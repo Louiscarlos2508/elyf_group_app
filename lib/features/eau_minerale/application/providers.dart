@@ -79,7 +79,7 @@ final activityStateProvider = FutureProvider.autoDispose(
 );
 
 final productionStateProvider = FutureProvider.autoDispose(
-  (ref) async => ref.watch(productionControllerProvider).fetchTodayProductions(),
+  (ref) async => ref.watch(productionControllerProvider).fetchAllProductions(),
 );
 
 final salesStateProvider = FutureProvider.autoDispose(
@@ -100,6 +100,10 @@ final financesStateProvider = FutureProvider.autoDispose(
 
 final productsProvider = FutureProvider.autoDispose<List<Product>>(
   (ref) async => ref.watch(productRepositoryProvider).fetchProducts(),
+);
+
+final productionPeriodConfigProvider = FutureProvider.autoDispose(
+  (ref) async => ref.watch(productionControllerProvider).getPeriodConfig(),
 );
 
 /// Enum used for bottom navigation in the module shell.

@@ -16,8 +16,16 @@ class MockProductionRepository implements ProductionRepository {
       _productions['prod-$i'] = Production(
         id: 'prod-$i',
         date: date,
-        quantity: 5000 - (i * 200),
+        quantity: 148 - (i * 10),
         period: _config.getPeriodForDate(date),
+        rawMaterialsUsed: [
+          RawMaterialUsage(
+            productId: 'sachet-1',
+            productName: 'Sachets',
+            quantity: 70 + (i * 5),
+            unit: 'unité',
+          ),
+        ],
         notes: 'Production session ${i + 1}',
       );
     }

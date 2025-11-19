@@ -36,9 +36,8 @@ class ProductionService {
     );
 
     // Update finished goods stock (find first active finished good product)
-    final finishedGoods = await productRepository.fetchActiveProducts(
-      ProductType.finishedGood,
-    );
+    final allProducts = await productRepository.fetchProducts();
+    final finishedGoods = allProducts.where((p) => p.type == ProductType.finishedGood).toList();
     if (finishedGoods.isNotEmpty) {
       final product = finishedGoods.first;
       final currentStock = await stockRepository.getStock(product.id);

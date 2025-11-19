@@ -5,14 +5,16 @@ import '../../../application/controllers/clients_controller.dart';
 import '../../../application/controllers/finances_controller.dart';
 import '../../../application/controllers/production_controller.dart';
 import '../../../application/controllers/sales_controller.dart';
+import '../../../application/controllers/stock_controller.dart';
 import '../../../application/providers.dart';
+import '../../../domain/entities/sale.dart';
 import '../../../domain/entities/stock_item.dart';
 import '../../widgets/dashboard_header.dart';
 import '../../widgets/dashboard_kpi_card.dart';
 import '../../widgets/section_placeholder.dart';
 import '../../widgets/stock_alert_banner.dart';
 
-/// Professional dashboard screen similar to the reference image.
+/// Professional dashboard screen with organized sections and responsive layout.
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
@@ -28,19 +30,17 @@ class DashboardScreen extends ConsumerWidget {
       body: CustomScrollView(
         slivers: [
           SliverToBoxAdapter(
-            child: DashboardHeader(
-              date: DateTime.now(),
-              role: 'Responsable',
-            ),
+            child: DashboardHeader(date: DateTime.now(), role: 'Responsable'),
           ),
-          // Stock alerts
           SliverToBoxAdapter(
             child: stockState.when(
               data: (data) {
                 final lowStockItems = data.items
-                    .where((item) =>
-                        item.type == StockType.finishedGoods &&
-                        item.quantity < 100)
+                    .where(
+                      (item) =>
+                          item.type == StockType.finishedGoods &&
+                          item.quantity < 100,
+                    )
                     .toList();
                 if (lowStockItems.isEmpty) return const SizedBox.shrink();
                 return StockAlertBanner(
@@ -54,21 +54,10 @@ class DashboardScreen extends ConsumerWidget {
               error: (_, __) => const SizedBox.shrink(),
             ),
           ),
-          // Today section
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
-              child: Text(
-                "AUJOURD'HUI",
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-              ),
-            ),
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
+          _buildSectionHeader("AUJOURD'HUI", 24, 16),
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+            sliver: SliverToBoxAdapter(
               child: salesState.when(
                 data: (data) => _buildTodaySection(context, data),
                 loading: () => const SizedBox(
@@ -79,21 +68,10 @@ class DashboardScreen extends ConsumerWidget {
               ),
             ),
           ),
-          // This month section
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
-              child: Text(
-                'CE MOIS',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-              ),
-            ),
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
+          _buildSectionHeader('CE MOIS', 0, 8),
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+            sliver: SliverToBoxAdapter(
               child: _buildMonthSection(
                 context,
                 salesState,
@@ -103,10 +81,10 @@ class DashboardScreen extends ConsumerWidget {
               ),
             ),
           ),
-          // Production, Expenses, Salaries section
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          _buildSectionHeader('Opérations', 0, 8),
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+            sliver: SliverToBoxAdapter(
               child: _buildOperationsSection(
                 context,
                 productionState,
@@ -114,24 +92,16 @@ class DashboardScreen extends ConsumerWidget {
               ),
             ),
           ),
-          // Stock section
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
-              child: Text(
-                'Stock Produits Finis',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-              ),
-            ),
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
+          _buildSectionHeader('Stock Produits Finis', 0, 8),
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
+            sliver: SliverToBoxAdapter(
               child: stockState.when(
                 data: (data) => _buildStockList(context, data),
-                loading: () => const Center(child: CircularProgressIndicator()),
+                loading: () => const SizedBox(
+                  height: 100,
+                  child: Center(child: CircularProgressIndicator()),
+                ),
                 error: (_, __) => SectionPlaceholder(
                   icon: Icons.inventory_2_outlined,
                   title: 'Stock indisponible',
@@ -140,62 +110,72 @@ class DashboardScreen extends ConsumerWidget {
               ),
             ),
           ),
-          const SliverToBoxAdapter(child: SizedBox(height: 24)),
         ],
       ),
     );
   }
 
-  Widget _buildTodaySection(BuildContext context, dynamic salesState) {
+  Widget _buildSectionHeader(String title, double top, double bottom) {
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(24, top, 24, bottom),
+        child: Text(
+          title,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.5,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTodaySection(BuildContext context, SalesState salesState) {
     final todayRevenue = salesState.todayRevenue;
     final todaySalesCount = salesState.sales.length;
+    final todayCollections = salesState.sales
+        .where((Sale sale) => sale.isFullyPaid)
+        .fold(0, (int sum, Sale sale) => sum + sale.amountPaid);
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final isWide = constraints.maxWidth > 600;
-        return isWide
-            ? Row(
-                children: [
-                  Expanded(
-                    child: DashboardKpiCard(
-                      label: 'Chiffre d\'Affaires',
-                      value: _formatCurrency(todayRevenue),
-                      subtitle: '$todaySalesCount vente(s)',
-                      icon: Icons.trending_up,
-                      iconColor: Colors.blue,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: DashboardKpiCard(
-                      label: 'Encaissements',
-                      value: _formatCurrency(todayRevenue),
-                      subtitle: '100% collecté',
-                      icon: Icons.attach_money,
-                      iconColor: Colors.green,
-                    ),
-                  ),
-                ],
-              )
-            : Column(
-                children: [
-                  DashboardKpiCard(
-                    label: 'Chiffre d\'Affaires',
-                    value: _formatCurrency(todayRevenue),
-                    subtitle: '$todaySalesCount vente(s)',
-                    icon: Icons.trending_up,
-                    iconColor: Colors.blue,
-                  ),
-                  const SizedBox(height: 16),
-                  DashboardKpiCard(
-                    label: 'Encaissements',
-                    value: _formatCurrency(todayRevenue),
-                    subtitle: '100% collecté',
-                    icon: Icons.attach_money,
-                    iconColor: Colors.green,
-                  ),
-                ],
-              );
+        final cards = [
+          DashboardKpiCard(
+            label: 'Chiffre d\'Affaires',
+            value: _formatCurrency(todayRevenue),
+            subtitle: '$todaySalesCount vente(s)',
+            icon: Icons.trending_up,
+            iconColor: Colors.blue,
+            backgroundColor: Colors.blue,
+          ),
+          DashboardKpiCard(
+            label: 'Encaissements',
+            value: _formatCurrency(todayCollections),
+            subtitle: todayRevenue > 0
+                ? '${((todayCollections / todayRevenue) * 100).toStringAsFixed(0)}% collecté'
+                : '0% collecté',
+            icon: Icons.attach_money,
+            iconColor: Colors.green,
+            valueColor: Colors.green.shade700,
+            backgroundColor: Colors.green,
+          ),
+        ];
+
+        if (isWide) {
+          return Row(
+            children: [
+              Expanded(child: cards[0]),
+              const SizedBox(width: 16),
+              Expanded(child: cards[1]),
+            ],
+          );
+        }
+
+        return Column(
+          children: [cards[0], const SizedBox(height: 16), cards[1]],
+        );
       },
     );
   }
@@ -212,9 +192,21 @@ class DashboardScreen extends ConsumerWidget {
         data: (production) => clientsState.when(
           data: (clients) => financesState.when(
             data: (finances) {
-              final monthRevenue = sales.todayRevenue * 30; // Mock
-              final monthCollections = (monthRevenue * 0.9).round();
-              final collectionRate = 90.0;
+              final now = DateTime.now();
+              final monthStart = DateTime(now.year, now.month, 1);
+              final monthSales = sales.sales
+                  .where((s) => s.date.isAfter(monthStart))
+                  .toList();
+              final monthRevenue = monthSales.fold(
+                0,
+                (sum, s) => sum + s.totalPrice,
+              );
+              final monthCollections = monthSales
+                  .where((s) => s.isFullyPaid)
+                  .fold(0, (sum, s) => sum + s.amountPaid);
+              final collectionRate = monthRevenue > 0
+                  ? ((monthCollections / monthRevenue) * 100)
+                  : 0.0;
               final totalCredits = clients.totalCredit;
               final creditCustomersCount = clients.customers
                   .where((c) => c.totalCredit > 0)
@@ -232,37 +224,43 @@ class DashboardScreen extends ConsumerWidget {
                     crossAxisCount: crossAxisCount,
                     crossAxisSpacing: 16,
                     mainAxisSpacing: 16,
-                    childAspectRatio: isWide ? 1.1 : 1.3,
+                    childAspectRatio: isWide ? 1.4 : 1.6,
                     children: [
                       DashboardKpiCard(
                         label: 'Chiffre d\'Affaires',
                         value: _formatCurrency(monthRevenue),
-                        subtitle: '${sales.sales.length} ventes',
+                        subtitle: '${monthSales.length} ventes',
                         icon: Icons.trending_up,
                         iconColor: Colors.blue,
+                        backgroundColor: Colors.blue,
                       ),
                       DashboardKpiCard(
                         label: 'Encaissé',
                         value: _formatCurrency(monthCollections),
-                        subtitle: '$collectionRate% taux encaissement',
+                        subtitle: '${collectionRate.toStringAsFixed(0)}%',
                         icon: Icons.attach_money,
                         iconColor: Colors.green,
                         valueColor: Colors.green.shade700,
+                        backgroundColor: Colors.green,
                       ),
                       DashboardKpiCard(
                         label: 'Crédits en Cours',
                         value: _formatCurrency(totalCredits),
-                        subtitle: '$creditCustomersCount client(s)',
+                        subtitle: '$creditCustomersCount client',
                         icon: Icons.calendar_today,
                         iconColor: Colors.orange,
+                        backgroundColor: Colors.orange,
                       ),
                       DashboardKpiCard(
                         label: 'Résultat',
                         value: _formatCurrency(monthResult),
-                        subtitle: 'Encaissements - Charges',
-                        icon: Icons.trending_up,
-                        iconColor: Colors.green,
-                        valueColor: Colors.green.shade700,
+                        subtitle: monthResult >= 0 ? 'Bénéfice' : 'Déficit',
+                        icon: Icons.account_balance_wallet,
+                        iconColor: monthResult >= 0 ? Colors.green : Colors.red,
+                        valueColor: monthResult >= 0
+                            ? Colors.green.shade700
+                            : Colors.red.shade700,
+                        backgroundColor: monthResult >= 0 ? Colors.green : Colors.red,
                       ),
                     ],
                   );
@@ -303,8 +301,18 @@ class DashboardScreen extends ConsumerWidget {
     return productionState.when(
       data: (production) => financesState.when(
         data: (finances) {
-          final monthProduction = production.totalQuantity;
-          final monthExpenses = finances.totalCharges;
+          final now = DateTime.now();
+          final monthStart = DateTime(now.year, now.month, 1);
+          final monthProductions = production.productions
+              .where((p) => p.date.isAfter(monthStart))
+              .toList();
+          final monthProduction = monthProductions.fold(
+            0,
+            (sum, p) => sum + p.quantity,
+          );
+          final monthExpenses = finances.expenses
+              .where((e) => e.date.isAfter(monthStart))
+              .fold(0, (sum, e) => sum + e.amountCfa);
           final monthSalaries = 0; // TODO: Add salaries
 
           return LayoutBuilder(
@@ -318,28 +326,31 @@ class DashboardScreen extends ConsumerWidget {
                 crossAxisCount: crossAxisCount,
                 crossAxisSpacing: 16,
                 mainAxisSpacing: 16,
-                childAspectRatio: isWide ? 1.2 : 1.5,
+                childAspectRatio: isWide ? 1.5 : 1.8,
                 children: [
                   DashboardKpiCard(
                     label: 'Production',
                     value: monthProduction.toString(),
-                    subtitle: '${production.productions.length} session(s) ce mois',
+                    subtitle: '${monthProductions.length} session',
                     icon: Icons.factory,
                     iconColor: Colors.purple,
+                    backgroundColor: Colors.purple,
                   ),
                   DashboardKpiCard(
                     label: 'Dépenses',
                     value: _formatCurrency(monthExpenses),
-                    subtitle: '${finances.expenses.length} transaction(s)',
+                    subtitle: '${finances.expenses.where((e) => e.date.isAfter(monthStart)).length} transaction',
                     icon: Icons.receipt_long,
                     iconColor: Colors.red,
+                    backgroundColor: Colors.red,
                   ),
                   DashboardKpiCard(
                     label: 'Salaires',
                     value: _formatCurrency(monthSalaries),
-                    subtitle: '0 paiement(s)',
+                    subtitle: '0 paiement',
                     icon: Icons.people,
-                    iconColor: Colors.purple,
+                    iconColor: Colors.indigo,
+                    backgroundColor: Colors.indigo,
                   ),
                 ],
               );
@@ -360,21 +371,42 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildStockList(BuildContext context, dynamic stockState) {
+  Widget _buildStockList(BuildContext context, StockState stockState) {
+    final theme = Theme.of(context);
     final finishedGoods = stockState.items
-        .where((item) => item.type == StockType.finishedGoods)
+        .where((StockItem item) => item.type == StockType.finishedGoods)
         .toList();
 
     if (finishedGoods.isEmpty) {
       return Card(
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(
+            color: theme.colorScheme.outline.withValues(alpha: 0.2),
+          ),
+        ),
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(32),
           child: Center(
-            child: Text(
-              'Aucun produit fini en stock',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.inventory_2_outlined,
+                  size: 48,
+                  color: theme.colorScheme.onSurfaceVariant.withValues(
+                    alpha: 0.5,
                   ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Aucun produit fini en stock',
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -382,30 +414,91 @@ class DashboardScreen extends ConsumerWidget {
     }
 
     return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: theme.colorScheme.outline.withValues(alpha: 0.1),
+        ),
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        children: finishedGoods.map<Widget>((item) {
-          return ListTile(
-            title: Text(item.name),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  '${item.quantity.toInt()} ${item.unit}',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
+        children: [
+          ...finishedGoods.asMap().entries.map((entry) {
+            final index = entry.key;
+            final item = entry.value;
+            final isLowStock = item.quantity < 100;
+
+            return Container(
+              decoration: BoxDecoration(
+                border: index < finishedGoods.length - 1
+                    ? Border(
+                        bottom: BorderSide(
+                          color: theme.colorScheme.outline.withValues(
+                            alpha: 0.1,
+                          ),
+                          width: 1,
+                        ),
+                      )
+                    : null,
+              ),
+              child: ListTile(
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
+                title: Text(
+                  item.name,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                subtitle: isLowStock
+                    ? Text(
+                        'Stock faible',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: Colors.orange.shade700,
+                        ),
+                      )
+                    : null,
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
                       ),
+                      decoration: BoxDecoration(
+                        color: isLowStock
+                            ? Colors.orange.withValues(alpha: 0.1)
+                            : theme.colorScheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '${item.quantity.toInt()} ${item.unit}',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: isLowStock
+                              ? Colors.orange.shade900
+                              : theme.colorScheme.onSurface,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Icon(
+                      Icons.chevron_right,
+                      color: theme.colorScheme.onSurfaceVariant.withValues(
+                        alpha: 0.5,
+                      ),
+                      size: 20,
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                Icon(
-                  Icons.settings_outlined,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  size: 20,
-                ),
-              ],
-            ),
-          );
-        }).toList(),
+              ),
+            );
+          }).toList(),
+        ],
       ),
     );
   }
@@ -423,4 +516,3 @@ class DashboardScreen extends ConsumerWidget {
     return '${buffer.toString()} CFA';
   }
 }
-
