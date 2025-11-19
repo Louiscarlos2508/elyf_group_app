@@ -30,6 +30,10 @@ class ProductionController {
   Future<ProductionPeriodConfig> getPeriodConfig() async {
     return await _repository.getPeriodConfig();
   }
+
+  Future<void> updatePeriodConfig(ProductionPeriodConfig config) async {
+    return await _repository.updatePeriodConfig(config);
+  }
 }
 
 class ProductionState {

@@ -1,9 +1,8 @@
 import '../entities/product.dart';
 
-/// Product management repository.
+/// Product catalog management repository.
 abstract class ProductRepository {
-  Future<List<Product>> fetchAllProducts();
-  Future<List<Product>> fetchActiveProducts(ProductType? type);
+  Future<List<Product>> fetchProducts();
   Future<Product?> getProduct(String id);
   Future<String> createProduct(Product product);
   Future<void> updateProduct(Product product);

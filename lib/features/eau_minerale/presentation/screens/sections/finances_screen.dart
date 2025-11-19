@@ -44,6 +44,7 @@ class FinancesScreen extends ConsumerWidget {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'finances_fab',
         onPressed: () => _showForm(context),
         icon: const Icon(Icons.add_card),
         label: const Text('Nouvelle dépense'),

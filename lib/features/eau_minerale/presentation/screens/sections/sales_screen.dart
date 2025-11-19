@@ -44,6 +44,7 @@ class SalesScreen extends ConsumerWidget {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'sales_fab',
         onPressed: () => _showForm(context),
         icon: const Icon(Icons.add_shopping_cart),
         label: const Text('Nouvelle vente'),

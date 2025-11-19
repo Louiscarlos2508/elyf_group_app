@@ -44,6 +44,7 @@ class ClientsScreen extends ConsumerWidget {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'clients_fab',
         onPressed: () => _showForm(context),
         icon: const Icon(Icons.person_add),
         label: const Text('Nouveau client'),

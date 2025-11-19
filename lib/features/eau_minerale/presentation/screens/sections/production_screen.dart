@@ -44,6 +44,7 @@ class ProductionScreen extends ConsumerWidget {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'production_fab',
         onPressed: () => _showForm(context),
         icon: const Icon(Icons.add),
         label: const Text('Nouveau lot'),
