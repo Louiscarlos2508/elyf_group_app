@@ -1,0 +1,82 @@
+---
+alwaysApply: true
+---
+
+Project Rule – Flutter Frontend (Version complète et UX/UI pro)
+Contexte du projet :
+
+Application mobile Flutter multi-entreprises / multi-modules .
+
+Backend unique : Firebase (Auth, Firestore, Cloud Functions, FCM, Storage).
+
+Entreprises gérées :
+
+Eau minérale – mise en sachet et vente
+
+Gaz – vente en détail et gros
+
+Orange Money – agent mobile de renom
+
+Emplacement – ​​maisons
+
+Boutique – vente physique
+
+Chaque entreprise a ses modules spécifiques, mais Flutter doit permettre le switch rapide entre entreprises/modules .
+
+Offline-first avec Isar :
+
+Entités critiques stockées localement.
+
+Synchronisation automatique avec Firestore.
+
+Conflits gérés par updated_atet logique métier.
+
+Sunmi V3 Mix pour impression thermique :
+
+Boutons / widgets d'impression intégrés dans les modules concernés.
+
+Retour de statut local et synchronisé avec Firestore.
+
+UI/UX Pro :
+
+Design pro, moderne, simple, non complexe .
+
+Cohérence visuelle :
+
+Palette de couleurs uniformes pour boutons, badges, textes, cartes.
+
+Styles de boutons et widgets homogènes à travers tous les modules.
+
+Typographie claire et uniforme.
+
+Navigation intuitive et fluide.
+
+Listes filtrables, triables, recherche rapide.
+
+Formulaires conviviaux avec validation et messages d'erreur clairs.
+
+State Management : Riverpod , chaque module a son propre fournisseur / bloc.
+
+Découpage de fichiers :
+
+Aucun fichier Flutter > 200 lignes .
+
+Écrans complexes découpés en widgets enfants modulaires .
+
+Multi-locataire :
+
+Les widgets reçoivent enterpriseIdet moduleIdpour filtrer les données.
+
+Les actions écrivent et lisent uniquement dans Firestore de l'entreprise active.
+
+Journalisation / Audit :
+
+Actions critiques loguées localement et synchronisées.
+
+Modèles générés par IA :
+
+Flutter/Dart valide et commenté .
+
+Respecte UI/UX pro, cohérence visuelle, boutons, widgets, couleurs .
+
+Découpe automatique en widgets enfants si nécessaire.
