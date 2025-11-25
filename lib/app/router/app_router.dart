@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/administration/presentation/screens/admin_home_screen.dart';
 import '../../features/intro/presentation/screens/login_screen.dart';
 import '../../features/intro/presentation/screens/onboarding_screen.dart';
 import '../../features/intro/presentation/screens/splash_screen.dart';
 import '../../features/eau_minerale/presentation/screens/eau_minerale_shell_screen.dart';
-import '../../features/modules/presentation/screens/boutique_home_screen.dart';
+import '../../features/boutique/presentation/screens/boutique_shell_screen.dart';
 import '../../features/modules/presentation/screens/gaz_home_screen.dart';
 import '../../features/modules/presentation/screens/immobilier_home_screen.dart';
 import '../../features/modules/presentation/screens/module_menu_screen.dart';
@@ -20,6 +21,7 @@ enum AppRoute {
   moduleMenu,
   dashboard,
   tenantSelection,
+  admin,
   homeEauSachet,
   homeGaz,
   homeOrangeMoney,
@@ -50,6 +52,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/modules',
         name: AppRoute.moduleMenu.name,
         builder: (context, state) => const ModuleMenuScreen(),
+      ),
+      GoRoute(
+        path: '/admin',
+        name: AppRoute.admin.name,
+        builder: (context, state) => const AdminHomeScreen(),
       ),
       GoRoute(
         path: '/',
@@ -85,7 +92,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/modules/boutique',
         name: AppRoute.homeBoutique.name,
-        builder: (context, state) => const BoutiqueHomeScreen(),
+        builder: (context, state) => const BoutiqueShellScreen(),
       ),
       GoRoute(
         path: '/tenants',

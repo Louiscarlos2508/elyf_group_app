@@ -8,7 +8,16 @@ class MockCustomerRepository implements CustomerRepository {
 
   MockCustomerRepository() {
     // Initialize with sample data
-    for (var i = 0; i < 5; i++) {
+    _customers['customer-0'] = CustomerSummary(
+      id: 'customer-0',
+      name: 'ouedraogo moussa',
+      phone: '+221770001234',
+      totalCredit: 500,
+      purchaseCount: 3,
+      lastPurchaseDate: DateTime.now().subtract(const Duration(days: 2)),
+      cnib: 'CNIB123456',
+    );
+    for (var i = 1; i < 5; i++) {
       final id = 'customer-$i';
       _customers[id] = CustomerSummary(
         id: id,

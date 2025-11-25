@@ -6,9 +6,15 @@ class ModuleMenuScreen extends StatelessWidget {
 
   static final modules = [
     _ModuleEntry(
+      name: 'Administration',
+      route: '/admin',
+      description: 'Gestion des utilisateurs, rôles et permissions pour tous les modules.',
+      icon: Icons.admin_panel_settings_outlined,
+    ),
+    _ModuleEntry(
       name: 'Eau Minérale',
       route: '/modules/eau_sachet',
-      description: 'Suivi de production et des ventes de sachets d’eau.',
+      description: "Suivi de production et des ventes de sachets d'eau.",
       icon: Icons.water_drop_outlined,
     ),
     _ModuleEntry(
@@ -40,6 +46,7 @@ class ModuleMenuScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Sélectionnez un module'),
@@ -49,13 +56,23 @@ class ModuleMenuScreen extends StatelessWidget {
         padding: const EdgeInsets.all(24),
         itemBuilder: (context, index) {
           final module = modules[index];
+          final isAdmin = module.route == '/admin';
           return Card(
+            elevation: isAdmin ? 2 : 0,
+            color: isAdmin
+                ? theme.colorScheme.primaryContainer.withValues(alpha: 0.3)
+                : null,
             child: ListTile(
-              leading: Icon(module.icon, size: 32),
+              leading: Icon(
+                module.icon,
+                size: 32,
+                color: isAdmin ? theme.colorScheme.primary : null,
+              ),
               title: Text(
                 module.name,
                 style: textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w600,
+                  color: isAdmin ? theme.colorScheme.primary : null,
                 ),
               ),
               subtitle: Text(module.description),

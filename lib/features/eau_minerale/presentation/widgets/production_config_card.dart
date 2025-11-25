@@ -91,6 +91,13 @@ class _ProductionConfigCardState extends ConsumerState<ProductionConfigCard> {
     final days = int.tryParse(_controller.text) ?? 10;
 
     return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: theme.colorScheme.outline.withValues(alpha: 0.2),
+        ),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -121,9 +128,12 @@ class _ProductionConfigCardState extends ConsumerState<ProductionConfigCard> {
             const SizedBox(height: 16),
             TextField(
               controller: _controller,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Période de Production (jours)',
                 hintText: '10',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
               keyboardType: TextInputType.number,
             ),
@@ -139,10 +149,6 @@ class _ProductionConfigCardState extends ConsumerState<ProductionConfigCard> {
               alignment: Alignment.centerRight,
               child: FilledButton.icon(
                 onPressed: (_isLoading || !_hasChanges) ? null : _save,
-                style: FilledButton.styleFrom(
-                  backgroundColor: Colors.grey.shade800,
-                  foregroundColor: Colors.white,
-                ),
                 icon: _isLoading
                     ? const SizedBox(
                         width: 16,

@@ -1,0 +1,176 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../application/providers.dart';
+import '../../../domain/entities/product.dart';
+import '../../widgets/product_form_dialog.dart';
+import '../../widgets/product_tile.dart';
+
+class CatalogScreen extends ConsumerStatefulWidget {
+  const CatalogScreen({super.key});
+
+  @override
+  ConsumerState<CatalogScreen> createState() => _CatalogScreenState();
+}
+
+class _CatalogScreenState extends ConsumerState<CatalogScreen> {
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<Product> _filterProducts(List<Product> products, String query) {
+    if (query.isEmpty) return products;
+    final lowerQuery = query.toLowerCase();
+    return products.where((product) {
+      return product.name.toLowerCase().contains(lowerQuery) ||
+          (product.category?.toLowerCase().contains(lowerQuery) ?? false) ||
+          (product.barcode?.contains(query) ?? false);
+    }).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final productsAsync = ref.watch(productsProvider);
+
+    return CustomScrollView(
+      slivers: [
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    'Catalogue Produits',
+                    style: theme.textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                IntrinsicWidth(
+                  child: FilledButton.icon(
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) => const ProductFormDialog(),
+                      );
+                    },
+                    icon: const Icon(Icons.add),
+                    label: const Text('Nouveau Produit'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'Rechercher un produit...',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() => _searchQuery = '');
+                        },
+                      )
+                    : null,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onChanged: (value) {
+                setState(() => _searchQuery = value);
+              },
+            ),
+          ),
+        ),
+        SliverPadding(
+          padding: const EdgeInsets.all(24),
+          sliver: productsAsync.when(
+            data: (products) {
+              final filteredProducts = _filterProducts(products, _searchQuery);
+              if (filteredProducts.isEmpty) {
+                return SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.inventory_2_outlined,
+                          size: 64,
+                          color: theme.colorScheme.onSurfaceVariant
+                              .withValues(alpha: 0.5),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          _searchQuery.isEmpty
+                              ? 'Aucun produit enregistré'
+                              : 'Aucun résultat pour "$_searchQuery"',
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+              return SliverGrid(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  childAspectRatio: 0.85,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 16,
+                ),
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    final product = filteredProducts[index];
+                    return ProductTile(
+                      product: product,
+                      onTap: () {
+                        showDialog(
+                          context: context,
+                          builder: (context) => ProductFormDialog(product: product),
+                        );
+                      },
+                    );
+                  },
+                  childCount: filteredProducts.length,
+                ),
+              );
+            },
+            loading: () => const SliverFillRemaining(
+              child: Center(child: CircularProgressIndicator()),
+            ),
+            error: (_, __) => SliverFillRemaining(
+              child: Center(
+                child: Text(
+                  'Erreur de chargement',
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: theme.colorScheme.error,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+

@@ -77,15 +77,17 @@ class _FormDialogState extends State<FormDialog> {
                     child: const Text('Annuler'),
                   ),
                   const SizedBox(width: 12),
-                  FilledButton(
-                    onPressed: _isLoading ? null : _handleSave,
-                    child: _isLoading
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : Text(widget.saveLabel),
+                  IntrinsicWidth(
+                    child: FilledButton(
+                      onPressed: _isLoading ? null : _handleSave,
+                      child: _isLoading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : Text(widget.saveLabel),
+                    ),
                   ),
                 ],
               ),

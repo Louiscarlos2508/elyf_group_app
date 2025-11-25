@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/providers.dart';
 import '../../domain/entities/product.dart';
+import 'product_form_fields.dart';
 
 /// Dialog for adding/editing a product.
 class ProductFormDialog extends ConsumerStatefulWidget {
@@ -114,76 +115,12 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
               Flexible(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      TextFormField(
-                        controller: _nameController,
-                        decoration: const InputDecoration(
-                          labelText: 'Nom du produit',
-                          prefixIcon: Icon(Icons.inventory_2),
-                        ),
-                        validator: (v) =>
-                            v?.isEmpty ?? true ? 'Requis' : null,
-                      ),
-                      const SizedBox(height: 16),
-                      DropdownButtonFormField<ProductType>(
-                        value: _type,
-                        decoration: const InputDecoration(
-                          labelText: 'Type',
-                          prefixIcon: Icon(Icons.category),
-                        ),
-                        items: const [
-                          DropdownMenuItem(
-                            value: ProductType.finishedGood,
-                            child: Text('Produit Fini (PF)'),
-                          ),
-                          DropdownMenuItem(
-                            value: ProductType.rawMaterial,
-                            child: Text('Matière Première (MP)'),
-                          ),
-                        ],
-                        onChanged: (v) {
-                          if (v != null) setState(() => _type = v);
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextFormField(
-                              controller: _priceController,
-                              decoration: const InputDecoration(
-                                labelText: 'Prix unitaire (CFA)',
-                                prefixIcon: Icon(Icons.attach_money),
-                              ),
-                              keyboardType: TextInputType.number,
-                              validator: (v) {
-                                if (v == null || v.isEmpty) return 'Requis';
-                                final price = int.tryParse(v);
-                                if (price == null || price < 0) {
-                                  return 'Prix invalide';
-                                }
-                                return null;
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: TextFormField(
-                              controller: _unitController,
-                              decoration: const InputDecoration(
-                                labelText: 'Unité',
-                                prefixIcon: Icon(Icons.straighten),
-                                hintText: 'kg, Unité, etc.',
-                              ),
-                              validator: (v) =>
-                                  v?.isEmpty ?? true ? 'Requis' : null,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                  child: ProductFormFields(
+                    nameController: _nameController,
+                    priceController: _priceController,
+                    unitController: _unitController,
+                    type: _type,
+                    onTypeChanged: (v) => setState(() => _type = v),
                   ),
                 ),
               ),

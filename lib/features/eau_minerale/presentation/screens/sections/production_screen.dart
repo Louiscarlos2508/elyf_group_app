@@ -5,10 +5,12 @@ import '../../../application/controllers/production_controller.dart';
 import '../../../application/providers.dart';
 import '../../../domain/entities/production.dart';
 import '../../../domain/entities/production_period_config.dart';
+import '../../../domain/permissions/eau_minerale_permissions.dart';
+import '../../widgets/centralized_permission_guard.dart';
 import '../../widgets/form_dialog.dart';
 import '../../widgets/production_form.dart';
 import '../../widgets/production_history_table.dart';
-import '../../widgets/production_summary_card.dart';
+import '../../widgets/production_summary_section.dart';
 import '../../widgets/section_placeholder.dart';
 
 class ProductionScreen extends ConsumerWidget {
@@ -122,83 +124,67 @@ class _ProductionContent extends StatelessWidget {
     final sortedProductions = List<Production>.from(state.productions)
       ..sort((a, b) => b.date.compareTo(a.date));
 
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.fromLTRB(24, 16, 24, 20),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 4,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Production',
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth > 600;
+        
+        return CustomScrollView(
+          slivers: [
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(
+                  24,
+                  24,
+                  24,
+                  isWide ? 24 : 16,
                 ),
-              ),
-              SizedBox(
-                width: 180,
-                child: FilledButton.icon(
-                  onPressed: onNewProduction,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: Colors.grey.shade800,
-                    foregroundColor: Colors.white,
-                  ),
-                  icon: const Icon(Icons.add, size: 18),
-                  label: const Text('Nouvelle Production'),
-                ),
-              ),
-            ],
-          ),
-        ),
-        Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+                child: Row(
                   children: [
-                    Expanded(
-                      child: ProductionSummaryCard(
-                        title: 'Aujourd\'hui',
-                        value: todayProduction,
-                        label: 'packs produits',
-                        color: Colors.green,
-                        icon: Icons.arrow_downward,
+                    Text(
+                      'Production',
+                      style: theme.textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: ProductionSummaryCard(
-                        title: 'Cette Semaine',
-                        value: weekProduction,
-                        label: 'packs produits',
-                        color: Colors.blue,
-                        icon: Icons.trending_up,
+                    const Spacer(),
+                    EauMineralePermissionGuard(
+                      permission: EauMineralePermissions.createProduction,
+                      child: IntrinsicWidth(
+                        child: FilledButton.icon(
+                          onPressed: onNewProduction,
+                          icon: const Icon(Icons.add),
+                          label: const Text('Nouvelle Production'),
+                        ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 32),
-                ProductionHistoryTable(
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: ProductionSummarySection(
+                  todayProduction: todayProduction,
+                  weekProduction: weekProduction,
+                ),
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
+                child: ProductionHistoryTable(
                   productions: sortedProductions,
                   periodConfig: periodConfig ?? const ProductionPeriodConfig(daysPerPeriod: 10),
                 ),
-              ],
+              ),
             ),
-          ),
-        ),
-      ],
+            const SliverToBoxAdapter(
+              child: SizedBox(height: 24),
+            ),
+          ],
+        );
+      },
     );
   }
 }

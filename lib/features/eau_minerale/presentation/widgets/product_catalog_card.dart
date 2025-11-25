@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/providers.dart';
 import '../../domain/entities/product.dart';
+import '../../domain/permissions/eau_minerale_permissions.dart';
+import 'centralized_permission_guard.dart';
 import 'product_catalog_tabs.dart';
 import 'product_form_dialog.dart';
 import 'product_list_item.dart';
@@ -25,6 +27,13 @@ class _ProductCatalogCardState extends ConsumerState<ProductCatalogCard> {
     final productsAsync = ref.watch(productsProvider);
 
     return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: theme.colorScheme.outline.withValues(alpha: 0.2),
+        ),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -58,16 +67,14 @@ class _ProductCatalogCardState extends ConsumerState<ProductCatalogCard> {
                   ),
                 ),
                 const SizedBox(width: 16),
-                SizedBox(
-                  width: 120,
-                  child: FilledButton.icon(
-                    onPressed: () => _showAddProductDialog(context),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: Colors.grey.shade800,
-                      foregroundColor: Colors.white,
+                EauMineralePermissionGuard(
+                  permission: EauMineralePermissions.manageProducts,
+                  child: IntrinsicWidth(
+                    child: FilledButton.icon(
+                      onPressed: () => _showAddProductDialog(context),
+                      icon: const Icon(Icons.add, size: 18),
+                      label: const Text('Ajouter'),
                     ),
-                    icon: const Icon(Icons.add, size: 18),
-                    label: const Text('Ajouter'),
                   ),
                 ),
               ],

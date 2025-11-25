@@ -7,7 +7,8 @@ class FinancesController {
   final FinanceRepository _repository;
 
   Future<FinancesState> fetchRecentExpenses() async {
-    final expenses = await _repository.fetchRecentExpenses(limit: 4);
+    // Fetch more expenses to support monthly summary
+    final expenses = await _repository.fetchRecentExpenses(limit: 50);
     return FinancesState(expenses: expenses);
   }
 

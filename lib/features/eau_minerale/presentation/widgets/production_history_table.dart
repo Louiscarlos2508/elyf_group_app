@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../domain/entities/production.dart';
 import '../../domain/entities/production_period_config.dart';
+import 'production_period_formatter.dart';
+import 'raw_materials_chips.dart';
 
 /// Table widget for displaying production history.
 class ProductionHistoryTable extends StatelessWidget {
@@ -14,59 +16,6 @@ class ProductionHistoryTable extends StatelessWidget {
   final List<Production> productions;
   final ProductionPeriodConfig periodConfig;
 
-  String _formatDate(DateTime date) {
-    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
-  }
-
-  String _formatPeriod(Production production) {
-    final now = DateTime.now();
-    final month = production.date.month;
-    final year = production.date.year;
-    final day = production.date.day;
-    
-    final period = periodConfig.getPeriodForDate(production.date);
-    final daysPerPeriod = periodConfig.daysPerPeriod;
-    
-    int periodStartDay;
-    int periodEndDay;
-    
-    if (period == 1) {
-      periodStartDay = 1;
-      periodEndDay = daysPerPeriod;
-    } else if (period == 2) {
-      periodStartDay = daysPerPeriod + 1;
-      periodEndDay = daysPerPeriod * 2;
-    } else {
-      periodStartDay = daysPerPeriod * 2 + 1;
-      periodEndDay = 31;
-    }
-    
-    final startMonth = _getMonthName(month);
-    final endMonth = _getMonthName(month);
-    
-    if (periodStartDay == periodEndDay) {
-      return '$periodStartDay $startMonth $year';
-    }
-    return '$periodStartDay-$periodEndDay $startMonth $year';
-  }
-
-  String _getMonthName(int month) {
-    const months = [
-      'janvier',
-      'février',
-      'mars',
-      'avril',
-      'mai',
-      'juin',
-      'juillet',
-      'août',
-      'septembre',
-      'octobre',
-      'novembre',
-      'décembre',
-    ];
-    return months[month - 1];
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -130,19 +79,21 @@ class ProductionHistoryTable extends StatelessWidget {
                 ],
               ),
               ...productions.map((production) {
+                final formatter = ProductionPeriodFormatter(periodConfig);
+                final period = periodConfig.getPeriodForDate(production.date);
                 return TableRow(
                   children: [
                     _buildDataCellText(
                       context,
-                      _formatDate(production.date),
+                      ProductionPeriodFormatter.formatDate(production.date),
                     ),
                     _buildDataCellText(
                       context,
-                      _formatPeriod(production),
+                      formatter.formatPeriod(period, production.date),
                     ),
                     _buildDataCellWidget(
                       context,
-                      _buildRawMaterialsChips(context, production),
+                      RawMaterialsChips(production: production),
                     ),
                     _buildDataCellWidget(
                       context,
@@ -196,40 +147,5 @@ class ProductionHistoryTable extends StatelessWidget {
     );
   }
 
-  Widget _buildRawMaterialsChips(
-    BuildContext context,
-    Production production,
-  ) {
-    if (production.rawMaterialsUsed == null ||
-        production.rawMaterialsUsed!.isEmpty) {
-      return Text(
-        '-',
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-      );
-    }
-
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: production.rawMaterialsUsed!.map((material) {
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            color: Colors.orange.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Text(
-            '${material.productName}: ${material.quantity}',
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: Colors.orange.shade800,
-                  fontWeight: FontWeight.w500,
-                ),
-          ),
-        );
-      }).toList(),
-    );
-  }
 }
 
