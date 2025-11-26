@@ -1,0 +1,108 @@
+/// Template pour l'impression de reçus de paiement sur imprimante thermique Sunmi.
+class PaymentReceiptTemplate {
+  PaymentReceiptTemplate._();
+
+  /// Génère le contenu du reçu de paiement pour impression thermique.
+  static String generateReceipt({
+    required String receiptNumber,
+    required String paymentDate,
+    required String amount,
+    required String paymentMethod,
+    required String tenantName,
+    required String propertyAddress,
+    String? period,
+    String? notes,
+  }) {
+    final width = 30; // Largeur pour imprimante 58mm
+    final lines = <String>[];
+
+    // Fonction pour centrer le texte
+    String centerText(String text) {
+      if (text.length >= width) return text.substring(0, width);
+      final padding = (width - text.length) ~/ 2;
+      return ' ' * padding + text;
+    }
+
+    // Fonction pour créer une ligne de séparation
+    String separator(String char) => char * 26;
+
+    // En-tête avec nom de l'entreprise
+    lines.add('');
+    lines.add(centerText('╔══════════════════╗'));
+    lines.add(centerText('║   ELYF GROUPE    ║'));
+    lines.add(centerText('╚══════════════════╝'));
+    lines.add('');
+    lines.add(centerText('REÇU DE PAIEMENT'));
+    lines.add(separator('═'));
+    lines.add('');
+
+    // Informations du reçu
+    lines.add('N°: $receiptNumber');
+    lines.add('Date: $paymentDate');
+    if (period != null) {
+      lines.add('Période: $period');
+    }
+    lines.add(separator('─'));
+
+    // Informations du locataire
+    lines.add('Locataire:');
+    lines.add(tenantName);
+    lines.add('');
+
+    // Informations de la propriété
+    lines.add('Propriété:');
+    if (propertyAddress.length > width - 2) {
+      lines.add(propertyAddress.substring(0, width - 2));
+    } else {
+      lines.add(propertyAddress);
+    }
+    lines.add(separator('─'));
+
+    // Détails du paiement
+    lines.add('Montant: $amount F');
+    lines.add('Méthode: $paymentMethod');
+    lines.add(separator('═'));
+
+    // Notes si présentes
+    if (notes != null && notes.isNotEmpty) {
+      lines.add('Notes:');
+      if (notes.length > width - 2) {
+        final words = notes.split(' ');
+        String currentLine = '';
+        for (final word in words) {
+          if ((currentLine + word).length < width - 2) {
+            currentLine += (currentLine.isEmpty ? '' : ' ') + word;
+          } else {
+            if (currentLine.isNotEmpty) lines.add(currentLine);
+            currentLine = word;
+          }
+        }
+        if (currentLine.isNotEmpty) lines.add(currentLine);
+      } else {
+        lines.add(notes);
+      }
+      lines.add(separator('─'));
+    }
+
+    // Espace pour signature
+    lines.add('');
+    lines.add('Signature locataire:');
+    lines.add('');
+    lines.add('');
+    lines.add('Signature et cachet:');
+    lines.add('');
+
+    // Pied de page
+    lines.add(centerText('Merci de votre'));
+    lines.add(centerText('confiance !'));
+    lines.add('');
+
+    // Ajouter des lignes vides à la fin pour éviter la coupure
+    for (int i = 0; i < 6; i++) {
+      lines.add('');
+    }
+
+    return lines.join('\n');
+  }
+}
+

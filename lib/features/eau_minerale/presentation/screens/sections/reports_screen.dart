@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:open_file/open_file.dart';
 
+import '../../../../../core/pdf/eau_minerale_report_pdf_service.dart';
+import '../../../application/providers.dart';
 import '../../../domain/entities/report_period.dart';
 import '../../widgets/expense_report_content.dart';
 import '../../widgets/production_report_content.dart';
@@ -54,7 +57,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     }
   }
 
-  void _downloadReport() {
+  Future<void> _downloadReport() async {
     if (_startDate == null || _endDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -63,10 +66,57 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       );
       return;
     }
-    // TODO: Implement report download
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Téléchargement - À implémenter')),
-    );
+
+    try {
+      // Afficher un indicateur de chargement
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+
+      // Récupérer les données du rapport
+      final period = ReportPeriod(startDate: _startDate, endDate: _endDate);
+      final reportData = await ref.read(
+        reportDataProvider(period).future,
+      );
+
+      // Générer le PDF
+      final pdfService = EauMineraleReportPdfService.instance;
+      final file = await pdfService.generateReport(
+        period: period,
+        reportData: reportData,
+      );
+
+      // Fermer le dialog de chargement
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+
+      // Ouvrir le fichier
+      if (mounted) {
+        final result = await OpenFile.open(file.path);
+        if (result.type != ResultType.done && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('PDF généré: ${file.path}'),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.of(context).pop(); // Fermer le dialog de chargement
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur lors de la génération PDF: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   @override

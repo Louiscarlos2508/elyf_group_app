@@ -8,6 +8,7 @@ import '../../features/intro/presentation/screens/onboarding_screen.dart';
 import '../../features/intro/presentation/screens/splash_screen.dart';
 import '../../features/eau_minerale/presentation/screens/eau_minerale_shell_screen.dart';
 import '../../features/boutique/presentation/screens/boutique_shell_screen.dart';
+import '../../features/immobilier/presentation/screens/immobilier_shell_screen.dart';
 import '../../features/modules/presentation/screens/gaz_home_screen.dart';
 import '../../features/modules/presentation/screens/immobilier_home_screen.dart';
 import '../../features/modules/presentation/screens/module_menu_screen.dart';
@@ -87,7 +88,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/modules/immobilier',
         name: AppRoute.homeImmobilier.name,
-        builder: (context, state) => const ImmobilierHomeScreen(),
+        builder: (context, state) => const ImmobilierShellScreen(),
       ),
       GoRoute(
         path: '/modules/boutique',

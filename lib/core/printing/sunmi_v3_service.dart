@@ -192,26 +192,32 @@ class SunmiV3Service {
           final largeTextFormat = TextFormat();
           final largeTextStyle = TextStyle(largeTextFormat);
           
-          final lines = content.split('\n');
+          // Nettoyer le contenu et diviser en lignes
+          final cleanedContent = content.trimRight();
+          final lines = cleanedContent.split('\n');
+          
+          // Imprimer chaque ligne dans l'ordre
           for (int i = 0; i < lines.length; i++) {
             final line = lines[i];
-            if (line.trim().isNotEmpty) {
-              // Utiliser un style plus grand pour le nom de l'entreprise
-              // (lignes contenant "BOUTIQUE", "ELYF GROUPE", ou les bordures avec "║" ou "╔" ou "╚")
-              final isCompanyName = line.contains('BOUTIQUE') || 
-                                   line.contains('ELYF GROUPE') ||
-                                   line.contains('║') ||
-                                   line.contains('╔') ||
-                                   line.contains('╚');
-              
-              if (isCompanyName) {
-                await lineApi.printText(line, largeTextStyle);
-              } else {
-                await lineApi.printText(line, defaultTextStyle);
-              }
+            
+            // Utiliser un style plus grand pour le nom de l'entreprise
+            // (lignes contenant "BOUTIQUE", "ELYF GROUPE", ou les bordures avec "║" ou "╔" ou "╚")
+            final isCompanyName = line.contains('BOUTIQUE') || 
+                                 line.contains('ELYF GROUPE') ||
+                                 line.contains('║') ||
+                                 line.contains('╔') ||
+                                 line.contains('╚');
+            
+            if (isCompanyName) {
+              await lineApi.printText(line, largeTextStyle);
             } else {
-              await lineApi.printText('', defaultTextStyle);
+              await lineApi.printText(line, defaultTextStyle);
             }
+          }
+          
+          // Ajouter quelques lignes vides en fin pour éviter la coupure
+          for (int i = 0; i < 3; i++) {
+            await lineApi.printText('', defaultTextStyle);
           }
           
           // Note: cutPaper peut ne pas exister, utiliser une alternative si disponible
@@ -229,6 +235,11 @@ class SunmiV3Service {
       debugPrint('SunmiV3Service: Erreur lors de l\'impression: $e');
       return false;
     }
+  }
+
+  /// Imprime un reçu de paiement.
+  Future<bool> printPaymentReceipt(String content) async {
+    return await printReceipt(content);
   }
 
   /// Ouvre le tiroir-caisse (si disponible).
