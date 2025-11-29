@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../shared/presentation/widgets/module_loading_animation.dart';
 import '../../../../shared/presentation/widgets/profile/profile_screen.dart' as shared;
 import '../../application/providers.dart';
 import 'sections/catalog_screen.dart';
@@ -22,6 +25,18 @@ class BoutiqueShellScreen extends ConsumerStatefulWidget {
 
 class _BoutiqueShellScreenState extends ConsumerState<BoutiqueShellScreen> {
   int _selectedIndex = 0;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    // Simulate module initialization
+    Timer(const Duration(milliseconds: 1200), () {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    });
+  }
 
   final _sections = [
     _SectionConfig(
@@ -73,6 +88,14 @@ class _BoutiqueShellScreenState extends ConsumerState<BoutiqueShellScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const ModuleLoadingAnimation(
+        moduleName: 'Boutique',
+        moduleIcon: Icons.store,
+        message: 'Chargement du catalogue...',
+      );
+    }
+
     final isWideScreen = MediaQuery.of(context).size.width > 600;
     
     if (isWideScreen) {

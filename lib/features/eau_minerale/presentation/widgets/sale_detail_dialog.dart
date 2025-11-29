@@ -100,6 +100,51 @@ class SaleDetailDialog extends StatelessWidget {
                     ),
                   ],
                 ),
+                // Affichage de la répartition des paiements
+                if (sale.cashAmount > 0 || sale.orangeMoneyAmount > 0) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Répartition du paiement',
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        if (sale.cashAmount > 0)
+                          _buildPaymentRow(
+                            'Cash',
+                            sale.cashAmount,
+                            Icons.money,
+                            theme.colorScheme.primary,
+                            theme,
+                          ),
+                        if (sale.cashAmount > 0 && sale.orangeMoneyAmount > 0)
+                          const SizedBox(height: 8),
+                        if (sale.orangeMoneyAmount > 0)
+                          _buildPaymentRow(
+                            'Orange Money',
+                            sale.orangeMoneyAmount,
+                            Icons.account_balance_wallet,
+                            theme.colorScheme.secondary,
+                            theme,
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
                 if (sale.remainingAmount > 0) ...[
                   const SizedBox(height: 16),
                   Container(
@@ -184,6 +229,37 @@ class SaleDetailDialog extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildPaymentRow(
+    String label,
+    int amount,
+    IconData icon,
+    Color color,
+    ThemeData theme,
+  ) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 18, color: color),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: theme.textTheme.bodyMedium,
+            ),
+          ],
+        ),
+        Text(
+          SaleDetailHelpers.formatCurrency(amount),
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: color,
+          ),
+        ),
+      ],
     );
   }
 }

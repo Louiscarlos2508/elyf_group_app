@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
+import '../../../../shared/presentation/widgets/module_loading_animation.dart';
 import '../../../../shared/presentation/widgets/profile/profile_screen.dart';
 
 class ModuleHomeScaffold extends StatefulWidget {
@@ -7,10 +10,12 @@ class ModuleHomeScaffold extends StatefulWidget {
     super.key,
     required this.title,
     required this.enterpriseId,
+    this.moduleIcon,
   });
 
   final String title;
   final String enterpriseId;
+  final IconData? moduleIcon;
 
   @override
   State<ModuleHomeScaffold> createState() => _ModuleHomeScaffoldState();
@@ -18,9 +23,40 @@ class ModuleHomeScaffold extends StatefulWidget {
 
 class _ModuleHomeScaffoldState extends State<ModuleHomeScaffold> {
   int _selectedIndex = 0;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    // Simulate module initialization
+    Timer(const Duration(milliseconds: 1200), () {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    });
+  }
+
+  IconData _getModuleIcon() {
+    if (widget.moduleIcon != null) return widget.moduleIcon!;
+    switch (widget.enterpriseId) {
+      case 'gaz':
+        return Icons.local_fire_department_outlined;
+      case 'orange_money':
+        return Icons.account_balance_wallet_outlined;
+      default:
+        return Icons.business;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return ModuleLoadingAnimation(
+        moduleName: widget.title.split(' • ').first,
+        moduleIcon: _getModuleIcon(),
+        message: 'Initialisation du module...',
+      );
+    }
     final colors = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     

@@ -16,6 +16,8 @@ class Sale {
     required this.createdBy,
     this.customerCnib,
     this.notes,
+    this.cashAmount = 0,
+    this.orangeMoneyAmount = 0,
   });
 
   final String id;
@@ -33,6 +35,8 @@ class Sale {
   final String createdBy;
   final String? customerCnib;
   final String? notes;
+  final int cashAmount;
+  final int orangeMoneyAmount;
 
   int get remainingAmount => totalPrice - amountPaid;
   bool get isCredit => remainingAmount > 0;
@@ -40,6 +44,10 @@ class Sale {
   bool get isPending => status == SaleStatus.pending;
   bool get isValidated => status == SaleStatus.validated;
   bool get isRejected => status == SaleStatus.rejected;
+  
+  /// Vérifie si la somme des paiements correspond au montant payé
+  bool get isPaymentSplitValid => 
+      (cashAmount + orangeMoneyAmount) == amountPaid;
 }
 
 enum SaleStatus { pending, validated, rejected, fullyPaid }

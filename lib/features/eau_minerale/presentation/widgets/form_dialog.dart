@@ -34,13 +34,26 @@ class _FormDialogState extends State<FormDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    final keyboardHeight = mediaQuery.viewInsets.bottom;
+    final screenHeight = mediaQuery.size.height;
+    final availableHeight = screenHeight - keyboardHeight - 100; // Réserver de l'espace pour le padding
+
     return Dialog(
+      insetPadding: EdgeInsets.symmetric(
+        horizontal: 16,
+        vertical: keyboardHeight > 0 ? 16 : 24,
+      ),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 600),
+        constraints: BoxConstraints(
+          maxWidth: 600,
+          maxHeight: availableHeight.clamp(300.0, screenHeight * 0.9),
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // Header fixe
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
               child: Row(
@@ -59,14 +72,25 @@ class _FormDialogState extends State<FormDialog> {
                 ],
               ),
             ),
+            // Contenu scrollable
             Flexible(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+                padding: EdgeInsets.only(
+                  left: 24,
+                  right: 24,
+                  bottom: keyboardHeight > 0 ? 8 : 0,
+                ),
                 child: widget.child,
               ),
             ),
+            // Footer fixe avec padding adaptatif pour le clavier
             Padding(
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.only(
+                left: 24,
+                right: 24,
+                top: 16,
+                bottom: keyboardHeight > 0 ? 16 : 24,
+              ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [

@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/repositories/mock_activity_repository.dart';
@@ -40,6 +41,16 @@ import 'controllers/report_controller.dart';
 import 'controllers/sales_controller.dart';
 import 'controllers/salary_controller.dart';
 import 'controllers/stock_controller.dart';
+import '../presentation/screens/sections/dashboard_screen.dart';
+import '../presentation/screens/sections/production_screen.dart';
+import '../presentation/screens/sections/sales_screen.dart';
+import '../presentation/screens/sections/stock_screen.dart';
+import '../presentation/screens/sections/clients_screen.dart';
+import '../presentation/screens/sections/finances_screen.dart';
+import '../presentation/screens/sections/salaries_screen.dart';
+import '../presentation/screens/sections/reports_screen.dart';
+import '../presentation/screens/sections/profile_screen.dart';
+import '../presentation/screens/sections/settings_screen.dart';
 
 final productionRepositoryProvider = Provider<ProductionRepository>(
   (ref) => MockProductionRepository(),
@@ -217,3 +228,108 @@ enum EauMineraleSection {
   profile,
   settings,
 }
+
+/// Configuration for a section in the module shell.
+class EauMineraleSectionConfig {
+  const EauMineraleSectionConfig({
+    required this.id,
+    required this.label,
+    required this.icon,
+    required this.builder,
+  });
+
+  final EauMineraleSection id;
+  final String label;
+  final IconData icon;
+  final Widget Function() builder;
+}
+
+/// Provider that caches accessible sections for the module shell.
+/// Uses autoDispose to allow reloading when navigating away and back.
+final accessibleSectionsProvider = FutureProvider.autoDispose<List<EauMineraleSectionConfig>>(
+  (ref) async {
+    // Ensure minimum loading time to show animation
+    final loadingStart = DateTime.now();
+    
+    final adapter = ref.watch(eauMineralePermissionAdapterProvider);
+    final accessible = <EauMineraleSectionConfig>[];
+    
+    for (final section in _allSections) {
+      if (await adapter.canAccessSection(section.id)) {
+        accessible.add(section);
+      }
+    }
+    
+    // Ensure animation is visible for at least 1.2 seconds
+    final elapsed = DateTime.now().difference(loadingStart);
+    const minimumDuration = Duration(milliseconds: 1200);
+    if (elapsed < minimumDuration) {
+      await Future.delayed(minimumDuration - elapsed);
+    }
+    
+    return accessible;
+  },
+);
+
+final _allSections = [
+  EauMineraleSectionConfig(
+    id: EauMineraleSection.activity,
+    label: 'Tableau',
+    icon: Icons.dashboard_outlined,
+    builder: () => const DashboardScreen(),
+  ),
+  EauMineraleSectionConfig(
+    id: EauMineraleSection.production,
+    label: 'Production',
+    icon: Icons.factory_outlined,
+    builder: () => const ProductionScreen(),
+  ),
+  EauMineraleSectionConfig(
+    id: EauMineraleSection.sales,
+    label: 'Ventes',
+    icon: Icons.point_of_sale,
+    builder: () => const SalesScreen(),
+  ),
+  EauMineraleSectionConfig(
+    id: EauMineraleSection.stock,
+    label: 'Stock',
+    icon: Icons.inventory_2_outlined,
+    builder: () => const StockScreen(),
+  ),
+  EauMineraleSectionConfig(
+    id: EauMineraleSection.clients,
+    label: 'Crédits',
+    icon: Icons.credit_card,
+    builder: () => const ClientsScreen(),
+  ),
+  EauMineraleSectionConfig(
+    id: EauMineraleSection.finances,
+    label: 'Dépenses',
+    icon: Icons.receipt_long,
+    builder: () => const FinancesScreen(),
+  ),
+  EauMineraleSectionConfig(
+    id: EauMineraleSection.salaries,
+    label: 'Salaires',
+    icon: Icons.people,
+    builder: () => const SalariesScreen(),
+  ),
+  EauMineraleSectionConfig(
+    id: EauMineraleSection.reports,
+    label: 'Rapports',
+    icon: Icons.description,
+    builder: () => const ReportsScreen(),
+  ),
+  EauMineraleSectionConfig(
+    id: EauMineraleSection.profile,
+    label: 'Profil',
+    icon: Icons.person,
+    builder: () => const ProfileScreen(),
+  ),
+  EauMineraleSectionConfig(
+    id: EauMineraleSection.settings,
+    label: 'Paramètres',
+    icon: Icons.settings,
+    builder: () => const SettingsScreen(),
+  ),
+];

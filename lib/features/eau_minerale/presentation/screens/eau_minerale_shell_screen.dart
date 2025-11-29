@@ -1,18 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../application/adapters/eau_minerale_permission_adapter.dart';
+import '../../../../shared/presentation/widgets/module_loading_animation.dart';
 import '../../application/providers.dart';
-import 'sections/dashboard_screen.dart';
-import 'sections/clients_screen.dart';
-import 'sections/finances_screen.dart';
-import 'sections/production_screen.dart';
-import 'sections/profile_screen.dart';
-import 'sections/reports_screen.dart';
-import 'sections/salaries_screen.dart';
-import 'sections/sales_screen.dart';
-import 'sections/settings_screen.dart';
-import 'sections/stock_screen.dart';
 
 class EauMineraleShellScreen extends ConsumerStatefulWidget {
   const EauMineraleShellScreen({super.key});
@@ -28,13 +18,10 @@ class _EauMineraleShellScreenState
 
   @override
   Widget build(BuildContext context) {
-    final adapter = ref.watch(eauMineralePermissionAdapterProvider);
-    
-    return FutureBuilder<List<_SectionConfig>>(
-      future: _getAccessibleSections(adapter),
-      builder: (context, snapshot) {
-        final accessibleSections = snapshot.data ?? [];
+    final sectionsAsync = ref.watch(accessibleSectionsProvider);
 
+    return sectionsAsync.when(
+      data: (accessibleSections) {
         // Adjust index if current section is not accessible
         if (_index >= accessibleSections.length) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -109,95 +96,40 @@ class _EauMineraleShellScreenState
               : null,
         );
       },
+      loading: () => const ModuleLoadingAnimation(
+        moduleName: 'Eau Minérale',
+        moduleIcon: Icons.water_drop_outlined,
+        message: 'Chargement des modules...',
+      ),
+      error: (error, stack) => Scaffold(
+        appBar: AppBar(
+          title: const Text('Eau Minérale • Module'),
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                const SizedBox(height: 16),
+                Text(
+                  'Erreur de chargement',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  error.toString(),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.grey),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
-
-  Future<List<_SectionConfig>> _getAccessibleSections(
-    EauMineralePermissionAdapter adapter,
-  ) async {
-    final accessible = <_SectionConfig>[];
-    for (final section in _sections) {
-      if (await adapter.canAccessSection(section.id)) {
-        accessible.add(section);
-      }
-    }
-    return accessible;
-  }
 }
-
-class _SectionConfig {
-  const _SectionConfig({
-    required this.id,
-    required this.label,
-    required this.icon,
-    required this.builder,
-  });
-
-  final EauMineraleSection id;
-  final String label;
-  final IconData icon;
-  final Widget Function() builder;
-}
-
-const _sections = [
-  _SectionConfig(
-    id: EauMineraleSection.activity,
-    label: 'Tableau',
-    icon: Icons.dashboard_outlined,
-    builder: DashboardScreen.new,
-  ),
-  _SectionConfig(
-    id: EauMineraleSection.production,
-    label: 'Production',
-    icon: Icons.factory_outlined,
-    builder: ProductionScreen.new,
-  ),
-  _SectionConfig(
-    id: EauMineraleSection.sales,
-    label: 'Ventes',
-    icon: Icons.point_of_sale,
-    builder: SalesScreen.new,
-  ),
-  _SectionConfig(
-    id: EauMineraleSection.stock,
-    label: 'Stock',
-    icon: Icons.inventory_2_outlined,
-    builder: StockScreen.new,
-  ),
-  _SectionConfig(
-    id: EauMineraleSection.clients,
-    label: 'Crédits',
-    icon: Icons.credit_card,
-    builder: ClientsScreen.new,
-  ),
-  _SectionConfig(
-    id: EauMineraleSection.finances,
-    label: 'Dépenses',
-    icon: Icons.receipt_long,
-    builder: FinancesScreen.new,
-  ),
-  _SectionConfig(
-    id: EauMineraleSection.salaries,
-    label: 'Salaires',
-    icon: Icons.people,
-    builder: SalariesScreen.new,
-  ),
-  _SectionConfig(
-    id: EauMineraleSection.reports,
-    label: 'Rapports',
-    icon: Icons.description,
-    builder: ReportsScreen.new,
-  ),
-  _SectionConfig(
-    id: EauMineraleSection.profile,
-    label: 'Profil',
-    icon: Icons.person,
-    builder: ProfileScreen.new,
-  ),
-  _SectionConfig(
-    id: EauMineraleSection.settings,
-    label: 'Paramètres',
-    icon: Icons.settings,
-    builder: SettingsScreen.new,
-  ),
-];

@@ -7,7 +7,7 @@ import '../../domain/entities/product.dart';
 import '../../domain/repositories/customer_repository.dart';
 import 'sale_product_selector.dart';
 import 'sale_customer_selector.dart';
-import 'sale_form_fields.dart';
+import 'simple_payment_splitter.dart';
 
 /// Form for creating/editing a sale record.
 class SaleForm extends ConsumerStatefulWidget {
@@ -21,22 +21,22 @@ class SaleFormState extends ConsumerState<SaleForm> {
   final _formKey = GlobalKey<FormState>();
   final _customerNameController = TextEditingController();
   final _customerPhoneController = TextEditingController();
-  final _customerCnibController = TextEditingController();
   final _quantityController = TextEditingController();
   final _amountPaidController = TextEditingController();
-  final _notesController = TextEditingController();
+  
   Product? _selectedProduct;
   CustomerSummary? _selectedCustomer;
   bool _isLoading = false;
+  int _cashAmount = 0;
+  int _orangeMoneyAmount = 0;
+  PaymentMethod _paymentMethod = PaymentMethod.cash;
 
   @override
   void dispose() {
     _customerNameController.dispose();
     _customerPhoneController.dispose();
-    _customerCnibController.dispose();
     _quantityController.dispose();
     _amountPaidController.dispose();
-    _notesController.dispose();
     super.dispose();
   }
 
@@ -46,16 +46,14 @@ class SaleFormState extends ConsumerState<SaleForm> {
       ? _unitPrice! * _quantity!
       : null;
   int? get _amountPaid => int.tryParse(_amountPaidController.text);
-  int? get _remainingAmount =>
-      _totalPrice != null && _amountPaid != null
-          ? _totalPrice! - _amountPaid!
-          : null;
 
   void _handleProductSelected(Product product) {
     setState(() {
       _selectedProduct = product;
-      if (_amountPaidController.text.isEmpty && _totalPrice != null) {
+      if (_totalPrice != null && _amountPaidController.text.isEmpty) {
         _amountPaidController.text = _totalPrice.toString();
+        _cashAmount = _totalPrice!;
+        _orangeMoneyAmount = 0;
       }
     });
   }
@@ -66,8 +64,52 @@ class SaleFormState extends ConsumerState<SaleForm> {
       if (customer != null) {
         _customerNameController.text = customer.name;
         _customerPhoneController.text = customer.phone;
-        _customerCnibController.text = customer.cnib ?? '';
       }
+    });
+  }
+
+  void _onPaymentMethodChanged(PaymentMethod? method) {
+    if (method != null) {
+      setState(() {
+        _paymentMethod = method;
+        if (method == PaymentMethod.cash) {
+          _cashAmount = _amountPaid ?? 0;
+          _orangeMoneyAmount = 0;
+        } else if (method == PaymentMethod.orangeMoney) {
+          _cashAmount = 0;
+          _orangeMoneyAmount = _amountPaid ?? 0;
+        } else if (method == PaymentMethod.both) {
+          // Ne pas initialiser automatiquement, laisser l'utilisateur répartir
+          _cashAmount = 0;
+          _orangeMoneyAmount = 0;
+        }
+      });
+    }
+  }
+
+  void _onAmountPaidChanged(String value) {
+    final amount = int.tryParse(value) ?? 0;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        setState(() {
+          if (_paymentMethod == PaymentMethod.cash) {
+            _cashAmount = amount;
+            _orangeMoneyAmount = 0;
+          } else if (_paymentMethod == PaymentMethod.orangeMoney) {
+            _cashAmount = 0;
+            _orangeMoneyAmount = amount;
+          }
+          // Si "Les deux", ne pas modifier automatiquement
+          // L'utilisateur répartira manuellement dans SimplePaymentSplitter
+        });
+      }
+    });
+  }
+
+  void _onSplitChanged(int cashAmount, int orangeMoneyAmount) {
+    setState(() {
+      _cashAmount = cashAmount;
+      _orangeMoneyAmount = orangeMoneyAmount;
     });
   }
 
@@ -87,13 +129,6 @@ class SaleFormState extends ConsumerState<SaleForm> {
       return;
     }
 
-    if (_amountPaid! > _totalPrice!) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Le montant payé ne peut pas dépasser le total')),
-      );
-      return;
-    }
-
     setState(() => _isLoading = true);
     try {
       final sale = Sale(
@@ -107,15 +142,15 @@ class SaleFormState extends ConsumerState<SaleForm> {
         customerName: _customerNameController.text.trim(),
         customerPhone: _customerPhoneController.text.trim(),
         customerId: _selectedCustomer?.id ?? 'temp-${DateTime.now().millisecondsSinceEpoch}',
-        customerCnib: _customerCnibController.text.isEmpty
-            ? null
-            : _customerCnibController.text.trim(),
+        customerCnib: null,
         date: DateTime.now(),
-        status: _remainingAmount == 0
+        status: (_totalPrice! - _amountPaid!) == 0
             ? SaleStatus.fullyPaid
             : SaleStatus.pending,
         createdBy: 'user-1',
-        notes: _notesController.text.isEmpty ? null : _notesController.text.trim(),
+        notes: null,
+        cashAmount: _cashAmount,
+        orangeMoneyAmount: _orangeMoneyAmount,
       );
 
       await ref.read(salesControllerProvider).createSale(sale);
@@ -124,11 +159,7 @@ class SaleFormState extends ConsumerState<SaleForm> {
       Navigator.of(context).pop();
       ref.invalidate(salesStateProvider);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(_remainingAmount == 0
-              ? 'Vente enregistrée'
-              : 'Vente enregistrée (Crédit: ${_remainingAmount} CFA)'),
-        ),
+        const SnackBar(content: Text('Vente enregistrée')),
       );
     } catch (e) {
       if (!mounted) return;
@@ -149,40 +180,166 @@ class SaleFormState extends ConsumerState<SaleForm> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    
     return Form(
       key: _formKey,
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+            // Produit
             SaleProductSelector(
               selectedProduct: _selectedProduct,
               onProductSelected: _handleProductSelected,
             ),
             const SizedBox(height: 16),
+            // Client (optionnel)
             SaleCustomerSelector(
               selectedCustomer: _selectedCustomer,
               onCustomerSelected: _handleCustomerSelected,
             ),
             const SizedBox(height: 16),
-            SaleFormFields(
-              customerNameController: _customerNameController,
-              customerPhoneController: _customerPhoneController,
-              customerCnibController: _customerCnibController,
-              quantityController: _quantityController,
-              amountPaidController: _amountPaidController,
-              notesController: _notesController,
-              selectedProduct: _selectedProduct,
-              totalPrice: _totalPrice,
-              remainingAmount: _remainingAmount,
-              onQuantityChanged: () => setState(() {}),
-              onAmountPaidChanged: () => setState(() {}),
-              formatCurrency: _formatCurrency,
+            // Nom et téléphone (pré-remplis si client sélectionné)
+            TextFormField(
+              controller: _customerNameController,
+              decoration: const InputDecoration(
+                labelText: 'Nom du client',
+                prefixIcon: Icon(Icons.person_outline),
+              ),
             ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _customerPhoneController,
+              decoration: const InputDecoration(
+                labelText: 'Téléphone',
+                prefixIcon: Icon(Icons.phone),
+              ),
+              keyboardType: TextInputType.phone,
+            ),
+            const SizedBox(height: 16),
+            // Quantité
+            TextFormField(
+              controller: _quantityController,
+              decoration: const InputDecoration(
+                labelText: 'Quantité',
+                prefixIcon: Icon(Icons.inventory_2),
+              ),
+              keyboardType: TextInputType.number,
+              onChanged: (_) => setState(() {}),
+              validator: (v) {
+                if (v == null || v.isEmpty) return 'Requis';
+                final qty = int.tryParse(v);
+                if (qty == null || qty <= 0) return 'Quantité invalide';
+                return null;
+              },
+            ),
+            if (_totalPrice != null) ...[
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: colors.primaryContainer.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Total',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      _formatCurrency(_totalPrice!),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: colors.primary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            const SizedBox(height: 24),
+            const Divider(),
+            const SizedBox(height: 16),
+            // Mode de paiement - SIMPLIFIÉ
+            Text(
+              'Mode de paiement',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            SegmentedButton<PaymentMethod>(
+              segments: const [
+                ButtonSegment<PaymentMethod>(
+                  value: PaymentMethod.cash,
+                  label: Text('Cash'),
+                  icon: Icon(Icons.money),
+                ),
+                ButtonSegment<PaymentMethod>(
+                  value: PaymentMethod.orangeMoney,
+                  label: Text('Orange Money'),
+                  icon: Icon(Icons.account_balance_wallet),
+                ),
+                ButtonSegment<PaymentMethod>(
+                  value: PaymentMethod.both,
+                  label: Text('Les deux'),
+                  icon: Icon(Icons.payment),
+                ),
+              ],
+              selected: {_paymentMethod},
+              onSelectionChanged: (Set<PaymentMethod> selection) {
+                _onPaymentMethodChanged(selection.first);
+              },
+            ),
+            const SizedBox(height: 16),
+            // Montant payé
+            TextFormField(
+              controller: _amountPaidController,
+              decoration: InputDecoration(
+                labelText: 'Montant payé (CFA)',
+                prefixIcon: const Icon(Icons.attach_money),
+                helperText: _totalPrice != null && _amountPaid != null
+                    ? (_totalPrice! - _amountPaid! > 0
+                        ? 'Crédit: ${_formatCurrency(_totalPrice! - _amountPaid!)}'
+                        : 'Paiement complet')
+                    : null,
+              ),
+              keyboardType: TextInputType.number,
+              onChanged: _onAmountPaidChanged,
+              validator: (v) {
+                if (v == null || v.isEmpty) return 'Requis';
+                final amount = int.tryParse(v);
+                if (amount == null || amount < 0) return 'Montant invalide';
+                if (_totalPrice != null && amount > _totalPrice!) {
+                  return 'Ne peut pas dépasser le total';
+                }
+                return null;
+              },
+            ),
+            // Répartition si les deux modes sont sélectionnés
+            if (_paymentMethod == PaymentMethod.both && _amountPaid != null && _amountPaid! > 0) ...[
+              const SizedBox(height: 16),
+              SimplePaymentSplitter(
+                totalAmount: _amountPaid!,
+                onSplitChanged: _onSplitChanged,
+                initialCashAmount: _cashAmount,
+                initialOrangeMoneyAmount: _orangeMoneyAmount,
+              ),
+            ],
           ],
         ),
-      ),
     );
   }
+}
+
+enum PaymentMethod {
+  cash,
+  orangeMoney,
+  both,
 }

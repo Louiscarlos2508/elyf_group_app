@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../shared/presentation/widgets/module_loading_animation.dart';
 import '../../../../shared/presentation/widgets/profile/profile_screen.dart'
     as shared;
 import '../../application/providers.dart';
@@ -23,6 +26,18 @@ class ImmobilierShellScreen extends ConsumerStatefulWidget {
 class _ImmobilierShellScreenState
     extends ConsumerState<ImmobilierShellScreen> {
   int _selectedIndex = 0;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    // Simulate module initialization
+    Timer(const Duration(milliseconds: 1200), () {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    });
+  }
 
   final _sections = [
     _SectionConfig(
@@ -69,6 +84,14 @@ class _ImmobilierShellScreenState
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const ModuleLoadingAnimation(
+        moduleName: 'Immobilier',
+        moduleIcon: Icons.home_work_outlined,
+        message: 'Chargement des données...',
+      );
+    }
+
     final isWide = MediaQuery.of(context).size.width >= 600;
 
     if (isWide) {

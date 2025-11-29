@@ -19,6 +19,7 @@ class SalesScreen extends ConsumerWidget {
     final formKey = GlobalKey<SaleFormState>();
     showDialog(
       context: context,
+      barrierDismissible: true,
       builder: (context) => FormDialog(
         title: 'Nouvelle vente',
         child: SaleForm(key: formKey),
