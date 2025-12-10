@@ -124,30 +124,60 @@ class _StockContent extends ConsumerWidget {
                   24,
                   isWide ? 24 : 16,
                 ),
-                child: Row(
-                  children: [
-                    Text(
-                      'Gestion des Stocks',
-                      style: theme.textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
+                child: isWide
+                    ? Row(
+                        children: [
+                          Text(
+                            'Gestion des Stocks',
+                            style: theme.textTheme.headlineMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const Spacer(),
+                          IconButton(
+                            icon: const Icon(Icons.download),
+                            onPressed: () => _downloadStockReport(context),
+                            tooltip: 'Télécharger rapport PDF',
+                          ),
+                          const SizedBox(width: 8),
+                          FilledButton.icon(
+                            onPressed: onStockOperation,
+                            icon: const Icon(Icons.add),
+                            label: const Text('Opération Stock'),
+                          ),
+                        ],
+                      )
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  'Gestion des Stocks',
+                                  style: theme.textTheme.titleLarge?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.download),
+                                onPressed: () => _downloadStockReport(context),
+                                tooltip: 'Télécharger rapport PDF',
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          SizedBox(
+                            width: double.infinity,
+                            child: FilledButton.icon(
+                              onPressed: onStockOperation,
+                              icon: const Icon(Icons.add),
+                              label: const Text('Opération Stock'),
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    const Spacer(),
-                    IconButton(
-                      icon: const Icon(Icons.download),
-                      onPressed: () => _downloadStockReport(context),
-                      tooltip: 'Télécharger rapport PDF',
-                    ),
-                    const SizedBox(width: 8),
-                    IntrinsicWidth(
-                      child: FilledButton.icon(
-                        onPressed: onStockOperation,
-                        icon: const Icon(Icons.add),
-                        label: const Text('Opération Stock'),
-                      ),
-                    ),
-                  ],
-                ),
               ),
             ),
             SliverToBoxAdapter(

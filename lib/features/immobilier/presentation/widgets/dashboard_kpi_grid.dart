@@ -140,12 +140,14 @@ class DashboardKpiGrid extends StatelessWidget {
       ),
     ];
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isWide = constraints.maxWidth > 600;
+    return Builder(
+      builder: (context) {
+        final screenWidth = MediaQuery.of(context).size.width;
+        final isWide = screenWidth > 600;
 
         if (isWide) {
           return Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               IntrinsicHeight(
                 child: Row(
@@ -190,43 +192,44 @@ class DashboardKpiGrid extends StatelessWidget {
         }
 
         return Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(child: cards[0]),
-                const SizedBox(width: 16),
+                const SizedBox(width: 12),
                 Expanded(child: cards[1]),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(child: cards[2]),
-                const SizedBox(width: 16),
+                const SizedBox(width: 12),
                 Expanded(child: cards[3]),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(child: cards[4]),
-                const SizedBox(width: 16),
+                const SizedBox(width: 12),
                 Expanded(child: cards[5]),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(child: cards[6]),
-                const SizedBox(width: 16),
+                const SizedBox(width: 12),
                 Expanded(child: cards[7]),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

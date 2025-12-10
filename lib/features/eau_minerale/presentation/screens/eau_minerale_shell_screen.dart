@@ -1,11 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../shared/presentation/widgets/adaptive_navigation_scaffold.dart';
 import '../../../../shared/presentation/widgets/module_loading_animation.dart';
 import '../../application/providers.dart';
 
 class EauMineraleShellScreen extends ConsumerStatefulWidget {
-  const EauMineraleShellScreen({super.key});
+  const EauMineraleShellScreen({
+    super.key,
+    required this.enterpriseId,
+    required this.moduleId,
+  });
+
+  final String enterpriseId;
+  final String moduleId;
 
   @override
   ConsumerState<EauMineraleShellScreen> createState() =>
@@ -15,6 +23,33 @@ class EauMineraleShellScreen extends ConsumerStatefulWidget {
 class _EauMineraleShellScreenState
     extends ConsumerState<EauMineraleShellScreen> {
   int _index = 0;
+
+  /// Convertit EauMineraleSectionConfig en NavigationSection
+  /// et marque les sections principales
+  List<NavigationSection> _convertToNavigationSections(
+      List<EauMineraleSectionConfig> configs) {
+    // Sections principales (les plus utilisées)
+    const primarySectionIds = {
+      EauMineraleSection.activity,
+      EauMineraleSection.production,
+      EauMineraleSection.sales,
+      EauMineraleSection.stock,
+      EauMineraleSection.clients,
+    };
+
+    return configs
+        .map(
+          (config) => NavigationSection(
+            label: config.label,
+            icon: config.icon,
+            builder: config.builder,
+            isPrimary: primarySectionIds.contains(config.id),
+            enterpriseId: widget.enterpriseId,
+            moduleId: widget.moduleId,
+          ),
+        )
+        .toList();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -67,33 +102,35 @@ class _EauMineraleShellScreenState
           );
         }
 
+        // Convertir en NavigationSection
+        final navigationSections =
+            _convertToNavigationSections(accessibleSections);
+
         // Show navigation only if 2+ sections
-        return Scaffold(
-          appBar: AppBar(
-            title: const Text('Eau Minérale • Module'),
-          ),
-          body: IndexedStack(
-            index: currentIndex,
-            children: accessibleSections.map((s) => s.builder()).toList(),
-          ),
-          bottomNavigationBar: accessibleSections.length >= 2
-              ? NavigationBar(
-                  selectedIndex: currentIndex,
-                  onDestinationSelected: (i) {
-                    if (i < accessibleSections.length) {
-                      setState(() => _index = i);
-                    }
-                  },
-                  destinations: accessibleSections
-                      .map(
-                        (s) => NavigationDestination(
-                          icon: Icon(s.icon),
-                          label: s.label,
-                        ),
-                      )
-                      .toList(),
-                )
-              : null,
+        if (navigationSections.length < 2) {
+          return Scaffold(
+            appBar: AppBar(
+              title: const Text('Eau Minérale • Module'),
+            ),
+            body: IndexedStack(
+              index: currentIndex,
+              children: navigationSections.map((s) => s.builder()).toList(),
+            ),
+          );
+        }
+
+        return AdaptiveNavigationScaffold(
+          sections: navigationSections,
+          appTitle: 'Eau Minérale • Module',
+          selectedIndex: currentIndex,
+          onIndexChanged: (i) {
+            if (i < accessibleSections.length) {
+              setState(() => _index = i);
+            }
+          },
+          isLoading: false,
+          enterpriseId: widget.enterpriseId,
+          moduleId: widget.moduleId,
         );
       },
       loading: () => const ModuleLoadingAnimation(

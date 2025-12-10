@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../shared/presentation/widgets/adaptive_navigation_scaffold.dart';
 import '../../../../shared/presentation/widgets/module_loading_animation.dart';
 import '../../../../shared/presentation/widgets/profile/profile_screen.dart' as shared;
 import '../../application/providers.dart';
@@ -16,7 +17,14 @@ import 'sections/sales_history_screen.dart';
 import 'sections/stock_screen.dart';
 
 class BoutiqueShellScreen extends ConsumerStatefulWidget {
-  const BoutiqueShellScreen({super.key});
+  const BoutiqueShellScreen({
+    super.key,
+    required this.enterpriseId,
+    required this.moduleId,
+  });
+
+  final String enterpriseId;
+  final String moduleId;
 
   @override
   ConsumerState<BoutiqueShellScreen> createState() =>
@@ -38,141 +46,100 @@ class _BoutiqueShellScreenState extends ConsumerState<BoutiqueShellScreen> {
     });
   }
 
-  final _sections = [
-    _SectionConfig(
-      label: 'Tableau',
-      icon: Icons.dashboard_outlined,
-      builder: () => const DashboardScreen(),
-    ),
-    _SectionConfig(
-      label: 'Point de Vente',
-      icon: Icons.point_of_sale,
-      builder: () => const PosScreen(),
-    ),
-    _SectionConfig(
-      label: 'Catalogue',
-      icon: Icons.inventory_2_outlined,
-      builder: () => const CatalogScreen(),
-    ),
-    _SectionConfig(
-      label: 'Stock',
-      icon: Icons.warehouse_outlined,
-      builder: () => const StockScreen(),
-    ),
-    _SectionConfig(
-      label: 'Ventes',
-      icon: Icons.receipt_long,
-      builder: () => const SalesHistoryScreen(),
-    ),
-    _SectionConfig(
-      label: 'Achats',
-      icon: Icons.shopping_bag,
-      builder: () => const PurchasesScreen(),
-    ),
-    _SectionConfig(
-      label: 'Dépenses',
-      icon: Icons.receipt_long_outlined,
-      builder: () => const ExpensesScreen(),
-    ),
-    _SectionConfig(
-      label: 'Rapports',
-      icon: Icons.assessment,
-      builder: () => const ReportsScreen(),
-    ),
-    _SectionConfig(
-      label: 'Profil',
-      icon: Icons.person_outline,
-      builder: () => const shared.ProfileScreen(),
-    ),
-  ];
+  List<NavigationSection> _buildSections() {
+    // TODO: Adapter les écrans de sections pour accepter enterpriseId et moduleId
+    // Pour l'instant, on passe les paramètres au widget mais les sections
+    // devront être adaptées individuellement pour les utiliser
+    return [
+      NavigationSection(
+        label: 'Tableau',
+        icon: Icons.dashboard_outlined,
+        builder: () => const DashboardScreen(),
+        isPrimary: true,
+        enterpriseId: widget.enterpriseId,
+        moduleId: widget.moduleId,
+      ),
+      NavigationSection(
+        label: 'Point de Vente',
+        icon: Icons.point_of_sale,
+        builder: () => const PosScreen(),
+        isPrimary: true,
+        enterpriseId: widget.enterpriseId,
+        moduleId: widget.moduleId,
+      ),
+      NavigationSection(
+        label: 'Catalogue',
+        icon: Icons.inventory_2_outlined,
+        builder: () => const CatalogScreen(),
+        isPrimary: true,
+        enterpriseId: widget.enterpriseId,
+        moduleId: widget.moduleId,
+      ),
+      NavigationSection(
+        label: 'Stock',
+        icon: Icons.warehouse_outlined,
+        builder: () => const StockScreen(),
+        isPrimary: true,
+        enterpriseId: widget.enterpriseId,
+        moduleId: widget.moduleId,
+      ),
+      NavigationSection(
+        label: 'Ventes',
+        icon: Icons.receipt_long,
+        builder: () => const SalesHistoryScreen(),
+        isPrimary: true,
+        enterpriseId: widget.enterpriseId,
+        moduleId: widget.moduleId,
+      ),
+      NavigationSection(
+        label: 'Achats',
+        icon: Icons.shopping_bag,
+        builder: () => const PurchasesScreen(),
+        enterpriseId: widget.enterpriseId,
+        moduleId: widget.moduleId,
+      ),
+      NavigationSection(
+        label: 'Dépenses',
+        icon: Icons.receipt_long_outlined,
+        builder: () => const ExpensesScreen(),
+        enterpriseId: widget.enterpriseId,
+        moduleId: widget.moduleId,
+      ),
+      NavigationSection(
+        label: 'Rapports',
+        icon: Icons.assessment,
+        builder: () => const ReportsScreen(),
+        enterpriseId: widget.enterpriseId,
+        moduleId: widget.moduleId,
+      ),
+      NavigationSection(
+        label: 'Profil',
+        icon: Icons.person_outline,
+        builder: () => const shared.ProfileScreen(),
+        enterpriseId: widget.enterpriseId,
+        moduleId: widget.moduleId,
+      ),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const ModuleLoadingAnimation(
+    return AdaptiveNavigationScaffold(
+      sections: _buildSections(),
+      appTitle: 'Boutique • Vente physique',
+      selectedIndex: _selectedIndex,
+      onIndexChanged: (index) {
+        setState(() => _selectedIndex = index);
+      },
+      isLoading: _isLoading,
+      loadingWidget: const ModuleLoadingAnimation(
         moduleName: 'Boutique',
         moduleIcon: Icons.store,
         message: 'Chargement du catalogue...',
-      );
-    }
-
-    final isWideScreen = MediaQuery.of(context).size.width > 600;
-    
-    if (isWideScreen) {
-      // Utiliser NavigationRail pour les écrans larges
-      return Scaffold(
-        appBar: AppBar(
-          title: const Text('Boutique • Vente physique'),
-          centerTitle: true,
-        ),
-        body: Row(
-          children: [
-            NavigationRail(
-              selectedIndex: _selectedIndex,
-              onDestinationSelected: (index) {
-                setState(() => _selectedIndex = index);
-              },
-              labelType: NavigationRailLabelType.all,
-              destinations: _sections
-                  .map(
-                    (s) => NavigationRailDestination(
-                      icon: Icon(s.icon),
-                      selectedIcon: Icon(s.icon),
-                      label: Text(s.label),
-                    ),
-                  )
-                  .toList(),
-            ),
-            const VerticalDivider(thickness: 1, width: 1),
-            Expanded(
-              child: IndexedStack(
-                index: _selectedIndex,
-                children: _sections.map((s) => s.builder()).toList(),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-    
-    // Utiliser NavigationBar pour les petits écrans
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Boutique • Vente physique'),
-        centerTitle: true,
       ),
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _sections.map((s) => s.builder()).toList(),
-      ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: (index) {
-          setState(() => _selectedIndex = index);
-        },
-        destinations: _sections
-            .map(
-              (s) => NavigationDestination(
-                icon: Icon(s.icon),
-                selectedIcon: Icon(s.icon),
-                label: s.label,
-              ),
-            )
-            .toList(),
-      ),
+      enterpriseId: widget.enterpriseId,
+      moduleId: widget.moduleId,
     );
   }
-}
-
-class _SectionConfig {
-  const _SectionConfig({
-    required this.label,
-    required this.icon,
-    required this.builder,
-  });
-
-  final String label;
-  final IconData icon;
-  final Widget Function() builder;
 }
 

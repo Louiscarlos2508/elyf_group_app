@@ -144,6 +144,21 @@ class _PosScreenState extends ConsumerState<PosScreen> {
     }).toList();
   }
 
+  int get _cartItemCount {
+    return _cartItems.fold(0, (sum, item) => sum + item.quantity);
+  }
+
+  int get _cartTotal {
+    return ref.read(storeControllerProvider).calculateCartTotal(_cartItems);
+  }
+
+  String _formatCurrency(int amount) {
+    return amount.toString().replaceAllMapped(
+          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+          (Match m) => '${m[1]} ',
+        ) + ' FCFA';
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -153,129 +168,170 @@ class _PosScreenState extends ConsumerState<PosScreen> {
       builder: (context, constraints) {
         final isWide = constraints.maxWidth > 800;
 
-        return Row(
+        return Stack(
           children: [
-            Expanded(
-              flex: isWide ? 2 : 1,
-              child: Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _searchController,
-                            decoration: InputDecoration(
-                              hintText: 'Rechercher un produit...',
-                              prefixIcon: const Icon(Icons.search),
-                              suffixIcon: _searchQuery.isNotEmpty
-                                  ? IconButton(
-                                      icon: const Icon(Icons.clear),
-                                      onPressed: () {
-                                        _searchController.clear();
-                                        setState(() => _searchQuery = '');
-                                      },
-                                    )
-                                  : null,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
+            Row(
+              children: [
+              Expanded(
+                flex: isWide ? 2 : 1,
+                child: Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _searchController,
+                              decoration: InputDecoration(
+                                hintText: 'Rechercher un produit...',
+                                prefixIcon: const Icon(Icons.search),
+                                suffixIcon: _searchQuery.isNotEmpty
+                                    ? IconButton(
+                                        icon: const Icon(Icons.clear),
+                                        onPressed: () {
+                                          _searchController.clear();
+                                          setState(() => _searchQuery = '');
+                                        },
+                                      )
+                                    : null,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                filled: true,
+                                fillColor: theme.colorScheme.surfaceContainerHighest,
                               ),
+                              onChanged: (value) {
+                                setState(() => _searchQuery = value);
+                              },
                             ),
-                            onChanged: (value) {
-                              setState(() => _searchQuery = value);
+                          ),
+                          const SizedBox(width: 8),
+                          IconButton(
+                            icon: const Icon(Icons.qr_code_scanner),
+                            onPressed: () {
+                              // TODO: Implement barcode scanning
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Scan de code-barres - À implémenter'),
+                                ),
+                              );
                             },
+                            tooltip: 'Scanner un code-barres',
+                            style: IconButton.styleFrom(
+                              backgroundColor: theme.colorScheme.primaryContainer,
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        IconButton(
-                          icon: const Icon(Icons.qr_code_scanner),
-                          onPressed: () {
-                            // TODO: Implement barcode scanning
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Scan de code-barres - À implémenter'),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: productsAsync.when(
+                        data: (products) {
+                          final filteredProducts =
+                              _filterProducts(products, _searchQuery);
+                          if (filteredProducts.isEmpty) {
+                            return Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    _searchQuery.isEmpty
+                                        ? Icons.inventory_2_outlined
+                                        : Icons.search_off,
+                                    size: 64,
+                                    color: theme.colorScheme.onSurfaceVariant
+                                        .withValues(alpha: 0.5),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    _searchQuery.isEmpty
+                                        ? 'Aucun produit disponible'
+                                        : 'Aucun résultat pour "$_searchQuery"',
+                                    style: theme.textTheme.bodyLarge?.copyWith(
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ],
                               ),
                             );
-                          },
-                          tooltip: 'Scanner un code-barres',
-                        ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: productsAsync.when(
-                      data: (products) {
-                        final filteredProducts = _filterProducts(products, _searchQuery);
-                        if (filteredProducts.isEmpty) {
-                          return Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  _searchQuery.isEmpty
-                                      ? Icons.inventory_2_outlined
-                                      : Icons.search_off,
-                                  size: 64,
-                                  color: theme.colorScheme.onSurfaceVariant
-                                      .withValues(alpha: 0.5),
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  _searchQuery.isEmpty
-                                      ? 'Aucun produit disponible'
-                                      : 'Aucun résultat pour "$_searchQuery"',
-                                  style: theme.textTheme.bodyLarge?.copyWith(
-                                    color: theme.colorScheme.onSurfaceVariant,
-                                  ),
-                                ),
-                              ],
+                          }
+                          return GridView.builder(
+                            padding: const EdgeInsets.all(16),
+                            gridDelegate:
+                                SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: isWide ? 4 : 2,
+                              childAspectRatio: 0.75,
+                              crossAxisSpacing: 12,
+                              mainAxisSpacing: 12,
                             ),
+                            itemCount: filteredProducts.length,
+                            itemBuilder: (context, index) {
+                              final product = filteredProducts[index];
+                              return ProductTile(
+                                product: product,
+                                onTap: () => _addToCart(product),
+                              );
+                            },
                           );
-                        }
-                        return GridView.builder(
-                          padding: const EdgeInsets.all(16),
-                          gridDelegate:
-                              SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: isWide ? 4 : 2,
-                            childAspectRatio: 0.75,
-                            crossAxisSpacing: 12,
-                            mainAxisSpacing: 12,
+                        },
+                        loading: () => const Center(
+                          child: CircularProgressIndicator(),
+                        ),
+                        error: (_, __) => Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.error_outline,
+                                size: 64,
+                                color: theme.colorScheme.error,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'Erreur de chargement',
+                                style: theme.textTheme.bodyLarge?.copyWith(
+                                  color: theme.colorScheme.error,
+                                ),
+                              ),
+                            ],
                           ),
-                          itemCount: filteredProducts.length,
-                          itemBuilder: (context, index) {
-                            final product = filteredProducts[index];
-                            return ProductTile(
-                              product: product,
-                              onTap: () => _addToCart(product),
-                            );
-                          },
-                        );
-                      },
-                      loading: () => const Center(
-                        child: CircularProgressIndicator(),
-                      ),
-                      error: (_, __) => const Center(
-                        child: Text('Erreur de chargement'),
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ),
-            if (isWide) ...[
-              const VerticalDivider(width: 1),
-              SizedBox(
-                width: 400,
-                child: CartSummary(
-                  cartItems: _cartItems,
-                  onRemove: _removeFromCart,
-                  onUpdateQuantity: _updateQuantity,
-                  onClear: _clearCart,
-                  onCheckout: () => _showCheckout(context),
+                  ],
                 ),
               ),
+              if (isWide) ...[
+                const VerticalDivider(width: 1),
+                SizedBox(
+                  width: 400,
+                  child: CartSummary(
+                    cartItems: _cartItems,
+                    onRemove: _removeFromCart,
+                    onUpdateQuantity: _updateQuantity,
+                    onClear: _clearCart,
+                    onCheckout: () => _showCheckout(context),
+                  ),
+                ),
+              ],
             ],
+            ),
+            if (!isWide && _cartItems.isNotEmpty)
+              Positioned(
+                bottom: 16,
+                right: 16,
+                child: FloatingActionButton.extended(
+                  onPressed: () => _showCartBottomSheet(context),
+                  icon: Badge(
+                    label: Text('$_cartItemCount'),
+                    child: const Icon(Icons.shopping_cart),
+                  ),
+                  label: Text(_formatCurrency(_cartTotal)),
+                  backgroundColor: theme.colorScheme.primary,
+                  foregroundColor: theme.colorScheme.onPrimary,
+                ),
+              ),
           ],
         );
       },

@@ -177,27 +177,49 @@ class _ExpensesContent extends StatelessWidget {
                   24,
                   isWide ? 24 : 16,
                 ),
-                child: Row(
-                  children: [
-                    Text(
-                      'Gestion des Dépenses',
-                      style: theme.textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
+                child: isWide
+                    ? Row(
+                        children: [
+                          Text(
+                            'Gestion des Dépenses',
+                            style: theme.textTheme.headlineMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const Spacer(),
+                          EauMineralePermissionGuard(
+                            permission: EauMineralePermissions.createExpense,
+                            child: FilledButton.icon(
+                              onPressed: onNewExpense,
+                              icon: const Icon(Icons.add),
+                              label: const Text('Nouvelle Dépense'),
+                            ),
+                          ),
+                        ],
+                      )
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Gestion des Dépenses',
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          EauMineralePermissionGuard(
+                            permission: EauMineralePermissions.createExpense,
+                            child: SizedBox(
+                              width: double.infinity,
+                              child: FilledButton.icon(
+                                onPressed: onNewExpense,
+                                icon: const Icon(Icons.add),
+                                label: const Text('Nouvelle Dépense'),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    const Spacer(),
-                    EauMineralePermissionGuard(
-                      permission: EauMineralePermissions.createExpense,
-                      child: IntrinsicWidth(
-                        child: FilledButton.icon(
-                          onPressed: onNewExpense,
-                          icon: const Icon(Icons.add),
-                          label: const Text('Nouvelle Dépense'),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
               ),
             ),
             SliverToBoxAdapter(

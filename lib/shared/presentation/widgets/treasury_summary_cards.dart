@@ -21,6 +21,8 @@ class TreasurySummaryCards extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isMobile = MediaQuery.of(context).size.width < 600;
+    
     return Row(
       children: [
         Expanded(
@@ -32,7 +34,7 @@ class TreasurySummaryCards extends StatelessWidget {
             Colors.green,
           ),
         ),
-        const SizedBox(width: 16),
+        SizedBox(width: isMobile ? 8 : 16),
         Expanded(
           child: _buildCard(
             context,
@@ -42,7 +44,7 @@ class TreasurySummaryCards extends StatelessWidget {
             Colors.orange,
           ),
         ),
-        const SizedBox(width: 16),
+        SizedBox(width: isMobile ? 8 : 16),
         Expanded(
           child: _buildCard(
             context,
@@ -63,31 +65,40 @@ class TreasurySummaryCards extends StatelessWidget {
     IconData icon,
     Color color,
   ) {
+    final isMobile = MediaQuery.of(context).size.width < 600;
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.all(isMobile ? 12 : 20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Row(
               children: [
                 Icon(icon, color: color, size: 24),
                 const SizedBox(width: 8),
-                Text(
-                  label,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.grey[600],
-                      ),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Colors.grey[600],
+                        ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: isMobile ? 8 : 12),
             Text(
               value,
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: color,
+                    fontSize: isMobile ? 18 : null,
                   ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),

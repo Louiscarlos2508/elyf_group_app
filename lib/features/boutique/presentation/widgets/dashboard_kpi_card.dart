@@ -23,8 +23,10 @@ class DashboardKpiCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isMobile = MediaQuery.of(context).size.width < 600;
+    
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(isMobile ? 12 : 20),
       decoration: BoxDecoration(
         color: backgroundColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
@@ -38,34 +40,49 @@ class DashboardKpiCard extends StatelessWidget {
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   label,
-                  style: theme.textTheme.bodyMedium?.copyWith(
+                  style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
+                    fontSize: isMobile ? 11 : null,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: isMobile ? 4 : 8),
                 Text(
                   value,
-                  style: theme.textTheme.headlineSmall?.copyWith(
+                  style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: valueColor ?? iconColor,
+                    fontSize: isMobile ? 18 : null,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 if (subtitle != null) ...[
-                  const SizedBox(height: 4),
+                  SizedBox(height: isMobile ? 2 : 4),
                   Text(
                     subtitle!,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: iconColor,
+                      fontSize: isMobile ? 10 : null,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ],
             ),
           ),
-          Icon(icon, color: iconColor, size: 32),
+          SizedBox(width: isMobile ? 8 : 12),
+          Icon(
+            icon,
+            color: iconColor,
+            size: isMobile ? 24 : 32,
+          ),
         ],
       ),
     );

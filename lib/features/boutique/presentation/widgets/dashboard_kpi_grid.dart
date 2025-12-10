@@ -49,8 +49,10 @@ class DashboardKpiGrid extends ConsumerWidget {
       builder: (context, constraints) {
         final isWide = constraints.maxWidth > 900;
         final isMedium = constraints.maxWidth > 600;
-        final crossAxisCount = isWide ? 4 : (isMedium ? 2 : 1);
-        final childAspectRatio = isWide ? 1.2 : (isMedium ? 1.3 : 1.0);
+        // Sur mobile, utiliser 2 colonnes pour mieux utiliser l'espace
+        final crossAxisCount = isWide ? 4 : (isMedium ? 2 : 2);
+        // Aspect ratio plus compact sur mobile
+        final childAspectRatio = isWide ? 1.2 : (isMedium ? 1.3 : 1.4);
         
         return productsAsync.when(
           data: (products) {
@@ -60,8 +62,9 @@ class DashboardKpiGrid extends ConsumerWidget {
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   crossAxisCount: crossAxisCount,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
+                  crossAxisSpacing: isWide ? 16 : 12,
+                  mainAxisSpacing: isWide ? 16 : 12,
+                  padding: EdgeInsets.all(isWide ? 0 : 12),
                   childAspectRatio: childAspectRatio,
                   children: [
                     DashboardKpiCard(

@@ -49,6 +49,7 @@ class EnhancedKpiCard extends StatelessWidget {
           padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Container(
                 padding: const EdgeInsets.all(10),
@@ -58,13 +59,15 @@ class EnhancedKpiCard extends StatelessWidget {
                 ),
                 child: Icon(icon, color: cardColor, size: 24),
               ),
-              const Spacer(),
+              const SizedBox(height: 16),
               Text(
                 value,
                 style: theme.textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: theme.colorScheme.onSurface,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 6),
               Text(
@@ -73,6 +76,8 @@ class EnhancedKpiCard extends StatelessWidget {
                   color: theme.colorScheme.onSurfaceVariant,
                   fontWeight: FontWeight.w500,
                 ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),

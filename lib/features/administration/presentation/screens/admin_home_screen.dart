@@ -2,13 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../shared/presentation/widgets/adaptive_navigation_scaffold.dart';
 import '../../application/providers.dart';
-import '../../domain/entities/admin_module.dart';
+import 'sections/admin_dashboard_section.dart';
+import 'sections/admin_enterprises_section.dart';
 import 'sections/admin_modules_list.dart';
 import 'sections/admin_users_section.dart';
 import 'sections/admin_roles_section.dart';
 
-/// Main administration screen.
+/// Écran principal d'administration avec navigation adaptative
 class AdminHomeScreen extends ConsumerStatefulWidget {
   const AdminHomeScreen({super.key});
 
@@ -16,21 +18,8 @@ class AdminHomeScreen extends ConsumerStatefulWidget {
   ConsumerState<AdminHomeScreen> createState() => _AdminHomeScreenState();
 }
 
-class _AdminHomeScreenState extends ConsumerState<AdminHomeScreen>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 3, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
+class _AdminHomeScreenState extends ConsumerState<AdminHomeScreen> {
+  int _selectedIndex = 0;
 
   Future<void> _handleLogout(BuildContext context) async {
     final confirmed = await showDialog<bool>(
@@ -56,16 +45,51 @@ class _AdminHomeScreenState extends ConsumerState<AdminHomeScreen>
 
     if (confirmed == true && context.mounted) {
       // TODO: Implement actual logout logic (clear auth state, etc.)
-      // For now, just navigate to login
       context.go('/login');
     }
+  }
+
+  List<NavigationSection> _buildSections() {
+    return [
+      NavigationSection(
+        label: 'Tableau de bord',
+        icon: Icons.dashboard_outlined,
+        builder: () => const AdminDashboardSection(),
+        isPrimary: true,
+      ),
+      NavigationSection(
+        label: 'Entreprises',
+        icon: Icons.business_outlined,
+        builder: () => const AdminEnterprisesSection(),
+        isPrimary: true,
+      ),
+      NavigationSection(
+        label: 'Modules',
+        icon: Icons.apps_outlined,
+        builder: () => const AdminModulesList(),
+        isPrimary: true,
+      ),
+      NavigationSection(
+        label: 'Utilisateurs',
+        icon: Icons.people_outlined,
+        builder: () => const AdminUsersSection(),
+        isPrimary: true,
+      ),
+      NavigationSection(
+        label: 'Rôles',
+        icon: Icons.shield_outlined,
+        builder: () => const AdminRolesSection(),
+        isPrimary: true,
+      ),
+    ];
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Administration'),
+        title: const Text('Administration • ELYF Groupe'),
+        centerTitle: true,
         actions: [
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
@@ -88,22 +112,25 @@ class _AdminHomeScreenState extends ConsumerState<AdminHomeScreen>
             ],
           ),
         ],
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(text: 'Modules'),
-            Tab(text: 'Utilisateurs'),
-            Tab(text: 'Rôles'),
-          ],
-        ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: const [
-          AdminModulesList(),
-          AdminUsersSection(),
-          AdminRolesSection(),
-        ],
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: _buildSections().map((s) => s.builder()).toList(),
+      ),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _selectedIndex,
+        onDestinationSelected: (index) {
+          setState(() => _selectedIndex = index);
+        },
+        destinations: _buildSections()
+            .map(
+              (section) => NavigationDestination(
+                icon: Icon(section.icon),
+                selectedIcon: Icon(section.icon),
+                label: section.label,
+              ),
+            )
+            .toList(),
       ),
     );
   }

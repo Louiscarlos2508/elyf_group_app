@@ -22,8 +22,10 @@ class SalesReportContent extends ConsumerWidget {
     final salesAsync = ref.watch(reportSalesProvider(period));
     final productSummaryAsync = ref.watch(reportProductSummaryProvider(period));
 
+    final isWide = MediaQuery.of(context).size.width > 600;
+    
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(isWide ? 24 : 16),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
@@ -37,6 +39,7 @@ class SalesReportContent extends ConsumerWidget {
             data: (productSummaries) {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     'Détail des Ventes',

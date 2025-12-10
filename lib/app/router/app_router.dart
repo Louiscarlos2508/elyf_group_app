@@ -70,30 +70,115 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           ),
         ),
       ),
+      // Routes pour les modules avec enterpriseId optionnel
       GoRoute(
         path: '/modules/eau_sachet',
         name: AppRoute.homeEauSachet.name,
-        builder: (context, state) => const EauMineraleShellScreen(),
+        builder: (context, state) {
+          const enterpriseId = 'eau_sachet_1';
+          const moduleId = 'eau_minerale';
+          return EauMineraleShellScreen(
+            enterpriseId: enterpriseId,
+            moduleId: moduleId,
+          );
+        },
+        routes: [
+          GoRoute(
+            path: ':enterpriseId',
+            builder: (context, state) {
+              final enterpriseId = state.pathParameters['enterpriseId']!;
+              const moduleId = 'eau_minerale';
+              return EauMineraleShellScreen(
+                enterpriseId: enterpriseId,
+                moduleId: moduleId,
+              );
+            },
+          ),
+        ],
       ),
       GoRoute(
         path: '/modules/gaz',
         name: AppRoute.homeGaz.name,
-        builder: (context, state) => const GazHomeScreen(),
+        builder: (context, state) {
+          const enterpriseId = 'gaz_1';
+          return GazHomeScreen(enterpriseId: enterpriseId);
+        },
+        routes: [
+          GoRoute(
+            path: ':enterpriseId',
+            builder: (context, state) {
+              final enterpriseId = state.pathParameters['enterpriseId']!;
+              return GazHomeScreen(enterpriseId: enterpriseId);
+            },
+          ),
+        ],
       ),
       GoRoute(
         path: '/modules/orange_money',
         name: AppRoute.homeOrangeMoney.name,
-        builder: (context, state) => const OrangeMoneyHomeScreen(),
+        builder: (context, state) {
+          const enterpriseId = 'orange_money_1';
+          return OrangeMoneyHomeScreen(enterpriseId: enterpriseId);
+        },
+        routes: [
+          GoRoute(
+            path: ':enterpriseId',
+            builder: (context, state) {
+              final enterpriseId = state.pathParameters['enterpriseId']!;
+              return OrangeMoneyHomeScreen(enterpriseId: enterpriseId);
+            },
+          ),
+        ],
       ),
       GoRoute(
         path: '/modules/immobilier',
         name: AppRoute.homeImmobilier.name,
-        builder: (context, state) => const ImmobilierShellScreen(),
+        builder: (context, state) {
+          const enterpriseId = 'immobilier_1';
+          const moduleId = 'immobilier';
+          return ImmobilierShellScreen(
+            enterpriseId: enterpriseId,
+            moduleId: moduleId,
+          );
+        },
+        routes: [
+          GoRoute(
+            path: ':enterpriseId',
+            builder: (context, state) {
+              final enterpriseId = state.pathParameters['enterpriseId']!;
+              const moduleId = 'immobilier';
+              return ImmobilierShellScreen(
+                enterpriseId: enterpriseId,
+                moduleId: moduleId,
+              );
+            },
+          ),
+        ],
       ),
       GoRoute(
         path: '/modules/boutique',
         name: AppRoute.homeBoutique.name,
-        builder: (context, state) => const BoutiqueShellScreen(),
+        builder: (context, state) {
+          const enterpriseId = 'boutique_1';
+          const moduleId = 'boutique';
+          return BoutiqueShellScreen(
+            enterpriseId: enterpriseId,
+            moduleId: moduleId,
+          );
+        },
+        routes: [
+          GoRoute(
+            path: ':enterpriseId',
+            builder: (context, state) {
+              final enterpriseId = state.pathParameters['enterpriseId']!;
+              const moduleId = 'boutique';
+              return BoutiqueShellScreen(
+                enterpriseId: enterpriseId,
+                moduleId: moduleId,
+              );
+            },
+          ),
+        ],
       ),
       GoRoute(
         path: '/tenants',

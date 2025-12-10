@@ -23,23 +23,26 @@ class DashboardScreen extends ConsumerWidget {
     final purchasesAsync = ref.watch(purchasesProvider);
     final expensesAsync = ref.watch(expensesProvider);
 
+    final isMobile = MediaQuery.of(context).size.width < 600;
+    
     return CustomScrollView(
       slivers: [
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.all(isMobile ? 16 : 24),
             child: Row(
               children: [
                 Icon(
                   Icons.dashboard,
                   color: theme.colorScheme.primary,
-                  size: 28,
+                  size: isMobile ? 24 : 28,
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: isMobile ? 8 : 12),
                 Text(
                   'Tableau de Bord',
                   style: theme.textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.bold,
+                    fontSize: isMobile ? 20 : null,
                   ),
                 ),
               ],
@@ -48,7 +51,7 @@ class DashboardScreen extends ConsumerWidget {
         ),
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+            padding: EdgeInsets.symmetric(horizontal: isMobile ? 0 : 24),
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final isWide = constraints.maxWidth > 600;
