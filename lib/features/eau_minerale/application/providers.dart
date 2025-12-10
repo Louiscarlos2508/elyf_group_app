@@ -6,7 +6,10 @@ import '../data/repositories/mock_customer_repository.dart';
 import '../data/repositories/mock_finance_repository.dart';
 import '../data/repositories/mock_inventory_repository.dart';
 import '../data/repositories/mock_product_repository.dart';
-import '../data/repositories/mock_production_repository.dart';
+import '../domain/services/production_period_service.dart';
+import '../data/repositories/mock_production_session_repository.dart';
+import '../data/repositories/mock_bobine_repository.dart';
+import '../data/repositories/mock_machine_repository.dart';
 import '../data/repositories/mock_sales_repository.dart';
 import '../data/repositories/mock_report_repository.dart';
 import '../data/repositories/mock_salary_repository.dart';
@@ -16,10 +19,15 @@ import '../domain/repositories/finance_repository.dart';
 import '../domain/repositories/inventory_repository.dart';
 import '../domain/entities/product.dart';
 import '../domain/repositories/product_repository.dart';
-import '../domain/repositories/production_repository.dart';
+import '../domain/repositories/production_session_repository.dart';
+import '../domain/repositories/bobine_repository.dart';
+import '../domain/repositories/machine_repository.dart';
+import '../domain/adapters/expense_balance_adapter.dart';
 import '../domain/entities/expense_report_data.dart';
+import '../../../../core/domain/entities/expense_balance_data.dart';
 import '../domain/entities/product_sales_summary.dart';
 import '../domain/entities/production_report_data.dart';
+import '../domain/entities/production_session.dart';
 import '../domain/entities/report_data.dart';
 import '../domain/entities/report_period.dart';
 import '../domain/entities/salary_report_data.dart';
@@ -36,13 +44,13 @@ import '../application/adapters/eau_minerale_permission_adapter.dart';
 import 'controllers/activity_controller.dart';
 import 'controllers/clients_controller.dart';
 import 'controllers/finances_controller.dart';
-import 'controllers/production_controller.dart';
+import 'controllers/production_session_controller.dart';
 import 'controllers/report_controller.dart';
 import 'controllers/sales_controller.dart';
 import 'controllers/salary_controller.dart';
 import 'controllers/stock_controller.dart';
 import '../presentation/screens/sections/dashboard_screen.dart';
-import '../presentation/screens/sections/production_screen.dart';
+import '../presentation/screens/sections/production_sessions_screen.dart';
 import '../presentation/screens/sections/sales_screen.dart';
 import '../presentation/screens/sections/stock_screen.dart';
 import '../presentation/screens/sections/clients_screen.dart';
@@ -51,10 +59,6 @@ import '../presentation/screens/sections/salaries_screen.dart';
 import '../presentation/screens/sections/reports_screen.dart';
 import '../presentation/screens/sections/profile_screen.dart';
 import '../presentation/screens/sections/settings_screen.dart';
-
-final productionRepositoryProvider = Provider<ProductionRepository>(
-  (ref) => MockProductionRepository(),
-);
 
 final salesRepositoryProvider = Provider<SalesRepository>(
   (ref) => MockSalesRepository(),
@@ -84,8 +88,28 @@ final activityControllerProvider = Provider<ActivityController>(
   (ref) => ActivityController(ref.watch(activityRepositoryProvider)),
 );
 
-final productionControllerProvider = Provider<ProductionController>(
-  (ref) => ProductionController(ref.watch(productionRepositoryProvider)),
+final productionPeriodServiceProvider = Provider<ProductionPeriodService>(
+  (ref) => ProductionPeriodService(),
+);
+
+final productionSessionRepositoryProvider =
+    Provider<ProductionSessionRepository>(
+  (ref) => MockProductionSessionRepository(),
+);
+
+final bobineRepositoryProvider = Provider<BobineRepository>(
+  (ref) => MockBobineRepository(),
+);
+
+final machineRepositoryProvider = Provider<MachineRepository>(
+  (ref) => MockMachineRepository(),
+);
+
+final productionSessionControllerProvider =
+    Provider<ProductionSessionController>(
+  (ref) => ProductionSessionController(
+    ref.watch(productionSessionRepositoryProvider),
+  ),
 );
 
 final salesControllerProvider = Provider<SalesController>(
@@ -117,7 +141,7 @@ final reportRepositoryProvider = Provider<ReportRepository>(
     salesRepository: ref.watch(salesRepositoryProvider),
     financeRepository: ref.watch(financeRepositoryProvider),
     salaryRepository: ref.watch(salaryRepositoryProvider),
-    productionRepository: ref.watch(productionRepositoryProvider),
+    productionSessionRepository: ref.watch(productionSessionRepositoryProvider),
   ),
 );
 
@@ -129,9 +153,6 @@ final activityStateProvider = FutureProvider.autoDispose(
   (ref) async => ref.watch(activityControllerProvider).fetchTodaySummary(),
 );
 
-final productionStateProvider = FutureProvider.autoDispose(
-  (ref) async => ref.watch(productionControllerProvider).fetchAllProductions(),
-);
 
 final salesStateProvider = FutureProvider.autoDispose(
   (ref) async => ref.watch(salesControllerProvider).fetchRecentSales(),
@@ -149,12 +170,29 @@ final financesStateProvider = FutureProvider.autoDispose(
   (ref) async => ref.watch(financesControllerProvider).fetchRecentExpenses(),
 );
 
+/// Provider pour le bilan des dépenses Eau Minérale.
+final eauMineraleExpenseBalanceProvider =
+    FutureProvider.autoDispose<List<ExpenseBalanceData>>(
+  (ref) async {
+    final expenses = await ref.read(financesControllerProvider).fetchRecentExpenses();
+    final adapter = EauMineraleExpenseBalanceAdapter();
+    return adapter.convertToBalanceData(expenses.expenses);
+  },
+);
+
 final productsProvider = FutureProvider.autoDispose<List<Product>>(
   (ref) async => ref.watch(productRepositoryProvider).fetchProducts(),
 );
 
 final productionPeriodConfigProvider = FutureProvider.autoDispose(
-  (ref) async => ref.watch(productionControllerProvider).getPeriodConfig(),
+  (ref) async => ref.watch(productionPeriodServiceProvider).getConfig(),
+);
+
+final productionSessionsStateProvider = FutureProvider.autoDispose<
+    List<ProductionSession>>(
+  (ref) async {
+    return ref.read(productionSessionControllerProvider).fetchSessions();
+  },
 );
 
 final salaryStateProvider = FutureProvider.autoDispose(
@@ -282,7 +320,7 @@ final _allSections = [
     id: EauMineraleSection.production,
     label: 'Production',
     icon: Icons.factory_outlined,
-    builder: () => const ProductionScreen(),
+    builder: () => const ProductionSessionsScreen(),
   ),
   EauMineraleSectionConfig(
     id: EauMineraleSection.sales,

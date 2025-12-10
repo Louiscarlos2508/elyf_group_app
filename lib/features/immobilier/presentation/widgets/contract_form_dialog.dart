@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/domain/entities/attached_file.dart';
+import '../../../../shared/presentation/widgets/file_attachment_field.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/contract.dart';
 import '../../domain/entities/property.dart';
@@ -33,6 +35,7 @@ class _ContractFormDialogState extends ConsumerState<ContractFormDialog> {
   int? _paymentDay;
   final _notesController = TextEditingController();
   ContractStatus _status = ContractStatus.pending;
+  List<AttachedFile> _attachedFiles = [];
 
   @override
   void initState() {
@@ -53,6 +56,7 @@ class _ContractFormDialogState extends ConsumerState<ContractFormDialog> {
       _paymentDay = c.paymentDay;
       _notesController.text = c.notes ?? '';
       _status = c.status;
+      _attachedFiles = c.attachedFiles ?? [];
     }
   }
 
@@ -140,6 +144,7 @@ class _ContractFormDialogState extends ConsumerState<ContractFormDialog> {
         depositInMonths: depositInMonths,
         createdAt: widget.contract?.createdAt ?? DateTime.now(),
         updatedAt: DateTime.now(),
+        attachedFiles: _attachedFiles.isEmpty ? null : _attachedFiles,
       );
 
       final controller = ref.read(contractControllerProvider);
@@ -297,6 +302,13 @@ class _ContractFormDialogState extends ConsumerState<ContractFormDialog> {
             const SizedBox(height: 16),
             ContractFormFields.notesField(
               controller: _notesController,
+            ),
+            const SizedBox(height: 16),
+            FileAttachmentField(
+              attachedFiles: _attachedFiles,
+              onFilesChanged: (files) {
+                setState(() => _attachedFiles = files);
+              },
             ),
             const SizedBox(height: 24),
           ],

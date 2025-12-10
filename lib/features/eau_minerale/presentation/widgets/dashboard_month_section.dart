@@ -3,11 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/controllers/clients_controller.dart';
 import '../../application/controllers/finances_controller.dart';
-import '../../application/controllers/production_controller.dart';
 import '../../application/controllers/sales_controller.dart';
 import 'dashboard_kpi_card.dart';
 
 /// Section displaying monthly KPIs.
+/// TODO: Réimplémenter avec productionSessionsStateProvider
 class DashboardMonthSection extends StatelessWidget {
   const DashboardMonthSection({
     super.key,
@@ -18,7 +18,7 @@ class DashboardMonthSection extends StatelessWidget {
   });
 
   final AsyncValue<SalesState> salesState;
-  final AsyncValue<ProductionState> productionState;
+  final AsyncValue<dynamic> productionState; // TODO: Remplacer par productionSessionsStateProvider
   final AsyncValue<ClientsState> clientsState;
   final AsyncValue<FinancesState> financesState;
 
@@ -36,11 +36,11 @@ class DashboardMonthSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // TODO: Réimplémenter avec les sessions de production
     return salesState.when(
-      data: (sales) => productionState.when(
-        data: (production) => clientsState.when(
-          data: (clients) => financesState.when(
-            data: (finances) {
+      data: (sales) => clientsState.when(
+        data: (clients) => financesState.when(
+          data: (finances) {
               final now = DateTime.now();
               final monthStart = DateTime(now.year, now.month, 1);
               final monthSales = sales.sales
@@ -158,12 +158,6 @@ class DashboardMonthSection extends StatelessWidget {
           ),
           error: (_, __) => const SizedBox.shrink(),
         ),
-        loading: () => const SizedBox(
-          height: 200,
-          child: Center(child: CircularProgressIndicator()),
-        ),
-        error: (_, __) => const SizedBox.shrink(),
-      ),
       loading: () => const SizedBox(
         height: 200,
         child: Center(child: CircularProgressIndicator()),

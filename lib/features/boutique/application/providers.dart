@@ -6,8 +6,10 @@ import '../data/repositories/mock_purchase_repository.dart';
 import '../data/repositories/mock_report_repository.dart';
 import '../data/repositories/mock_sale_repository.dart';
 import '../data/repositories/mock_stock_repository.dart';
+import '../domain/adapters/expense_balance_adapter.dart';
 import '../domain/entities/report_data.dart';
 import '../domain/repositories/expense_repository.dart';
+import '../../../../core/domain/entities/expense_balance_data.dart';
 import '../domain/repositories/product_repository.dart';
 import '../domain/repositories/purchase_repository.dart';
 import '../domain/repositories/report_repository.dart';
@@ -73,6 +75,16 @@ final purchasesProvider = FutureProvider.autoDispose(
 
 final expensesProvider = FutureProvider.autoDispose(
   (ref) async => ref.watch(storeControllerProvider).fetchExpenses(),
+);
+
+/// Provider pour le bilan des dépenses Boutique.
+final boutiqueExpenseBalanceProvider =
+    FutureProvider.autoDispose<List<ExpenseBalanceData>>(
+  (ref) async {
+    final expenses = await ref.watch(storeControllerProvider).fetchExpenses();
+    final adapter = BoutiqueExpenseBalanceAdapter();
+    return adapter.convertToBalanceData(expenses);
+  },
 );
 
 final reportDataProvider = FutureProvider.family.autoDispose<ReportData, ({

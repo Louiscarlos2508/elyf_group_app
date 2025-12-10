@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../../core/application/providers/treasury_providers.dart';
+import '../../../../../shared/domain/adapters/expense_balance_adapter.dart';
+import '../../../../../shared/presentation/screens/expense_balance_screen.dart';
+import '../../../../../shared/presentation/screens/treasury_dashboard_screen.dart';
 import '../../../application/controllers/finances_controller.dart';
 import '../../../application/providers.dart';
+import '../../../domain/adapters/expense_balance_adapter.dart';
 import '../../../domain/entities/expense_record.dart';
 import '../../../domain/permissions/eau_minerale_permissions.dart';
 import '../../widgets/centralized_permission_guard.dart';
@@ -49,42 +54,78 @@ class FinancesScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(financesStateProvider);
-    return state.when(
-      data: (data) => _ExpensesContent(
-        state: data,
-        onNewExpense: () => _showForm(context),
-        formatCurrency: _formatCurrency,
-        onActionTap: (expense, action) {
-          if (action == 'view') {
-            showDialog(
-              context: context,
-              builder: (context) => ExpenseDetailDialog(expense: expense),
-            );
-          } else if (action == 'edit') {
-            final formKey = GlobalKey<ExpenseFormState>();
-            showDialog(
-              context: context,
-              builder: (context) => FormDialog(
-                title: 'Modifier la dépense',
-                child: ExpenseForm(key: formKey),
-                onSave: () async {
-                  final state = formKey.currentState;
-                  if (state != null) {
-                    await state.submit();
-                  }
-                },
-              ),
-            );
-          }
-        },
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Dépenses'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.account_balance),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => TreasuryDashboardScreen(
+                    moduleId: 'eau_minerale',
+                    moduleName: 'Eau Minérale',
+                  ),
+                ),
+              );
+            },
+            tooltip: 'Trésorerie',
+          ),
+          IconButton(
+            icon: const Icon(Icons.analytics),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => ExpenseBalanceScreen(
+                    moduleName: 'Eau Minérale',
+                    expensesProvider: eauMineraleExpenseBalanceProvider,
+                    adapter: EauMineraleExpenseBalanceAdapter(),
+                  ),
+                ),
+              );
+            },
+            tooltip: 'Bilan des dépenses',
+          ),
+        ],
       ),
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stackTrace) => SectionPlaceholder(
-        icon: Icons.account_balance,
-        title: 'Charges indisponibles',
-        subtitle: 'Impossible de charger les dernières dépenses.',
-        primaryActionLabel: 'Réessayer',
-        onPrimaryAction: () => ref.invalidate(financesStateProvider),
+      body: state.when(
+        data: (data) => _ExpensesContent(
+          state: data,
+          onNewExpense: () => _showForm(context),
+          formatCurrency: _formatCurrency,
+          onActionTap: (expense, action) {
+            if (action == 'view') {
+              showDialog(
+                context: context,
+                builder: (context) => ExpenseDetailDialog(expense: expense),
+              );
+            } else if (action == 'edit') {
+              final formKey = GlobalKey<ExpenseFormState>();
+              showDialog(
+                context: context,
+                builder: (context) => FormDialog(
+                  title: 'Modifier la dépense',
+                  child: ExpenseForm(key: formKey),
+                  onSave: () async {
+                    final state = formKey.currentState;
+                    if (state != null) {
+                      await state.submit();
+                    }
+                  },
+                ),
+              );
+            }
+          },
+        ),
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stackTrace) => SectionPlaceholder(
+          icon: Icons.account_balance,
+          title: 'Charges indisponibles',
+          subtitle: 'Impossible de charger les dernières dépenses.',
+          primaryActionLabel: 'Réessayer',
+          onPrimaryAction: () => ref.invalidate(financesStateProvider),
+        ),
       ),
     );
   }

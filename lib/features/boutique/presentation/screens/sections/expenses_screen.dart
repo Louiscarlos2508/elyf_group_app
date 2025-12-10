@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../../core/application/providers/treasury_providers.dart';
+import '../../../../../shared/domain/adapters/expense_balance_adapter.dart';
+import '../../../../../shared/presentation/screens/expense_balance_screen.dart';
+import '../../../../../shared/presentation/screens/treasury_dashboard_screen.dart';
 import '../../../application/providers.dart';
+import '../../../domain/adapters/expense_balance_adapter.dart';
 import '../../../domain/entities/expense.dart';
 import '../../widgets/expense_form_dialog.dart';
 
@@ -69,6 +74,36 @@ class ExpensesScreen extends ConsumerWidget {
                     ),
                   ),
                 ),
+                IconButton(
+                  icon: const Icon(Icons.account_balance),
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => TreasuryDashboardScreen(
+                          moduleId: 'boutique',
+                          moduleName: 'Boutique',
+                        ),
+                      ),
+                    );
+                  },
+                  tooltip: 'Trésorerie',
+                ),
+                IconButton(
+                  icon: const Icon(Icons.analytics),
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => ExpenseBalanceScreen(
+                          moduleName: 'Boutique',
+                          expensesProvider: boutiqueExpenseBalanceProvider,
+                          adapter: BoutiqueExpenseBalanceAdapter(),
+                        ),
+                      ),
+                    );
+                  },
+                  tooltip: 'Bilan des dépenses',
+                ),
+                const SizedBox(width: 8),
                 IntrinsicWidth(
                   child: FilledButton.icon(
                     onPressed: () {

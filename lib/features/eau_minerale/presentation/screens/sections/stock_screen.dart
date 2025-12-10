@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:open_file/open_file.dart';
 
+import '../../../../../core/pdf/eau_minerale_stock_report_pdf_service.dart';
 import '../../../application/controllers/stock_controller.dart';
 import '../../../application/providers.dart';
 import '../../../domain/entities/stock_movement.dart';
@@ -51,7 +53,7 @@ class StockScreen extends ConsumerWidget {
   }
 }
 
-class _StockContent extends StatelessWidget {
+class _StockContent extends ConsumerWidget {
   const _StockContent({
     required this.state,
     required this.onStockOperation,
@@ -60,12 +62,51 @@ class _StockContent extends StatelessWidget {
   final StockState state;
   final VoidCallback onStockOperation;
 
+  Future<void> _downloadStockReport(BuildContext context) async {
+    try {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+
+      final pdfService = EauMineraleStockReportPdfService();
+      final file = await pdfService.generateReport(
+        stockItems: state.items,
+      );
+
+      if (context.mounted) {
+        Navigator.of(context).pop();
+        final result = await OpenFile.open(file.path);
+        if (result.type != ResultType.done && context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('PDF généré: ${file.path}'),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur lors de la génération PDF: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   List<StockMovement> _getMockMovements() {
     return List.generate(5, (index) => StockMovement.sample(index));
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final movements = _getMockMovements();
     
@@ -92,6 +133,12 @@ class _StockContent extends StatelessWidget {
                       ),
                     ),
                     const Spacer(),
+                    IconButton(
+                      icon: const Icon(Icons.download),
+                      onPressed: () => _downloadStockReport(context),
+                      tooltip: 'Télécharger rapport PDF',
+                    ),
+                    const SizedBox(width: 8),
                     IntrinsicWidth(
                       child: FilledButton.icon(
                         onPressed: onStockOperation,

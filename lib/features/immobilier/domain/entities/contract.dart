@@ -1,3 +1,4 @@
+import '../../../../core/domain/entities/attached_file.dart';
 import 'property.dart';
 import 'tenant.dart';
 
@@ -19,6 +20,7 @@ class Contract {
     this.depositInMonths,
     this.createdAt,
     this.updatedAt,
+    this.attachedFiles,
   });
 
   final String id;
@@ -36,6 +38,7 @@ class Contract {
   final int? depositInMonths; // Nombre de mois pour la caution (si null, deposit est un montant fixe)
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final List<AttachedFile>? attachedFiles; // Fichiers joints (contrat signé, photos, etc.)
 
   /// Calcule le montant de la caution en fonction du nombre de mois ou retourne le montant fixe.
   int get calculatedDeposit {

@@ -1,3 +1,5 @@
+import '../../../../core/domain/entities/attached_file.dart';
+
 /// Represents a purchase (achat) of products for the boutique.
 class Purchase {
   const Purchase({
@@ -7,6 +9,7 @@ class Purchase {
     required this.totalAmount,
     this.supplier,
     this.notes,
+    this.attachedFiles,
   });
 
   final String id;
@@ -15,6 +18,7 @@ class Purchase {
   final int totalAmount; // Montant total en CFA
   final String? supplier; // Fournisseur
   final String? notes; // Notes additionnelles
+  final List<AttachedFile>? attachedFiles; // Fichiers joints (factures, photos, etc.)
 }
 
 /// Represents an item in a purchase.

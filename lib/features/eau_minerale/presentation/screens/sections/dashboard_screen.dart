@@ -20,7 +20,8 @@ class DashboardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final salesState = ref.watch(salesStateProvider);
-    final productionState = ref.watch(productionStateProvider);
+    // TODO: Réimplémenter avec productionSessionsStateProvider
+    // final productionState = ref.watch(productionStateProvider);
     final financesState = ref.watch(financesStateProvider);
     final clientsState = ref.watch(clientsStateProvider);
     final stockState = ref.watch(stockStateProvider);
@@ -67,28 +68,29 @@ class DashboardScreen extends ConsumerWidget {
               ),
             ),
           ),
-          _buildSectionHeader('CE MOIS', 0, 8),
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-            sliver: SliverToBoxAdapter(
-              child: DashboardMonthSection(
-                salesState: salesState,
-                productionState: productionState,
-                clientsState: clientsState,
-                financesState: financesState,
-              ),
-            ),
-          ),
-          _buildSectionHeader('Opérations', 0, 8),
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-            sliver: SliverToBoxAdapter(
-              child: DashboardOperationsSection(
-                productionState: productionState,
-                financesState: financesState,
-              ),
-            ),
-          ),
+          // TODO: Réimplémenter les sections de production avec les sessions
+          // _buildSectionHeader('CE MOIS', 0, 8),
+          // SliverPadding(
+          //   padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+          //   sliver: SliverToBoxAdapter(
+          //     child: DashboardMonthSection(
+          //       salesState: salesState,
+          //       productionState: productionState,
+          //       clientsState: clientsState,
+          //       financesState: financesState,
+          //     ),
+          //   ),
+          // ),
+          // _buildSectionHeader('Opérations', 0, 8),
+          // SliverPadding(
+          //   padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+          //   sliver: SliverToBoxAdapter(
+          //     child: DashboardOperationsSection(
+          //       productionState: productionState,
+          //       financesState: financesState,
+          //     ),
+          //   ),
+          // ),
           _buildSectionHeader('Stock Produits Finis', 0, 8),
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),

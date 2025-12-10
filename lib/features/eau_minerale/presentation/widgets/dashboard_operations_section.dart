@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/controllers/finances_controller.dart' show FinancesState;
-import '../../application/controllers/production_controller.dart' show ProductionState;
 import 'dashboard_kpi_card.dart';
 
 /// Section displaying operations KPIs.
+/// TODO: Réimplémenter avec productionSessionsStateProvider
 class DashboardOperationsSection extends StatelessWidget {
   const DashboardOperationsSection({
     super.key,
@@ -13,7 +13,7 @@ class DashboardOperationsSection extends StatelessWidget {
     required this.financesState,
   });
 
-  final AsyncValue<ProductionState> productionState;
+  final AsyncValue<dynamic> productionState; // TODO: Remplacer par productionSessionsStateProvider
   final AsyncValue<FinancesState> financesState;
 
   String _formatCurrency(int amount) {
@@ -30,18 +30,14 @@ class DashboardOperationsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return productionState.when(
-      data: (production) => financesState.when(
-        data: (finances) {
-          final now = DateTime.now();
-          final monthStart = DateTime(now.year, now.month, 1);
-          final monthProductions = production.productions
-              .where((p) => p.date.isAfter(monthStart))
-              .toList();
-          final monthProduction = monthProductions.fold(
-            0,
-            (sum, p) => sum + p.quantity,
-          );
+    // TODO: Réimplémenter avec les sessions de production
+    return financesState.when(
+      data: (finances) {
+        final now = DateTime.now();
+        final monthStart = DateTime(now.year, now.month, 1);
+        // TODO: Calculer avec les sessions de production
+        final monthProduction = 0;
+        final monthProductions = <dynamic>[];
           final monthExpenses = finances.expenses
               .where((e) => e.date.isAfter(monthStart))
               .fold(0, (sum, e) => sum + e.amountCfa);
@@ -104,13 +100,7 @@ class DashboardOperationsSection extends StatelessWidget {
               );
             },
           );
-        },
-        loading: () => const SizedBox(
-          height: 150,
-          child: Center(child: CircularProgressIndicator()),
-        ),
-        error: (_, __) => const SizedBox.shrink(),
-      ),
+      },
       loading: () => const SizedBox(
         height: 150,
         child: Center(child: CircularProgressIndicator()),

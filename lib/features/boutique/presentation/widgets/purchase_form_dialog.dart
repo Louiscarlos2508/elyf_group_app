@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/domain/entities/attached_file.dart';
+import '../../../../shared/presentation/widgets/file_attachment_field.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/product.dart';
 import '../../domain/entities/purchase.dart';
@@ -23,6 +25,7 @@ class _PurchaseFormDialogState extends ConsumerState<PurchaseFormDialog> {
   final _supplierController = TextEditingController();
   final _notesController = TextEditingController();
   final List<PurchaseItemForm> _items = [];
+  List<AttachedFile> _attachedFiles = [];
   DateTime _selectedDate = DateTime.now();
   bool _isLoading = false;
 
@@ -126,6 +129,7 @@ class _PurchaseFormDialogState extends ConsumerState<PurchaseFormDialog> {
         notes: _notesController.text.isEmpty
             ? null
             : _notesController.text.trim(),
+        attachedFiles: _attachedFiles.isEmpty ? null : _attachedFiles,
       );
 
       await ref.read(storeControllerProvider).createPurchase(purchase);
@@ -215,6 +219,14 @@ class _PurchaseFormDialogState extends ConsumerState<PurchaseFormDialog> {
                         onRemoveItem: _removeItem,
                         onCalculateTotal: _calculateTotal,
                       ),
+                      const SizedBox(height: 16),
+                      FileAttachmentField(
+                        attachedFiles: _attachedFiles,
+                        onFilesChanged: (files) {
+                          setState(() => _attachedFiles = files);
+                        },
+                      ),
+                      const SizedBox(height: 16),
                       PurchaseFormFooter(
                         totalAmount: _calculateTotal(),
                         notesController: _notesController,

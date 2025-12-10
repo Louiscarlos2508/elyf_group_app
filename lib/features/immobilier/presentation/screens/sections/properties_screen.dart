@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:open_file/open_file.dart';
 
+import '../../../../../core/pdf/immobilier_stock_report_pdf_service.dart';
 import '../../../application/providers.dart';
 import '../../../domain/entities/property.dart';
 import '../../widgets/property_detail_dialog.dart';
@@ -89,6 +91,47 @@ class _PropertiesScreenState extends ConsumerState<PropertiesScreen> {
     );
   }
 
+  Future<void> _downloadStockReport(BuildContext context) async {
+    try {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+
+      // Fetch properties directly from controller
+      final controller = ref.read(propertyControllerProvider);
+      final properties = await controller.fetchProperties();
+
+      final pdfService = ImmobilierStockReportPdfService();
+      final file = await pdfService.generateReport(properties: properties);
+
+      if (context.mounted) {
+        Navigator.of(context).pop();
+        final result = await OpenFile.open(file.path);
+        if (result.type != ResultType.done && context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('PDF généré: ${file.path}'),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur lors de la génération PDF: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final propertiesAsync = ref.watch(propertiesProvider);
@@ -97,6 +140,11 @@ class _PropertiesScreenState extends ConsumerState<PropertiesScreen> {
       appBar: AppBar(
         title: const Text('Propriétés'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.download),
+            onPressed: () => _downloadStockReport(context),
+            tooltip: 'Télécharger rapport PDF',
+          ),
           PropertySortMenu(
             selectedSort: _sortOption,
             onSortChanged: (sort) {

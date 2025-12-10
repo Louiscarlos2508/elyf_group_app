@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:open_file/open_file.dart';
 
+import '../../../../../core/pdf/boutique_stock_report_pdf_service.dart';
 import '../../../application/providers.dart';
 import '../../../domain/entities/product.dart';
 import '../../widgets/product_form_dialog.dart';
@@ -20,6 +22,47 @@ class _StockScreenState extends ConsumerState<StockScreen> {
           RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
           (Match m) => '${m[1]} ',
         ) + ' FCFA';
+  }
+
+  Future<void> _downloadStockReport(BuildContext context) async {
+    try {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+
+      // Fetch products directly from controller
+      final controller = ref.read(storeControllerProvider);
+      final products = await controller.fetchProducts();
+
+      final pdfService = BoutiqueStockReportPdfService();
+      final file = await pdfService.generateReport(products: products);
+
+      if (context.mounted) {
+        Navigator.of(context).pop();
+        final result = await OpenFile.open(file.path);
+        if (result.type != ResultType.done && context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('PDF généré: ${file.path}'),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur lors de la génération PDF: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   void _showProductInfo(BuildContext context, Product product) {
@@ -112,6 +155,12 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                     ),
                   ),
                 ),
+                IconButton(
+                  icon: const Icon(Icons.download),
+                  onPressed: () => _downloadStockReport(context),
+                  tooltip: 'Télécharger rapport PDF',
+                ),
+                const SizedBox(width: 8),
                 IntrinsicWidth(
                   child: FilledButton.icon(
                     onPressed: () {

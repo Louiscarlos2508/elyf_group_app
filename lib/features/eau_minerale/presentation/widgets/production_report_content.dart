@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/providers.dart';
-import '../../domain/entities/production.dart';
+import '../../domain/entities/production_session.dart';
 import '../../domain/entities/production_report_data.dart';
 import '../../domain/entities/report_period.dart';
 import 'production_period_formatter.dart';
@@ -168,7 +168,7 @@ class _SummaryCard extends StatelessWidget {
 class _ProductionCard extends StatelessWidget {
   const _ProductionCard({required this.production});
 
-  final Production production;
+  final ProductionSession production;
 
   @override
   Widget build(BuildContext context) {
@@ -177,7 +177,7 @@ class _ProductionCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
         leading: const Icon(Icons.factory, color: Colors.blue),
-        title: Text('${production.quantity} unités'),
+        title: Text('${production.quantiteProduite} ${production.quantiteProduiteUnite}'),
         subtitle: Text(ProductionPeriodFormatter.formatDate(production.date)),
         trailing: Text(
           'Période ${production.period}',

@@ -6,8 +6,10 @@ import '../data/repositories/mock_payment_repository.dart';
 import '../data/repositories/mock_property_repository.dart';
 import '../data/repositories/mock_tenant_repository.dart';
 import '../domain/entities/contract.dart';
+import '../domain/adapters/expense_balance_adapter.dart';
 import '../domain/entities/expense.dart';
 import '../domain/entities/payment.dart';
+import '../../../../core/domain/entities/expense_balance_data.dart';
 import '../domain/entities/property.dart';
 import '../domain/entities/tenant.dart';
 import '../domain/repositories/contract_repository.dart';
@@ -119,6 +121,16 @@ final expensesProvider = FutureProvider.autoDispose<List<PropertyExpense>>(
   (ref) async {
     final controller = ref.watch(expenseControllerProvider);
     return await controller.fetchExpenses();
+  },
+);
+
+/// Provider pour le bilan des dépenses Immobilier.
+final immobilierExpenseBalanceProvider =
+    FutureProvider.autoDispose<List<ExpenseBalanceData>>(
+  (ref) async {
+    final expenses = await ref.watch(expenseControllerProvider).fetchExpenses();
+    final adapter = ImmobilierExpenseBalanceAdapter();
+    return adapter.convertToBalanceData(expenses);
   },
 );
 

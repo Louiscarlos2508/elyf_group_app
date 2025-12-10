@@ -3,14 +3,14 @@ import 'dart:async';
 import '../../domain/entities/expense_report_data.dart';
 import '../../domain/entities/expense_record.dart';
 import '../../domain/entities/product_sales_summary.dart';
-import '../../domain/entities/production.dart';
+import '../../domain/entities/production_session.dart';
 import '../../domain/entities/production_report_data.dart';
 import '../../domain/entities/report_data.dart';
 import '../../domain/entities/report_period.dart';
 import '../../domain/entities/salary_report_data.dart';
 import '../../domain/entities/sale.dart';
 import '../../domain/repositories/finance_repository.dart';
-import '../../domain/repositories/production_repository.dart';
+import '../../domain/repositories/production_session_repository.dart';
 import '../../domain/repositories/report_repository.dart';
 import '../../domain/repositories/salary_repository.dart';
 import '../../domain/repositories/sales_repository.dart';
@@ -20,13 +20,13 @@ class MockReportRepository implements ReportRepository {
     required this.salesRepository,
     required this.financeRepository,
     required this.salaryRepository,
-    required this.productionRepository,
+    required this.productionSessionRepository,
   });
 
   final SalesRepository salesRepository;
   final FinanceRepository financeRepository;
   final SalaryRepository salaryRepository;
-  final ProductionRepository productionRepository;
+  final ProductionSessionRepository productionSessionRepository;
 
   @override
   Future<ReportData> fetchReportData(ReportPeriod period) async {
@@ -121,24 +121,28 @@ class MockReportRepository implements ReportRepository {
   Future<ProductionReportData> fetchProductionReport(ReportPeriod period) async {
     await Future<void>.delayed(const Duration(milliseconds: 300));
     
-    final productions = await productionRepository.fetchProductions();
-    final periodProductions = productions.where((production) {
-      final prodDate = DateTime(production.date.year, production.date.month, production.date.day);
+    final sessions = await productionSessionRepository.fetchSessions(
+      startDate: period.startDate,
+      endDate: period.endDate,
+    );
+    
+    final periodSessions = sessions.where((session) {
+      final sessionDate = DateTime(session.date.year, session.date.month, session.date.day);
       final start = DateTime(period.startDate.year, period.startDate.month, period.startDate.day);
       final end = DateTime(period.endDate.year, period.endDate.month, period.endDate.day);
-      return (prodDate.isAfter(start.subtract(const Duration(days: 1))) || prodDate.isAtSameMomentAs(start)) &&
-          (prodDate.isBefore(end.add(const Duration(days: 1))) || prodDate.isAtSameMomentAs(end));
+      return (sessionDate.isAfter(start.subtract(const Duration(days: 1))) || sessionDate.isAtSameMomentAs(start)) &&
+          (sessionDate.isBefore(end.add(const Duration(days: 1))) || sessionDate.isAtSameMomentAs(end));
     }).toList();
 
-    final totalQuantity = periodProductions.fold(0, (sum, p) => sum + p.quantity);
-    final totalBatches = periodProductions.length;
+    final totalQuantity = periodSessions.fold(0, (sum, s) => sum + s.quantiteProduite);
+    final totalBatches = periodSessions.length;
     final averageQuantityPerBatch = totalBatches > 0 ? totalQuantity / totalBatches : 0.0;
 
     return ProductionReportData(
       totalQuantity: totalQuantity,
       totalBatches: totalBatches,
       averageQuantityPerBatch: averageQuantityPerBatch,
-      productions: periodProductions,
+      productions: periodSessions,
     );
   }
 

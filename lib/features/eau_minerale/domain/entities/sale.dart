@@ -18,6 +18,7 @@ class Sale {
     this.notes,
     this.cashAmount = 0,
     this.orangeMoneyAmount = 0,
+    this.productionSessionId,
   });
 
   final String id;
@@ -37,6 +38,7 @@ class Sale {
   final String? notes;
   final int cashAmount;
   final int orangeMoneyAmount;
+  final String? productionSessionId; // Lien vers la session de production
 
   int get remainingAmount => totalPrice - amountPaid;
   bool get isCredit => remainingAmount > 0;

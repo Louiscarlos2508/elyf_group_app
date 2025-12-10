@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../../core/application/providers/treasury_providers.dart';
+import '../../../../../shared/domain/adapters/expense_balance_adapter.dart';
+import '../../../../../shared/presentation/screens/expense_balance_screen.dart';
+import '../../../../../shared/presentation/screens/treasury_dashboard_screen.dart';
 import '../../../application/providers.dart';
+import '../../../domain/adapters/expense_balance_adapter.dart';
 import '../../../domain/entities/expense.dart';
 import '../../widgets/expense_card.dart';
 import '../../widgets/expense_filters.dart';
@@ -67,6 +72,37 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Dépenses'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.account_balance),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => TreasuryDashboardScreen(
+                    moduleId: 'immobilier',
+                    moduleName: 'Immobilier',
+                  ),
+                ),
+              );
+            },
+            tooltip: 'Trésorerie',
+          ),
+          IconButton(
+            icon: const Icon(Icons.analytics),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => ExpenseBalanceScreen(
+                    moduleName: 'Immobilier',
+                    expensesProvider: immobilierExpenseBalanceProvider,
+                    adapter: ImmobilierExpenseBalanceAdapter(),
+                  ),
+                ),
+              );
+            },
+            tooltip: 'Bilan des dépenses',
+          ),
+        ],
       ),
       body: Column(
         children: [

@@ -6,7 +6,6 @@ import '../../../domain/permissions/eau_minerale_permissions.dart';
 import '../../widgets/centralized_permission_guard.dart';
 import '../../widgets/product_catalog_card.dart';
 import '../../widgets/product_info_banner.dart';
-import '../../widgets/production_config_card.dart';
 
 /// Settings screen for the Eau Minérale module.
 class SettingsScreen extends ConsumerWidget {
@@ -45,15 +44,6 @@ class SettingsScreen extends ConsumerWidget {
                       ),
                     ),
                   ],
-                ),
-              ),
-            ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: EauMineralePermissionGuard(
-                  permission: EauMineralePermissions.configureProduction,
-                  child: const ProductionConfigCard(),
                 ),
               ),
             ),
