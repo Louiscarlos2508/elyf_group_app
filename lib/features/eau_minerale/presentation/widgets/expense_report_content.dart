@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/providers.dart';
 import '../../domain/entities/expense_record.dart';
-import '../../domain/entities/expense_report_data.dart';
 import '../../domain/entities/report_period.dart';
 import 'production_period_formatter.dart';
 
@@ -17,10 +16,10 @@ class ExpenseReportContent extends ConsumerWidget {
   final ReportPeriod period;
 
   String _formatCurrency(int amount) {
-    return amount.toString().replaceAllMapped(
+    return '${amount.toString().replaceAllMapped(
           RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
           (Match m) => '${m[1]} ',
-        ) + ' FCFA';
+        )} FCFA';
   }
 
   IconData _getCategoryIcon(ExpenseCategory category) {

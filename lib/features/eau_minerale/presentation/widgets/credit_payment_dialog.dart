@@ -119,6 +119,8 @@ class _CreditPaymentDialogState extends ConsumerState<CreditPaymentDialog> {
       await creditService.recordPayment(payment);
 
       if (!mounted) return;
+      // Invalider les providers pour rafraîchir les données
+      ref.invalidate(clientsStateProvider);
       Navigator.of(context).pop();
       ref.invalidate(clientsStateProvider);
       ScaffoldMessenger.of(context).showSnackBar(

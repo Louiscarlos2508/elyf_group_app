@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../../shared/presentation/widgets/refresh_button.dart';
 import '../../../application/controllers/sales_controller.dart';
 import '../../../application/providers.dart';
 import '../../../domain/entities/sale.dart';
@@ -40,6 +41,7 @@ class SalesScreen extends ConsumerWidget {
       body: state.when(
         data: (data) => _SalesContent(
           state: data,
+          ref: ref,
           onNewSale: () => _showForm(context),
           onActionTap: (sale, action) {
             if (action == 'view') {
@@ -81,11 +83,13 @@ class SalesScreen extends ConsumerWidget {
 class _SalesContent extends StatelessWidget {
   const _SalesContent({
     required this.state,
+    required this.ref,
     required this.onNewSale,
     required this.onActionTap,
   });
 
   final SalesState state;
+  final WidgetRef ref;
   final VoidCallback onNewSale;
   final void Function(Sale sale, String action) onActionTap;
 
@@ -115,17 +119,22 @@ class _SalesContent extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                            const Spacer(),
-                            EauMineralePermissionGuard(
-                              permission: EauMineralePermissions.createSale,
-                              child: IntrinsicWidth(
-                                child: FilledButton.icon(
-                                  onPressed: onNewSale,
-                                  icon: const Icon(Icons.add),
-                                  label: const Text('Nouvelle Vente'),
-                                ),
-                              ),
-                            ),
+                    const Spacer(),
+                    RefreshButton(
+                      onRefresh: () => ref.invalidate(salesStateProvider),
+                      tooltip: 'Actualiser les ventes',
+                    ),
+                    const SizedBox(width: 8),
+                    EauMineralePermissionGuard(
+                      permission: EauMineralePermissions.createSale,
+                      child: IntrinsicWidth(
+                        child: FilledButton.icon(
+                          onPressed: onNewSale,
+                          icon: const Icon(Icons.add),
+                          label: const Text('Nouvelle Vente'),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),

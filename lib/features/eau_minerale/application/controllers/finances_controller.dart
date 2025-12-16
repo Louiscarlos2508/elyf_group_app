@@ -15,6 +15,10 @@ class FinancesController {
   Future<String> createExpense(ExpenseRecord expense) async {
     return await _repository.createExpense(expense);
   }
+
+  Future<void> updateExpense(ExpenseRecord expense) async {
+    return await _repository.updateExpense(expense);
+  }
 }
 
 class FinancesState {

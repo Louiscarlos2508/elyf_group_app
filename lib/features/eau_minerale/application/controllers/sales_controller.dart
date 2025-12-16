@@ -19,8 +19,9 @@ class SalesController {
   }
 
   /// Creates a sale using SaleService which handles stock validation and decrement.
-  Future<String> createSale(Sale sale, String userId, bool isManager) async {
-    return await _saleService.createSale(sale, userId, isManager);
+  /// Sales are now created directly without validation workflow.
+  Future<String> createSale(Sale sale, String userId) async {
+    return await _saleService.createSale(sale, userId);
   }
 }
 

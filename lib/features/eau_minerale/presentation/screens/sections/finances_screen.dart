@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../../core/application/providers/treasury_providers.dart';
-import '../../../../../shared/domain/adapters/expense_balance_adapter.dart';
 import '../../../../../shared/presentation/screens/expense_balance_screen.dart';
-import '../../../../../shared/presentation/screens/treasury_dashboard_screen.dart';
+import '../../../../../shared/presentation/widgets/refresh_button.dart';
 import '../../../application/controllers/finances_controller.dart';
 import '../../../application/providers.dart';
 import '../../../domain/adapters/expense_balance_adapter.dart';
@@ -55,43 +53,10 @@ class FinancesScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(financesStateProvider);
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Dépenses'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.account_balance),
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => TreasuryDashboardScreen(
-                    moduleId: 'eau_minerale',
-                    moduleName: 'Eau Minérale',
-                  ),
-                ),
-              );
-            },
-            tooltip: 'Trésorerie',
-          ),
-          IconButton(
-            icon: const Icon(Icons.analytics),
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => ExpenseBalanceScreen(
-                    moduleName: 'Eau Minérale',
-                    expensesProvider: eauMineraleExpenseBalanceProvider,
-                    adapter: EauMineraleExpenseBalanceAdapter(),
-                  ),
-                ),
-              );
-            },
-            tooltip: 'Bilan des dépenses',
-          ),
-        ],
-      ),
       body: state.when(
         data: (data) => _ExpensesContent(
           state: data,
+          ref: ref,
           onNewExpense: () => _showForm(context),
           formatCurrency: _formatCurrency,
           onActionTap: (expense, action) {
@@ -106,7 +71,7 @@ class FinancesScreen extends ConsumerWidget {
                 context: context,
                 builder: (context) => FormDialog(
                   title: 'Modifier la dépense',
-                  child: ExpenseForm(key: formKey),
+                  child: ExpenseForm(key: formKey, expense: expense),
                   onSave: () async {
                     final state = formKey.currentState;
                     if (state != null) {
@@ -116,6 +81,17 @@ class FinancesScreen extends ConsumerWidget {
                 ),
               );
             }
+          },
+          onBalanceTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => ExpenseBalanceScreen(
+                  moduleName: 'Eau Minérale',
+                  expensesProvider: eauMineraleExpenseBalanceProvider,
+                  adapter: EauMineraleExpenseBalanceAdapter(),
+                ),
+              ),
+            );
           },
         ),
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -134,15 +110,19 @@ class FinancesScreen extends ConsumerWidget {
 class _ExpensesContent extends StatelessWidget {
   const _ExpensesContent({
     required this.state,
+    required this.ref,
     required this.onNewExpense,
     required this.formatCurrency,
     required this.onActionTap,
+    required this.onBalanceTap,
   });
 
   final FinancesState state;
+  final WidgetRef ref;
   final VoidCallback onNewExpense;
   final String Function(int) formatCurrency;
   final void Function(ExpenseRecord expense, String action) onActionTap;
+  final VoidCallback onBalanceTap;
 
   List<ExpenseRecord> _getTodayExpenses() {
     final now = DateTime.now();
@@ -181,12 +161,22 @@ class _ExpensesContent extends StatelessWidget {
                     ? Row(
                         children: [
                           Text(
-                            'Gestion des Dépenses',
+                            'Dépenses',
                             style: theme.textTheme.headlineMedium?.copyWith(
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           const Spacer(),
+                          RefreshButton(
+                            onRefresh: () => ref.invalidate(financesStateProvider),
+                            tooltip: 'Actualiser les dépenses',
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.analytics),
+                            onPressed: onBalanceTap,
+                            tooltip: 'Bilan des dépenses',
+                          ),
+                          const SizedBox(width: 8),
                           Flexible(
                             child: EauMineralePermissionGuard(
                               permission: EauMineralePermissions.createExpense,
@@ -202,11 +192,26 @@ class _ExpensesContent extends StatelessWidget {
                     : Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'Gestion des Dépenses',
-                            style: theme.textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  'Dépenses',
+                                  style: theme.textTheme.titleLarge?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                          RefreshButton(
+                            onRefresh: () => ref.invalidate(financesStateProvider),
+                            tooltip: 'Actualiser les dépenses',
+                          ),
+                              IconButton(
+                                icon: const Icon(Icons.analytics),
+                                onPressed: onBalanceTap,
+                                tooltip: 'Bilan des dépenses',
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 12),
                           EauMineralePermissionGuard(

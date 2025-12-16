@@ -71,6 +71,7 @@ import '../presentation/screens/sections/clients_screen.dart';
 import '../presentation/screens/sections/finances_screen.dart';
 import '../presentation/screens/sections/salaries_screen.dart';
 import '../presentation/screens/sections/reports_screen.dart';
+import '../../../../shared/presentation/widgets/treasury/treasury_screen.dart' as shared_treasury;
 import '../presentation/screens/sections/profile_screen.dart';
 import '../presentation/screens/sections/settings_screen.dart';
 
@@ -79,7 +80,10 @@ final saleRepositoryProvider = Provider<SaleRepository>(
 );
 
 final stockRepositoryProvider = Provider<StockRepository>(
-  (ref) => MockStockRepository(),
+  (ref) => MockStockRepository(
+    ref.watch(inventoryRepositoryProvider),
+    ref.watch(productRepositoryProvider),
+  ),
 );
 
 final creditRepositoryProvider = Provider<CreditRepository>(
@@ -90,13 +94,11 @@ final saleServiceProvider = Provider<SaleService>(
   (ref) {
     final saleRepo = ref.watch(saleRepositoryProvider);
     final stockRepo = ref.watch(stockRepositoryProvider);
-    final inventoryRepo = ref.watch(inventoryRepositoryProvider);
     final creditRepo = ref.watch(creditRepositoryProvider);
     
     return SaleService(
       saleRepository: saleRepo,
       stockRepository: stockRepo,
-      inventoryRepository: inventoryRepo,
       creditRepository: creditRepo,
     );
   },
@@ -183,6 +185,7 @@ final stockControllerProvider = Provider<StockController>(
     ref.watch(inventoryRepositoryProvider),
     ref.watch(bobineStockQuantityRepositoryProvider),
     ref.watch(packagingStockRepositoryProvider),
+    ref.watch(stockRepositoryProvider),
   ),
 );
 
@@ -480,6 +483,15 @@ final _allSections = [
     label: 'Rapports',
     icon: Icons.description,
     builder: () => const ReportsScreen(),
+  ),
+  EauMineraleSectionConfig(
+    id: EauMineraleSection.treasury,
+    label: 'Trésorerie',
+    icon: Icons.account_balance,
+    builder: () => shared_treasury.TreasuryScreen(
+      moduleId: 'eau_minerale',
+      moduleName: 'Eau Minérale',
+    ),
   ),
   EauMineraleSectionConfig(
     id: EauMineraleSection.profile,

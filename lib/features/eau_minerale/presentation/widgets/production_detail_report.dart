@@ -37,14 +37,8 @@ class ProductionDetailReport extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     
-    // Récupérer les dépenses liées à cette production
-    final expensesAsync = ref.watch(financesStateProvider);
-    final linkedExpenses = expensesAsync.maybeWhen(
-      data: (data) => data.expenses
-          .where((e) => e.productionId == session.id)
-          .toList(),
-      orElse: () => <ExpenseRecord>[],
-    );
+    // Les dépenses ne sont plus liées aux productions
+    final linkedExpenses = <ExpenseRecord>[];
     
     // Récupérer toutes les sessions pour vérifier si les bobines viennent d'une session précédente
     final allSessionsAsync = ref.watch(productionSessionsStateProvider);

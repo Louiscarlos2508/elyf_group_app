@@ -5,11 +5,12 @@ import '../../domain/repositories/inventory_repository.dart';
 
 class MockInventoryRepository implements InventoryRepository {
   // Simule un stock en mémoire (normalement ce serait dans une base de données)
+  // StockRepository utilise maintenant InventoryRepository comme source unique de vérité
   final Map<String, StockItem> _stockItems = {
     'pack-1': StockItem(
       id: 'pack-1',
       name: 'Pack',
-      quantity: 0,
+      quantity: 1000.0,
       unit: 'unité',
       type: StockType.finishedGoods,
       updatedAt: DateTime.now(),

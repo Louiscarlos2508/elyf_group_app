@@ -8,6 +8,7 @@ enum EauMineraleSection {
   finances,
   salaries,
   reports,
+  treasury,
   profile,
   settings,
 }

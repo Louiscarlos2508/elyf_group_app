@@ -178,6 +178,14 @@ class EauMineralePermissions {
     description: 'Permet de télécharger les rapports',
   );
 
+  // Treasury
+  static const viewTreasury = ActionPermission(
+    id: 'view_treasury',
+    name: 'Voir la trésorerie',
+    module: 'eau_minerale',
+    description: 'Permet de voir la trésorerie du module',
+  );
+
   // Settings
   static const viewSettings = ActionPermission(
     id: 'view_settings',
@@ -255,6 +263,7 @@ class EauMineralePermissions {
     deleteSalary,
     viewReports,
     downloadReports,
+    viewTreasury,
     viewSettings,
     editSettings,
     manageProducts,

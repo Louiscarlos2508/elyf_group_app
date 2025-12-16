@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:open_file/open_file.dart';
 
-import '../../../../../core/pdf/eau_minerale_stock_report_pdf_service.dart';
+import '../../../../../shared/presentation/screens/stock_report_screen.dart';
 import '../../../application/controllers/stock_controller.dart';
 import '../../../application/providers.dart';
 import '../../widgets/finished_products_card.dart';
@@ -79,45 +78,17 @@ class _StockContentWithFiltersState
     _selectedProduct = null;
   }
 
-  Future<void> _downloadStockReport(BuildContext context) async {
-    try {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const Center(
-          child: CircularProgressIndicator(),
+  void _showStockReport(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => StockReportScreen(
+          moduleName: 'Eau Minérale',
+          stockItems: widget.state.items,
+          packagingStocks: widget.state.packagingStocks,
+          availableBobines: widget.state.availableBobines,
         ),
-      );
-
-      final pdfService = EauMineraleStockReportPdfService();
-      final file = await pdfService.generateReport(
-        stockItems: widget.state.items,
-        packagingStocks: widget.state.packagingStocks,
-        availableBobines: widget.state.availableBobines,
-      );
-
-      if (context.mounted) {
-        Navigator.of(context).pop();
-        final result = await OpenFile.open(file.path);
-        if (result.type != ResultType.done && context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('PDF généré: ${file.path}'),
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (context.mounted) {
-        Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur lors de la génération PDF: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
+      ),
+    );
   }
 
   void _onFiltersChanged({
@@ -204,9 +175,9 @@ class _StockContentWithFiltersState
                             tooltip: 'Actualiser les stocks',
                           ),
                           IconButton(
-                            icon: const Icon(Icons.download),
-                            onPressed: () => _downloadStockReport(context),
-                            tooltip: 'Télécharger rapport PDF',
+                            icon: const Icon(Icons.analytics),
+                            onPressed: () => _showStockReport(context),
+                            tooltip: 'Rapport de stock',
                           ),
                           const SizedBox(width: 8),
                           IntrinsicWidth(
@@ -246,9 +217,9 @@ class _StockContentWithFiltersState
                                 tooltip: 'Actualiser les stocks',
                               ),
                               IconButton(
-                                icon: const Icon(Icons.download),
-                                onPressed: () => _downloadStockReport(context),
-                                tooltip: 'Télécharger rapport PDF',
+                                icon: const Icon(Icons.analytics),
+                                onPressed: () => _showStockReport(context),
+                                tooltip: 'Rapport de stock',
                               ),
                             ],
                           ),

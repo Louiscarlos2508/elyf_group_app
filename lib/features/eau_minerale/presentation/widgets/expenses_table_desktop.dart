@@ -68,17 +68,6 @@ class ExpensesTableDesktop extends StatelessWidget {
                           style: theme.textTheme.bodyMedium,
                         ),
                       ),
-                      if (expense.estLieeAProduction) ...[
-                        const SizedBox(width: 8),
-                        Tooltip(
-                          message: 'Liée à une production',
-                          child: Icon(
-                            Icons.factory,
-                            size: 16,
-                            color: Colors.blue.shade700,
-                          ),
-                        ),
-                      ],
                     ],
                   ),
                 ),

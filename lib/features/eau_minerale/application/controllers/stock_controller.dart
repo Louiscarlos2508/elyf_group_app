@@ -7,17 +7,20 @@ import '../../domain/entities/stock_movement.dart';
 import '../../domain/repositories/bobine_stock_quantity_repository.dart';
 import '../../domain/repositories/inventory_repository.dart';
 import '../../domain/repositories/packaging_stock_repository.dart';
+import '../../domain/repositories/stock_repository.dart';
 
 class StockController {
   StockController(
     this._inventoryRepository,
     this._bobineStockQuantityRepository,
     this._packagingStockRepository,
+    this._stockRepository,
   );
 
   final InventoryRepository _inventoryRepository;
   final BobineStockQuantityRepository _bobineStockQuantityRepository;
   final PackagingStockRepository _packagingStockRepository;
+  final StockRepository _stockRepository;
 
   Future<StockState> fetchSnapshot() async {
     final items = await _inventoryRepository.fetchStockItems();
@@ -321,8 +324,19 @@ class StockController {
       );
     }).toList();
     
-    // Combiner et trier par date (plus récent en premier)
-    final allMovements = [...unifiedBobineMovements, ...unifiedPackagingMovements];
+    // Récupérer les mouvements de ventes depuis StockRepository
+    final saleMovements = await _stockRepository.fetchMovements(
+      productId: null, // Récupérer tous les produits
+      startDate: startDate,
+      endDate: endDate,
+    );
+    
+    // Combiner tous les mouvements et trier par date (plus récent en premier)
+    final allMovements = [
+      ...unifiedBobineMovements,
+      ...unifiedPackagingMovements,
+      ...saleMovements,
+    ];
     allMovements.sort((a, b) => b.date.compareTo(a.date));
     
     return allMovements;

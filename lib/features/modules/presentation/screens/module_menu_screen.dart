@@ -12,6 +12,12 @@ class ModuleMenuScreen extends StatelessWidget {
       icon: Icons.admin_panel_settings_outlined,
     ),
     _ModuleEntry(
+      name: 'Trésorerie',
+      route: '/treasury',
+      description: 'Gestion centralisée de la trésorerie pour tous les modules.',
+      icon: Icons.account_balance,
+    ),
+    _ModuleEntry(
       name: 'Eau Minérale',
       route: '/modules/eau_sachet',
       description: "Suivi de production et des ventes de sachets d'eau.",

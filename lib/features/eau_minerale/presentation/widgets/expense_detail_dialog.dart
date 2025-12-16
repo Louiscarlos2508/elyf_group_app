@@ -97,33 +97,6 @@ class ExpenseDetailDialog extends StatelessWidget {
                   value: _formatDate(expense.date),
                   icon: Icons.calendar_today,
                 ),
-                if (expense.estLieeAProduction) ...[
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.blue.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.factory,
-                          color: Colors.blue.shade700,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Liée à une production',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: Colors.blue.shade700,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
                 if (expense.notes != null && expense.notes!.isNotEmpty) ...[
                   const SizedBox(height: 16),
                   _DetailRow(

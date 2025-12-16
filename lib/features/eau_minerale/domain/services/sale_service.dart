@@ -1,8 +1,7 @@
 import '../entities/sale.dart';
-import '../entities/stock_item.dart';
+import '../entities/stock_movement.dart';
 import '../repositories/sale_repository.dart';
 import '../repositories/stock_repository.dart';
-import '../repositories/inventory_repository.dart';
 import '../repositories/credit_repository.dart';
 
 /// Business logic service for sales with automatic stock and credit management.
@@ -10,25 +9,24 @@ class SaleService {
   const SaleService({
     required this.saleRepository,
     required this.stockRepository,
-    required this.inventoryRepository,
     required this.creditRepository,
   });
 
   final SaleRepository saleRepository;
   final StockRepository stockRepository;
-  final InventoryRepository inventoryRepository;
   final CreditRepository creditRepository;
 
-  /// Creates a sale and handles validation workflow.
-  Future<String> createSale(Sale sale, String userId, bool isManager) async {
+  /// Creates a sale directly (no validation workflow).
+  /// Stock is updated immediately upon sale creation.
+  Future<String> createSale(Sale sale, String userId) async {
     // Check stock availability
     final currentStock = await stockRepository.getStock(sale.productId);
     if (currentStock < sale.quantity) {
       throw Exception('Stock insuffisant. Disponible: $currentStock');
     }
 
-    // Determine initial status
-    final status = isManager ? SaleStatus.validated : SaleStatus.pending;
+    // Determine status: fullyPaid if completely paid, otherwise validated (credit sale)
+    final status = sale.isFullyPaid ? SaleStatus.fullyPaid : SaleStatus.validated;
 
     final saleWithStatus = Sale(
       id: sale.id,
@@ -46,18 +44,31 @@ class SaleService {
       createdBy: userId,
       customerCnib: sale.customerCnib,
       notes: sale.notes,
+      cashAmount: sale.cashAmount,
+      orangeMoneyAmount: sale.orangeMoneyAmount,
+      productionSessionId: sale.productionSessionId,
     );
 
     final saleId = await saleRepository.createSale(saleWithStatus);
 
-    // If validated by manager, update stock immediately
-    if (status == SaleStatus.validated) {
-      final newStock = currentStock - sale.quantity;
-      await stockRepository.updateStock(sale.productId, newStock);
-      
-      // Synchroniser avec InventoryRepository si c'est un produit fini (pack)
-      await _syncInventoryStock(sale.productId, sale.productName, newStock);
-    }
+    // Update stock immediately (direct sale system)
+    final newStock = currentStock - sale.quantity;
+    await stockRepository.updateStock(sale.productId, newStock);
+
+    // Enregistrer le mouvement de stock pour la vente
+    final movement = StockMovement(
+      id: 'sale-$saleId',
+      date: sale.date,
+      productName: sale.productName,
+      type: StockMovementType.exit,
+      reason: 'Vente',
+      quantity: sale.quantity.toDouble(),
+      unit: 'unité',
+      notes: sale.customerName.isNotEmpty 
+          ? 'Client: ${sale.customerName}${sale.customerPhone.isNotEmpty ? ' (${sale.customerPhone})' : ''}'
+          : null,
+    );
+    await stockRepository.recordMovement(movement);
 
     return saleId;
   }
@@ -76,9 +87,7 @@ class SaleService {
 
     final newStock = currentStock - sale.quantity;
     await stockRepository.updateStock(sale.productId, newStock);
-    
-    // Synchroniser avec InventoryRepository si c'est un produit fini (pack)
-    await _syncInventoryStock(sale.productId, sale.productName, newStock);
+    // StockRepository utilise maintenant InventoryRepository en interne, pas besoin de synchronisation
 
     await saleRepository.validateSale(saleId, validatedBy);
   }
@@ -86,38 +95,5 @@ class SaleService {
   /// Rejects a pending sale.
   Future<void> rejectSale(String saleId, String rejectedBy) async {
     await saleRepository.rejectSale(saleId, rejectedBy);
-  }
-
-  /// Synchronise le stock entre StockRepository et InventoryRepository.
-  /// Cherche un StockItem correspondant au produit (par nom) et met à jour sa quantité.
-  Future<void> _syncInventoryStock(String productId, String productName, int newStock) async {
-    try {
-      final stockItems = await inventoryRepository.fetchStockItems();
-      StockItem? packItem;
-      try {
-        packItem = stockItems.firstWhere(
-          (item) =>
-              item.type == StockType.finishedGoods &&
-              (item.name.toLowerCase().contains('pack') ||
-                  item.name.toLowerCase().contains(productName.toLowerCase())),
-        );
-      } catch (_) {
-        // Aucun item trouvé, on ne fait rien
-        return;
-      }
-      
-      final updatedItem = StockItem(
-        id: packItem.id,
-        name: packItem.name,
-        quantity: newStock.toDouble(),
-        unit: packItem.unit,
-        type: packItem.type,
-        updatedAt: DateTime.now(),
-      );
-      await inventoryRepository.updateStockItem(updatedItem);
-    } catch (e) {
-      // Si la synchronisation échoue, on continue quand même
-      // (le stock dans StockRepository est déjà mis à jour)
-    }
   }
 }

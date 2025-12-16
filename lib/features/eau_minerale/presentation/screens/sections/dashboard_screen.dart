@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../../shared/presentation/widgets/refresh_button.dart';
 import '../../../application/providers.dart';
 import '../../../domain/entities/stock_item.dart';
 import '../../widgets/dashboard_header.dart';
-import '../../widgets/dashboard_month_section.dart';
-import '../../widgets/dashboard_operations_section.dart';
 import '../../widgets/dashboard_stock_list.dart';
 import '../../widgets/dashboard_today_section.dart';
 import '../../widgets/section_placeholder.dart';
@@ -20,15 +19,41 @@ class DashboardScreen extends ConsumerWidget {
     final salesState = ref.watch(salesStateProvider);
     // TODO: Réimplémenter avec productionSessionsStateProvider
     // final productionState = ref.watch(productionStateProvider);
-    final financesState = ref.watch(financesStateProvider);
-    final clientsState = ref.watch(clientsStateProvider);
     final stockState = ref.watch(stockStateProvider);
 
     return Scaffold(
       body: CustomScrollView(
         slivers: [
           SliverToBoxAdapter(
-            child: DashboardHeader(date: DateTime.now(), role: 'Responsable'),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isWide = constraints.maxWidth > 600;
+                return Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    24,
+                    24,
+                    24,
+                    isWide ? 24 : 16,
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: DashboardHeader(date: DateTime.now(), role: 'Responsable'),
+                      ),
+                      RefreshButton(
+                        onRefresh: () {
+                          ref.invalidate(salesStateProvider);
+                          ref.invalidate(financesStateProvider);
+                          ref.invalidate(clientsStateProvider);
+                          ref.invalidate(stockStateProvider);
+                        },
+                        tooltip: 'Actualiser le tableau de bord',
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
           ),
           SliverToBoxAdapter(
             child: stockState.when(

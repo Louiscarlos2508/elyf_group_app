@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../application/controllers/clients_controller.dart';
 import '../../../application/providers.dart';
 import '../../../domain/entities/customer_credit.dart';
+import '../../../domain/entities/sale.dart';
+import '../../../domain/repositories/customer_repository.dart';
 import '../../widgets/credit_history_dialog.dart';
 import '../../widgets/credit_payment_dialog.dart';
 import '../../widgets/credits_customers_list.dart';
@@ -13,85 +15,107 @@ import '../../widgets/section_placeholder.dart';
 class ClientsScreen extends ConsumerWidget {
   const ClientsScreen({super.key});
 
-  void _showPaymentDialog(BuildContext context, WidgetRef ref, String customerId) {
-    final state = ref.read(clientsStateProvider);
-    state.when(
-      data: (data) {
-        if (data.customers.isEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Aucun client trouvé')),
-          );
-          return;
-        }
-        
-        final customer = data.customers.firstWhere(
-          (c) => c.id == customerId,
-          orElse: () => data.customers.first,
-        );
-        
-        if (customer.totalCredit > 0) {
-          showDialog(
-            context: context,
-            builder: (context) => CreditPaymentDialog(
-              customerId: customerId,
-              customerName: customer.name,
-              totalCredit: customer.totalCredit,
-            ),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Ce client n\'a pas de crédit en cours')),
-          );
-        }
-      },
-      loading: () {
+  Future<void> _showPaymentDialog(
+    BuildContext context,
+    WidgetRef ref,
+    String customerId,
+  ) async {
+    final creditRepo = ref.read(creditRepositoryProvider);
+    final customerRepo = ref.read(customerRepositoryProvider);
+    
+    try {
+      // Charger les crédits réels du client
+      final allCreditSales = await creditRepo.fetchCreditSales();
+      final customerCreditSales = allCreditSales
+          .where((s) => s.customerId == customerId && s.isCredit && s.isValidated)
+          .toList();
+      
+      if (customerCreditSales.isEmpty) {
+        if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Chargement en cours...')),
+          const SnackBar(content: Text('Ce client n\'a pas de crédit en cours')),
         );
-      },
-      error: (error, stackTrace) {
+        return;
+      }
+      
+      // Calculer le crédit total réel
+      int totalCreditReal = 0;
+      for (final sale in customerCreditSales) {
+        final payments = await creditRepo.fetchSalePayments(sale.id);
+        final totalPaidFromPayments = payments.fold<int>(0, (sum, p) => sum + p.amount);
+        final totalAmountPaid = sale.amountPaid + totalPaidFromPayments;
+        final remaining = sale.totalPrice - totalAmountPaid;
+        if (remaining > 0) {
+          totalCreditReal += remaining;
+        }
+      }
+      
+      if (totalCreditReal <= 0) {
+        if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur: ${error.toString()}')),
+          const SnackBar(content: Text('Ce client n\'a pas de crédit en cours')),
         );
-      },
-    );
+        return;
+      }
+      
+      // Récupérer le nom du client
+      final customer = await customerRepo.getCustomer(customerId);
+      final customerName = customer?.name ?? 
+          (customerCreditSales.isNotEmpty ? customerCreditSales.first.customerName : 'Client');
+      
+      if (!context.mounted) return;
+      
+      showDialog(
+        context: context,
+        builder: (context) => CreditPaymentDialog(
+          customerId: customerId,
+          customerName: customerName,
+          totalCredit: totalCreditReal,
+        ),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur: ${e.toString()}')),
+      );
+    }
   }
 
-  void _showHistoryDialog(BuildContext context, WidgetRef ref, String customerId) {
-    final state = ref.read(clientsStateProvider);
-    state.when(
-      data: (data) {
-        if (data.customers.isEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Aucun client trouvé')),
-          );
-          return;
-        }
-        
-        final customer = data.customers.firstWhere(
-          (c) => c.id == customerId,
-          orElse: () => data.customers.first,
-        );
-        
-        showDialog(
-          context: context,
-          builder: (context) => CreditHistoryDialog(
-            customerId: customerId,
-            customerName: customer.name,
-          ),
-        );
-      },
-      loading: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Chargement en cours...')),
-        );
-      },
-      error: (error, stackTrace) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur: ${error.toString()}')),
-        );
-      },
-    );
+  Future<void> _showHistoryDialog(
+    BuildContext context,
+    WidgetRef ref,
+    String customerId,
+  ) async {
+    final creditRepo = ref.read(creditRepositoryProvider);
+    final customerRepo = ref.read(customerRepositoryProvider);
+    
+    try {
+      // Vérifier que le client a des crédits
+      final allCreditSales = await creditRepo.fetchCreditSales();
+      final customerCreditSales = allCreditSales
+          .where((s) => s.customerId == customerId && s.isCredit && s.isValidated)
+          .toList();
+      
+      // Récupérer le nom du client
+      final customer = await customerRepo.getCustomer(customerId);
+      final customerName = customer?.name ?? 
+          (customerCreditSales.isNotEmpty ? customerCreditSales.first.customerName : 'Client');
+      
+      if (!context.mounted) return;
+      
+      showDialog(
+        context: context,
+        builder: (context) => CreditHistoryDialog(
+          customerId: customerId,
+          customerName: customerName,
+        ),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur: ${e.toString()}')),
+      );
+    }
   }
 
   @override
@@ -100,8 +124,12 @@ class ClientsScreen extends ConsumerWidget {
     return state.when(
       data: (data) => _CreditsContent(
         state: data,
-        onPaymentTap: (customerId) => _showPaymentDialog(context, ref, customerId),
-        onHistoryTap: (customerId) => _showHistoryDialog(context, ref, customerId),
+        onPaymentTap: (customerId) async {
+          await _showPaymentDialog(context, ref, customerId);
+        },
+        onHistoryTap: (customerId) async {
+          await _showHistoryDialog(context, ref, customerId);
+        },
       ),
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stackTrace) => SectionPlaceholder(
@@ -115,7 +143,7 @@ class ClientsScreen extends ConsumerWidget {
   }
 }
 
-class _CreditsContent extends ConsumerWidget {
+class _CreditsContent extends ConsumerStatefulWidget {
   const _CreditsContent({
     required this.state,
     required this.onPaymentTap,
@@ -126,11 +154,23 @@ class _CreditsContent extends ConsumerWidget {
   final void Function(String customerId) onPaymentTap;
   final void Function(String customerId) onHistoryTap;
 
+  @override
+  ConsumerState<_CreditsContent> createState() => _CreditsContentState();
+}
+
+class _CreditsContentState extends ConsumerState<_CreditsContent> {
+  int _refreshKey = 0;
+
+  void _refresh() {
+    ref.invalidate(clientsStateProvider);
+    setState(() {
+      _refreshKey++;
+    });
+  }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final customersWithCredit = state.customers.where((c) => c.totalCredit > 0).length;
     
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -138,89 +178,39 @@ class _CreditsContent extends ConsumerWidget {
         
         return CustomScrollView(
           slivers: [
-            // Header
+            // Header - Style uniforme avec les autres pages
             SliverToBoxAdapter(
-              child: Container(
-                margin: EdgeInsets.fromLTRB(
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(
                   24,
                   24,
                   24,
                   isWide ? 24 : 16,
                 ),
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      theme.colorScheme.primaryContainer,
-                      theme.colorScheme.primaryContainer.withValues(alpha: 0.5),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
                 child: Row(
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.primary.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(
-                        Icons.account_balance_wallet,
-                        color: theme.colorScheme.primary,
-                        size: 32,
+                    Text(
+                      'Gestion des Crédits Clients',
+                      style: theme.textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(width: 20),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Gestion des Crédits Clients',
-                            style: theme.textTheme.headlineMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: theme.colorScheme.onPrimaryContainer,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Suivi et encaissement des crédits clients',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.onPrimaryContainer.withValues(alpha: 0.8),
-                            ),
-                          ),
-                        ],
-                      ),
+                    const Spacer(),
+                    IconButton(
+                      icon: const Icon(Icons.refresh),
+                      onPressed: _refresh,
+                      tooltip: 'Actualiser les crédits',
                     ),
                   ],
                 ),
               ),
             ),
-            // KPI Section
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: CreditsKpiSection(
-                  totalCredit: state.totalCredit,
-                  customersWithCredit: customersWithCredit,
-                ),
-              ),
-            ),
-            // Customers List
+            // KPI Section and Customers List (calculated from real credits)
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
-                child: FutureBuilder<Map<String, List<CustomerCredit>>>(
+                child: FutureBuilder<_CreditsData>(
+                  key: ValueKey(_refreshKey),
                   future: _loadAllCredits(ref),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
@@ -232,13 +222,60 @@ class _CreditsContent extends ConsumerWidget {
                       );
                     }
 
-                    final creditsMap = snapshot.data ?? {};
+                    final creditsData = snapshot.data ?? _CreditsData(
+                      creditsMap: <String, List<CustomerCredit>>{},
+                      customersMap: <String, CustomerSummary>{},
+                    );
+                    final creditsMap = creditsData.creditsMap;
+                    final allCustomersMap = creditsData.customersMap;
                     
-                    return CreditsCustomersList(
-                      customers: state.customers,
-                      getCredits: (customer) => creditsMap[customer.id] ?? [],
-                      onHistoryTap: onHistoryTap,
-                      onPaymentTap: onPaymentTap,
+                    // Combiner les clients de widget.state.customers avec ceux qui ont des crédits
+                    final allCustomersList = <CustomerSummary>[];
+                    final existingCustomerIds = widget.state.customers.map((c) => c.id).toSet();
+                    
+                    // Ajouter les clients de widget.state.customers
+                    allCustomersList.addAll(widget.state.customers);
+                    
+                    // Ajouter les clients qui ont des crédits mais ne sont pas dans state.customers
+                    for (final entry in allCustomersMap.entries) {
+                      if (!existingCustomerIds.contains(entry.key)) {
+                        allCustomersList.add(entry.value);
+                      }
+                    }
+                    
+                    // Calculer les KPI à partir des crédits réels
+                    int totalCreditReal = 0;
+                    int customersWithCreditReal = 0;
+                    
+                    for (final customer in allCustomersList) {
+                      final credits = creditsMap[customer.id] ?? [];
+                      final totalCreditFromCredits = credits.fold<int>(
+                        0,
+                        (sum, credit) => sum + credit.remainingAmount,
+                      );
+                      if (totalCreditFromCredits > 0) {
+                        totalCreditReal += totalCreditFromCredits;
+                        customersWithCreditReal++;
+                      }
+                    }
+                    
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // KPI Section
+                        CreditsKpiSection(
+                          totalCredit: totalCreditReal,
+                          customersWithCredit: customersWithCreditReal,
+                        ),
+                        const SizedBox(height: 32),
+                        // Customers List
+                        CreditsCustomersList(
+                          customers: allCustomersList,
+                          getCredits: (customer) => creditsMap[customer.id] ?? [],
+                          onHistoryTap: widget.onHistoryTap,
+                          onPaymentTap: widget.onPaymentTap,
+                        ),
+                      ],
                     );
                   },
                 ),
@@ -253,20 +290,47 @@ class _CreditsContent extends ConsumerWidget {
     );
   }
 
-  Future<Map<String, List<CustomerCredit>>> _loadAllCredits(WidgetRef ref) async {
+  Future<_CreditsData> _loadAllCredits(WidgetRef ref) async {
     final creditRepo = ref.read(creditRepositoryProvider);
+    final customerRepo = ref.read(customerRepositoryProvider);
     final creditsMap = <String, List<CustomerCredit>>{};
+    final customersMap = <String, CustomerSummary>{};
 
-    for (final customer in state.customers) {
+    // Charger toutes les ventes en crédit validées (pas seulement celles des clients dans state.customers)
+    final allCreditSales = await creditRepo.fetchCreditSales();
+    
+    // Grouper les ventes par customerId
+    final salesByCustomer = <String, List<Sale>>{};
+    for (final sale in allCreditSales) {
+      if (sale.customerId.isNotEmpty && !sale.customerId.startsWith('temp-')) {
+        salesByCustomer.putIfAbsent(sale.customerId, () => []).add(sale);
+      }
+    }
+
+    // Charger les crédits pour chaque client ayant des ventes en crédit
+    for (final entry in salesByCustomer.entries) {
+      final customerId = entry.key;
+      final creditSales = entry.value;
+      
       try {
-        // Charger uniquement les ventes en crédit validées
-        final sales = await creditRepo.fetchCustomerCredits(customer.id);
-        final creditSales = sales.where((s) => s.isCredit && s.isValidated).toList();
+        // Essayer de récupérer le client depuis le repository
+        CustomerSummary? customer = await customerRepo.getCustomer(customerId);
         
-        if (creditSales.isEmpty) {
-          creditsMap[customer.id] = [];
-          continue;
+        // Si le client n'existe pas, créer un CustomerSummary temporaire à partir de la première vente
+        if (customer == null && creditSales.isNotEmpty) {
+          final firstSale = creditSales.first;
+          customer = CustomerSummary(
+            id: customerId,
+            name: firstSale.customerName,
+            phone: firstSale.customerPhone,
+            totalCredit: 0, // Sera calculé plus tard
+            purchaseCount: creditSales.length,
+            lastPurchaseDate: creditSales.map((s) => s.date).reduce((a, b) => a.isAfter(b) ? a : b),
+            cnib: firstSale.customerCnib,
+          );
         }
+        
+        if (customer == null) continue;
         
         final credits = await Future.wait(
           creditSales.map((sale) async {
@@ -290,12 +354,25 @@ class _CreditsContent extends ConsumerWidget {
         
         // Ne garder que les crédits avec un montant restant > 0
         final validCredits = credits.where((c) => c.remainingAmount > 0).toList();
-        creditsMap[customer.id] = validCredits;
+        if (validCredits.isNotEmpty) {
+          creditsMap[customerId] = validCredits;
+          customersMap[customerId] = customer;
+        }
       } catch (e) {
-        creditsMap[customer.id] = [];
+        // Ignorer les erreurs pour ce client
       }
     }
 
-    return creditsMap;
+    return _CreditsData(creditsMap: creditsMap, customersMap: customersMap);
   }
+}
+
+class _CreditsData {
+  const _CreditsData({
+    required this.creditsMap,
+    required this.customersMap,
+  });
+
+  final Map<String, List<CustomerCredit>> creditsMap;
+  final Map<String, CustomerSummary> customersMap;
 }

@@ -20,7 +20,7 @@ class ExpenseBalanceScreen extends ConsumerStatefulWidget {
   });
 
   final String moduleName;
-  final dynamic expensesProvider; // Accepts any provider type (auto-dispose or always-alive)
+  final dynamic expensesProvider; // Provider that returns AsyncValue<List<ExpenseBalanceData>>
   final ExpenseBalanceAdapter adapter;
 
   @override
@@ -54,7 +54,7 @@ class _ExpenseBalanceScreenState
 
   @override
   Widget build(BuildContext context) {
-    final expensesAsync = ref.watch(widget.expensesProvider);
+    final expensesAsync = ref.watch(widget.expensesProvider) as AsyncValue<List<ExpenseBalanceData>>;
 
     return Scaffold(
       appBar: AppBar(

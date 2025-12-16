@@ -169,9 +169,16 @@ class MockReportRepository implements ReportRepository {
     await Future<void>.delayed(const Duration(milliseconds: 300));
     
     final expenses = await financeRepository.fetchRecentExpenses(limit: 1000);
+    // Filtrer les dépenses dans la période (inclusif des dates de début et fin)
     final periodExpenses = expenses.where((expense) {
-      return expense.date.isAfter(period.startDate.subtract(const Duration(days: 1))) &&
-          expense.date.isBefore(period.endDate.add(const Duration(days: 1)));
+      final expenseDate = DateTime(expense.date.year, expense.date.month, expense.date.day);
+      final startDate = DateTime(period.startDate.year, period.startDate.month, period.startDate.day);
+      final endDate = DateTime(period.endDate.year, period.endDate.month, period.endDate.day);
+      
+      return (expenseDate.isAfter(startDate.subtract(const Duration(days: 1))) &&
+              expenseDate.isBefore(endDate.add(const Duration(days: 1)))) ||
+             expenseDate.isAtSameMomentAs(startDate) ||
+             expenseDate.isAtSameMomentAs(endDate);
     }).toList();
 
     final totalAmount = periodExpenses.fold(0, (sum, e) => sum + e.amountCfa);

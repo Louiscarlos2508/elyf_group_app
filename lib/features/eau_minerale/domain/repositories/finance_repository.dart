@@ -4,4 +4,5 @@ import '../entities/expense_record.dart';
 abstract class FinanceRepository {
   Future<List<ExpenseRecord>> fetchRecentExpenses({int limit = 10});
   Future<String> createExpense(ExpenseRecord expense);
+  Future<void> updateExpense(ExpenseRecord expense);
 }

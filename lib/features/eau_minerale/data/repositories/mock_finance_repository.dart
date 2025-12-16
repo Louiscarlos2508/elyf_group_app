@@ -24,14 +24,27 @@ class MockFinanceRepository implements FinanceRepository {
   @override
   Future<String> createExpense(ExpenseRecord expense) async {
     await Future<void>.delayed(const Duration(milliseconds: 150));
-    final id = 'expense-${_expenses.length}';
+    final id = expense.id.isEmpty ? 'expense-${_expenses.length}' : expense.id;
     _expenses[id] = ExpenseRecord(
       id: id,
       label: expense.label,
       amountCfa: expense.amountCfa,
       category: expense.category,
       date: expense.date,
+      productionId: expense.productionId,
+      notes: expense.notes,
+      createdAt: expense.createdAt ?? DateTime.now(),
+      updatedAt: DateTime.now(),
     );
     return id;
+  }
+
+  @override
+  Future<void> updateExpense(ExpenseRecord expense) async {
+    await Future<void>.delayed(const Duration(milliseconds: 150));
+    if (!_expenses.containsKey(expense.id)) {
+      throw Exception('Dépense introuvable');
+    }
+    _expenses[expense.id] = expense.copyWith(updatedAt: DateTime.now());
   }
 }

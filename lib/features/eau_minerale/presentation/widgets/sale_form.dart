@@ -160,7 +160,7 @@ class SaleFormState extends ConsumerState<SaleForm> {
         date: DateTime.now(),
         status: (_totalPrice! - _amountPaid!) == 0
             ? SaleStatus.fullyPaid
-            : SaleStatus.pending,
+            : SaleStatus.validated, // Direct validation for credit sales
         createdBy: 'user-1',
         notes: null,
         cashAmount: _cashAmount,
@@ -168,13 +168,14 @@ class SaleFormState extends ConsumerState<SaleForm> {
       );
 
       final userId = ref.read(currentUserIdProvider);
-      // TODO: Récupérer le rôle réel de l'utilisateur
-      // Pour l'instant, on considère que l'utilisateur est manager s'il a la permission de valider
-      final isManager = true; // À remplacer par la vérification réelle des permissions
       
-      await ref.read(salesControllerProvider).createSale(sale, userId, isManager);
+      await ref.read(salesControllerProvider).createSale(sale, userId);
 
       if (!mounted) return;
+      // Invalider les providers pour rafraîchir les données
+      ref.invalidate(salesStateProvider);
+      ref.invalidate(stockStateProvider);
+      ref.invalidate(clientsStateProvider);
       Navigator.of(context).pop();
       ref.invalidate(salesStateProvider);
       ScaffoldMessenger.of(context).showSnackBar(

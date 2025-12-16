@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:open_file/open_file.dart';
 
+import '../../../../../shared/presentation/widgets/refresh_button.dart';
 import '../../../../../core/pdf/eau_minerale_report_pdf_service.dart';
 import '../../../application/providers.dart';
 import '../../../domain/entities/report_period.dart';
@@ -41,9 +42,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   ) async {
     final picked = await showDatePicker(
       context: context,
-      initialDate: isStartDate
-          ? (_startDate ?? DateTime.now())
-          : (_endDate ?? DateTime.now()),
+      initialDate: isStartDate ? _startDate : _endDate,
       firstDate: DateTime(2020),
       lastDate: DateTime.now(),
     );
@@ -59,14 +58,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   }
 
   Future<void> _downloadReport() async {
-    if (_startDate == null || _endDate == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Veuillez sélectionner une période'),
-        ),
-      );
-      return;
-    }
+    // _startDate and _endDate are initialized in initState, so they're never null
 
     try {
       // Afficher un indicateur de chargement
@@ -138,11 +130,29 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                   24,
                   isWide ? 24 : 16,
                 ),
-                child: Text(
-                  'Rapports',
-                  style: theme.textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                child: Row(
+                  children: [
+                    Text(
+                      'Rapports',
+                      style: theme.textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const Spacer(),
+                    RefreshButton(
+                      onRefresh: () {
+                        // Invalider les providers de rapports pour forcer le rafraîchissement
+                        final period = ReportPeriod(startDate: _startDate, endDate: _endDate);
+                        ref.invalidate(reportDataProvider(period));
+                        ref.invalidate(reportSalesProvider(period));
+                        ref.invalidate(reportProductSummaryProvider(period));
+                        ref.invalidate(reportProductionProvider(period));
+                        ref.invalidate(reportExpenseProvider(period));
+                        ref.invalidate(reportSalaryProvider(period));
+                      },
+                      tooltip: 'Actualiser les rapports',
+                    ),
+                  ],
                 ),
               ),
             ),

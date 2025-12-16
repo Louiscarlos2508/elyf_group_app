@@ -1,4 +1,3 @@
-import '../../domain/entities/bobine_usage.dart';
 import '../../domain/entities/production_session.dart';
 import '../../domain/repositories/production_session_repository.dart';
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../../shared/presentation/widgets/refresh_button.dart';
 import '../../../application/providers.dart';
 import '../../widgets/fixed_employee_form.dart';
 import '../../widgets/fixed_employees_content.dart';
@@ -87,6 +88,11 @@ class _SalariesScreenState extends ConsumerState<SalariesScreen> {
                       style: theme.textTheme.headlineMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
+                    ),
+                    const Spacer(),
+                    RefreshButton(
+                      onRefresh: () => ref.invalidate(salaryStateProvider),
+                      tooltip: 'Actualiser les salaires',
                     ),
                   ],
                 ),
