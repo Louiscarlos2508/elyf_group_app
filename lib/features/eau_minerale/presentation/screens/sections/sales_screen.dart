@@ -111,32 +111,66 @@ class _SalesContent extends StatelessWidget {
                   24,
                   isWide ? 24 : 16,
                 ),
-                child: Row(
-                  children: [
-                    Text(
-                      'Ventes',
-                      style: theme.textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
+                child: isWide
+                    ? Row(
+                        children: [
+                          Text(
+                            'Ventes',
+                            style: theme.textTheme.headlineMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const Spacer(),
+                          RefreshButton(
+                            onRefresh: () => ref.invalidate(salesStateProvider),
+                            tooltip: 'Actualiser les ventes',
+                          ),
+                          const SizedBox(width: 8),
+                          EauMineralePermissionGuard(
+                            permission: EauMineralePermissions.createSale,
+                            child: IntrinsicWidth(
+                              child: FilledButton.icon(
+                                onPressed: onNewSale,
+                                icon: const Icon(Icons.add),
+                                label: const Text('Nouvelle Vente'),
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  'Ventes',
+                                  style: theme.textTheme.headlineMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              RefreshButton(
+                                onRefresh: () => ref.invalidate(salesStateProvider),
+                                tooltip: 'Actualiser les ventes',
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          EauMineralePermissionGuard(
+                            permission: EauMineralePermissions.createSale,
+                            child: SizedBox(
+                              width: double.infinity,
+                              child: FilledButton.icon(
+                                onPressed: onNewSale,
+                                icon: const Icon(Icons.add),
+                                label: const Text('Nouvelle Vente'),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    const Spacer(),
-                    RefreshButton(
-                      onRefresh: () => ref.invalidate(salesStateProvider),
-                      tooltip: 'Actualiser les ventes',
-                    ),
-                    const SizedBox(width: 8),
-                    EauMineralePermissionGuard(
-                      permission: EauMineralePermissions.createSale,
-                      child: IntrinsicWidth(
-                        child: FilledButton.icon(
-                          onPressed: onNewSale,
-                          icon: const Icon(Icons.add),
-                          label: const Text('Nouvelle Vente'),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
               ),
             ),
             SliverToBoxAdapter(

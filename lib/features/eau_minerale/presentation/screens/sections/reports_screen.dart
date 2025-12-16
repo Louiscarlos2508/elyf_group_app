@@ -130,30 +130,61 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                   24,
                   isWide ? 24 : 16,
                 ),
-                child: Row(
-                  children: [
-                    Text(
-                      'Rapports',
-                      style: theme.textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
+                child: isWide
+                    ? Row(
+                        children: [
+                          Text(
+                            'Rapports',
+                            style: theme.textTheme.headlineMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const Spacer(),
+                          RefreshButton(
+                            onRefresh: () {
+                              // Invalider les providers de rapports pour forcer le rafraîchissement
+                              final period = ReportPeriod(startDate: _startDate, endDate: _endDate);
+                              ref.invalidate(reportDataProvider(period));
+                              ref.invalidate(reportSalesProvider(period));
+                              ref.invalidate(reportProductSummaryProvider(period));
+                              ref.invalidate(reportProductionProvider(period));
+                              ref.invalidate(reportExpenseProvider(period));
+                              ref.invalidate(reportSalaryProvider(period));
+                            },
+                            tooltip: 'Actualiser les rapports',
+                          ),
+                        ],
+                      )
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  'Rapports',
+                                  style: theme.textTheme.headlineMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              RefreshButton(
+                                onRefresh: () {
+                                  // Invalider les providers de rapports pour forcer le rafraîchissement
+                                  final period = ReportPeriod(startDate: _startDate, endDate: _endDate);
+                                  ref.invalidate(reportDataProvider(period));
+                                  ref.invalidate(reportSalesProvider(period));
+                                  ref.invalidate(reportProductSummaryProvider(period));
+                                  ref.invalidate(reportProductionProvider(period));
+                                  ref.invalidate(reportExpenseProvider(period));
+                                  ref.invalidate(reportSalaryProvider(period));
+                                },
+                                tooltip: 'Actualiser les rapports',
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
-                    ),
-                    const Spacer(),
-                    RefreshButton(
-                      onRefresh: () {
-                        // Invalider les providers de rapports pour forcer le rafraîchissement
-                        final period = ReportPeriod(startDate: _startDate, endDate: _endDate);
-                        ref.invalidate(reportDataProvider(period));
-                        ref.invalidate(reportSalesProvider(period));
-                        ref.invalidate(reportProductSummaryProvider(period));
-                        ref.invalidate(reportProductionProvider(period));
-                        ref.invalidate(reportExpenseProvider(period));
-                        ref.invalidate(reportSalaryProvider(period));
-                      },
-                      tooltip: 'Actualiser les rapports',
-                    ),
-                  ],
-                ),
               ),
             ),
             SliverToBoxAdapter(

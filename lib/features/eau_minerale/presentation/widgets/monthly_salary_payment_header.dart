@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../shared/utils/currency_formatter.dart';
 import '../../domain/entities/employee.dart';
 
 /// Header section showing employee info and monthly salary.
@@ -11,12 +12,6 @@ class MonthlySalaryPaymentHeader extends StatelessWidget {
 
   final Employee employee;
 
-  String _formatCurrency(int amount) {
-    return amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        ) + ' FCFA';
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -78,7 +73,7 @@ class MonthlySalaryPaymentHeader extends StatelessWidget {
                 style: theme.textTheme.bodyLarge,
               ),
               Text(
-                _formatCurrency(employee.monthlySalary),
+                CurrencyFormatter.format(employee.monthlySalary),
                 style: theme.textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: theme.colorScheme.primary,

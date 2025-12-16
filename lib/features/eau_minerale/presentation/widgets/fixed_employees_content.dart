@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/providers.dart';
-import '../../domain/entities/employee.dart';
 import 'employee_payment_card.dart';
 
 /// Content widget for fixed employees tab.
@@ -35,11 +34,45 @@ class FixedEmployeesContent extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Column(
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final isWide = constraints.maxWidth > 600;
+                  
+                  if (isWide) {
+                    return Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Employés à Salaire Mensuel',
+                                style: theme.textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Gérez vos employés permanents et enregistrez leurs salaires mensuels',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IntrinsicWidth(
+                          child: FilledButton.icon(
+                            onPressed: onNewEmployee,
+                            icon: const Icon(Icons.add),
+                            label: const Text('Nouvel Employé'),
+                          ),
+                        ),
+                      ],
+                    );
+                  } else {
+                    return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
@@ -55,17 +88,19 @@ class FixedEmployeesContent extends ConsumerWidget {
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
                         ),
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          width: double.infinity,
+                          child: FilledButton.icon(
+                            onPressed: onNewEmployee,
+                            icon: const Icon(Icons.add),
+                            label: const Text('Nouvel Employé'),
+                          ),
+                        ),
                       ],
-                    ),
-                  ),
-                  IntrinsicWidth(
-                    child: FilledButton.icon(
-                      onPressed: onNewEmployee,
-                      icon: const Icon(Icons.add),
-                      label: const Text('Nouvel Employé'),
-                    ),
-                  ),
-                ],
+                    );
+                  }
+                },
               ),
               if (employees.isEmpty) ...[
                 const SizedBox(height: 48),

@@ -35,11 +35,45 @@ class ProductionPaymentsContent extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Column(
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final isWide = constraints.maxWidth > 600;
+                  
+                  if (isWide) {
+                    return Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Paiements Production / Hebdomadaires',
+                                style: theme.textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Enregistrez les paiements pour les productions de la semaine (prestataires, ouvriers occasionnels)',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IntrinsicWidth(
+                          child: FilledButton.icon(
+                            onPressed: onNewPayment,
+                            icon: const Icon(Icons.add),
+                            label: const Text('Nouveau Paiement'),
+                          ),
+                        ),
+                      ],
+                    );
+                  } else {
+                    return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
@@ -55,17 +89,19 @@ class ProductionPaymentsContent extends ConsumerWidget {
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
                         ),
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          width: double.infinity,
+                          child: FilledButton.icon(
+                            onPressed: onNewPayment,
+                            icon: const Icon(Icons.add),
+                            label: const Text('Nouveau Paiement'),
+                          ),
+                        ),
                       ],
-                    ),
-                  ),
-                  IntrinsicWidth(
-                    child: FilledButton.icon(
-                      onPressed: onNewPayment,
-                      icon: const Icon(Icons.add),
-                      label: const Text('Nouveau Paiement'),
-                    ),
-                  ),
-                ],
+                    );
+                  }
+                },
               ),
               const SizedBox(height: 24),
               // Calculateur de salaires hebdomadaires (toujours visible)

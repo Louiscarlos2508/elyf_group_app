@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../shared/utils/currency_formatter.dart';
+import '../../application/providers.dart';
 import '../../domain/entities/employee.dart';
 import '../../domain/entities/salary_payment.dart';
 import 'form_dialog.dart';
@@ -19,20 +21,34 @@ class EmployeePaymentCard extends ConsumerWidget {
   final List<SalaryPayment> monthlyPayments;
 
   void _showPaymentForm(BuildContext context, WidgetRef ref) {
-    final formKey = GlobalKey<MonthlySalaryPaymentFormState>();
+    final stateAsync = ref.read(salaryStateProvider);
+    final existingPayments = stateAsync.maybeWhen(
+      data: (data) => data.monthlySalaryPayments
+          .where((p) => p.employeeId == employee.id)
+          .toList(),
+      orElse: () => <SalaryPayment>[],
+    );
+
     showDialog(
       context: context,
-      builder: (context) => FormDialog(
-        title: 'Paiement de Salaire Mensuel',
-        child: MonthlySalaryPaymentForm(key: formKey, employee: employee),
-        onSave: () async {
-          final state = formKey.currentState;
-          if (state != null) {
-            await state.submit();
-          }
-        },
-        saveLabel: 'Enregistrer le Paiement',
-      ),
+      builder: (dialogContext) {
+        final formKey = GlobalKey<MonthlySalaryPaymentFormState>();
+        return FormDialog(
+          title: 'Paiement de Salaire Mensuel',
+          onSave: () async {
+            final formState = formKey.currentState;
+            if (formState != null) {
+              await formState.submit();
+            }
+          },
+          saveLabel: 'Enregistrer le Paiement',
+          child: MonthlySalaryPaymentForm(
+            key: formKey,
+            employee: employee,
+            existingPayments: existingPayments,
+          ),
+        );
+      },
     );
   }
 
@@ -46,12 +62,6 @@ class EmployeePaymentCard extends ConsumerWidget {
     );
   }
 
-  String _formatCurrency(int amount) {
-    return amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        ) + ' FCFA';
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -71,8 +81,8 @@ class EmployeePaymentCard extends ConsumerWidget {
             ),
             title: Text(employee.name),
             subtitle: employee.position != null
-                ? Text('${employee.position} • ${_formatCurrency(employee.monthlySalary)}/mois')
-                : Text('${_formatCurrency(employee.monthlySalary)}/mois'),
+                ? Text('${employee.position} • ${CurrencyFormatter.format(employee.monthlySalary)}/mois')
+                : Text('${CurrencyFormatter.format(employee.monthlySalary)}/mois'),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -117,54 +127,129 @@ class EmployeePaymentCard extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Derniers paiements',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  ...monthlyPayments.take(3).map((payment) {
-                    return InkWell(
-                      onTap: () => _showReceipt(context, payment),
-                      child: Padding(
-                        padding: const EdgeInsets.only(bottom: 4),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                              child: Row(
-                                children: [
-                                  Text(
-                                    payment.period,
-                                    style: theme.textTheme.bodySmall,
-                                  ),
-                                  if (payment.aSignature) ...[
-                                    const SizedBox(width: 8),
-                                    Icon(
-                                      Icons.check_circle,
-                                      size: 16,
-                                      color: Colors.green,
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ),
-                            Text(
-                              _formatCurrency(payment.amount),
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Derniers paiements',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
-                    );
-                  }),
+                      if (monthlyPayments.length > 3)
+                        TextButton(
+                          onPressed: () {
+                            // TODO: Navigate to full payment history
+                          },
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            minimumSize: const Size(0, 32),
+                          ),
+                          child: Text(
+                            'Voir tout (${monthlyPayments.length})',
+                            style: theme.textTheme.bodySmall,
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  ...monthlyPayments
+                      .take(3)
+                      .map((payment) => _PaymentHistoryItem(
+                            payment: payment,
+                            onTap: () => _showReceipt(context, payment),
+                            theme: theme,
+                          )),
                 ],
               ),
             ),
         ],
+      ),
+    );
+  }
+}
+
+/// Widget for displaying a single payment history item.
+class _PaymentHistoryItem extends StatelessWidget {
+  const _PaymentHistoryItem({
+    required this.payment,
+    required this.onTap,
+    required this.theme,
+  });
+
+  final SalaryPayment payment;
+  final VoidCallback onTap;
+  final ThemeData theme;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.calendar_today_outlined,
+                    size: 16,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          payment.period,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        if (payment.notes != null && payment.notes!.isNotEmpty) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            payment.notes!,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                              fontSize: 11,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  if (payment.aSignature) ...[
+                    const SizedBox(width: 8),
+                    Tooltip(
+                      message: 'Signature enregistrée',
+                      child: Icon(
+                        Icons.check_circle,
+                        size: 18,
+                        color: Colors.green,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              CurrencyFormatter.format(payment.amount),
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

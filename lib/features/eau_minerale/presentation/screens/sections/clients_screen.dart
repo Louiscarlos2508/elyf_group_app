@@ -187,22 +187,41 @@ class _CreditsContentState extends ConsumerState<_CreditsContent> {
                   24,
                   isWide ? 24 : 16,
                 ),
-                child: Row(
-                  children: [
-                    Text(
-                      'Gestion des Crédits Clients',
-                      style: theme.textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
+                child: isWide
+                    ? Row(
+                        children: [
+                          Text(
+                            'Gestion des Crédits Clients',
+                            style: theme.textTheme.headlineMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const Spacer(),
+                          IconButton(
+                            icon: const Icon(Icons.refresh),
+                            onPressed: _refresh,
+                            tooltip: 'Actualiser les crédits',
+                          ),
+                        ],
+                      )
+                    : Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'Gestion des Crédits Clients',
+                              style: theme.textTheme.headlineMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.refresh),
+                            onPressed: _refresh,
+                            tooltip: 'Actualiser les crédits',
+                          ),
+                        ],
                       ),
-                    ),
-                    const Spacer(),
-                    IconButton(
-                      icon: const Icon(Icons.refresh),
-                      onPressed: _refresh,
-                      tooltip: 'Actualiser les crédits',
-                    ),
-                  ],
-                ),
               ),
             ),
             // KPI Section and Customers List (calculated from real credits)
