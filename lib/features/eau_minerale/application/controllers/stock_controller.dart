@@ -458,6 +458,8 @@ class StockState {
   final List<PackagingStock> packagingStocks; // Stocks d'emballages
   final List<PackagingStock> lowStockPackaging; // Stocks d'emballages avec alerte
 
-  StockItem? get finishedGoods =>
-      items.firstWhere((i) => i.type == StockType.finishedGoods);
+  StockItem? get finishedGoods {
+    final finishedGoodsItems = items.where((i) => i.type == StockType.finishedGoods);
+    return finishedGoodsItems.isNotEmpty ? finishedGoodsItems.first : null;
+  }
 }
