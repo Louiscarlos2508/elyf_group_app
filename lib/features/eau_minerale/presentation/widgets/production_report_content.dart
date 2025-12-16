@@ -78,6 +78,68 @@ class ProductionReportContent extends ConsumerWidget {
                   ),
                 ],
               ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: _SummaryCard(
+                      label: 'Coût Total',
+                      value: '${_formatCurrency(data.totalCost)} FCFA',
+                      icon: Icons.attach_money,
+                      color: Colors.red,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _SummaryCard(
+                      label: 'Coût/Unité',
+                      value: data.totalQuantity > 0
+                          ? '${_formatCurrency((data.totalCost / data.totalQuantity).round())} FCFA'
+                          : '0 FCFA',
+                      icon: Icons.calculate,
+                      color: Colors.orange,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              // Détail des coûts
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: theme.colorScheme.outline.withValues(alpha: 0.2),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Détail des Coûts',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _CostDetailRow(
+                      label: 'Bobines',
+                      value: '${_formatCurrency(data.totalBobinesCost)} FCFA',
+                    ),
+                    const SizedBox(height: 8),
+                    _CostDetailRow(
+                      label: 'Électricité',
+                      value: '${_formatCurrency(data.totalElectricityCost)} FCFA',
+                    ),
+                    const SizedBox(height: 8),
+                    _CostDetailRow(
+                      label: 'Personnel',
+                      value: '${_formatCurrency(data.totalPersonnelCost)} FCFA',
+                    ),
+                  ],
+                ),
+              ),
               const SizedBox(height: 24),
               Text(
                 'Détail des Productions',
@@ -170,12 +232,19 @@ class _ProductionCard extends StatelessWidget {
 
   final ProductionSession production;
 
+  String _formatCurrency(int amount) {
+    return amount.toString().replaceAllMapped(
+          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+          (Match m) => '${m[1]} ',
+        ) + ' FCFA';
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      child: ListTile(
+      child: ExpansionTile(
         leading: const Icon(Icons.factory, color: Colors.blue),
         title: Text('${production.quantiteProduite} ${production.quantiteProduiteUnite}'),
         subtitle: Text(ProductionPeriodFormatter.formatDate(production.date)),
@@ -185,7 +254,143 @@ class _ProductionCard extends StatelessWidget {
             color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: _DetailItem(
+                        label: 'Machines',
+                        value: '${production.machinesUtilisees.length}',
+                      ),
+                    ),
+                    Expanded(
+                      child: _DetailItem(
+                        label: 'Bobines',
+                        value: '${production.bobinesUtilisees.length}',
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                if (production.consommationCourant > 0)
+                  _DetailItem(
+                    label: 'Consommation électrique',
+                    value: '${production.consommationCourant.toStringAsFixed(2)} kWh',
+                  ),
+                if (production.coutTotal > 0) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      children: [
+                        _DetailItem(
+                          label: 'Coût total',
+                          value: _formatCurrency(production.coutTotal),
+                        ),
+                        if (production.coutBobines != null && production.coutBobines! > 0) ...[
+                          const SizedBox(height: 4),
+                          _DetailItem(
+                            label: '  • Bobines',
+                            value: _formatCurrency(production.coutBobines!),
+                          ),
+                        ],
+                        if (production.coutElectricite != null && production.coutElectricite! > 0) ...[
+                          const SizedBox(height: 4),
+                          _DetailItem(
+                            label: '  • Électricité',
+                            value: _formatCurrency(production.coutElectricite!),
+                          ),
+                        ],
+                        if (production.coutTotalPersonnel > 0) ...[
+                          const SizedBox(height: 4),
+                          _DetailItem(
+                            label: '  • Personnel',
+                            value: _formatCurrency(production.coutTotalPersonnel),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
       ),
+    );
+  }
+}
+
+class _DetailItem extends StatelessWidget {
+  const _DetailItem({
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        Text(
+          value,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _CostDetailRow extends StatelessWidget {
+  const _CostDetailRow({
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        Text(
+          value,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: theme.colorScheme.primary,
+          ),
+        ),
+      ],
     );
   }
 }

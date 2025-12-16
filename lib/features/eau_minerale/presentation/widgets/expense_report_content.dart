@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/providers.dart';
-import '../../domain/entities/expense_record.dart' show ExpenseCategory, ExpenseRecord;
+import '../../domain/entities/expense_record.dart';
 import '../../domain/entities/expense_report_data.dart';
 import '../../domain/entities/report_period.dart';
 import 'production_period_formatter.dart';
@@ -23,29 +23,16 @@ class ExpenseReportContent extends ConsumerWidget {
         ) + ' FCFA';
   }
 
-  String _getCategoryLabel(ExpenseCategory category) {
-    switch (category) {
-      case ExpenseCategory.logistics:
-        return 'Logistique';
-      case ExpenseCategory.payroll:
-        return 'Salaires';
-      case ExpenseCategory.maintenance:
-        return 'Maintenance';
-      case ExpenseCategory.utility:
-        return 'Services publics';
-    }
-  }
-
   IconData _getCategoryIcon(ExpenseCategory category) {
     switch (category) {
-      case ExpenseCategory.logistics:
-        return Icons.local_shipping;
-      case ExpenseCategory.payroll:
-        return Icons.people;
-      case ExpenseCategory.maintenance:
+      case ExpenseCategory.carburant:
+        return Icons.local_gas_station;
+      case ExpenseCategory.reparations:
         return Icons.build;
-      case ExpenseCategory.utility:
-        return Icons.public;
+      case ExpenseCategory.achatsDivers:
+        return Icons.shopping_cart;
+      case ExpenseCategory.autres:
+        return Icons.more_horiz;
     }
   }
 
@@ -118,7 +105,7 @@ class ExpenseReportContent extends ConsumerWidget {
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            _getCategoryLabel(entry.key),
+                            entry.key.label,
                             style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.bold,
                             ),

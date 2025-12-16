@@ -3,7 +3,6 @@ import 'dart:async';
 import '../../domain/entities/expense_report_data.dart';
 import '../../domain/entities/expense_record.dart';
 import '../../domain/entities/product_sales_summary.dart';
-import '../../domain/entities/production_session.dart';
 import '../../domain/entities/production_report_data.dart';
 import '../../domain/entities/report_data.dart';
 import '../../domain/entities/report_period.dart';
@@ -13,7 +12,7 @@ import '../../domain/repositories/finance_repository.dart';
 import '../../domain/repositories/production_session_repository.dart';
 import '../../domain/repositories/report_repository.dart';
 import '../../domain/repositories/salary_repository.dart';
-import '../../domain/repositories/sales_repository.dart';
+import '../../domain/repositories/sale_repository.dart';
 
 class MockReportRepository implements ReportRepository {
   MockReportRepository({
@@ -23,7 +22,7 @@ class MockReportRepository implements ReportRepository {
     required this.productionSessionRepository,
   });
 
-  final SalesRepository salesRepository;
+  final SaleRepository salesRepository;
   final FinanceRepository financeRepository;
   final SalaryRepository salaryRepository;
   final ProductionSessionRepository productionSessionRepository;
@@ -33,7 +32,7 @@ class MockReportRepository implements ReportRepository {
     await Future<void>.delayed(const Duration(milliseconds: 300));
 
     // Fetch sales for period
-    final sales = await salesRepository.fetchRecentSales(limit: 1000);
+    final sales = await salesRepository.fetchSales();
     final periodSales = sales.where((sale) {
       return sale.date.isAfter(period.startDate.subtract(const Duration(days: 1))) &&
           sale.date.isBefore(period.endDate.add(const Duration(days: 1)));
@@ -83,7 +82,7 @@ class MockReportRepository implements ReportRepository {
   @override
   Future<List<Sale>> fetchSalesForPeriod(ReportPeriod period) async {
     await Future<void>.delayed(const Duration(milliseconds: 200));
-    final sales = await salesRepository.fetchRecentSales(limit: 1000);
+    final sales = await salesRepository.fetchSales();
     return sales.where((sale) {
       return sale.date.isAfter(period.startDate.subtract(const Duration(days: 1))) &&
           sale.date.isBefore(period.endDate.add(const Duration(days: 1)));
@@ -137,12 +136,31 @@ class MockReportRepository implements ReportRepository {
     final totalQuantity = periodSessions.fold(0, (sum, s) => sum + s.quantiteProduite);
     final totalBatches = periodSessions.length;
     final averageQuantityPerBatch = totalBatches > 0 ? totalQuantity / totalBatches : 0.0;
+    
+    // Calculer les totaux de coûts
+    final totalBobinesCost = periodSessions.fold<int>(
+      0,
+      (sum, s) => sum + (s.coutBobines ?? 0),
+    );
+    final totalElectricityCost = periodSessions.fold<int>(
+      0,
+      (sum, s) => sum + (s.coutElectricite ?? 0),
+    );
+    final totalPersonnelCost = periodSessions.fold<int>(
+      0,
+      (sum, s) => sum + s.coutTotalPersonnel,
+    );
+    final totalCost = totalBobinesCost + totalElectricityCost + totalPersonnelCost;
 
     return ProductionReportData(
       totalQuantity: totalQuantity,
       totalBatches: totalBatches,
       averageQuantityPerBatch: averageQuantityPerBatch,
       productions: periodSessions,
+      totalCost: totalCost,
+      totalBobinesCost: totalBobinesCost,
+      totalElectricityCost: totalElectricityCost,
+      totalPersonnelCost: totalPersonnelCost,
     );
   }
 

@@ -9,20 +9,30 @@ class CreditsCustomersList extends StatelessWidget {
   const CreditsCustomersList({
     super.key,
     required this.customers,
-    required this.getMockCredits,
+    required this.getCredits,
     required this.onHistoryTap,
     required this.onPaymentTap,
   });
 
   final List<CustomerSummary> customers;
-  final List<CustomerCredit> Function(CustomerSummary) getMockCredits;
+  final List<CustomerCredit> Function(CustomerSummary) getCredits;
   final void Function(String customerId) onHistoryTap;
   final void Function(String customerId) onPaymentTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final customersWithCredit = customers.where((c) => c.totalCredit > 0).toList();
+    
+    // Filtrer les clients qui ont réellement des crédits avec un montant restant > 0
+    final customersWithRealCredits = customers.where((customer) {
+      final credits = getCredits(customer);
+      final totalCreditFromCredits = credits.fold<int>(
+        0,
+        (sum, credit) => sum + credit.remainingAmount,
+      );
+      // Garder seulement ceux qui ont un crédit restant > 0
+      return totalCreditFromCredits > 0;
+    }).toList();
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -41,8 +51,17 @@ class CreditsCustomersList extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        ...customersWithCredit.map((customer) {
-          final credits = getMockCredits(customer);
+        ...customersWithRealCredits.map((customer) {
+          final credits = getCredits(customer);
+          // Calculer le crédit total réel à partir des crédits détaillés
+          final totalCreditFromCredits = credits.fold<int>(
+            0,
+            (sum, credit) => sum + credit.remainingAmount,
+          );
+          // Ne pas afficher si le client n'a pas de crédit réel (le widget le gère aussi)
+          if (totalCreditFromCredits <= 0) {
+            return const SizedBox.shrink();
+          }
           return Padding(
             padding: const EdgeInsets.only(bottom: 16),
             child: CustomerCreditCard(
@@ -53,7 +72,7 @@ class CreditsCustomersList extends StatelessWidget {
             ),
           );
         }),
-        if (customersWithCredit.isEmpty)
+        if (customersWithRealCredits.isEmpty)
           Center(
             child: Padding(
               padding: const EdgeInsets.all(48),

@@ -1,76 +1,35 @@
 import 'package:flutter/material.dart';
 
+import '../../domain/entities/bobine_stock.dart';
+import '../../domain/entities/packaging_stock.dart';
 import '../../domain/entities/stock_item.dart';
 
-/// Card displaying raw materials stock summary.
+/// Card displaying raw materials stock summary (including bobines and packaging).
 class RawMaterialsCard extends StatelessWidget {
   const RawMaterialsCard({
     super.key,
     required this.items,
+    required this.availableBobines,
+    required this.bobineStocks,
+    required this.packagingStocks,
   });
 
   final List<StockItem> items;
+  final int availableBobines; // Total pour compatibilité
+  final List<BobineStock> bobineStocks; // Stocks de bobines par type
+  final List<PackagingStock> packagingStocks;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     
-    // Filter raw materials
+    // Filter raw materials (excluding sachets which are managed as bobines, and bidons which are packaging)
     final rawMaterials = items
-        .where((item) => item.type == StockType.rawMaterial)
+        .where((item) => 
+            item.type == StockType.rawMaterial &&
+            !item.name.toLowerCase().contains('sachet') &&
+            !item.name.toLowerCase().contains('bidon'))
         .toList();
-    
-    // Find specific items
-    StockItem sachets = rawMaterials.firstWhere(
-      (item) => item.name.toLowerCase().contains('sachet'),
-      orElse: () => StockItem(
-        id: 'sachets',
-        name: 'Sachets',
-        quantity: 0,
-        unit: 'kg',
-        type: StockType.rawMaterial,
-        updatedAt: DateTime.now(),
-      ),
-    );
-    
-    StockItem bidons = rawMaterials.firstWhere(
-      (item) => item.name.toLowerCase().contains('bidon'),
-      orElse: () => StockItem(
-        id: 'bidons',
-        name: 'Bidons',
-        quantity: 0,
-        unit: 'unité',
-        type: StockType.rawMaterial,
-        updatedAt: DateTime.now(),
-      ),
-    );
-    
-    // If no items found, use defaults
-    if (rawMaterials.isEmpty) {
-      sachets = StockItem(
-        id: 'sachets',
-        name: 'Sachets',
-        quantity: 0,
-        unit: 'kg',
-        type: StockType.rawMaterial,
-        updatedAt: DateTime.now(),
-      );
-      bidons = StockItem(
-        id: 'bidons',
-        name: 'Bidons',
-        quantity: 0,
-        unit: 'unité',
-        type: StockType.rawMaterial,
-        updatedAt: DateTime.now(),
-      );
-    } else if (rawMaterials.length == 1) {
-      // If only one raw material, assign it to sachets
-      sachets = rawMaterials.first;
-    } else {
-      // Use first two items
-      sachets = rawMaterials[0];
-      bidons = rawMaterials.length > 1 ? rawMaterials[1] : bidons;
-    }
 
     return Container(
       decoration: BoxDecoration(
@@ -109,21 +68,65 @@ class RawMaterialsCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 20),
-          _buildMaterialItem(
-            context,
-            'Sachets',
-            'Géré manuellement • Utilisé en production',
-            sachets.quantity,
-            sachets.unit,
-          ),
-          const SizedBox(height: 16),
-          _buildMaterialItem(
-            context,
-            'Bidons',
-            'Géré manuellement • Utilisé en production',
-            bidons.quantity,
-            bidons.unit,
-          ),
+          // Afficher les bobines par type (comme les emballages)
+          if (bobineStocks.isNotEmpty) ...[
+            ...bobineStocks.map((stock) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: _buildPackagingItem(
+                  context,
+                  stock.type,
+                  'Géré automatiquement • Déduit lors des installations en production',
+                  stock.quantity.toDouble(),
+                  stock.unit,
+                  stock.estStockFaible,
+                  stock.seuilAlerte,
+                ),
+              );
+            }),
+          ] else if (availableBobines > 0) ...[
+            // Fallback si bobineStocks est vide mais availableBobines > 0
+            _buildMaterialItem(
+              context,
+              'Bobines',
+              'Gérées depuis le stock • Sorties lors des installations en production',
+              availableBobines.toDouble(),
+              'unité',
+            ),
+          ],
+          // Afficher les emballages (un seul type: "Emballage")
+          if (packagingStocks.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            // Calculer la quantité totale de tous les emballages
+            _buildPackagingItem(
+              context,
+              'Emballage',
+              'Géré automatiquement • Déduit lors des productions',
+              packagingStocks.fold<double>(
+                0.0,
+                (sum, stock) => sum + stock.quantity.toDouble(),
+              ),
+              'unité',
+              packagingStocks.any((stock) => stock.estStockFaible),
+              packagingStocks.isNotEmpty ? packagingStocks.first.seuilAlerte : null,
+            ),
+          ],
+          // Afficher les autres matières premières
+          if (rawMaterials.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            ...rawMaterials.map((item) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: _buildMaterialItem(
+                  context,
+                  item.name,
+                  'Géré manuellement • Utilisé en production',
+                  item.quantity,
+                  item.unit,
+                ),
+              );
+            }),
+          ],
         ],
       ),
     );
@@ -165,6 +168,90 @@ class RawMaterialsCard extends StatelessWidget {
             color: Colors.orange.shade800,
             fontWeight: FontWeight.bold,
           ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPackagingItem(
+    BuildContext context,
+    String name,
+    String description,
+    double quantity,
+    String unit,
+    bool isLowStock,
+    int? seuilAlerte,
+  ) {
+    final theme = Theme.of(context);
+    final color = isLowStock ? Colors.red : Colors.orange.shade800;
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        name,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      if (isLowStock) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.red.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            'FAIBLE',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: Colors.red,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    description,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  if (seuilAlerte != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      'Seuil d\'alerte: $seuilAlerte $unit',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            Text(
+              '${quantity.toStringAsFixed(0)} $unit',
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: color,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
         ),
       ],
     );

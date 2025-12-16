@@ -187,12 +187,14 @@ class _ExpensesContent extends StatelessWidget {
                             ),
                           ),
                           const Spacer(),
-                          EauMineralePermissionGuard(
-                            permission: EauMineralePermissions.createExpense,
-                            child: FilledButton.icon(
-                              onPressed: onNewExpense,
-                              icon: const Icon(Icons.add),
-                              label: const Text('Nouvelle Dépense'),
+                          Flexible(
+                            child: EauMineralePermissionGuard(
+                              permission: EauMineralePermissions.createExpense,
+                              child: FilledButton.icon(
+                                onPressed: onNewExpense,
+                                icon: const Icon(Icons.add),
+                                label: const Text('Nouvelle Dépense'),
+                              ),
                             ),
                           ),
                         ],

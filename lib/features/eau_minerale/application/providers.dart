@@ -7,10 +7,16 @@ import '../data/repositories/mock_finance_repository.dart';
 import '../data/repositories/mock_inventory_repository.dart';
 import '../data/repositories/mock_product_repository.dart';
 import '../domain/services/production_period_service.dart';
+import '../domain/services/electricity_meter_config_service.dart';
+import '../domain/entities/electricity_meter_type.dart';
 import '../data/repositories/mock_production_session_repository.dart';
-import '../data/repositories/mock_bobine_repository.dart';
+import '../data/repositories/mock_bobine_stock_quantity_repository.dart';
 import '../data/repositories/mock_machine_repository.dart';
-import '../data/repositories/mock_sales_repository.dart';
+import '../data/repositories/mock_packaging_stock_repository.dart';
+import '../data/repositories/mock_daily_worker_repository.dart';
+import '../data/repositories/mock_sale_repository.dart';
+import '../data/repositories/mock_stock_repository.dart';
+import '../data/repositories/mock_credit_repository.dart';
 import '../data/repositories/mock_report_repository.dart';
 import '../data/repositories/mock_salary_repository.dart';
 import '../domain/repositories/activity_repository.dart';
@@ -18,10 +24,14 @@ import '../domain/repositories/customer_repository.dart';
 import '../domain/repositories/finance_repository.dart';
 import '../domain/repositories/inventory_repository.dart';
 import '../domain/entities/product.dart';
+import '../domain/entities/stock_movement.dart';
 import '../domain/repositories/product_repository.dart';
 import '../domain/repositories/production_session_repository.dart';
-import '../domain/repositories/bobine_repository.dart';
+import '../domain/repositories/bobine_stock_quantity_repository.dart';
 import '../domain/repositories/machine_repository.dart';
+import '../domain/entities/machine.dart';
+import '../domain/repositories/packaging_stock_repository.dart';
+import '../domain/repositories/daily_worker_repository.dart';
 import '../domain/adapters/expense_balance_adapter.dart';
 import '../domain/entities/expense_report_data.dart';
 import '../../../../core/domain/entities/expense_balance_data.dart';
@@ -32,14 +42,18 @@ import '../domain/entities/report_data.dart';
 import '../domain/entities/report_period.dart';
 import '../domain/entities/salary_report_data.dart';
 import '../domain/entities/sale.dart';
+import '../domain/entities/daily_worker.dart';
+import '../domain/entities/eau_minerale_section.dart';
 import '../domain/repositories/report_repository.dart';
-import '../domain/repositories/sales_repository.dart';
+import '../domain/repositories/sale_repository.dart';
+import '../domain/repositories/stock_repository.dart';
+import '../domain/repositories/credit_repository.dart';
+import '../domain/services/sale_service.dart';
+import '../domain/services/credit_service.dart';
 import '../domain/repositories/salary_repository.dart';
 import 'package:elyf_groupe_app/features/administration/application/providers.dart'
     show permissionServiceProvider;
 import '../../../core/permissions/services/permission_service.dart';
-import '../../../core/permissions/services/permission_registry.dart';
-import '../domain/permissions/eau_minerale_permissions.dart';
 import '../application/adapters/eau_minerale_permission_adapter.dart';
 import 'controllers/activity_controller.dart';
 import 'controllers/clients_controller.dart';
@@ -60,8 +74,44 @@ import '../presentation/screens/sections/reports_screen.dart';
 import '../presentation/screens/sections/profile_screen.dart';
 import '../presentation/screens/sections/settings_screen.dart';
 
-final salesRepositoryProvider = Provider<SalesRepository>(
-  (ref) => MockSalesRepository(),
+final saleRepositoryProvider = Provider<SaleRepository>(
+  (ref) => MockSaleRepository(),
+);
+
+final stockRepositoryProvider = Provider<StockRepository>(
+  (ref) => MockStockRepository(),
+);
+
+final creditRepositoryProvider = Provider<CreditRepository>(
+  (ref) => MockCreditRepository(ref.watch(saleRepositoryProvider)),
+);
+
+final saleServiceProvider = Provider<SaleService>(
+  (ref) {
+    final saleRepo = ref.watch(saleRepositoryProvider);
+    final stockRepo = ref.watch(stockRepositoryProvider);
+    final inventoryRepo = ref.watch(inventoryRepositoryProvider);
+    final creditRepo = ref.watch(creditRepositoryProvider);
+    
+    return SaleService(
+      saleRepository: saleRepo,
+      stockRepository: stockRepo,
+      inventoryRepository: inventoryRepo,
+      creditRepository: creditRepo,
+    );
+  },
+);
+
+final creditServiceProvider = Provider<CreditService>(
+  (ref) {
+    final creditRepo = ref.watch(creditRepositoryProvider);
+    final saleRepo = ref.watch(saleRepositoryProvider);
+    
+    return CreditService(
+      creditRepository: creditRepo,
+      saleRepository: saleRepo,
+    );
+  },
 );
 
 final inventoryRepositoryProvider = Provider<InventoryRepository>(
@@ -92,32 +142,75 @@ final productionPeriodServiceProvider = Provider<ProductionPeriodService>(
   (ref) => ProductionPeriodService(),
 );
 
+final electricityMeterConfigServiceProvider =
+    Provider<ElectricityMeterConfigService>(
+  (ref) => ElectricityMeterConfigService.instance,
+);
+
+/// Provider pour récupérer le type de compteur configuré
+final electricityMeterTypeProvider = FutureProvider.autoDispose<ElectricityMeterType>(
+  (ref) async => ref.watch(electricityMeterConfigServiceProvider).getMeterType(),
+);
+
 final productionSessionRepositoryProvider =
     Provider<ProductionSessionRepository>(
   (ref) => MockProductionSessionRepository(),
 );
 
-final bobineRepositoryProvider = Provider<BobineRepository>(
-  (ref) => MockBobineRepository(),
-);
 
 final machineRepositoryProvider = Provider<MachineRepository>(
   (ref) => MockMachineRepository(),
+);
+
+/// Provider pour récupérer toutes les machines (sans filtre).
+final allMachinesProvider = FutureProvider.autoDispose<List<Machine>>(
+  (ref) async {
+    return ref.read(machineRepositoryProvider).fetchMachines();
+  },
+);
+
+
+final bobineStockQuantityRepositoryProvider = Provider<BobineStockQuantityRepository>(
+  (ref) => MockBobineStockQuantityRepository(),
+);
+
+final packagingStockRepositoryProvider = Provider<PackagingStockRepository>(
+  (ref) => MockPackagingStockRepository(),
+);
+
+final stockControllerProvider = Provider<StockController>(
+  (ref) => StockController(
+    ref.watch(inventoryRepositoryProvider),
+    ref.watch(bobineStockQuantityRepositoryProvider),
+    ref.watch(packagingStockRepositoryProvider),
+  ),
 );
 
 final productionSessionControllerProvider =
     Provider<ProductionSessionController>(
   (ref) => ProductionSessionController(
     ref.watch(productionSessionRepositoryProvider),
+    ref.watch(stockControllerProvider),
+    ref.watch(bobineStockQuantityRepositoryProvider),
   ),
 );
 
 final salesControllerProvider = Provider<SalesController>(
-  (ref) => SalesController(ref.watch(salesRepositoryProvider)),
+  (ref) => SalesController(
+    ref.watch(saleRepositoryProvider),
+    ref.watch(saleServiceProvider),
+  ),
 );
 
-final stockControllerProvider = Provider<StockController>(
-  (ref) => StockController(ref.watch(inventoryRepositoryProvider)),
+final dailyWorkerRepositoryProvider = Provider<DailyWorkerRepository>(
+  (ref) => MockDailyWorkerRepository(),
+);
+
+/// Provider pour récupérer tous les ouvriers journaliers.
+final allDailyWorkersProvider = FutureProvider.autoDispose<List<DailyWorker>>(
+  (ref) async {
+    return ref.read(dailyWorkerRepositoryProvider).fetchAllWorkers();
+  },
 );
 
 final clientsControllerProvider = Provider<ClientsController>(
@@ -138,7 +231,7 @@ final salaryControllerProvider = Provider<SalaryController>(
 
 final reportRepositoryProvider = Provider<ReportRepository>(
   (ref) => MockReportRepository(
-    salesRepository: ref.watch(salesRepositoryProvider),
+    salesRepository: ref.watch(saleRepositoryProvider),
     financeRepository: ref.watch(financeRepositoryProvider),
     salaryRepository: ref.watch(salaryRepositoryProvider),
     productionSessionRepository: ref.watch(productionSessionRepositoryProvider),
@@ -186,6 +279,50 @@ final productsProvider = FutureProvider.autoDispose<List<Product>>(
 
 final productionPeriodConfigProvider = FutureProvider.autoDispose(
   (ref) async => ref.watch(productionPeriodServiceProvider).getConfig(),
+);
+
+/// Paramètres pour filtrer les mouvements de stock
+class StockMovementFiltersParams {
+  const StockMovementFiltersParams({
+    this.startDate,
+    this.endDate,
+    this.type,
+    this.productName,
+  });
+
+  final DateTime? startDate;
+  final DateTime? endDate;
+  final StockMovementType? type;
+  final String? productName;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is StockMovementFiltersParams &&
+          runtimeType == other.runtimeType &&
+          startDate == other.startDate &&
+          endDate == other.endDate &&
+          type == other.type &&
+          productName == other.productName;
+
+  @override
+  int get hashCode =>
+      startDate.hashCode ^
+      endDate.hashCode ^
+      type.hashCode ^
+      productName.hashCode;
+}
+
+/// Provider pour récupérer tous les mouvements de stock (bobines, emballages) avec filtres optionnels.
+final stockMovementsProvider = FutureProvider.autoDispose
+    .family<List<StockMovement>, StockMovementFiltersParams>(
+  (ref, params) async {
+    final controller = ref.read(stockControllerProvider);
+    return await controller.fetchAllMovements(
+      startDate: params.startDate,
+      endDate: params.endDate,
+    );
+  },
 );
 
 final productionSessionsStateProvider = FutureProvider.autoDispose<
@@ -252,20 +389,6 @@ final eauMineralePermissionAdapterProvider = Provider<EauMineralePermissionAdapt
     userId: ref.watch(currentUserIdProvider),
   ),
 );
-
-/// Enum used for bottom navigation in the module shell.
-enum EauMineraleSection {
-  activity,
-  production,
-  sales,
-  stock,
-  clients,
-  finances,
-  salaries,
-  reports,
-  profile,
-  settings,
-}
 
 /// Configuration for a section in the module shell.
 class EauMineraleSectionConfig {

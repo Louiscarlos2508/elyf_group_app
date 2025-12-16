@@ -5,6 +5,7 @@ import '../../domain/entities/employee.dart';
 import '../../domain/entities/salary_payment.dart';
 import 'form_dialog.dart';
 import 'monthly_salary_payment_form.dart';
+import 'salary_receipt_dialog.dart';
 
 /// Card widget displaying employee info and payment history.
 class EmployeePaymentCard extends ConsumerWidget {
@@ -31,6 +32,16 @@ class EmployeePaymentCard extends ConsumerWidget {
           }
         },
         saveLabel: 'Enregistrer le Paiement',
+      ),
+    );
+  }
+
+  void _showReceipt(BuildContext context, SalaryPayment payment) {
+    showDialog(
+      context: context,
+      builder: (context) => SalaryReceiptDialog(
+        employee: employee,
+        payment: payment,
       ),
     );
   }
@@ -114,22 +125,39 @@ class EmployeePaymentCard extends ConsumerWidget {
                   ),
                   const SizedBox(height: 8),
                   ...monthlyPayments.take(3).map((payment) {
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 4),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            payment.period,
-                            style: theme.textTheme.bodySmall,
-                          ),
-                          Text(
-                            _formatCurrency(payment.amount),
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              fontWeight: FontWeight.w500,
+                    return InkWell(
+                      onTap: () => _showReceipt(context, payment),
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Row(
+                                children: [
+                                  Text(
+                                    payment.period,
+                                    style: theme.textTheme.bodySmall,
+                                  ),
+                                  if (payment.aSignature) ...[
+                                    const SizedBox(width: 8),
+                                    Icon(
+                                      Icons.check_circle,
+                                      size: 16,
+                                      color: Colors.green,
+                                    ),
+                                  ],
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
+                            Text(
+                              _formatCurrency(payment.amount),
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     );
                   }),

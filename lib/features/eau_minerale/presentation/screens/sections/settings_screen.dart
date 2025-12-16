@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../application/providers.dart';
 import '../../../domain/permissions/eau_minerale_permissions.dart';
 import '../../widgets/centralized_permission_guard.dart';
-import '../../widgets/product_catalog_card.dart';
-import '../../widgets/product_info_banner.dart';
+import '../../widgets/electricity_meter_config_card.dart';
+import '../../widgets/machine_breakdown_report_card.dart';
+import '../../widgets/machine_management_card.dart';
+import '../../widgets/pack_price_config_card.dart';
 
 /// Settings screen for the Eau Minérale module.
 class SettingsScreen extends ConsumerWidget {
@@ -49,16 +50,37 @@ class SettingsScreen extends ConsumerWidget {
             ),
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-                child: const ProductInfoBanner(),
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                child: EauMineralePermissionGuard(
+                  permission: EauMineralePermissions.manageProducts,
+                  child: const PackPriceConfigCard(),
+                ),
               ),
             ),
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
                 child: EauMineralePermissionGuard(
                   permission: EauMineralePermissions.manageProducts,
-                  child: const ProductCatalogCard(),
+                  child: const MachineManagementCard(),
+                ),
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                child: EauMineralePermissionGuard(
+                  permission: EauMineralePermissions.configureProduction,
+                  child: const ElectricityMeterConfigCard(),
+                ),
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                child: EauMineralePermissionGuard(
+                  permission: EauMineralePermissions.configureProduction,
+                  child: const MachineBreakdownReportCard(),
                 ),
               ),
             ),

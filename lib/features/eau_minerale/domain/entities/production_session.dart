@@ -1,4 +1,6 @@
 import 'bobine_usage.dart';
+import 'production_day.dart';
+import 'production_event.dart';
 import 'production_session_status.dart';
 
 /// Session de production avec suivi détaillé des bobines, machines et coûts.
@@ -8,9 +10,9 @@ class ProductionSession {
     required this.date,
     required this.period,
     required this.heureDebut,
-    required this.heureFin,
-    required this.indexCompteurDebut,
-    required this.indexCompteurFin,
+    this.heureFin,
+    this.indexCompteurInitialKwh,
+    this.indexCompteurFinalKwh,
     required this.consommationCourant,
     required this.machinesUtilisees,
     required this.bobinesUtilisees,
@@ -23,19 +25,18 @@ class ProductionSession {
     this.createdAt,
     this.updatedAt,
     this.status = ProductionSessionStatus.draft,
-  }) : assert(
-          indexCompteurFin >= indexCompteurDebut,
-          'L\'index final doit être supérieur ou égal à l\'index initial',
-        );
+    this.events = const [],
+    this.productionDays = const [],
+  }  );
 
   final String id;
   final DateTime date;
   final int period; // Période de production (pour compatibilité)
   final DateTime heureDebut;
-  final DateTime heureFin;
-  final int indexCompteurDebut; // Index du compteur d'eau au début
-  final int indexCompteurFin; // Index du compteur d'eau à la fin
-  final double consommationCourant; // kWh
+  final DateTime? heureFin; // null jusqu'à la finalisation de la production
+  final int? indexCompteurInitialKwh; // Index compteur électrique initial (kWh) au démarrage
+  final int? indexCompteurFinalKwh; // Index compteur électrique final (kWh) à la fin
+  final double consommationCourant; // kWh (calculé si indexCompteurInitialKwh et indexCompteurFinalKwh sont définis)
   final List<String> machinesUtilisees; // IDs des machines
   final List<BobineUsage> bobinesUtilisees;
   final int quantiteProduite; // Quantité produite
@@ -47,42 +48,40 @@ class ProductionSession {
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final ProductionSessionStatus status;
+  final List<ProductionEvent> events; // Événements (pannes, coupures, arrêts)
+  final List<ProductionDay> productionDays; // Jours de production avec personnel
 
-  /// Calcule la consommation d'eau (indexFin - indexDébut)
-  int get consommationEau => indexCompteurFin - indexCompteurDebut;
 
   /// Calcule la durée de production en heures
   double get dureeHeures {
-    final difference = heureFin.difference(heureDebut);
+    if (heureFin == null) {
+      // Si pas encore finalisée, calculer depuis le début jusqu'à maintenant
+      final difference = DateTime.now().difference(heureDebut);
+      return difference.inMinutes / 60.0;
+    }
+    final difference = heureFin!.difference(heureDebut);
     return difference.inMinutes / 60.0;
   }
 
-  /// Calcule le poids total des bobines utilisées (kg)
-  double get poidsTotalBobinesUtilisees {
-    return bobinesUtilisees.fold<double>(
-      0,
-      (sum, bobine) => sum + bobine.poidsUtilise,
-    );
-  }
 
-  /// Calcule le coût total de la session (bobines + électricité)
+  /// Calcule le coût total de la session (bobines + électricité + personnel)
   int get coutTotal {
     final coutBob = coutBobines ?? 0;
     final coutElec = coutElectricite ?? 0;
-    return coutBob + coutElec;
+    final coutPers = coutTotalPersonnel;
+    return coutBob + coutElec + coutPers;
   }
 
   /// Vérifie si la session est complète (toutes les données nécessaires)
   bool get estComplete {
     return bobinesUtilisees.isNotEmpty &&
         machinesUtilisees.isNotEmpty &&
-        quantiteProduite > 0 &&
-        consommationEau >= 0;
+        (quantiteProduite > 0 || totalPacksProduitsJournalier > 0);
   }
 
   /// Calcule le statut de progression basé sur les données disponibles
   ProductionSessionStatus get calculatedStatus {
-    if (quantiteProduite > 0 && heureFin.isAfter(heureDebut)) {
+    if (quantiteProduite > 0 && heureFin != null && heureFin!.isAfter(heureDebut)) {
       return ProductionSessionStatus.completed;
     }
     if (machinesUtilisees.isNotEmpty || bobinesUtilisees.isNotEmpty) {
@@ -94,11 +93,67 @@ class ProductionSession {
     return ProductionSessionStatus.draft;
   }
 
-  /// Retourne le statut effectif (celui défini ou celui calculé)
+  /// Retourne le statut effectif (toujours utiliser le statut enregistré, sauf s'il est draft)
+  /// 
+  /// Le statut enregistré doit toujours être utilisé pour éviter les conflits.
+  /// Si le statut est draft, on peut calculer le statut à partir des données.
   ProductionSessionStatus get effectiveStatus {
-    return status != ProductionSessionStatus.draft
-        ? status
-        : calculatedStatus;
+    // Utiliser le statut enregistré s'il existe et n'est pas draft
+    // Cela garantit que le statut explicitement défini (notamment "completed") est toujours respecté
+    if (status != ProductionSessionStatus.draft) {
+      return status;
+    }
+    // Si le statut est draft, calculer le statut à partir des données disponibles
+    return calculatedStatus;
+  }
+
+  /// Vérifie si toutes les bobines sont complètement finies.
+  /// Une production ne peut se terminer que si toutes les bobines sont finies.
+  bool get toutesBobinesFinies {
+    if (bobinesUtilisees.isEmpty) return false;
+    return bobinesUtilisees.every((bobine) => bobine.estFinie);
+  }
+
+  /// Vérifie si la production peut être finalisée.
+  /// Conditions : toutes les boubines doivent être finies.
+  bool get peutEtreFinalisee {
+    return toutesBobinesFinies &&
+        bobinesUtilisees.isNotEmpty &&
+        machinesUtilisees.length == bobinesUtilisees.length;
+  }
+
+  /// Total des packs produits sur l'ensemble des jours de production.
+  int get totalPacksProduitsJournalier {
+    return productionDays.fold<int>(
+      0,
+      (sum, day) => sum + day.packsProduits,
+    );
+  }
+
+  /// Total des emballages utilisés sur l'ensemble des jours de production.
+  int get totalEmballagesUtilisesJournalier {
+    return productionDays.fold<int>(
+      0,
+      (sum, day) => sum + day.emballagesUtilises,
+    );
+  }
+
+  /// Calcule le coût total du personnel pour tous les jours de production.
+  int get coutTotalPersonnel {
+    return productionDays.fold<int>(
+      0,
+      (sum, day) => sum + day.coutTotalPersonnel,
+    );
+  }
+
+  /// Vérifie s'il y a des événements en cours (non terminés).
+  bool get aEvenementsEnCours {
+    return events.any((event) => !event.estTermine);
+  }
+
+  /// Récupère les événements d'un type donné.
+  List<ProductionEvent> evenementsParType(ProductionEventType type) {
+    return events.where((event) => event.type == type).toList();
   }
 
   ProductionSession copyWith({
@@ -107,8 +162,8 @@ class ProductionSession {
     int? period,
     DateTime? heureDebut,
     DateTime? heureFin,
-    int? indexCompteurDebut,
-    int? indexCompteurFin,
+    int? indexCompteurInitialKwh,
+    int? indexCompteurFinalKwh,
     double? consommationCourant,
     List<String>? machinesUtilisees,
     List<BobineUsage>? bobinesUtilisees,
@@ -121,6 +176,8 @@ class ProductionSession {
     DateTime? createdAt,
     DateTime? updatedAt,
     ProductionSessionStatus? status,
+    List<ProductionEvent>? events,
+    List<ProductionDay>? productionDays,
   }) {
     return ProductionSession(
       id: id ?? this.id,
@@ -128,8 +185,8 @@ class ProductionSession {
       period: period ?? this.period,
       heureDebut: heureDebut ?? this.heureDebut,
       heureFin: heureFin ?? this.heureFin,
-      indexCompteurDebut: indexCompteurDebut ?? this.indexCompteurDebut,
-      indexCompteurFin: indexCompteurFin ?? this.indexCompteurFin,
+      indexCompteurInitialKwh: indexCompteurInitialKwh ?? this.indexCompteurInitialKwh,
+      indexCompteurFinalKwh: indexCompteurFinalKwh ?? this.indexCompteurFinalKwh,
       consommationCourant: consommationCourant ?? this.consommationCourant,
       machinesUtilisees: machinesUtilisees ?? this.machinesUtilisees,
       bobinesUtilisees: bobinesUtilisees ?? this.bobinesUtilisees,
@@ -142,6 +199,8 @@ class ProductionSession {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       status: status ?? this.status,
+      events: events ?? this.events,
+      productionDays: productionDays ?? this.productionDays,
     );
   }
 }

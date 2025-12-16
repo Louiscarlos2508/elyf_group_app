@@ -45,33 +45,36 @@ class SalesTableHelpers {
     void Function(Sale sale, String action)? onActionTap,
   ) {
     final theme = Theme.of(context);
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        IconButton(
-          icon: const Icon(Icons.visibility, size: 18),
-          onPressed: () => onActionTap?.call(sale, 'view'),
-          tooltip: 'Voir',
-          padding: const EdgeInsets.all(8),
-          constraints: const BoxConstraints(
-            minWidth: 32,
-            minHeight: 32,
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.visibility, size: 18),
+            onPressed: () => onActionTap?.call(sale, 'view'),
+            tooltip: 'Voir',
+            padding: const EdgeInsets.all(8),
+            constraints: const BoxConstraints(
+              minWidth: 32,
+              minHeight: 32,
+            ),
+            color: theme.colorScheme.primary,
           ),
-          color: theme.colorScheme.primary,
-        ),
-        const SizedBox(width: 4),
-        IconButton(
-          icon: const Icon(Icons.edit, size: 18),
-          onPressed: () => onActionTap?.call(sale, 'edit'),
-          tooltip: 'Modifier',
-          padding: const EdgeInsets.all(8),
-          constraints: const BoxConstraints(
-            minWidth: 32,
-            minHeight: 32,
+          const SizedBox(width: 4),
+          IconButton(
+            icon: const Icon(Icons.edit, size: 18),
+            onPressed: () => onActionTap?.call(sale, 'edit'),
+            tooltip: 'Modifier',
+            padding: const EdgeInsets.all(8),
+            constraints: const BoxConstraints(
+              minWidth: 32,
+              minHeight: 32,
+            ),
+            color: theme.colorScheme.primary,
           ),
-          color: theme.colorScheme.primary,
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

@@ -1,0 +1,322 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../domain/entities/stock_movement.dart';
+
+/// Widget pour filtrer les mouvements de stock par période et type
+class StockMovementFilters extends ConsumerStatefulWidget {
+  const StockMovementFilters({
+    super.key,
+    required this.onFiltersChanged,
+  });
+
+  final void Function({
+    DateTime? startDate,
+    DateTime? endDate,
+    StockMovementType? type,
+    String? productName,
+  }) onFiltersChanged;
+
+  @override
+  ConsumerState<StockMovementFilters> createState() =>
+      _StockMovementFiltersState();
+}
+
+class _StockMovementFiltersState
+    extends ConsumerState<StockMovementFilters> {
+  DateTime? _startDate;
+  DateTime? _endDate;
+  StockMovementType? _selectedType;
+  String? _selectedProduct;
+
+  @override
+  void initState() {
+    super.initState();
+    // Par défaut, afficher les 30 derniers jours
+    _endDate = DateTime.now();
+    _startDate = DateTime.now().subtract(const Duration(days: 30));
+    // Ne pas appeler _applyFilters() ici car le parent initialise déjà les valeurs
+    // et le provider sera appelé avec ces valeurs dès le premier build
+  }
+
+  void _applyFilters() {
+    widget.onFiltersChanged(
+      startDate: _startDate,
+      endDate: _endDate,
+      type: _selectedType,
+      productName: _selectedProduct,
+    );
+  }
+
+  Future<void> _selectStartDate(BuildContext context) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _startDate ?? DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+    );
+    if (picked != null) {
+      setState(() {
+        _startDate = picked;
+        _applyFilters();
+      });
+    }
+  }
+
+  Future<void> _selectEndDate(BuildContext context) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _endDate ?? DateTime.now(),
+      firstDate: _startDate ?? DateTime(2020),
+      lastDate: DateTime.now(),
+    );
+    if (picked != null) {
+      setState(() {
+        _endDate = picked;
+        _applyFilters();
+      });
+    }
+  }
+
+  void _selectPeriod(String period) {
+    final now = DateTime.now();
+    setState(() {
+      _endDate = now;
+      switch (period) {
+        case 'today':
+          _startDate = DateTime(now.year, now.month, now.day);
+          break;
+        case 'week':
+          _startDate = now.subtract(const Duration(days: 7));
+          break;
+        case 'month':
+          _startDate = DateTime(now.year, now.month, 1);
+          break;
+        case 'quarter':
+          final quarter = (now.month - 1) ~/ 3;
+          _startDate = DateTime(now.year, quarter * 3 + 1, 1);
+          break;
+        case 'year':
+          _startDate = DateTime(now.year, 1, 1);
+          break;
+        case 'all':
+          _startDate = null;
+          _endDate = null;
+          break;
+      }
+      _applyFilters();
+    });
+  }
+
+  void _clearFilters() {
+    setState(() {
+      _startDate = DateTime.now().subtract(const Duration(days: 30));
+      _endDate = DateTime.now();
+      _selectedType = null;
+      _selectedProduct = null;
+      _applyFilters();
+    });
+  }
+
+  String _formatDate(DateTime? date) {
+    if (date == null) return 'Toutes';
+    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.filter_list,
+                  size: 20,
+                  color: theme.colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Filtres',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const Spacer(),
+                TextButton.icon(
+                  onPressed: _clearFilters,
+                  icon: const Icon(Icons.clear, size: 16),
+                  label: const Text('Réinitialiser'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _buildPeriodButton(context, 'Aujourd\'hui', 'today'),
+                _buildPeriodButton(context, '7 jours', 'week'),
+                _buildPeriodButton(context, 'Mois', 'month'),
+                _buildPeriodButton(context, 'Trimestre', 'quarter'),
+                _buildPeriodButton(context, 'Année', 'year'),
+                _buildPeriodButton(context, 'Tout', 'all'),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildDateField(
+                    context,
+                    'Du',
+                    _startDate,
+                    _selectStartDate,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _buildDateField(
+                    context,
+                    'Au',
+                    _endDate,
+                    _selectEndDate,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _buildTypeFilter(context),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPeriodButton(BuildContext context, String label, String period) {
+    final theme = Theme.of(context);
+    final isSelected = _isPeriodSelected(period);
+    
+    return FilterChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (_) => _selectPeriod(period),
+      selectedColor: theme.colorScheme.primaryContainer,
+      checkmarkColor: theme.colorScheme.onPrimaryContainer,
+    );
+  }
+
+  bool _isPeriodSelected(String period) {
+    final now = DateTime.now();
+    switch (period) {
+      case 'today':
+        return _startDate != null &&
+            _startDate!.year == now.year &&
+            _startDate!.month == now.month &&
+            _startDate!.day == now.day;
+      case 'week':
+        return _startDate != null &&
+            _endDate != null &&
+            _endDate!.difference(_startDate!) == const Duration(days: 7);
+      case 'month':
+        return _startDate != null &&
+            _startDate!.year == now.year &&
+            _startDate!.month == now.month &&
+            _startDate!.day == 1;
+      case 'quarter':
+        if (_startDate == null) return false;
+        final quarter = (_startDate!.month - 1) ~/ 3;
+        return _startDate!.year == now.year &&
+            _startDate!.month == quarter * 3 + 1 &&
+            _startDate!.day == 1;
+      case 'year':
+        return _startDate != null &&
+            _startDate!.year == now.year &&
+            _startDate!.month == 1 &&
+            _startDate!.day == 1;
+      case 'all':
+        return _startDate == null && _endDate == null;
+      default:
+        return false;
+    }
+  }
+
+  Widget _buildDateField(
+    BuildContext context,
+    String label,
+    DateTime? date,
+    Future<void> Function(BuildContext) onTap,
+  ) {
+    final theme = Theme.of(context);
+    return InkWell(
+      onTap: () => onTap(context),
+      child: InputDecorator(
+        decoration: InputDecoration(
+          labelText: label,
+          prefixIcon: const Icon(Icons.calendar_today, size: 20),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        child: Text(
+          _formatDate(date),
+          style: theme.textTheme.bodyMedium,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTypeFilter(BuildContext context) {
+    final theme = Theme.of(context);
+    return DropdownButtonFormField<StockMovementType?>(
+      decoration: InputDecoration(
+        labelText: 'Type',
+        prefixIcon: const Icon(Icons.swap_vert, size: 20),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+      value: _selectedType,
+      items: [
+        const DropdownMenuItem<StockMovementType?>(
+          value: null,
+          child: Text('Tous'),
+        ),
+        DropdownMenuItem<StockMovementType>(
+          value: StockMovementType.entry,
+          child: Row(
+            children: [
+              Icon(Icons.arrow_downward, size: 16, color: Colors.green),
+              const SizedBox(width: 8),
+              const Text('Entrées'),
+            ],
+          ),
+        ),
+        DropdownMenuItem<StockMovementType>(
+          value: StockMovementType.exit,
+          child: Row(
+            children: [
+              Icon(Icons.arrow_upward, size: 16, color: Colors.red),
+              const SizedBox(width: 8),
+              const Text('Sorties'),
+            ],
+          ),
+        ),
+      ],
+      onChanged: (value) {
+        setState(() {
+          _selectedType = value;
+          _applyFilters();
+        });
+      },
+    );
+  }
+}
+

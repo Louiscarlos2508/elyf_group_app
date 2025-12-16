@@ -1,5 +1,5 @@
 import '../entities/module_permission.dart';
-import '../../application/providers.dart' show EauMineraleSection;
+import '../entities/eau_minerale_section.dart';
 
 /// Service for checking user permissions in the eau minérale module.
 abstract class PermissionService {

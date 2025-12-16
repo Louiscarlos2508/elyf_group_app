@@ -129,6 +129,20 @@ class SaleFormState extends ConsumerState<SaleForm> {
       return;
     }
 
+    // Vérifier le stock avant de créer la vente
+    final stockRepository = ref.read(stockRepositoryProvider);
+    final currentStock = await stockRepository.getStock(_selectedProduct!.id);
+    if (_quantity! > currentStock) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Stock insuffisant. Disponible: $currentStock'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
     try {
       final sale = Sale(
@@ -153,7 +167,12 @@ class SaleFormState extends ConsumerState<SaleForm> {
         orangeMoneyAmount: _orangeMoneyAmount,
       );
 
-      await ref.read(salesControllerProvider).createSale(sale);
+      final userId = ref.read(currentUserIdProvider);
+      // TODO: Récupérer le rôle réel de l'utilisateur
+      // Pour l'instant, on considère que l'utilisateur est manager s'il a la permission de valider
+      final isManager = true; // À remplacer par la vérification réelle des permissions
+      
+      await ref.read(salesControllerProvider).createSale(sale, userId, isManager);
 
       if (!mounted) return;
       Navigator.of(context).pop();
@@ -219,22 +238,65 @@ class SaleFormState extends ConsumerState<SaleForm> {
               keyboardType: TextInputType.phone,
             ),
             const SizedBox(height: 16),
-            // Quantité
-            TextFormField(
-              controller: _quantityController,
-              decoration: const InputDecoration(
-                labelText: 'Quantité',
-                prefixIcon: Icon(Icons.inventory_2),
+            // Quantité avec validation du stock
+            if (_selectedProduct != null)
+              FutureBuilder<int>(
+                future: ref.read(stockRepositoryProvider).getStock(_selectedProduct!.id),
+                builder: (context, snapshot) {
+                  final stock = snapshot.data ?? 0;
+                  final stockError = _quantity != null && stock < _quantity!;
+                  
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      TextFormField(
+                        controller: _quantityController,
+                        decoration: InputDecoration(
+                          labelText: 'Quantité',
+                          prefixIcon: const Icon(Icons.inventory_2),
+                          helperText: snapshot.hasData
+                              ? (stockError
+                                  ? 'Stock insuffisant. Disponible: $stock'
+                                  : 'Stock disponible: $stock')
+                              : 'Vérification du stock...',
+                          helperMaxLines: 2,
+                          errorText: stockError && _quantity != null
+                              ? 'Stock insuffisant. Disponible: $stock'
+                              : null,
+                        ),
+                        keyboardType: TextInputType.number,
+                        onChanged: (_) => setState(() {}),
+                        validator: (v) {
+                          if (v == null || v.isEmpty) return 'Requis';
+                          final qty = int.tryParse(v);
+                          if (qty == null || qty <= 0) return 'Quantité invalide';
+                          if (snapshot.hasData && qty > stock) {
+                            return 'Stock insuffisant. Disponible: $stock';
+                          }
+                          return null;
+                        },
+                      ),
+                    ],
+                  );
+                },
+              )
+            else
+              TextFormField(
+                controller: _quantityController,
+                decoration: const InputDecoration(
+                  labelText: 'Quantité',
+                  prefixIcon: Icon(Icons.inventory_2),
+                  helperText: 'Sélectionnez d\'abord un produit',
+                ),
+                keyboardType: TextInputType.number,
+                onChanged: (_) => setState(() {}),
+                validator: (v) {
+                  if (v == null || v.isEmpty) return 'Requis';
+                  final qty = int.tryParse(v);
+                  if (qty == null || qty <= 0) return 'Quantité invalide';
+                  return null;
+                },
               ),
-              keyboardType: TextInputType.number,
-              onChanged: (_) => setState(() {}),
-              validator: (v) {
-                if (v == null || v.isEmpty) return 'Requis';
-                final qty = int.tryParse(v);
-                if (qty == null || qty <= 0) return 'Quantité invalide';
-                return null;
-              },
-            ),
             if (_totalPrice != null) ...[
               const SizedBox(height: 16),
               Container(

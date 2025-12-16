@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../shared/presentation/widgets/adaptive_navigation_scaffold.dart';
 import '../../../../shared/presentation/widgets/module_loading_animation.dart';
 import '../../application/providers.dart';
+import '../../domain/entities/eau_minerale_section.dart';
 
 class EauMineraleShellScreen extends ConsumerStatefulWidget {
   const EauMineraleShellScreen({
@@ -29,7 +30,7 @@ class _EauMineraleShellScreenState
   List<NavigationSection> _convertToNavigationSections(
       List<EauMineraleSectionConfig> configs) {
     // Sections principales (les plus utilisées)
-    const primarySectionIds = {
+    final primarySectionIds = {
       EauMineraleSection.activity,
       EauMineraleSection.production,
       EauMineraleSection.sales,

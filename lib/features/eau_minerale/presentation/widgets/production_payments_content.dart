@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/providers.dart';
 import '../../domain/entities/production_payment.dart';
+import 'weekly_salary_calculator.dart';
 
 /// Content widget for production payments tab.
 class ProductionPaymentsContent extends ConsumerWidget {
@@ -66,37 +67,42 @@ class ProductionPaymentsContent extends ConsumerWidget {
                   ),
                 ],
               ),
-              if (payments.isEmpty) ...[
-                const SizedBox(height: 48),
+              const SizedBox(height: 24),
+              // Calculateur de salaires hebdomadaires (toujours visible)
+              const WeeklySalaryCalculator(),
+              if (payments.isNotEmpty) ...[
+                const SizedBox(height: 24),
+                const Divider(),
+                const SizedBox(height: 24),
+                Text(
+                  'Historique des paiements',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ...payments.map((payment) => _PaymentCard(payment: payment)),
+              ] else ...[
+                const SizedBox(height: 24),
                 Center(
                   child: Column(
                     children: [
                       Icon(
-                        Icons.factory_outlined,
-                        size: 64,
+                        Icons.history,
+                        size: 48,
                         color: theme.colorScheme.onSurfaceVariant
                             .withValues(alpha: 0.5),
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'Aucun paiement de production enregistré',
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Cliquez sur "Nouveau Paiement" pour commencer',
-                        style: theme.textTheme.bodySmall?.copyWith(
+                        'Aucun paiement enregistré',
+                        style: theme.textTheme.bodyMedium?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
                   ),
                 ),
-              ] else ...[
-                const SizedBox(height: 24),
-                ...payments.map((payment) => _PaymentCard(payment: payment)),
               ],
             ],
           ),

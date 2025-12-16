@@ -58,7 +58,30 @@ class ExpensesTableDesktop extends StatelessWidget {
                   context,
                   ExpensesTableHelpers.buildCategoryChip(context, expense.category),
                 ),
-                _buildDataCellText(context, expense.label),
+                _buildDataCellWidget(
+                  context,
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          expense.label,
+                          style: theme.textTheme.bodyMedium,
+                        ),
+                      ),
+                      if (expense.estLieeAProduction) ...[
+                        const SizedBox(width: 8),
+                        Tooltip(
+                          message: 'Liée à une production',
+                          child: Icon(
+                            Icons.factory,
+                            size: 16,
+                            color: Colors.blue.shade700,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
                 _buildDataCellText(
                   context,
                   '${formatCurrency(expense.amountCfa)} FCFA',

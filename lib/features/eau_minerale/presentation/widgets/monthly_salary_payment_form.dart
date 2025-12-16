@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -6,6 +8,8 @@ import '../../domain/entities/employee.dart';
 import '../../domain/entities/salary_payment.dart';
 import 'monthly_salary_payment_date_section.dart';
 import 'monthly_salary_payment_header.dart';
+import 'payment_signature_dialog.dart';
+import 'payment_signature_dialog.dart';
 
 /// Form for creating a monthly salary payment for a fixed employee.
 class MonthlySalaryPaymentForm extends ConsumerStatefulWidget {
@@ -75,8 +79,26 @@ class MonthlySalaryPaymentFormState
     });
   }
 
-  Future<void> submit() async {
+  Future<void> _requestSignatureAndSubmit() async {
     if (!_formKey.currentState!.validate()) return;
+
+    // Demander la signature avant d'enregistrer le paiement
+    final signature = await showDialog<Uint8List>(
+      context: context,
+      builder: (dialogContext) => PaymentSignatureDialog(
+        workerName: widget.employee.name,
+        amount: widget.employee.monthlySalary,
+        period: _period,
+        onPaid: (sig) {
+          Navigator.of(context).pop(sig);
+        },
+      ),
+    );
+
+    if (signature == null) {
+      // L'utilisateur a annulé la signature
+      return;
+    }
 
     setState(() => _isLoading = true);
     try {
@@ -88,6 +110,7 @@ class MonthlySalaryPaymentFormState
         date: _paymentDate,
         period: _period,
         notes: _notesController.text.isEmpty ? null : _notesController.text.trim(),
+        signature: signature,
       );
 
       await ref.read(salaryControllerProvider).createMonthlySalaryPayment(payment);
@@ -96,7 +119,10 @@ class MonthlySalaryPaymentFormState
       Navigator.of(context).pop();
       ref.invalidate(salaryStateProvider);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Paiement de salaire enregistré')),
+        const SnackBar(
+          content: Text('Paiement de salaire enregistré avec signature'),
+          backgroundColor: Colors.green,
+        ),
       );
     } catch (e) {
       if (!mounted) return;
@@ -106,6 +132,10 @@ class MonthlySalaryPaymentFormState
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  Future<void> submit() async {
+    await _requestSignatureAndSubmit();
   }
 
 

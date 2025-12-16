@@ -3,15 +3,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../../app/theme/app_theme.dart';
 import '../../../application/providers.dart';
+import '../../../domain/entities/electricity_meter_type.dart';
 import '../../../domain/entities/production_session.dart';
 import '../../../domain/entities/sale.dart';
 import '../../../domain/services/production_margin_calculator.dart';
+import '../../widgets/production_detail_report.dart';
 import '../../widgets/section_placeholder.dart';
 import 'production_sessions_screen.dart' show ventesParSessionProvider;
 import 'production_session_form_screen.dart';
 
 /// Écran de détail d'une session de production.
-class ProductionSessionDetailScreen extends ConsumerWidget {
+class ProductionSessionDetailScreen extends ConsumerStatefulWidget {
   const ProductionSessionDetailScreen({
     super.key,
     required this.sessionId,
@@ -20,15 +22,44 @@ class ProductionSessionDetailScreen extends ConsumerWidget {
   final String sessionId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ProductionSessionDetailScreen> createState() =>
+      _ProductionSessionDetailScreenState();
+}
+
+class _ProductionSessionDetailScreenState
+    extends ConsumerState<ProductionSessionDetailScreen>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final sessionAsync = ref.watch(
-      productionSessionDetailProvider(sessionId),
+      productionSessionDetailProvider(widget.sessionId),
     );
-    final ventesAsync = ref.watch(ventesParSessionProvider(sessionId));
+    final ventesAsync = ref.watch(ventesParSessionProvider(widget.sessionId));
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Détail session'),
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(text: 'Détails', icon: Icon(Icons.info_outline)),
+            Tab(text: 'Rapport', icon: Icon(Icons.assessment)),
+          ],
+        ),
         actions: [
           sessionAsync.when(
             data: (session) => IconButton(
@@ -40,42 +71,27 @@ class ProductionSessionDetailScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: sessionAsync.when(
-        data: (session) {
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeaderCard(context, session),
-                const SizedBox(height: 16),
-                _buildConsumptionCard(context, session),
-                const SizedBox(height: 16),
-                _buildMachinesCard(context, session),
-                const SizedBox(height: 16),
-                _buildBobinesCard(context, session),
-                const SizedBox(height: 16),
-                ventesAsync.when(
-                  data: (ventes) => _buildMarginCard(context, session, ventes),
-                  loading: () => const CircularProgressIndicator(),
-                  error: (_, __) => const SizedBox.shrink(),
-                ),
-                if (session.notes != null) ...[
-                  const SizedBox(height: 16),
-                  _buildNotesCard(context, session),
-                ],
-              ],
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          // Onglet Détails
+          sessionAsync.when(
+            data: (session) => _ProductionSessionDetailContent(
+              sessionId: widget.sessionId,
+              ventesAsync: ventesAsync,
             ),
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => SectionPlaceholder(
-          icon: Icons.error_outline,
-          title: 'Erreur de chargement',
-          subtitle: 'Impossible de charger les détails de la session.',
-          primaryActionLabel: 'Réessayer',
-          onPrimaryAction: () => ref.invalidate(productionSessionDetailProvider(sessionId)),
-        ),
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (error, stack) => SectionPlaceholder(
+              icon: Icons.error_outline,
+              title: 'Erreur de chargement',
+              subtitle: 'Impossible de charger les détails de la session.',
+              primaryActionLabel: 'Réessayer',
+              onPrimaryAction: () => ref.invalidate(productionSessionDetailProvider(widget.sessionId)),
+            ),
+          ),
+          // Onglet Rapport
+          _ProductionSessionReportContent(sessionId: widget.sessionId),
+        ],
       ),
     );
   }
@@ -88,6 +104,57 @@ class ProductionSessionDetailScreen extends ConsumerWidget {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => ProductionSessionFormScreen(session: session),
+      ),
+    );
+  }
+}
+
+class _ProductionSessionDetailContent extends ConsumerWidget {
+  const _ProductionSessionDetailContent({
+    required this.sessionId,
+    required this.ventesAsync,
+  });
+
+  final String sessionId;
+  final AsyncValue<List<Sale>> ventesAsync;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final sessionAsync = ref.watch(productionSessionDetailProvider(sessionId));
+    
+    return sessionAsync.when(
+      data: (session) => SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildHeaderCard(context, session),
+            const SizedBox(height: 16),
+            _buildConsumptionCard(context, session),
+            const SizedBox(height: 16),
+            _buildMachinesCard(context, session),
+            const SizedBox(height: 16),
+            _buildBobinesCard(context, session),
+            const SizedBox(height: 16),
+            ventesAsync.when(
+              data: (ventes) => _buildMarginCard(context, session, ventes),
+              loading: () => const CircularProgressIndicator(),
+              error: (_, __) => const SizedBox.shrink(),
+            ),
+            if (session.notes != null) ...[
+              const SizedBox(height: 16),
+              _buildNotesCard(context, session),
+            ],
+          ],
+        ),
+      ),
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, stack) => SectionPlaceholder(
+        icon: Icons.error_outline,
+        title: 'Erreur de chargement',
+        subtitle: 'Impossible de charger les détails de la session.',
+        primaryActionLabel: 'Réessayer',
+        onPrimaryAction: () => ref.invalidate(productionSessionDetailProvider(sessionId)),
       ),
     );
   }
@@ -111,7 +178,8 @@ class ProductionSessionDetailScreen extends ConsumerWidget {
             const SizedBox(height: 12),
             _buildInfoRow(context, 'Heure début', _formatTime(session.heureDebut)),
             const SizedBox(height: 12),
-            _buildInfoRow(context, 'Heure fin', _formatTime(session.heureFin)),
+            if (session.heureFin != null)
+              _buildInfoRow(context, 'Heure fin', _formatTime(session.heureFin!)),
             const SizedBox(height: 12),
             _buildInfoRow(
               context,
@@ -149,42 +217,7 @@ class ProductionSessionDetailScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Consommations',
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 20),
-            _buildInfoRow(
-              context,
-              'Index compteur début',
-              session.indexCompteurDebut.toString(),
-            ),
-            const SizedBox(height: 12),
-            _buildInfoRow(
-              context,
-              'Index compteur fin',
-              session.indexCompteurFin.toString(),
-            ),
-            const SizedBox(height: 12),
-            _buildInfoRow(
-              context,
-              'Consommation eau',
-              '${session.consommationEau} L',
-            ),
-            const SizedBox(height: 12),
-            _buildInfoRow(
-              context,
-              'Consommation courant',
-              '${session.consommationCourant.toStringAsFixed(2)} kWh',
-            ),
-            const SizedBox(height: 12),
-            _buildInfoRow(
-              context,
-              'Poids bobines utilisées',
-              '${session.poidsTotalBobinesUtilisees.toStringAsFixed(2)} kg',
-            ),
+            _buildConsumptionInfoRow(context, session),
           ],
         ),
       ),
@@ -242,12 +275,33 @@ class ProductionSessionDetailScreen extends ConsumerWidget {
             ...session.bobinesUtilisees.map(
               (bobine) => Card(
                 margin: const EdgeInsets.only(bottom: 8),
+                color: bobine.estFinie
+                    ? null
+                    : theme.colorScheme.primaryContainer.withValues(alpha: 0.1),
                 child: ListTile(
-                  title: Text(bobine.bobineReference),
-                  subtitle: Text(
-                    'Machine: ${bobine.machineName}\n'
-                    'Poids: ${bobine.poidsInitial}kg → ${bobine.poidsFinal}kg\n'
-                    'Utilisé: ${bobine.poidsUtilise.toStringAsFixed(2)}kg',
+                  leading: Icon(
+                    bobine.estFinie
+                        ? Icons.check_circle
+                        : Icons.rotate_right,
+                    color: bobine.estFinie
+                        ? Colors.green
+                        : theme.colorScheme.primary,
+                  ),
+                  title: Text(bobine.bobineType),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Machine: ${bobine.machineName}'),
+                      if (!bobine.estFinie)
+                        Text(
+                          'Bobine non finie - reste en machine',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: Colors.orange.shade700,
+                            fontStyle: FontStyle.italic,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                    ],
                   ),
                 ),
               ),
@@ -409,6 +463,62 @@ class ProductionSessionDetailScreen extends ConsumerWidget {
   String _formatTime(DateTime time) {
     return '${time.hour.toString().padLeft(2, '0')}:'
         '${time.minute.toString().padLeft(2, '0')}';
+  }
+
+  Widget _buildConsumptionInfoRow(BuildContext context, ProductionSession session) {
+    return Consumer(
+      builder: (context, ref, child) {
+        final meterTypeAsync = ref.watch(electricityMeterTypeProvider);
+        
+        return meterTypeAsync.when(
+          data: (meterType) {
+            return _buildInfoRow(
+              context,
+              'Consommation courant',
+              '${session.consommationCourant.toStringAsFixed(2)} ${meterType.unit}',
+            );
+          },
+          loading: () => _buildInfoRow(
+            context,
+            'Consommation courant',
+            '${session.consommationCourant.toStringAsFixed(2)}',
+          ),
+          error: (_, __) => _buildInfoRow(
+            context,
+            'Consommation courant',
+            '${session.consommationCourant.toStringAsFixed(2)}',
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _ProductionSessionReportContent extends ConsumerWidget {
+  const _ProductionSessionReportContent({
+    required this.sessionId,
+  });
+
+  final String sessionId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final sessionAsync = ref.watch(productionSessionDetailProvider(sessionId));
+    
+    return sessionAsync.when(
+      data: (session) => SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: ProductionDetailReport(session: session),
+      ),
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, stack) => SectionPlaceholder(
+        icon: Icons.error_outline,
+        title: 'Erreur de chargement',
+        subtitle: 'Impossible de charger les détails de la session.',
+        primaryActionLabel: 'Réessayer',
+        onPrimaryAction: () => ref.invalidate(productionSessionDetailProvider(sessionId)),
+      ),
+    );
   }
 }
 

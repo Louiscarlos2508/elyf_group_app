@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/providers.dart';
-import '../../domain/entities/bobine.dart';
 import '../../domain/entities/bobine_usage.dart';
 import '../../domain/entities/machine.dart';
 import '../../domain/entities/production_period_config.dart';
@@ -29,8 +28,6 @@ class ProductionSessionForm extends ConsumerStatefulWidget {
 class ProductionSessionFormState
     extends ConsumerState<ProductionSessionForm> {
   final _formKey = GlobalKey<FormState>();
-  final _indexDebutController = TextEditingController();
-  final _indexFinController = TextEditingController();
   final _consommationController = TextEditingController();
   final _quantiteController = TextEditingController();
   final _emballagesController = TextEditingController();
@@ -54,9 +51,7 @@ class ProductionSessionFormState
   void _initialiserAvecSession(ProductionSession session) {
     _selectedDate = session.date;
     _heureDebut = session.heureDebut;
-    _heureFin = session.heureFin;
-    _indexDebutController.text = session.indexCompteurDebut.toString();
-    _indexFinController.text = session.indexCompteurFin.toString();
+    _heureFin = session.heureFin ?? DateTime.now();
     _consommationController.text = session.consommationCourant.toString();
     _quantiteController.text = session.quantiteProduite.toString();
     _emballagesController.text = session.emballagesUtilises?.toString() ?? '';
@@ -67,8 +62,6 @@ class ProductionSessionFormState
 
   @override
   void dispose() {
-    _indexDebutController.dispose();
-    _indexFinController.dispose();
     _consommationController.dispose();
     _quantiteController.dispose();
     _emballagesController.dispose();
@@ -76,10 +69,6 @@ class ProductionSessionFormState
     super.dispose();
   }
 
-  int? get _indexDebut => int.tryParse(_indexDebutController.text);
-  int? get _indexFin => int.tryParse(_indexFinController.text);
-  int? get _consommationEau =>
-      _indexDebut != null && _indexFin != null ? _indexFin! - _indexDebut! : null;
 
   Future<void> submit() async {
     if (!_formKey.currentState!.validate()) return;
@@ -105,9 +94,7 @@ class ProductionSessionFormState
         date: _selectedDate,
         period: config.getPeriodForDate(_selectedDate),
         heureDebut: _heureDebut,
-        heureFin: _heureFin,
-        indexCompteurDebut: _indexDebut!,
-        indexCompteurFin: _indexFin!,
+        heureFin: null, // Sera défini lors de la finalisation
         consommationCourant: double.parse(_consommationController.text),
         machinesUtilisees: _machinesSelectionnees,
         bobinesUtilisees: _bobinesUtilisees,
@@ -117,6 +104,7 @@ class ProductionSessionFormState
             ? int.tryParse(_emballagesController.text)
             : null,
         notes: _notesController.text.isEmpty ? null : _notesController.text,
+        // indexCompteurInitialKwh et indexCompteurFinalKwh seront ajoutés plus tard
       );
 
       final controller = ref.read(productionSessionControllerProvider);
@@ -159,9 +147,6 @@ class ProductionSessionFormState
             const SizedBox(height: 16),
             _buildTimeFields(),
             const SizedBox(height: 16),
-            _buildIndexFields(),
-            const SizedBox(height: 16),
-            _buildConsommationField(),
             const SizedBox(height: 16),
             MachineSelectorField(
               machinesSelectionnees: _machinesSelectionnees,
@@ -244,56 +229,6 @@ class ProductionSessionFormState
     );
   }
 
-  Widget _buildIndexFields() {
-    return Row(
-      children: [
-        Expanded(
-          child: TextFormField(
-            controller: _indexDebutController,
-            decoration: const InputDecoration(
-              labelText: 'Index compteur début',
-              prefixIcon: Icon(Icons.water_drop),
-            ),
-            keyboardType: TextInputType.number,
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Requis';
-              }
-              if (int.tryParse(value) == null) {
-                return 'Nombre invalide';
-              }
-              return null;
-            },
-            onChanged: (_) => setState(() {}),
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: TextFormField(
-            controller: _indexFinController,
-            decoration: const InputDecoration(
-              labelText: 'Index compteur fin',
-              prefixIcon: Icon(Icons.water_drop),
-            ),
-            keyboardType: TextInputType.number,
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Requis';
-              }
-              if (int.tryParse(value) == null) {
-                return 'Nombre invalide';
-              }
-              if (_indexDebut != null && int.parse(value) < _indexDebut!) {
-                return 'Doit être >= index début';
-              }
-              return null;
-            },
-            onChanged: (_) => setState(() {}),
-          ),
-        ),
-      ],
-    );
-  }
 
   Widget _buildConsommationField() {
     return Column(
@@ -316,15 +251,6 @@ class ProductionSessionFormState
             return null;
           },
         ),
-        if (_consommationEau != null) ...[
-          const SizedBox(height: 8),
-          Text(
-            'Consommation eau: $_consommationEau L',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-          ),
-        ],
       ],
     );
   }

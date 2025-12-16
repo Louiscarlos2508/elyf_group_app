@@ -110,33 +110,51 @@ class _AdaptiveNavigationScaffoldState
         title: Text(widget.appTitle),
         centerTitle: true,
       ),
-      body: Row(
-        children: [
-          NavigationRail(
-            selectedIndex: _selectedIndex,
-            onDestinationSelected: _onDestinationSelected,
-            labelType: isExtended
-                ? NavigationRailLabelType.none
-                : NavigationRailLabelType.all,
-            extended: isExtended,
-            destinations: widget.sections
-                .map(
-                  (section) => NavigationRailDestination(
-                    icon: Icon(section.icon),
-                    selectedIcon: Icon(section.icon),
-                    label: Text(section.label),
+      resizeToAvoidBottomInset: false,
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final maxHeight = constraints.maxHeight.isFinite 
+              ? constraints.maxHeight 
+              : MediaQuery.of(context).size.height;
+          
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ClipRect(
+                child: SizedBox(
+                  width: isExtended ? 200 : 80,
+                  height: maxHeight,
+                  child: NavigationRail(
+                    selectedIndex: _selectedIndex,
+                    onDestinationSelected: _onDestinationSelected,
+                    labelType: isExtended
+                        ? NavigationRailLabelType.none
+                        : NavigationRailLabelType.all,
+                    extended: isExtended,
+                    minExtendedWidth: 200,
+                    minWidth: 80,
+                    destinations: widget.sections
+                        .map(
+                          (section) => NavigationRailDestination(
+                            icon: Icon(section.icon),
+                            selectedIcon: Icon(section.icon),
+                            label: Text(section.label),
+                          ),
+                        )
+                        .toList(),
                   ),
-                )
-                .toList(),
-          ),
-          const VerticalDivider(thickness: 1, width: 1),
-          Expanded(
-            child: IndexedStack(
-              index: _selectedIndex,
-              children: widget.sections.map((s) => s.builder()).toList(),
-            ),
-          ),
-        ],
+                ),
+              ),
+              const VerticalDivider(thickness: 1, width: 1),
+              Expanded(
+                child: IndexedStack(
+                  index: _selectedIndex,
+                  children: widget.sections.map((s) => s.builder()).toList(),
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

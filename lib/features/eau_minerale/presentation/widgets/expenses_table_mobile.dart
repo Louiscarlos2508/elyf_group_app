@@ -52,11 +52,26 @@ class ExpensesTableMobile extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 8),
-              Text(
-                expense.label,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      expense.label,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  if (expense.estLieeAProduction)
+                    Tooltip(
+                      message: 'Liée à une production',
+                      child: Icon(
+                        Icons.factory,
+                        size: 16,
+                        color: Colors.blue.shade700,
+                      ),
+                    ),
+                ],
               ),
               const SizedBox(height: 8),
               ExpensesTableHelpers.buildActionButtons(

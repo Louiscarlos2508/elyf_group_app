@@ -12,7 +12,7 @@ class CreditService {
   final CreditRepository creditRepository;
   final SaleRepository saleRepository;
 
-  /// Records a credit payment and updates sale status if fully paid.
+  /// Records a credit payment and updates sale amountPaid and status if fully paid.
   Future<String> recordPayment(CreditPayment payment) async {
     final sale = await saleRepository.getSale(payment.saleId);
     if (sale == null) throw Exception('Vente introuvable');
@@ -29,11 +29,9 @@ class CreditService {
 
     final paymentId = await creditRepository.recordPayment(payment);
 
-    // If fully paid, update sale status
-    final newRemaining = sale.remainingAmount - payment.amount;
-    if (newRemaining == 0 && sale.isValidated) {
-      // Sale is now fully paid (status update would be handled by repository)
-    }
+    // Update sale amountPaid to include the new payment
+    final newAmountPaid = sale.amountPaid + payment.amount;
+    await saleRepository.updateSaleAmountPaid(payment.saleId, newAmountPaid);
 
     return paymentId;
   }

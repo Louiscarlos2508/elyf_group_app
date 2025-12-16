@@ -1,18 +1,26 @@
 import '../../domain/entities/sale.dart';
-import '../../domain/repositories/sales_repository.dart';
+import '../../domain/repositories/sale_repository.dart';
+import '../../domain/services/sale_service.dart';
 
 class SalesController {
-  SalesController(this._repository);
+  SalesController(
+    this._saleRepository,
+    this._saleService,
+  );
 
-  final SalesRepository _repository;
+  final SaleRepository _saleRepository;
+  final SaleService _saleService;
 
   Future<SalesState> fetchRecentSales() async {
-    final sales = await _repository.fetchRecentSales(limit: 6);
-    return SalesState(sales: sales);
+    // Récupérer les ventes récentes (dernières 6 ventes)
+    final sales = await _saleRepository.fetchSales();
+    sales.sort((a, b) => b.date.compareTo(a.date));
+    return SalesState(sales: sales.take(6).toList());
   }
 
-  Future<String> createSale(Sale sale) async {
-    return await _repository.createSale(sale);
+  /// Creates a sale using SaleService which handles stock validation and decrement.
+  Future<String> createSale(Sale sale, String userId, bool isManager) async {
+    return await _saleService.createSale(sale, userId, isManager);
   }
 }
 

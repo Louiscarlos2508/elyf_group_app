@@ -22,29 +22,16 @@ class ExpenseDetailDialog extends StatelessWidget {
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
   }
 
-  String _getCategoryLabel(ExpenseCategory category) {
-    switch (category) {
-      case ExpenseCategory.logistics:
-        return 'Logistique';
-      case ExpenseCategory.payroll:
-        return 'Salaires';
-      case ExpenseCategory.maintenance:
-        return 'Maintenance';
-      case ExpenseCategory.utility:
-        return 'Services publics';
-    }
-  }
-
   IconData _getCategoryIcon(ExpenseCategory category) {
     switch (category) {
-      case ExpenseCategory.logistics:
-        return Icons.local_shipping;
-      case ExpenseCategory.payroll:
-        return Icons.payments;
-      case ExpenseCategory.maintenance:
+      case ExpenseCategory.carburant:
+        return Icons.local_gas_station;
+      case ExpenseCategory.reparations:
         return Icons.build;
-      case ExpenseCategory.utility:
-        return Icons.bolt;
+      case ExpenseCategory.achatsDivers:
+        return Icons.shopping_cart;
+      case ExpenseCategory.autres:
+        return Icons.more_horiz;
     }
   }
 
@@ -90,7 +77,7 @@ class ExpenseDetailDialog extends StatelessWidget {
                     Expanded(
                       child: _DetailRow(
                         label: 'Catégorie',
-                        value: _getCategoryLabel(expense.category),
+                        value: expense.category.label,
                         icon: _getCategoryIcon(expense.category),
                       ),
                     ),
@@ -110,6 +97,41 @@ class ExpenseDetailDialog extends StatelessWidget {
                   value: _formatDate(expense.date),
                   icon: Icons.calendar_today,
                 ),
+                if (expense.estLieeAProduction) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.factory,
+                          color: Colors.blue.shade700,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Liée à une production',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: Colors.blue.shade700,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                if (expense.notes != null && expense.notes!.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  _DetailRow(
+                    label: 'Notes',
+                    value: expense.notes!,
+                    icon: Icons.note,
+                  ),
+                ],
               ],
             ),
           ),

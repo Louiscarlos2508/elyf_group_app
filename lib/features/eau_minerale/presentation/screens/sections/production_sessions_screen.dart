@@ -29,11 +29,7 @@ class ProductionSessionsScreen extends ConsumerWidget {
     final sessionsAsync = ref.watch(productionSessionsStateProvider);
     final theme = Theme.of(context);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Sessions de production'),
-      ),
-      body: sessionsAsync.when(
+    return sessionsAsync.when(
         data: (sessions) {
           if (sessions.isEmpty) {
             return SectionPlaceholder(
@@ -45,26 +41,76 @@ class ProductionSessionsScreen extends ConsumerWidget {
             );
           }
 
+          // Trier les sessions par date (plus récentes en premier)
+          final sessionsTriees = List<ProductionSession>.from(sessions)
+            ..sort((a, b) => b.date.compareTo(a.date));
+
+          // Calculer les statistiques
+          final totalSessions = sessionsTriees.length;
+          final sessionsEnCours = sessionsTriees.where((s) =>
+            s.effectiveStatus == ProductionSessionStatus.started ||
+            s.effectiveStatus == ProductionSessionStatus.inProgress
+          ).length;
+          final sessionsTerminees = sessionsTriees.where((s) =>
+            s.effectiveStatus == ProductionSessionStatus.completed
+          ).length;
+          final totalProduit = sessionsTriees.fold<double>(
+            0,
+            (sum, s) => sum + s.quantiteProduite,
+          );
+
           return CustomScrollView(
             slivers: [
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-                  child: Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Sessions de production',
-                        style: theme.textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Sessions de production',
+                                  style: theme.textTheme.headlineMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '$totalSessions session${totalSessions > 1 ? 's' : ''} au total',
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.refresh),
+                            onPressed: () => ref.invalidate(productionSessionsStateProvider),
+                            tooltip: 'Actualiser',
+                          ),
+                          const SizedBox(width: 8),
+                          IntrinsicWidth(
+                            child: FilledButton.icon(
+                              onPressed: () => _showCreateForm(context),
+                              icon: const Icon(Icons.add),
+                              label: const Text('Nouvelle session'),
+                            ),
+                          ),
+                        ],
                       ),
-                      const Spacer(),
-                      IntrinsicWidth(
-                        child: FilledButton.icon(
-                          onPressed: () => _showCreateForm(context),
-                          icon: const Icon(Icons.add),
-                          label: const Text('Nouvelle session'),
-                        ),
+                      const SizedBox(height: 24),
+                      // Statistiques
+                      _StatisticsCards(
+                        totalSessions: totalSessions,
+                        sessionsEnCours: sessionsEnCours,
+                        sessionsTerminees: sessionsTerminees,
+                        totalProduit: totalProduit,
                       ),
                     ],
                   ),
@@ -75,15 +121,18 @@ class ProductionSessionsScreen extends ConsumerWidget {
                 sliver: SliverList(
                   delegate: SliverChildBuilderDelegate(
                     (context, index) {
-                      final session = sessions[index];
+                      final session = sessionsTriees[index];
                       return Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.only(bottom: 16),
                         child: _ProductionSessionCard(session: session),
                       );
                     },
-                    childCount: sessions.length,
+                    childCount: sessionsTriees.length,
                   ),
                 ),
+              ),
+              const SliverToBoxAdapter(
+                child: SizedBox(height: 24),
               ),
             ],
           );
@@ -96,6 +145,184 @@ class ProductionSessionsScreen extends ConsumerWidget {
           primaryActionLabel: 'Réessayer',
           onPrimaryAction: () => ref.invalidate(productionSessionsStateProvider),
         ),
+    );
+  }
+}
+
+/// Widget pour afficher les statistiques des sessions
+class _StatisticsCards extends StatelessWidget {
+  const _StatisticsCards({
+    required this.totalSessions,
+    required this.sessionsEnCours,
+    required this.sessionsTerminees,
+    required this.totalProduit,
+  });
+
+  final int totalSessions;
+  final int sessionsEnCours;
+  final int sessionsTerminees;
+  final double totalProduit;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth > 600;
+        
+        if (isWide) {
+          return Row(
+            children: [
+              Expanded(
+                child: _buildStatCard(
+                  context,
+                  'Total',
+                  totalSessions.toString(),
+                  Icons.factory,
+                  theme.colorScheme.primary,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildStatCard(
+                  context,
+                  'En cours',
+                  sessionsEnCours.toString(),
+                  Icons.settings,
+                  Colors.blue,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildStatCard(
+                  context,
+                  'Terminées',
+                  sessionsTerminees.toString(),
+                  Icons.check_circle,
+                  Colors.green,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildStatCard(
+                  context,
+                  'Total produit',
+                  totalProduit.toStringAsFixed(0),
+                  Icons.inventory_2,
+                  Colors.orange,
+                ),
+              ),
+            ],
+          );
+        } else {
+          return Column(
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildStatCard(
+                      context,
+                      'Total',
+                      totalSessions.toString(),
+                      Icons.factory,
+                      theme.colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildStatCard(
+                      context,
+                      'En cours',
+                      sessionsEnCours.toString(),
+                      Icons.settings,
+                      Colors.blue,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildStatCard(
+                      context,
+                      'Terminées',
+                      sessionsTerminees.toString(),
+                      Icons.check_circle,
+                      Colors.green,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildStatCard(
+                      context,
+                      'Total produit',
+                      totalProduit.toStringAsFixed(0),
+                      Icons.inventory_2,
+                      Colors.orange,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          );
+        }
+      },
+    );
+  }
+
+  Widget _buildStatCard(
+    BuildContext context,
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
+    final theme = Theme.of(context);
+    
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: color.withValues(alpha: 0.3),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, size: 20, color: color),
+              ),
+              const Spacer(),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -115,11 +342,12 @@ class _ProductionSessionCard extends ConsumerWidget {
     );
 
     return Card(
+      elevation: 2,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         onTap: () {
           Navigator.of(context).push(
             MaterialPageRoute(
@@ -129,11 +357,19 @@ class _ProductionSessionCard extends ConsumerWidget {
             ),
           );
         },
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: theme.colorScheme.outline.withValues(alpha: 0.1),
+              width: 1,
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -142,18 +378,42 @@ class _ProductionSessionCard extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          _formatDate(session.date),
-                          style: theme.textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          _formatTime(session.date),
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.primaryContainer,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Icon(
+                                Icons.calendar_today,
+                                size: 18,
+                                color: theme.colorScheme.onPrimaryContainer,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    _formatDate(session.date),
+                                    style: theme.textTheme.titleLarge?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    _formatTime(session.date),
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -163,8 +423,16 @@ class _ProductionSessionCard extends ConsumerWidget {
                     children: [
                       _buildStatusChip(context, session.effectiveStatus),
                       const SizedBox(height: 8),
-                      Chip(
-                        label: Row(
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.primaryContainer,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
@@ -173,62 +441,119 @@ class _ProductionSessionCard extends ConsumerWidget {
                               color: theme.colorScheme.onPrimaryContainer,
                             ),
                             const SizedBox(width: 4),
-                            Text('${session.dureeHeures.toStringAsFixed(1)}h'),
+                            Text(
+                              '${session.dureeHeures.toStringAsFixed(1)}h',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onPrimaryContainer,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                           ],
                         ),
-                        backgroundColor: theme.colorScheme.primaryContainer,
                       ),
                     ],
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: [
-                  _buildInfoChip(
-                    context,
-                    Icons.inventory_2,
-                    '${session.quantiteProduite} ${session.quantiteProduiteUnite}',
-                  ),
-                  _buildInfoChip(
-                    context,
-                    Icons.precision_manufacturing,
-                    '${session.machinesUtilisees.length} machine${session.machinesUtilisees.length > 1 ? 's' : ''}',
-                  ),
-                  _buildInfoChip(
-                    context,
-                    Icons.inventory,
-                    '${session.bobinesUtilisees.length} bobine${session.bobinesUtilisees.length > 1 ? 's' : ''}',
-                  ),
-                  _buildInfoChip(
-                    context,
-                    Icons.water_drop,
-                    '${session.consommationEau} L',
-                  ),
-                ],
+              const SizedBox(height: 20),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _buildInfoItem(
+                        context,
+                        Icons.inventory_2,
+                        'Production',
+                        '${session.quantiteProduite.toStringAsFixed(0)} ${session.quantiteProduiteUnite}',
+                        theme.colorScheme.primary,
+                      ),
+                    ),
+                    Container(
+                      width: 1,
+                      height: 40,
+                      color: theme.colorScheme.outline.withValues(alpha: 0.2),
+                    ),
+                    Expanded(
+                      child: _buildInfoItem(
+                        context,
+                        Icons.precision_manufacturing,
+                        'Machines',
+                        '${session.machinesUtilisees.length}',
+                        Colors.blue,
+                      ),
+                    ),
+                    Container(
+                      width: 1,
+                      height: 40,
+                      color: theme.colorScheme.outline.withValues(alpha: 0.2),
+                    ),
+                    Expanded(
+                      child: _buildInfoItem(
+                        context,
+                        Icons.rotate_right,
+                        'Bobines',
+                        '${session.bobinesUtilisees.length}',
+                        Colors.orange,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               Row(
-                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  OutlinedButton.icon(
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => ProductionTrackingScreen(
-                            sessionId: session.id,
-                          ),
+                  // Bouton Modifier pour les sessions en cours
+                  if (session.effectiveStatus == ProductionSessionStatus.draft ||
+                      session.effectiveStatus == ProductionSessionStatus.started ||
+                      session.effectiveStatus == ProductionSessionStatus.inProgress)
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => ProductionSessionFormScreen(
+                                session: session,
+                              ),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.edit, size: 18),
+                        label: const Text('Modifier'),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
-                      );
-                    },
-                    icon: const Icon(Icons.track_changes),
-                    label: const Text('Suivre'),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
+                      ),
+                    ),
+                  if (session.effectiveStatus == ProductionSessionStatus.draft ||
+                      session.effectiveStatus == ProductionSessionStatus.started ||
+                      session.effectiveStatus == ProductionSessionStatus.inProgress)
+                    const SizedBox(width: 12),
+                  // Bouton Suivre pour toutes les sessions
+                  Expanded(
+                    flex: session.effectiveStatus == ProductionSessionStatus.draft ||
+                            session.effectiveStatus == ProductionSessionStatus.started ||
+                            session.effectiveStatus == ProductionSessionStatus.inProgress
+                        ? 1
+                        : 1,
+                    child: FilledButton.icon(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => ProductionTrackingScreen(
+                              sessionId: session.id,
+                            ),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.track_changes, size: 18),
+                      label: const Text('Suivre'),
+                      style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
                     ),
                   ),
@@ -282,6 +607,7 @@ class _ProductionSessionCard extends ConsumerWidget {
           ),
         ),
       ),
+      ),
     );
   }
 
@@ -313,6 +639,12 @@ class _ProductionSessionCard extends ConsumerWidget {
         textColor = statusColors?.success ?? Colors.blue;
         icon = Icons.settings;
         break;
+      case ProductionSessionStatus.suspended:
+        backgroundColor = statusColors?.danger.withValues(alpha: 0.2) ??
+            Colors.orange.withValues(alpha: 0.2);
+        textColor = statusColors?.danger ?? Colors.orange;
+        icon = Icons.pause_circle_outline;
+        break;
       case ProductionSessionStatus.completed:
         backgroundColor = statusColors?.success.withValues(alpha: 0.2) ??
             Colors.green.withValues(alpha: 0.2);
@@ -341,32 +673,33 @@ class _ProductionSessionCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildInfoChip(BuildContext context, IconData icon, String text) {
+  Widget _buildInfoItem(
+    BuildContext context,
+    IconData icon,
+    String label,
+    String value,
+    Color color,
+  ) {
     final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            size: 16,
+    return Column(
+      children: [
+        Icon(icon, size: 24, color: color),
+        const SizedBox(height: 8),
+        Text(
+          value,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
-          const SizedBox(width: 6),
-          Text(
-            text,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

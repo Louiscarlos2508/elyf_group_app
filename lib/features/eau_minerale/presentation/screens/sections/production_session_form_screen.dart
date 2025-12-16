@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../application/providers.dart';
 import '../../../domain/entities/production_session.dart';
 import '../../widgets/production_session_form_steps.dart';
 
@@ -60,12 +59,18 @@ class _ProductionSessionFormScreenState
   }
 
   Widget _buildProgressIndicator(ThemeData theme) {
-    final steps = [
-      'Informations',
-      'Consommations',
-      'Machines & Bobines',
-      'Résumé',
-    ];
+    // Pour une nouvelle session, on a seulement 1 étape (démarrage)
+    // Pour une session existante, on garde les 3 étapes pour l'édition
+    final isEditing = widget.session != null;
+    final steps = isEditing
+        ? [
+            'Démarrage',
+            'Production',
+            'Finalisation',
+          ]
+        : [
+            'Démarrage',
+          ];
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
@@ -174,6 +179,9 @@ class _ProductionSessionFormScreenState
   }
 
   Widget _buildBottomActions(BuildContext context, ThemeData theme) {
+    final isEditing = widget.session != null;
+    final maxStep = isEditing ? 2 : 0;
+    
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -208,13 +216,30 @@ class _ProductionSessionFormScreenState
                   ),
                 ),
               if (_currentStep > 0) const SizedBox(width: 12),
+              // Bouton Sauvegarder (visible sur toutes les étapes sauf la dernière)
+              if (_currentStep < maxStep)
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () async {
+                      final formState = _formStepsKey.currentState;
+                      if (formState != null) {
+                        await formState.saveDraft();
+                      }
+                    },
+                    icon: const Icon(Icons.save, size: 18),
+                    label: const Text('Sauvegarder'),
+                  ),
+                ),
+              if (_currentStep < maxStep) const SizedBox(width: 12),
               Expanded(
                 child: FilledButton(
                   onPressed: () async {
-                    if (_currentStep < 3) {
+                    if (_currentStep < maxStep) {
                       // Valider l'étape actuelle avant de passer à la suivante
                       final formState = _formStepsKey.currentState;
                       if (formState != null && formState.validateCurrentStep()) {
+                        // Sauvegarder automatiquement avant de passer à l'étape suivante
+                        await formState.saveDraft();
                         setState(() => _currentStep++);
                       }
                     } else {
@@ -225,7 +250,7 @@ class _ProductionSessionFormScreenState
                       }
                     }
                   },
-                  child: Text(_currentStep < 3 ? 'Suivant' : 'Enregistrer'),
+                  child: Text(_currentStep < maxStep ? 'Suivant' : 'Créer la session'),
                 ),
               ),
             ],

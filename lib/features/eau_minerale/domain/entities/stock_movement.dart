@@ -1,4 +1,5 @@
 /// Represents a stock movement (entry or exit).
+/// Unified model for displaying all stock movements from different sources.
 class StockMovement {
   const StockMovement({
     required this.id,
@@ -8,6 +9,8 @@ class StockMovement {
     required this.reason,
     required this.quantity,
     required this.unit,
+    this.productionId,
+    this.notes,
   });
 
   final String id;
@@ -17,6 +20,8 @@ class StockMovement {
   final String reason;
   final double quantity;
   final String unit;
+  final String? productionId; // ID de la production si lié à une production
+  final String? notes; // Notes additionnelles
 
   factory StockMovement.sample(int index) {
     final reasons = [
@@ -27,9 +32,9 @@ class StockMovement {
       'Perte',
     ];
     final products = [
-      'Sachets',
-      'Bidons',
       'Pack',
+      'Emballage',
+      'Bobine',
     ];
     
     return StockMovement(
@@ -39,7 +44,7 @@ class StockMovement {
       type: index.isEven ? StockMovementType.entry : StockMovementType.exit,
       reason: reasons[index % reasons.length],
       quantity: (100 + index * 10).toDouble(),
-      unit: index % 2 == 0 ? 'kg' : 'unité',
+      unit: 'unité',
     );
   }
 }

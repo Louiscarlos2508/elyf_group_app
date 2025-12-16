@@ -14,4 +14,6 @@ abstract class SaleRepository {
   Future<void> validateSale(String saleId, String validatedBy);
   Future<void> rejectSale(String saleId, String rejectedBy);
   Future<void> deleteSale(String saleId);
+  /// Updates the amount paid for a sale (used when recording credit payments).
+  Future<void> updateSaleAmountPaid(String saleId, int newAmountPaid);
 }

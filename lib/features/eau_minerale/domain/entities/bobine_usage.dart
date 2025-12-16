@@ -1,49 +1,51 @@
 /// Représente l'utilisation d'une bobine dans une session de production.
+/// Les bobines sont gérées par type et quantité (comme les emballages).
 class BobineUsage {
   const BobineUsage({
-    required this.bobineId,
-    required this.bobineReference,
-    required this.poidsInitial,
-    required this.poidsFinal,
+    required this.bobineType, // Type de bobine (ex: "Bobine standard")
     required this.machineId,
     required this.machineName,
+    required this.dateInstallation,
+    required this.heureInstallation,
     this.dateUtilisation,
-  }) : assert(
-          poidsInitial >= poidsFinal,
-          'Le poids initial doit être supérieur ou égal au poids final',
-        );
+    this.estInstallee = true,
+    this.estFinie = false,
+  });
 
-  final String bobineId;
-  final String bobineReference; // Référence/nom de la bobine
-  final double poidsInitial; // kg - pesée avant utilisation
-  final double poidsFinal; // kg - pesée après utilisation
+  final String bobineType; // Type de bobine (au lieu de référence unique)
   final String machineId; // ID de la machine qui a utilisé cette bobine
   final String machineName; // Nom de la machine
+  final DateTime dateInstallation; // Date d'installation (obligatoire)
+  final DateTime heureInstallation; // Heure d'installation (obligatoire)
   final DateTime? dateUtilisation;
-
-  /// Calcule le poids utilisé (kg)
-  double get poidsUtilise => poidsInitial - poidsFinal;
+  final bool estInstallee; // Indique si la bobine est installée
+  final bool estFinie; // Indique si la bobine est complètement finie
 
   /// Vérifie si la bobine est complètement utilisée
-  bool get estCompletementUtilisee => poidsFinal <= 0;
+  bool get estCompletementUtilisee => estFinie;
+
+  /// Vérifie si la bobine peut être retirée (doit être finie)
+  bool get peutEtreRetiree => estFinie;
 
   BobineUsage copyWith({
-    String? bobineId,
-    String? bobineReference,
-    double? poidsInitial,
-    double? poidsFinal,
+    String? bobineType,
     String? machineId,
     String? machineName,
+    DateTime? dateInstallation,
+    DateTime? heureInstallation,
     DateTime? dateUtilisation,
+    bool? estInstallee,
+    bool? estFinie,
   }) {
     return BobineUsage(
-      bobineId: bobineId ?? this.bobineId,
-      bobineReference: bobineReference ?? this.bobineReference,
-      poidsInitial: poidsInitial ?? this.poidsInitial,
-      poidsFinal: poidsFinal ?? this.poidsFinal,
+      bobineType: bobineType ?? this.bobineType,
       machineId: machineId ?? this.machineId,
       machineName: machineName ?? this.machineName,
+      dateInstallation: dateInstallation ?? this.dateInstallation,
+      heureInstallation: heureInstallation ?? this.heureInstallation,
       dateUtilisation: dateUtilisation ?? this.dateUtilisation,
+      estInstallee: estInstallee ?? this.estInstallee,
+      estFinie: estFinie ?? this.estFinie,
     );
   }
 }

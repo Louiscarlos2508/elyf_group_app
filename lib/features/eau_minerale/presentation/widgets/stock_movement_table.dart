@@ -15,6 +15,10 @@ class StockMovementTable extends StatelessWidget {
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
   }
 
+  String _formatDateTime(DateTime date) {
+    return '${_formatDate(date)} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -23,25 +27,170 @@ class StockMovementTable extends StatelessWidget {
       return Container(
         padding: const EdgeInsets.all(48),
         alignment: Alignment.center,
-        child: Text(
-          'Aucun mouvement de stock enregistré',
-          style: theme.textTheme.bodyLarge?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.inventory_2_outlined,
+              size: 64,
+              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Aucun mouvement de stock enregistré',
+              style: theme.textTheme.bodyLarge?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Les mouvements apparaîtront ici après les opérations de stock',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
       );
     }
+    
+    // Calculer les statistiques
+    final totalEntries = movements
+        .where((m) => m.type == StockMovementType.entry)
+        .fold<double>(0, (sum, m) => sum + m.quantity);
+    final totalExits = movements
+        .where((m) => m.type == StockMovementType.exit)
+        .fold<double>(0, (sum, m) => sum + m.quantity);
+    final netMovement = totalEntries - totalExits;
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final isWide = constraints.maxWidth > 900;
         
-        if (isWide) {
-          return _buildDesktopTable(context, movements);
-        } else {
-          return _buildMobileList(context, movements);
-        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Résumé des mouvements
+            _buildSummaryCard(context, totalEntries, totalExits, netMovement, movements.length),
+            const SizedBox(height: 16),
+            // Tableau ou liste des mouvements
+            if (isWide)
+              _buildDesktopTable(context, movements)
+            else
+              _buildMobileList(context, movements),
+          ],
+        );
       },
+    );
+  }
+
+  Widget _buildSummaryCard(
+    BuildContext context,
+    double totalEntries,
+    double totalExits,
+    double netMovement,
+    int totalMovements,
+  ) {
+    final theme = Theme.of(context);
+    
+    return Card(
+      color: theme.colorScheme.surfaceContainerHighest,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Expanded(
+              child: _buildSummaryItem(
+                context,
+                'Total Entrées',
+                totalEntries,
+                Colors.green,
+                Icons.arrow_downward,
+              ),
+            ),
+            Container(
+              width: 1,
+              height: 40,
+              color: theme.colorScheme.outline.withValues(alpha: 0.2),
+            ),
+            Expanded(
+              child: _buildSummaryItem(
+                context,
+                'Total Sorties',
+                totalExits,
+                Colors.red,
+                Icons.arrow_upward,
+              ),
+            ),
+            Container(
+              width: 1,
+              height: 40,
+              color: theme.colorScheme.outline.withValues(alpha: 0.2),
+            ),
+            Expanded(
+              child: _buildSummaryItem(
+                context,
+                'Mouvement Net',
+                netMovement,
+                netMovement >= 0 ? Colors.green : Colors.red,
+                Icons.swap_horiz,
+              ),
+            ),
+            Container(
+              width: 1,
+              height: 40,
+              color: theme.colorScheme.outline.withValues(alpha: 0.2),
+            ),
+            Expanded(
+              child: _buildSummaryItem(
+                context,
+                'Total Mouvements',
+                totalMovements.toDouble(),
+                theme.colorScheme.primary,
+                Icons.list,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSummaryItem(
+    BuildContext context,
+    String label,
+    double value,
+    Color color,
+    IconData icon,
+  ) {
+    final theme = Theme.of(context);
+    
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 16, color: color),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value.toStringAsFixed(0),
+          style: theme.textTheme.titleMedium?.copyWith(
+            color: color,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
     );
   }
 
@@ -58,11 +207,12 @@ class StockMovementTable extends StatelessWidget {
       ),
       child: Table(
         columnWidths: const {
-          0: FlexColumnWidth(1.5),
-          1: FlexColumnWidth(2),
+          0: FlexColumnWidth(1.8),
+          1: FlexColumnWidth(2.2),
           2: FlexColumnWidth(1.2),
           3: FlexColumnWidth(2),
           4: FlexColumnWidth(1.5),
+          5: FlexColumnWidth(1.3),
         },
         children: [
           TableRow(
@@ -74,26 +224,44 @@ class StockMovementTable extends StatelessWidget {
               ),
             ),
             children: [
-              _buildHeaderCell(context, 'Date'),
+              _buildHeaderCell(context, 'Date/Heure'),
               _buildHeaderCell(context, 'Produit'),
               _buildHeaderCell(context, 'Type'),
               _buildHeaderCell(context, 'Motif'),
               _buildHeaderCell(context, 'Quantité'),
+              _buildHeaderCell(context, 'Machine'),
             ],
           ),
           ...movements.map((movement) {
+            final reasonText = movement.productionId != null
+                ? '${movement.reason} (Production)'
+                : movement.reason;
+            // Extraire le nom de la machine depuis les notes si disponible
+            String? machineName;
+            if (movement.notes != null) {
+              // Les notes peuvent contenir "Installation en production - {machineName}"
+              final match = RegExp(r'Installation.*- (.+)|machine[:\s]+(.+)', caseSensitive: false)
+                  .firstMatch(movement.notes!);
+              if (match != null) {
+                machineName = match.group(1) ?? match.group(2);
+              }
+            }
             return TableRow(
               children: [
-                _buildDataCellText(context, _formatDate(movement.date)),
+                _buildDataCellText(context, _formatDateTime(movement.date)),
                 _buildDataCellText(context, movement.productName),
                 _buildDataCellWidget(
                   context,
                   _buildTypeChip(context, movement.type),
                 ),
-                _buildDataCellText(context, movement.reason),
+                _buildDataCellText(context, reasonText),
                 _buildDataCellText(
                   context,
                   '${movement.quantity.toStringAsFixed(0)} ${movement.unit}',
+                ),
+                _buildDataCellText(
+                  context,
+                  machineName ?? '-',
                 ),
               ],
             );
@@ -138,9 +306,26 @@ class StockMovementTable extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'Date: ${_formatDate(movement.date)}',
+                'Date: ${_formatDateTime(movement.date)}',
                 style: theme.textTheme.bodySmall,
               ),
+              if (movement.productionId != null) ...[
+                Builder(
+                  builder: (context) {
+                    final prodId = movement.productionId!;
+                    final shortId = prodId.length > 8 
+                        ? '${prodId.substring(0, 8)}...' 
+                        : prodId;
+                    return Text(
+                      'Production: $shortId',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.primary,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    );
+                  },
+                ),
+              ],
               Text(
                 'Motif: ${movement.reason}',
                 style: theme.textTheme.bodySmall,
@@ -151,6 +336,27 @@ class StockMovementTable extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                 ),
               ),
+              if (movement.notes != null) ...[
+                const SizedBox(height: 4),
+                Builder(
+                  builder: (context) {
+                    // Extraire le nom de la machine depuis les notes
+                    final match = RegExp(r'Installation.*- (.+)|machine[:\s]+(.+)', caseSensitive: false)
+                        .firstMatch(movement.notes!);
+                    if (match != null) {
+                      final machineName = match.group(1) ?? match.group(2);
+                      return Text(
+                        'Machine: $machineName',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.primary,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  },
+                ),
+              ],
             ],
           ),
         );

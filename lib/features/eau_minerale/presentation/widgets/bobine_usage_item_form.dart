@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../domain/entities/bobine.dart';
+import '../../domain/entities/bobine_stock.dart';
 import '../../domain/entities/bobine_usage.dart';
 import '../../domain/entities/machine.dart';
 
@@ -9,11 +9,11 @@ import '../../domain/entities/machine.dart';
 class BobineUsageItemForm extends ConsumerStatefulWidget {
   const BobineUsageItemForm({
     super.key,
-    required this.bobinesDisponibles,
+    required this.bobineStocksDisponibles,
     required this.machinesDisponibles,
   });
 
-  final List<Bobine> bobinesDisponibles;
+  final List<BobineStock> bobineStocksDisponibles;
   final List<Machine> machinesDisponibles;
 
   @override
@@ -24,35 +24,34 @@ class BobineUsageItemForm extends ConsumerStatefulWidget {
 class _BobineUsageItemFormState
     extends ConsumerState<BobineUsageItemForm> {
   final formKey = GlobalKey<FormState>();
-  Bobine? _bobineSelectionnee;
   Machine? _machineSelectionnee;
-  final _poidsInitialController = TextEditingController();
-  final _poidsFinalController = TextEditingController();
-
-  @override
-  void dispose() {
-    _poidsInitialController.dispose();
-    _poidsFinalController.dispose();
-    super.dispose();
-  }
 
   void _submit() {
     if (!formKey.currentState!.validate()) return;
-    if (_bobineSelectionnee == null || _machineSelectionnee == null) {
+    if (widget.bobineStocksDisponibles.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sélectionnez une bobine et une machine')),
+        const SnackBar(content: Text('Aucune bobine disponible en stock')),
+      );
+      return;
+    }
+    if (_machineSelectionnee == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sélectionnez une machine')),
       );
       return;
     }
 
+    // Prendre automatiquement le premier type de bobine disponible
+    final bobineStock = widget.bobineStocksDisponibles.first;
+
+    final now = DateTime.now();
     final usage = BobineUsage(
-      bobineId: _bobineSelectionnee!.id,
-      bobineReference: _bobineSelectionnee!.reference,
-      poidsInitial: double.parse(_poidsInitialController.text),
-      poidsFinal: double.parse(_poidsFinalController.text),
+      bobineType: bobineStock.type,
       machineId: _machineSelectionnee!.id,
       machineName: _machineSelectionnee!.nom,
-      dateUtilisation: DateTime.now(),
+      dateInstallation: now,
+      heureInstallation: now,
+      dateUtilisation: now,
     );
 
     Navigator.of(context).pop(usage);
@@ -66,32 +65,65 @@ class _BobineUsageItemFormState
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          DropdownButtonFormField<Bobine>(
-            value: _bobineSelectionnee,
-            decoration: const InputDecoration(
-              labelText: 'Bobine',
-              prefixIcon: Icon(Icons.inventory),
+          if (widget.bobineStocksDisponibles.isEmpty)
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Aucune bobine disponible en stock',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Une bobine sera automatiquement assignée',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                        Text(
+                          '${widget.bobineStocksDisponibles.fold<int>(0, (sum, stock) => sum + stock.quantity)} bobine${widget.bobineStocksDisponibles.fold<int>(0, (sum, stock) => sum + stock.quantity) > 1 ? 's' : ''} disponible${widget.bobineStocksDisponibles.fold<int>(0, (sum, stock) => sum + stock.quantity) > 1 ? 's' : ''}',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
-            items: widget.bobinesDisponibles.map((bobine) {
-              return DropdownMenuItem(
-                value: bobine,
-                child: Text(
-                  '${bobine.reference} (${bobine.poidsActuel.toStringAsFixed(2)}kg)',
-                ),
-              );
-            }).toList(),
-            onChanged: (bobine) {
-              setState(() {
-                _bobineSelectionnee = bobine;
-                if (bobine != null) {
-                  _poidsInitialController.text =
-                      bobine.poidsActuel.toStringAsFixed(2);
-                }
-              });
-            },
-            validator: (value) =>
-                value == null ? 'Sélectionnez une bobine' : null,
-          ),
           const SizedBox(height: 16),
           DropdownButtonFormField<Machine>(
             value: _machineSelectionnee,
@@ -111,51 +143,9 @@ class _BobineUsageItemFormState
             validator: (value) =>
                 value == null ? 'Sélectionnez une machine' : null,
           ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _poidsInitialController,
-            decoration: const InputDecoration(
-              labelText: 'Poids initial (kg)',
-              prefixIcon: Icon(Icons.scale),
-            ),
-            keyboardType: TextInputType.numberWithOptions(decimal: true),
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Requis';
-              }
-              if (double.tryParse(value) == null || double.parse(value) <= 0) {
-                return 'Nombre invalide';
-              }
-              return null;
-            },
-          ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _poidsFinalController,
-            decoration: const InputDecoration(
-              labelText: 'Poids final (kg)',
-              prefixIcon: Icon(Icons.scale),
-            ),
-            keyboardType: TextInputType.numberWithOptions(decimal: true),
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Requis';
-              }
-              final poidsFinal = double.tryParse(value);
-              if (poidsFinal == null || poidsFinal < 0) {
-                return 'Nombre invalide';
-              }
-              final poidsInitial =
-                  double.tryParse(_poidsInitialController.text);
-              if (poidsInitial != null && poidsFinal > poidsInitial) {
-                return 'Doit être <= poids initial';
-              }
-              return null;
-            },
-          ),
           const SizedBox(height: 24),
           ElevatedButton(
-            onPressed: _submit,
+            onPressed: widget.bobineStocksDisponibles.isEmpty ? null : _submit,
             child: const Text('Ajouter'),
           ),
         ],

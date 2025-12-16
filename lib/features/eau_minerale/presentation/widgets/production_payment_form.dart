@@ -165,6 +165,13 @@ class ProductionPaymentFormState
               onAddPerson: _addPerson,
               onRemovePerson: _removePerson,
               onUpdatePerson: _updatePerson,
+              period: _period,
+              onLoadFromProduction: (persons) {
+                setState(() {
+                  _persons.clear();
+                  _persons.addAll(persons);
+                });
+              },
             ),
             if (_persons.isNotEmpty) ...[
               const SizedBox(height: 24),

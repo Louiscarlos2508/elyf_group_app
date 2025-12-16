@@ -6,8 +6,6 @@ class MockBobineRepository implements BobineRepository {
     Bobine(
       id: 'bobine-1',
       reference: 'BOB-001',
-      poidsActuel: 45.5,
-      poidsInitial: 50.0,
       dateReception: DateTime.now().subtract(const Duration(days: 10)),
       fournisseur: 'Fournisseur A',
       prixUnitaire: 2500,
@@ -16,8 +14,6 @@ class MockBobineRepository implements BobineRepository {
     Bobine(
       id: 'bobine-2',
       reference: 'BOB-002',
-      poidsActuel: 48.0,
-      poidsInitial: 50.0,
       dateReception: DateTime.now().subtract(const Duration(days: 5)),
       fournisseur: 'Fournisseur A',
       prixUnitaire: 2500,
@@ -26,8 +22,6 @@ class MockBobineRepository implements BobineRepository {
     Bobine(
       id: 'bobine-3',
       reference: 'BOB-003',
-      poidsActuel: 50.0,
-      poidsInitial: 50.0,
       dateReception: DateTime.now().subtract(const Duration(days: 2)),
       fournisseur: 'Fournisseur B',
       prixUnitaire: 2600,

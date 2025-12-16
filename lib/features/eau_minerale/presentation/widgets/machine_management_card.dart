@@ -2,29 +2,28 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/providers.dart';
-import '../../domain/entities/product.dart';
+import '../../domain/entities/machine.dart';
 import '../../domain/permissions/eau_minerale_permissions.dart';
 import 'centralized_permission_guard.dart';
-import 'product_catalog_tabs.dart';
-import 'product_form_dialog.dart';
-import 'product_list_item.dart';
+import 'machine_form_dialog.dart';
+import 'machine_list_item.dart';
+import 'machine_selector_field.dart';
 
-/// Product catalog management card with tabs and product list.
-class ProductCatalogCard extends ConsumerStatefulWidget {
-  const ProductCatalogCard({super.key});
+/// Carte de gestion des machines.
+class MachineManagementCard extends ConsumerStatefulWidget {
+  const MachineManagementCard({super.key});
 
   @override
-  ConsumerState<ProductCatalogCard> createState() =>
-      _ProductCatalogCardState();
+  ConsumerState<MachineManagementCard> createState() =>
+      _MachineManagementCardState();
 }
 
-class _ProductCatalogCardState extends ConsumerState<ProductCatalogCard> {
-  ProductType? _selectedFilter;
-
+class _MachineManagementCardState
+    extends ConsumerState<MachineManagementCard> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final productsAsync = ref.watch(productsProvider);
+    final machinesAsync = ref.watch(allMachinesProvider);
 
     return Card(
       elevation: 0,
@@ -51,14 +50,14 @@ class _ProductCatalogCardState extends ConsumerState<ProductCatalogCard> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        'Catalogue de Produits',
+                        'Gestion des Machines',
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Gérez vos matières premières et produits finis',
+                        'Configurez les machines de production',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
@@ -71,7 +70,7 @@ class _ProductCatalogCardState extends ConsumerState<ProductCatalogCard> {
                   permission: EauMineralePermissions.manageProducts,
                   child: IntrinsicWidth(
                     child: FilledButton.icon(
-                      onPressed: () => _showAddProductDialog(context),
+                      onPressed: () => _showAddMachineDialog(context),
                       icon: const Icon(Icons.add, size: 18),
                       label: const Text('Ajouter'),
                     ),
@@ -80,30 +79,22 @@ class _ProductCatalogCardState extends ConsumerState<ProductCatalogCard> {
               ],
             ),
             const SizedBox(height: 16),
-            ProductCatalogTabs(
-              selectedFilter: _selectedFilter,
-              onFilterChanged: (filter) => setState(() => _selectedFilter = filter),
-            ),
-            const SizedBox(height: 16),
-            productsAsync.when(
-              data: (products) {
-                final filtered = _selectedFilter == null
-                    ? products
-                    : products.where((p) => p.type == _selectedFilter).toList();
-                if (filtered.isEmpty) {
+            machinesAsync.when(
+              data: (machines) {
+                if (machines.isEmpty) {
                   return const Center(
                     child: Padding(
                       padding: EdgeInsets.all(24),
-                      child: Text('Aucun produit'),
+                      child: Text('Aucune machine'),
                     ),
                   );
                 }
                 return Column(
-                  children: filtered.map<Widget>((product) {
-                    return ProductListItem(
-                      product: product,
-                      onEdit: () => _showEditProductDialog(context, product),
-                      onDelete: () => _showDeleteConfirm(context, product),
+                  children: machines.map<Widget>((machine) {
+                    return MachineListItem(
+                      machine: machine,
+                      onEdit: () => _showEditMachineDialog(context, machine),
+                      onDelete: () => _showDeleteConfirm(context, machine),
                     );
                   }).toList(),
                 );
@@ -127,26 +118,29 @@ class _ProductCatalogCardState extends ConsumerState<ProductCatalogCard> {
     );
   }
 
-  void _showAddProductDialog(BuildContext context) {
+  void _showAddMachineDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => const ProductFormDialog(),
+      builder: (context) => const MachineFormDialog(),
     );
   }
 
-  void _showEditProductDialog(BuildContext context, Product product) {
+  void _showEditMachineDialog(BuildContext context, Machine machine) {
     showDialog(
       context: context,
-      builder: (context) => ProductFormDialog(product: product),
+      builder: (context) => MachineFormDialog(machine: machine),
     );
   }
 
-  void _showDeleteConfirm(BuildContext context, Product product) {
+  void _showDeleteConfirm(BuildContext context, Machine machine) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Supprimer le produit'),
-        content: Text('Êtes-vous sûr de vouloir supprimer "${product.name}" ?'),
+        title: const Text('Supprimer la machine'),
+        content: Text(
+          'Êtes-vous sûr de vouloir supprimer "${machine.nom}" ?\n\n'
+          'Cette action est irréversible.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -155,8 +149,28 @@ class _ProductCatalogCardState extends ConsumerState<ProductCatalogCard> {
           FilledButton(
             onPressed: () async {
               Navigator.of(context).pop();
-              await ref.read(productRepositoryProvider).deleteProduct(product.id);
-              ref.invalidate(productsProvider);
+              try {
+                await ref
+                    .read(machineRepositoryProvider)
+                    .deleteMachine(machine.id);
+                ref.invalidate(allMachinesProvider);
+                ref.invalidate(machinesProvider);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Machine supprimée'),
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Erreur: ${e.toString()}'),
+                    ),
+                  );
+                }
+              }
             },
             child: const Text('Supprimer'),
           ),

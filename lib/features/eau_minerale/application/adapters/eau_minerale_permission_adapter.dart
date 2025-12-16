@@ -1,7 +1,7 @@
 import '../../../../../core/permissions/services/permission_service.dart';
 import '../../../../../core/permissions/services/permission_registry.dart';
 import '../../domain/permissions/eau_minerale_permissions.dart';
-import '../../application/providers.dart' show EauMineraleSection;
+import '../../domain/entities/eau_minerale_section.dart';
 
 /// Adapter to use centralized permission system for eau_minerale module.
 class EauMineralePermissionAdapter {

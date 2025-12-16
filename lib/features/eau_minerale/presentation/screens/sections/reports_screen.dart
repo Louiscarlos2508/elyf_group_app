@@ -12,6 +12,7 @@ import '../../widgets/report_period_selector.dart';
 import '../../widgets/report_tabs.dart';
 import '../../widgets/salary_report_content.dart';
 import '../../widgets/sales_report_content.dart';
+import '../../widgets/weekly_monthly_report_content.dart';
 
 class ReportsScreen extends ConsumerStatefulWidget {
   const ReportsScreen({super.key});
@@ -192,10 +193,17 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   Widget _buildTabContent(BuildContext context) {
     final period = ReportPeriod(startDate: _startDate, endDate: _endDate);
     
+    // Détecter si c'est une période hebdomadaire ou mensuelle
+    final days = period.endDate.difference(period.startDate).inDays;
+    final isWeeklyOrMonthly = days <= 31; // Semaine ou mois
+    
     switch (_selectedTab) {
       case 0:
         return SalesReportContent(period: period);
       case 1:
+        if (isWeeklyOrMonthly) {
+          return WeeklyMonthlyReportContent(period: period);
+        }
         return ProductionReportContent(period: period);
       case 2:
         return ExpenseReportContent(period: period);

@@ -5,16 +5,7 @@ import '../../domain/entities/expense_record.dart';
 /// Helper widgets for expenses table.
 class ExpensesTableHelpers {
   static String getCategoryName(ExpenseCategory category) {
-    switch (category) {
-      case ExpenseCategory.logistics:
-        return 'Logistique';
-      case ExpenseCategory.payroll:
-        return 'Salaires';
-      case ExpenseCategory.maintenance:
-        return 'Maintenance';
-      case ExpenseCategory.utility:
-        return 'Services';
-    }
+    return category.label;
   }
 
   static Widget buildCategoryChip(BuildContext context, ExpenseCategory category) {

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/providers.dart';
-import '../../domain/entities/bobine.dart';
+import '../../domain/entities/bobine_stock.dart';
 import '../../domain/entities/bobine_usage.dart';
 import '../../domain/entities/machine.dart';
 import 'bobine_usage_item_form.dart';
@@ -26,14 +26,31 @@ class BobineUsageFormField extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
   ) async {
-    final bobines = await ref.read(bobinesDisponiblesProvider.future);
+    final bobineStocks = await ref.read(bobineStocksDisponiblesProvider.future);
     final machines = await ref.read(machinesProvider.future);
     
-    if (bobines.isEmpty) {
+    // Filtrer les machines qui ont déjà une bobine
+    final machinesAvecBobine = bobinesUtilisees.map((u) => u.machineId).toSet();
+    final machinesDisponiblesFiltrees = machines
+        .where((m) => machinesDisponibles.contains(m.id))
+        .where((m) => !machinesAvecBobine.contains(m.id))
+        .toList();
+    
+    if (machinesDisponiblesFiltrees.isEmpty) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Aucune bobine disponible'),
+          content: Text('Toutes les machines ont déjà une bobine'),
+        ),
+      );
+      return;
+    }
+
+    if (bobineStocks.isEmpty) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Aucune bobine disponible en stock'),
         ),
       );
       return;
@@ -47,10 +64,8 @@ class BobineUsageFormField extends ConsumerWidget {
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: BobineUsageItemForm(
-            bobinesDisponibles: bobines,
-            machinesDisponibles: machines
-                .where((m) => machinesDisponibles.contains(m.id))
-                .toList(),
+            bobineStocksDisponibles: bobineStocks,
+            machinesDisponibles: machinesDisponiblesFiltrees,
           ),
         ),
       ),
@@ -92,11 +107,9 @@ class BobineUsageFormField extends ConsumerWidget {
             return Card(
               margin: const EdgeInsets.only(bottom: 8),
               child: ListTile(
-                title: Text(bobine.bobineReference),
+                title: Text(bobine.bobineType),
                 subtitle: Text(
-                  'Machine: ${bobine.machineName}\n'
-                  'Poids: ${bobine.poidsInitial}kg → ${bobine.poidsFinal}kg '
-                  '(${bobine.poidsUtilise.toStringAsFixed(2)}kg utilisés)',
+                  'Machine: ${bobine.machineName}',
                 ),
                 trailing: IconButton(
                   icon: const Icon(Icons.delete, color: Colors.red),
@@ -115,10 +128,12 @@ class BobineUsageFormField extends ConsumerWidget {
   }
 }
 
-/// Provider pour récupérer les bobines disponibles.
-final bobinesDisponiblesProvider = FutureProvider.autoDispose<List<Bobine>>(
+/// Provider pour récupérer les stocks de bobines disponibles (nouveau système par type/quantité).
+final bobineStocksDisponiblesProvider = FutureProvider.autoDispose<List<BobineStock>>(
   (ref) async {
-    return ref.read(bobineRepositoryProvider).fetchBobines(estDisponible: true);
+    final stocks = await ref.read(bobineStockQuantityRepositoryProvider).fetchAll();
+    // Filtrer seulement les stocks avec quantité > 0
+    return stocks.where((stock) => stock.quantity > 0).toList();
   },
 );
 
