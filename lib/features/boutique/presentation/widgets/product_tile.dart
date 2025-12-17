@@ -9,10 +9,14 @@ class ProductTile extends StatelessWidget {
     super.key,
     required this.product,
     required this.onTap,
+    this.onRestock,
+    this.showRestockButton = false,
   });
 
   final Product product;
   final VoidCallback onTap;
+  final VoidCallback? onRestock;
+  final bool showRestockButton;
 
   String _formatCurrency(int amount) {
     return amount.toString().replaceAllMapped(
@@ -73,7 +77,8 @@ class ProductTile extends StatelessWidget {
                             : theme.colorScheme.onSurfaceVariant,
                       ),
                       const SizedBox(width: 4),
-                      Text(
+                      Expanded(
+                        child: Text(
                         'Stock: ${product.stock}',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: isLowStock
@@ -83,6 +88,20 @@ class ProductTile extends StatelessWidget {
                               isLowStock ? FontWeight.w600 : FontWeight.normal,
                         ),
                       ),
+                      ),
+                      if (showRestockButton && onRestock != null)
+                        InkWell(
+                          onTap: onRestock,
+                          borderRadius: BorderRadius.circular(4),
+                          child: Padding(
+                            padding: const EdgeInsets.all(4),
+                            child: Icon(
+                              Icons.add_shopping_cart,
+                              size: 18,
+                              color: theme.colorScheme.primary,
+                            ),
+                          ),
+                        ),
                     ],
                   ),
                 ],

@@ -190,11 +190,6 @@ class _CheckoutDialogState extends ConsumerState<CheckoutDialog> {
                         label: Text('Mobile Money'),
                         icon: Icon(Icons.phone_android),
                       ),
-                      ButtonSegment(
-                        value: PaymentMethod.card,
-                        label: Text('Carte'),
-                        icon: Icon(Icons.credit_card),
-                      ),
                     ],
                     selected: {_paymentMethod},
                     onSelectionChanged: (Set<PaymentMethod> newSelection) {

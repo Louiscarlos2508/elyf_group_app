@@ -112,7 +112,6 @@ class _PosScreenState extends ConsumerState<PosScreen> {
   }
 
   void _showCartBottomSheet(BuildContext context) {
-    final total = ref.read(storeControllerProvider).calculateCartTotal(_cartItems);
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,

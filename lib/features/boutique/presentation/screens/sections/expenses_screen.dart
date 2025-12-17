@@ -1,29 +1,335 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../../shared/domain/adapters/expense_balance_adapter.dart';
 import '../../../../../shared/presentation/screens/expense_balance_screen.dart';
+import '../../../../../shared/presentation/widgets/refresh_button.dart';
 import '../../../application/providers.dart';
 import '../../../domain/adapters/expense_balance_adapter.dart';
 import '../../../domain/entities/expense.dart';
+import '../../widgets/daily_expense_summary_card.dart';
 import '../../widgets/expense_form_dialog.dart';
+import '../../widgets/expenses_table.dart';
+import '../../widgets/monthly_expense_summary.dart';
 
+/// Expenses screen with professional UI - style eau_minerale.
 class ExpensesScreen extends ConsumerWidget {
   const ExpensesScreen({super.key});
 
-  String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year}';
-  }
-
   String _formatCurrency(int amount) {
-    return amount.toString().replaceAllMapped(
+    return '${amount.toString().replaceAllMapped(
           RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
           (Match m) => '${m[1]} ',
-        ) + ' FCFA';
+        )} FCFA';
+  }
+
+  List<Expense> _getTodayExpenses(List<Expense> expenses) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    return expenses.where((e) {
+      final expenseDate = DateTime(e.date.year, e.date.month, e.date.day);
+      return expenseDate.isAtSameMomentAs(today);
+    }).toList();
+  }
+
+  int _getTodayTotal(List<Expense> expenses) {
+    return _getTodayExpenses(expenses).fold(0, (sum, e) => sum + e.amountCfa);
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final expensesAsync = ref.watch(expensesProvider);
+
+    return Scaffold(
+      body: expensesAsync.when(
+        data: (expenses) {
+          final todayExpenses = _getTodayExpenses(expenses);
+          final todayTotal = _getTodayTotal(expenses);
+
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              final isWide = constraints.maxWidth > 600;
+
+    return CustomScrollView(
+      slivers: [
+                  // Header
+        SliverToBoxAdapter(
+          child: Padding(
+                      padding: EdgeInsets.fromLTRB(
+                        24,
+                        24,
+                        24,
+                        isWide ? 24 : 16,
+                      ),
+                      child: isWide
+                          ? Row(
+              children: [
+                                Text(
+                    'Dépenses',
+                                  style:
+                                      theme.textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                                const Spacer(),
+                                RefreshButton(
+                                  onRefresh: () =>
+                                      ref.invalidate(expensesProvider),
+                                  tooltip: 'Actualiser les dépenses',
+                ),
+                IconButton(
+                  icon: const Icon(Icons.analytics),
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            ExpenseBalanceScreen(
+                          moduleName: 'Boutique',
+                                          expensesProvider:
+                                              boutiqueExpenseBalanceProvider,
+                                          adapter:
+                                              BoutiqueExpenseBalanceAdapter(),
+                        ),
+                      ),
+                    );
+                  },
+                  tooltip: 'Bilan des dépenses',
+                ),
+                const SizedBox(width: 8),
+                                Flexible(
+                                  child: FilledButton.icon(
+                                    onPressed: () {
+                                      showDialog(
+                                        context: context,
+                                        builder: (_) =>
+                                            const ExpenseFormDialog(),
+                                      );
+                                    },
+                                    icon: const Icon(Icons.add),
+                                    label: const Text('Nouvelle Dépense'),
+                                  ),
+                                ),
+                              ],
+                            )
+                          : Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        'Dépenses',
+                                        style: theme.textTheme.titleLarge
+                                            ?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                    RefreshButton(
+                                      onRefresh: () =>
+                                          ref.invalidate(expensesProvider),
+                                      tooltip: 'Actualiser les dépenses',
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.analytics),
+                                      onPressed: () {
+                                        Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                ExpenseBalanceScreen(
+                                              moduleName: 'Boutique',
+                                              expensesProvider:
+                                                  boutiqueExpenseBalanceProvider,
+                                              adapter:
+                                                  BoutiqueExpenseBalanceAdapter(),
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                      tooltip: 'Bilan des dépenses',
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                SizedBox(
+                                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                                        builder: (_) =>
+                                            const ExpenseFormDialog(),
+                      );
+                    },
+                    icon: const Icon(Icons.add),
+                    label: const Text('Nouvelle Dépense'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+                  // Daily summary card
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: DailyExpenseSummaryCard(
+                        total: todayTotal,
+                        formatCurrency: _formatCurrency,
+                      ),
+                    ),
+                  ),
+
+                  // Today's expenses table
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                          Text(
+                            'Dépenses du Jour',
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                        ),
+                        const SizedBox(height: 16),
+                          Container(
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.surface,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: theme.colorScheme.outline
+                                    .withValues(alpha: 0.2),
+                              ),
+                            ),
+                            padding: const EdgeInsets.all(20),
+                            child: ExpensesTable(
+                              expenses: todayExpenses,
+                              formatCurrency: _formatCurrency,
+                              onActionTap: (expense, action) {
+                                if (action == 'delete') {
+                                  _confirmDelete(context, ref, expense);
+                                } else if (action == 'view') {
+                                  _showExpenseDetail(context, expense);
+                                }
+                              },
+                            ),
+                              ),
+                          ],
+                        ),
+                    ),
+                  ),
+
+                  // Monthly summary
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: MonthlyExpenseSummary(expenses: expenses),
+                        ),
+                      ),
+
+                  const SliverToBoxAdapter(
+                    child: SizedBox(height: 24),
+                ),
+                ],
+              );
+            },
+              );
+            },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (_, __) => Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.error_outline,
+                size: 64,
+                color: theme.colorScheme.error,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                  'Erreur de chargement',
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: theme.colorScheme.error,
+                  ),
+                ),
+              const SizedBox(height: 16),
+              FilledButton(
+                onPressed: () => ref.invalidate(expensesProvider),
+                child: const Text('Réessayer'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showExpenseDetail(BuildContext context, Expense expense) {
+    final theme = Theme.of(context);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(expense.label),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildDetailRow(theme, 'Montant', _formatCurrency(expense.amountCfa)),
+            _buildDetailRow(theme, 'Catégorie', _getCategoryLabel(expense.category)),
+            _buildDetailRow(
+              theme,
+              'Date',
+              '${expense.date.day}/${expense.date.month}/${expense.date.year}',
+            ),
+            if (expense.notes != null)
+              _buildDetailRow(theme, 'Notes', expense.notes!),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Fermer'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(ThemeData theme, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 80,
+            child: Text(
+              label,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+        ),
+    );
   }
 
   String _getCategoryLabel(ExpenseCategory category) {
     switch (category) {
+      case ExpenseCategory.stock:
+        return 'Stock/Achats';
       case ExpenseCategory.rent:
         return 'Loyer';
       case ExpenseCategory.utilities:
@@ -37,159 +343,38 @@ class ExpensesScreen extends ConsumerWidget {
     }
   }
 
-  IconData _getCategoryIcon(ExpenseCategory category) {
-    switch (category) {
-      case ExpenseCategory.rent:
-        return Icons.home;
-      case ExpenseCategory.utilities:
-        return Icons.bolt;
-      case ExpenseCategory.maintenance:
-        return Icons.build;
-      case ExpenseCategory.marketing:
-        return Icons.campaign;
-      case ExpenseCategory.other:
-        return Icons.category;
-    }
+  void _confirmDelete(BuildContext context, WidgetRef ref, Expense expense) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Supprimer la dépense ?'),
+        content: Text('Voulez-vous vraiment supprimer "${expense.label}" ?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Annuler'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              await ref.read(storeControllerProvider).deleteExpense(expense.id);
+              ref.invalidate(expensesProvider);
+              if (context.mounted) {
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Dépense supprimée'),
+                    backgroundColor: Colors.green,
+                  ),
+    );
   }
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final expensesAsync = ref.watch(expensesProvider);
-
-    return CustomScrollView(
-      slivers: [
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'Dépenses',
-                    style: theme.textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.analytics),
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => ExpenseBalanceScreen(
-                          moduleName: 'Boutique',
-                          expensesProvider: boutiqueExpenseBalanceProvider,
-                          adapter: BoutiqueExpenseBalanceAdapter(),
-                        ),
-                      ),
-                    );
-                  },
-                  tooltip: 'Bilan des dépenses',
-                ),
-                const SizedBox(width: 8),
-                IntrinsicWidth(
-                  child: FilledButton.icon(
-                    onPressed: () {
-                      showDialog(
-                        context: context,
-                        builder: (_) => const ExpenseFormDialog(),
-                      );
-                    },
-                    icon: const Icon(Icons.add),
-                    label: const Text('Nouvelle Dépense'),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        SliverPadding(
-          padding: const EdgeInsets.all(24),
-          sliver: expensesAsync.when(
-            data: (expenses) {
-              if (expenses.isEmpty) {
-                return SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.receipt_long_outlined,
-                          size: 64,
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Aucune dépense enregistrée',
-                          style: theme.textTheme.bodyLarge?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }
-              return SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final expense = expenses[index];
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      child: ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: theme.colorScheme.secondaryContainer,
-                          child: Icon(
-                            _getCategoryIcon(expense.category),
-                            color: theme.colorScheme.onSecondaryContainer,
-                          ),
-                        ),
-                        title: Text(expense.label),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(_getCategoryLabel(expense.category)),
-                            Text(_formatDate(expense.date)),
-                            if (expense.notes != null)
-                              Text(
-                                expense.notes!,
-                                style: theme.textTheme.bodySmall,
-                              ),
-                          ],
-                        ),
-                        trailing: Text(
-                          _formatCurrency(expense.amountCfa),
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: theme.colorScheme.error,
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                  childCount: expenses.length,
-                ),
-              );
             },
-            loading: () => const SliverFillRemaining(
-              child: Center(child: CircularProgressIndicator()),
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.red,
             ),
-            error: (_, __) => SliverFillRemaining(
-              child: Center(
-                child: Text(
-                  'Erreur de chargement',
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    color: theme.colorScheme.error,
-                  ),
-                ),
-              ),
-            ),
+            child: const Text('Supprimer'),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
-

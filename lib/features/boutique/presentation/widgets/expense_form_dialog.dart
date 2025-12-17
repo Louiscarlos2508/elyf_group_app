@@ -48,6 +48,8 @@ class _ExpenseFormDialogState extends ConsumerState<ExpenseFormDialog> {
 
   String _getCategoryLabel(ExpenseCategory category) {
     switch (category) {
+      case ExpenseCategory.stock:
+        return 'Stock/Achats';
       case ExpenseCategory.rent:
         return 'Loyer';
       case ExpenseCategory.utilities:

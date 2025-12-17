@@ -157,10 +157,6 @@ class SalesReceiptTemplate {
         return 'Espèces';
       case PaymentMethod.mobileMoney:
         return 'Mobile Money';
-      case PaymentMethod.card:
-        return 'Carte';
-      case PaymentMethod.credit:
-        return 'Crédit';
     }
   }
 }

@@ -3,15 +3,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:open_file/open_file.dart';
 
 import '../../../../../core/pdf/boutique_report_pdf_service.dart';
+import '../../../../../shared/presentation/widgets/refresh_button.dart';
 import '../../../application/providers.dart';
 import '../../../domain/entities/report_data.dart';
-import '../../widgets/expense_report_content.dart';
-import '../../widgets/profit_report_content.dart';
-import '../../widgets/purchase_report_content.dart';
-import '../../widgets/report_kpi_cards.dart';
-import '../../widgets/report_period_selector.dart';
-import '../../widgets/sales_report_content.dart';
+import '../../widgets/expenses_report_content_v2.dart';
+import '../../widgets/profit_report_content_v2.dart';
+import '../../widgets/purchases_report_content_v2.dart';
+import '../../widgets/report_kpi_cards_v2.dart';
+import '../../widgets/report_period_selector_v2.dart';
+import '../../widgets/report_tabs_v2.dart';
+import '../../widgets/sales_report_content_v2.dart';
 
+/// Reports screen with professional UI - style eau_minerale.
 class ReportsScreen extends ConsumerStatefulWidget {
   const ReportsScreen({super.key});
 
@@ -21,38 +24,38 @@ class ReportsScreen extends ConsumerStatefulWidget {
 
 class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   int _selectedTab = 0;
-  ReportPeriod _selectedPeriod = ReportPeriod.month;
-  DateTime? _startDate;
-  DateTime? _endDate;
+  late DateTime _startDate;
+  late DateTime _endDate;
 
   @override
   void initState() {
     super.initState();
+    // Initialize with current month by default
     final now = DateTime.now();
     _startDate = DateTime(now.year, now.month, 1);
     _endDate = DateTime(now.year, now.month + 1, 0);
   }
 
-  void _onPeriodChanged(ReportPeriod period, DateTime? start, DateTime? end) {
+  Future<void> _selectDate(BuildContext context, bool isStartDate) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: isStartDate ? _startDate : _endDate,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+    );
+    if (picked != null) {
     setState(() {
-      _selectedPeriod = period;
-      _startDate = start;
-      _endDate = end;
-    });
+        if (isStartDate) {
+          _startDate = picked;
+        } else {
+          _endDate = picked;
+        }
+      });
+    }
   }
 
   Future<void> _downloadReport() async {
-    if (_startDate == null || _endDate == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Veuillez sélectionner une période'),
-        ),
-      );
-      return;
-    }
-
     try {
-      // Afficher un indicateur de chargement
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -61,16 +64,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         ),
       );
 
-      // Récupérer les données du rapport
       final reportData = await ref.read(
         reportDataProvider((
-          period: _selectedPeriod,
+          period: ReportPeriod.custom,
           startDate: _startDate,
           endDate: _endDate,
         )).future,
       );
 
-      // Générer le PDF
       final pdfService = BoutiqueReportPdfService.instance;
       final file = await pdfService.generateReport(
         reportData: reportData,
@@ -78,25 +79,21 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         endDate: _endDate,
       );
 
-      // Fermer le dialog de chargement
       if (mounted) {
         Navigator.of(context).pop();
       }
 
-      // Ouvrir le fichier
       if (mounted) {
         final result = await OpenFile.open(file.path);
         if (result.type != ResultType.done && mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('PDF généré: ${file.path}'),
-            ),
+            SnackBar(content: Text('PDF généré: ${file.path}')),
           );
         }
       }
     } catch (e) {
       if (mounted) {
-        Navigator.of(context).pop(); // Fermer le dialog de chargement
+        Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Erreur lors de la génération PDF: $e'),
@@ -107,23 +104,33 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     }
   }
 
+  void _invalidateProviders() {
+    ref.invalidate(reportDataProvider);
+    ref.invalidate(salesReportProvider);
+    ref.invalidate(purchasesReportProvider);
+    ref.invalidate(expensesReportProvider);
+    ref.invalidate(profitReportProvider);
+    ref.invalidate(recentSalesProvider);
+    ref.invalidate(purchasesProvider);
+    ref.invalidate(expensesProvider);
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth > 600;
     
     return CustomScrollView(
       slivers: [
+            // Header
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.all(24),
+                padding: EdgeInsets.fromLTRB(24, 24, 24, isWide ? 24 : 16),
             child: Row(
               children: [
-                Icon(
-                  Icons.assessment,
-                  color: theme.colorScheme.primary,
-                  size: 28,
-                ),
-                const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     'Rapports',
@@ -132,71 +139,64 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                     ),
                   ),
                 ),
+                    RefreshButton(
+                      onRefresh: _invalidateProviders,
+                      tooltip: 'Actualiser les rapports',
+                    ),
               ],
             ),
           ),
         ),
+
+            // Period selector
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Column(
-              children: [
-                ReportPeriodSelector(
-                  selectedPeriod: _selectedPeriod,
+                child: ReportPeriodSelectorV2(
                   startDate: _startDate,
                   endDate: _endDate,
-                  onPeriodChanged: _onPeriodChanged,
+                  onStartDateSelected: () => _selectDate(context, true),
+                  onEndDateSelected: () => _selectDate(context, false),
+                  onDownload: _downloadReport,
                 ),
-                const SizedBox(height: 16),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: FilledButton.icon(
-                    onPressed: _downloadReport,
-                    icon: const Icon(Icons.picture_as_pdf),
-                    label: const Text('Télécharger PDF'),
                   ),
                 ),
-              ],
-            ),
-          ),
-        ),
+
+            // KPI Cards
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            child: ReportKpiCards(
-              period: _selectedPeriod,
+                padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+                child: ReportKpiCardsV2(
               startDate: _startDate,
               endDate: _endDate,
             ),
           ),
         ),
+
+            // Tabs
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+                child: ReportTabsV2(
+                  selectedTab: _selectedTab,
+                  onTabChanged: (index) => setState(() => _selectedTab = index),
+                ),
+              ),
+            ),
+
+            // Tab content
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: _buildTabs(theme),
-          ),
-        ),
-        SliverPadding(
-          padding: const EdgeInsets.all(24),
-          sliver: SliverToBoxAdapter(
             child: _buildTabContent(),
           ),
         ),
-      ],
-    );
-  }
 
-  Widget _buildTabs(ThemeData theme) {
-    return SegmentedButton<int>(
-      segments: const [
-        ButtonSegment(value: 0, label: Text('Ventes'), icon: Icon(Icons.shopping_cart)),
-        ButtonSegment(value: 1, label: Text('Achats'), icon: Icon(Icons.shopping_bag)),
-        ButtonSegment(value: 2, label: Text('Dépenses'), icon: Icon(Icons.receipt_long)),
-        ButtonSegment(value: 3, label: Text('Bénéfices'), icon: Icon(Icons.trending_up)),
+            const SliverToBoxAdapter(
+              child: SizedBox(height: 24),
+            ),
       ],
-      selected: {_selectedTab},
-      onSelectionChanged: (Set<int> selection) {
-        setState(() => _selectedTab = selection.first);
+        );
       },
     );
   }
@@ -204,26 +204,22 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   Widget _buildTabContent() {
     switch (_selectedTab) {
       case 0:
-        return SalesReportContent(
-          period: _selectedPeriod,
+        return SalesReportContentV2(
           startDate: _startDate,
           endDate: _endDate,
         );
       case 1:
-        return PurchaseReportContent(
-          period: _selectedPeriod,
+        return PurchasesReportContentV2(
           startDate: _startDate,
           endDate: _endDate,
         );
       case 2:
-        return ExpenseReportContent(
-          period: _selectedPeriod,
+        return ExpensesReportContentV2(
           startDate: _startDate,
           endDate: _endDate,
         );
       case 3:
-        return ProfitReportContent(
-          period: _selectedPeriod,
+        return ProfitReportContentV2(
           startDate: _startDate,
           endDate: _endDate,
         );
@@ -232,4 +228,3 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     }
   }
 }
-

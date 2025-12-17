@@ -11,10 +11,7 @@ import 'sections/catalog_screen.dart';
 import 'sections/dashboard_screen.dart';
 import 'sections/expenses_screen.dart';
 import 'sections/pos_screen.dart';
-import 'sections/purchases_screen.dart';
 import 'sections/reports_screen.dart';
-import 'sections/sales_history_screen.dart';
-import 'sections/stock_screen.dart';
 
 class BoutiqueShellScreen extends ConsumerStatefulWidget {
   const BoutiqueShellScreen({
@@ -60,7 +57,7 @@ class _BoutiqueShellScreenState extends ConsumerState<BoutiqueShellScreen> {
         moduleId: widget.moduleId,
       ),
       NavigationSection(
-        label: 'Point de Vente',
+        label: 'Caisse',
         icon: Icons.point_of_sale,
         builder: () => const PosScreen(),
         isPrimary: true,
@@ -68,33 +65,10 @@ class _BoutiqueShellScreenState extends ConsumerState<BoutiqueShellScreen> {
         moduleId: widget.moduleId,
       ),
       NavigationSection(
-        label: 'Catalogue',
+        label: 'Produits',
         icon: Icons.inventory_2_outlined,
         builder: () => const CatalogScreen(),
         isPrimary: true,
-        enterpriseId: widget.enterpriseId,
-        moduleId: widget.moduleId,
-      ),
-      NavigationSection(
-        label: 'Stock',
-        icon: Icons.warehouse_outlined,
-        builder: () => const StockScreen(),
-        isPrimary: true,
-        enterpriseId: widget.enterpriseId,
-        moduleId: widget.moduleId,
-      ),
-      NavigationSection(
-        label: 'Ventes',
-        icon: Icons.receipt_long,
-        builder: () => const SalesHistoryScreen(),
-        isPrimary: true,
-        enterpriseId: widget.enterpriseId,
-        moduleId: widget.moduleId,
-      ),
-      NavigationSection(
-        label: 'Achats',
-        icon: Icons.shopping_bag,
-        builder: () => const PurchasesScreen(),
         enterpriseId: widget.enterpriseId,
         moduleId: widget.moduleId,
       ),

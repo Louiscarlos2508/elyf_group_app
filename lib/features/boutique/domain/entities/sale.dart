@@ -43,7 +43,5 @@ class SaleItem {
 enum PaymentMethod {
   cash,
   mobileMoney,
-  card,
-  credit,
 }
 

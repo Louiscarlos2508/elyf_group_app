@@ -19,6 +19,7 @@ class Expense {
 
 /// Categories of expenses for the boutique.
 enum ExpenseCategory {
+  stock, // Achats/Approvisionnement
   rent, // Loyer
   utilities, // Services publics (électricité, eau)
   maintenance, // Maintenance

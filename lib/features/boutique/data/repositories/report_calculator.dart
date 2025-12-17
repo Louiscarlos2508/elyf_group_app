@@ -61,6 +61,8 @@ class ReportCalculator {
 
   static String getCategoryName(ExpenseCategory category) {
     switch (category) {
+      case ExpenseCategory.stock:
+        return 'Stock/Achats';
       case ExpenseCategory.rent:
         return 'Loyer';
       case ExpenseCategory.utilities:

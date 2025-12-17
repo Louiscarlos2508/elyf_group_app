@@ -5,6 +5,7 @@ import '../../../application/providers.dart';
 import '../../../domain/entities/product.dart';
 import '../../widgets/product_form_dialog.dart';
 import '../../widgets/product_tile.dart';
+import '../../widgets/restock_dialog.dart';
 
 class CatalogScreen extends ConsumerStatefulWidget {
   const CatalogScreen({super.key});
@@ -48,7 +49,7 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
               children: [
                 Expanded(
                   child: Text(
-                    'Catalogue Produits',
+                    'Produits',
                     style: theme.textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -130,28 +131,49 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
                   ),
                 );
               }
+              return SliverLayoutBuilder(
+                builder: (context, constraints) {
+                  final width = constraints.crossAxisExtent;
+                  final crossAxisCount = width > 1200
+                      ? 6
+                      : width > 900
+                          ? 5
+                          : width > 600
+                              ? 4
+                              : width > 400
+                                  ? 3
+                                  : 2;
               return SliverGrid(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  childAspectRatio: 0.85,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: crossAxisCount,
+                  childAspectRatio: 0.75,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
                 ),
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
                     final product = filteredProducts[index];
                     return ProductTile(
                       product: product,
+                      showRestockButton: true,
                       onTap: () {
                         showDialog(
                           context: context,
-                          builder: (context) => ProductFormDialog(product: product),
+                          builder: (_) => ProductFormDialog(product: product),
+                        );
+                      },
+                      onRestock: () {
+                        showDialog(
+                          context: context,
+                          builder: (_) => RestockDialog(product: product),
                         );
                       },
                     );
                   },
                   childCount: filteredProducts.length,
                 ),
+                );
+              },
               );
             },
             loading: () => const SliverFillRemaining(

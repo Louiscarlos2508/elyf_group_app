@@ -71,22 +71,27 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
 
     setState(() => _isLoading = true);
     try {
-      final purchasePrice = _purchasePriceController.text.isEmpty
+      // Stock initial (optionnel, 0 par défaut)
+      final stockInitial = widget.product == null
+          ? (int.tryParse(_stockController.text) ?? 0)
+          : widget.product!.stock;
+
+      // Prix total d'achat (si stock > 0)
+      final totalPurchasePrice = _purchasePriceController.text.isEmpty
           ? null
           : int.tryParse(_purchasePriceController.text);
       
-      final stockInitial = widget.product == null
-          ? int.parse(_stockController.text)
-          : widget.product!.stock;
+      // Calculer le prix unitaire d'achat
+      final unitPurchasePrice = (stockInitial > 0 && totalPurchasePrice != null)
+          ? (totalPurchasePrice / stockInitial).round()
+          : null;
 
       final product = Product(
         id: widget.product?.id ?? 'prod-${DateTime.now().millisecondsSinceEpoch}',
         name: _nameController.text.trim(),
         price: int.parse(_priceController.text),
-        // Le stock ne peut être modifié que via les achats et ventes
-        // Si on modifie un produit existant, on garde son stock actuel
         stock: stockInitial,
-        purchasePrice: purchasePrice,
+        purchasePrice: unitPurchasePrice,
         description: _descriptionController.text.isEmpty
             ? null
             : _descriptionController.text.trim(),
@@ -96,10 +101,8 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
         barcode: _barcodeController.text.isEmpty
             ? null
             : _barcodeController.text.trim(),
-        // Pour l'instant, on garde l'URL si pas d'image sélectionnée
-        // TODO: Uploader _selectedImage vers Firebase Storage et utiliser l'URL retournée
         imageUrl: _selectedImage != null
-            ? _selectedImage!.path // Temporaire: chemin local
+            ? _selectedImage!.path
             : (_imageUrlController.text.isEmpty
                 ? null
                 : _imageUrlController.text.trim()),
@@ -108,16 +111,15 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
       if (widget.product == null) {
         await ref.read(storeControllerProvider).createProduct(product);
         
-        // Si stock initial et prix d'achat sont définis, créer une dépense automatique
-        if (stockInitial > 0 && purchasePrice != null) {
-          final totalExpense = stockInitial * purchasePrice;
+        // Si stock initial et prix total sont définis, créer une dépense automatique
+        if (stockInitial > 0 && totalPurchasePrice != null) {
           final expense = Expense(
             id: 'expense-stock-${product.id}',
             label: 'Stock initial: ${product.name}',
-            amountCfa: totalExpense,
+            amountCfa: totalPurchasePrice,
             category: ExpenseCategory.other,
             date: DateTime.now(),
-            notes: 'Stock initial de $stockInitial unité(s) à ${purchasePrice} FCFA/unité',
+            notes: 'Stock initial de $stockInitial unité(s) à $unitPurchasePrice FCFA/unité',
           );
           await ref.read(storeControllerProvider).createExpense(expense);
           ref.invalidate(expensesProvider);
@@ -134,10 +136,7 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
         SnackBar(
           content: Text(
             widget.product == null
-                ? 'Produit créé avec succès' + 
-                  (stockInitial > 0 && purchasePrice != null
-                      ? ' (dépense enregistrée)'
-                      : '')
+                ? 'Produit créé avec succès${stockInitial > 0 && totalPurchasePrice != null ? ' (dépense enregistrée)' : ''}'
                 : 'Produit mis à jour',
           ),
           backgroundColor: Colors.green,

@@ -1,10 +1,6 @@
 import 'dart:async';
 
-import '../../domain/entities/expense.dart';
-import '../../domain/entities/product.dart';
-import '../../domain/entities/purchase.dart';
 import '../../domain/entities/report_data.dart';
-import '../../domain/entities/sale.dart';
 import '../../domain/repositories/expense_repository.dart';
 import '../../domain/repositories/product_repository.dart';
 import '../../domain/repositories/purchase_repository.dart';

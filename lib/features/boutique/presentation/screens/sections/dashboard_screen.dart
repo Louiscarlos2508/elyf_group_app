@@ -1,141 +1,216 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../../shared/presentation/widgets/refresh_button.dart';
 import '../../../application/providers.dart';
-import '../../widgets/dashboard_kpi_grid.dart';
+import '../../../domain/entities/sale.dart';
+import '../../widgets/dashboard_header.dart';
+import '../../widgets/dashboard_low_stock_list.dart';
+import '../../widgets/dashboard_month_section.dart';
+import '../../widgets/dashboard_today_section.dart';
+import '../../widgets/restock_dialog.dart';
 
+/// Professional dashboard screen for boutique module.
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
-  String _formatCurrency(int amount) {
-    return amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        ) + ' FCFA';
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final salesAsync = ref.watch(recentSalesProvider);
-    final productsAsync = ref.watch(productsProvider);
     final lowStockAsync = ref.watch(lowStockProductsProvider);
     final purchasesAsync = ref.watch(purchasesProvider);
     final expensesAsync = ref.watch(expensesProvider);
 
-    final isMobile = MediaQuery.of(context).size.width < 600;
-    
-    return CustomScrollView(
+    return Scaffold(
+      body: CustomScrollView(
       slivers: [
+          // Header
         SliverToBoxAdapter(
           child: Padding(
-            padding: EdgeInsets.all(isMobile ? 16 : 24),
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
             child: Row(
               children: [
-                Icon(
-                  Icons.dashboard,
-                  color: theme.colorScheme.primary,
-                  size: isMobile ? 24 : 28,
+                  Expanded(
+                    child: DashboardHeader(
+                      date: DateTime.now(),
+                      role: 'Gérant',
                 ),
-                SizedBox(width: isMobile ? 8 : 12),
-                Text(
-                  'Tableau de Bord',
-                  style: theme.textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    fontSize: isMobile ? 20 : null,
                   ),
+                  RefreshButton(
+                    onRefresh: () {
+                      ref.invalidate(recentSalesProvider);
+                      ref.invalidate(productsProvider);
+                      ref.invalidate(lowStockProductsProvider);
+                      ref.invalidate(purchasesProvider);
+                      ref.invalidate(expensesProvider);
+                    },
+                    tooltip: 'Actualiser le tableau de bord',
                 ),
               ],
             ),
           ),
         ),
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: isMobile ? 0 : 24),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final isWide = constraints.maxWidth > 600;
-                return salesAsync.when(
-                  data: (sales) {
-                    final todaySales = sales.where((sale) {
-                      final today = DateTime.now();
-                      return sale.date.year == today.year &&
-                          sale.date.month == today.month &&
-                          sale.date.day == today.day;
-                    }).toList();
 
-                    final todayRevenue = todaySales.fold(
-                      0,
-                      (sum, sale) => sum + sale.totalAmount,
+          // Today section header
+          _buildSectionHeader("AUJOURD'HUI", 8, 8),
+
+          // Today KPIs
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+            sliver: SliverToBoxAdapter(
+              child: salesAsync.when(
+                  data: (sales) {
+                      final today = DateTime.now();
+                  final todaySales = sales
+                      .where((s) =>
+                          s.date.year == today.year &&
+                          s.date.month == today.month &&
+                          s.date.day == today.day)
+                      .toList();
+                  return DashboardTodaySection(todaySales: todaySales);
+                },
+                loading: () => const SizedBox(
+                  height: 120,
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+                error: (_, __) => const SizedBox.shrink(),
+              ),
+            ),
+          ),
+
+          // Month section header
+          _buildSectionHeader('CE MOIS', 0, 8),
+
+          // Month KPIs
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+            sliver: SliverToBoxAdapter(
+              child: _buildMonthKpis(
+                salesAsync,
+                purchasesAsync,
+                expensesAsync,
+              ),
+            ),
+          ),
+
+          // Low stock section header
+          _buildSectionHeader('ALERTES STOCK', 0, 8),
+
+          // Low stock list
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
+            sliver: SliverToBoxAdapter(
+              child: lowStockAsync.when(
+                data: (products) => DashboardLowStockList(
+                  products: products,
+                  onProductTap: (product) {
+                    showDialog(
+                      context: context,
+                      builder: (_) => RestockDialog(product: product),
                     );
-                    final todayCount = todaySales.length;
-                    
-                    // Calculate week and month stats
+                  },
+                ),
+                loading: () => const SizedBox(
+                  height: 100,
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+                error: (_, __) => const SizedBox.shrink(),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title, double top, double bottom) {
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(24, top, 24, bottom),
+        child: Text(
+          title,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.5,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMonthKpis(
+    AsyncValue<List<Sale>> salesAsync,
+    AsyncValue purchasesAsync,
+    AsyncValue expensesAsync,
+  ) {
+    return salesAsync.when(
+      data: (sales) {
                     final now = DateTime.now();
-                    final weekStart = now.subtract(Duration(days: now.weekday - 1));
                     final monthStart = DateTime(now.year, now.month, 1);
                     
-                    final weekSales = sales.where((sale) {
-                      return sale.date.isAfter(weekStart.subtract(const Duration(days: 1)));
-                    }).toList();
-                    final weekRevenue = weekSales.fold(0, (sum, sale) => sum + sale.totalAmount);
+        final monthSales = sales
+            .where((s) => s.date.isAfter(monthStart.subtract(
+                  const Duration(days: 1),
+                )))
+            .toList();
+        final monthRevenue =
+            monthSales.fold(0, (sum, s) => sum + s.totalAmount);
                     
-                    final monthSales = sales.where((sale) {
-                      return sale.date.isAfter(monthStart.subtract(const Duration(days: 1)));
-                    }).toList();
-                    final monthRevenue = monthSales.fold(0, (sum, sale) => sum + sale.totalAmount);
-                    
-                    // Calculate purchases and expenses for the month
                     return purchasesAsync.when(
                       data: (purchases) {
+            final monthPurchases = (purchases as List)
+                .where((p) => p.date.isAfter(monthStart.subtract(
+                      const Duration(days: 1),
+                    )))
+                .toList();
+            final monthPurchasesAmount = monthPurchases.fold<int>(
+              0,
+              (sum, p) => sum + (p.totalAmount as int),
+            );
+
                         return expensesAsync.when(
                           data: (expenses) {
-                            final monthPurchases = purchases.where((p) {
-                              return p.date.isAfter(monthStart.subtract(const Duration(days: 1)));
-                            }).toList();
-                            final monthPurchasesAmount = monthPurchases.fold(0, (sum, p) => sum + p.totalAmount);
+                final monthExpenses = (expenses as List)
+                    .where((e) => e.date.isAfter(monthStart.subtract(
+                          const Duration(days: 1),
+                        )))
+                    .toList();
+                final monthExpensesAmount = monthExpenses.fold<int>(
+                  0,
+                  (sum, e) => sum + (e.amountCfa as int),
+                );
                             
-                            final monthExpenses = expenses.where((e) {
-                              return e.date.isAfter(monthStart.subtract(const Duration(days: 1)));
-                            }).toList();
-                            final monthExpensesAmount = monthExpenses.fold(0, (sum, e) => sum + e.amountCfa);
-                            
-                            final monthProfit = monthRevenue - monthPurchasesAmount - monthExpensesAmount;
+                final monthProfit =
+                    monthRevenue - monthPurchasesAmount - monthExpensesAmount;
 
-                    return DashboardKpiGrid(
-                      todayCount: todayCount,
-                      todayRevenue: todayRevenue,
-                      weekRevenue: weekRevenue,
-                      weekSalesCount: weekSales.length,
+                return DashboardMonthSection(
                       monthRevenue: monthRevenue,
                       monthSalesCount: monthSales.length,
                       monthPurchasesAmount: monthPurchasesAmount,
-                      monthPurchasesCount: monthPurchases.length,
                       monthExpensesAmount: monthExpensesAmount,
-                      monthExpensesCount: monthExpenses.length,
                       monthProfit: monthProfit,
                     );
                           },
-                          loading: () => const SizedBox.shrink(),
+              loading: () => const SizedBox(
+                height: 200,
+                child: Center(child: CircularProgressIndicator()),
+              ),
                           error: (_, __) => const SizedBox.shrink(),
                         );
                       },
-                      loading: () => const SizedBox.shrink(),
+          loading: () => const SizedBox(
+            height: 200,
+            child: Center(child: CircularProgressIndicator()),
+          ),
                       error: (_, __) => const SizedBox.shrink(),
                     );
                   },
-                  loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const SizedBox(
+        height: 200,
+        child: Center(child: CircularProgressIndicator()),
+      ),
                   error: (_, __) => const SizedBox.shrink(),
                 );
-              },
-            ),
-          ),
-        ),
-        const SliverToBoxAdapter(
-          child: SizedBox(height: 24),
-        ),
-      ],
-    );
   }
 }
-
