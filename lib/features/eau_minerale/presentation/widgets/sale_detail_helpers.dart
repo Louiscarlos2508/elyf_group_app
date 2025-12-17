@@ -17,12 +17,8 @@ class SaleDetailHelpers {
 
   static String getStatusLabel(SaleStatus status) {
     switch (status) {
-      case SaleStatus.pending:
-        return 'En attente';
       case SaleStatus.validated:
         return 'Validée';
-      case SaleStatus.rejected:
-        return 'Rejetée';
       case SaleStatus.fullyPaid:
         return 'Payée';
     }
@@ -31,12 +27,8 @@ class SaleDetailHelpers {
   static Color getStatusColor(SaleStatus status, BuildContext context) {
     final theme = Theme.of(context);
     switch (status) {
-      case SaleStatus.pending:
-        return Colors.orange;
       case SaleStatus.validated:
         return Colors.green;
-      case SaleStatus.rejected:
-        return Colors.red;
       case SaleStatus.fullyPaid:
         return theme.colorScheme.primary;
     }

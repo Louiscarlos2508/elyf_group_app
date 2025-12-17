@@ -856,9 +856,17 @@ class _ProductionTrackingContent extends ConsumerWidget {
     WidgetRef ref,
     BobineUsage bobine,
   ) {
+    // Créer un objet Machine à partir des infos de la bobine
+    final machine = Machine(
+      id: bobine.machineId,
+      nom: bobine.machineName,
+      reference: bobine.machineId,
+    );
+    
     showDialog(
       context: context,
       builder: (dialogContext) => MachineBreakdownDialog(
+        machine: machine,
         session: session,
         bobine: bobine,
         onPanneSignaled: (event) {

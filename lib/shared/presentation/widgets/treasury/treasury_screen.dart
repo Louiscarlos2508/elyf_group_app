@@ -52,38 +52,30 @@ class TreasuryScreen extends ConsumerWidget {
                   isWide ? 24 : 16,
                 ),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Trésorerie',
-                          style: theme.textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Trésorerie',
+                            style: theme.textTheme.headlineMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Gestion de la trésorerie du module',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
+                          const SizedBox(height: 4),
+                          Text(
+                            'Gestion de la trésorerie du module',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                     RefreshButton(
                       onRefresh: () => ref.invalidate(treasuryProvider(moduleId)),
                       tooltip: 'Actualiser la trésorerie',
-                    ),
-                    const SizedBox(width: 8),
-                    IconButton(
-                      icon: const Icon(Icons.swap_horiz),
-                      onPressed: () => _showTransferDialog(context),
-                      tooltip: 'Effectuer un transfert',
-                      style: IconButton.styleFrom(
-                        backgroundColor: theme.colorScheme.primaryContainer,
-                      ),
                     ),
                   ],
                 ),
@@ -100,23 +92,20 @@ class TreasuryScreen extends ConsumerWidget {
                       children: [
                         TreasurySummaryCards(treasury: treasury),
                         const SizedBox(height: 32),
-                        Row(
-                          children: [
-                            Text(
-                              'Historique des mouvements',
-                              style: theme.textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const Spacer(),
-                            Flexible(
-                              child: FilledButton.icon(
-                                onPressed: () => _showTransferDialog(context),
-                                icon: const Icon(Icons.swap_horiz),
-                                label: const Text('Transfert'),
-                              ),
-                            ),
-                          ],
+                        Text(
+                          'Historique des mouvements',
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: FilledButton.icon(
+                            onPressed: () => _showTransferDialog(context),
+                            icon: const Icon(Icons.swap_horiz),
+                            label: const Text('Nouveau transfert'),
+                          ),
                         ),
                         const SizedBox(height: 16),
                         TreasuryMovementList(movements: treasury.mouvements),

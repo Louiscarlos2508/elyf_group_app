@@ -87,7 +87,7 @@ class MachineBreakdownReportCard extends ConsumerWidget {
                   data: (sessions) {
                     return Column(
                       children: machines.map((machine) {
-                        // Trouver la bobine non finie pour cette machine
+                        // Trouver la bobine non finie pour cette machine (optionnel)
                         BobineUsage? bobineNonFinie;
                         ProductionSession? sessionActive;
                         
@@ -107,37 +107,67 @@ class MachineBreakdownReportCard extends ConsumerWidget {
 
                         return Card(
                           margin: const EdgeInsets.only(bottom: 8),
-                          child: ListTile(
-                            leading: CircleAvatar(
-                              backgroundColor: theme.colorScheme.primaryContainer,
-                              child: Icon(
-                                Icons.precision_manufacturing,
-                                color: theme.colorScheme.onPrimaryContainer,
-                              ),
-                            ),
-                            title: Text(machine.nom),
-                            subtitle: Text(
-                              bobineNonFinie != null
-                                  ? 'Bobine ${bobineNonFinie.bobineType} en cours'
-                                  : 'Aucune bobine en cours',
-                            ),
-                            trailing: IntrinsicWidth(
-                              child: OutlinedButton.icon(
-                                onPressed: bobineNonFinie != null && sessionActive != null
-                                    ? () => _showBreakdownDialog(
-                                          context,
-                                          ref,
-                                          machine,
-                                          bobineNonFinie!,
-                                          sessionActive!,
-                                        )
-                                    : null,
-                                icon: const Icon(Icons.build, size: 18),
-                                label: const Text('Signaler panne'),
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: theme.colorScheme.error,
+                          child: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    CircleAvatar(
+                                      backgroundColor: theme.colorScheme.primaryContainer,
+                                      radius: 20,
+                                      child: Icon(
+                                        Icons.precision_manufacturing,
+                                        color: theme.colorScheme.onPrimaryContainer,
+                                        size: 20,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            machine.nom,
+                                            style: theme.textTheme.titleSmall?.copyWith(
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            bobineNonFinie != null
+                                                ? 'Bobine ${bobineNonFinie.bobineType} en cours'
+                                                : 'Aucune bobine en cours',
+                                            style: theme.textTheme.bodySmall?.copyWith(
+                                              color: theme.colorScheme.onSurfaceVariant,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ),
+                                const SizedBox(height: 12),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: OutlinedButton.icon(
+                                    onPressed: () => _showBreakdownDialog(
+                                      context,
+                                      ref,
+                                      machine,
+                                      bobineNonFinie,
+                                      sessionActive,
+                                    ),
+                                    icon: const Icon(Icons.build, size: 18),
+                                    label: const Text('Signaler panne'),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: theme.colorScheme.error,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         );
@@ -181,17 +211,20 @@ class MachineBreakdownReportCard extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     Machine machine,
-    BobineUsage bobine,
-    ProductionSession session,
+    BobineUsage? bobine,
+    ProductionSession? session,
   ) {
     showDialog(
       context: context,
       builder: (dialogContext) => MachineBreakdownDialog(
+        machine: machine,
         session: session,
         bobine: bobine,
         onPanneSignaled: (event) {
           ref.invalidate(productionSessionsStateProvider);
-          ref.invalidate(productionSessionDetailProvider(session.id));
+          if (session != null) {
+            ref.invalidate(productionSessionDetailProvider(session.id));
+          }
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Panne signalée avec succès'),

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Tabs widget for reports module.
+/// Tabs widget for reports module with extended report types.
 class ReportTabs extends StatelessWidget {
   const ReportTabs({
     super.key,
@@ -11,49 +11,150 @@ class ReportTabs extends StatelessWidget {
   final int selectedTab;
   final void Function(int) onTabChanged;
 
+  static const _tabs = [
+    _TabInfo('Ventes', Icons.shopping_cart_outlined),
+    _TabInfo('Production', Icons.factory_outlined),
+    _TabInfo('Dépenses', Icons.receipt_long_outlined),
+    _TabInfo('Salaires', Icons.people_outline),
+    _TabInfo('Rentabilité', Icons.trending_up),
+    _TabInfo('Tendances', Icons.analytics_outlined),
+    _TabInfo('Prévisions', Icons.auto_graph),
+  ];
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final tabs = ['Ventes', 'Production', 'Dépenses', 'Salaires'];
-    
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth > 700;
+
+        if (isWide) {
+          return _buildWideLayout(theme);
+        }
+        return _buildCompactLayout(theme);
+      },
+    );
+  }
+
+  Widget _buildWideLayout(ThemeData theme) {
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Row(
-        children: tabs.asMap().entries.map((entry) {
-          final index = entry.key;
-          final label = entry.value;
-          final isSelected = selectedTab == index;
-          
-          return Expanded(
-            child: InkWell(
-              onTap: () => onTabChanged(index),
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  color: isSelected ? theme.colorScheme.surface : Colors.transparent,
-                  borderRadius: BorderRadius.circular(12),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: _tabs.asMap().entries.map((entry) {
+            return _buildTab(theme, entry.key, entry.value, false);
+          }).toList(),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCompactLayout(ThemeData theme) {
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        child: Row(
+          children: _tabs.asMap().entries.map((entry) {
+            return _buildTab(theme, entry.key, entry.value, true);
+          }).toList(),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTab(ThemeData theme, int index, _TabInfo tab, bool compact) {
+    final isSelected = selectedTab == index;
+    final isAdvanced = index >= 4;
+
+    return Padding(
+      padding: const EdgeInsets.all(4),
+      child: InkWell(
+        onTap: () => onTabChanged(index),
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: compact ? 12 : 16,
+            vertical: 10,
+          ),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? (isAdvanced
+                    ? theme.colorScheme.primaryContainer
+                    : theme.colorScheme.surface)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+            border: isSelected && isAdvanced
+                ? Border.all(
+                    color: theme.colorScheme.primary.withValues(alpha: 0.5),
+                  )
+                : null,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                tab.icon,
+                size: 18,
+                color: isSelected
+                    ? (isAdvanced
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.onSurface)
+                    : theme.colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                tab.label,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                  color: isSelected
+                      ? (isAdvanced
+                          ? theme.colorScheme.primary
+                          : theme.colorScheme.onSurface)
+                      : theme.colorScheme.onSurfaceVariant,
                 ),
-                child: Center(
+              ),
+              if (isAdvanced && !isSelected) ...[
+                const SizedBox(width: 4),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                   child: Text(
-                    label,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                      color: isSelected
-                          ? theme.colorScheme.onSurface
-                          : theme.colorScheme.onSurfaceVariant,
+                    'PRO',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      fontSize: 8,
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.primary,
                     ),
                   ),
                 ),
-              ),
-            ),
-          );
-        }).toList(),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }
 }
 
+class _TabInfo {
+  const _TabInfo(this.label, this.icon);
+
+  final String label;
+  final IconData icon;
+}

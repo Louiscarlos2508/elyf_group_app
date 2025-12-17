@@ -75,47 +75,76 @@ class EmployeePaymentCard extends ConsumerWidget {
       margin: const EdgeInsets.only(bottom: 12),
       child: Column(
         children: [
-          ListTile(
-            leading: CircleAvatar(
-              child: Text(employee.name[0].toUpperCase()),
-            ),
-            title: Text(employee.name),
-            subtitle: employee.position != null
-                ? Text('${employee.position} • ${CurrencyFormatter.format(employee.monthlySalary)}/mois')
-                : Text('${CurrencyFormatter.format(employee.monthlySalary)}/mois'),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (hasCurrentMonthPayment)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
+                Row(
+                  children: [
+                    CircleAvatar(
+                      child: Text(employee.name[0].toUpperCase()),
                     ),
-                    decoration: BoxDecoration(
-                      color: Colors.green.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      'Payé',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: Colors.green,
-                        fontWeight: FontWeight.w500,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  employee.name,
+                                  style: theme.textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              if (hasCurrentMonthPayment) ...[
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.green.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    'Payé',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: Colors.green,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            employee.position != null
+                                ? '${employee.position} • ${CurrencyFormatter.format(employee.monthlySalary)}/mois'
+                                : '${CurrencyFormatter.format(employee.monthlySalary)}/mois',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
                       ),
                     ),
-                  ),
-                const SizedBox(width: 8),
-                IntrinsicWidth(
+                  ],
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
                   child: OutlinedButton.icon(
                     onPressed: () => _showPaymentForm(context, ref),
                     icon: const Icon(Icons.payment, size: 18),
-                    label: const Text('Payer'),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                    ),
+                    label: const Text('Enregistrer un paiement'),
                   ),
                 ),
               ],

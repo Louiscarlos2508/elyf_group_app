@@ -59,16 +59,21 @@ class SalesReportTable extends StatelessWidget {
         ),
         child: SingleChildScrollView(
           scrollDirection: Axis.horizontal,
-          child: Table(
-            columnWidths: const {
-              0: FlexColumnWidth(1.5),
-              1: FlexColumnWidth(2),
-              2: FlexColumnWidth(1.5),
-              3: FlexColumnWidth(1),
-              4: FlexColumnWidth(1.5),
-              5: FlexColumnWidth(1.5),
-              6: FlexColumnWidth(1.5),
-            },
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minWidth: MediaQuery.of(context).size.width - 48,
+            ),
+            child: Table(
+              defaultColumnWidth: const IntrinsicColumnWidth(),
+              columnWidths: const {
+                0: FixedColumnWidth(100), // Date
+                1: FixedColumnWidth(150), // Client
+                2: FixedColumnWidth(120), // Produit
+                3: FixedColumnWidth(60),  // Qté
+                4: FixedColumnWidth(120), // Total
+                5: FixedColumnWidth(120), // Payé
+                6: FixedColumnWidth(120), // Reste
+              },
             children: [
               TableRow(
                 decoration: BoxDecoration(
@@ -89,7 +94,7 @@ class SalesReportTable extends StatelessWidget {
                 ],
               ),
               ...sales.map((sale) {
-                final remaining = sale.totalPrice - sale.amountPaid;
+                final remaining = sale.remainingAmount;
                 return TableRow(
                   children: [
                     _buildDataCellText(context, _formatDate(sale.date)),
@@ -121,6 +126,7 @@ class SalesReportTable extends StatelessWidget {
                 );
               }),
             ],
+            ),
           ),
         ),
       );
@@ -129,7 +135,7 @@ class SalesReportTable extends StatelessWidget {
     // Mobile: Liste de cartes
     return Column(
       children: sales.map((sale) {
-        final remaining = sale.totalPrice - sale.amountPaid;
+        final remaining = sale.remainingAmount;
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.all(16),

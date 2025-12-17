@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/entities/sale.dart';
+import 'invoice_print_service.dart';
 import 'sale_detail_helpers.dart';
 
 /// Dialog showing sale details.
@@ -36,6 +37,7 @@ class SaleDetailDialog extends StatelessWidget {
                         ),
                       ),
                     ),
+                    EauMineralePrintButton(sale: sale, compact: true),
                     IconButton(
                       icon: const Icon(Icons.close),
                       onPressed: () => Navigator.of(context).pop(),

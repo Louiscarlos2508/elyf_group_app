@@ -27,7 +27,7 @@ class ClientsScreen extends ConsumerWidget {
       // Charger les crédits réels du client
       final allCreditSales = await creditRepo.fetchCreditSales();
       final customerCreditSales = allCreditSales
-          .where((s) => s.customerId == customerId && s.isCredit && s.isValidated)
+          .where((s) => s.customerId == customerId && s.isCredit)
           .toList();
       
       if (customerCreditSales.isEmpty) {
@@ -39,14 +39,12 @@ class ClientsScreen extends ConsumerWidget {
       }
       
       // Calculer le crédit total réel
+      // Note: sale.amountPaid est déjà mis à jour avec les paiements via updateSaleAmountPaid
+      // donc on utilise directement remainingAmount
       int totalCreditReal = 0;
       for (final sale in customerCreditSales) {
-        final payments = await creditRepo.fetchSalePayments(sale.id);
-        final totalPaidFromPayments = payments.fold<int>(0, (sum, p) => sum + p.amount);
-        final totalAmountPaid = sale.amountPaid + totalPaidFromPayments;
-        final remaining = sale.totalPrice - totalAmountPaid;
-        if (remaining > 0) {
-          totalCreditReal += remaining;
+        if (sale.remainingAmount > 0) {
+          totalCreditReal += sale.remainingAmount;
         }
       }
       
@@ -93,7 +91,7 @@ class ClientsScreen extends ConsumerWidget {
       // Vérifier que le client a des crédits
       final allCreditSales = await creditRepo.fetchCreditSales();
       final customerCreditSales = allCreditSales
-          .where((s) => s.customerId == customerId && s.isCredit && s.isValidated)
+          .where((s) => s.customerId == customerId && s.isCredit)
           .toList();
       
       // Récupérer le nom du client
@@ -351,25 +349,17 @@ class _CreditsContentState extends ConsumerState<_CreditsContent> {
         
         if (customer == null) continue;
         
-        final credits = await Future.wait(
-          creditSales.map((sale) async {
-            // Récupérer les paiements supplémentaires enregistrés
-            final payments = await creditRepo.fetchSalePayments(sale.id);
-            final totalPaidFromPayments = payments.fold<int>(0, (sum, p) => sum + p.amount);
-            
-            // Le montant total payé = montant payé initial + paiements supplémentaires
-            final totalAmountPaid = sale.amountPaid + totalPaidFromPayments;
-            
-            return CustomerCredit(
-              id: sale.id,
-              saleId: sale.id,
-              amount: sale.totalPrice,
-              amountPaid: totalAmountPaid,
-              date: sale.date,
-              dueDate: sale.date.add(const Duration(days: 30)),
-            );
-          }),
-        );
+        // Utiliser directement sale.amountPaid car il est déjà mis à jour par CreditService
+        final credits = creditSales.map((sale) {
+          return CustomerCredit(
+            id: sale.id,
+            saleId: sale.id,
+            amount: sale.totalPrice,
+            amountPaid: sale.amountPaid,
+            date: sale.date,
+            dueDate: sale.date.add(const Duration(days: 30)),
+          );
+        }).toList();
         
         // Ne garder que les crédits avec un montant restant > 0
         final validCredits = credits.where((c) => c.remainingAmount > 0).toList();

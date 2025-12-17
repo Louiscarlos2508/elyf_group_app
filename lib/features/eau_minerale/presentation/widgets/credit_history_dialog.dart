@@ -80,7 +80,7 @@ class CreditHistoryDialog extends ConsumerWidget {
           );
         }
 
-        final creditSales = salesSnapshot.data?.where((s) => s.isCredit && s.isValidated).toList() ?? [];
+        final creditSales = salesSnapshot.data?.where((s) => s.isCredit).toList() ?? [];
         
         return FutureBuilder<Map<String, List<CreditPayment>>>(
           future: Future.wait(

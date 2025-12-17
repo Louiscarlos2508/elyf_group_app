@@ -121,7 +121,7 @@ final inventoryRepositoryProvider = Provider<InventoryRepository>(
 );
 
 final customerRepositoryProvider = Provider<CustomerRepository>(
-  (ref) => MockCustomerRepository(),
+  (ref) => MockCustomerRepository(saleRepository: ref.watch(saleRepositoryProvider)),
 );
 
 final financeRepositoryProvider = Provider<FinanceRepository>(

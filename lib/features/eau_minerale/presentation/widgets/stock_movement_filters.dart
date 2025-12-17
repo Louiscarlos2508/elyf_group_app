@@ -169,30 +169,66 @@ class _StockMovementFiltersState
               ],
             ),
             const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildDateField(
-                    context,
-                    'Du',
-                    _startDate,
-                    _selectStartDate,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _buildDateField(
-                    context,
-                    'Au',
-                    _endDate,
-                    _selectEndDate,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _buildTypeFilter(context),
-                ),
-              ],
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final isWide = constraints.maxWidth > 600;
+                
+                if (isWide) {
+                  return Row(
+                    children: [
+                      Expanded(
+                        child: _buildDateField(
+                          context,
+                          'Du',
+                          _startDate,
+                          _selectStartDate,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _buildDateField(
+                          context,
+                          'Au',
+                          _endDate,
+                          _selectEndDate,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _buildTypeFilter(context),
+                      ),
+                    ],
+                  );
+                } else {
+                  return Column(
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildDateField(
+                              context,
+                              'Du',
+                              _startDate,
+                              _selectStartDate,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _buildDateField(
+                              context,
+                              'Au',
+                              _endDate,
+                              _selectEndDate,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      _buildTypeFilter(context),
+                    ],
+                  );
+                }
+              },
             ),
           ],
         ),
@@ -274,47 +310,58 @@ class _StockMovementFiltersState
   }
 
   Widget _buildTypeFilter(BuildContext context) {
-    final theme = Theme.of(context);
-    return DropdownButtonFormField<StockMovementType?>(
-      decoration: InputDecoration(
-        labelText: 'Type',
-        prefixIcon: const Icon(Icons.swap_vert, size: 20),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-      ),
-      value: _selectedType,
-      items: [
-        const DropdownMenuItem<StockMovementType?>(
-          value: null,
-          child: Text('Tous'),
-        ),
-        DropdownMenuItem<StockMovementType>(
-          value: StockMovementType.entry,
-          child: Row(
-            children: [
-              Icon(Icons.arrow_downward, size: 16, color: Colors.green),
-              const SizedBox(width: 8),
-              const Text('Entrées'),
-            ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth > 400;
+        
+        return DropdownButtonFormField<StockMovementType?>(
+          decoration: InputDecoration(
+            labelText: 'Type',
+            prefixIcon: const Icon(Icons.swap_vert, size: 20),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
-        ),
-        DropdownMenuItem<StockMovementType>(
-          value: StockMovementType.exit,
-          child: Row(
-            children: [
-              Icon(Icons.arrow_upward, size: 16, color: Colors.red),
-              const SizedBox(width: 8),
-              const Text('Sorties'),
-            ],
-          ),
-        ),
-      ],
-      onChanged: (value) {
-        setState(() {
-          _selectedType = value;
-          _applyFilters();
-        });
+          value: _selectedType,
+          items: [
+            const DropdownMenuItem<StockMovementType?>(
+              value: null,
+              child: Text('Tous'),
+            ),
+            DropdownMenuItem<StockMovementType>(
+              value: StockMovementType.entry,
+              child: isWide
+                  ? Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.arrow_downward, size: 16, color: Colors.green),
+                        const SizedBox(width: 8),
+                        const Text('Entrées'),
+                      ],
+                    )
+                  : const Text('Entrées'),
+            ),
+            DropdownMenuItem<StockMovementType>(
+              value: StockMovementType.exit,
+              child: isWide
+                  ? Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.arrow_upward, size: 16, color: Colors.red),
+                        const SizedBox(width: 8),
+                        const Text('Sorties'),
+                      ],
+                    )
+                  : const Text('Sorties'),
+            ),
+          ],
+          onChanged: (value) {
+            setState(() {
+              _selectedType = value;
+              _applyFilters();
+            });
+          },
+        );
       },
     );
   }

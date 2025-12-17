@@ -50,13 +50,15 @@ class SaleProductSelector extends ConsumerWidget {
                 padding: const EdgeInsets.all(20),
                 child: Row(
                   children: [
-                    Text(
-                      'Sélectionner le produit',
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
+                    Expanded(
+                      child: Text(
+                        'Sélectionner le produit',
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    const Spacer(),
                     IconButton(
                       icon: const Icon(Icons.close),
                       onPressed: () => Navigator.of(dialogContext).pop(),
@@ -184,47 +186,101 @@ class SaleProductSelector extends ConsumerWidget {
                               ? theme.colorScheme.onSurface
                               : theme.colorScheme.onSurfaceVariant,
                         ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                       if (selectedProduct != null) ...[
                         const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Text(
-                              '${selectedProduct!.unitPrice} CFA/${selectedProduct!.unit}',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            FutureBuilder<int>(
-                              future: stockRepository.getStock(selectedProduct!.id),
-                              builder: (context, snapshot) {
-                                final stock = snapshot.data ?? 0;
-                                return Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.store_outlined,
-                                      size: 14,
-                                      color: stock > 0
-                                          ? theme.colorScheme.primary
-                                          : theme.colorScheme.error,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      'Stock: $stock',
+                        LayoutBuilder(
+                          builder: (context, constraints) {
+                            final isWide = constraints.maxWidth > 300;
+                            
+                            if (isWide) {
+                              return Row(
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      '${selectedProduct!.unitPrice} CFA/${selectedProduct!.unit}',
                                       style: theme.textTheme.bodySmall?.copyWith(
-                                        color: stock > 0
-                                            ? theme.colorScheme.primary
-                                            : theme.colorScheme.error,
-                                        fontWeight: FontWeight.w600,
+                                        color: theme.colorScheme.onSurfaceVariant,
                                       ),
+                                      overflow: TextOverflow.ellipsis,
                                     ),
-                                  ],
-                                );
-                              },
-                            ),
-                          ],
+                                  ),
+                                  const SizedBox(width: 12),
+                                  FutureBuilder<int>(
+                                    future: stockRepository.getStock(selectedProduct!.id),
+                                    builder: (context, snapshot) {
+                                      final stock = snapshot.data ?? 0;
+                                      return Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.store_outlined,
+                                            size: 14,
+                                            color: stock > 0
+                                                ? theme.colorScheme.primary
+                                                : theme.colorScheme.error,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            'Stock: $stock',
+                                            style: theme.textTheme.bodySmall?.copyWith(
+                                              color: stock > 0
+                                                  ? theme.colorScheme.primary
+                                                  : theme.colorScheme.error,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
+                                      );
+                                    },
+                                  ),
+                                ],
+                              );
+                            } else {
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '${selectedProduct!.unitPrice} CFA/${selectedProduct!.unit}',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  FutureBuilder<int>(
+                                    future: stockRepository.getStock(selectedProduct!.id),
+                                    builder: (context, snapshot) {
+                                      final stock = snapshot.data ?? 0;
+                                      return Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.store_outlined,
+                                            size: 14,
+                                            color: stock > 0
+                                                ? theme.colorScheme.primary
+                                                : theme.colorScheme.error,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            'Stock: $stock',
+                                            style: theme.textTheme.bodySmall?.copyWith(
+                                              color: stock > 0
+                                                  ? theme.colorScheme.primary
+                                                  : theme.colorScheme.error,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
+                                      );
+                                    },
+                                  ),
+                                ],
+                              );
+                            }
+                          },
                         ),
                       ],
                     ],

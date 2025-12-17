@@ -152,8 +152,8 @@ class _WeeklySalaryCalculatorState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'Salaires Hebdomadaires',
@@ -161,7 +161,16 @@ class _WeeklySalaryCalculatorState
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                IntrinsicWidth(
+                const SizedBox(height: 8),
+                Text(
+                  'Semaine du ${_formatDate(_getStartOfWeek(_selectedWeek))}',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
                   child: OutlinedButton.icon(
                     onPressed: () => _selectWeek(context),
                     icon: const Icon(Icons.calendar_today, size: 18),
@@ -169,13 +178,6 @@ class _WeeklySalaryCalculatorState
                   ),
                 ),
               ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Semaine du ${_formatDate(_getStartOfWeek(_selectedWeek))}',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
             ),
             const SizedBox(height: 24),
             if (_isLoading)
@@ -349,46 +351,102 @@ class _SalaryCard extends StatelessWidget {
   final WeeklySalaryInfo info;
   final VoidCallback onPay;
 
+  String _formatCurrency(int amount) {
+    return '${amount.toString().replaceAllMapped(
+          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+          (Match m) => '${m[1]} ',
+        )} CFA';
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: theme.colorScheme.primaryContainer,
-          child: Text(
-            info.workerName[0].toUpperCase(),
-            style: TextStyle(
-              color: theme.colorScheme.onPrimaryContainer,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: theme.colorScheme.outline.withValues(alpha: 0.2),
         ),
-        title: Text(info.workerName),
-        subtitle: Text(
-          '${info.daysWorked} jour(s) × ${info.dailySalary} CFA/jour',
-        ),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              '${info.totalSalary} CFA',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: theme.colorScheme.primary,
-              ),
+            Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: theme.colorScheme.primaryContainer,
+                  child: Text(
+                    info.workerName[0].toUpperCase(),
+                    style: TextStyle(
+                      color: theme.colorScheme.onPrimaryContainer,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        info.workerName,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${info.daysWorked} jour${info.daysWorked > 1 ? 's' : ''} × ${_formatCurrency(info.dailySalary)}/jour',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 4),
-            FilledButton(
-              onPressed: onPay,
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                minimumSize: const Size(0, 32),
-              ),
-              child: const Text('Payer'),
+            const SizedBox(height: 12),
+            Divider(
+              height: 1,
+              color: theme.colorScheme.outline.withValues(alpha: 0.1),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    _formatCurrency(info.totalSalary),
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onPrimaryContainer,
+                    ),
+                  ),
+                ),
+                FilledButton.icon(
+                  onPressed: onPay,
+                  icon: const Icon(Icons.payment, size: 18),
+                  label: const Text('Payer'),
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  ),
+                ),
+              ],
             ),
           ],
         ),

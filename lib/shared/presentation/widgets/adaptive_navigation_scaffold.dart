@@ -160,6 +160,54 @@ class _AdaptiveNavigationScaffoldState
   }
 
   Widget _buildMobileScreen() {
+    final theme = Theme.of(context);
+    final sectionsCount = widget.sections.length;
+    
+    // Si plus de 5 sections, utiliser un drawer, sinon NavigationBar
+    if (sectionsCount > 5) {
+      return _buildMobileWithDrawer(theme);
+    }
+    
+    return Scaffold(
+      key: _scaffoldKey,
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: widget.sections.map((s) => s.builder()).toList(),
+      ),
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          boxShadow: [
+            BoxShadow(
+              color: theme.shadowColor.withValues(alpha: 0.1),
+              blurRadius: 8,
+              offset: const Offset(0, -2),
+            ),
+          ],
+        ),
+        child: NavigationBar(
+          selectedIndex: _selectedIndex,
+          onDestinationSelected: _onDestinationSelected,
+          labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+          height: 72,
+          elevation: 0,
+          backgroundColor: theme.colorScheme.surface,
+          indicatorColor: theme.colorScheme.primaryContainer,
+          destinations: widget.sections.map((section) {
+            return NavigationDestination(
+              icon: Icon(section.icon),
+              selectedIcon: Icon(
+                section.icon,
+                color: theme.colorScheme.primary,
+              ),
+              label: section.label,
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMobileWithDrawer(ThemeData theme) {
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
@@ -171,7 +219,7 @@ class _AdaptiveNavigationScaffoldState
           tooltip: 'Menu',
         ),
       ),
-      drawer: _buildDrawer(),
+      drawer: _buildDrawer(theme),
       body: IndexedStack(
         index: _selectedIndex,
         children: widget.sections.map((s) => s.builder()).toList(),
@@ -179,33 +227,46 @@ class _AdaptiveNavigationScaffoldState
     );
   }
 
-  Widget _buildDrawer() {
-    final theme = Theme.of(context);
-    
+  Widget _buildDrawer(ThemeData theme) {
     return Drawer(
       child: SafeArea(
         child: Column(
           children: [
-            DrawerHeader(
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: theme.colorScheme.primaryContainer,
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    theme.colorScheme.primaryContainer,
+                    theme.colorScheme.primary.withValues(alpha: 0.3),
+                  ],
+                ),
               ),
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(
-                    Icons.menu,
-                    size: 48,
-                    color: theme.colorScheme.onPrimaryContainer,
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surface,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Icon(
+                      Icons.business,
+                      size: 32,
+                      color: theme.colorScheme.primary,
+                    ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 16),
                   Text(
                     widget.appTitle,
                     style: theme.textTheme.titleLarge?.copyWith(
                       color: theme.colorScheme.onPrimaryContainer,
                       fontWeight: FontWeight.bold,
                     ),
-                    textAlign: TextAlign.center,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -213,36 +274,70 @@ class _AdaptiveNavigationScaffoldState
               ),
             ),
             Expanded(
-              child: ListView(
-                padding: EdgeInsets.zero,
-                children: [
-                  ...widget.sections.asMap().entries.map(
-                    (entry) {
-                      final index = entry.key;
-                      final section = entry.value;
-                      final isSelected = _selectedIndex == index;
-                      return ListTile(
-                        leading: Icon(
-                          section.icon,
-                          color: isSelected
-                              ? theme.colorScheme.primary
-                              : null,
-                        ),
-                        title: Text(section.label),
-                        selected: isSelected,
+              child: ListView.builder(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                itemCount: widget.sections.length,
+                itemBuilder: (context, index) {
+                  final section = widget.sections[index];
+                  final isSelected = _selectedIndex == index;
+                  
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 2,
+                    ),
+                    child: Material(
+                      color: isSelected
+                          ? theme.colorScheme.primaryContainer
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(12),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(12),
                         onTap: () => _onDestinationSelected(index),
-                        selectedTileColor:
-                            theme.colorScheme.primaryContainer,
-                        trailing: isSelected
-                            ? Icon(
-                                Icons.check,
-                                color: theme.colorScheme.primary,
-                              )
-                            : null,
-                      );
-                    },
-                  ),
-                ],
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                section.icon,
+                                color: isSelected
+                                    ? theme.colorScheme.primary
+                                    : theme.colorScheme.onSurfaceVariant,
+                                size: 24,
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Text(
+                                  section.label,
+                                  style: theme.textTheme.bodyLarge?.copyWith(
+                                    color: isSelected
+                                        ? theme.colorScheme.primary
+                                        : theme.colorScheme.onSurface,
+                                    fontWeight: isSelected
+                                        ? FontWeight.w600
+                                        : FontWeight.normal,
+                                  ),
+                                ),
+                              ),
+                              if (isSelected)
+                                Container(
+                                  width: 6,
+                                  height: 6,
+                                  decoration: BoxDecoration(
+                                    color: theme.colorScheme.primary,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
           ],

@@ -42,6 +42,7 @@ class CustomerCreditHeader extends StatelessWidget {
                 style: theme.textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
+                overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 6),
               Row(
@@ -52,10 +53,13 @@ class CustomerCreditHeader extends StatelessWidget {
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
                   const SizedBox(width: 6),
-                  Text(
-                    customer.phone,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
+                  Flexible(
+                    child: Text(
+                      customer.phone,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],

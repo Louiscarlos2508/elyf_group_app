@@ -94,15 +94,16 @@ class ProductionSessionsScreen extends ConsumerWidget {
                             onPressed: () => ref.invalidate(productionSessionsStateProvider),
                             tooltip: 'Actualiser',
                           ),
-                          const SizedBox(width: 8),
-                          IntrinsicWidth(
-                            child: FilledButton.icon(
-                              onPressed: () => _showCreateForm(context),
-                              icon: const Icon(Icons.add),
-                              label: const Text('Nouvelle session'),
-                            ),
-                          ),
                         ],
+                      ),
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton.icon(
+                          onPressed: () => _showCreateForm(context),
+                          icon: const Icon(Icons.add),
+                          label: const Text('Nouvelle session'),
+                        ),
                       ),
                       const SizedBox(height: 24),
                       // Statistiques

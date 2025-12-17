@@ -1551,6 +1551,13 @@ class ProductionSessionFormStepsState
     BobineUsage bobine,
     int index,
   ) async {
+    // Créer un objet Machine à partir des infos de la bobine
+    final machine = Machine(
+      id: bobine.machineId,
+      nom: bobine.machineName,
+      reference: bobine.machineId,
+    );
+    
     // Créer une session temporaire pour le dialog
     final tempSession = ProductionSession(
       id: widget.session?.id ?? 'temp',
@@ -1569,6 +1576,7 @@ class ProductionSessionFormStepsState
     await showDialog(
       context: context,
       builder: (dialogContext) => MachineBreakdownDialog(
+        machine: machine,
         session: tempSession,
         bobine: bobine,
         onPanneSignaled: (event) {

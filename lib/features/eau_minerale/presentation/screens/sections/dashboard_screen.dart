@@ -5,8 +5,10 @@ import '../../../../../shared/presentation/widgets/refresh_button.dart';
 import '../../../application/providers.dart';
 import '../../../domain/entities/stock_item.dart';
 import '../../widgets/dashboard_header.dart';
+import '../../widgets/dashboard_month_kpis.dart';
 import '../../widgets/dashboard_stock_list.dart';
 import '../../widgets/dashboard_today_section.dart';
+import '../../widgets/dashboard_trends_chart.dart';
 import '../../widgets/section_placeholder.dart';
 import '../../widgets/stock_alert_banner.dart';
 
@@ -17,13 +19,12 @@ class DashboardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final salesState = ref.watch(salesStateProvider);
-    // TODO: Réimplémenter avec productionSessionsStateProvider
-    // final productionState = ref.watch(productionStateProvider);
     final stockState = ref.watch(stockStateProvider);
 
     return Scaffold(
       body: CustomScrollView(
         slivers: [
+          // Header
           SliverToBoxAdapter(
             child: LayoutBuilder(
               builder: (context, constraints) {
@@ -38,7 +39,8 @@ class DashboardScreen extends ConsumerWidget {
                   child: Row(
                     children: [
                       Expanded(
-                        child: DashboardHeader(date: DateTime.now(), role: 'Responsable'),
+                        child:
+                            DashboardHeader(date: DateTime.now(), role: 'Responsable'),
                       ),
                       RefreshButton(
                         onRefresh: () {
@@ -46,6 +48,7 @@ class DashboardScreen extends ConsumerWidget {
                           ref.invalidate(financesStateProvider);
                           ref.invalidate(clientsStateProvider);
                           ref.invalidate(stockStateProvider);
+                          ref.invalidate(productionSessionsStateProvider);
                         },
                         tooltip: 'Actualiser le tableau de bord',
                       ),
@@ -55,6 +58,8 @@ class DashboardScreen extends ConsumerWidget {
               },
             ),
           ),
+
+          // Stock alerts
           SliverToBoxAdapter(
             child: stockState.when(
               data: (data) {
@@ -77,6 +82,8 @@ class DashboardScreen extends ConsumerWidget {
               error: (_, __) => const SizedBox.shrink(),
             ),
           ),
+
+          // Today section
           _buildSectionHeader("AUJOURD'HUI", 24, 16),
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
@@ -91,29 +98,26 @@ class DashboardScreen extends ConsumerWidget {
               ),
             ),
           ),
-          // TODO: Réimplémenter les sections de production avec les sessions
-          // _buildSectionHeader('CE MOIS', 0, 8),
-          // SliverPadding(
-          //   padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-          //   sliver: SliverToBoxAdapter(
-          //     child: DashboardMonthSection(
-          //       salesState: salesState,
-          //       productionState: productionState,
-          //       clientsState: clientsState,
-          //       financesState: financesState,
-          //     ),
-          //   ),
-          // ),
-          // _buildSectionHeader('Opérations', 0, 8),
-          // SliverPadding(
-          //   padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-          //   sliver: SliverToBoxAdapter(
-          //     child: DashboardOperationsSection(
-          //       productionState: productionState,
-          //       financesState: financesState,
-          //     ),
-          //   ),
-          // ),
+
+          // Month KPIs section
+          _buildSectionHeader('CE MOIS', 0, 8),
+          const SliverPadding(
+            padding: EdgeInsets.fromLTRB(24, 8, 24, 24),
+            sliver: SliverToBoxAdapter(
+              child: DashboardMonthKpis(),
+            ),
+          ),
+
+          // Trends chart section
+          _buildSectionHeader('TENDANCES', 0, 8),
+          const SliverPadding(
+            padding: EdgeInsets.fromLTRB(24, 8, 24, 24),
+            sliver: SliverToBoxAdapter(
+              child: DashboardTrendsChart(),
+            ),
+          ),
+
+          // Stock section
           _buildSectionHeader('Stock Produits Finis', 0, 8),
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
@@ -143,7 +147,7 @@ class DashboardScreen extends ConsumerWidget {
         padding: EdgeInsets.fromLTRB(24, top, 24, bottom),
         child: Text(
           title,
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
             letterSpacing: 0.5,
@@ -152,5 +156,4 @@ class DashboardScreen extends ConsumerWidget {
       ),
     );
   }
-
 }

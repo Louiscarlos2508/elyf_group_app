@@ -7,12 +7,15 @@ import '../../../../../core/pdf/eau_minerale_report_pdf_service.dart';
 import '../../../application/providers.dart';
 import '../../../domain/entities/report_period.dart';
 import '../../widgets/expense_report_content.dart';
+import '../../widgets/forecast_report_content.dart';
 import '../../widgets/production_report_content.dart';
+import '../../widgets/profitability_report_content.dart';
 import '../../widgets/report_kpi_cards.dart';
 import '../../widgets/report_period_selector.dart';
 import '../../widgets/report_tabs.dart';
 import '../../widgets/salary_report_content.dart';
 import '../../widgets/sales_report_content.dart';
+import '../../widgets/trends_report_content.dart';
 import '../../widgets/weekly_monthly_report_content.dart';
 
 class ReportsScreen extends ConsumerStatefulWidget {
@@ -58,8 +61,6 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   }
 
   Future<void> _downloadReport() async {
-    // _startDate and _endDate are initialized in initState, so they're never null
-
     try {
       // Afficher un indicateur de chargement
       showDialog(
@@ -112,14 +113,27 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     }
   }
 
+  void _invalidateProviders() {
+    final period = ReportPeriod(startDate: _startDate, endDate: _endDate);
+    ref.invalidate(reportDataProvider(period));
+    ref.invalidate(reportSalesProvider(period));
+    ref.invalidate(reportProductSummaryProvider(period));
+    ref.invalidate(reportProductionProvider(period));
+    ref.invalidate(reportExpenseProvider(period));
+    ref.invalidate(reportSalaryProvider(period));
+    ref.invalidate(salesStateProvider);
+    ref.invalidate(productionSessionsStateProvider);
+    ref.invalidate(financesStateProvider);
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final isWide = constraints.maxWidth > 600;
-        
+
         return CustomScrollView(
           slivers: [
             SliverToBoxAdapter(
@@ -141,16 +155,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                           ),
                           const Spacer(),
                           RefreshButton(
-                            onRefresh: () {
-                              // Invalider les providers de rapports pour forcer le rafraîchissement
-                              final period = ReportPeriod(startDate: _startDate, endDate: _endDate);
-                              ref.invalidate(reportDataProvider(period));
-                              ref.invalidate(reportSalesProvider(period));
-                              ref.invalidate(reportProductSummaryProvider(period));
-                              ref.invalidate(reportProductionProvider(period));
-                              ref.invalidate(reportExpenseProvider(period));
-                              ref.invalidate(reportSalaryProvider(period));
-                            },
+                            onRefresh: _invalidateProviders,
                             tooltip: 'Actualiser les rapports',
                           ),
                         ],
@@ -163,22 +168,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                               Expanded(
                                 child: Text(
                                   'Rapports',
-                                  style: theme.textTheme.headlineMedium?.copyWith(
+                                  style:
+                                      theme.textTheme.headlineMedium?.copyWith(
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
                               ),
                               RefreshButton(
-                                onRefresh: () {
-                                  // Invalider les providers de rapports pour forcer le rafraîchissement
-                                  final period = ReportPeriod(startDate: _startDate, endDate: _endDate);
-                                  ref.invalidate(reportDataProvider(period));
-                                  ref.invalidate(reportSalesProvider(period));
-                                  ref.invalidate(reportProductSummaryProvider(period));
-                                  ref.invalidate(reportProductionProvider(period));
-                                  ref.invalidate(reportExpenseProvider(period));
-                                  ref.invalidate(reportSalaryProvider(period));
-                                },
+                                onRefresh: _invalidateProviders,
                                 tooltip: 'Actualiser les rapports',
                               ),
                             ],
@@ -203,7 +200,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
                 child: ReportKpiCards(
-                  period: ReportPeriod(startDate: _startDate, endDate: _endDate),
+                  period:
+                      ReportPeriod(startDate: _startDate, endDate: _endDate),
                 ),
               ),
             ),
@@ -233,11 +231,11 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
 
   Widget _buildTabContent(BuildContext context) {
     final period = ReportPeriod(startDate: _startDate, endDate: _endDate);
-    
+
     // Détecter si c'est une période hebdomadaire ou mensuelle
     final days = period.endDate.difference(period.startDate).inDays;
     final isWeeklyOrMonthly = days <= 31; // Semaine ou mois
-    
+
     switch (_selectedTab) {
       case 0:
         return SalesReportContent(period: period);
@@ -250,9 +248,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         return ExpenseReportContent(period: period);
       case 3:
         return SalaryReportContent(period: period);
+      case 4:
+        return ProfitabilityReportContent(period: period);
+      case 5:
+        return TrendsReportContent(period: period);
+      case 6:
+        return ForecastReportContent(period: period);
       default:
         return const SizedBox.shrink();
     }
   }
 }
-

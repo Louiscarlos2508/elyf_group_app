@@ -145,6 +145,23 @@ class SaleFormState extends ConsumerState<SaleForm> {
 
     setState(() => _isLoading = true);
     try {
+      // Si pas de client sélectionné mais nom renseigné, créer un nouveau client
+      String customerId = _selectedCustomer?.id ?? '';
+      final customerName = _customerNameController.text.trim();
+      final customerPhone = _customerPhoneController.text.trim();
+      
+      if (customerId.isEmpty && customerName.isNotEmpty) {
+        // Créer le nouveau client dans le repository
+        final clientsController = ref.read(clientsControllerProvider);
+        customerId = await clientsController.createCustomer(
+          customerName,
+          customerPhone,
+        );
+      } else if (customerId.isEmpty) {
+        // Client anonyme
+        customerId = 'anonymous-${DateTime.now().millisecondsSinceEpoch}';
+      }
+      
       final sale = Sale(
         id: '',
         productId: _selectedProduct!.id,
@@ -153,9 +170,9 @@ class SaleFormState extends ConsumerState<SaleForm> {
         unitPrice: _unitPrice!,
         totalPrice: _totalPrice!,
         amountPaid: _amountPaid!,
-        customerName: _customerNameController.text.trim(),
-        customerPhone: _customerPhoneController.text.trim(),
-        customerId: _selectedCustomer?.id ?? 'temp-${DateTime.now().millisecondsSinceEpoch}',
+        customerName: customerName,
+        customerPhone: customerPhone,
+        customerId: customerId,
         customerCnib: null,
         date: DateTime.now(),
         status: (_totalPrice! - _amountPaid!) == 0

@@ -179,49 +179,57 @@ class SunmiV3Service {
       }
       
         try {
-          // Utiliser LineApi pour imprimer les factures (小票打印接口)
+          // Utiliser LineApi pour imprimer les factures
           final lineApi = _printer!.lineApi;
           
-          // Créer des styles pour différents types de texte
-          final defaultTextFormat = TextFormat();
+          // Style par défaut - taille normale
+          final defaultTextFormat = TextFormat(
+            textSize: 24,
+          );
           final defaultTextStyle = TextStyle(defaultTextFormat);
           
-          // Style pour le nom de l'entreprise (plus grand)
-          // Note: Le TextFormat peut avoir des paramètres pour la taille
-          // Pour l'instant, on utilise le style par défaut mais on peut l'ajuster
-          final largeTextFormat = TextFormat();
-          final largeTextStyle = TextStyle(largeTextFormat);
+          // Style pour les titres - gras
+          final titleTextFormat = TextFormat(
+            textSize: 26,
+            enBold: true,
+          );
+          final titleTextStyle = TextStyle(titleTextFormat);
+          
+          // Style pour les totaux - gras
+          final totalTextFormat = TextFormat(
+            textSize: 26,
+            enBold: true,
+          );
+          final totalTextStyle = TextStyle(totalTextFormat);
           
           // Nettoyer le contenu et diviser en lignes
           final cleanedContent = content.trimRight();
           final lines = cleanedContent.split('\n');
           
-          // Imprimer chaque ligne dans l'ordre
-          for (int i = 0; i < lines.length; i++) {
-            final line = lines[i];
+          // Imprimer chaque ligne (ignorer les lignes vides)
+          for (final line in lines) {
+            if (line.isEmpty) continue; // Skip empty lines
             
-            // Utiliser un style plus grand pour le nom de l'entreprise
-            // (lignes contenant "BOUTIQUE", "ELYF GROUPE", ou les bordures avec "║" ou "╔" ou "╚")
-            final isCompanyName = line.contains('BOUTIQUE') || 
-                                 line.contains('ELYF GROUPE') ||
-                                 line.contains('║') ||
-                                 line.contains('╔') ||
-                                 line.contains('╚');
+            // Détecter le type de ligne pour appliquer le bon style
+            final isTitle = line.contains('EAU MINERALE') || 
+                           line.contains('ELYF') ||
+                           line.contains('FACTURE') ||
+                           line.contains('RECU');
+            final isTotal = line.contains('TOTAL') || 
+                           line.contains('PAIEMENT:') ||
+                           line.contains('SOLDE');
             
-            if (isCompanyName) {
-              await lineApi.printText(line, largeTextStyle);
+            if (isTitle) {
+              await lineApi.printText(line, titleTextStyle);
+            } else if (isTotal) {
+              await lineApi.printText(line, totalTextStyle);
             } else {
               await lineApi.printText(line, defaultTextStyle);
             }
           }
           
-          // Ajouter quelques lignes vides en fin pour éviter la coupure
-          for (int i = 0; i < 3; i++) {
-            await lineApi.printText('', defaultTextStyle);
-          }
-          
-          // Note: cutPaper peut ne pas exister, utiliser une alternative si disponible
-          // await lineApi.cutPaper();
+          // Faire sortir le papier automatiquement
+          await lineApi.autoOut();
       } catch (e) {
         debugPrint('SunmiV3Service: Erreur lors de l\'impression réelle: $e');
         // Fallback en mode simulation

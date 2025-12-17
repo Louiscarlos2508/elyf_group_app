@@ -42,11 +42,6 @@ class MockSaleRepository implements SaleRepository {
   }
 
   @override
-  Future<List<Sale>> fetchPendingSales() async {
-    return fetchSales(status: SaleStatus.pending);
-  }
-
-  @override
   Future<Sale?> getSale(String id) async {
     await Future<void>.delayed(const Duration(milliseconds: 100));
     return _sales[id];
@@ -77,64 +72,6 @@ class MockSaleRepository implements SaleRepository {
       productionSessionId: sale.productionSessionId,
     );
     return id;
-  }
-
-  @override
-  Future<void> validateSale(String saleId, String validatedBy) async {
-    await Future<void>.delayed(const Duration(milliseconds: 150));
-    final sale = _sales[saleId];
-    if (sale == null) {
-      throw Exception('Vente introuvable');
-    }
-    _sales[saleId] = Sale(
-      id: sale.id,
-      productId: sale.productId,
-      productName: sale.productName,
-      quantity: sale.quantity,
-      unitPrice: sale.unitPrice,
-      totalPrice: sale.totalPrice,
-      amountPaid: sale.amountPaid,
-      customerName: sale.customerName,
-      customerPhone: sale.customerPhone,
-      customerId: sale.customerId,
-      date: sale.date,
-      status: SaleStatus.validated,
-      createdBy: sale.createdBy,
-      customerCnib: sale.customerCnib,
-      notes: sale.notes,
-      cashAmount: sale.cashAmount,
-      orangeMoneyAmount: sale.orangeMoneyAmount,
-      productionSessionId: sale.productionSessionId,
-    );
-  }
-
-  @override
-  Future<void> rejectSale(String saleId, String rejectedBy) async {
-    await Future<void>.delayed(const Duration(milliseconds: 150));
-    final sale = _sales[saleId];
-    if (sale == null) {
-      throw Exception('Vente introuvable');
-    }
-    _sales[saleId] = Sale(
-      id: sale.id,
-      productId: sale.productId,
-      productName: sale.productName,
-      quantity: sale.quantity,
-      unitPrice: sale.unitPrice,
-      totalPrice: sale.totalPrice,
-      amountPaid: sale.amountPaid,
-      customerName: sale.customerName,
-      customerPhone: sale.customerPhone,
-      customerId: sale.customerId,
-      date: sale.date,
-      status: SaleStatus.rejected,
-      createdBy: sale.createdBy,
-      customerCnib: sale.customerCnib,
-      notes: sale.notes,
-      cashAmount: sale.cashAmount,
-      orangeMoneyAmount: sale.orangeMoneyAmount,
-      productionSessionId: sale.productionSessionId,
-    );
   }
 
   @override

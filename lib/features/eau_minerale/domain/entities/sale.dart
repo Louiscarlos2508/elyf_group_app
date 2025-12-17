@@ -1,4 +1,4 @@
-/// Complete sale record with validation workflow.
+/// Complete sale record.
 class Sale {
   const Sale({
     required this.id,
@@ -43,13 +43,10 @@ class Sale {
   int get remainingAmount => totalPrice - amountPaid;
   bool get isCredit => remainingAmount > 0;
   bool get isFullyPaid => remainingAmount == 0;
-  bool get isPending => status == SaleStatus.pending;
-  bool get isValidated => status == SaleStatus.validated;
-  bool get isRejected => status == SaleStatus.rejected;
   
   /// Vérifie si la somme des paiements correspond au montant payé
   bool get isPaymentSplitValid => 
       (cashAmount + orangeMoneyAmount) == amountPaid;
 }
 
-enum SaleStatus { pending, validated, rejected, fullyPaid }
+enum SaleStatus { validated, fullyPaid }

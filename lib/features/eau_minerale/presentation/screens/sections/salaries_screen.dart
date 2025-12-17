@@ -83,13 +83,15 @@ class _SalariesScreenState extends ConsumerState<SalariesScreen> {
                       size: 28,
                     ),
                     const SizedBox(width: 12),
-                    Text(
-                      'Salaires & Indemnités',
-                      style: theme.textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
+                    Expanded(
+                      child: Text(
+                        'Salaires & Indemnités',
+                        style: theme.textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    const Spacer(),
                     RefreshButton(
                       onRefresh: () => ref.invalidate(salaryStateProvider),
                       tooltip: 'Actualiser les salaires',

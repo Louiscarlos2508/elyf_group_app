@@ -16,9 +16,9 @@ class MockCreditRepository implements CreditRepository {
   Future<List<Sale>> fetchCreditSales() async {
     await Future<void>.delayed(const Duration(milliseconds: 200));
     final allSales = await _saleRepository.fetchSales();
-    // Retourne les ventes avec crédit (amountPaid < totalPrice) et validées
+    // Retourne les ventes avec crédit (amountPaid < totalPrice)
     return allSales
-        .where((s) => s.isCredit && s.isValidated)
+        .where((s) => s.isCredit)
         .toList();
   }
 
@@ -28,7 +28,7 @@ class MockCreditRepository implements CreditRepository {
     final customerSales = await _saleRepository.fetchSales(customerId: customerId);
     // Retourne les ventes avec crédit pour ce client
     return customerSales
-        .where((s) => s.isCredit && s.isValidated)
+        .where((s) => s.isCredit)
         .toList();
   }
 
@@ -47,11 +47,8 @@ class MockCreditRepository implements CreditRepository {
     }
 
     // Vérifier que le montant ne dépasse pas le reste à payer
-    final currentPayments = await fetchSalePayments(payment.saleId);
-    final totalPaid = currentPayments.fold<int>(0, (sum, p) => sum + p.amount);
-    final remaining = sale.totalPrice - sale.amountPaid - totalPaid;
-
-    if (payment.amount > remaining) {
+    // Note: sale.amountPaid contient déjà tous les paiements précédents
+    if (payment.amount > sale.remainingAmount) {
       throw Exception('Montant supérieur au reste à payer');
     }
 
@@ -72,14 +69,11 @@ class MockCreditRepository implements CreditRepository {
   Future<int> getTotalCredits() async {
     await Future<void>.delayed(const Duration(milliseconds: 100));
     final creditSales = await fetchCreditSales();
+    // sale.amountPaid est déjà mis à jour par CreditService via updateSaleAmountPaid
+    // donc on utilise directement remainingAmount (totalPrice - amountPaid)
     return creditSales.fold<int>(
       0,
-      (sum, sale) {
-        final totalPaid = _payments
-            .where((p) => p.saleId == sale.id)
-            .fold<int>(0, (s, p) => s + p.amount);
-        return sum + (sale.totalPrice - sale.amountPaid - totalPaid);
-      },
+      (sum, sale) => sum + sale.remainingAmount,
     );
   }
 

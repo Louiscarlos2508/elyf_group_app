@@ -72,28 +72,4 @@ class SaleService {
 
     return saleId;
   }
-
-  /// Validates a pending sale and updates stock.
-  Future<void> validateSale(String saleId, String validatedBy) async {
-    final sale = await saleRepository.getSale(saleId);
-    if (sale == null) throw Exception('Vente introuvable');
-    if (sale.isValidated) throw Exception('Vente déjà validée');
-
-    // Update stock
-    final currentStock = await stockRepository.getStock(sale.productId);
-    if (currentStock < sale.quantity) {
-      throw Exception('Stock insuffisant pour valider cette vente');
-    }
-
-    final newStock = currentStock - sale.quantity;
-    await stockRepository.updateStock(sale.productId, newStock);
-    // StockRepository utilise maintenant InventoryRepository en interne, pas besoin de synchronisation
-
-    await saleRepository.validateSale(saleId, validatedBy);
-  }
-
-  /// Rejects a pending sale.
-  Future<void> rejectSale(String saleId, String rejectedBy) async {
-    await saleRepository.rejectSale(saleId, rejectedBy);
-  }
 }

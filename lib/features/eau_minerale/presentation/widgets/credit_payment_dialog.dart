@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:open_file/open_file.dart';
 
 import '../../application/providers.dart';
 import '../../domain/entities/credit_payment.dart';
 import '../../domain/entities/sale.dart';
-import '../../domain/repositories/customer_repository.dart';
-import '../../domain/repositories/credit_repository.dart';
+import 'invoice_print_service.dart';
 
 /// Dialog for recording a credit payment.
 class CreditPaymentDialog extends ConsumerStatefulWidget {
@@ -58,7 +58,7 @@ class _CreditPaymentDialogState extends ConsumerState<CreditPaymentDialog> {
       final creditRepo = ref.read(creditRepositoryProvider);
       final sales = await creditRepo.fetchCustomerCredits(widget.customerId);
       setState(() {
-        _creditSales = sales.where((s) => s.isCredit && s.isValidated).toList();
+        _creditSales = sales.where((s) => s.isCredit).toList();
         if (_creditSales.isNotEmpty && _selectedSale == null) {
           _selectedSale = _creditSales.first;
         }
@@ -74,14 +74,79 @@ class _CreditPaymentDialogState extends ConsumerState<CreditPaymentDialog> {
   }
 
   String _formatCurrency(int amount) {
-    return amount.toString().replaceAllMapped(
+    final formatted = amount.toString().replaceAllMapped(
           RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
           (Match m) => '${m[1]} ',
-        ) + ' CFA';
+        );
+    return '$formatted CFA';
   }
 
   String _formatDate(DateTime date) {
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+  }
+
+  Future<void> _showPrintOption(int paymentAmount, int remainingAfterPayment) async {
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Imprimer le reçu ?'),
+        content: const Text('Voulez-vous imprimer ou générer un PDF du reçu de paiement ?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'skip'),
+            child: const Text('Non merci'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'pdf'),
+            child: const Text('PDF'),
+          ),
+          FutureBuilder<bool>(
+            future: EauMineraleInvoiceService.instance.isSunmiAvailable(),
+            builder: (context, snapshot) {
+              if (snapshot.data == true) {
+                return FilledButton(
+                  onPressed: () => Navigator.pop(context, 'sunmi'),
+                  child: const Text('Imprimer'),
+                );
+              }
+              return const SizedBox.shrink();
+            },
+          ),
+        ],
+      ),
+    );
+
+    if (result == null || result == 'skip' || !mounted) return;
+
+    try {
+      if (result == 'pdf') {
+        final file = await EauMineraleInvoiceService.instance.generateCreditPaymentPdf(
+          customerName: widget.customerName,
+          sale: _selectedSale!,
+          paymentAmount: paymentAmount,
+          remainingAfterPayment: remainingAfterPayment,
+          notes: _notesController.text.isEmpty ? null : _notesController.text,
+        );
+        if (!mounted) return;
+        await OpenFile.open(file.path);
+      } else if (result == 'sunmi') {
+        await EauMineraleInvoiceService.instance.printCreditPaymentReceipt(
+          customerName: widget.customerName,
+          sale: _selectedSale!,
+          paymentAmount: paymentAmount,
+          remainingAfterPayment: remainingAfterPayment,
+          notes: _notesController.text.isEmpty ? null : _notesController.text,
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur d\'impression: $e'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+    }
   }
 
   Future<void> _submit() async {
@@ -121,6 +186,12 @@ class _CreditPaymentDialogState extends ConsumerState<CreditPaymentDialog> {
       if (!mounted) return;
       // Invalider les providers pour rafraîchir les données
       ref.invalidate(clientsStateProvider);
+
+      // Proposer d'imprimer le reçu
+      final remainingAfterPayment = _selectedSale!.remainingAmount - amount;
+      await _showPrintOption(amount, remainingAfterPayment);
+
+      if (!mounted) return;
       Navigator.of(context).pop();
       ref.invalidate(clientsStateProvider);
       ScaffoldMessenger.of(context).showSnackBar(

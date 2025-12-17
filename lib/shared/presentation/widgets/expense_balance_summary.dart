@@ -99,21 +99,25 @@ class ExpenseBalanceSummary extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(icon, color: color, size: 24),
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: Theme.of(context).textTheme.bodySmall,
+              Icon(icon, color: color, size: 20),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  label,
+                  style: Theme.of(context).textTheme.bodySmall,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ],
           ),
           const SizedBox(height: 8),
           Text(
             value,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: color,
                 ),
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),

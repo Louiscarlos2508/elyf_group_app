@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/providers.dart';
 import '../../domain/entities/bobine_usage.dart';
+import '../../domain/entities/machine.dart';
 import '../../domain/entities/production_event.dart';
 import '../../domain/entities/production_session.dart';
 
@@ -10,13 +11,15 @@ import '../../domain/entities/production_session.dart';
 class MachineBreakdownDialog extends ConsumerStatefulWidget {
   const MachineBreakdownDialog({
     super.key,
-    required this.session,
-    required this.bobine,
+    required this.machine,
+    this.session,
+    this.bobine,
     required this.onPanneSignaled,
   });
 
-  final ProductionSession session;
-  final BobineUsage bobine;
+  final Machine machine;
+  final ProductionSession? session;
+  final BobineUsage? bobine;
   final ValueChanged<ProductionEvent> onPanneSignaled;
 
   @override
@@ -31,7 +34,16 @@ class _MachineBreakdownDialogState
   final _notesController = TextEditingController();
   DateTime _selectedDate = DateTime.now();
   TimeOfDay _selectedTime = TimeOfDay.now();
-  bool _retirerBobine = true;
+  late bool _retirerBobine;
+  
+  bool get _hasBobine => widget.bobine != null;
+  bool get _hasSession => widget.session != null;
+
+  @override
+  void initState() {
+    super.initState();
+    _retirerBobine = _hasBobine;
+  }
 
   @override
   void dispose() {
@@ -54,7 +66,7 @@ class _MachineBreakdownDialogState
     // Créer l'événement de panne
     final event = ProductionEvent(
       id: 'event-${DateTime.now().millisecondsSinceEpoch}',
-      productionId: widget.session.id,
+      productionId: widget.session?.id ?? 'standalone-${DateTime.now().millisecondsSinceEpoch}',
       type: ProductionEventType.panne,
       date: _selectedDate,
       heure: dateHeure,
@@ -63,11 +75,11 @@ class _MachineBreakdownDialogState
       createdAt: DateTime.now(),
     );
 
-    // Si on retire la bobine, la marquer comme finie
-    if (_retirerBobine) {
-      final bobinesMisesAJour = widget.session.bobinesUtilisees.map((b) {
-        if (b.bobineType == widget.bobine.bobineType &&
-            b.machineId == widget.bobine.machineId) {
+    // Si on a une session et une bobine, et qu'on veut retirer la bobine
+    if (_hasSession && _hasBobine && _retirerBobine) {
+      final bobinesMisesAJour = widget.session!.bobinesUtilisees.map((b) {
+        if (b.bobineType == widget.bobine!.bobineType &&
+            b.machineId == widget.bobine!.machineId) {
           return b.copyWith(
             estFinie: true,
             dateUtilisation: dateHeure,
@@ -76,9 +88,9 @@ class _MachineBreakdownDialogState
         return b;
       }).toList();
 
-      final sessionMiseAJour = widget.session.copyWith(
+      final sessionMiseAJour = widget.session!.copyWith(
         bobinesUtilisees: bobinesMisesAJour,
-        events: [...widget.session.events, event],
+        events: [...widget.session!.events, event],
         updatedAt: DateTime.now(),
       );
 
@@ -88,21 +100,22 @@ class _MachineBreakdownDialogState
       // Enregistrer le retour de stock pour la bobine retirée (ajoute à la quantité)
       final stockController = ref.read(stockControllerProvider);
       await stockController.recordBobineEntry(
-        bobineType: widget.bobine.bobineType,
+        bobineType: widget.bobine!.bobineType,
         quantite: 1, // Une bobine = 1 unité
         fournisseur: null,
-        notes: 'Retour suite à panne - Machine ${widget.bobine.machineName}',
+        notes: 'Retour suite à panne - Machine ${widget.bobine!.machineName}',
       );
-    } else {
+    } else if (_hasSession) {
       // Juste enregistrer l'événement sans retirer la bobine
-      final sessionMiseAJour = widget.session.copyWith(
-        events: [...widget.session.events, event],
+      final sessionMiseAJour = widget.session!.copyWith(
+        events: [...widget.session!.events, event],
         updatedAt: DateTime.now(),
       );
 
       final controller = ref.read(productionSessionControllerProvider);
       await controller.updateSession(sessionMiseAJour);
     }
+    // Si pas de session, on enregistre juste l'événement de panne (signalement standalone)
 
     if (!mounted) return;
     widget.onPanneSignaled(event);
@@ -110,7 +123,7 @@ class _MachineBreakdownDialogState
     
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(_retirerBobine
+        content: Text(_retirerBobine && _hasBobine
             ? 'Panne signalée et bobine retirée'
             : 'Panne signalée'),
       ),
@@ -141,10 +154,11 @@ class _MachineBreakdownDialogState
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'Signaler panne - ${widget.bobine.machineName}',
+                      'Signaler panne - ${widget.machine.nom}',
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],
@@ -194,17 +208,19 @@ class _MachineBreakdownDialogState
                   child: Text(_formatTime(_selectedTime)),
                 ),
               ),
-              const SizedBox(height: 16),
-              CheckboxListTile(
-                title: const Text('Retirer la bobine de la machine'),
-                subtitle: const Text(
-                  'La bobine sera marquée comme finie et retournée au stock',
+              if (_hasBobine) ...[
+                const SizedBox(height: 16),
+                CheckboxListTile(
+                  title: const Text('Retirer la bobine de la machine'),
+                  subtitle: Text(
+                    'La bobine ${widget.bobine!.bobineType} sera marquée comme finie et retournée au stock',
+                  ),
+                  value: _retirerBobine,
+                  onChanged: (value) {
+                    setState(() => _retirerBobine = value ?? true);
+                  },
                 ),
-                value: _retirerBobine,
-                onChanged: (value) {
-                  setState(() => _retirerBobine = value ?? true);
-                },
-              ),
+              ],
               const SizedBox(height: 16),
               TextFormField(
                 controller: _notesController,
