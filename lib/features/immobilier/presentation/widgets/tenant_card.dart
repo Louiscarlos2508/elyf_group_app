@@ -8,10 +8,13 @@ class TenantCard extends StatelessWidget {
     super.key,
     required this.tenant,
     this.onTap,
+    this.activeContractsCount = 0,
   });
 
   final Tenant tenant;
   final VoidCallback? onTap;
+  /// Nombre de contrats actifs pour ce locataire.
+  final int activeContractsCount;
 
   @override
   Widget build(BuildContext context) {
@@ -30,30 +33,96 @@ class TenantCard extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              CircleAvatar(
-                radius: 28,
-                backgroundColor: theme.colorScheme.primaryContainer,
-                child: Text(
-                  tenant.fullName.isNotEmpty
-                      ? tenant.fullName[0].toUpperCase()
-                      : '?',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.onPrimaryContainer,
+              Stack(
+                children: [
+                  CircleAvatar(
+                    radius: 28,
+                    backgroundColor: theme.colorScheme.primaryContainer,
+                    child: Text(
+                      tenant.fullName.isNotEmpty
+                          ? tenant.fullName[0].toUpperCase()
+                          : '?',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onPrimaryContainer,
+                      ),
+                    ),
                   ),
-                ),
+                  // Badge contrats actifs
+                  if (activeContractsCount > 0)
+                    Positioned(
+                      right: 0,
+                      bottom: 0,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.green,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: theme.colorScheme.surface,
+                            width: 2,
+                          ),
+                        ),
+                        child: Text(
+                          '$activeContractsCount',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      tenant.fullName,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            tenant.fullName,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        // Chip pour les contrats actifs
+                        if (activeContractsCount > 0)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.green.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.description,
+                                  size: 12,
+                                  color: Colors.green,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '$activeContractsCount',
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.green,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
                     ),
                     const SizedBox(height: 6),
                     Row(

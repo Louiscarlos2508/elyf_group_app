@@ -8,7 +8,6 @@ import '../../domain/entities/contract.dart';
 import '../../domain/entities/property.dart';
 import '../../domain/entities/tenant.dart';
 import 'contract_form_fields.dart';
-import 'deposit_field.dart';
 import 'form_dialog.dart';
 
 class ContractFormDialog extends ConsumerStatefulWidget {

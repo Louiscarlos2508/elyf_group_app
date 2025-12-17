@@ -1,12 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../../shared/presentation/widgets/refresh_button.dart';
 import '../../../application/providers.dart';
 import '../../../domain/entities/contract.dart';
+import '../../../domain/entities/payment.dart';
+import '../../../domain/entities/property.dart';
+import '../../../domain/entities/tenant.dart';
 import '../../widgets/contract_card.dart';
+import '../../widgets/contract_card_helpers.dart';
+import '../../widgets/contract_detail_dialog.dart';
 import '../../widgets/contract_filters.dart';
 import '../../widgets/contract_form_dialog.dart';
+import '../../widgets/payment_detail_dialog.dart';
+import '../../widgets/property_detail_dialog.dart';
 import '../../widgets/property_search_bar.dart';
+import '../../widgets/tenant_detail_dialog.dart';
 
 class ContractsScreen extends ConsumerStatefulWidget {
   const ContractsScreen({super.key});
@@ -28,7 +37,6 @@ class _ContractsScreenState extends ConsumerState<ContractsScreen> {
   List<Contract> _filterAndSort(List<Contract> contracts) {
     var filtered = contracts;
 
-    // Filtrage par recherche
     if (_searchController.text.isNotEmpty) {
       final query = _searchController.text.toLowerCase();
       filtered = filtered.where((c) {
@@ -38,146 +46,462 @@ class _ContractsScreenState extends ConsumerState<ContractsScreen> {
       }).toList();
     }
 
-    // Filtrage par statut
     if (_selectedStatus != null) {
       filtered = filtered.where((c) => c.status == _selectedStatus).toList();
     }
 
-    // Tri par date de début (plus récents en premier)
     filtered.sort((a, b) => b.startDate.compareTo(a.startDate));
-
     return filtered;
   }
 
-  void _showContractForm() {
+  void _showContractForm({Contract? contract}) {
     showDialog(
       context: context,
-      builder: (context) => const ContractFormDialog(),
+      builder: (context) => ContractFormDialog(contract: contract),
     );
   }
 
   void _showContractDetails(Contract contract) {
-    // TODO: Ouvrir le dialog de détails
+    showDialog(
+      context: context,
+      builder: (context) => ContractDetailDialog(
+        contract: contract,
+        onTenantTap: _showTenantDetails,
+        onPropertyTap: _showPropertyDetails,
+        onPaymentTap: _showPaymentDetails,
+        onDelete: () => _deleteContract(contract),
+      ),
+    );
+  }
+
+  void _showTenantDetails(Tenant tenant) {
+    showDialog(
+      context: context,
+      builder: (context) => TenantDetailDialog(
+        tenant: tenant,
+        onContractTap: _showContractDetails,
+        onPaymentTap: _showPaymentDetails,
+      ),
+    );
+  }
+
+  void _showPropertyDetails(Property property) {
+    showDialog(
+      context: context,
+      builder: (context) => PropertyDetailDialog(
+        property: property,
+        onEdit: () => Navigator.of(context).pop(),
+        onDelete: () {},
+      ),
+    );
+  }
+
+  void _showPaymentDetails(Payment payment) {
+    showDialog(
+      context: context,
+      builder: (context) => PaymentDetailDialog(
+        payment: payment,
+        onContractTap: _showContractDetails,
+        onTenantTap: _showTenantDetails,
+      ),
+    );
+  }
+
+  Future<void> _deleteContract(Contract contract) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Supprimer le contrat'),
+        content: const Text('Êtes-vous sûr de vouloir supprimer ce contrat ?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Annuler'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Supprimer'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true && mounted) {
+      try {
+        final controller = ref.read(contractControllerProvider);
+        await controller.deleteContract(contract.id);
+        ref.invalidate(contractsProvider);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Contrat supprimé avec succès'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Erreur: $e'), backgroundColor: Colors.red),
+          );
+        }
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final contractsAsync = ref.watch(contractsProvider);
     final theme = Theme.of(context);
+    final contractsAsync = ref.watch(contractsProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Contrats'),
-      ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: IntrinsicWidth(
-                child: FilledButton.icon(
-                  onPressed: _showContractForm,
-                  icon: const Icon(Icons.add),
-                  label: const Text('Nouveau Contrat'),
-                ),
-              ),
-            ),
-          ),
-          PropertySearchBar(
-            controller: _searchController,
-            onChanged: (_) => setState(() {}),
-            onClear: () => setState(() {}),
-          ),
-          ContractFilters(
-            selectedStatus: _selectedStatus,
-            onStatusChanged: (status) => setState(() => _selectedStatus = status),
-            onClear: () => setState(() => _selectedStatus = null),
-          ),
-          Expanded(
-            child: contractsAsync.when(
-              data: (contracts) {
-                final filtered = _filterAndSort(contracts);
-                
-                if (filtered.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          contracts.isEmpty ? Icons.description_outlined : Icons.search_off,
-                          size: 64,
+      body: contractsAsync.when(
+        data: (contracts) {
+          final filtered = _filterAndSort(contracts);
+          final activeCount = contracts.where((c) => c.status == ContractStatus.active).length;
+          final pendingCount = contracts.where((c) => c.status == ContractStatus.pending).length;
+          final monthlyRevenue = contracts
+              .where((c) => c.status == ContractStatus.active)
+              .fold(0, (sum, c) => sum + c.monthlyRent);
+
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              final isWide = constraints.maxWidth > 600;
+
+              return CustomScrollView(
+                slivers: [
+                  // Header
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(24, 24, 24, isWide ? 24 : 16),
+                      child: isWide
+                          ? Row(
+                              children: [
+                                Text(
+                                  'Contrats',
+                                  style: theme.textTheme.headlineMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const Spacer(),
+                                RefreshButton(
+                                  onRefresh: () => ref.invalidate(contractsProvider),
+                                  tooltip: 'Actualiser',
+                                ),
+                                const SizedBox(width: 8),
+                                Flexible(
+                                  child: FilledButton.icon(
+                                    onPressed: () => _showContractForm(),
+                                    icon: const Icon(Icons.add),
+                                    label: const Text('Nouveau Contrat'),
+                                  ),
+                                ),
+                              ],
+                            )
+                          : Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        'Contrats',
+                                        style: theme.textTheme.titleLarge?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                    RefreshButton(
+                                      onRefresh: () => ref.invalidate(contractsProvider),
+                                      tooltip: 'Actualiser',
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: FilledButton.icon(
+                                    onPressed: () => _showContractForm(),
+                                    icon: const Icon(Icons.add),
+                                    label: const Text('Nouveau Contrat'),
+                                  ),
+                                ),
+                              ],
+                            ),
+                    ),
+                  ),
+
+                  // KPI Summary Cards
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: _buildKpiCards(theme, contracts.length, activeCount, pendingCount, monthlyRevenue),
+                    ),
+                  ),
+
+                  // Section header
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
+                      child: Text(
+                        'LISTE DES CONTRATS',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
-                        const SizedBox(height: 16),
-                        Text(
-                          contracts.isEmpty
-                              ? 'Aucun contrat enregistré'
-                              : 'Aucun résultat trouvé',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                        if (contracts.isNotEmpty) ...[
-                          const SizedBox(height: 8),
-                          TextButton(
-                            onPressed: () {
-                              _searchController.clear();
-                              _selectedStatus = null;
-                              setState(() {});
-                            },
-                            child: const Text('Réinitialiser les filtres'),
-                          ),
-                        ],
-                      ],
+                      ),
                     ),
-                  );
-                }
-                
-                return RefreshIndicator(
-                  onRefresh: () async {
-                    ref.invalidate(contractsProvider);
-                  },
-                  child: ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: filtered.length,
-                    itemBuilder: (context, index) {
-                      final contract = filtered[index];
-                      return ContractCard(
-                        contract: contract,
-                        onTap: () => _showContractDetails(contract),
-                      );
-                    },
                   ),
-                );
+
+                  // Search Bar
+                  SliverToBoxAdapter(
+                    child: PropertySearchBar(
+                      controller: _searchController,
+                      onChanged: (_) => setState(() {}),
+                      onClear: () => setState(() {}),
+                    ),
+                  ),
+
+                  // Filters
+                  SliverToBoxAdapter(
+                    child: ContractFilters(
+                      selectedStatus: _selectedStatus,
+                      onStatusChanged: (status) => setState(() => _selectedStatus = status),
+                      onClear: () => setState(() => _selectedStatus = null),
+                    ),
+                  ),
+
+                  // Contracts List
+                  if (filtered.isEmpty)
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: _buildEmptyState(theme, contracts.isEmpty),
+                    )
+                  else
+                    SliverPadding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                      sliver: SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                            final contract = filtered[index];
+                            return ContractCard(
+                              contract: contract,
+                              onTap: () => _showContractDetails(contract),
+                            );
+                          },
+                          childCount: filtered.length,
+                        ),
+                      ),
+                    ),
+
+                  const SliverToBoxAdapter(child: SizedBox(height: 24)),
+                ],
+              );
+            },
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stack) => _buildErrorState(theme, error),
+      ),
+    );
+  }
+
+  Widget _buildKpiCards(ThemeData theme, int total, int active, int pending, int monthlyRevenue) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: _KpiCard(
+                label: 'Total',
+                value: '$total',
+                icon: Icons.description,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _KpiCard(
+                label: 'Actifs',
+                value: '$active',
+                icon: Icons.check_circle,
+                color: Colors.green,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _KpiCard(
+                label: 'En attente',
+                value: '$pending',
+                icon: Icons.pending,
+                color: Colors.orange,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        _RevenueCard(monthlyRevenue: monthlyRevenue),
+      ],
+    );
+  }
+
+  Widget _buildEmptyState(ThemeData theme, bool isEmpty) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            isEmpty ? Icons.description_outlined : Icons.search_off,
+            size: 64,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            isEmpty ? 'Aucun contrat enregistré' : 'Aucun résultat trouvé',
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          if (!isEmpty) ...[
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: () {
+                _searchController.clear();
+                _selectedStatus = null;
+                setState(() {});
               },
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, stack) => Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.error_outline,
-                      size: 64,
-                      color: theme.colorScheme.error,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Erreur: $error',
-                      style: theme.textTheme.bodyMedium,
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 16),
-                    FilledButton.icon(
-                      onPressed: () {
-                        ref.invalidate(contractsProvider);
-                      },
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('Réessayer'),
-                    ),
-                  ],
+              child: const Text('Réinitialiser les filtres'),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState(ThemeData theme, Object error) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.error_outline, size: 64, color: theme.colorScheme.error),
+          const SizedBox(height: 16),
+          Text(
+            'Erreur de chargement',
+            style: theme.textTheme.bodyLarge?.copyWith(color: theme.colorScheme.error),
+          ),
+          const SizedBox(height: 16),
+          FilledButton(
+            onPressed: () => ref.invalidate(contractsProvider),
+            child: const Text('Réessayer'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _KpiCard extends StatelessWidget {
+  const _KpiCard({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: color, size: 20),
+              const Spacer(),
+              Text(
+                value,
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: color,
                 ),
               ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RevenueCard extends StatelessWidget {
+  const _RevenueCard({required this.monthlyRevenue});
+
+  final int monthlyRevenue;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE8F5E9),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.green.withValues(alpha: 0.2)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.green.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.trending_up, size: 24, color: Colors.green),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Revenus Mensuels Attendus',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                Text(
+                  ContractCardHelpers.formatCurrency(monthlyRevenue),
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.green.shade700,
+                  ),
+                ),
+              ],
             ),
           ),
         ],

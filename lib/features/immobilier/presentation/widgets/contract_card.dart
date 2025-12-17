@@ -18,7 +18,6 @@ class ContractCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return Card(
       elevation: 2,
@@ -130,27 +129,23 @@ class ContractCard extends StatelessWidget {
                   ],
                 ),
               ],
-              if (contract.property != null) ...[
+              // Section locataire et propriété
+              if (contract.tenant != null || contract.property != null) ...[
                 const Divider(height: 24),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        contract.property!.address,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    Icon(
-                      Icons.chevron_right,
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ],
-                ),
+                if (contract.tenant != null)
+                  _LinkedEntityRow(
+                    icon: Icons.person,
+                    label: contract.tenant!.fullName,
+                    subtitle: contract.tenant!.phone,
+                  ),
+                if (contract.tenant != null && contract.property != null)
+                  const SizedBox(height: 8),
+                if (contract.property != null)
+                  _LinkedEntityRow(
+                    icon: Icons.home,
+                    label: contract.property!.address,
+                    subtitle: '${contract.property!.city} - ${contract.property!.rooms} pièces',
+                  ),
               ],
             ],
           ),
@@ -198,6 +193,68 @@ class _InfoItem extends StatelessWidget {
             fontWeight: FontWeight.bold,
             color: valueColor ?? theme.colorScheme.onSurface,
           ),
+        ),
+      ],
+    );
+  }
+}
+
+class _LinkedEntityRow extends StatelessWidget {
+  const _LinkedEntityRow({
+    required this.icon,
+    required this.label,
+    this.subtitle,
+  });
+
+  final IconData icon;
+  final String label;
+  final String? subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
+    return Row(
+      children: [
+        CircleAvatar(
+          radius: 14,
+          backgroundColor: theme.colorScheme.primaryContainer.withValues(alpha: 0.5),
+          child: Icon(
+            icon,
+            size: 14,
+            color: theme.colorScheme.primary,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontWeight: FontWeight.w500,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              if (subtitle != null)
+                Text(
+                  subtitle!,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    fontSize: 11,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+            ],
+          ),
+        ),
+        Icon(
+          Icons.chevron_right,
+          size: 18,
+          color: theme.colorScheme.onSurfaceVariant,
         ),
       ],
     );

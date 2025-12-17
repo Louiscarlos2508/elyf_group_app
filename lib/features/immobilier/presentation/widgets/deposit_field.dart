@@ -50,8 +50,6 @@ class _DepositFieldState extends State<DepositField> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

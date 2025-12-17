@@ -3,12 +3,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:open_file/open_file.dart';
 
 import '../../../../../core/pdf/immobilier_report_pdf_service.dart';
+import '../../../../../shared/presentation/widgets/refresh_button.dart';
 import '../../../application/providers.dart';
 import '../../../domain/entities/report_period.dart';
-import '../../widgets/report_period_selector.dart';
-import '../../widgets/reports_helpers.dart';
-import '../../widgets/reports_kpi_grid.dart';
+import '../../widgets/expenses_report_content.dart';
+import '../../widgets/payments_report_content.dart';
+import '../../widgets/profit_report_content.dart';
+import '../../widgets/report_kpi_cards_v2.dart';
+import '../../widgets/report_period_selector_v2.dart';
+import '../../widgets/report_tabs_v2.dart';
 
+/// Reports screen with professional UI - style Boutique/Eau Minérale.
 class ReportsScreen extends ConsumerStatefulWidget {
   const ReportsScreen({super.key});
 
@@ -17,30 +22,39 @@ class ReportsScreen extends ConsumerStatefulWidget {
 }
 
 class _ReportsScreenState extends ConsumerState<ReportsScreen> {
-  ReportPeriod _selectedPeriod = ReportPeriod.thisMonth;
-  DateTime? _startDate;
-  DateTime? _endDate;
+  int _selectedTab = 0;
+  late DateTime _startDate;
+  late DateTime _endDate;
 
-  void _onPeriodChanged(ReportPeriod period, DateTime? start, DateTime? end) {
-    setState(() {
-      _selectedPeriod = period;
-      _startDate = start;
-      _endDate = end;
-    });
+  @override
+  void initState() {
+    super.initState();
+    // Initialize with current month by default
+    final now = DateTime.now();
+    _startDate = DateTime(now.year, now.month, 1);
+    _endDate = DateTime(now.year, now.month + 1, 0);
+  }
+
+  Future<void> _selectDate(BuildContext context, bool isStartDate) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: isStartDate ? _startDate : _endDate,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+    );
+    if (picked != null) {
+      setState(() {
+        if (isStartDate) {
+          _startDate = picked;
+        } else {
+          _endDate = picked;
+        }
+      });
+    }
   }
 
   Future<void> _downloadReport() async {
-    if (_startDate == null || _endDate == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Veuillez sélectionner une période'),
-        ),
-      );
-      return;
-    }
-
     try {
-      // Afficher un indicateur de chargement
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -49,29 +63,26 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         ),
       );
 
-      // Récupérer toutes les données nécessaires
       final properties = await ref.read(propertiesProvider.future);
       final contracts = await ref.read(contractsProvider.future);
       final payments = await ref.read(paymentsProvider.future);
       final expenses = await ref.read(expensesProvider.future);
 
-      final periodPayments = ReportsHelpers.getPaymentsInPeriod(
-        payments,
-        _selectedPeriod,
-        _startDate,
-        _endDate,
-      );
-      final periodExpenses = ReportsHelpers.getExpensesInPeriod(
-        expenses,
-        _selectedPeriod,
-        _startDate,
-        _endDate,
-      );
+      final periodPayments = payments.where((p) {
+        return p.paymentDate
+                .isAfter(_startDate.subtract(const Duration(days: 1))) &&
+            p.paymentDate.isBefore(_endDate.add(const Duration(days: 1)));
+      }).toList();
 
-      // Générer le PDF
+      final periodExpenses = expenses.where((e) {
+        return e.expenseDate
+                .isAfter(_startDate.subtract(const Duration(days: 1))) &&
+            e.expenseDate.isBefore(_endDate.add(const Duration(days: 1)));
+      }).toList();
+
       final pdfService = ImmobilierReportPdfService.instance;
       final file = await pdfService.generateReport(
-        period: _selectedPeriod,
+        period: ReportPeriod.custom,
         startDate: _startDate,
         endDate: _endDate,
         properties: properties,
@@ -82,25 +93,21 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         periodExpenses: periodExpenses,
       );
 
-      // Fermer le dialog de chargement
       if (mounted) {
         Navigator.of(context).pop();
       }
 
-      // Ouvrir le fichier
       if (mounted) {
         final result = await OpenFile.open(file.path);
         if (result.type != ResultType.done && mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('PDF généré: ${file.path}'),
-            ),
+            SnackBar(content: Text('PDF généré: ${file.path}')),
           );
         }
       }
     } catch (e) {
       if (mounted) {
-        Navigator.of(context).pop(); // Fermer le dialog de chargement
+        Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Erreur lors de la génération PDF: $e'),
@@ -111,122 +118,118 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     }
   }
 
+  void _invalidateProviders() {
+    ref.invalidate(propertiesProvider);
+    ref.invalidate(contractsProvider);
+    ref.invalidate(paymentsProvider);
+    ref.invalidate(expensesProvider);
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final propertiesAsync = ref.watch(propertiesProvider);
-    final contractsAsync = ref.watch(contractsProvider);
-    final paymentsAsync = ref.watch(paymentsProvider);
-    final expensesAsync = ref.watch(expensesProvider);
 
-    return CustomScrollView(
-      slivers: [
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.assessment,
-                  color: theme.colorScheme.primary,
-                  size: 28,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth > 600;
+
+        return CustomScrollView(
+          slivers: [
+            // Header
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(24, 24, 24, isWide ? 24 : 16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Rapports',
+                        style: theme.textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    RefreshButton(
+                      onRefresh: _invalidateProviders,
+                      tooltip: 'Actualiser les rapports',
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 12),
-                Text(
-                  'Rapports',
-                  style: theme.textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
-        ),
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Column(
-              children: [
-                ReportPeriodSelector(
-                  selectedPeriod: _selectedPeriod,
+
+            // Period selector
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: ReportPeriodSelectorV2(
                   startDate: _startDate,
                   endDate: _endDate,
-                  onPeriodChanged: _onPeriodChanged,
+                  onStartDateSelected: () => _selectDate(context, true),
+                  onEndDateSelected: () => _selectDate(context, false),
+                  onDownload: _downloadReport,
                 ),
-                const SizedBox(height: 16),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: FilledButton.icon(
-                    onPressed: _downloadReport,
-                    icon: const Icon(Icons.picture_as_pdf),
-                    label: const Text('Télécharger PDF'),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
-            child: Text(
-              'Vue d\'ensemble',
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
               ),
             ),
-          ),
-        ),
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: propertiesAsync.when(
-              data: (properties) => contractsAsync.when(
-                data: (contracts) => paymentsAsync.when(
-                  data: (payments) => expensesAsync.when(
-                    data: (expenses) {
-                      final periodPayments = ReportsHelpers.getPaymentsInPeriod(
-                        payments,
-                        _selectedPeriod,
-                        _startDate,
-                        _endDate,
-                      );
-                      final periodExpenses = ReportsHelpers.getExpensesInPeriod(
-                        expenses,
-                        _selectedPeriod,
-                        _startDate,
-                        _endDate,
-                      );
 
-                      return ReportsKpiGrid(
-                        properties: properties,
-                        contracts: contracts,
-                        payments: payments,
-                        expenses: expenses,
-                        periodPayments: periodPayments,
-                        periodExpenses: periodExpenses,
-                      );
-                    },
-                    loading: () => const Center(child: CircularProgressIndicator()),
-                    error: (_, __) => const SizedBox.shrink(),
-                  ),
-                  loading: () => const Center(child: CircularProgressIndicator()),
-                  error: (_, __) => const SizedBox.shrink(),
+            // KPI Cards
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+                child: ReportKpiCardsV2(
+                  startDate: _startDate,
+                  endDate: _endDate,
                 ),
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (_, __) => const SizedBox.shrink(),
               ),
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (_, __) => const SizedBox.shrink(),
             ),
-          ),
-        ),
-        const SliverToBoxAdapter(
-          child: SizedBox(height: 24),
-        ),
-      ],
+
+            // Tabs
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+                child: ReportTabsV2(
+                  selectedTab: _selectedTab,
+                  onTabChanged: (index) => setState(() => _selectedTab = index),
+                ),
+              ),
+            ),
+
+            // Tab content
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: _buildTabContent(),
+              ),
+            ),
+
+            const SliverToBoxAdapter(
+              child: SizedBox(height: 24),
+            ),
+          ],
+        );
+      },
     );
   }
-}
 
+  Widget _buildTabContent() {
+    switch (_selectedTab) {
+      case 0:
+        return PaymentsReportContent(
+          startDate: _startDate,
+          endDate: _endDate,
+        );
+      case 1:
+        return ExpensesReportContent(
+          startDate: _startDate,
+          endDate: _endDate,
+        );
+      case 2:
+        return ProfitReportContent(
+          startDate: _startDate,
+          endDate: _endDate,
+        );
+      default:
+        return const SizedBox.shrink();
+    }
+  }
+}

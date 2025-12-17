@@ -1,7 +1,6 @@
 import '../../domain/entities/contract.dart';
 import '../../domain/entities/payment.dart';
 import '../../domain/entities/property.dart';
-import '../../domain/entities/tenant.dart';
 import '../../domain/repositories/contract_repository.dart';
 import '../../domain/repositories/payment_repository.dart';
 import '../../domain/repositories/property_repository.dart';
@@ -137,6 +136,93 @@ class ImmobilierValidationService {
     }
 
     return null;
+  }
+
+  /// Rafraîchit les statuts des contrats et paiements.
+  /// - Contrats actifs dont endDate < now passent à expired
+  /// - Paiements pending dont paymentDate < now passent à overdue
+  Future<void> refreshStatuses() async {
+    final now = DateTime.now();
+
+    // Mise à jour des contrats expirés
+    final contracts = await _contractRepository.getAllContracts();
+    for (final contract in contracts) {
+      if (contract.status == ContractStatus.active && 
+          contract.endDate.isBefore(now)) {
+        final updated = Contract(
+          id: contract.id,
+          propertyId: contract.propertyId,
+          tenantId: contract.tenantId,
+          startDate: contract.startDate,
+          endDate: contract.endDate,
+          monthlyRent: contract.monthlyRent,
+          deposit: contract.deposit,
+          status: ContractStatus.expired,
+          property: contract.property,
+          tenant: contract.tenant,
+          paymentDay: contract.paymentDay,
+          notes: contract.notes,
+          depositInMonths: contract.depositInMonths,
+          createdAt: contract.createdAt,
+          updatedAt: DateTime.now(),
+          attachedFiles: contract.attachedFiles,
+        );
+        await _contractRepository.updateContract(updated);
+      }
+    }
+
+    // Mise à jour des paiements en retard
+    final payments = await _paymentRepository.getAllPayments();
+    for (final payment in payments) {
+      if (payment.status == PaymentStatus.pending && 
+          payment.paymentDate.isBefore(now)) {
+        final updated = Payment(
+          id: payment.id,
+          contractId: payment.contractId,
+          amount: payment.amount,
+          paymentDate: payment.paymentDate,
+          paymentMethod: payment.paymentMethod,
+          status: PaymentStatus.overdue,
+          contract: payment.contract,
+          month: payment.month,
+          year: payment.year,
+          receiptNumber: payment.receiptNumber,
+          notes: payment.notes,
+          paymentType: payment.paymentType,
+          createdAt: payment.createdAt,
+          updatedAt: DateTime.now(),
+        );
+        await _paymentRepository.updatePayment(updated);
+      }
+    }
+  }
+
+  /// Calcule le statut actuel d'un contrat en fonction de sa date.
+  ContractStatus computeContractStatus(Contract contract) {
+    final now = DateTime.now();
+    if (contract.status == ContractStatus.terminated) {
+      return ContractStatus.terminated;
+    }
+    if (contract.endDate.isBefore(now)) {
+      return ContractStatus.expired;
+    }
+    if (contract.startDate.isAfter(now)) {
+      return ContractStatus.pending;
+    }
+    return ContractStatus.active;
+  }
+
+  /// Calcule le statut actuel d'un paiement.
+  PaymentStatus computePaymentStatus(Payment payment) {
+    if (payment.status == PaymentStatus.paid || 
+        payment.status == PaymentStatus.cancelled) {
+      return payment.status;
+    }
+    final now = DateTime.now();
+    if (payment.paymentDate.isBefore(now)) {
+      return PaymentStatus.overdue;
+    }
+    return PaymentStatus.pending;
   }
 }
 

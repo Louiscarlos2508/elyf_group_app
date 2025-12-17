@@ -134,3 +134,47 @@ final immobilierExpenseBalanceProvider =
   },
 );
 
+/// Provider pour les contrats d'un locataire spécifique.
+final contractsByTenantProvider =
+    FutureProvider.autoDispose.family<List<Contract>, String>(
+  (ref, tenantId) async {
+    final repository = ref.watch(contractRepositoryProvider);
+    return await repository.getContractsByTenant(tenantId);
+  },
+);
+
+/// Provider pour les paiements d'un contrat spécifique.
+final paymentsByContractProvider =
+    FutureProvider.autoDispose.family<List<Payment>, String>(
+  (ref, contractId) async {
+    final repository = ref.watch(paymentRepositoryProvider);
+    return await repository.getPaymentsByContract(contractId);
+  },
+);
+
+/// Provider pour les contrats d'une propriété spécifique.
+final contractsByPropertyProvider =
+    FutureProvider.autoDispose.family<List<Contract>, String>(
+  (ref, propertyId) async {
+    final repository = ref.watch(contractRepositoryProvider);
+    return await repository.getContractsByProperty(propertyId);
+  },
+);
+
+/// Provider pour tous les paiements d'un locataire (via ses contrats).
+final paymentsByTenantProvider =
+    FutureProvider.autoDispose.family<List<Payment>, String>(
+  (ref, tenantId) async {
+    final contracts = await ref.watch(contractsByTenantProvider(tenantId).future);
+    final paymentRepository = ref.watch(paymentRepositoryProvider);
+    final allPayments = <Payment>[];
+    for (final contract in contracts) {
+      final payments = await paymentRepository.getPaymentsByContract(contract.id);
+      allPayments.addAll(payments);
+    }
+    // Trier par date décroissante
+    allPayments.sort((a, b) => b.paymentDate.compareTo(a.paymentDate));
+    return allPayments;
+  },
+);
+

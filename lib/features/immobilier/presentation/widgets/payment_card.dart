@@ -142,6 +142,24 @@ class PaymentCard extends StatelessWidget {
                   ],
                 ),
               ],
+              // Section locataire et propriété
+              if (payment.contract?.tenant != null ||
+                  payment.contract?.property != null) ...[
+                const Divider(height: 20),
+                if (payment.contract?.tenant != null)
+                  _LinkedEntityRow(
+                    icon: Icons.person,
+                    label: payment.contract!.tenant!.fullName,
+                  ),
+                if (payment.contract?.property != null) ...[
+                  if (payment.contract?.tenant != null)
+                    const SizedBox(height: 4),
+                  _LinkedEntityRow(
+                    icon: Icons.home,
+                    label: payment.contract!.property!.address,
+                  ),
+                ],
+              ],
               const SizedBox(height: 12),
               PaymentCardActions(payment: payment),
             ],
@@ -150,6 +168,41 @@ class PaymentCard extends StatelessWidget {
       ),
     );
   }
+}
 
+class _LinkedEntityRow extends StatelessWidget {
+  const _LinkedEntityRow({
+    required this.icon,
+    required this.label,
+  });
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Row(
+      children: [
+        Icon(
+          icon,
+          size: 14,
+          color: theme.colorScheme.primary,
+        ),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            label,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
 }
 

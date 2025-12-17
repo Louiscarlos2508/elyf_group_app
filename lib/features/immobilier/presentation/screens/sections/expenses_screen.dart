@@ -1,203 +1,385 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../../shared/domain/adapters/expense_balance_adapter.dart';
 import '../../../../../shared/presentation/screens/expense_balance_screen.dart';
+import '../../../../../shared/presentation/widgets/refresh_button.dart';
 import '../../../application/providers.dart';
 import '../../../domain/adapters/expense_balance_adapter.dart';
 import '../../../domain/entities/expense.dart';
-import '../../widgets/expense_card.dart';
-import '../../widgets/expense_filters.dart';
+import '../../widgets/daily_expense_summary_card_v2.dart';
 import '../../widgets/expense_form_dialog.dart';
-import '../../widgets/property_search_bar.dart';
+import '../../widgets/expenses_table_v2.dart';
+import '../../widgets/monthly_expense_summary_v2.dart';
 
-class ExpensesScreen extends ConsumerStatefulWidget {
+/// Expenses screen with professional UI - style Boutique/Eau Minérale.
+class ExpensesScreen extends ConsumerWidget {
   const ExpensesScreen({super.key});
 
-  @override
-  ConsumerState<ExpensesScreen> createState() => _ExpensesScreenState();
-}
-
-class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
-  final _searchController = TextEditingController();
-  ExpenseCategory? _selectedCategory;
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
+  String _formatCurrency(int amount) {
+    return '${amount.toString().replaceAllMapped(
+          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+          (Match m) => '${m[1]} ',
+        )} FCFA';
   }
 
-  List<PropertyExpense> _filterAndSort(List<PropertyExpense> expenses) {
-    var filtered = expenses;
-
-    // Filtrage par recherche
-    if (_searchController.text.isNotEmpty) {
-      final query = _searchController.text.toLowerCase();
-      filtered = filtered.where((e) {
-        return e.description.toLowerCase().contains(query) ||
-            (e.property?.toLowerCase().contains(query) ?? false);
-      }).toList();
-    }
-
-    // Filtrage par catégorie
-    if (_selectedCategory != null) {
-      filtered = filtered.where((e) => e.category == _selectedCategory).toList();
-    }
-
-    // Tri par date (plus récents en premier)
-    filtered.sort((a, b) => b.expenseDate.compareTo(a.expenseDate));
-
-    return filtered;
+  List<PropertyExpense> _getTodayExpenses(List<PropertyExpense> expenses) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    return expenses.where((e) {
+      final expenseDate =
+          DateTime(e.expenseDate.year, e.expenseDate.month, e.expenseDate.day);
+      return expenseDate.isAtSameMomentAs(today);
+    }).toList();
   }
 
-  void _showExpenseForm() {
-    showDialog(
-      context: context,
-      builder: (context) => const ExpenseFormDialog(),
+  int _getTodayTotal(List<PropertyExpense> expenses) {
+    return _getTodayExpenses(expenses).fold(0, (sum, e) => sum + e.amount);
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final expensesAsync = ref.watch(expensesProvider);
+
+    return Scaffold(
+      body: expensesAsync.when(
+        data: (expenses) {
+          final todayExpenses = _getTodayExpenses(expenses);
+          final todayTotal = _getTodayTotal(expenses);
+
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              final isWide = constraints.maxWidth > 600;
+
+              return CustomScrollView(
+                slivers: [
+                  // Header
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(
+                        24,
+                        24,
+                        24,
+                        isWide ? 24 : 16,
+                      ),
+                      child: isWide
+                          ? Row(
+                              children: [
+                                Text(
+                                  'Dépenses',
+                                  style:
+                                      theme.textTheme.headlineMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const Spacer(),
+                                RefreshButton(
+                                  onRefresh: () =>
+                                      ref.invalidate(expensesProvider),
+                                  tooltip: 'Actualiser les dépenses',
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.analytics),
+                                  onPressed: () {
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            ExpenseBalanceScreen(
+                                          moduleName: 'Immobilier',
+                                          expensesProvider:
+                                              immobilierExpenseBalanceProvider,
+                                          adapter:
+                                              ImmobilierExpenseBalanceAdapter(),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  tooltip: 'Bilan des dépenses',
+                                ),
+                                const SizedBox(width: 8),
+                                Flexible(
+                                  child: FilledButton.icon(
+                                    onPressed: () {
+                                      showDialog(
+                                        context: context,
+                                        builder: (_) =>
+                                            const ExpenseFormDialog(),
+                                      );
+                                    },
+                                    icon: const Icon(Icons.add),
+                                    label: const Text('Nouvelle Dépense'),
+                                  ),
+                                ),
+                              ],
+                            )
+                          : Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        'Dépenses',
+                                        style: theme.textTheme.titleLarge
+                                            ?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                    RefreshButton(
+                                      onRefresh: () =>
+                                          ref.invalidate(expensesProvider),
+                                      tooltip: 'Actualiser les dépenses',
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.analytics),
+                                      onPressed: () {
+                                        Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                ExpenseBalanceScreen(
+                                              moduleName: 'Immobilier',
+                                              expensesProvider:
+                                                  immobilierExpenseBalanceProvider,
+                                              adapter:
+                                                  ImmobilierExpenseBalanceAdapter(),
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                      tooltip: 'Bilan des dépenses',
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: FilledButton.icon(
+                                    onPressed: () {
+                                      showDialog(
+                                        context: context,
+                                        builder: (_) =>
+                                            const ExpenseFormDialog(),
+                                      );
+                                    },
+                                    icon: const Icon(Icons.add),
+                                    label: const Text('Nouvelle Dépense'),
+                                  ),
+                                ),
+                              ],
+                            ),
+                    ),
+                  ),
+
+                  // Daily summary card
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: DailyExpenseSummaryCardV2(
+                        total: todayTotal,
+                        formatCurrency: _formatCurrency,
+                      ),
+                    ),
+                  ),
+
+                  // Today's expenses table
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Dépenses du Jour',
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Container(
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.surface,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: theme.colorScheme.outline
+                                    .withValues(alpha: 0.2),
+                              ),
+                            ),
+                            padding: const EdgeInsets.all(20),
+                            child: ExpensesTableV2(
+                              expenses: todayExpenses,
+                              formatCurrency: _formatCurrency,
+                              onActionTap: (expense, action) {
+                                if (action == 'delete') {
+                                  _confirmDelete(context, ref, expense);
+                                } else if (action == 'view') {
+                                  _showExpenseDetail(context, expense);
+                                }
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // Monthly summary
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: MonthlyExpenseSummaryV2(expenses: expenses),
+                    ),
+                  ),
+
+                  const SliverToBoxAdapter(
+                    child: SizedBox(height: 24),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (_, __) => Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.error_outline,
+                size: 64,
+                color: theme.colorScheme.error,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Erreur de chargement',
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: theme.colorScheme.error,
+                ),
+              ),
+              const SizedBox(height: 16),
+              FilledButton(
+                onPressed: () => ref.invalidate(expensesProvider),
+                child: const Text('Réessayer'),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
-  void _showExpenseDetails(PropertyExpense expense) {
-    // TODO: Ouvrir le dialog de détails
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final expensesAsync = ref.watch(expensesProvider);
+  void _showExpenseDetail(BuildContext context, PropertyExpense expense) {
     final theme = Theme.of(context);
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Dépenses'),
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(expense.description),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildDetailRow(theme, 'Montant', _formatCurrency(expense.amount)),
+            _buildDetailRow(
+                theme, 'Catégorie', _getCategoryLabel(expense.category)),
+            _buildDetailRow(
+              theme,
+              'Date',
+              '${expense.expenseDate.day}/${expense.expenseDate.month}/${expense.expenseDate.year}',
+            ),
+            if (expense.property != null)
+              _buildDetailRow(theme, 'Propriété', expense.property!),
+          ],
+        ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.analytics),
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => ExpenseBalanceScreen(
-                    moduleName: 'Immobilier',
-                    expensesProvider: immobilierExpenseBalanceProvider,
-                    adapter: ImmobilierExpenseBalanceAdapter(),
-                  ),
-                ),
-              );
-            },
-            tooltip: 'Bilan des dépenses',
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Fermer'),
           ),
         ],
       ),
-      body: Column(
+    );
+  }
+
+  Widget _buildDetailRow(ThemeData theme, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: IntrinsicWidth(
-                child: FilledButton.icon(
-                  onPressed: _showExpenseForm,
-                  icon: const Icon(Icons.add),
-                  label: const Text('Nouvelle Dépense'),
-                ),
+          SizedBox(
+            width: 80,
+            child: Text(
+              label,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
-          ),
-          PropertySearchBar(
-            controller: _searchController,
-            onChanged: (_) => setState(() {}),
-            onClear: () => setState(() {}),
-          ),
-          ExpenseFilters(
-            selectedCategory: _selectedCategory,
-            onCategoryChanged: (category) => setState(() => _selectedCategory = category),
-            onClear: () => setState(() => _selectedCategory = null),
           ),
           Expanded(
-            child: expensesAsync.when(
-              data: (expenses) {
-                final filtered = _filterAndSort(expenses);
-                
-                if (filtered.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          expenses.isEmpty ? Icons.receipt_long_outlined : Icons.search_off,
-                          size: 64,
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          expenses.isEmpty
-                              ? 'Aucune dépense enregistrée'
-                              : 'Aucun résultat trouvé',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                        if (expenses.isNotEmpty) ...[
-                          const SizedBox(height: 8),
-                          TextButton(
-                            onPressed: () {
-                              _searchController.clear();
-                              _selectedCategory = null;
-                              setState(() {});
-                            },
-                            child: const Text('Réinitialiser les filtres'),
-                          ),
-                        ],
-                      ],
-                    ),
-                  );
-                }
-                
-                return RefreshIndicator(
-                  onRefresh: () async {
-                    ref.invalidate(expensesProvider);
-                  },
-                  child: ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: filtered.length,
-                    itemBuilder: (context, index) {
-                      final expense = filtered[index];
-                      return ExpenseCard(
-                        expense: expense,
-                        onTap: () => _showExpenseDetails(expense),
-                      );
-                    },
-                  ),
-                );
-              },
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, stack) => Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.error_outline,
-                      size: 64,
-                      color: theme.colorScheme.error,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Erreur: $error',
-                      style: theme.textTheme.bodyMedium,
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 16),
-                    FilledButton.icon(
-                      onPressed: () {
-                        ref.invalidate(expensesProvider);
-                      },
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('Réessayer'),
-                    ),
-                  ],
-                ),
+            child: Text(
+              value,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w500,
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getCategoryLabel(ExpenseCategory category) {
+    switch (category) {
+      case ExpenseCategory.maintenance:
+        return 'Maintenance';
+      case ExpenseCategory.repair:
+        return 'Réparation';
+      case ExpenseCategory.utilities:
+        return 'Services publics';
+      case ExpenseCategory.insurance:
+        return 'Assurance';
+      case ExpenseCategory.taxes:
+        return 'Taxes';
+      case ExpenseCategory.cleaning:
+        return 'Nettoyage';
+      case ExpenseCategory.other:
+        return 'Autres';
+    }
+  }
+
+  void _confirmDelete(
+      BuildContext context, WidgetRef ref, PropertyExpense expense) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Supprimer la dépense ?'),
+        content:
+            Text('Voulez-vous vraiment supprimer "${expense.description}" ?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Annuler'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              await ref
+                  .read(expenseControllerProvider)
+                  .deleteExpense(expense.id);
+              ref.invalidate(expensesProvider);
+              if (context.mounted) {
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Dépense supprimée'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              }
+            },
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
+            child: const Text('Supprimer'),
           ),
         ],
       ),
