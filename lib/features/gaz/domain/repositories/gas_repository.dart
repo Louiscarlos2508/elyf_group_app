@@ -1,29 +1,27 @@
 import '../entities/cylinder.dart';
-import '../entities/depot.dart';
+import '../entities/delivery.dart';
 import '../entities/gas_sale.dart';
 
-/// Repository for managing gas operations.
+/// Interface pour le repository de gestion du gaz.
 abstract class GasRepository {
-  Future<List<Cylinder>> fetchCylinders({
-    String? depotId,
-    CylinderSize? size,
-    CylinderStatus? status,
-  });
+  // Cylinders
+  Future<List<Cylinder>> getCylinders();
+  Future<Cylinder?> getCylinderById(String id);
+  Future<void> addCylinder(Cylinder cylinder);
+  Future<void> updateCylinder(Cylinder cylinder);
+  Future<void> deleteCylinder(String id);
 
-  Future<List<GasSale>> fetchSales({
-    DateTime? startDate,
-    DateTime? endDate,
-    SaleType? type,
-    String? depotId,
-  });
+  // Sales
+  Future<List<GasSale>> getSales({DateTime? from, DateTime? to});
+  Future<GasSale?> getSaleById(String id);
+  Future<void> addSale(GasSale sale);
+  Future<void> updateSale(GasSale sale);
+  Future<void> deleteSale(String id);
 
-  Future<List<Depot>> fetchDepots();
-
-  Future<String> createSale(GasSale sale);
-
-  Future<Map<String, dynamic>> getStatistics({
-    DateTime? startDate,
-    DateTime? endDate,
-  });
+  // Deliveries
+  Future<List<Delivery>> getDeliveries({DateTime? from, DateTime? to});
+  Future<Delivery?> getDeliveryById(String id);
+  Future<void> addDelivery(Delivery delivery);
+  Future<void> updateDelivery(Delivery delivery);
+  Future<void> deleteDelivery(String id);
 }
-

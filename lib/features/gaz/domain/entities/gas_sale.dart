@@ -1,77 +1,60 @@
-import 'cylinder.dart';
-
-/// Represents a gas sale (retail or wholesale).
+/// Représente une vente de gaz.
 class GasSale {
   const GasSale({
     required this.id,
-    required this.type,
-    required this.cylinderSize,
+    required this.cylinderId,
     required this.quantity,
     required this.unitPrice,
-    required this.totalPrice,
-    required this.date,
-    required this.status,
+    required this.totalAmount,
+    required this.saleDate,
+    required this.saleType,
     this.customerName,
     this.customerPhone,
-    this.depotId,
-    this.deliveryAddress,
     this.notes,
-    this.createdBy,
   });
 
   final String id;
-  final SaleType type;
-  final CylinderSize cylinderSize;
+  final String cylinderId;
   final int quantity;
-  final int unitPrice; // Price per cylinder in FCFA
-  final int totalPrice; // Total price in FCFA
-  final DateTime date;
-  final SaleStatus status;
+  final double unitPrice;
+  final double totalAmount;
+  final DateTime saleDate;
+  final SaleType saleType;
   final String? customerName;
   final String? customerPhone;
-  final String? depotId;
-  final String? deliveryAddress;
   final String? notes;
-  final String? createdBy;
 
-  bool get isRetail => type == SaleType.retail;
-  bool get isWholesale => type == SaleType.wholesale;
-  bool get isCompleted => status == SaleStatus.completed;
-  bool get isPending => status == SaleStatus.pending;
+  GasSale copyWith({
+    String? id,
+    String? cylinderId,
+    int? quantity,
+    double? unitPrice,
+    double? totalAmount,
+    DateTime? saleDate,
+    SaleType? saleType,
+    String? customerName,
+    String? customerPhone,
+    String? notes,
+  }) {
+    return GasSale(
+      id: id ?? this.id,
+      cylinderId: cylinderId ?? this.cylinderId,
+      quantity: quantity ?? this.quantity,
+      unitPrice: unitPrice ?? this.unitPrice,
+      totalAmount: totalAmount ?? this.totalAmount,
+      saleDate: saleDate ?? this.saleDate,
+      saleType: saleType ?? this.saleType,
+      customerName: customerName ?? this.customerName,
+      customerPhone: customerPhone ?? this.customerPhone,
+      notes: notes ?? this.notes,
+    );
+  }
 }
 
 enum SaleType {
-  retail,
-  wholesale,
-}
+  retail('Détail'),
+  wholesale('Gros');
 
-enum SaleStatus {
-  pending,
-  completed,
-  cancelled,
+  const SaleType(this.label);
+  final String label;
 }
-
-extension SaleTypeExtension on SaleType {
-  String get label {
-    switch (this) {
-      case SaleType.retail:
-        return 'Détail';
-      case SaleType.wholesale:
-        return 'Gros';
-    }
-  }
-}
-
-extension SaleStatusExtension on SaleStatus {
-  String get label {
-    switch (this) {
-      case SaleStatus.pending:
-        return 'En attente';
-      case SaleStatus.completed:
-        return 'Terminé';
-      case SaleStatus.cancelled:
-        return 'Annulé';
-    }
-  }
-}
-

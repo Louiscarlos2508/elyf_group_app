@@ -1,62 +1,46 @@
-/// Represents a gas cylinder.
+/// Représente une bouteille de gaz.
 class Cylinder {
   const Cylinder({
     required this.id,
-    required this.size,
-    required this.status,
-    this.depotId,
-    this.customerId,
-    this.lastDeliveryDate,
-    this.lastSaleDate,
+    required this.type,
+    required this.weight,
+    required this.buyPrice,
+    required this.sellPrice,
+    this.stock = 0,
   });
 
   final String id;
-  final CylinderSize size;
-  final CylinderStatus status;
-  final String? depotId;
-  final String? customerId;
-  final DateTime? lastDeliveryDate;
-  final DateTime? lastSaleDate;
-}
+  final CylinderType type;
+  final double weight; // en kg
+  final double buyPrice;
+  final double sellPrice;
+  final int stock;
 
-enum CylinderSize {
-  kg6,
-  kg12,
-  kg14,
-}
-
-enum CylinderStatus {
-  available,
-  rented,
-  inTransit,
-  maintenance,
-}
-
-extension CylinderSizeExtension on CylinderSize {
-  String get label {
-    switch (this) {
-      case CylinderSize.kg6:
-        return '6 kg';
-      case CylinderSize.kg12:
-        return '12 kg';
-      case CylinderSize.kg14:
-        return '14 kg';
-    }
+  Cylinder copyWith({
+    String? id,
+    CylinderType? type,
+    double? weight,
+    double? buyPrice,
+    double? sellPrice,
+    int? stock,
+  }) {
+    return Cylinder(
+      id: id ?? this.id,
+      type: type ?? this.type,
+      weight: weight ?? this.weight,
+      buyPrice: buyPrice ?? this.buyPrice,
+      sellPrice: sellPrice ?? this.sellPrice,
+      stock: stock ?? this.stock,
+    );
   }
 }
 
-extension CylinderStatusExtension on CylinderStatus {
-  String get label {
-    switch (this) {
-      case CylinderStatus.available:
-        return 'Disponible';
-      case CylinderStatus.rented:
-        return 'En location';
-      case CylinderStatus.inTransit:
-        return 'En transit';
-      case CylinderStatus.maintenance:
-        return 'En maintenance';
-    }
-  }
-}
+enum CylinderType {
+  small('Petite', 6),
+  medium('Moyenne', 12.5),
+  large('Grande', 38);
 
+  const CylinderType(this.label, this.defaultWeight);
+  final String label;
+  final double defaultWeight;
+}
