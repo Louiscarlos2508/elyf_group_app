@@ -188,19 +188,39 @@ class _CylinderManagementCardState
   }
 
   void _showAddCylinderDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => const CylinderFormDialog(),
-    );
+    try {
+      showDialog(
+        context: context,
+        builder: (dialogContext) => const CylinderFormDialog(),
+      );
+    } catch (e) {
+      debugPrint('Erreur lors de l\'ouverture du dialog: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   void _showEditCylinderDialog(BuildContext context, Cylinder cylinder) {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => CylinderFormDialog(
-        cylinder: cylinder,
-      ),
-    );
+    try {
+      showDialog(
+        context: context,
+        builder: (dialogContext) => CylinderFormDialog(
+          cylinder: cylinder,
+        ),
+      );
+    } catch (e) {
+      debugPrint('Erreur lors de l\'ouverture du dialog: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   void _showDeleteConfirm(BuildContext context, Cylinder cylinder) {
@@ -209,7 +229,7 @@ class _CylinderManagementCardState
       builder: (dialogContext) => AlertDialog(
         title: const Text('Supprimer la bouteille'),
         content: Text(
-          'Êtes-vous sûr de vouloir supprimer "${cylinder.type.label} - ${cylinder.weight} kg" ?\n\n'
+          'Êtes-vous sûr de vouloir supprimer "${cylinder.weight} kg" ?\n\n'
           'Cette action est irréversible.',
         ),
         actions: [

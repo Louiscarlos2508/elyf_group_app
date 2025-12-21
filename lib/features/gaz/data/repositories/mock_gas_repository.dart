@@ -1,5 +1,4 @@
 import '../../domain/entities/cylinder.dart';
-import '../../domain/entities/delivery.dart';
 import '../../domain/entities/gas_sale.dart';
 import '../../domain/repositories/gas_repository.dart';
 
@@ -10,7 +9,6 @@ class MockGasRepository implements GasRepository {
   final List<Cylinder> _cylinders = [];
 
   final List<GasSale> _sales = [];
-  final List<Delivery> _deliveries = [];
 
   @override
   Future<List<Cylinder>> getCylinders() async => List.from(_cylinders);
@@ -64,35 +62,5 @@ class MockGasRepository implements GasRepository {
   @override
   Future<void> deleteSale(String id) async {
     _sales.removeWhere((s) => s.id == id);
-  }
-
-  @override
-  Future<List<Delivery>> getDeliveries({DateTime? from, DateTime? to}) async {
-    return _deliveries.where((d) {
-      if (from != null && d.deliveryDate.isBefore(from)) return false;
-      if (to != null && d.deliveryDate.isAfter(to)) return false;
-      return true;
-    }).toList();
-  }
-
-  @override
-  Future<Delivery?> getDeliveryById(String id) async {
-    return _deliveries.where((d) => d.id == id).firstOrNull;
-  }
-
-  @override
-  Future<void> addDelivery(Delivery delivery) async {
-    _deliveries.add(delivery);
-  }
-
-  @override
-  Future<void> updateDelivery(Delivery delivery) async {
-    final index = _deliveries.indexWhere((d) => d.id == delivery.id);
-    if (index != -1) _deliveries[index] = delivery;
-  }
-
-  @override
-  Future<void> deleteDelivery(String id) async {
-    _deliveries.removeWhere((d) => d.id == id);
   }
 }

@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../application/providers.dart';
 import '../../domain/entities/cylinder.dart';
+import '../../domain/entities/cylinder_stock.dart';
 
 /// Carte récapitulative du stock de bouteilles.
-class StockSummaryCard extends StatelessWidget {
+class StockSummaryCard extends ConsumerWidget {
   const StockSummaryCard({super.key, required this.cylinders});
 
   final List<Cylinder> cylinders;
@@ -15,40 +18,72 @@ class StockSummaryCard extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: theme.colorScheme.outline.withValues(alpha: 0.2),
+    if (cylinders.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    // Récupérer le stock pour tous les cylinders
+    final enterpriseId = cylinders.first.enterpriseId;
+    final stocksAsync = ref.watch(
+      cylinderStocksProvider(
+        (
+          enterpriseId: enterpriseId,
+          status: CylinderStatus.full,
+          siteId: null,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.08),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
       ),
-      child: Column(
-        children: [
-          for (var i = 0; i < cylinders.length; i++) ...[
-            _CylinderStockRow(
-              cylinder: cylinders[i],
-              stockColor: _getStockColor(cylinders[i].stock),
+    );
+
+    return stocksAsync.when(
+      data: (allStocks) {
+        return Container(
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: theme.colorScheme.outline.withValues(alpha: 0.2),
             ),
-            if (i < cylinders.length - 1)
-              Divider(
-                height: 1,
-                color: theme.colorScheme.outline.withValues(alpha: 0.1),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.08),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
               ),
-          ],
-        ],
+            ],
+          ),
+          child: Column(
+            children: [
+              for (var i = 0; i < cylinders.length; i++) ...[
+                _CylinderStockRow(
+                  cylinder: cylinders[i],
+                  fullStock: allStocks
+                      .where((s) => s.weight == cylinders[i].weight)
+                      .fold<int>(0, (sum, stock) => sum + stock.quantity),
+                  stockColor: _getStockColor(
+                    allStocks
+                        .where((s) => s.weight == cylinders[i].weight)
+                        .fold<int>(0, (sum, stock) => sum + stock.quantity),
+                  ),
+                ),
+                if (i < cylinders.length - 1)
+                  Divider(
+                    height: 1,
+                    color: theme.colorScheme.outline.withValues(alpha: 0.1),
+                  ),
+              ],
+            ],
+          ),
+        );
+      },
+      loading: () => Container(
+        padding: const EdgeInsets.all(16),
+        child: const Center(child: CircularProgressIndicator()),
       ),
+      error: (_, __) => const SizedBox.shrink(),
     );
   }
 }
@@ -56,10 +91,12 @@ class StockSummaryCard extends StatelessWidget {
 class _CylinderStockRow extends StatelessWidget {
   const _CylinderStockRow({
     required this.cylinder,
+    required this.fullStock,
     required this.stockColor,
   });
 
   final Cylinder cylinder;
+  final int fullStock;
   final Color stockColor;
 
   String _formatCurrency(double amount) {
@@ -96,7 +133,7 @@ class _CylinderStockRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${cylinder.type.label} (${cylinder.weight} kg)',
+                  '${cylinder.weight} kg',
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -136,15 +173,13 @@ class _CylinderStockRow extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
-                  cylinder.stock <= 5
-                      ? Icons.warning_amber
-                      : Icons.inventory_2,
+                  fullStock <= 5 ? Icons.warning_amber : Icons.inventory_2,
                   size: 18,
                   color: stockColor,
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  '${cylinder.stock}',
+                  '$fullStock',
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: stockColor,

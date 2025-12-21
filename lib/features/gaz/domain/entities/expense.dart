@@ -6,6 +6,8 @@ class GazExpense {
     required this.amount,
     required this.description,
     required this.date,
+    required this.enterpriseId,
+    required this.isFixed,
     this.notes,
   });
 
@@ -14,6 +16,8 @@ class GazExpense {
   final double amount;
   final String description;
   final DateTime date;
+  final String enterpriseId;
+  final bool isFixed; // Charge fixe vs variable
   final String? notes;
 
   GazExpense copyWith({
@@ -22,6 +26,8 @@ class GazExpense {
     double? amount,
     String? description,
     DateTime? date,
+    String? enterpriseId,
+    bool? isFixed,
     String? notes,
   }) {
     return GazExpense(
@@ -30,15 +36,19 @@ class GazExpense {
       amount: amount ?? this.amount,
       description: description ?? this.description,
       date: date ?? this.date,
+      enterpriseId: enterpriseId ?? this.enterpriseId,
+      isFixed: isFixed ?? this.isFixed,
       notes: notes ?? this.notes,
     );
   }
 }
 
 enum ExpenseCategory {
-  transport('Transport'),
   maintenance('Maintenance'),
+  structureCharges('Charges de structure'),
   salaries('Salaires'),
+  loadingEvents('Frais de chargement'),
+  transport('Transport'),
   rent('Loyer'),
   utilities('Services publics'),
   supplies('Fournitures'),

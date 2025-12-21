@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../application/providers.dart';
+import '../../../domain/entities/cylinder.dart';
+import '../../../domain/entities/cylinder_stock.dart';
 import '../../../domain/entities/gas_sale.dart';
 import '../../widgets/gas_sale_form_dialog.dart';
 
-/// Écran des ventes au détail.
+/// Écran de vente au détail.
 class GazRetailScreen extends ConsumerWidget {
   const GazRetailScreen({super.key});
 
@@ -14,15 +16,15 @@ class GazRetailScreen extends ConsumerWidget {
           RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
           (Match m) => '${m[1]} ',
         ) +
-        ' F';
+        ' FCFA';
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final salesAsync = ref.watch(gasSalesProvider);
-    final cylindersAsync = ref.watch(cylindersProvider);
     final isMobile = MediaQuery.of(context).size.width < 600;
+    final cylindersAsync = ref.watch(cylindersProvider);
+    final salesAsync = ref.watch(gasSalesProvider);
 
     return CustomScrollView(
       slivers: [
@@ -39,68 +41,90 @@ class GazRetailScreen extends ConsumerWidget {
                 SizedBox(width: isMobile ? 8 : 12),
                 Expanded(
                   child: Text(
-                    'Ventes au Détail',
+                    'Vente au Détail',
                     style: theme.textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                       fontSize: isMobile ? 20 : null,
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
-                Flexible(
-                  child: FilledButton.icon(
-                    onPressed: () {
-                      showDialog(
-                        context: context,
-                        builder: (context) => const GasSaleFormDialog(
-                          saleType: SaleType.retail,
-                        ),
-                      );
-                    },
-                    icon: const Icon(Icons.add),
-                    label: Text(isMobile ? 'Vendre' : 'Nouvelle vente'),
-                  ),
-                ),
               ],
             ),
           ),
         ),
-        // Quick sale cards
         SliverToBoxAdapter(
           child: Padding(
             padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 24),
             child: cylindersAsync.when(
-              data: (cylinders) => Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Vente rapide',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
+              data: (cylinders) {
+                if (cylinders.isEmpty) {
+                  return Container(
+                    padding: const EdgeInsets.all(48),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceContainerHighest
+                          .withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(16),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
-                    children: cylinders.map((c) {
-                      return _QuickSaleCard(
-                        label: '${c.type.label}\n${c.weight} kg',
-                        price: _formatCurrency(c.sellPrice),
-                        stock: c.stock,
-                        onTap: () {
-                          showDialog(
-                            context: context,
-                            builder: (context) => GasSaleFormDialog(
-                              saleType: SaleType.retail,
-                            ),
-                          );
-                        },
-                      );
-                    }).toList(),
-                  ),
-                ],
-              ),
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.local_fire_department_outlined,
+                          size: 64,
+                          color: theme.colorScheme.outline,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Aucune bouteille configurée',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Vente rapide',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: cylinders.map((c) {
+                        return _QuickSaleCard(
+                          cylinder: c,
+                          formatCurrency: _formatCurrency,
+                          onTap: () {
+                            try {
+                              showDialog(
+                                context: context,
+                                builder: (context) => const GasSaleFormDialog(
+                                  saleType: SaleType.retail,
+                                ),
+                              );
+                            } catch (e) {
+                              debugPrint('Erreur lors de l\'ouverture du dialog: $e');
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Erreur: $e'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          },
+                        );
+                      }).toList(),
+                    ),
+                  ],
+                );
+              },
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (_, __) => const SizedBox.shrink(),
             ),
@@ -191,91 +215,124 @@ class GazRetailScreen extends ConsumerWidget {
   }
 }
 
-class _QuickSaleCard extends StatelessWidget {
+class _QuickSaleCard extends ConsumerWidget {
   const _QuickSaleCard({
-    required this.label,
-    required this.price,
-    required this.stock,
+    required this.cylinder,
+    required this.formatCurrency,
     required this.onTap,
   });
 
-  final String label;
-  final String price;
-  final int stock;
+  final Cylinder cylinder;
+  final String Function(double) formatCurrency;
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final isLowStock = stock <= 5;
 
-    return InkWell(
-      onTap: stock > 0 ? onTap : null,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        width: 140,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: stock > 0
-                ? [
-                    Colors.orange.shade400,
-                    Colors.deepOrange.shade400,
-                  ]
-                : [Colors.grey.shade400, Colors.grey.shade500],
-          ),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: (stock > 0 ? Colors.orange : Colors.grey)
-                  .withValues(alpha: 0.3),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
+    // Récupérer le stock disponible (pleines) pour ce cylinder
+    final stocksAsync = ref.watch(
+      cylinderStocksProvider(
+        (
+          enterpriseId: cylinder.enterpriseId,
+          status: CylinderStatus.full,
+          siteId: null,
         ),
-        child: Column(
-          children: [
-            const Icon(
-              Icons.local_fire_department,
-              color: Colors.white,
-              size: 32,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.w500,
+      ),
+    );
+
+    return stocksAsync.when(
+      data: (allStocks) {
+        final fullStock = allStocks
+            .where((s) => s.weight == cylinder.weight)
+            .fold<int>(0, (sum, stock) => sum + stock.quantity);
+
+        return Card(
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(16),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.primaryContainer,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          Icons.local_fire_department,
+                          color: theme.colorScheme.onPrimaryContainer,
+                          size: 24,
+                        ),
+                      ),
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: fullStock <= 5
+                              ? Colors.red.withValues(alpha: 0.1)
+                              : Colors.green.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          '$fullStock en stock',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: fullStock <= 5 ? Colors.red : Colors.green,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    '${cylinder.weight} kg',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    formatCurrency(cylinder.sellPrice),
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      color: theme.colorScheme.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              price,
-              style: theme.textTheme.titleMedium?.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
+          ),
+        );
+      },
+      loading: () => Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: const Center(
+            child: SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
             ),
-            const SizedBox(height: 4),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                '$stock en stock',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: isLowStock ? Colors.yellow : Colors.white,
-                  fontWeight: isLowStock ? FontWeight.bold : null,
-                ),
-              ),
-            ),
-          ],
+          ),
+        ),
+      ),
+      error: (_, __) => Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Text('Erreur'),
         ),
       ),
     );
@@ -294,31 +351,53 @@ class _SaleCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final dateStr =
+        '${sale.saleDate.day}/${sale.saleDate.month}/${sale.saleDate.year}';
 
     return Card(
+      elevation: 1,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: ListTile(
         leading: Container(
-          padding: const EdgeInsets.all(10),
+          padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Colors.green.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(10),
+            color: theme.colorScheme.primaryContainer,
+            borderRadius: BorderRadius.circular(8),
           ),
-          child: const Icon(Icons.shopping_cart, color: Colors.green),
+          child: Icon(
+            Icons.local_fire_department,
+            color: theme.colorScheme.onPrimaryContainer,
+          ),
         ),
         title: Text(
-          '${sale.quantity} bouteille${sale.quantity > 1 ? 's' : ''}',
-          style: const TextStyle(fontWeight: FontWeight.w600),
-        ),
-        subtitle: Text(
-          sale.customerName ?? 'Client anonyme',
-          style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
-        ),
-        trailing: Text(
-          formatCurrency(sale.totalAmount),
+          '${sale.quantity} × ${formatCurrency(sale.unitPrice)}',
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.bold,
-            color: Colors.green,
           ),
+        ),
+        subtitle: Text(
+          sale.customerName ?? 'Client non renseigné',
+        ),
+        trailing: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(
+              formatCurrency(sale.totalAmount),
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+            Text(
+              dateStr,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
         ),
       ),
     );

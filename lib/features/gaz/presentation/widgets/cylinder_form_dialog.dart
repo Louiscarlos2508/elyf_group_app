@@ -20,28 +20,33 @@ class CylinderFormDialog extends ConsumerStatefulWidget {
       _CylinderFormDialogState();
 }
 
-class _CylinderFormDialogState
-    extends ConsumerState<CylinderFormDialog> {
+class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
   final _formKey = GlobalKey<FormState>();
   final _weightController = TextEditingController();
   final _buyPriceController = TextEditingController();
   final _sellPriceController = TextEditingController();
-  final _stockController = TextEditingController();
-  
-  CylinderType? _selectedType;
+
+  int? _selectedWeight;
   bool _isLoading = false;
+  String? _enterpriseId;
+  String? _moduleId;
+
+  final List<int> _availableWeights = [3, 6, 10, 12];
 
   @override
   void initState() {
     super.initState();
+    // TODO: Récupérer enterpriseId et moduleId depuis le contexte/tenant
+    _enterpriseId ??= 'default_enterprise';
+    _moduleId ??= 'gaz';
+
     if (widget.cylinder != null) {
-      _selectedType = widget.cylinder!.type;
+      _selectedWeight = widget.cylinder!.weight;
       _weightController.text = widget.cylinder!.weight.toString();
       _buyPriceController.text = widget.cylinder!.buyPrice.toStringAsFixed(0);
       _sellPriceController.text = widget.cylinder!.sellPrice.toStringAsFixed(0);
-      _stockController.text = widget.cylinder!.stock.toString();
-    } else {
-      _stockController.text = '0';
+      _enterpriseId = widget.cylinder!.enterpriseId;
+      _moduleId = widget.cylinder!.moduleId;
     }
   }
 
@@ -50,16 +55,15 @@ class _CylinderFormDialogState
     _weightController.dispose();
     _buyPriceController.dispose();
     _sellPriceController.dispose();
-    _stockController.dispose();
     super.dispose();
   }
 
   Future<void> _saveCylinder() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_selectedType == null) {
+    if (_selectedWeight == null || _enterpriseId == null || _moduleId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Veuillez sélectionner un type de bouteille'),
+          content: Text('Veuillez remplir tous les champs requis'),
           backgroundColor: Colors.red,
         ),
       );
@@ -70,20 +74,18 @@ class _CylinderFormDialogState
 
     try {
       final controller = ref.read(cylinderControllerProvider);
-      final weight = double.tryParse(_weightController.text) ?? 
-          _selectedType!.defaultWeight;
+      final weight = int.tryParse(_weightController.text) ?? _selectedWeight!;
       final buyPrice = double.tryParse(_buyPriceController.text) ?? 0.0;
       final sellPrice = double.tryParse(_sellPriceController.text) ?? 0.0;
-      final stock = int.tryParse(_stockController.text) ?? 0;
 
       final cylinder = Cylinder(
-        id: widget.cylinder?.id ?? 
+        id: widget.cylinder?.id ??
             'cyl-${DateTime.now().millisecondsSinceEpoch}',
-        type: _selectedType!,
         weight: weight,
         buyPrice: buyPrice,
         sellPrice: sellPrice,
-        stock: stock,
+        enterpriseId: _enterpriseId!,
+        moduleId: _moduleId!,
       );
 
       if (widget.cylinder == null) {
@@ -160,65 +162,33 @@ class _CylinderFormDialogState
                     ],
                   ),
                   const SizedBox(height: 24),
-                  // Type de bouteille
-                  DropdownButtonFormField<CylinderType>(
-                    value: _selectedType,
-                    decoration: InputDecoration(
-                      labelText: 'Type de bouteille *',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      prefixIcon: const Icon(Icons.local_fire_department),
-                    ),
-                    items: CylinderType.values.map((type) {
-                      return DropdownMenuItem(
-                        value: type,
-                        child: Text(type.label),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedType = value;
-                        if (value != null && _weightController.text.isEmpty) {
-                          _weightController.text =
-                              value.defaultWeight.toString();
-                        }
-                      });
-                    },
-                    validator: (value) {
-                      if (value == null) {
-                        return 'Veuillez sélectionner un type';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
                   // Poids
-                  TextFormField(
-                    controller: _weightController,
+                  DropdownButtonFormField<int>(
+                    value: _selectedWeight,
                     decoration: InputDecoration(
                       labelText: 'Poids (kg) *',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                       prefixIcon: const Icon(Icons.scale),
-                      suffixText: 'kg',
                     ),
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    inputFormatters: [
-                      FilteringTextInputFormatter.allow(
-                        RegExp(r'^\d+\.?\d{0,2}'),
-                      ),
-                    ],
+                    items: _availableWeights.map((weight) {
+                      return DropdownMenuItem(
+                        value: weight,
+                        child: Text('$weight kg'),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedWeight = value;
+                        if (value != null) {
+                          _weightController.text = value.toString();
+                        }
+                      });
+                    },
                     validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Veuillez entrer un poids';
-                      }
-                      final weight = double.tryParse(value);
-                      if (weight == null || weight <= 0) {
-                        return 'Poids invalide';
+                      if (value == null) {
+                        return 'Veuillez sélectionner un poids';
                       }
                       return null;
                     },
@@ -284,45 +254,21 @@ class _CylinderFormDialogState
                       return null;
                     },
                   ),
-                  const SizedBox(height: 16),
-                  // Stock initial
-                  TextFormField(
-                    controller: _stockController,
-                    decoration: InputDecoration(
-                      labelText: 'Stock initial',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      prefixIcon: const Icon(Icons.inventory_2),
-                      hintText: '0',
-                    ),
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                    ],
-                    validator: (value) {
-                      if (value != null && value.isNotEmpty) {
-                        final stock = int.tryParse(value);
-                        if (stock == null || stock < 0) {
-                          return 'Stock invalide';
-                        }
-                      }
-                      return null;
-                    },
-                  ),
                   const SizedBox(height: 24),
                   // Boutons d'action
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      TextButton(
-                        onPressed: _isLoading
-                            ? null
-                            : () => Navigator.of(context).pop(),
-                        child: const Text('Annuler'),
+                      Flexible(
+                        child: TextButton(
+                          onPressed: _isLoading
+                              ? null
+                              : () => Navigator.of(context).pop(),
+                          child: const Text('Annuler'),
+                        ),
                       ),
                       const SizedBox(width: 12),
-                      IntrinsicWidth(
+                      Flexible(
                         child: FilledButton(
                           onPressed: _isLoading ? null : _saveCylinder,
                           child: _isLoading
@@ -337,9 +283,7 @@ class _CylinderFormDialogState
                                   ),
                                 )
                               : Text(
-                                  widget.cylinder == null
-                                      ? 'Créer'
-                                      : 'Enregistrer',
+                                  widget.cylinder == null ? 'Créer' : 'Enregistrer',
                                 ),
                         ),
                       ),

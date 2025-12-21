@@ -49,12 +49,22 @@ class GazWholesaleScreen extends ConsumerWidget {
                 Flexible(
                   child: FilledButton.icon(
                     onPressed: () {
-                      showDialog(
-                        context: context,
-                        builder: (context) => const GasSaleFormDialog(
-                          saleType: SaleType.wholesale,
-                        ),
-                      );
+                      try {
+                        showDialog(
+                          context: context,
+                          builder: (context) => const GasSaleFormDialog(
+                            saleType: SaleType.wholesale,
+                          ),
+                        );
+                      } catch (e) {
+                        debugPrint('Erreur lors de l\'ouverture du dialog: $e');
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Erreur: $e'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
                     },
                     icon: const Icon(Icons.add),
                     label: Text(isMobile ? 'Vendre' : 'Nouvelle vente'),

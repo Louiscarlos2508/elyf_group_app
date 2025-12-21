@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../../shared/presentation/widgets/refresh_button.dart';
 import '../../../application/providers.dart';
+import '../../../domain/entities/report_data.dart';
 import '../../widgets/expenses_report_content_v2.dart';
+import '../../widgets/financial_report_content_v2.dart';
 import '../../widgets/profit_report_content_v2.dart';
 import '../../widgets/report_kpi_cards_v2.dart';
 import '../../widgets/report_period_selector_v2.dart';
@@ -154,6 +156,18 @@ class _GazReportsScreenState extends ConsumerState<GazReportsScreen> {
   }
 
   Widget _buildTabContent() {
+    final reportDataAsync = ref.watch(
+      gazReportDataProvider((
+        period: GazReportPeriod.custom,
+        startDate: _startDate,
+        endDate: _endDate,
+      ) as ({
+          GazReportPeriod period,
+          DateTime? startDate,
+          DateTime? endDate,
+        })),
+    );
+
     switch (_selectedTab) {
       case 0:
         return GazSalesReportContentV2(
@@ -169,6 +183,16 @@ class _GazReportsScreenState extends ConsumerState<GazReportsScreen> {
         return GazProfitReportContentV2(
           startDate: _startDate,
           endDate: _endDate,
+        );
+      case 3:
+        return reportDataAsync.when(
+          data: (reportData) => GazFinancialReportContentV2(
+            startDate: _startDate,
+            endDate: _endDate,
+            totalRevenue: reportData.salesRevenue,
+          ),
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (_, __) => const SizedBox.shrink(),
         );
       default:
         return const SizedBox.shrink();

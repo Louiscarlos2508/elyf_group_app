@@ -129,7 +129,7 @@ class _AdaptiveNavigationScaffoldState
                     onDestinationSelected: _onDestinationSelected,
                     labelType: isExtended
                         ? NavigationRailLabelType.none
-                        : NavigationRailLabelType.all,
+                        : NavigationRailLabelType.selected,
                     extended: isExtended,
                     minExtendedWidth: 200,
                     minWidth: 80,

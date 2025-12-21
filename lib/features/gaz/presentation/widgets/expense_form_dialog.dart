@@ -25,6 +25,8 @@ class _GazExpenseFormDialogState
   late TextEditingController _notesController;
   ExpenseCategory _selectedCategory = ExpenseCategory.other;
   DateTime _selectedDate = DateTime.now();
+  bool _isFixed = false;
+  String? _enterpriseId;
 
   bool get isEditing => widget.expense != null;
 
@@ -43,6 +45,11 @@ class _GazExpenseFormDialogState
     if (widget.expense != null) {
       _selectedCategory = widget.expense!.category;
       _selectedDate = widget.expense!.date;
+      _isFixed = widget.expense!.isFixed;
+      _enterpriseId = widget.expense!.enterpriseId;
+    } else {
+      // TODO: Récupérer enterpriseId depuis le contexte/tenant
+      _enterpriseId = 'default_enterprise';
     }
   }
 
@@ -91,6 +98,8 @@ class _GazExpenseFormDialogState
         amount: amount,
         category: _selectedCategory,
         date: _selectedDate,
+        enterpriseId: _enterpriseId ?? 'default_enterprise',
+        isFixed: _isFixed,
         notes: _notesController.text.trim().isEmpty
             ? null
             : _notesController.text.trim(),
@@ -139,14 +148,15 @@ class _GazExpenseFormDialogState
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 500),
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                 Row(
                   children: [
                     Container(
@@ -243,6 +253,20 @@ class _GazExpenseFormDialogState
                   ),
                 ),
                 const SizedBox(height: 16),
+                CheckboxListTile(
+                  title: const Text('Charge fixe'),
+                  subtitle: const Text(
+                    'Si coché, cette dépense est une charge fixe (ex: loyer). Sinon, c\'est une charge variable.',
+                  ),
+                  value: _isFixed,
+                  onChanged: (value) {
+                    setState(() {
+                      _isFixed = value ?? false;
+                    });
+                  },
+                  controlAffinity: ListTileControlAffinity.leading,
+                ),
+                const SizedBox(height: 16),
                 TextFormField(
                   controller: _notesController,
                   decoration: const InputDecoration(
@@ -285,6 +309,7 @@ class _GazExpenseFormDialogState
             ),
           ),
         ),
+      ),
       ),
     );
   }

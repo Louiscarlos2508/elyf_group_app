@@ -62,6 +62,10 @@ class GazMonthlyExpenseSummary extends StatelessWidget {
         return Colors.amber;
       case ExpenseCategory.supplies:
         return Colors.teal;
+      case ExpenseCategory.structureCharges:
+        return Colors.indigo;
+      case ExpenseCategory.loadingEvents:
+        return Colors.cyan;
       case ExpenseCategory.other:
         return Colors.grey;
     }

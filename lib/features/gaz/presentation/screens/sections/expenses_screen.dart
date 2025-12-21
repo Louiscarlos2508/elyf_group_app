@@ -84,11 +84,21 @@ class GazExpensesScreen extends ConsumerWidget {
                                 Flexible(
                                   child: FilledButton.icon(
                                     onPressed: () {
-                                      showDialog(
-                                        context: context,
-                                        builder: (_) =>
-                                            const GazExpenseFormDialog(),
-                                      );
+                                      try {
+                                        showDialog(
+                                          context: context,
+                                          builder: (_) =>
+                                              const GazExpenseFormDialog(),
+                                        );
+                                      } catch (e) {
+                                        debugPrint('Erreur lors de l\'ouverture du dialog: $e');
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text('Erreur: $e'),
+                                            backgroundColor: Colors.red,
+                                          ),
+                                        );
+                                      }
                                     },
                                     icon: const Icon(Icons.add),
                                     label: const Text('Nouvelle Dépense'),
@@ -122,11 +132,21 @@ class GazExpensesScreen extends ConsumerWidget {
                                   width: double.infinity,
                                   child: FilledButton.icon(
                                     onPressed: () {
-                                      showDialog(
-                                        context: context,
-                                        builder: (_) =>
-                                            const GazExpenseFormDialog(),
-                                      );
+                                      try {
+                                        showDialog(
+                                          context: context,
+                                          builder: (_) =>
+                                              const GazExpenseFormDialog(),
+                                        );
+                                      } catch (e) {
+                                        debugPrint('Erreur lors de l\'ouverture du dialog: $e');
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text('Erreur: $e'),
+                                            backgroundColor: Colors.red,
+                                          ),
+                                        );
+                                      }
                                     },
                                     icon: const Icon(Icons.add),
                                     label: const Text('Nouvelle Dépense'),

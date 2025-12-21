@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../application/providers.dart';
 import '../../domain/entities/cylinder.dart';
+import '../../domain/entities/cylinder_stock.dart';
 
 /// Widget pour afficher une bouteille dans la liste des paramètres.
-class CylinderListItem extends StatelessWidget {
+class CylinderListItem extends ConsumerWidget {
   const CylinderListItem({
     super.key,
     required this.cylinder,
@@ -23,106 +26,136 @@ class CylinderListItem extends StatelessWidget {
         ' FCFA';
   }
 
-  Color _getStockColor(BuildContext context, int stock) {
-    final theme = Theme.of(context);
+  Color _getStockColor(int stock) {
     if (stock <= 5) return Colors.red;
     if (stock <= 15) return Colors.orange;
     return Colors.green;
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final stockColor = _getStockColor(context, cylinder.stock);
     final profit = cylinder.sellPrice - cylinder.buyPrice;
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: theme.colorScheme.outline.withValues(alpha: 0.1),
+    // Récupérer le stock disponible (pleines) pour ce cylinder
+    final stocksAsync = ref.watch(
+      cylinderStocksProvider(
+        (
+          enterpriseId: cylinder.enterpriseId,
+          status: CylinderStatus.full,
+          siteId: null,
         ),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primaryContainer,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                Icons.local_fire_department,
-                color: theme.colorScheme.onPrimaryContainer,
-              ),
+    );
+
+    return stocksAsync.when(
+      data: (allStocks) {
+        final fullStock = allStocks
+            .where((s) => s.weight == cylinder.weight)
+            .fold<int>(0, (sum, stock) => sum + stock.quantity);
+        final stockColor = _getStockColor(fullStock);
+
+        return Card(
+          margin: const EdgeInsets.only(bottom: 8),
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(
+              color: theme.colorScheme.outline.withValues(alpha: 0.1),
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.local_fire_department,
+                    color: theme.colorScheme.onPrimaryContainer,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: Text(
-                          '${cylinder.type.label} - ${cylinder.weight} kg',
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              '${cylinder.weight} kg',
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
-                        ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: stockColor.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              'Stock: $fullStock',
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: stockColor,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: stockColor.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          'Stock: ${cylinder.stock}',
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: stockColor,
-                            fontWeight: FontWeight.bold,
-                          ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Prix: ${_formatCurrency(cylinder.buyPrice)} → ${_formatCurrency(cylinder.sellPrice)} (Marge: ${_formatCurrency(profit)})',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Prix: ${_formatCurrency(cylinder.buyPrice)} → ${_formatCurrency(cylinder.sellPrice)} (Marge: ${_formatCurrency(profit)})',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.edit, size: 20),
-                  onPressed: onEdit,
-                  tooltip: 'Modifier',
                 ),
-                IconButton(
-                  icon: const Icon(Icons.delete, size: 20),
-                  onPressed: onDelete,
-                  tooltip: 'Supprimer',
-                  color: theme.colorScheme.error,
+                const SizedBox(width: 8),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.edit, size: 20),
+                      onPressed: onEdit,
+                      tooltip: 'Modifier',
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete, size: 20),
+                      onPressed: onDelete,
+                      tooltip: 'Supprimer',
+                      color: theme.colorScheme.error,
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
+          ),
+        );
+      },
+      loading: () => Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: const Center(child: CircularProgressIndicator()),
+        ),
+      ),
+      error: (_, __) => Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Text('Erreur de chargement du stock'),
         ),
       ),
     );

@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../application/controllers/cylinder_stock_controller.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/cylinder.dart';
+import '../../domain/entities/cylinder_stock.dart';
 import '../../domain/entities/gas_sale.dart';
 
 /// Dialog de formulaire pour créer une vente de gaz.
@@ -28,12 +30,16 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
   final _notesController = TextEditingController();
 
   Cylinder? _selectedCylinder;
+  int _availableStock = 0;
   bool _isLoading = false;
+  String? _enterpriseId;
 
   @override
   void initState() {
     super.initState();
     _quantityController.text = '1';
+    // TODO: Récupérer enterpriseId depuis le contexte/tenant
+    _enterpriseId ??= 'default_enterprise';
   }
 
   @override
@@ -59,6 +65,28 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
     return _selectedCylinder!.sellPrice * quantity;
   }
 
+  Future<void> _updateAvailableStock() async {
+    if (_selectedCylinder == null || _enterpriseId == null) {
+      setState(() => _availableStock = 0);
+      return;
+    }
+
+    try {
+      final controller = ref.read(cylinderStockControllerProvider);
+      _availableStock = await controller.getAvailableStock(
+        _enterpriseId!,
+        _selectedCylinder!.weight,
+      );
+      if (mounted) {
+        setState(() {});
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _availableStock = 0);
+      }
+    }
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedCylinder == null) {
@@ -75,14 +103,14 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
 
     try {
       final quantity = int.tryParse(_quantityController.text) ?? 1;
-      
+
       // Vérifier le stock disponible
-      if (quantity > _selectedCylinder!.stock) {
+      if (quantity > _availableStock) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Stock insuffisant. Stock disponible: ${_selectedCylinder!.stock}',
+              'Stock insuffisant. Stock disponible: $_availableStock',
             ),
             backgroundColor: Colors.red,
           ),
@@ -111,20 +139,47 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
       );
 
       // Ajouter la vente
-      final controller = ref.read(gasControllerProvider);
-      await controller.addSale(sale);
+      final gasController = ref.read(gasControllerProvider);
+      await gasController.addSale(sale);
 
-      // Mettre à jour le stock de la bouteille
-      await controller.updateCylinderStock(
-        _selectedCylinder!.id,
-        -quantity,
+      // Mettre à jour le stock: retirer les bouteilles pleines
+      final stockController = ref.read(cylinderStockControllerProvider);
+      final stocks = await stockController.getStocksByWeight(
+        _enterpriseId!,
+        _selectedCylinder!.weight,
       );
+
+      final fullStock = stocks
+          .where((s) => s.status == CylinderStatus.full)
+          .firstOrNull;
+
+      if (fullStock != null) {
+        final newQuantity = fullStock.quantity - quantity;
+        if (newQuantity >= 0) {
+          await stockController.adjustStockQuantity(
+            fullStock.id,
+            newQuantity,
+          );
+        } else {
+          throw Exception('Stock insuffisant après validation');
+        }
+      } else {
+        throw Exception('Aucun stock disponible trouvé');
+      }
 
       if (!mounted) return;
 
       // Invalider les providers
       ref.invalidate(gasSalesProvider);
-      ref.invalidate(cylindersProvider);
+      ref.invalidate(
+        cylinderStocksProvider(
+          (
+            enterpriseId: _enterpriseId!,
+            status: null,
+            siteId: null,
+          ),
+        ),
+      );
 
       Navigator.of(context).pop();
 
@@ -152,9 +207,11 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final cylindersAsync = ref.watch(cylindersProvider);
+    
+    try {
+      final cylindersAsync = ref.watch(cylindersProvider);
 
-    return Dialog(
+      return Dialog(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(24),
       ),
@@ -171,21 +228,11 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
                 children: [
                   Row(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.primaryContainer,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(
-                          Icons.local_fire_department,
-                          color: theme.colorScheme.onPrimaryContainer,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
                       Expanded(
                         child: Text(
-                          'Nouvelle Vente - ${widget.saleType.label}',
+                          widget.saleType == SaleType.retail
+                              ? 'Vente au Détail'
+                              : 'Vente en Gros',
                           style: theme.textTheme.headlineSmall?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -208,22 +255,11 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
                             color: theme.colorScheme.errorContainer,
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.warning,
-                                color: theme.colorScheme.onErrorContainer,
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  'Aucune bouteille configurée. Veuillez d\'abord créer des bouteilles dans les paramètres.',
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    color: theme.colorScheme.onErrorContainer,
-                                  ),
-                                ),
-                              ),
-                            ],
+                          child: Text(
+                            'Aucune bouteille disponible',
+                            style: TextStyle(
+                              color: theme.colorScheme.onErrorContainer,
+                            ),
                           ),
                         );
                       }
@@ -240,40 +276,19 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
                         items: cylinders.map((cylinder) {
                           return DropdownMenuItem(
                             value: cylinder,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  '${cylinder.type.label} - ${cylinder.weight} kg',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                Text(
-                                  'Prix: ${_formatCurrency(cylinder.sellPrice)} | Stock: ${cylinder.stock}',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: theme.colorScheme.onSurfaceVariant,
-                                  ),
-                                ),
-                              ],
+                            enabled: true,
+                            child: Text(
+                              '${cylinder.weight} kg - ${_formatCurrency(cylinder.sellPrice)}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           );
                         }).toList(),
                         onChanged: (value) {
                           setState(() {
                             _selectedCylinder = value;
-                            if (value != null && value.stock == 0) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Attention: Stock à zéro pour cette bouteille',
-                                  ),
-                                  backgroundColor: Colors.orange,
-                                ),
-                              );
-                            }
+                            _updateAvailableStock();
                           });
                         },
                         validator: (value) {
@@ -304,6 +319,54 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
                       ),
                     ),
                   ),
+                  // Afficher le stock disponible si une bouteille est sélectionnée
+                  if (_selectedCylinder != null) ...[
+                    const SizedBox(height: 8),
+                    FutureBuilder<int>(
+                      future: ref
+                          .read(cylinderStockControllerProvider)
+                          .getAvailableStock(
+                            _selectedCylinder!.enterpriseId,
+                            _selectedCylinder!.weight,
+                          ),
+                      builder: (context, snapshot) {
+                        final stock = snapshot.data ?? 0;
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: stock <= 5
+                                ? theme.colorScheme.errorContainer
+                                : theme.colorScheme.primaryContainer,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                stock <= 5 ? Icons.warning : Icons.inventory_2,
+                                size: 16,
+                                color: stock <= 5
+                                    ? theme.colorScheme.onErrorContainer
+                                    : theme.colorScheme.onPrimaryContainer,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Stock disponible: $stock',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: stock <= 5
+                                      ? theme.colorScheme.onErrorContainer
+                                      : theme.colorScheme.onPrimaryContainer,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ],
                   const SizedBox(height: 16),
                   // Quantité
                   TextFormField(
@@ -327,9 +390,8 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
                       if (quantity == null || quantity <= 0) {
                         return 'Quantité invalide';
                       }
-                      if (_selectedCylinder != null &&
-                          quantity > _selectedCylinder!.stock) {
-                        return 'Stock insuffisant (${_selectedCylinder!.stock} disponible)';
+                      if (quantity > _availableStock) {
+                        return 'Stock insuffisant ($_availableStock disponible)';
                       }
                       return null;
                     },
@@ -444,5 +506,38 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
         ),
       ),
     );
+    } catch (e) {
+      return Dialog(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.error_outline,
+                color: theme.colorScheme.error,
+                size: 48,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Erreur lors du chargement',
+                style: theme.textTheme.titleLarge,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                e.toString(),
+                style: theme.textTheme.bodySmall,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              FilledButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Fermer'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
   }
 }

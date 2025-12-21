@@ -33,6 +33,10 @@ class GazExpensesTable extends StatelessWidget {
         return Icons.bolt;
       case ExpenseCategory.supplies:
         return Icons.inventory;
+      case ExpenseCategory.structureCharges:
+        return Icons.business;
+      case ExpenseCategory.loadingEvents:
+        return Icons.local_shipping;
       case ExpenseCategory.other:
         return Icons.category;
     }
@@ -52,6 +56,10 @@ class GazExpensesTable extends StatelessWidget {
         return Colors.amber;
       case ExpenseCategory.supplies:
         return Colors.teal;
+      case ExpenseCategory.structureCharges:
+        return Colors.indigo;
+      case ExpenseCategory.loadingEvents:
+        return Colors.cyan;
       case ExpenseCategory.other:
         return Colors.grey;
     }
