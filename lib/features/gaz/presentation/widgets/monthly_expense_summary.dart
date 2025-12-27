@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/entities/expense.dart';
+import '../../../../shared/utils/currency_formatter.dart';
 
 /// Résumé mensuel des dépenses avec graphique par catégorie.
 class GazMonthlyExpenseSummary extends StatelessWidget {
@@ -26,9 +27,7 @@ class GazMonthlyExpenseSummary extends StatelessWidget {
     return '${months[date.month - 1]} ${date.year}';
   }
 
-  String _formatCurrency(double amount) {
-    return amount.toStringAsFixed(0).replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+)+(?!\d))'),
           (Match m) => '${m[1]} ',
         ) +
         ' F';
@@ -133,7 +132,7 @@ class GazMonthlyExpenseSummary extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          _formatCurrency(totalMonth),
+                          CurrencyFormatter.formatDouble(totalMonth),
                           style: theme.textTheme.headlineMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: Colors.red,
@@ -189,7 +188,7 @@ class GazMonthlyExpenseSummary extends StatelessWidget {
                             ),
                             const Spacer(),
                             Text(
-                              _formatCurrency(entry.value),
+                              CurrencyFormatter.formatDouble(entry.value),
                               style: theme.textTheme.bodyMedium?.copyWith(
                                 fontWeight: FontWeight.bold,
                               ),

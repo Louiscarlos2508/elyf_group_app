@@ -33,5 +33,32 @@ class DateFormatter {
   static String formatPeriod(DateTime date) {
     return '${getMonthName(date.month)} ${date.year}';
   }
+
+  /// Formats a date with day name (e.g., "lun 15 janv 2024").
+  static String formatDateWithDayName(DateTime date) {
+    const days = ['dim', 'lun', 'mar', 'mer', 'jeu', 'ven', 'sam'];
+    const months = [
+      'janv',
+      'févr',
+      'mars',
+      'avr',
+      'mai',
+      'juin',
+      'juil',
+      'août',
+      'sept',
+      'oct',
+      'nov',
+      'déc'
+    ];
+    final dayName = days[date.weekday % 7];
+    return '$dayName ${date.day} ${months[date.month - 1]} ${date.year}';
+  }
+
+  /// Formats a date as "DD/MM/YYYY", returns empty string if null.
+  static String formatDateOrEmpty(DateTime? date) {
+    if (date == null) return '';
+    return formatDate(date);
+  }
 }
 

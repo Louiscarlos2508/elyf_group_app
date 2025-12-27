@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../shared/utils/currency_formatter.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/cylinder.dart';
 import '../../domain/entities/cylinder_stock.dart';
@@ -21,13 +22,6 @@ class GazDashboardKpiGrid extends ConsumerWidget {
   final List<GasSale> sales;
   final List<GazExpense> expenses;
 
-  String _formatCurrency(double amount) {
-    return amount.toStringAsFixed(0).replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        ) +
-        ' F';
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -112,35 +106,35 @@ class GazDashboardKpiGrid extends ConsumerWidget {
           ),
           GazEnhancedKpiCard(
             label: 'Ventes du jour',
-            value: _formatCurrency(todayRevenue),
+            value: CurrencyFormatter.formatDouble(todayRevenue).replaceAll(' FCFA', ' F'),
             subtitle: '${todaySales.length} ventes',
             icon: Icons.today,
             color: Colors.green,
           ),
           GazEnhancedKpiCard(
             label: 'Ventes semaine',
-            value: _formatCurrency(weekRevenue),
+            value: CurrencyFormatter.formatDouble(weekRevenue).replaceAll(' FCFA', ' F'),
             subtitle: '${weekSales.length} ventes',
             icon: Icons.date_range,
             color: Colors.teal,
           ),
           GazEnhancedKpiCard(
             label: 'Revenus du mois',
-            value: _formatCurrency(monthRevenue),
+            value: CurrencyFormatter.formatDouble(monthRevenue).replaceAll(' FCFA', ' F'),
             subtitle: '${monthSales.length} ventes',
             icon: Icons.trending_up,
             color: Colors.indigo,
           ),
           GazEnhancedKpiCard(
             label: 'Dépenses du mois',
-            value: _formatCurrency(monthExpensesTotal),
+            value: CurrencyFormatter.formatDouble(monthExpensesTotal).replaceAll(' FCFA', ' F'),
             subtitle: '${monthExpenses.length} dépenses',
             icon: Icons.trending_down,
             color: Colors.red,
           ),
           GazEnhancedKpiCard(
             label: 'Bénéfice net',
-            value: _formatCurrency(monthProfit),
+            value: CurrencyFormatter.formatDouble(monthProfit).replaceAll(' FCFA', ' F'),
             icon: Icons.account_balance_wallet,
             color: monthProfit >= 0 ? Colors.green : Colors.red,
           ),

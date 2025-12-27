@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../utils/responsive_helper.dart';
+
 /// Configuration pour une section de navigation
 class NavigationSection {
   const NavigationSection({
@@ -60,11 +62,14 @@ class _AdaptiveNavigationScaffoldState
     extends State<AdaptiveNavigationScaffold> {
   late int _selectedIndex;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  final Map<int, Widget> _cachedWidgets = {};
 
   @override
   void initState() {
     super.initState();
     _selectedIndex = widget.selectedIndex;
+    // Construire uniquement le widget initial
+    _cachedWidgets[_selectedIndex] = widget.sections[_selectedIndex].builder();
   }
 
   @override
@@ -72,10 +77,25 @@ class _AdaptiveNavigationScaffoldState
     super.didUpdateWidget(oldWidget);
     if (widget.selectedIndex != oldWidget.selectedIndex) {
       _selectedIndex = widget.selectedIndex;
+      // Construire le widget si pas encore en cache
+      if (!_cachedWidgets.containsKey(_selectedIndex)) {
+        _cachedWidgets[_selectedIndex] = widget.sections[_selectedIndex].builder();
+      }
     }
   }
 
+  Widget _getWidgetForIndex(int index) {
+    if (!_cachedWidgets.containsKey(index)) {
+      _cachedWidgets[index] = widget.sections[index].builder();
+    }
+    return _cachedWidgets[index]!;
+  }
+
   void _onDestinationSelected(int index) {
+    // Construire le widget si pas encore en cache
+    if (!_cachedWidgets.containsKey(index)) {
+      _cachedWidgets[index] = widget.sections[index].builder();
+    }
     setState(() {
       _selectedIndex = index;
     });
@@ -93,17 +113,68 @@ class _AdaptiveNavigationScaffoldState
       return widget.loadingWidget!;
     }
 
-    final isWideScreen = MediaQuery.of(context).size.width >= 600;
-
-    if (isWideScreen) {
-      return _buildWideScreen();
+    // Utiliser le helper pour déterminer le type d'écran
+    if (ResponsiveHelper.isMobile(context)) {
+      return _buildMobileScreen();
+    } else if (ResponsiveHelper.isTablet(context)) {
+      return _buildTabletScreen();
+    } else {
+      return _buildDesktopScreen();
     }
-
-    return _buildMobileScreen();
   }
 
-  Widget _buildWideScreen() {
-    final isExtended = MediaQuery.of(context).size.width >= 800;
+  Widget _buildTabletScreen() {
+    // Sur tablette, utiliser NavigationRail compact (80px) avec labels
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.appTitle),
+        centerTitle: true,
+      ),
+      resizeToAvoidBottomInset: false,
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final maxHeight = constraints.maxHeight.isFinite 
+              ? constraints.maxHeight 
+              : MediaQuery.of(context).size.height;
+          
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ClipRect(
+                child: SizedBox(
+                  width: 80,
+                  height: maxHeight,
+                  child: NavigationRail(
+                    selectedIndex: _selectedIndex,
+                    onDestinationSelected: _onDestinationSelected,
+                    labelType: NavigationRailLabelType.selected,
+                    extended: false,
+                    minWidth: 80,
+                    destinations: widget.sections
+                        .map(
+                          (section) => NavigationRailDestination(
+                            icon: Icon(section.icon),
+                            selectedIcon: Icon(section.icon),
+                            label: Text(section.label),
+                          ),
+                        )
+                        .toList(),
+                  ),
+                ),
+              ),
+              const VerticalDivider(thickness: 1, width: 1),
+              Expanded(
+                child: _getWidgetForIndex(_selectedIndex),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildDesktopScreen() {
+    final isExtended = ResponsiveHelper.isExtendedScreen(context);
     
     return Scaffold(
       appBar: AppBar(
@@ -147,10 +218,7 @@ class _AdaptiveNavigationScaffoldState
               ),
               const VerticalDivider(thickness: 1, width: 1),
               Expanded(
-                child: IndexedStack(
-                  index: _selectedIndex,
-                  children: widget.sections.map((s) => s.builder()).toList(),
-                ),
+                child: _getWidgetForIndex(_selectedIndex),
               ),
             ],
           );
@@ -170,10 +238,7 @@ class _AdaptiveNavigationScaffoldState
     
     return Scaffold(
       key: _scaffoldKey,
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: widget.sections.map((s) => s.builder()).toList(),
-      ),
+      body: _getWidgetForIndex(_selectedIndex),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           boxShadow: [
@@ -220,10 +285,7 @@ class _AdaptiveNavigationScaffoldState
         ),
       ),
       drawer: _buildDrawer(theme),
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: widget.sections.map((s) => s.builder()).toList(),
-      ),
+      body: _getWidgetForIndex(_selectedIndex),
     );
   }
 

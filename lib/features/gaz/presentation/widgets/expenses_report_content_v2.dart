@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/expense.dart';
 import '../../domain/entities/report_data.dart';
+import '../../../../shared/utils/currency_formatter.dart';
 
 /// Content widget for expenses report tab - style eau_minerale.
 class GazExpensesReportContentV2 extends ConsumerWidget {
@@ -16,9 +17,7 @@ class GazExpensesReportContentV2 extends ConsumerWidget {
   final DateTime startDate;
   final DateTime endDate;
 
-  String _formatCurrency(double amount) {
-    return amount.toStringAsFixed(0).replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+)+(?!\d))'),
           (Match m) => '${m[1]} ',
         ) +
         ' F';
@@ -81,7 +80,7 @@ class GazExpensesReportContentV2 extends ConsumerWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '${reportData.expensesCount} dépenses • Total: ${_formatCurrency(reportData.expensesAmount)}',
+                    '${reportData.expensesCount} dépenses • Total: ${CurrencyFormatter.formatDouble(reportData.expensesAmount)}',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -176,7 +175,7 @@ class GazExpensesReportContentV2 extends ConsumerWidget {
                     ),
                   ),
                   Text(
-                    _formatCurrency(entry.value),
+                    CurrencyFormatter.formatDouble(entry.value),
                     style: theme.textTheme.bodyMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -234,7 +233,7 @@ class GazExpensesReportContentV2 extends ConsumerWidget {
                   ),
                 ),
                 Text(
-                  _formatCurrency(avgAmount),
+                  CurrencyFormatter.formatDouble(avgAmount),
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -253,7 +252,7 @@ class GazExpensesReportContentV2 extends ConsumerWidget {
                   ),
                 ),
                 Text(
-                  _formatCurrency(expenses.fold<double>(
+                  CurrencyFormatter.formatDouble(expenses.fold<double>(
                     0,
                     (sum, e) => sum + e.amount,
                   )),

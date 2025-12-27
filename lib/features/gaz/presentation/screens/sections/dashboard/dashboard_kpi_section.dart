@@ -1,0 +1,163 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../../../../shared/utils/currency_formatter.dart';
+import '../../../../application/providers.dart';
+import '../../../../domain/entities/cylinder.dart';
+import '../../../../domain/entities/cylinder_stock.dart';
+import '../../../../domain/entities/expense.dart';
+import '../../../../domain/entities/gas_sale.dart';
+import '../../../../domain/services/gaz_calculation_service.dart';
+import '../../../widgets/dashboard_overview_kpi_card.dart';
+
+/// Section des KPI cards pour le dashboard.
+class DashboardKpiSection extends ConsumerWidget {
+  const DashboardKpiSection({
+    super.key,
+    required this.sales,
+    required this.expenses,
+    required this.cylinders,
+  });
+
+  final List<GasSale> sales;
+  final List<GazExpense> expenses;
+  final List<Cylinder> cylinders;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Utiliser le service pour les calculs
+    final todaySales = GazCalculationService.calculateTodaySales(sales);
+    final todayRevenue = GazCalculationService.calculateTodayRevenue(sales);
+    final todayExpenses = GazCalculationService.calculateTodayExpenses(expenses);
+    final todayExpensesAmount =
+        GazCalculationService.calculateTodayExpensesTotal(expenses);
+    final todayProfit =
+        GazCalculationService.calculateTodayProfit(sales, expenses);
+
+    // Full bottles count
+    String? enterpriseId = cylinders.isNotEmpty
+        ? cylinders.first.enterpriseId
+        : 'default_enterprise';
+
+    final stocksAsync = ref.watch(
+      cylinderStocksProvider(
+        (
+          enterpriseId: enterpriseId ?? 'default_enterprise',
+          status: CylinderStatus.full,
+          siteId: null,
+        ),
+      ),
+    );
+
+    return stocksAsync.when(
+      data: (stocks) {
+        final fullBottles = stocks.fold<int>(0, (sum, s) => sum + s.quantity);
+        final emptyBottles = 0; // TODO: Calculate empty bottles
+
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final isWide = constraints.maxWidth > 800;
+            if (isWide) {
+              return Row(
+                children: [
+                  Expanded(
+                    child: DashboardOverviewKpiCard(
+                      title: 'Ventes du jour',
+                      value: CurrencyFormatter.formatDouble(todayRevenue),
+                      subtitle: '${todaySales.length} vente(s)',
+                      icon: Icons.trending_up,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: DashboardOverviewKpiCard(
+                      title: 'Dépenses du jour',
+                      value: CurrencyFormatter.formatDouble(todayExpensesAmount),
+                      subtitle: '${todayExpenses.length} dépense(s)',
+                      icon: Icons.trending_down,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: DashboardOverviewKpiCard(
+                      title: 'Bénéfice du jour',
+                      value: CurrencyFormatter.formatDouble(todayProfit),
+                      subtitle: todayProfit >= 0 ? 'Positif' : 'Négatif',
+                      icon: Icons.account_balance_wallet,
+                      valueColor: const Color(0xFF00A63E),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: DashboardOverviewKpiCard(
+                      title: 'Bouteilles pleines',
+                      value: '$fullBottles',
+                      subtitle: '$emptyBottles vides',
+                      icon: Icons.inventory_2,
+                    ),
+                  ),
+                ],
+              );
+            }
+
+            // Mobile layout: 2x2 grid
+            return Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: DashboardOverviewKpiCard(
+                        title: 'Ventes du jour',
+                        value: CurrencyFormatter.formatDouble(todayRevenue),
+                        subtitle: '${todaySales.length} vente(s)',
+                        icon: Icons.trending_up,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: DashboardOverviewKpiCard(
+                        title: 'Dépenses du jour',
+                        value: CurrencyFormatter.formatDouble(todayExpensesAmount),
+                        subtitle: '${todayExpenses.length} dépense(s)',
+                        icon: Icons.trending_down,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: DashboardOverviewKpiCard(
+                        title: 'Bénéfice du jour',
+                        value: CurrencyFormatter.formatDouble(todayProfit),
+                        subtitle: todayProfit >= 0 ? 'Positif' : 'Négatif',
+                        icon: Icons.account_balance_wallet,
+                        valueColor: const Color(0xFF00A63E),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: DashboardOverviewKpiCard(
+                        title: 'Bouteilles pleines',
+                        value: '$fullBottles',
+                        subtitle: '$emptyBottles vides',
+                        icon: Icons.inventory_2,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            );
+          },
+        );
+      },
+      loading: () => const SizedBox(
+        height: 155,
+        child: Center(child: CircularProgressIndicator()),
+      ),
+      error: (_, __) => const SizedBox.shrink(),
+    );
+  }
+}
+

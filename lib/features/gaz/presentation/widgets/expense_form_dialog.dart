@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../shared/presentation/widgets/gaz_button_styles.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/expense.dart';
+import 'expense_form/expense_amount_input.dart';
+import 'expense_form/expense_category_input.dart';
+import 'expense_form/expense_date_input.dart';
+import 'expense_form/expense_form_header.dart';
 
 /// Dialog de formulaire pour créer/modifier une dépense.
 class GazExpenseFormDialog extends ConsumerStatefulWidget {
@@ -59,18 +63,6 @@ class _GazExpenseFormDialogState
     _descriptionController.dispose();
     _notesController.dispose();
     super.dispose();
-  }
-
-  Future<void> _selectDate() async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime(2020),
-      lastDate: DateTime.now(),
-    );
-    if (picked != null) {
-      setState(() => _selectedDate = picked);
-    }
   }
 
   Future<void> _submit() async {
@@ -142,8 +134,6 @@ class _GazExpenseFormDialogState
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       child: ConstrainedBox(
@@ -157,159 +147,95 @@ class _GazExpenseFormDialogState
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.red.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.receipt_long,
-                        color: Colors.red,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Text(
-                        isEditing ? 'Modifier la dépense' : 'Nouvelle dépense',
-                        style: theme.textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                TextFormField(
-                  controller: _amountController,
-                  decoration: const InputDecoration(
-                    labelText: 'Montant (FCFA)',
-                    prefixIcon: Icon(Icons.attach_money),
-                    border: OutlineInputBorder(),
+                  ExpenseFormHeader(isEditing: isEditing),
+                  const SizedBox(height: 24),
+                  ExpenseAmountInput(controller: _amountController),
+                  const SizedBox(height: 16),
+                  ExpenseCategoryInput(
+                    selectedCategory: _selectedCategory,
+                    onCategoryChanged: (category) =>
+                        setState(() => _selectedCategory = category),
                   ),
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Veuillez entrer un montant';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                DropdownButtonFormField<ExpenseCategory>(
-                  value: _selectedCategory,
-                  decoration: const InputDecoration(
-                    labelText: 'Catégorie',
-                    prefixIcon: Icon(Icons.category),
-                    border: OutlineInputBorder(),
-                  ),
-                  items: ExpenseCategory.values.map((category) {
-                    return DropdownMenuItem(
-                      value: category,
-                      child: Text(category.label),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    if (value != null) {
-                      setState(() => _selectedCategory = value);
-                    }
-                  },
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _descriptionController,
-                  decoration: const InputDecoration(
-                    labelText: 'Description',
-                    prefixIcon: Icon(Icons.description),
-                    border: OutlineInputBorder(),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Veuillez entrer une description';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                InkWell(
-                  onTap: _selectDate,
-                  borderRadius: BorderRadius.circular(8),
-                  child: InputDecorator(
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _descriptionController,
                     decoration: const InputDecoration(
-                      labelText: 'Date',
-                      prefixIcon: Icon(Icons.calendar_today),
+                      labelText: 'Description',
+                      prefixIcon: Icon(Icons.description),
                       border: OutlineInputBorder(),
                     ),
-                    child: Text(
-                      '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Veuillez entrer une description';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  ExpenseDateInput(
+                    selectedDate: _selectedDate,
+                    onDateSelected: (date) => setState(() => _selectedDate = date),
+                  ),
+                  const SizedBox(height: 16),
+                  CheckboxListTile(
+                    title: const Text('Charge fixe'),
+                    subtitle: const Text(
+                      'Si coché, cette dépense est une charge fixe (ex: loyer). Sinon, c\'est une charge variable.',
                     ),
+                    value: _isFixed,
+                    onChanged: (value) {
+                      setState(() {
+                        _isFixed = value ?? false;
+                      });
+                    },
+                    controlAffinity: ListTileControlAffinity.leading,
                   ),
-                ),
-                const SizedBox(height: 16),
-                CheckboxListTile(
-                  title: const Text('Charge fixe'),
-                  subtitle: const Text(
-                    'Si coché, cette dépense est une charge fixe (ex: loyer). Sinon, c\'est une charge variable.',
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _notesController,
+                    decoration: const InputDecoration(
+                      labelText: 'Notes (optionnel)',
+                      prefixIcon: Icon(Icons.note),
+                      border: OutlineInputBorder(),
+                    ),
+                    maxLines: 2,
                   ),
-                  value: _isFixed,
-                  onChanged: (value) {
-                    setState(() {
-                      _isFixed = value ?? false;
-                    });
-                  },
-                  controlAffinity: ListTileControlAffinity.leading,
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _notesController,
-                  decoration: const InputDecoration(
-                    labelText: 'Notes (optionnel)',
-                    prefixIcon: Icon(Icons.note),
-                    border: OutlineInputBorder(),
-                  ),
-                  maxLines: 2,
-                ),
-                const SizedBox(height: 24),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        child: const Text('Annuler'),
+                  const SizedBox(height: 24),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          style: GazButtonStyles.outlined,
+                          child: const Text('Annuler'),
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: FilledButton.icon(
-                        onPressed: _isLoading ? null : _submit,
-                        icon: _isLoading
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor:
-                                      AlwaysStoppedAnimation<Color>(Colors.white),
-                                ),
-                              )
-                            : Icon(isEditing ? Icons.save : Icons.add),
-                        label: Text(isEditing ? 'Enregistrer' : 'Ajouter'),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: FilledButton.icon(
+                          onPressed: _isLoading ? null : _submit,
+                          style: GazButtonStyles.filledPrimary,
+                          icon: _isLoading
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor:
+                                        AlwaysStoppedAnimation<Color>(Colors.white),
+                                  ),
+                                )
+                              : Icon(isEditing ? Icons.save : Icons.add),
+                          label: Text(isEditing ? 'Enregistrer' : 'Ajouter'),
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),
-      ),
       ),
     );
   }

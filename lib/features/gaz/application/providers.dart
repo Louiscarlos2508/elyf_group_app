@@ -6,34 +6,34 @@ import 'controllers/cylinder_stock_controller.dart';
 import 'controllers/expense_controller.dart';
 import 'controllers/financial_report_controller.dart';
 import 'controllers/gas_controller.dart';
-import 'controllers/loading_event_controller.dart';
-import 'controllers/site_reconciliation_controller.dart';
+import 'controllers/gaz_settings_controller.dart';
+import 'controllers/tour_controller.dart';
 import '../data/repositories/mock_cylinder_leak_repository.dart';
 import '../data/repositories/mock_cylinder_stock_repository.dart';
 import '../data/repositories/mock_expense_repository.dart';
 import '../data/repositories/mock_financial_report_repository.dart';
 import '../data/repositories/mock_gas_repository.dart';
-import '../data/repositories/mock_loading_event_repository.dart';
-import '../data/repositories/mock_site_reconciliation_repository.dart';
+import '../data/repositories/mock_gaz_settings_repository.dart';
+import '../data/repositories/mock_tour_repository.dart';
 import '../domain/entities/cylinder.dart';
 import '../domain/entities/cylinder_leak.dart';
 import '../domain/entities/cylinder_stock.dart';
 import '../domain/entities/expense.dart';
 import '../domain/entities/financial_report.dart';
 import '../domain/entities/gas_sale.dart';
-import '../domain/entities/loading_event.dart';
+import '../domain/entities/gaz_settings.dart';
 import '../domain/entities/report_data.dart';
-import '../domain/entities/site_reconciliation.dart';
+import '../domain/entities/tour.dart';
 import '../domain/repositories/cylinder_leak_repository.dart';
 import '../domain/repositories/cylinder_stock_repository.dart';
 import '../domain/repositories/expense_repository.dart';
 import '../domain/repositories/financial_report_repository.dart';
 import '../domain/repositories/gas_repository.dart';
-import '../domain/repositories/loading_event_repository.dart';
-import '../domain/repositories/site_reconciliation_repository.dart';
+import '../domain/repositories/gaz_settings_repository.dart';
+import '../domain/repositories/tour_repository.dart';
 import '../domain/services/financial_calculation_service.dart';
-import '../domain/services/loading_event_service.dart';
 import '../domain/services/stock_service.dart';
+import '../domain/services/tour_service.dart';
 
 // Repositories
 final gasRepositoryProvider = Provider<GasRepository>((ref) {
@@ -49,19 +49,18 @@ final cylinderStockRepositoryProvider =
   return MockCylinderStockRepository();
 });
 
-final loadingEventRepositoryProvider =
-    Provider<LoadingEventRepository>((ref) {
-  return MockLoadingEventRepository();
-});
-
 final cylinderLeakRepositoryProvider =
     Provider<CylinderLeakRepository>((ref) {
   return MockCylinderLeakRepository();
 });
 
-final siteReconciliationRepositoryProvider =
-    Provider<SiteReconciliationRepository>((ref) {
-  return MockSiteReconciliationRepository();
+final tourRepositoryProvider = Provider<TourRepository>((ref) {
+  return MockTourRepository();
+});
+
+final gazSettingsRepositoryProvider =
+    Provider<GazSettingsRepository>((ref) {
+  return MockGazSettingsRepository();
 });
 
 final financialReportRepositoryProvider =
@@ -70,28 +69,22 @@ final financialReportRepositoryProvider =
 });
 
 // Services
-final loadingEventServiceProvider = Provider<LoadingEventService>((ref) {
-  final loadingEventRepo = ref.watch(loadingEventRepositoryProvider);
-  final stockRepo = ref.watch(cylinderStockRepositoryProvider);
-  return LoadingEventService(
-    loadingEventRepository: loadingEventRepo,
-    stockRepository: stockRepo,
-  );
-});
-
 final financialCalculationServiceProvider =
     Provider<FinancialCalculationService>((ref) {
   final expenseRepo = ref.watch(gazExpenseRepositoryProvider);
-  final loadingEventRepo = ref.watch(loadingEventRepositoryProvider);
   return FinancialCalculationService(
     expenseRepository: expenseRepo,
-    loadingEventRepository: loadingEventRepo,
   );
 });
 
 final stockServiceProvider = Provider<StockService>((ref) {
   final stockRepo = ref.watch(cylinderStockRepositoryProvider);
   return StockService(stockRepository: stockRepo);
+});
+
+final tourServiceProvider = Provider<TourService>((ref) {
+  final tourRepo = ref.watch(tourRepositoryProvider);
+  return TourService(tourRepository: tourRepo);
 });
 
 // Controllers
@@ -124,23 +117,23 @@ final cylinderLeakControllerProvider = Provider<CylinderLeakController>((ref) {
   return CylinderLeakController(leakRepo, stockRepo);
 });
 
-final loadingEventControllerProvider = Provider<LoadingEventController>((ref) {
-  final repo = ref.watch(loadingEventRepositoryProvider);
-  final service = ref.watch(loadingEventServiceProvider);
-  return LoadingEventController(repo, service);
-});
-
-final siteReconciliationControllerProvider =
-    Provider<SiteReconciliationController>((ref) {
-  final repo = ref.watch(siteReconciliationRepositoryProvider);
-  return SiteReconciliationController(repo);
-});
-
 final financialReportControllerProvider =
     Provider<FinancialReportController>((ref) {
   final repo = ref.watch(financialReportRepositoryProvider);
   final service = ref.watch(financialCalculationServiceProvider);
   return FinancialReportController(repo, service);
+});
+
+final tourControllerProvider = Provider<TourController>((ref) {
+  final repo = ref.watch(tourRepositoryProvider);
+  final service = ref.watch(tourServiceProvider);
+  return TourController(repository: repo, service: service);
+});
+
+final gazSettingsControllerProvider =
+    Provider<GazSettingsController>((ref) {
+  final repo = ref.watch(gazSettingsRepositoryProvider);
+  return GazSettingsController(repository: repo);
 });
 
 // Cylinders
@@ -292,18 +285,6 @@ final cylinderStocksProvider = FutureProvider.family<List<CylinderStock>, ({
   return allStocks;
 });
 
-// Loading Events
-final loadingEventsProvider = FutureProvider.family<List<LoadingEvent>, ({
-  String enterpriseId,
-  LoadingEventStatus? status,
-})>((ref, params) async {
-  final repo = ref.watch(loadingEventRepositoryProvider);
-  return repo.getLoadingEvents(
-    params.enterpriseId,
-    status: params.status,
-  );
-});
-
 // Cylinder Leaks
 final cylinderLeaksProvider = FutureProvider.family<List<CylinderLeak>, ({
   String enterpriseId,
@@ -311,20 +292,6 @@ final cylinderLeaksProvider = FutureProvider.family<List<CylinderLeak>, ({
 })>((ref, params) async {
   final repo = ref.watch(cylinderLeakRepositoryProvider);
   return repo.getLeaks(params.enterpriseId, status: params.status);
-});
-
-// Site Reconciliations
-final siteReconciliationsProvider = FutureProvider.family<
-    List<SiteReconciliation>,
-    ({
-  String enterpriseId,
-  String siteId,
-})>((ref, params) async {
-  final repo = ref.watch(siteReconciliationRepositoryProvider);
-  return repo.getReconciliationsBySite(
-    params.enterpriseId,
-    params.siteId,
-  );
 });
 
 // Financial Reports
@@ -338,5 +305,71 @@ final financialReportsProvider = FutureProvider.family<List<FinancialReport>, ({
     params.enterpriseId,
     period: params.period,
     status: params.status,
+  );
+});
+
+/// Provider pour calculer les charges pour une période donnée.
+final financialChargesProvider = FutureProvider.family<
+    ({
+      double fixedCharges,
+      double variableCharges,
+      double salaries,
+      double loadingEventExpenses,
+      double totalExpenses,
+    }),
+    ({
+      String enterpriseId,
+      DateTime startDate,
+      DateTime endDate,
+    })>((ref, params) async {
+  final service = ref.watch(financialCalculationServiceProvider);
+  return service.calculateCharges(
+    params.enterpriseId,
+    params.startDate,
+    params.endDate,
+  );
+});
+
+/// Provider pour calculer le reliquat net pour une période donnée.
+final financialNetAmountProvider = FutureProvider.family<
+    double,
+    ({
+      String enterpriseId,
+      DateTime startDate,
+      DateTime endDate,
+      double totalRevenue,
+    })>((ref, params) async {
+  final controller = ref.watch(financialReportControllerProvider);
+  return controller.calculateNetAmount(
+    params.enterpriseId,
+    params.startDate,
+    params.endDate,
+    params.totalRevenue,
+  );
+});
+
+// Tours
+final toursProvider = FutureProvider.family<
+    List<Tour>,
+    ({
+      String enterpriseId,
+      TourStatus? status,
+    })>((ref, params) async {
+  final controller = ref.watch(tourControllerProvider);
+  return controller.getTours(
+    params.enterpriseId,
+    status: params.status,
+  );
+});
+
+// Gaz Settings
+final gazSettingsProvider = FutureProvider.family<GazSettings?, ({
+  String enterpriseId,
+  String moduleId,
+})>((ref, params) async {
+  final controller = ref.watch(gazSettingsControllerProvider);
+  return controller.getSettings(
+    enterpriseId: params.enterpriseId,
+    moduleId: params.moduleId,
   );
 });

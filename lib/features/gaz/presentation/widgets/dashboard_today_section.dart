@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../shared/utils/currency_formatter.dart';
 import '../../domain/entities/gas_sale.dart';
 import 'dashboard_kpi_card.dart';
 
@@ -12,13 +13,6 @@ class GazDashboardTodaySection extends StatelessWidget {
 
   final List<GasSale> todaySales;
 
-  String _formatCurrency(double amount) {
-    return amount.toStringAsFixed(0).replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        ) +
-        ' F';
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +29,7 @@ class GazDashboardTodaySection extends StatelessWidget {
         final cards = [
           GazDashboardKpiCard(
             label: "Chiffre d'Affaires",
-            value: _formatCurrency(todayRevenue),
+            value: CurrencyFormatter.formatDouble(todayRevenue).replaceAll(' FCFA', ' F'),
             subtitle: '$todayCount vente(s)',
             icon: Icons.trending_up,
             iconColor: Colors.blue,
@@ -43,7 +37,7 @@ class GazDashboardTodaySection extends StatelessWidget {
           ),
           GazDashboardKpiCard(
             label: 'Ticket Moyen',
-            value: _formatCurrency(avgTicket),
+            value: CurrencyFormatter.formatDouble(avgTicket).replaceAll(' FCFA', ' F'),
             subtitle: todayCount > 0 ? 'par transaction' : 'aucune vente',
             icon: Icons.receipt,
             iconColor: Colors.green,

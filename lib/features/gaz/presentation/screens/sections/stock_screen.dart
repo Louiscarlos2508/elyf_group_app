@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../application/providers.dart';
-import '../../../domain/entities/cylinder.dart';
-import '../../../domain/entities/cylinder_stock.dart';
-import '../../widgets/cylinder_stock_status_card.dart';
+import '../../../domain/entities/point_of_sale.dart';
+import '../../widgets/point_of_sale_stock_card.dart';
+import 'stock/stock_header.dart';
+import 'stock/stock_kpi_section.dart';
+import 'stock/stock_pos_list.dart';
 
-/// Écran de gestion du stock de bouteilles avec statuts.
+/// Écran de gestion du stock de bouteilles par point de vente - matches Figma design.
 class GazStockScreen extends ConsumerStatefulWidget {
   const GazStockScreen({super.key});
 
@@ -16,10 +18,6 @@ class GazStockScreen extends ConsumerStatefulWidget {
 
 class _GazStockScreenState extends ConsumerState<GazStockScreen> {
   String? _enterpriseId;
-  CylinderStatus _selectedStatus = CylinderStatus.full;
-  int? _selectedWeight;
-
-  final List<int> _availableWeights = [3, 6, 10, 12];
 
   @override
   Widget build(BuildContext context) {
@@ -29,144 +27,108 @@ class _GazStockScreenState extends ConsumerState<GazStockScreen> {
     // TODO: Récupérer enterpriseId depuis le contexte/tenant
     _enterpriseId ??= 'default_enterprise';
 
-    final stocksAsync = ref.watch(
+    // Mock points of sale for now
+    final pointsOfSale = [
+      PointOfSale(
+        id: 'pos_1',
+        name: 'Point de vente 1',
+        address: '123 Rue de la Gaz',
+        contact: '0123456789',
+        enterpriseId: _enterpriseId!,
+        moduleId: 'gaz',
+        isActive: true,
+      ),
+      PointOfSale(
+        id: 'pos_2',
+        name: 'Point de vente 2',
+        address: '456 Rue de la Gaz',
+        contact: '0987654321',
+        enterpriseId: _enterpriseId!,
+        moduleId: 'gaz',
+        isActive: true,
+      ),
+    ];
+
+    final activePointsOfSale = pointsOfSale.where((pos) => pos.isActive).toList();
+
+    // Get all stocks
+    final allStocksAsync = ref.watch(
       cylinderStocksProvider(
         (
           enterpriseId: _enterpriseId!,
-          status: _selectedStatus,
+          status: null, // Get all statuses
           siteId: null,
         ),
       ),
     );
 
-    return DefaultTabController(
-      length: CylinderStatus.values.length,
-      child: CustomScrollView(
-        slivers: [
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.all(isMobile ? 16 : 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.inventory_2,
-                        color: theme.colorScheme.primary,
-                        size: isMobile ? 24 : 28,
-                      ),
-                      SizedBox(width: isMobile ? 8 : 12),
-                      Expanded(
-                        child: Text(
-                          'Gestion du Stock',
-                          style: theme.textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            fontSize: isMobile ? 20 : null,
-                          ),
-                        ),
-                      ),
-                    ],
+    return CustomScrollView(
+      slivers: [
+        // Header
+        SliverToBoxAdapter(
+          child: StockHeader(
+            isMobile: isMobile,
+            onAdjustStock: () {
+              // TODO: Show stock adjustment dialog
+            },
+          ),
+        ),
+
+        // KPI Cards
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+            child: allStocksAsync.when(
+              data: (allStocks) => StockKpiSection(
+                allStocks: allStocks,
+                activePointsOfSale: activePointsOfSale,
+                pointsOfSale: pointsOfSale,
+              ),
+              loading: () => const SizedBox(
+                height: 169,
+                child: Center(child: CircularProgressIndicator()),
+              ),
+              error: (_, __) => const SizedBox.shrink(),
+            ),
+          ),
+        ),
+
+        // Tab section
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+            child: Container(
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                color: const Color(0xFFECECF0),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Text(
+                  'Points de vente actifs (${activePointsOfSale.length})',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontSize: 14,
+                    color: const Color(0xFF0A0A0A),
                   ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Filtrer par format:',
-                    style: theme.textTheme.titleSmall,
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    children: [
-                      FilterChip(
-                        label: const Text('Tous'),
-                        selected: _selectedWeight == null,
-                        onSelected: (selected) {
-                          if (selected) {
-                            setState(() => _selectedWeight = null);
-                          }
-                        },
-                      ),
-                      ..._availableWeights.map((weight) {
-                        return FilterChip(
-                          label: Text('$weight kg'),
-                          selected: _selectedWeight == weight,
-                          onSelected: (selected) {
-                            setState(() {
-                              _selectedWeight = selected ? weight : null;
-                            });
-                          },
-                        );
-                      }),
-                    ],
-                  ),
-                ],
+                ),
               ),
             ),
           ),
-          const SliverToBoxAdapter(child: SizedBox(height: 16)),
-          stocksAsync.when(
-            data: (stocks) {
-              // Filtrer par poids si sélectionné
-              final filteredStocks = _selectedWeight != null
-                  ? stocks.where((s) => s.weight == _selectedWeight).toList()
-                  : stocks;
+        ),
 
-              // Grouper par poids pour affichage, agréger toutes les quantités par statut
-              final Map<int, Map<CylinderStatus, int>> grouped = {};
-              for (final stock in filteredStocks) {
-                grouped.putIfAbsent(stock.weight, () => {});
-                final currentQty = grouped[stock.weight]![stock.status] ?? 0;
-                grouped[stock.weight]![stock.status] = currentQty + stock.quantity;
-              }
-
-              if (grouped.isEmpty) {
-                return SliverFillRemaining(
-                  child: Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.inventory_2_outlined,
-                          size: 64,
-                          color: theme.colorScheme.outline,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Aucun stock',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }
-
-              return SliverPadding(
-                padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 24),
-                sliver: SliverList.separated(
-                  itemCount: grouped.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 16),
-                  itemBuilder: (context, index) {
-                    final weight = grouped.keys.elementAt(index);
-                    final statusMap = grouped[weight]!;
-
-                    return CylinderStockStatusCard(
-                      weight: weight,
-                      fullQuantity: statusMap[CylinderStatus.full] ?? 0,
-                      emptyAtStoreQuantity:
-                          statusMap[CylinderStatus.emptyAtStore] ?? 0,
-                      emptyInTransitQuantity:
-                          statusMap[CylinderStatus.emptyInTransit] ?? 0,
-                      defectiveQuantity:
-                          statusMap[CylinderStatus.defective] ?? 0,
-                      leakQuantity: statusMap[CylinderStatus.leak] ?? 0,
-                    );
-                  },
-                ),
-              );
-            },
+        // Points of sale cards
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+          sliver: allStocksAsync.when(
+            data: (allStocks) => StockPosList(
+              activePointsOfSale: activePointsOfSale,
+              allStocks: allStocks,
+            ),
             loading: () => const SliverFillRemaining(
               child: Center(child: CircularProgressIndicator()),
             ),
@@ -174,36 +136,8 @@ class _GazStockScreenState extends ConsumerState<GazStockScreen> {
               child: Center(child: Text('Erreur: $e')),
             ),
           ),
-          const SliverToBoxAdapter(child: SizedBox(height: 24)),
-        ],
-      ),
+        ),
+      ],
     );
   }
-}
-
-class _TabBarDelegate extends SliverPersistentHeaderDelegate {
-  _TabBarDelegate(this.tabBar);
-
-  final TabBar tabBar;
-
-  @override
-  double get minExtent => tabBar.preferredSize.height;
-
-  @override
-  double get maxExtent => tabBar.preferredSize.height;
-
-  @override
-  Widget build(
-    BuildContext context,
-    double shrinkOffset,
-    bool overlapsContent,
-  ) {
-    return Container(
-      color: Theme.of(context).scaffoldBackgroundColor,
-      child: tabBar,
-    );
-  }
-
-  @override
-  bool shouldRebuild(_TabBarDelegate oldDelegate) => false;
 }

@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../shared/presentation/widgets/gaz_button_styles.dart';
 import '../../application/controllers/cylinder_stock_controller.dart';
-import '../../application/providers.dart';
 import '../../domain/entities/cylinder.dart';
-import '../../domain/entities/cylinder_stock.dart';
 import '../../domain/entities/gas_sale.dart';
+import 'gas_sale_form/customer_info_widget.dart';
+import 'gas_sale_form/cylinder_selector_widget.dart';
+import 'gas_sale_form/gas_sale_submit_handler.dart';
+import 'gas_sale_form/quantity_and_total_widget.dart';
 
 /// Dialog de formulaire pour créer une vente de gaz.
 class GasSaleFormDialog extends ConsumerStatefulWidget {
@@ -51,14 +53,6 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
     super.dispose();
   }
 
-  String _formatCurrency(double amount) {
-    return amount.toStringAsFixed(0).replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        ) +
-        ' FCFA';
-  }
-
   double get _totalAmount {
     if (_selectedCylinder == null) return 0.0;
     final quantity = int.tryParse(_quantityController.text) ?? 0;
@@ -99,413 +93,136 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
       return;
     }
 
-    setState(() => _isLoading = true);
+    final quantity = int.tryParse(_quantityController.text) ?? 1;
 
-    try {
-      final quantity = int.tryParse(_quantityController.text) ?? 1;
-
-      // Vérifier le stock disponible
-      if (quantity > _availableStock) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Stock insuffisant. Stock disponible: $_availableStock',
-            ),
-            backgroundColor: Colors.red,
-          ),
-        );
-        setState(() => _isLoading = false);
-        return;
-      }
-
-      final sale = GasSale(
-        id: 'sale-${DateTime.now().millisecondsSinceEpoch}',
-        cylinderId: _selectedCylinder!.id,
-        quantity: quantity,
-        unitPrice: _selectedCylinder!.sellPrice,
-        totalAmount: _totalAmount,
-        saleDate: DateTime.now(),
-        saleType: widget.saleType,
-        customerName: _customerNameController.text.trim().isEmpty
-            ? null
-            : _customerNameController.text.trim(),
-        customerPhone: _customerPhoneController.text.trim().isEmpty
-            ? null
-            : _customerPhoneController.text.trim(),
-        notes: _notesController.text.trim().isEmpty
-            ? null
-            : _notesController.text.trim(),
-      );
-
-      // Ajouter la vente
-      final gasController = ref.read(gasControllerProvider);
-      await gasController.addSale(sale);
-
-      // Mettre à jour le stock: retirer les bouteilles pleines
-      final stockController = ref.read(cylinderStockControllerProvider);
-      final stocks = await stockController.getStocksByWeight(
-        _enterpriseId!,
-        _selectedCylinder!.weight,
-      );
-
-      final fullStock = stocks
-          .where((s) => s.status == CylinderStatus.full)
-          .firstOrNull;
-
-      if (fullStock != null) {
-        final newQuantity = fullStock.quantity - quantity;
-        if (newQuantity >= 0) {
-          await stockController.adjustStockQuantity(
-            fullStock.id,
-            newQuantity,
-          );
-        } else {
-          throw Exception('Stock insuffisant après validation');
-        }
-      } else {
-        throw Exception('Aucun stock disponible trouvé');
-      }
-
-      if (!mounted) return;
-
-      // Invalider les providers
-      ref.invalidate(gasSalesProvider);
-      ref.invalidate(
-        cylinderStocksProvider(
-          (
-            enterpriseId: _enterpriseId!,
-            status: null,
-            siteId: null,
-          ),
-        ),
-      );
-
-      Navigator.of(context).pop();
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Vente enregistrée avec succès: ${_formatCurrency(_totalAmount)}',
-          ),
-          backgroundColor: Colors.green,
-        ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
+    await GasSaleSubmitHandler.submit(
+      context: context,
+      ref: ref,
+      selectedCylinder: _selectedCylinder!,
+      quantity: quantity,
+      availableStock: _availableStock,
+      enterpriseId: _enterpriseId!,
+      saleType: widget.saleType,
+      customerName: _customerNameController.text.trim().isEmpty
+          ? null
+          : _customerNameController.text.trim(),
+      customerPhone: _customerPhoneController.text.trim().isEmpty
+          ? null
+          : _customerPhoneController.text.trim(),
+      notes: _notesController.text.trim().isEmpty
+          ? null
+          : _notesController.text.trim(),
+      totalAmount: _totalAmount,
+      onLoadingChanged: () => setState(() => _isLoading = !_isLoading),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     try {
-      final cylindersAsync = ref.watch(cylindersProvider);
-
       return Dialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 500),
-        child: Form(
-          key: _formKey,
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          widget.saleType == SaleType.retail
-                              ? 'Vente au Détail'
-                              : 'Vente en Gros',
-                          style: theme.textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: () => Navigator.of(context).pop(),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  // Sélection de la bouteille
-                  cylindersAsync.when(
-                    data: (cylinders) {
-                      if (cylinders.isEmpty) {
-                        return Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.errorContainer,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 500),
+          child: Form(
+            key: _formKey,
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
                           child: Text(
-                            'Aucune bouteille disponible',
-                            style: TextStyle(
-                              color: theme.colorScheme.onErrorContainer,
-                            ),
-                          ),
-                        );
-                      }
-
-                      return DropdownButtonFormField<Cylinder>(
-                        value: _selectedCylinder,
-                        decoration: InputDecoration(
-                          labelText: 'Type de bouteille *',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          prefixIcon: const Icon(Icons.local_fire_department),
-                        ),
-                        items: cylinders.map((cylinder) {
-                          return DropdownMenuItem(
-                            value: cylinder,
-                            enabled: true,
-                            child: Text(
-                              '${cylinder.weight} kg - ${_formatCurrency(cylinder.sellPrice)}',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                        onChanged: (value) {
-                          setState(() {
-                            _selectedCylinder = value;
-                            _updateAvailableStock();
-                          });
-                        },
-                        validator: (value) {
-                          if (value == null) {
-                            return 'Veuillez sélectionner une bouteille';
-                          }
-                          return null;
-                        },
-                      );
-                    },
-                    loading: () => const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(16),
-                        child: CircularProgressIndicator(),
-                      ),
-                    ),
-                    error: (error, _) => Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.errorContainer,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        'Erreur: ${error.toString()}',
-                        style: TextStyle(
-                          color: theme.colorScheme.onErrorContainer,
-                        ),
-                      ),
-                    ),
-                  ),
-                  // Afficher le stock disponible si une bouteille est sélectionnée
-                  if (_selectedCylinder != null) ...[
-                    const SizedBox(height: 8),
-                    FutureBuilder<int>(
-                      future: ref
-                          .read(cylinderStockControllerProvider)
-                          .getAvailableStock(
-                            _selectedCylinder!.enterpriseId,
-                            _selectedCylinder!.weight,
-                          ),
-                      builder: (context, snapshot) {
-                        final stock = snapshot.data ?? 0;
-                        return Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: stock <= 5
-                                ? theme.colorScheme.errorContainer
-                                : theme.colorScheme.primaryContainer,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                stock <= 5 ? Icons.warning : Icons.inventory_2,
-                                size: 16,
-                                color: stock <= 5
-                                    ? theme.colorScheme.onErrorContainer
-                                    : theme.colorScheme.onPrimaryContainer,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Stock disponible: $stock',
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: stock <= 5
-                                      ? theme.colorScheme.onErrorContainer
-                                      : theme.colorScheme.onPrimaryContainer,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                  const SizedBox(height: 16),
-                  // Quantité
-                  TextFormField(
-                    controller: _quantityController,
-                    decoration: InputDecoration(
-                      labelText: 'Quantité *',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      prefixIcon: const Icon(Icons.numbers),
-                    ),
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                    ],
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Veuillez entrer une quantité';
-                      }
-                      final quantity = int.tryParse(value);
-                      if (quantity == null || quantity <= 0) {
-                        return 'Quantité invalide';
-                      }
-                      if (quantity > _availableStock) {
-                        return 'Stock insuffisant ($_availableStock disponible)';
-                      }
-                      return null;
-                    },
-                    onChanged: (value) {
-                      setState(() {}); // Rebuild pour mettre à jour le total
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  // Afficher le total
-                  if (_selectedCylinder != null &&
-                      _quantityController.text.isNotEmpty)
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.primaryContainer,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Total:',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Text(
-                            _formatCurrency(_totalAmount),
+                            widget.saleType == SaleType.retail
+                                ? 'Vente au Détail'
+                                : 'Vente en Gros',
                             style: theme.textTheme.headlineSmall?.copyWith(
                               fontWeight: FontWeight.bold,
-                              color: theme.colorScheme.primary,
                             ),
                           ),
-                        ],
-                      ),
-                    ),
-                  const SizedBox(height: 16),
-                  // Nom du client (optionnel)
-                  TextFormField(
-                    controller: _customerNameController,
-                    decoration: InputDecoration(
-                      labelText: 'Nom du client (optionnel)',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      prefixIcon: const Icon(Icons.person),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  // Téléphone du client (optionnel)
-                  TextFormField(
-                    controller: _customerPhoneController,
-                    decoration: InputDecoration(
-                      labelText: 'Téléphone (optionnel)',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      prefixIcon: const Icon(Icons.phone),
-                    ),
-                    keyboardType: TextInputType.phone,
-                  ),
-                  const SizedBox(height: 16),
-                  // Notes (optionnel)
-                  TextFormField(
-                    controller: _notesController,
-                    decoration: InputDecoration(
-                      labelText: 'Notes (optionnel)',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      prefixIcon: const Icon(Icons.note),
-                    ),
-                    maxLines: 2,
-                  ),
-                  const SizedBox(height: 24),
-                  // Boutons d'action
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: _isLoading
-                              ? null
-                              : () => Navigator.of(context).pop(),
-                          child: const Text('Annuler'),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        flex: 2,
-                        child: FilledButton.icon(
-                          onPressed: _isLoading ? null : _submit,
-                          icon: _isLoading
-                              ? const SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor:
-                                        AlwaysStoppedAnimation<Color>(Colors.white),
-                                  ),
-                                )
-                              : const Icon(Icons.check),
-                          label: const Text('Enregistrer la vente'),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () => Navigator.of(context).pop(),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    // Sélection de la bouteille
+                    CylinderSelectorWidget(
+                      selectedCylinder: _selectedCylinder,
+                      onCylinderChanged: (value) {
+                        setState(() {
+                          _selectedCylinder = value;
+                          _updateAvailableStock();
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    // Quantité et total
+                    QuantityAndTotalWidget(
+                      quantityController: _quantityController,
+                      selectedCylinder: _selectedCylinder,
+                      availableStock: _availableStock,
+                      onQuantityChanged: () => setState(() {}),
+                    ),
+                    const SizedBox(height: 16),
+                    // Informations client
+                    CustomerInfoWidget(
+                      customerNameController: _customerNameController,
+                      customerPhoneController: _customerPhoneController,
+                      notesController: _notesController,
+                    ),
+                    const SizedBox(height: 24),
+                    // Boutons d'action
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: _isLoading
+                                ? null
+                                : () => Navigator.of(context).pop(),
+                            style: GazButtonStyles.outlined,
+                            child: const Text('Annuler'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          flex: 2,
+                          child: FilledButton.icon(
+                            onPressed: _isLoading ? null : _submit,
+                            style: GazButtonStyles.filledPrimary,
+                            icon: _isLoading
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor:
+                                          AlwaysStoppedAnimation<Color>(Colors.white),
+                                    ),
+                                  )
+                                : const Icon(Icons.check),
+                            label: const Text('Enregistrer la vente'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
         ),
-      ),
-    );
+      );
     } catch (e) {
       return Dialog(
         child: Padding(
@@ -532,6 +249,7 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
               const SizedBox(height: 16),
               FilledButton(
                 onPressed: () => Navigator.of(context).pop(),
+                style: GazButtonStyles.filledPrimary,
                 child: const Text('Fermer'),
               ),
             ],

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/gas_sale.dart';
 import '../../domain/entities/report_data.dart';
+import '../../../../shared/utils/currency_formatter.dart';
 
 /// Content widget for sales report tab - style eau_minerale.
 class GazSalesReportContentV2 extends ConsumerWidget {
@@ -16,9 +17,7 @@ class GazSalesReportContentV2 extends ConsumerWidget {
   final DateTime startDate;
   final DateTime endDate;
 
-  String _formatCurrency(double amount) {
-    return amount.toStringAsFixed(0).replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+)+(?!\d))'),
           (Match m) => '${m[1]} ',
         ) +
         ' F';
@@ -82,7 +81,7 @@ class GazSalesReportContentV2 extends ConsumerWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '${reportData.salesCount} ventes • Total: ${_formatCurrency(reportData.salesRevenue)}',
+                    '${reportData.salesCount} ventes • Total: ${CurrencyFormatter.formatDouble(reportData.salesRevenue)}',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -198,7 +197,7 @@ class GazSalesReportContentV2 extends ConsumerWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            _formatCurrency(total),
+            CurrencyFormatter.formatDouble(total),
             style: theme.textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.bold,
             ),
@@ -261,7 +260,7 @@ class GazSalesReportContentV2 extends ConsumerWidget {
             ),
           ),
           Text(
-            _formatCurrency(sale.totalAmount),
+            CurrencyFormatter.formatDouble(sale.totalAmount),
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.bold,
               color: Colors.green,

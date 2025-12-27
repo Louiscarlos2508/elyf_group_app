@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../shared/utils/currency_formatter.dart';
 
 /// Carte résumé financier (revenus, dépenses, reliquat).
 class FinancialSummaryCard extends StatelessWidget {
@@ -12,14 +13,6 @@ class FinancialSummaryCard extends StatelessWidget {
   final double totalRevenue;
   final double totalExpenses;
   final double netAmount;
-
-  String _formatCurrency(double amount) {
-    return amount.toStringAsFixed(0).replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        ) +
-        ' FCFA';
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,21 +35,21 @@ class FinancialSummaryCard extends StatelessWidget {
               label: 'Revenus',
               amount: totalRevenue,
               color: Colors.green,
-              formatCurrency: _formatCurrency,
+              formatCurrency: CurrencyFormatter.formatDouble,
             ),
             const SizedBox(height: 12),
             _FinancialRow(
               label: 'Dépenses',
               amount: totalExpenses,
               color: Colors.red,
-              formatCurrency: _formatCurrency,
+              formatCurrency: CurrencyFormatter.formatDouble,
             ),
             const Divider(height: 32),
             _FinancialRow(
               label: 'Reliquat Net (Siège)',
               amount: netAmount,
               color: netAmount >= 0 ? Colors.green : Colors.red,
-              formatCurrency: _formatCurrency,
+              formatCurrency: CurrencyFormatter.formatDouble,
               isBold: true,
             ),
           ],

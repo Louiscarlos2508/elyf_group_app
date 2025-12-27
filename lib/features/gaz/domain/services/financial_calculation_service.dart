@@ -1,17 +1,13 @@
 import '../entities/expense.dart';
-import '../entities/loading_event.dart';
 import '../repositories/expense_repository.dart';
-import '../repositories/loading_event_repository.dart';
 
 /// Service de calcul financier pour les rapports et reliquat siège.
 class FinancialCalculationService {
   const FinancialCalculationService({
     required this.expenseRepository,
-    required this.loadingEventRepository,
   });
 
   final GazExpenseRepository expenseRepository;
-  final LoadingEventRepository loadingEventRepository;
 
   /// Calcule les charges totales pour une période.
   Future<({
@@ -49,26 +45,16 @@ class FinancialCalculationService {
       }
     }
 
-    // Calculer les frais de chargement
-    final loadingEvents = await loadingEventRepository.getLoadingEvents(
-      enterpriseId,
-      from: startDate,
-      to: endDate,
-    );
+    // Note: Les frais de chargement sont maintenant gérés dans Approvisionnement
+    // Pour l'instant, on ne les inclut pas ici
 
-    double loadingEventExpenses = 0.0;
-    for (final event in loadingEvents) {
-      loadingEventExpenses += event.totalExpenses;
-    }
-
-    final totalExpenses =
-        fixedCharges + variableCharges + salaries + loadingEventExpenses;
+    final totalExpenses = fixedCharges + variableCharges + salaries;
 
     return (
       fixedCharges: fixedCharges,
       variableCharges: variableCharges,
       salaries: salaries,
-      loadingEventExpenses: loadingEventExpenses,
+      loadingEventExpenses: 0.0,
       totalExpenses: totalExpenses,
     );
   }

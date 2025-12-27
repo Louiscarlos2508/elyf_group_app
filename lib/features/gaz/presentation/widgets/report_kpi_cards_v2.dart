@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/report_data.dart';
 import 'dashboard_kpi_card.dart';
+import '../../../../shared/utils/currency_formatter.dart';
 
 /// KPI cards for gaz reports module - style eau_minerale.
 class GazReportKpiCardsV2 extends ConsumerWidget {
@@ -16,12 +17,7 @@ class GazReportKpiCardsV2 extends ConsumerWidget {
   final DateTime startDate;
   final DateTime endDate;
 
-  String _formatCurrency(double amount) {
-    final isNegative = amount < 0;
-    final absAmount = amount.abs();
-    return (isNegative ? '-' : '') +
-        absAmount.toStringAsFixed(0).replaceAllMapped(
-              RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+)+(?!\d))'),
               (Match m) => '${m[1]} ',
             ) +
         ' F';
@@ -49,7 +45,7 @@ class GazReportKpiCardsV2 extends ConsumerWidget {
                       Expanded(
                         child: GazDashboardKpiCard(
                           label: "Chiffre d'Affaires",
-                          value: '${_formatCurrency(data.salesRevenue)}',
+                          value: '${CurrencyFormatter.formatDouble(data.salesRevenue)}',
                           subtitle: '${data.salesCount} ventes',
                           icon: Icons.trending_up,
                           iconColor: Colors.blue,
@@ -60,7 +56,7 @@ class GazReportKpiCardsV2 extends ConsumerWidget {
                       Expanded(
                         child: GazDashboardKpiCard(
                           label: 'Dépenses',
-                          value: '${_formatCurrency(data.expensesAmount)}',
+                          value: '${CurrencyFormatter.formatDouble(data.expensesAmount)}',
                           subtitle: '${data.expensesCount} charges',
                           icon: Icons.receipt_long,
                           iconColor: Colors.red,
@@ -72,7 +68,7 @@ class GazReportKpiCardsV2 extends ConsumerWidget {
                       Expanded(
                         child: GazDashboardKpiCard(
                           label: 'Bénéfice Net',
-                          value: '${_formatCurrency(data.profit)}',
+                          value: '${CurrencyFormatter.formatDouble(data.profit)}',
                           subtitle: data.profit >= 0 ? 'Profit' : 'Déficit',
                           icon: Icons.account_balance_wallet,
                           iconColor: data.profit >= 0 ? Colors.green : Colors.red,
@@ -88,7 +84,7 @@ class GazReportKpiCardsV2 extends ConsumerWidget {
                     children: [
                       GazDashboardKpiCard(
                         label: "Chiffre d'Affaires",
-                        value: '${_formatCurrency(data.salesRevenue)}',
+                        value: '${CurrencyFormatter.formatDouble(data.salesRevenue)}',
                         subtitle: '${data.salesCount} ventes',
                         icon: Icons.trending_up,
                         iconColor: Colors.blue,
@@ -97,7 +93,7 @@ class GazReportKpiCardsV2 extends ConsumerWidget {
                       const SizedBox(height: 16),
                       GazDashboardKpiCard(
                         label: 'Dépenses',
-                        value: '${_formatCurrency(data.expensesAmount)}',
+                        value: '${CurrencyFormatter.formatDouble(data.expensesAmount)}',
                         subtitle: '${data.expensesCount} charges',
                         icon: Icons.receipt_long,
                         iconColor: Colors.red,
@@ -107,7 +103,7 @@ class GazReportKpiCardsV2 extends ConsumerWidget {
                       const SizedBox(height: 16),
                       GazDashboardKpiCard(
                         label: 'Bénéfice Net',
-                        value: '${_formatCurrency(data.profit)}',
+                        value: '${CurrencyFormatter.formatDouble(data.profit)}',
                         subtitle: data.profit >= 0 ? 'Profit' : 'Déficit',
                         icon: Icons.account_balance_wallet,
                         iconColor: data.profit >= 0 ? Colors.green : Colors.red,

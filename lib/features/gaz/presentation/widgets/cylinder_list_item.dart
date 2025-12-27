@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../shared/utils/currency_formatter.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/cylinder.dart';
 import '../../domain/entities/cylinder_stock.dart';
@@ -18,13 +19,6 @@ class CylinderListItem extends ConsumerWidget {
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
-  String _formatCurrency(double amount) {
-    return amount.toStringAsFixed(0).replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        ) +
-        ' FCFA';
-  }
 
   Color _getStockColor(int stock) {
     if (stock <= 5) return Colors.red;
@@ -116,7 +110,7 @@ class CylinderListItem extends ConsumerWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Prix: ${_formatCurrency(cylinder.buyPrice)} → ${_formatCurrency(cylinder.sellPrice)} (Marge: ${_formatCurrency(profit)})',
+                        'Prix: ${CurrencyFormatter.formatDouble(cylinder.buyPrice)} → ${CurrencyFormatter.formatDouble(cylinder.sellPrice)} (Marge: ${CurrencyFormatter.formatDouble(profit)})',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),

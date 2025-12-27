@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/cylinder.dart';
 import '../../domain/entities/cylinder_stock.dart';
+import '../../../../shared/utils/currency_formatter.dart';
 
 /// Carte récapitulative du stock de bouteilles.
 class StockSummaryCard extends ConsumerWidget {
@@ -99,9 +100,7 @@ class _CylinderStockRow extends StatelessWidget {
   final int fullStock;
   final Color stockColor;
 
-  String _formatCurrency(double amount) {
-    return amount.toStringAsFixed(0).replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+)+(?!\d))'),
           (Match m) => '${m[1]} ',
         ) +
         ' F';
@@ -142,14 +141,14 @@ class _CylinderStockRow extends StatelessWidget {
                 Row(
                   children: [
                     Text(
-                      'Achat: ${_formatCurrency(cylinder.buyPrice)}',
+                      'Achat: ${CurrencyFormatter.formatDouble(cylinder.buyPrice)}',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                     const SizedBox(width: 16),
                     Text(
-                      'Vente: ${_formatCurrency(cylinder.sellPrice)}',
+                      'Vente: ${CurrencyFormatter.formatDouble(cylinder.sellPrice)}',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: Colors.green,
                         fontWeight: FontWeight.w500,

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../shared/utils/date_formatter.dart';
+
 /// Professional dashboard header with date and role.
 class GazDashboardHeader extends StatelessWidget {
   const GazDashboardHeader({
@@ -11,25 +13,6 @@ class GazDashboardHeader extends StatelessWidget {
   final DateTime date;
   final String role;
 
-  String _formatDate(DateTime date) {
-    const days = ['dim', 'lun', 'mar', 'mer', 'jeu', 'ven', 'sam'];
-    const months = [
-      'janv',
-      'févr',
-      'mars',
-      'avr',
-      'mai',
-      'juin',
-      'juil',
-      'août',
-      'sept',
-      'oct',
-      'nov',
-      'déc'
-    ];
-    final dayName = days[date.weekday % 7];
-    return '$dayName ${date.day} ${months[date.month - 1]} ${date.year}';
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -62,7 +45,7 @@ class GazDashboardHeader extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  _formatDate(date),
+                  DateFormatter.formatDateWithDayName(date),
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),

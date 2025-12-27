@@ -3,14 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../../shared/presentation/widgets/refresh_button.dart';
 import '../../../application/providers.dart';
+import '../../../domain/entities/cylinder.dart';
 import '../../../domain/entities/expense.dart';
 import '../../../domain/entities/gas_sale.dart';
-import '../../widgets/dashboard_header.dart';
-import '../../widgets/dashboard_month_section.dart';
-import '../../widgets/dashboard_today_section.dart';
-import '../../widgets/stock_summary_card.dart';
+import '../../widgets/dashboard_stock_by_capacity.dart';
+import 'dashboard/dashboard_kpi_section.dart';
+import 'dashboard/dashboard_performance_section.dart';
+import 'dashboard/dashboard_pos_performance_section.dart';
 
-/// Professional dashboard screen for gaz module.
+/// Professional dashboard screen for gaz module - matches Figma design.
 class GazDashboardScreen extends ConsumerWidget {
   const GazDashboardScreen({super.key});
 
@@ -22,16 +23,33 @@ class GazDashboardScreen extends ConsumerWidget {
 
     return CustomScrollView(
       slivers: [
-        // Header
+        // Header section
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
             child: Row(
               children: [
                 Expanded(
-                  child: GazDashboardHeader(
-                    date: DateTime.now(),
-                    role: 'Gérant',
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Vue d'ensemble",
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              fontSize: 16,
+                              fontWeight: FontWeight.normal,
+                              color: const Color(0xFF101828),
+                            ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Tableau de bord de gestion du gaz',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              fontSize: 14,
+                              color: const Color(0xFF4A5565),
+                            ),
+                      ),
+                    ],
                   ),
                 ),
                 RefreshButton(
@@ -47,26 +65,32 @@ class GazDashboardScreen extends ConsumerWidget {
           ),
         ),
 
-        // Today section header
-        _buildSectionHeader("AUJOURD'HUI", 8, 8),
-
-        // Today KPIs
+        // KPI Cards (4 cards in a row)
         SliverPadding(
-          padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+          padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
           sliver: SliverToBoxAdapter(
             child: salesAsync.when(
-              data: (sales) {
-                final today = DateTime.now();
-                final todaySales = sales
-                    .where((s) =>
-                        s.saleDate.year == today.year &&
-                        s.saleDate.month == today.month &&
-                        s.saleDate.day == today.day)
-                    .toList();
-                return GazDashboardTodaySection(todaySales: todaySales);
-              },
+              data: (sales) => expensesAsync.when(
+                data: (expenses) => cylindersAsync.when(
+                  data: (cylinders) => DashboardKpiSection(
+                    sales: sales,
+                    expenses: expenses,
+                    cylinders: cylinders,
+                  ),
+                  loading: () => const SizedBox(
+                    height: 155,
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
+                  error: (_, __) => const SizedBox.shrink(),
+                ),
+                loading: () => const SizedBox(
+                  height: 155,
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+                error: (_, __) => const SizedBox.shrink(),
+              ),
               loading: () => const SizedBox(
-                height: 120,
+                height: 155,
                 child: Center(child: CircularProgressIndicator()),
               ),
               error: (_, __) => const SizedBox.shrink(),
@@ -74,31 +98,47 @@ class GazDashboardScreen extends ConsumerWidget {
           ),
         ),
 
-        // Month section header
-        _buildSectionHeader('CE MOIS', 0, 8),
-
-        // Month KPIs
+        // Stock par capacité section
         SliverPadding(
-          padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+          padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
           sliver: SliverToBoxAdapter(
-            child: _buildMonthKpis(
-              salesAsync,
-              expensesAsync,
+            child: const DashboardStockByCapacity(),
+          ),
+        ),
+
+        // Performance chart (7 derniers jours)
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+          sliver: SliverToBoxAdapter(
+            child: salesAsync.when(
+              data: (sales) => expensesAsync.when(
+                data: (expenses) => DashboardPerformanceSection(
+                  sales: sales,
+                  expenses: expenses,
+                ),
+                loading: () => const SizedBox(
+                  height: 397,
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+                error: (_, __) => const SizedBox.shrink(),
+              ),
+              loading: () => const SizedBox(
+                height: 397,
+                child: Center(child: CircularProgressIndicator()),
+              ),
+              error: (_, __) => const SizedBox.shrink(),
             ),
           ),
         ),
 
-        // Stock section header
-        _buildSectionHeader('STOCK', 0, 8),
-
-        // Stock summary
+        // Performance par point de vente
         SliverPadding(
-          padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
+          padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
           sliver: SliverToBoxAdapter(
-            child: cylindersAsync.when(
-              data: (cylinders) => StockSummaryCard(cylinders: cylinders),
+            child: salesAsync.when(
+              data: (sales) => DashboardPosPerformanceSection(sales: sales),
               loading: () => const SizedBox(
-                height: 100,
+                height: 262,
                 child: Center(child: CircularProgressIndicator()),
               ),
               error: (_, __) => const SizedBox.shrink(),
@@ -106,77 +146,6 @@ class GazDashboardScreen extends ConsumerWidget {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildSectionHeader(String title, double top, double bottom) {
-    return SliverToBoxAdapter(
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(24, top, 24, bottom),
-        child: Text(
-          title,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 0.5,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMonthKpis(
-    AsyncValue<List<GasSale>> salesAsync,
-    AsyncValue<List<GazExpense>> expensesAsync,
-  ) {
-    return salesAsync.when(
-      data: (sales) {
-        final now = DateTime.now();
-        final monthStart = DateTime(now.year, now.month, 1);
-
-        final monthSales = sales
-            .where((s) => s.saleDate.isAfter(monthStart.subtract(
-                  const Duration(days: 1),
-                )))
-            .toList();
-        final monthRevenue = monthSales.fold<double>(
-          0,
-          (sum, s) => sum + s.totalAmount,
-        );
-
-        return expensesAsync.when(
-          data: (expenses) {
-            final monthExpenses = expenses
-                .where((e) => e.date.isAfter(monthStart.subtract(
-                      const Duration(days: 1),
-                    )))
-                .toList();
-            final monthExpensesAmount = monthExpenses.fold<double>(
-              0,
-              (sum, e) => sum + e.amount,
-            );
-
-            final monthProfit = monthRevenue - monthExpensesAmount;
-
-            return GazDashboardMonthSection(
-              monthRevenue: monthRevenue,
-              monthSalesCount: monthSales.length,
-              monthExpensesAmount: monthExpensesAmount,
-              monthProfit: monthProfit,
-            );
-          },
-          loading: () => const SizedBox(
-            height: 200,
-            child: Center(child: CircularProgressIndicator()),
-          ),
-          error: (_, __) => const SizedBox.shrink(),
-        );
-      },
-      loading: () => const SizedBox(
-        height: 200,
-        child: Center(child: CircularProgressIndicator()),
-      ),
-      error: (_, __) => const SizedBox.shrink(),
     );
   }
 }

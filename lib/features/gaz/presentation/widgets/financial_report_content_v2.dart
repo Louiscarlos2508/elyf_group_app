@@ -5,6 +5,7 @@ import '../../application/controllers/financial_report_controller.dart';
 import '../../application/providers.dart';
 import '../../domain/services/financial_calculation_service.dart';
 import 'financial_summary_card.dart';
+import '../../../../shared/utils/currency_formatter.dart';
 
 /// Contenu de rapport financier avec charges fixes/variables et reliquat siège.
 class GazFinancialReportContentV2 extends ConsumerWidget {
@@ -19,9 +20,7 @@ class GazFinancialReportContentV2 extends ConsumerWidget {
   final DateTime endDate;
   final double totalRevenue;
 
-  String _formatCurrency(double amount) {
-    return amount.toStringAsFixed(0).replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+)+(?!\d))'),
           (Match m) => '${m[1]} ',
         ) +
         ' FCFA';
@@ -30,27 +29,25 @@ class GazFinancialReportContentV2 extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    String? enterpriseId = 'default_enterprise'; // TODO: depuis contexte
+    String enterpriseId = 'default_enterprise'; // TODO: depuis contexte
 
     // Calculer les charges
     final chargesFuture = ref.watch(
-      FutureProvider((ref) async {
-        final service = ref.read(financialCalculationServiceProvider);
-        return service.calculateCharges(enterpriseId, startDate, endDate);
-      }),
+      financialChargesProvider((
+        enterpriseId: enterpriseId,
+        startDate: startDate,
+        endDate: endDate,
+      )),
     );
 
     // Calculer le reliquat net
     final netAmountFuture = ref.watch(
-      FutureProvider((ref) async {
-        final controller = ref.read(financialReportControllerProvider);
-        return controller.calculateNetAmount(
-          enterpriseId,
-          startDate,
-          endDate,
-          totalRevenue,
-        );
-      }),
+      financialNetAmountProvider((
+        enterpriseId: enterpriseId,
+        startDate: startDate,
+        endDate: endDate,
+        totalRevenue: totalRevenue,
+      )),
     );
 
     final isWide = MediaQuery.of(context).size.width > 600;
@@ -165,7 +162,7 @@ class GazFinancialReportContentV2 extends ConsumerWidget {
             ),
           ),
           Text(
-            _formatCurrency(amount),
+            CurrencyFormatter.formatDouble(amount),
             style: theme.textTheme.bodyMedium?.copyWith(
               fontWeight: isBold ? FontWeight.bold : FontWeight.w600,
               color: color,
@@ -223,7 +220,7 @@ class GazFinancialReportContentV2 extends ConsumerWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            _formatCurrency(netAmount),
+            CurrencyFormatter.formatDouble(netAmount),
             style: theme.textTheme.headlineMedium?.copyWith(
               fontWeight: FontWeight.bold,
               color: canTransfer ? Colors.green : Colors.red,

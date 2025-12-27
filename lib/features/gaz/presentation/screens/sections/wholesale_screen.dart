@@ -3,367 +3,261 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../application/providers.dart';
 import '../../../domain/entities/gas_sale.dart';
-import '../../widgets/gas_sale_form_dialog.dart';
+import '../../widgets/wholesale_date_filter_card.dart';
+import '../../widgets/wholesale_empty_state.dart';
+import '../../widgets/wholesale_kpi_card.dart';
 
-/// Écran des ventes en gros.
-class GazWholesaleScreen extends ConsumerWidget {
+/// Écran des ventes en gros - matches Figma design.
+class GazWholesaleScreen extends ConsumerStatefulWidget {
   const GazWholesaleScreen({super.key});
 
-  String _formatCurrency(double amount) {
-    return amount.toStringAsFixed(0).replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        ) +
-        ' F';
+  @override
+  ConsumerState<GazWholesaleScreen> createState() =>
+      _GazWholesaleScreenState();
+}
+
+class _GazWholesaleScreenState extends ConsumerState<GazWholesaleScreen> {
+  DateTime? _startDate;
+  DateTime? _endDate;
+
+
+  List<GasSale> _filterSales(List<GasSale> sales) {
+    if (_startDate == null && _endDate == null) {
+      return sales;
+    }
+
+    final start = _startDate ?? DateTime(2020);
+    final end = _endDate ?? DateTime.now();
+
+    return sales.where((s) {
+      final saleDate = DateTime(
+        s.saleDate.year,
+        s.saleDate.month,
+        s.saleDate.day,
+      );
+      return saleDate.isAfter(start.subtract(const Duration(days: 1))) &&
+          saleDate.isBefore(end.add(const Duration(days: 1)));
+    }).toList();
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final salesAsync = ref.watch(gasSalesProvider);
-    final isMobile = MediaQuery.of(context).size.width < 600;
 
     return CustomScrollView(
       slivers: [
+        // Header
         SliverToBoxAdapter(
-          child: Padding(
-            padding: EdgeInsets.all(isMobile ? 16 : 24),
-            child: Row(
+          child: Container(
+            color: const Color(0xFFF9FAFB),
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  Icons.local_shipping,
-                  color: theme.colorScheme.primary,
-                  size: isMobile ? 24 : 28,
-                ),
-                SizedBox(width: isMobile ? 8 : 12),
-                Expanded(
-                  child: Text(
-                    'Ventes en Gros',
-                    style: theme.textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      fontSize: isMobile ? 20 : null,
-                    ),
+                Text(
+                  'Suivi des ventes',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontSize: 16,
+                    fontWeight: FontWeight.normal,
+                    color: const Color(0xFF101828),
                   ),
                 ),
-                const SizedBox(width: 12),
-                Flexible(
-                  child: FilledButton.icon(
-                    onPressed: () {
-                      try {
-                        showDialog(
-                          context: context,
-                          builder: (context) => const GasSaleFormDialog(
-                            saleType: SaleType.wholesale,
-                          ),
-                        );
-                      } catch (e) {
-                        debugPrint('Erreur lors de l\'ouverture du dialog: $e');
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Erreur: $e'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                      }
-                    },
-                    icon: const Icon(Icons.add),
-                    label: Text(isMobile ? 'Vendre' : 'Nouvelle vente'),
+                const SizedBox(height: 8),
+                Text(
+                  'Consultez les ventes effectuées',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontSize: 14,
+                    color: const Color(0xFF4A5565),
                   ),
                 ),
               ],
             ),
           ),
         ),
-        // Wholesale stats
+
+        // Filter section
         SliverToBoxAdapter(
           child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 24),
+            padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+            child: WholesaleDateFilterCard(
+              startDate: _startDate,
+              endDate: _endDate,
+              onStartDateChanged: (date) {
+                setState(() {
+                  _startDate = date;
+                });
+              },
+              onEndDateChanged: (date) {
+                setState(() {
+                  _endDate = date;
+                });
+              },
+            ),
+          ),
+        ),
+
+        // KPI Cards
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
             child: salesAsync.when(
-              data: (sales) {
-                final wholesaleSales = sales
+              data: (allSales) {
+                final wholesaleSales = allSales
                     .where((s) => s.saleType == SaleType.wholesale)
                     .toList();
-                final totalRevenue = wholesaleSales.fold<double>(
+                final filteredSales = _filterSales(wholesaleSales);
+
+                // Calculate metrics
+                final salesCount = filteredSales.length;
+                final totalSold = filteredSales.fold<double>(
                   0,
                   (sum, s) => sum + s.totalAmount,
                 );
-                final totalQty = wholesaleSales.fold<int>(
-                  0,
-                  (sum, s) => sum + s.quantity,
-                );
+                // For now, assume all sales are paid (encaissé)
+                // TODO: Add payment status to GasSale entity
+                final collected = totalSold;
+                final credit = 0.0; // TODO: Calculate actual credit
 
-                return Row(
-                  children: [
-                    Expanded(
-                      child: _StatCard(
-                        label: 'Ventes totales',
-                        value: '${wholesaleSales.length}',
-                        icon: Icons.receipt_long,
-                        color: Colors.purple,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _StatCard(
-                        label: 'Bouteilles vendues',
-                        value: '$totalQty',
-                        icon: Icons.local_fire_department,
-                        color: Colors.orange,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _StatCard(
-                        label: 'Revenus',
-                        value: _formatCurrency(totalRevenue),
-                        icon: Icons.attach_money,
-                        color: Colors.green,
-                      ),
-                    ),
-                  ],
+                return LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isWide = constraints.maxWidth > 800;
+                    if (isWide) {
+                      return Row(
+                        children: [
+                          Expanded(
+                            child: WholesaleKpiCard(
+                              title: 'Nombre de ventes',
+                              value: '$salesCount',
+                              icon: Icons.shopping_cart,
+                              iconColor: const Color(0xFF3B82F6),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: WholesaleKpiCard(
+                              title: 'Total vendu',
+                              value: totalSold.toStringAsFixed(0),
+                              subtitle: 'FCFA',
+                              icon: Icons.trending_up,
+                              iconColor: const Color(0xFF10B981),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: WholesaleKpiCard(
+                              title: 'Encaissé',
+                              value: collected.toStringAsFixed(0),
+                              subtitle: 'FCFA',
+                              icon: Icons.trending_up,
+                              iconColor: const Color(0xFF3B82F6),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: WholesaleKpiCard(
+                              title: 'Crédit',
+                              value: credit.toStringAsFixed(0),
+                              subtitle: 'FCFA',
+                              icon: Icons.trending_up,
+                              iconColor: const Color(0xFFF97316),
+                            ),
+                          ),
+                        ],
+                      );
+                    }
+
+                    // Mobile: 2x2 grid
+                    return Column(
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: WholesaleKpiCard(
+                                title: 'Nombre de ventes',
+                                value: '$salesCount',
+                                icon: Icons.shopping_cart,
+                                iconColor: const Color(0xFF3B82F6),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: WholesaleKpiCard(
+                                title: 'Total vendu',
+                                value: totalSold.toStringAsFixed(0),
+                                subtitle: 'FCFA',
+                                icon: Icons.trending_up,
+                                iconColor: const Color(0xFF10B981),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: WholesaleKpiCard(
+                                title: 'Encaissé',
+                                value: collected.toStringAsFixed(0),
+                                subtitle: 'FCFA',
+                                icon: Icons.trending_up,
+                                iconColor: const Color(0xFF3B82F6),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: WholesaleKpiCard(
+                                title: 'Crédit',
+                                value: credit.toStringAsFixed(0),
+                                subtitle: 'FCFA',
+                                icon: Icons.trending_up,
+                                iconColor: const Color(0xFFF97316),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    );
+                  },
                 );
               },
-              loading: () => const Center(child: CircularProgressIndicator()),
+              loading: () => const SizedBox(
+                height: 115,
+                child: Center(child: CircularProgressIndicator()),
+              ),
               error: (_, __) => const SizedBox.shrink(),
             ),
           ),
         ),
-        const SliverToBoxAdapter(child: SizedBox(height: 24)),
-        // Recent wholesale sales
+
+        // Empty state or sales list
         SliverToBoxAdapter(
           child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 24),
-            child: Text(
-              'Ventes récentes (gros)',
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
+            padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+            child: salesAsync.when(
+              data: (allSales) {
+                final wholesaleSales = allSales
+                    .where((s) => s.saleType == SaleType.wholesale)
+                    .toList();
+                final filteredSales = _filterSales(wholesaleSales);
+
+                if (filteredSales.isEmpty) {
+                  return const WholesaleEmptyState();
+                }
+
+                // TODO: Add sales list view here if needed
+                return const WholesaleEmptyState();
+              },
+              loading: () => const SizedBox(
+                height: 163,
+                child: Center(child: CircularProgressIndicator()),
               ),
+              error: (_, __) => const SizedBox.shrink(),
             ),
           ),
         ),
-        const SliverToBoxAdapter(child: SizedBox(height: 16)),
-        salesAsync.when(
-          data: (sales) {
-            final wholesaleSales = sales
-                .where((s) => s.saleType == SaleType.wholesale)
-                .toList()
-              ..sort((a, b) => b.saleDate.compareTo(a.saleDate));
-
-            if (wholesaleSales.isEmpty) {
-              return SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 24),
-                  child: Container(
-                    padding: const EdgeInsets.all(48),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.surfaceContainerHighest
-                          .withValues(alpha: 0.5),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Column(
-                      children: [
-                        Icon(
-                          Icons.local_shipping_outlined,
-                          size: 64,
-                          color: theme.colorScheme.outline,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Aucune vente en gros',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Les ventes en gros apparaîtront ici',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            }
-
-            return SliverPadding(
-              padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 24),
-              sliver: SliverList.separated(
-                itemCount: wholesaleSales.length.clamp(0, 10),
-                separatorBuilder: (_, __) => const SizedBox(height: 12),
-                itemBuilder: (context, index) => _WholesaleSaleCard(
-                  sale: wholesaleSales[index],
-                  formatCurrency: _formatCurrency,
-                ),
-              ),
-            );
-          },
-          loading: () => const SliverFillRemaining(
-            child: Center(child: CircularProgressIndicator()),
-          ),
-          error: (e, _) => SliverFillRemaining(
-            child: Center(child: Text('Erreur: $e')),
-          ),
-        ),
-        const SliverToBoxAdapter(child: SizedBox(height: 24)),
       ],
     );
   }
 }
 
-class _StatCard extends StatelessWidget {
-  const _StatCard({
-    required this.label,
-    required this.value,
-    required this.icon,
-    required this.color,
-  });
-
-  final String label;
-  final String value;
-  final IconData icon;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withValues(alpha: 0.2)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: color, size: 24),
-          const SizedBox(height: 12),
-          Text(
-            value,
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _WholesaleSaleCard extends StatelessWidget {
-  const _WholesaleSaleCard({
-    required this.sale,
-    required this.formatCurrency,
-  });
-
-  final GasSale sale;
-  final String Function(double) formatCurrency;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Colors.purple.shade400, Colors.purple.shade600],
-                ),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: const Icon(
-                Icons.local_shipping,
-                color: Colors.white,
-                size: 28,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    sale.customerName ?? 'Client gros',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.local_fire_department,
-                        size: 16,
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${sale.quantity} bouteilles',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      if (sale.customerPhone != null) ...[
-                        const SizedBox(width: 16),
-                        Icon(
-                          Icons.phone,
-                          size: 16,
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          sale.customerPhone!,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  formatCurrency(sale.totalAmount),
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${sale.saleDate.day}/${sale.saleDate.month}/${sale.saleDate.year}',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}

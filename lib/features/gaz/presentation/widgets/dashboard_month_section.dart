@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../shared/utils/currency_formatter.dart';
 import '../../domain/entities/expense.dart';
 import '../../domain/entities/gas_sale.dart';
 import 'dashboard_kpi_card.dart';
@@ -19,16 +20,6 @@ class GazDashboardMonthSection extends StatelessWidget {
   final double monthExpensesAmount;
   final double monthProfit;
 
-  String _formatCurrency(double amount) {
-    final isNegative = amount < 0;
-    final absAmount = amount.abs();
-    final amountStr = absAmount.toStringAsFixed(0);
-    final formatted = amountStr.replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-      (Match m) => '${m[1]} ',
-    );
-    return '${isNegative ? '-' : ''}$formatted F';
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +30,7 @@ class GazDashboardMonthSection extends StatelessWidget {
         final cards = [
           GazDashboardKpiCard(
             label: "Chiffre d'Affaires",
-            value: _formatCurrency(monthRevenue),
+            value: CurrencyFormatter.formatDouble(monthRevenue).replaceAll(' FCFA', ' F'),
             subtitle: '$monthSalesCount ventes',
             icon: Icons.trending_up,
             iconColor: Colors.blue,
@@ -47,7 +38,7 @@ class GazDashboardMonthSection extends StatelessWidget {
           ),
           GazDashboardKpiCard(
             label: 'Dépenses',
-            value: _formatCurrency(monthExpensesAmount),
+            value: CurrencyFormatter.formatDouble(monthExpensesAmount).replaceAll(' FCFA', ' F'),
             subtitle: 'Charges du mois',
             icon: Icons.receipt_long,
             iconColor: Colors.red,
@@ -55,7 +46,7 @@ class GazDashboardMonthSection extends StatelessWidget {
           ),
           GazDashboardKpiCard(
             label: 'Bénéfice Net',
-            value: _formatCurrency(monthProfit),
+            value: CurrencyFormatter.formatDouble(monthProfit).replaceAll(' FCFA', ' F'),
             subtitle: monthProfit >= 0 ? 'Profit' : 'Déficit',
             icon: Icons.account_balance_wallet,
             iconColor: monthProfit >= 0 ? Colors.green : Colors.red,

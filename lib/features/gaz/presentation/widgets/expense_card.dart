@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../shared/utils/currency_formatter.dart';
 import '../../domain/entities/expense.dart';
 
 /// Carte affichant les détails d'une dépense.
@@ -16,13 +17,6 @@ class GazExpenseCard extends StatelessWidget {
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
 
-  String _formatCurrency(double amount) {
-    return amount.toStringAsFixed(0).replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        ) +
-        ' F';
-  }
 
   IconData _getCategoryIcon() {
     switch (expense.category) {
@@ -160,7 +154,8 @@ class GazExpenseCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    _formatCurrency(expense.amount),
+                    CurrencyFormatter.formatDouble(expense.amount)
+                        .replaceAll(' FCFA', ' F'),
                     style: theme.textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: Colors.red,

@@ -1,0 +1,48 @@
+import 'package:flutter/material.dart';
+
+import '../../../../domain/entities/cylinder_leak.dart';
+
+/// Filtres pour les fuites.
+class LeakFilters extends StatelessWidget {
+  const LeakFilters({
+    super.key,
+    required this.filterStatus,
+    required this.onFilterChanged,
+  });
+
+  final LeakStatus? filterStatus;
+  final ValueChanged<LeakStatus?> onFilterChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: const Color(0xFFF9FAFB),
+      padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          FilterChip(
+            label: const Text('Tous'),
+            selected: filterStatus == null,
+            onSelected: (selected) {
+              if (selected) {
+                onFilterChanged(null);
+              }
+            },
+          ),
+          ...LeakStatus.values.map((status) {
+            return FilterChip(
+              label: Text(status.label),
+              selected: filterStatus == status,
+              onSelected: (selected) {
+                onFilterChanged(selected ? status : null);
+              },
+            );
+          }),
+        ],
+      ),
+    );
+  }
+}
+
