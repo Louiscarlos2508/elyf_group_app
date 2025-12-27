@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../../shared/utils/currency_formatter.dart';
+import '../../../../../shared/utils/currency_formatter.dart';
 import '../../../domain/entities/report_data.dart';
 
 /// Détail des calculs du rapport de profit.

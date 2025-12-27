@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../../shared/presentation/widgets/gaz_button_styles.dart';
+import '../../../../../shared/presentation/widgets/gaz_button_styles.dart';
 
 /// Formulaire d'ajout de bouteille avec sélection du type et de la quantité.
 class BottleQuantityInput extends StatelessWidget {

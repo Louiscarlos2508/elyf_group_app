@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../../../shared/utils/currency_formatter.dart';
-import '../../../../application/controllers/cylinder_stock_controller.dart';
-import '../../../../application/providers.dart';
-import '../../../../domain/entities/cylinder.dart';
-import '../../../../domain/entities/cylinder_stock.dart';
-import '../../../../domain/entities/gas_sale.dart';
+import '../../../../../shared/utils/currency_formatter.dart';
+import '../../../application/providers.dart';
+import '../../../domain/entities/cylinder.dart';
+import '../../../domain/entities/cylinder_stock.dart';
+import '../../../domain/entities/gas_sale.dart';
 
 /// Handler pour la soumission du formulaire de vente de gaz.
 class GasSaleSubmitHandler {

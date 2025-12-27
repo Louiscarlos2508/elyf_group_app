@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../../domain/entities/point_of_sale.dart';
-import '../../../../../../shared/presentation/widgets/gaz_button_styles.dart';
+import '../../../domain/entities/point_of_sale.dart';
+import '../../../../../shared/presentation/widgets/gaz_button_styles.dart';
 
 /// Ligne du tableau des points de vente.
 class PosTableRow extends StatelessWidget {

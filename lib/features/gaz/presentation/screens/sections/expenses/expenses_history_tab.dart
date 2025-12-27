@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../../../shared/utils/currency_formatter.dart';
-import '../../../domain/entities/expense.dart';
+import '../../../../domain/entities/expense.dart';
 import '../../../widgets/expenses_empty_state.dart';
 
 /// Onglet historique des dépenses.

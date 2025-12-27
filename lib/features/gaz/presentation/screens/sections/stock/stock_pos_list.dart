@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../domain/entities/cylinder.dart';
 import '../../../../domain/entities/cylinder_stock.dart';
 import '../../../../domain/entities/point_of_sale.dart';
 import '../../../widgets/point_of_sale_stock_card.dart';

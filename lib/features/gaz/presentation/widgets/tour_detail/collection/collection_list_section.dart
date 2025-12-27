@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../domain/entities/collection.dart';
 import '../../../../domain/entities/tour.dart';
-import '../../../collection_item_widget.dart';
+import '../../collection_item_widget.dart';
 
 /// Section de liste des collections par type.
 class CollectionListSection extends StatelessWidget {

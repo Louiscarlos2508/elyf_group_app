@@ -17,12 +17,6 @@ class GazExpensesReportContentV2 extends ConsumerWidget {
   final DateTime startDate;
   final DateTime endDate;
 
-)+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        ) +
-        ' F';
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);

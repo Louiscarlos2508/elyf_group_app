@@ -20,12 +20,6 @@ class GazFinancialReportContentV2 extends ConsumerWidget {
   final DateTime endDate;
   final double totalRevenue;
 
-)+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        ) +
-        ' FCFA';
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);

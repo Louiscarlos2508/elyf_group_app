@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../../shared/presentation/widgets/gaz_button_styles.dart';
 import '../../../../application/providers.dart';
 import '../../../../domain/entities/tour.dart';
-import '../../../transport_expense_form_dialog.dart';
+import '../../transport_expense_form_dialog.dart';
 
 /// En-tête de l'étape transport.
 class TransportStepHeader extends ConsumerWidget {

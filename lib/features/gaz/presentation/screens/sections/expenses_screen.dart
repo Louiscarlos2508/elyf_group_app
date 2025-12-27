@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../shared/presentation/widgets/gaz_button_styles.dart';
+import '../../../../../shared/presentation/widgets/gaz_button_styles.dart';
 import '../../../application/providers.dart';
 import '../../../domain/entities/expense.dart';
 import '../../../domain/services/gaz_calculation_service.dart';
@@ -30,22 +30,20 @@ class _GazExpensesScreenState extends ConsumerState<GazExpensesScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(_onTabChanged);
   }
 
   @override
   void dispose() {
+    _tabController.removeListener(_onTabChanged);
     _tabController.dispose();
     super.dispose();
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _tabController.addListener(() {
-      if (mounted) {
-        setState(() {});
-      }
-    });
+  void _onTabChanged() {
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   void _showNewExpenseDialog() {

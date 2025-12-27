@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../application/controllers/cylinder_controller.dart';
+import '../../../../shared/presentation/widgets/gaz_button_styles.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/cylinder.dart';
+import 'cylinder_form/cylinder_form_header.dart';
+import 'cylinder_form/cylinder_submit_handler.dart';
 
 /// Dialogue pour créer ou modifier une bouteille de gaz.
 class CylinderFormDialog extends ConsumerStatefulWidget {
@@ -36,7 +38,6 @@ class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
   @override
   void initState() {
     super.initState();
-    // TODO: Récupérer enterpriseId et moduleId depuis le contexte/tenant
     _enterpriseId ??= 'default_enterprise';
     _moduleId ??= 'gaz';
 
@@ -60,67 +61,23 @@ class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
 
   Future<void> _saveCylinder() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_selectedWeight == null || _enterpriseId == null || _moduleId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Veuillez remplir tous les champs requis'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
 
     setState(() => _isLoading = true);
 
-    try {
-      final controller = ref.read(cylinderControllerProvider);
-      final weight = int.tryParse(_weightController.text) ?? _selectedWeight!;
-      final buyPrice = double.tryParse(_buyPriceController.text) ?? 0.0;
-      final sellPrice = double.tryParse(_sellPriceController.text) ?? 0.0;
+    final success = await CylinderSubmitHandler.submit(
+      context: context,
+      ref: ref,
+      selectedWeight: _selectedWeight,
+      weightText: _weightController.text,
+      buyPriceText: _buyPriceController.text,
+      sellPriceText: _sellPriceController.text,
+      enterpriseId: _enterpriseId,
+      moduleId: _moduleId,
+      existingCylinder: widget.cylinder,
+    );
 
-      final cylinder = Cylinder(
-        id: widget.cylinder?.id ??
-            'cyl-${DateTime.now().millisecondsSinceEpoch}',
-        weight: weight,
-        buyPrice: buyPrice,
-        sellPrice: sellPrice,
-        enterpriseId: _enterpriseId!,
-        moduleId: _moduleId!,
-      );
-
-      if (widget.cylinder == null) {
-        await controller.addCylinder(cylinder);
-      } else {
-        await controller.updateCylinder(cylinder);
-      }
-
-      if (!mounted) return;
-
-      // Invalider le provider pour rafraîchir la liste
-      ref.invalidate(cylindersProvider);
-
-      Navigator.of(context).pop();
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            widget.cylinder == null
-                ? 'Bouteille créée avec succès'
-                : 'Bouteille mise à jour',
-          ),
-          backgroundColor: Colors.green,
-        ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+    if (mounted) {
+      setState(() => _isLoading = false);
     }
   }
 
@@ -143,24 +100,7 @@ class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          widget.cylinder == null
-                              ? 'Nouvelle Bouteille'
-                              : 'Modifier la Bouteille',
-                          style: theme.textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: () => Navigator.of(context).pop(),
-                      ),
-                    ],
-                  ),
+                  CylinderFormHeader(isEditing: widget.cylinder != null),
                   const SizedBox(height: 24),
                   // Poids
                   DropdownButtonFormField<int>(
@@ -260,10 +200,11 @@ class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       Flexible(
-                        child: TextButton(
+                        child: OutlinedButton(
                           onPressed: _isLoading
                               ? null
                               : () => Navigator.of(context).pop(),
+                          style: GazButtonStyles.outlined,
                           child: const Text('Annuler'),
                         ),
                       ),
@@ -271,6 +212,7 @@ class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
                       Flexible(
                         child: FilledButton(
                           onPressed: _isLoading ? null : _saveCylinder,
+                          style: GazButtonStyles.filledPrimary,
                           child: _isLoading
                               ? const SizedBox(
                                   width: 20,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../application/providers.dart';
+import '../../../../domain/entities/cylinder.dart';
 import '../../../../domain/entities/cylinder_stock.dart';
 import '../../../../domain/entities/point_of_sale.dart';
 import '../../../widgets/stock_kpi_card.dart';

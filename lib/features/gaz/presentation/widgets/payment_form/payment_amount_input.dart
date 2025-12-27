@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
-import '../../../../shared/utils/currency_formatter.dart';
+import '../../../../../shared/utils/currency_formatter.dart';
 import '../../../domain/entities/collection.dart';
 
 /// Section d'affichage des montants et saisie du montant reçu.

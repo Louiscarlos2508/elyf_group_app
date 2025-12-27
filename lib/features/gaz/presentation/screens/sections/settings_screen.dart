@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../widgets/bottle_price_table.dart';
 import '../../widgets/point_of_sale_table.dart';
-import '../../../../shared/presentation/widgets/gaz_button_styles.dart';
 
 /// Écran de paramètres pour le module Gaz selon le design Figma.
 class GazSettingsScreen extends ConsumerWidget {

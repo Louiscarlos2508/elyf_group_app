@@ -27,22 +27,20 @@ class _ApprovisionnementScreenState
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(_onTabChanged);
   }
 
   @override
   void dispose() {
+    _tabController.removeListener(_onTabChanged);
     _tabController.dispose();
     super.dispose();
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _tabController.addListener(() {
-      if (mounted) {
-        setState(() {});
-      }
-    });
+  void _onTabChanged() {
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   void _showNewTourDialog() async {

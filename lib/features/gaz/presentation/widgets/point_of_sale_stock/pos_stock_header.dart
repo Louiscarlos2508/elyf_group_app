@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../../domain/entities/point_of_sale.dart';
+import '../../../domain/entities/point_of_sale.dart';
 
 /// En-tête de la carte de stock d'un point de vente.
 class PosStockHeader extends StatelessWidget {

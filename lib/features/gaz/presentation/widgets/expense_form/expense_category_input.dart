@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../../domain/entities/expense.dart';
+import '../../../domain/entities/expense.dart';
 
 /// Input pour la catégorie de la dépense.
 class ExpenseCategoryInput extends StatelessWidget {

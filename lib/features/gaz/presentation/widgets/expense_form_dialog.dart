@@ -153,8 +153,11 @@ class _GazExpenseFormDialogState
                   const SizedBox(height: 16),
                   ExpenseCategoryInput(
                     selectedCategory: _selectedCategory,
-                    onCategoryChanged: (category) =>
-                        setState(() => _selectedCategory = category),
+                    onCategoryChanged: (category) {
+                      if (category != null) {
+                        setState(() => _selectedCategory = category);
+                      }
+                    },
                   ),
                   const SizedBox(height: 16),
                   TextFormField(

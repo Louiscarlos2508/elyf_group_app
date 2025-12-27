@@ -238,7 +238,7 @@ class _ClosureActionButtons extends ConsumerWidget {
           const SizedBox(width: 8),
           FilledButton.icon(
             style: GazButtonStyles.filledPrimaryIcon.copyWith(
-              minimumSize: const Size(147.286, 36),
+              minimumSize: const MaterialStatePropertyAll(Size(147.286, 36)),
             ),
             onPressed: () async {
               try {

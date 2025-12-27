@@ -4,8 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../application/providers.dart';
 import '../../../domain/entities/collection.dart';
 import '../../../domain/entities/tour.dart';
-import '../../payment_form_dialog.dart';
-import '../../wholesaler_payment_card.dart';
+import '../payment_form_dialog.dart';
+import '../wholesaler_payment_card.dart';
 
 /// Contenu de l'étape retour du tour.
 class ReturnStepContent extends ConsumerWidget {
