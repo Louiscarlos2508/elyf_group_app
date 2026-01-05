@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../widgets/bottle_price_table.dart';
+import '../../widgets/cylinder_form_dialog.dart';
+import '../../widgets/point_of_sale_form_dialog.dart';
 import '../../widgets/point_of_sale_table.dart';
 
 /// Écran de paramètres pour le module Gaz selon le design Figma.
