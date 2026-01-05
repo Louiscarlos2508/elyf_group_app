@@ -3,10 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:open_file/open_file.dart';
 
 import '../../../../../core/pdf/unified_payment_pdf_service.dart';
+import '../../../../shared/presentation/widgets/form_dialog.dart';
+import '../../../../shared/utils/validators.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/contract.dart';
 import '../../domain/entities/payment.dart';
-import 'form_dialog.dart';
 import 'payment_form_fields.dart';
 
 class PaymentFormDialog extends ConsumerStatefulWidget {
@@ -305,16 +306,7 @@ class _PaymentFormDialogState extends ConsumerState<PaymentFormDialog> {
             const SizedBox(height: 16),
             PaymentFormFields.amountField(
               controller: _amountController,
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Le montant est requis';
-                }
-                final amount = int.tryParse(value);
-                if (amount == null || amount <= 0) {
-                  return 'Montant invalide';
-                }
-                return null;
-              },
+              validator: (value) => Validators.amount(value),
             ),
             const SizedBox(height: 16),
             PaymentFormFields.monthYearFields(

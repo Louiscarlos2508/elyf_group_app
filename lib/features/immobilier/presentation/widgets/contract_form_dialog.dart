@@ -8,7 +8,7 @@ import '../../domain/entities/contract.dart';
 import '../../domain/entities/property.dart';
 import '../../domain/entities/tenant.dart';
 import 'contract_form_fields.dart';
-import 'form_dialog.dart';
+import '../../../../shared/presentation/widgets/form_dialog.dart';
 
 class ContractFormDialog extends ConsumerStatefulWidget {
   const ContractFormDialog({
@@ -263,16 +263,7 @@ class _ContractFormDialogState extends ConsumerState<ContractFormDialog> {
             const SizedBox(height: 16),
             ContractFormFields.monthlyRentField(
               controller: _monthlyRentController,
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Le loyer est requis';
-                }
-                final rent = int.tryParse(value);
-                if (rent == null || rent <= 0) {
-                  return 'Montant invalide';
-                }
-                return null;
-              },
+              validator: (value) => Validators.amount(value, customMessage: 'Le loyer est requis'),
             ),
             const SizedBox(height: 16),
             ContractFormFields.depositField(

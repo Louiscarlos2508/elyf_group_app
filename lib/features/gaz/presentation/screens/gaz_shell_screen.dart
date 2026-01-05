@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../shared/presentation/widgets/adaptive_navigation_scaffold.dart';
+import '../../../../shared/presentation/widgets/base_module_shell_screen.dart';
 import 'sections/approvisionnement_screen.dart';
 import 'sections/cylinder_leak_screen.dart';
 import 'sections/dashboard_screen.dart';
@@ -13,24 +15,31 @@ import 'sections/stock_screen.dart';
 import 'sections/wholesale_screen.dart';
 
 /// Écran principal du module Gaz avec navigation.
-class GazShellScreen extends StatefulWidget {
+class GazShellScreen extends BaseModuleShellScreen {
   const GazShellScreen({
     super.key,
-    required this.enterpriseId,
-    required this.moduleId,
+    required super.enterpriseId,
+    required super.moduleId,
   });
 
-  final String enterpriseId;
-  final String moduleId;
-
   @override
-  State<GazShellScreen> createState() => _GazShellScreenState();
+  BaseModuleShellScreenState<GazShellScreen> createState() =>
+      _GazShellScreenState();
 }
 
-class _GazShellScreenState extends State<GazShellScreen> {
-  int _selectedIndex = 0;
+class _GazShellScreenState
+    extends BaseModuleShellScreenState<GazShellScreen> {
+  @override
+  String get moduleName => 'Gaz';
 
-  List<NavigationSection> _buildSections() {
+  @override
+  IconData get moduleIcon => Icons.local_gas_station_outlined;
+
+  @override
+  String get appTitle => 'Gaz • Détail et gros';
+
+  @override
+  List<NavigationSection> buildSections() {
     return [
       NavigationSection(
         label: 'Tableau',
@@ -111,20 +120,5 @@ class _GazShellScreenState extends State<GazShellScreen> {
         moduleId: widget.moduleId,
       ),
     ];
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AdaptiveNavigationScaffold(
-      sections: _buildSections(),
-      appTitle: 'Gaz • Détail et gros',
-      selectedIndex: _selectedIndex,
-      onIndexChanged: (index) {
-        setState(() => _selectedIndex = index);
-      },
-      isLoading: false,
-      enterpriseId: widget.enterpriseId,
-      moduleId: widget.moduleId,
-    );
   }
 }

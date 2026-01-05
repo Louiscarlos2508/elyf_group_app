@@ -1,9 +1,7 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../shared/presentation/widgets/adaptive_navigation_scaffold.dart';
+import '../../../../shared/presentation/widgets/base_module_shell_screen.dart';
 import '../../../../shared/presentation/widgets/module_loading_animation.dart';
 import '../../../../shared/presentation/widgets/profile/profile_screen.dart' as shared;
 import 'sections/catalog_screen.dart';
@@ -12,37 +10,40 @@ import 'sections/expenses_screen.dart';
 import 'sections/pos_screen.dart';
 import 'sections/reports_screen.dart';
 
-class BoutiqueShellScreen extends ConsumerStatefulWidget {
+class BoutiqueShellScreen extends BaseModuleShellScreen {
   const BoutiqueShellScreen({
     super.key,
-    required this.enterpriseId,
-    required this.moduleId,
+    required super.enterpriseId,
+    required super.moduleId,
   });
 
-  final String enterpriseId;
-  final String moduleId;
-
   @override
-  ConsumerState<BoutiqueShellScreen> createState() =>
+  BaseModuleShellScreenState<BoutiqueShellScreen> createState() =>
       _BoutiqueShellScreenState();
 }
 
-class _BoutiqueShellScreenState extends ConsumerState<BoutiqueShellScreen> {
-  int _selectedIndex = 0;
-  bool _isLoading = true;
+class _BoutiqueShellScreenState
+    extends BaseModuleShellScreenState<BoutiqueShellScreen> {
+  @override
+  String get moduleName => 'Boutique';
 
   @override
-  void initState() {
-    super.initState();
-    // Simulate module initialization
-    Timer(const Duration(milliseconds: 1200), () {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    });
+  IconData get moduleIcon => Icons.store;
+
+  @override
+  String get appTitle => 'Boutique • Vente physique';
+
+  @override
+  Widget buildLoading() {
+    return const ModuleLoadingAnimation(
+      moduleName: 'Boutique',
+      moduleIcon: Icons.store,
+      message: 'Chargement du catalogue...',
+    );
   }
 
-  List<NavigationSection> _buildSections() {
+  @override
+  List<NavigationSection> buildSections() {
     // TODO: Adapter les écrans de sections pour accepter enterpriseId et moduleId
     // Pour l'instant, on passe les paramètres au widget mais les sections
     // devront être adaptées individuellement pour les utiliser
@@ -93,26 +94,6 @@ class _BoutiqueShellScreenState extends ConsumerState<BoutiqueShellScreen> {
         moduleId: widget.moduleId,
       ),
     ];
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AdaptiveNavigationScaffold(
-      sections: _buildSections(),
-      appTitle: 'Boutique • Vente physique',
-      selectedIndex: _selectedIndex,
-      onIndexChanged: (index) {
-        setState(() => _selectedIndex = index);
-      },
-      isLoading: _isLoading,
-      loadingWidget: const ModuleLoadingAnimation(
-        moduleName: 'Boutique',
-        moduleIcon: Icons.store,
-        message: 'Chargement du catalogue...',
-      ),
-      enterpriseId: widget.enterpriseId,
-      moduleId: widget.moduleId,
-    );
   }
 }
 

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../shared/presentation/widgets/adaptive_navigation_scaffold.dart';
+import '../../../../shared/presentation/widgets/base_module_shell_screen.dart';
 import '../../../../shared/presentation/widgets/profile/profile_screen.dart' as shared;
 import 'sections/agents_screen.dart';
 import 'sections/commissions_screen.dart';
@@ -10,26 +10,31 @@ import 'sections/reports_screen.dart';
 import 'sections/settings_screen.dart';
 import 'sections/transactions_v2_screen.dart';
 
-class OrangeMoneyShellScreen extends ConsumerStatefulWidget {
+class OrangeMoneyShellScreen extends BaseModuleShellScreen {
   const OrangeMoneyShellScreen({
     super.key,
-    required this.enterpriseId,
-    required this.moduleId,
+    required super.enterpriseId,
+    required super.moduleId,
   });
 
-  final String enterpriseId;
-  final String moduleId;
-
   @override
-  ConsumerState<OrangeMoneyShellScreen> createState() =>
+  BaseModuleShellScreenState<OrangeMoneyShellScreen> createState() =>
       _OrangeMoneyShellScreenState();
 }
 
 class _OrangeMoneyShellScreenState
-    extends ConsumerState<OrangeMoneyShellScreen> {
-  int _index = 0;
+    extends BaseModuleShellScreenState<OrangeMoneyShellScreen> {
+  @override
+  String get moduleName => 'Orange Money';
 
-  List<NavigationSection> _buildSections() {
+  @override
+  IconData get moduleIcon => Icons.account_balance_wallet_outlined;
+
+  @override
+  String get appTitle => 'Orange Money';
+
+  @override
+  List<NavigationSection> buildSections() {
     return [
       NavigationSection(
         label: 'Transactions',
@@ -74,18 +79,6 @@ class _OrangeMoneyShellScreenState
         isPrimary: false,
       ),
     ];
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AdaptiveNavigationScaffold(
-      appTitle: 'Orange Money',
-      sections: _buildSections(),
-      selectedIndex: _index,
-      onIndexChanged: (index) => setState(() => _index = index),
-      enterpriseId: widget.enterpriseId,
-      moduleId: widget.moduleId,
-    );
   }
 }
 

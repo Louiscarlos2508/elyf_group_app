@@ -1,9 +1,7 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../shared/presentation/widgets/adaptive_navigation_scaffold.dart';
+import '../../../../shared/presentation/widgets/base_module_shell_screen.dart';
 import '../../../../shared/presentation/widgets/module_loading_animation.dart';
 import '../../../../shared/presentation/widgets/profile/profile_screen.dart'
     as shared;
@@ -15,38 +13,40 @@ import 'sections/properties_screen.dart';
 import 'sections/reports_screen.dart';
 import 'sections/tenants_screen.dart';
 
-class ImmobilierShellScreen extends ConsumerStatefulWidget {
+class ImmobilierShellScreen extends BaseModuleShellScreen {
   const ImmobilierShellScreen({
     super.key,
-    required this.enterpriseId,
-    required this.moduleId,
+    required super.enterpriseId,
+    required super.moduleId,
   });
 
-  final String enterpriseId;
-  final String moduleId;
-
   @override
-  ConsumerState<ImmobilierShellScreen> createState() =>
+  BaseModuleShellScreenState<ImmobilierShellScreen> createState() =>
       _ImmobilierShellScreenState();
 }
 
 class _ImmobilierShellScreenState
-    extends ConsumerState<ImmobilierShellScreen> {
-  int _selectedIndex = 0;
-  bool _isLoading = true;
+    extends BaseModuleShellScreenState<ImmobilierShellScreen> {
+  @override
+  String get moduleName => 'Immobilier';
 
   @override
-  void initState() {
-    super.initState();
-    // Simulate module initialization
-    Timer(const Duration(milliseconds: 1200), () {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    });
+  IconData get moduleIcon => Icons.home_work_outlined;
+
+  @override
+  String get appTitle => 'Immobilier • Maisons';
+
+  @override
+  Widget buildLoading() {
+    return const ModuleLoadingAnimation(
+      moduleName: 'Immobilier',
+      moduleIcon: Icons.home_work_outlined,
+      message: 'Chargement des données...',
+    );
   }
 
-  List<NavigationSection> _buildSections() {
+  @override
+  List<NavigationSection> buildSections() {
     // TODO: Adapter les écrans de sections pour accepter enterpriseId et moduleId
     // Pour l'instant, on passe les paramètres au widget mais les sections
     // devront être adaptées individuellement pour les utiliser
@@ -113,26 +113,6 @@ class _ImmobilierShellScreenState
         moduleId: widget.moduleId,
       ),
     ];
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AdaptiveNavigationScaffold(
-      sections: _buildSections(),
-      appTitle: 'Immobilier • Maisons',
-      selectedIndex: _selectedIndex,
-      onIndexChanged: (index) {
-        setState(() => _selectedIndex = index);
-      },
-      isLoading: _isLoading,
-      loadingWidget: const ModuleLoadingAnimation(
-        moduleName: 'Immobilier',
-        moduleIcon: Icons.home_work_outlined,
-        message: 'Chargement des données...',
-      ),
-      enterpriseId: widget.enterpriseId,
-      moduleId: widget.moduleId,
-    );
   }
 }
 

@@ -13,7 +13,7 @@ import '../../widgets/daily_expense_summary_card.dart';
 import '../../widgets/expense_detail_dialog.dart';
 import '../../widgets/expense_form.dart';
 import '../../widgets/expenses_table.dart';
-import '../../widgets/form_dialog.dart';
+import '../../../../../../shared/presentation/widgets/form_dialog.dart';
 import '../../widgets/monthly_expense_summary.dart';
 import '../../widgets/section_placeholder.dart';
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../../shared/utils/validators.dart';
 import '../../application/providers.dart';
 
 /// Form for creating/editing a customer account.
@@ -26,11 +27,6 @@ class CustomerFormState extends ConsumerState<CustomerForm> {
     super.dispose();
   }
 
-  bool _isValidPhone(String phone) {
-    // Basic validation: should start with + or 0 and have at least 8 digits
-    final cleaned = phone.replaceAll(RegExp(r'[\s\-]'), '');
-    return RegExp(r'^(\+?[0-9]{8,})$').hasMatch(cleaned);
-  }
 
   Future<void> submit() async {
     if (!_formKey.currentState!.validate()) return;
@@ -76,11 +72,10 @@ class CustomerFormState extends ConsumerState<CustomerForm> {
                 helperText: 'Prénom et nom du client',
               ),
               textCapitalization: TextCapitalization.words,
-              validator: (v) {
-                if (v == null || v.isEmpty) return 'Requis';
-                if (v.trim().length < 2) return 'Nom trop court';
-                return null;
-              },
+              validator: (v) => Validators.combine([
+                () => Validators.required(v),
+                () => Validators.minLength(v, 2, customMessage: 'Nom trop court'),
+              ]),
             ),
             const SizedBox(height: 16),
             TextFormField(
@@ -91,13 +86,7 @@ class CustomerFormState extends ConsumerState<CustomerForm> {
                 helperText: 'Numéro de téléphone (ex: +237 6XX XXX XXX)',
               ),
               keyboardType: TextInputType.phone,
-              validator: (v) {
-                if (v == null || v.isEmpty) return 'Requis';
-                if (!_isValidPhone(v)) {
-                  return 'Format de téléphone invalide';
-                }
-                return null;
-              },
+              validator: (v) => Validators.phone(v),
             ),
             const SizedBox(height: 16),
             TextFormField(

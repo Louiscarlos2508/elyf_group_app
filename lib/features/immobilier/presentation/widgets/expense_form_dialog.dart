@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../shared/presentation/widgets/form_dialog.dart';
+import '../../../../shared/utils/validators.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/expense.dart';
 import '../../domain/entities/property.dart';
 import 'expense_form_fields.dart';
-import 'form_dialog.dart';
 
 class ExpenseFormDialog extends ConsumerStatefulWidget {
   const ExpenseFormDialog({
@@ -158,16 +159,7 @@ class _ExpenseFormDialogState extends ConsumerState<ExpenseFormDialog> {
             const SizedBox(height: 16),
             ExpenseFormFields.amountField(
               controller: _amountController,
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Le montant est requis';
-                }
-                final amount = int.tryParse(value);
-                if (amount == null || amount <= 0) {
-                  return 'Montant invalide';
-                }
-                return null;
-              },
+              validator: (value) => Validators.amount(value),
             ),
             const SizedBox(height: 16),
             ExpenseFormFields.categoryField(

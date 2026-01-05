@@ -4,20 +4,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/providers.dart';
 import '../../domain/entities/bobine_usage.dart';
-import '../../domain/entities/electricity_meter_type.dart';
 import '../../domain/entities/machine.dart';
 import '../../domain/entities/production_day.dart';
 import '../../domain/entities/production_session.dart';
 import '../../domain/entities/production_session_status.dart';
-import '../../domain/entities/stock_movement.dart';
 import '../screens/sections/production_session_detail_screen.dart'
     show productionSessionDetailProvider;
-import 'daily_personnel_form.dart';
 import 'bobine_installation_form.dart';
 import 'bobine_usage_form_field.dart' show bobineStocksDisponiblesProvider;
 import 'machine_breakdown_dialog.dart';
 import 'machine_selector_field.dart';
-import 'time_picker_field.dart';
+import 'production_session_form_steps/production_session_form_helpers.dart';
+import 'production_session_form_steps/step_startup.dart';
+import 'production_session_form_steps/step_production.dart';
+import 'production_session_form_steps/step_finalization.dart';
 
 /// Formulaire de session de production divisé en étapes.
 class ProductionSessionFormSteps extends ConsumerStatefulWidget {
@@ -222,21 +222,14 @@ class ProductionSessionFormStepsState
     super.dispose();
   }
 
-  int? get _indexCompteurInitialKwh {
-    final value = _indexCompteurInitialController.text.trim();
-    if (value.isEmpty) return null;
-    // Accepter les décimales et arrondir
-    final doubleValue = double.tryParse(value);
-    return doubleValue?.round();
-  }
-  int? get _indexCompteurFinalKwh {
-    final value = _indexCompteurFinalController.text.trim();
-    if (value.isEmpty) return null;
-    // Accepter les nombres avec virgule ou point décimal et arrondir
-    final cleanedValue = value.replaceAll(',', '.');
-    final doubleValue = double.tryParse(cleanedValue);
-    return doubleValue?.round();
-  }
+  int? get _indexCompteurInitialKwh =>
+      ProductionSessionFormHelpers.parseIndexCompteur(
+        _indexCompteurInitialController.text,
+      );
+  int? get _indexCompteurFinalKwh =>
+      ProductionSessionFormHelpers.parseIndexCompteur(
+        _indexCompteurFinalController.text,
+      );
 
   Future<void> submit() async {
     if (!_formKey.currentState!.validate()) return;
@@ -512,819 +505,83 @@ class ProductionSessionFormStepsState
   }
 
   Widget _buildCurrentStep() {
-    // Pour une nouvelle session, on a seulement l'étape 1
-    // Pour une session existante, on garde les 3 étapes
     final isEditing = widget.session != null;
     final maxStep = isEditing ? 2 : 0;
-    
+
     if (widget.currentStep > maxStep) {
       return const SizedBox.shrink();
     }
-    
+
     switch (widget.currentStep) {
       case 0:
-        return _buildStep1(isEditing: isEditing);
+        return StepStartup(
+          isEditing: isEditing,
+          selectedDate: _selectedDate,
+          heureDebut: _heureDebut,
+          machinesSelectionnees: _machinesSelectionnees,
+          bobinesUtilisees: _bobinesUtilisees,
+          machinesAvecBobineNonFinie: _machinesAvecBobineNonFinie,
+          indexCompteurInitialController: _indexCompteurInitialController,
+          onDateSelected: (date) => setState(() => _selectedDate = date),
+          onHeureDebutChanged: (heure) => setState(() => _heureDebut = heure),
+          onMachinesChanged: (machines) async {
+            setState(() => _machinesSelectionnees = machines);
+            await _chargerBobinesNonFinies();
+          },
+          onBobinesChanged: (bobines) => setState(() => _bobinesUtilisees = bobines),
+          onInstallerBobine: () => _installerBobine(context),
+          onSignalerPanne: _signalerPanne,
+          onRetirerBobine: (index) {
+            setState(() => _bobinesUtilisees.removeAt(index));
+          },
+        );
       case 1:
-        return isEditing ? _buildStep2() : const SizedBox.shrink();
+        return isEditing
+            ? StepProduction(
+                quantiteController: _quantiteController,
+                emballagesController: _emballagesController,
+                notesController: _notesController,
+                productionDays: _productionDays,
+                selectedDate: _selectedDate,
+                session: widget.session,
+                machinesSelectionnees: _machinesSelectionnees,
+                bobinesUtilisees: _bobinesUtilisees,
+                onProductionDayAdded: (day) {
+                  setState(() {
+                    final existingIndex = _productionDays.indexWhere((d) => d.id == day.id);
+                    if (existingIndex != -1) {
+                      _productionDays[existingIndex] = day;
+                    } else {
+                      _productionDays.add(day);
+                    }
+                  });
+                },
+                onProductionDayRemoved: (day) {
+                  setState(() => _productionDays.removeWhere((d) => d.id == day.id));
+                },
+              )
+            : const SizedBox.shrink();
       case 2:
-        return isEditing ? _buildStep3() : const SizedBox.shrink();
+        return isEditing
+            ? StepFinalization(
+                selectedDate: _selectedDate,
+                heureDebut: _heureDebut,
+                machinesCount: _machinesSelectionnees.length,
+                bobinesCount: _bobinesUtilisees.length,
+                indexCompteurInitialController: _indexCompteurInitialController,
+                indexCompteurFinalController: _indexCompteurFinalController,
+                consommationController: _consommationController,
+                quantiteController: _quantiteController,
+                emballagesController: _emballagesController,
+              )
+            : const SizedBox.shrink();
       default:
         return const SizedBox.shrink();
     }
   }
 
-  Widget _buildStep1({required bool isEditing}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(
-          isEditing ? 'Modifier le démarrage' : 'Démarrage de production',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          isEditing
-              ? 'Modifiez les informations de démarrage de la session.'
-              : 'Configurez la session de production : date, machines, bobines et index initial.',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-        ),
-        const SizedBox(height: 24),
-        _buildDateField(),
-        const SizedBox(height: 16),
-        _buildTimeFields(),
-        const SizedBox(height: 24),
-        Text(
-          'Machines utilisées',
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-        ),
-        const SizedBox(height: 8),
-        MachineSelectorField(
-          machinesSelectionnees: _machinesSelectionnees,
-          onMachinesChanged: (machines) async {
-            setState(() {
-              _machinesSelectionnees = machines;
-            });
-            
-            // Charger automatiquement les bobines non finies pour les machines sélectionnées
-            await _chargerBobinesNonFinies();
-          },
-        ),
-        // Afficher une alerte si des machines ont des bobines non finies
-        if (_machinesAvecBobineNonFinie.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          _buildBobineNonFinieAlert(context),
-        ],
-        if (_machinesSelectionnees.isEmpty) ...[
-          const SizedBox(height: 8),
-          Text(
-            '⚠️ Au moins une machine est obligatoire',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.error,
-                ),
-          ),
-        ],
-        // Installation des bobines (toujours affichée)
-        const SizedBox(height: 24),
-        Text(
-          'Installation des bobines',
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-        ),
-        const SizedBox(height: 8),
-        _buildBobinesInstallationSection(),
-        const SizedBox(height: 24),
-        Text(
-          'Index compteur électrique au démarrage',
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-        ),
-        const SizedBox(height: 8),
-        _buildIndexCompteurInitialField(ref),
-      ],
-    );
-  }
-
-  Widget _buildStep2() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(
-          'Production',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Enregistrez les quantités produites et les emballages utilisés.',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-        ),
-        const SizedBox(height: 24),
-        _buildQuantiteField(),
-        const SizedBox(height: 16),
-        _buildEmballagesField(),
-        const SizedBox(height: 24),
-        _buildPersonnelSection(),
-        const SizedBox(height: 24),
-        _buildNotesField(),
-      ],
-    );
-  }
-
-  Widget _buildStep3() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(
-          'Finalisation',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Enregistrez les index finaux et la consommation pour finaliser la session.',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-        ),
-        const SizedBox(height: 24),
-        _buildIndexCompteurFinalField(ref),
-        const SizedBox(height: 16),
-        _buildConsommationField(ref),
-        const SizedBox(height: 24),
-        _buildSummaryCard(ref),
-      ],
-    );
-  }
-
-  Widget _buildSummaryCard(WidgetRef ref) {
-    final meterTypeAsync = ref.watch(electricityMeterTypeProvider);
-    
-    return meterTypeAsync.when(
-      data: (meterType) {
-        return Card(
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: BorderSide(
-              color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
-            ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Résumé de la session',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-                const SizedBox(height: 16),
-                _buildSummaryRow('Date', _formatDate(_selectedDate)),
-                _buildSummaryRow('Heure début', _formatTime(_heureDebut)),
-                _buildSummaryRow('Machines', '${_machinesSelectionnees.length}'),
-                _buildSummaryRow('Bobines', '${_bobinesUtilisees.length}'),
-                if (_indexCompteurInitialKwh != null)
-                  _buildSummaryRow(
-                    meterType.initialLabel,
-                    '$_indexCompteurInitialKwh ${meterType.unit}',
-                  ),
-                if (_indexCompteurFinalKwh != null)
-                  _buildSummaryRow(
-                    meterType.finalLabel,
-                    '$_indexCompteurFinalKwh ${meterType.unit}',
-                  ),
-                if (_consommationController.text.isNotEmpty)
-                  _buildSummaryRow(
-                    'Consommation électrique',
-                    '${_consommationController.text} ${meterType.unit}',
-                  ),
-                _buildSummaryRow('Quantité produite',
-                    '${_quantiteController.text} packs'),
-                if (_emballagesController.text.isNotEmpty)
-                  _buildSummaryRow('Emballages',
-                      '${_emballagesController.text} packs'),
-              ],
-            ),
-          ),
-        );
-      },
-      loading: () => const Card(
-        child: Padding(
-          padding: EdgeInsets.all(16),
-          child: Center(child: CircularProgressIndicator()),
-        ),
-      ),
-      error: (_, __) => Card(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Text('Erreur de chargement du type de compteur'),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildElectricitySummary(WidgetRef ref) {
-    final meterTypeAsync = ref.watch(electricityMeterTypeProvider);
-    
-    return meterTypeAsync.when(
-      data: (meterType) {
-        return Column(
-          children: [
-            if (_indexCompteurInitialKwh != null)
-              _buildSummaryRow(
-                meterType.initialLabel,
-                '$_indexCompteurInitialKwh ${meterType.unit}',
-              ),
-            if (_indexCompteurFinalKwh != null)
-              _buildSummaryRow(
-                meterType.finalLabel,
-                '$_indexCompteurFinalKwh ${meterType.unit}',
-              ),
-            if (_consommationController.text.isNotEmpty)
-              _buildSummaryRow(
-                'Consommation électrique',
-                '${_consommationController.text} ${meterType.unit}',
-              ),
-          ],
-        );
-      },
-      loading: () => const SizedBox.shrink(),
-      error: (_, __) {
-        // Fallback si erreur
-        return Column(
-          children: [
-            if (_indexCompteurInitialKwh != null)
-              _buildSummaryRow('Index électrique initial', '$_indexCompteurInitialKwh'),
-            if (_indexCompteurFinalKwh != null)
-              _buildSummaryRow('Index électrique final', '$_indexCompteurFinalKwh'),
-            if (_consommationController.text.isNotEmpty)
-              _buildSummaryRow('Consommation courant', '${_consommationController.text}'),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildSummaryRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-          ),
-          Text(
-            value,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDateField() {
-    return InkWell(
-      onTap: () => _selectDate(context),
-      child: InputDecorator(
-        decoration: const InputDecoration(
-          labelText: 'Date',
-          prefixIcon: Icon(Icons.calendar_today),
-        ),
-        child: Text(_formatDate(_selectedDate)),
-      ),
-    );
-  }
-
-  Widget _buildTimeFields() {
-    return Row(
-      children: [
-        Expanded(
-          child: TimePickerField(
-            label: 'Heure début',
-            initialTime: TimeOfDay.fromDateTime(_heureDebut),
-            onTimeSelected: (time) {
-              setState(() {
-                _heureDebut = DateTime(
-                  _selectedDate.year,
-                  _selectedDate.month,
-                  _selectedDate.day,
-                  time.hour,
-                  time.minute,
-                );
-              });
-            },
-          ),
-        ),
-        // Heure fin sera définie lors de la finalisation de la production
-      ],
-    );
-  }
-
-  Widget _buildIndexCompteurInitialField(WidgetRef ref) {
-    final meterTypeAsync = ref.watch(electricityMeterTypeProvider);
-    
-    return meterTypeAsync.when(
-      data: (meterType) {
-        return TextFormField(
-          controller: _indexCompteurInitialController,
-          decoration: InputDecoration(
-            labelText: '${meterType.initialLabel} *',
-            prefixIcon: const Icon(Icons.bolt),
-            helperText: meterType.initialHelperText,
-          ),
-          keyboardType: TextInputType.numberWithOptions(decimal: true),
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'Requis';
-            }
-            // Accepter les nombres avec virgule ou point décimal
-            final cleanedValue = value.replaceAll(',', '.');
-            final doubleValue = double.tryParse(cleanedValue);
-            if (doubleValue == null) {
-              return 'Nombre invalide';
-            }
-            if (doubleValue < 0) {
-              return 'Le nombre doit être positif';
-            }
-            return null;
-          },
-          onChanged: (_) => setState(() {}),
-        );
-      },
-      loading: () => TextFormField(
-        decoration: const InputDecoration(
-          labelText: 'Chargement...',
-          prefixIcon: Icon(Icons.bolt),
-        ),
-        enabled: false,
-      ),
-      error: (_, __) => TextFormField(
-        decoration: const InputDecoration(
-          labelText: 'Index compteur initial *',
-          prefixIcon: Icon(Icons.bolt),
-        ),
-        keyboardType: TextInputType.numberWithOptions(decimal: true),
-      ),
-    );
-  }
-
-  Widget _buildIndexCompteurFinalField(WidgetRef ref) {
-    final meterTypeAsync = ref.watch(electricityMeterTypeProvider);
-    
-    return meterTypeAsync.when(
-      data: (meterType) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              meterType.finalLabel,
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-            ),
-            const SizedBox(height: 8),
-            TextFormField(
-              controller: _indexCompteurFinalController,
-              decoration: InputDecoration(
-                labelText: '${meterType.finalLabel} *',
-                prefixIcon: const Icon(Icons.bolt),
-                helperText: meterType.finalHelperText,
-              ),
-              keyboardType: TextInputType.numberWithOptions(decimal: true),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Requis';
-                }
-                // Accepter les nombres avec virgule ou point décimal
-                final cleanedValue = value.replaceAll(',', '.');
-                final finalValue = double.tryParse(cleanedValue);
-                if (finalValue == null) {
-                  return 'Nombre invalide';
-                }
-                if (finalValue < 0) {
-                  return 'Le nombre doit être positif';
-                }
-                if (_indexCompteurInitialKwh != null) {
-                  if (!meterType.isValidRange(_indexCompteurInitialKwh!.toDouble(), finalValue)) {
-                    return meterType.validationErrorMessage;
-                  }
-                }
-                return null;
-              },
-              onChanged: (value) {
-                // Calculer automatiquement la consommation si les deux valeurs sont présentes
-                if (_indexCompteurInitialKwh != null && value != null && value.isNotEmpty) {
-                  // Accepter les nombres avec virgule ou point décimal
-                  final cleanedValue = value.replaceAll(',', '.');
-                  final finalValue = double.tryParse(cleanedValue);
-                  if (finalValue != null) {
-                    final consommation = meterType.calculateConsumption(
-                      _indexCompteurInitialKwh!.toDouble(),
-                      finalValue,
-                    );
-                    _consommationController.text = consommation.toStringAsFixed(2);
-                    setState(() {});
-                  }
-                }
-              },
-            ),
-          ],
-        );
-      },
-      loading: () => TextFormField(
-        decoration: const InputDecoration(
-          labelText: 'Chargement...',
-          prefixIcon: Icon(Icons.bolt),
-        ),
-        enabled: false,
-      ),
-      error: (_, __) => TextFormField(
-        controller: _indexCompteurFinalController,
-        decoration: const InputDecoration(
-          labelText: 'Index compteur final *',
-          prefixIcon: Icon(Icons.bolt),
-        ),
-        keyboardType: TextInputType.numberWithOptions(decimal: true),
-      ),
-    );
-  }
 
 
-  Widget _buildConsommationField(WidgetRef ref) {
-    final meterTypeAsync = ref.watch(electricityMeterTypeProvider);
-    
-    return meterTypeAsync.when(
-      data: (meterType) {
-        return TextFormField(
-          controller: _consommationController,
-          decoration: InputDecoration(
-            labelText: 'Consommation électrique (${meterType.unit}) *',
-            prefixIcon: const Icon(Icons.bolt),
-            helperText: 'Consommation électrique totale de la session',
-          ),
-          keyboardType: TextInputType.numberWithOptions(decimal: true),
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'Requis';
-            }
-            // Accepter les nombres avec virgule ou point décimal
-            final cleanedValue = value.replaceAll(',', '.');
-            final doubleValue = double.tryParse(cleanedValue);
-            if (doubleValue == null) {
-              return 'Nombre invalide';
-            }
-            if (doubleValue < 0) {
-              return 'Le nombre doit être positif';
-            }
-            return null;
-          },
-        );
-      },
-      loading: () => TextFormField(
-        decoration: const InputDecoration(
-          labelText: 'Chargement...',
-          prefixIcon: Icon(Icons.bolt),
-        ),
-        enabled: false,
-      ),
-      error: (_, __) => TextFormField(
-        decoration: const InputDecoration(
-          labelText: 'Consommation électrique *',
-          prefixIcon: Icon(Icons.bolt),
-        ),
-        keyboardType: TextInputType.numberWithOptions(decimal: true),
-      ),
-    );
-  }
-
-  Widget _buildQuantiteField() {
-    return TextFormField(
-      controller: _quantiteController,
-      decoration: const InputDecoration(
-        labelText: 'Quantité produite (packs)',
-        prefixIcon: Icon(Icons.inventory_2),
-      ),
-      keyboardType: TextInputType.number,
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return 'Requis';
-        }
-        final intValue = int.tryParse(value);
-        if (intValue == null || intValue <= 0) {
-          return 'Le nombre doit être un entier positif';
-        }
-        return null;
-      },
-    );
-  }
-
-  Widget _buildEmballagesField() {
-    return TextFormField(
-      controller: _emballagesController,
-      decoration: const InputDecoration(
-        labelText: 'Emballages utilisés (packs)',
-        prefixIcon: Icon(Icons.inventory_2),
-        helperText: 'Optionnel',
-      ),
-      keyboardType: TextInputType.number,
-    );
-  }
-
-  Widget _buildNotesField() {
-    return TextFormField(
-      controller: _notesController,
-      decoration: const InputDecoration(
-        labelText: 'Notes',
-        prefixIcon: Icon(Icons.note),
-        helperText: 'Optionnel',
-      ),
-      maxLines: 3,
-    );
-  }
-
-  /// Affiche une alerte pour informer l'utilisateur des machines avec bobines non finies
-  Widget _buildBobineNonFinieAlert(BuildContext context) {
-    final theme = Theme.of(context);
-    final machines = _machinesAvecBobineNonFinie.keys.toList();
-    
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.orange.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Colors.orange.withValues(alpha: 0.3),
-          width: 1.5,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.info_outline,
-                color: Colors.orange.shade700,
-                size: 24,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'Bobines non finies détectées',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.orange.shade700,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'Les machines suivantes ont des bobines non finies qui seront réutilisées au lieu d\'utiliser le stock :',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: 8),
-          ...machines.map((machineId) {
-            final bobine = _machinesAvecBobineNonFinie[machineId]!;
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.precision_manufacturing,
-                    size: 16,
-                    color: Colors.orange.shade700,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      '${bobine.machineName}: ${bobine.bobineType}',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        fontWeight: FontWeight.w500,
-                        color: Colors.orange.shade700,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.orange.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.lightbulb_outline,
-                  size: 16,
-                  color: Colors.orange.shade700,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Ces bobines seront réutilisées automatiquement. Le stock ne sera pas décrémenté.',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: Colors.orange.shade700,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _selectDate(BuildContext context) async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime.now().subtract(const Duration(days: 365)),
-      lastDate: DateTime.now(),
-    );
-    if (picked != null) {
-      setState(() => _selectedDate = picked);
-    }
-  }
-
-  String _formatDate(DateTime date) {
-    return '${date.day.toString().padLeft(2, '0')}/'
-        '${date.month.toString().padLeft(2, '0')}/'
-        '${date.year}';
-  }
-
-  String _formatTime(DateTime time) {
-    return '${time.hour.toString().padLeft(2, '0')}:'
-        '${time.minute.toString().padLeft(2, '0')}';
-  }
-
-  Widget _buildBobinesInstallationSection() {
-    if (_machinesSelectionnees.isEmpty) {
-      return Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Text(
-          'Sélectionnez d\'abord les machines dans l\'étape 1',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-        ),
-      );
-    }
-
-    // Identifier les machines avec et sans bobine
-    final machinesAvecBobine = _bobinesUtilisees.map((b) => b.machineId).toSet();
-    final machinesSansBobine = _machinesSelectionnees
-        .where((mId) => !machinesAvecBobine.contains(mId))
-        .toList();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Bobines installées (${_bobinesUtilisees.length}/${_machinesSelectionnees.length})',
-              style: Theme.of(context).textTheme.titleSmall,
-            ),
-            if (machinesSansBobine.isNotEmpty)
-              IntrinsicWidth(
-                child: FilledButton.icon(
-                  onPressed: () => _installerBobine(context),
-                  icon: const Icon(Icons.add),
-                  label: const Text('Installer bobine'),
-                ),
-              ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        if (_bobinesUtilisees.isEmpty)
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: Theme.of(context).colorScheme.error.withValues(alpha: 0.3),
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.warning,
-                  color: Theme.of(context).colorScheme.error,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'Ajoutez ${_machinesSelectionnees.length} bobine(s) (une par machine). Les bobines seront créées automatiquement.',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.error,
-                        ),
-                  ),
-                ),
-              ],
-            ),
-          )
-        else
-          ..._bobinesUtilisees.asMap().entries.map((entry) {
-            final index = entry.key;
-            final bobine = entry.value;
-            return Card(
-              margin: const EdgeInsets.only(bottom: 8),
-              child: ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                  child: Text('${index + 1}'),
-                ),
-                title: Text(bobine.bobineType),
-                subtitle: Text(
-                  'Machine: ${bobine.machineName}\n'
-                  'Installée le: ${_formatDate(bobine.dateInstallation)} à ${_formatTime(bobine.heureInstallation)}',
-                ),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.build, color: Colors.orange),
-                      tooltip: 'Signaler panne',
-                      onPressed: () => _signalerPanne(context, bobine, index),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.delete, color: Colors.red),
-                      onPressed: () {
-                        setState(() {
-                          _bobinesUtilisees.removeAt(index);
-                        });
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }),
-        if (_bobinesUtilisees.length < _machinesSelectionnees.length) ...[
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.orange.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.info_outline,
-                  size: 20,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Il manque ${_machinesSelectionnees.length - _bobinesUtilisees.length} bobine(s)',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ],
-    );
-  }
 
   Future<void> _installerBobine(BuildContext context) async {
     // Trouver une machine sans bobine
@@ -1373,102 +630,6 @@ class ProductionSessionFormStepsState
     }
   }
 
-  Widget _buildPersonnelSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildPersonnelSectionHeader(),
-        const SizedBox(height: 12),
-        if (_productionDays.isEmpty)
-          _buildPersonnelEmptyState()
-        else
-          ..._productionDays.map((day) => _buildPersonnelDayCard(day)),
-      ],
-    );
-  }
-
-  Widget _buildPersonnelSectionHeader() {
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            'Personnel journalier',
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-          ),
-        ),
-        IntrinsicWidth(
-          child: OutlinedButton.icon(
-            onPressed: () => _showPersonnelForm(context, _selectedDate),
-            icon: const Icon(Icons.person_add, size: 18),
-            label: const Text('Ajouter'),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPersonnelEmptyState() {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.info_outline,
-            size: 20,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              'Ajoutez le personnel qui travaillera chaque jour de production',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPersonnelDayCard(ProductionDay day) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-          child: Text(
-            '${day.nombrePersonnes}',
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.onPrimaryContainer,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-        title: Text(
-          _formatDate(day.date),
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-        ),
-        subtitle: Text(
-          '${day.nombrePersonnes} personne${day.nombrePersonnes > 1 ? 's' : ''} • ${day.coutTotalPersonnel} CFA',
-        ),
-        trailing: IconButton(
-          icon: const Icon(Icons.delete, size: 20),
-          onPressed: () {
-            setState(() {
-              _productionDays.removeWhere((d) => d.id == day.id);
-            });
-          },
-        ),
-      ),
-    );
-  }
 
   void _showPersonnelForm(BuildContext context, DateTime date) {
     // Créer une session temporaire pour le formulaire
