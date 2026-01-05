@@ -5,7 +5,7 @@ import '../../../../../shared/presentation/screens/stock_report_screen.dart';
 import '../../../application/controllers/stock_controller.dart';
 import '../../../application/providers.dart';
 import '../../widgets/finished_products_card.dart';
-import '../../widgets/form_dialog.dart';
+import '../../../../../shared/presentation/widgets/form_dialog.dart';
 import '../../widgets/raw_materials_card.dart';
 import '../../widgets/section_placeholder.dart';
 import '../../widgets/stock_alerts_widget.dart';

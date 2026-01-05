@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/providers.dart';
 import '../../domain/entities/tenant.dart';
-import 'form_dialog.dart';
+import '../../../../shared/presentation/widgets/form_dialog.dart';
 
 class TenantFormDialog extends ConsumerStatefulWidget {
   const TenantFormDialog({

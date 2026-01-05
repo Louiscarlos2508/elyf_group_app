@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../core/auth/services/auth_service.dart';
 import '../shared/providers/app_boot_status_provider.dart';
 import 'router/app_router.dart';
 import 'theme/app_theme.dart';
@@ -18,11 +17,9 @@ class _ElyfAppState extends ConsumerState<ElyfApp> {
   @override
   void initState() {
     super.initState();
-    // Initialiser l'auth service au démarrage
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final authService = ref.read(authServiceProvider);
-      authService.initialize();
-    });
+    // L'initialisation de l'auth service est gérée automatiquement
+    // par le provider currentUserProvider lors du premier accès.
+    // Pas besoin d'initialisation manuelle ici.
   }
 
   @override

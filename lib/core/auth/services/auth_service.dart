@@ -146,11 +146,12 @@ class AuthService {
 }
 
 /// Provider pour le service d'authentification
+/// 
+/// Le service est initialisé de manière lazy lors du premier accès.
+/// L'initialisation est gérée par le provider currentUserProvider qui attend
+/// que le service soit initialisé avant de l'utiliser.
 final authServiceProvider = Provider<AuthService>((ref) {
-  final service = AuthService();
-  // Initialiser le service au démarrage
-  service.initialize();
-  return service;
+  return AuthService();
 });
 
 /// Provider pour l'utilisateur actuel

@@ -28,24 +28,22 @@ class ActiveEnterpriseIdManager {
 /// Provider pour l'ID de l'entreprise active
 /// 
 /// Charge automatiquement la valeur sauvegardée au démarrage.
-final activeEnterpriseIdProvider = NotifierProvider<ActiveEnterpriseIdNotifier, AsyncValue<String?>>(() {
+final activeEnterpriseIdProvider = AsyncNotifierProvider<ActiveEnterpriseIdNotifier, String?>(() {
   return ActiveEnterpriseIdNotifier();
 });
 
 /// Notifier pour gérer l'ID de l'entreprise active
-class ActiveEnterpriseIdNotifier extends Notifier<AsyncValue<String?>> {
+/// 
+/// Utilise AsyncNotifier pour gérer le chargement asynchrone depuis SharedPreferences
+class ActiveEnterpriseIdNotifier extends AsyncNotifier<String?> {
   @override
-  AsyncValue<String?> build() {
-    _loadSavedEnterprise();
-    return const AsyncValue.loading();
-  }
-
-  Future<void> _loadSavedEnterprise() async {
+  Future<String?> build() async {
     try {
       final savedId = await ActiveEnterpriseIdManager.loadSavedEnterpriseId();
-      state = AsyncValue.data(savedId);
-    } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
+      return savedId;
+    } catch (error) {
+      // Re-throw pour que AsyncNotifier gère l'erreur automatiquement
+      rethrow;
     }
   }
 
@@ -80,8 +78,8 @@ final activeEnterpriseProvider = FutureProvider<Enterprise?>((ref) async {
       final enterpriseRepo = ref.watch(enterpriseRepositoryProvider);
       return await enterpriseRepo.getEnterpriseById(enterpriseId);
     },
-    loading: () => null,
-    error: (_, __) => null,
+    loading: () async => null,
+    error: (_, __) async => null,
   );
 });
 

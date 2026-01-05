@@ -6,7 +6,7 @@ import '../../../../../core/pdf/unified_payment_pdf_service.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/contract.dart';
 import '../../domain/entities/payment.dart';
-import 'form_dialog.dart';
+import '../../../../shared/presentation/widgets/form_dialog.dart';
 import 'payment_form_fields.dart';
 
 class PaymentFormDialog extends ConsumerStatefulWidget {
@@ -245,7 +245,7 @@ class _PaymentFormDialogState extends ConsumerState<PaymentFormDialog> {
     return FormDialog(
       title: widget.payment == null ? 'Nouveau paiement' : 'Modifier le paiement',
       saveLabel: widget.payment == null ? 'Enregistrer' : 'Enregistrer',
-      onSave: _isSaving ? null : _save,
+      onSave: _save,
       isLoading: _isSaving,
       child: Form(
         key: _formKey,
