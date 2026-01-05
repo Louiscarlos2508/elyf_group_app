@@ -5,6 +5,17 @@ import 'package:intl/date_symbol_data_local.dart';
 
 import '../core/offline/connectivity_service.dart';
 import '../core/offline/isar_service.dart';
+import '../core/offline/sync_manager.dart';
+
+/// Global connectivity service instance.
+///
+/// Available after [bootstrap] completes successfully.
+ConnectivityService? globalConnectivityService;
+
+/// Global sync manager instance.
+///
+/// Available after [bootstrap] completes successfully.
+SyncManager? globalSyncManager;
 
 /// Performs global asynchronous initialization before the app renders.
 ///
@@ -29,8 +40,22 @@ Future<void> _initializeOfflineServices() async {
     await IsarService.instance.initialize();
 
     // Initialize connectivity monitoring
-    final connectivityService = ConnectivityService();
-    await connectivityService.initialize();
+    globalConnectivityService = ConnectivityService();
+    await globalConnectivityService!.initialize();
+
+    // Initialize sync manager
+    globalSyncManager = SyncManager(
+      isarService: IsarService.instance,
+      connectivityService: globalConnectivityService!,
+      config: const SyncConfig(
+        maxRetryAttempts: 5,
+        syncIntervalMinutes: 5,
+        maxOperationAgeHours: 72,
+      ),
+      // Note: Set syncHandler when Firebase is initialized
+      // syncHandler: FirebaseSyncHandler(...),
+    );
+    await globalSyncManager!.initialize();
 
     developer.log(
       'Offline services initialized successfully',
@@ -46,4 +71,13 @@ Future<void> _initializeOfflineServices() async {
     // Continue app startup even if offline services fail
     // The app should still work in online-only mode
   }
+}
+
+/// Disposes global offline services.
+///
+/// Call this when the app is closing.
+Future<void> disposeOfflineServices() async {
+  await globalSyncManager?.dispose();
+  await globalConnectivityService?.dispose();
+  await IsarService.dispose();
 }

@@ -2,6 +2,30 @@
 
 This module implements offline-first data persistence using Isar database with automatic synchronization to Firebase.
 
+## Security Features
+
+### Data Sanitization
+- All string inputs are sanitized to prevent injection attacks
+- Dangerous characters (`<`, `>`, `"`, control characters) are escaped
+- Maximum string length enforced (10,000 characters by default)
+- Maximum JSON size enforced (1MB by default)
+
+### Sensitive Data Protection
+- Sensitive fields (passwords, tokens, etc.) are automatically removed before storage
+- Configurable list of sensitive field names
+- Fields containing: `password`, `token`, `secret`, `apiKey`, `pin`, `cvv`, `ssn` are filtered
+
+### ID Validation
+- All IDs are validated against alphanumeric pattern
+- Maximum ID length of 100 characters
+- Invalid IDs are rejected with clear error messages
+
+### Retry Security
+- Maximum retry attempts prevent infinite loops (default: 5)
+- Exponential backoff prevents server overload
+- Jitter added to prevent thundering herd
+- Old operations cleaned up after 72 hours
+
 ## Architecture Overview
 
 ```
@@ -271,3 +295,84 @@ Pending operations queue:
 3. **Don't block on sync**: Let sync happen in background
 4. **Test offline scenarios**: Use airplane mode during development
 5. **Monitor pending queue**: Alert users if queue grows large
+
+## Security Best Practices
+
+### 1. Never Store Sensitive Data Locally
+
+```dart
+// ❌ BAD: Storing sensitive data
+await repo.save(User(
+  id: 'user123',
+  password: 'secret123', // This will be filtered out
+));
+
+// ✅ GOOD: Store only non-sensitive data locally
+await repo.save(User(
+  id: 'user123',
+  name: 'John Doe',
+  email: 'john@example.com',
+));
+```
+
+### 2. Validate All Input
+
+```dart
+// The sync manager validates automatically, but for extra safety:
+if (!DataSanitizer.isValidId(userId)) {
+  throw ArgumentError('Invalid user ID');
+}
+```
+
+### 3. Configure Sync Appropriately
+
+```dart
+final syncManager = SyncManager(
+  isarService: isarService,
+  connectivityService: connectivityService,
+  config: const SyncConfig(
+    maxRetryAttempts: 5,        // Prevent infinite retries
+    maxOperationAgeHours: 72,   // Clean up old operations
+    operationTimeoutMs: 30000,  // Prevent hanging operations
+    batchSize: 50,              // Limit batch size
+  ),
+);
+```
+
+### 4. Handle Errors Securely
+
+```dart
+try {
+  await syncManager.queueCreate(...);
+} on DataValidationException catch (e) {
+  // Log sanitized error, don't expose details to user
+  developer.log('Validation failed', name: 'sync', error: e);
+  showErrorMessage('Invalid data. Please try again.');
+} on DataSizeException catch (e) {
+  showErrorMessage('Data too large. Please reduce content.');
+}
+```
+
+### 5. Clear Data on Logout
+
+```dart
+Future<void> logout() async {
+  // Clear all offline data for the current enterprise
+  await isarService.clearEnterpriseData(currentEnterpriseId);
+
+  // Or clear everything if needed
+  await isarService.clearAll();
+}
+```
+
+## Sync Configuration
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `maxRetryAttempts` | 5 | Maximum retries before giving up |
+| `baseRetryDelayMs` | 1000 | Base delay for exponential backoff |
+| `maxRetryDelayMs` | 60000 | Maximum delay between retries |
+| `syncIntervalMinutes` | 5 | Automatic sync interval |
+| `operationTimeoutMs` | 30000 | Individual operation timeout |
+| `maxOperationAgeHours` | 72 | Auto-cleanup threshold |
+| `batchSize` | 50 | Operations per sync batch |
