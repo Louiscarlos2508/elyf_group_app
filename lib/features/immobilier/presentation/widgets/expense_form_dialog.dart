@@ -5,7 +5,7 @@ import '../../application/providers.dart';
 import '../../domain/entities/expense.dart';
 import '../../domain/entities/property.dart';
 import 'expense_form_fields.dart';
-import '../../../../shared/presentation/widgets/form_dialog.dart';
+import 'form_dialog.dart';
 
 class ExpenseFormDialog extends ConsumerStatefulWidget {
   const ExpenseFormDialog({

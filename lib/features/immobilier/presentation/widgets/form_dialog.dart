@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Dialog générique pour les formulaires avec style cohérent.
-/// 
-/// Ce composant unifie les différentes implémentations de FormDialog
-/// pour offrir une expérience utilisateur cohérente à travers tous les modules.
+/// Base dialog wrapper for forms with consistent styling.
 class FormDialog extends StatefulWidget {
   const FormDialog({
     super.key,
@@ -11,69 +8,34 @@ class FormDialog extends StatefulWidget {
     required this.child,
     this.onSave,
     this.saveLabel = 'Enregistrer',
-    this.cancelLabel = 'Annuler',
-    this.isLoading,
-    this.maxWidth = 600,
+    this.isLoading = false,
   });
 
   final String title;
   final Widget child;
   final Future<void> Function()? onSave;
   final String saveLabel;
-  final String cancelLabel;
-  final bool? isLoading;
-  final double maxWidth;
+  final bool isLoading;
 
   @override
   State<FormDialog> createState() => _FormDialogState();
 }
 
 class _FormDialogState extends State<FormDialog> {
-  bool _internalLoading = false;
-
-  bool get _isLoading => widget.isLoading ?? _internalLoading;
-
   Future<void> _handleSave() async {
-    if (widget.onSave == null || _isLoading) return;
-    if (widget.isLoading == null) {
-      setState(() => _internalLoading = true);
-    }
-    try {
-      await widget.onSave!();
-      if (mounted) {
-        Navigator.of(context).pop();
-      }
-    } finally {
-      if (mounted && widget.isLoading == null) {
-        setState(() => _internalLoading = false);
-      }
-    }
+    if (widget.onSave == null) return;
+    await widget.onSave!();
   }
 
   @override
   Widget build(BuildContext context) {
-    final mediaQuery = MediaQuery.of(context);
-    final keyboardHeight = mediaQuery.viewInsets.bottom;
-    final screenHeight = mediaQuery.size.height;
-    final screenWidth = mediaQuery.size.width;
-    final availableHeight = screenHeight - keyboardHeight - 100;
-    final maxWidth = (screenWidth * 0.9).clamp(320.0, widget.maxWidth);
-
     return Dialog(
-      insetPadding: EdgeInsets.symmetric(
-        horizontal: screenWidth < 600 ? 16 : 24,
-        vertical: keyboardHeight > 0 ? 16 : 24,
-      ),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxWidth: maxWidth,
-          maxHeight: availableHeight.clamp(300.0, screenHeight * 0.9),
-        ),
+        constraints: const BoxConstraints(maxWidth: 600),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Header fixe
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
               child: Row(
@@ -92,40 +54,28 @@ class _FormDialogState extends State<FormDialog> {
                 ],
               ),
             ),
-            // Contenu scrollable
             Flexible(
               child: SingleChildScrollView(
-                padding: EdgeInsets.only(
-                  left: 24,
-                  right: 24,
-                  bottom: keyboardHeight > 0 ? 8 : 0,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: widget.child,
               ),
             ),
-            // Footer fixe avec padding adaptatif pour le clavier
             Padding(
-              padding: EdgeInsets.only(
-                left: 24,
-                right: 24,
-                top: 16,
-                bottom: keyboardHeight > 0 ? 16 : 24,
-              ),
+              padding: const EdgeInsets.all(24),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   TextButton(
-                    onPressed: _isLoading
+                    onPressed: widget.isLoading
                         ? null
                         : () => Navigator.of(context).pop(),
-                    child: Text(widget.cancelLabel),
+                    child: const Text('Annuler'),
                   ),
                   const SizedBox(width: 12),
                   IntrinsicWidth(
                     child: FilledButton(
-                      onPressed:
-                          (_isLoading || widget.onSave == null) ? null : _handleSave,
-                      child: _isLoading
+                      onPressed: widget.isLoading ? null : _handleSave,
+                      child: widget.isLoading
                           ? const SizedBox(
                               width: 20,
                               height: 20,

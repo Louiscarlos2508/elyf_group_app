@@ -7,7 +7,7 @@ import '../../domain/entities/machine.dart';
 import '../../domain/entities/production_period_config.dart';
 import '../../domain/entities/production_session.dart';
 import 'bobine_usage_form_field.dart';
-import '../../../../shared/presentation/widgets/form_dialog.dart';
+import 'form_dialog.dart';
 import 'machine_selector_field.dart';
 import 'time_picker_field.dart';
 

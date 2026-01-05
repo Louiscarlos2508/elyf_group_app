@@ -5,7 +5,7 @@ import '../../../../../shared/presentation/widgets/refresh_button.dart';
 import '../../../application/providers.dart';
 import '../../widgets/fixed_employee_form.dart';
 import '../../widgets/fixed_employees_content.dart';
-import '../../../../../shared/presentation/widgets/form_dialog.dart';
+import '../../widgets/form_dialog.dart';
 import '../../widgets/production_payment_form.dart';
 import '../../widgets/production_payments_content.dart';
 import '../../widgets/salary_history_content.dart';
