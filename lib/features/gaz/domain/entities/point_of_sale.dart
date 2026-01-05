@@ -8,6 +8,7 @@ class PointOfSale {
     required this.enterpriseId,
     required this.moduleId,
     this.isActive = true,
+    this.cylinderIds = const [],
     this.createdAt,
     this.updatedAt,
   });
@@ -19,6 +20,7 @@ class PointOfSale {
   final String enterpriseId;
   final String moduleId;
   final bool isActive;
+  final List<String> cylinderIds; // IDs des types de bouteilles associés à ce point de vente
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -30,6 +32,7 @@ class PointOfSale {
     String? enterpriseId,
     String? moduleId,
     bool? isActive,
+    List<String>? cylinderIds,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -41,8 +44,27 @@ class PointOfSale {
       enterpriseId: enterpriseId ?? this.enterpriseId,
       moduleId: moduleId ?? this.moduleId,
       isActive: isActive ?? this.isActive,
+      cylinderIds: cylinderIds ?? this.cylinderIds,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  /// Ajoute un type de bouteille à ce point de vente.
+  PointOfSale addCylinder(String cylinderId) {
+    if (cylinderIds.contains(cylinderId)) return this;
+    return copyWith(
+      cylinderIds: [...cylinderIds, cylinderId],
+      updatedAt: DateTime.now(),
+    );
+  }
+
+  /// Retire un type de bouteille de ce point de vente.
+  PointOfSale removeCylinder(String cylinderId) {
+    if (!cylinderIds.contains(cylinderId)) return this;
+    return copyWith(
+      cylinderIds: cylinderIds.where((id) => id != cylinderId).toList(),
+      updatedAt: DateTime.now(),
     );
   }
 }

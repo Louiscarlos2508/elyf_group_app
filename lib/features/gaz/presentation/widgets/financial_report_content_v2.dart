@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/controllers/financial_report_controller.dart';
 import '../../application/providers.dart';
+import '../../domain/entities/gas_sale.dart';
 import '../../domain/services/financial_calculation_service.dart';
 import 'financial_summary_card.dart';
 import '../../../../shared/utils/currency_formatter.dart';
@@ -24,6 +25,9 @@ class GazFinancialReportContentV2 extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     String enterpriseId = 'default_enterprise'; // TODO: depuis contexte
+
+    // Récupérer les ventes pour analyse
+    final salesAsync = ref.watch(gasSalesProvider);
 
     // Calculer les charges
     final chargesFuture = ref.watch(
@@ -92,6 +96,20 @@ class GazFinancialReportContentV2 extends ConsumerWidget {
                   ),
                   const SizedBox(height: 16),
                   _buildHeadquartersPayment(context, theme, netAmount),
+                  const SizedBox(height: 24),
+                  // Analyse des ventes par type
+                  salesAsync.when(
+                    data: (sales) {
+                      final filteredSales = sales.where((s) {
+                        return s.saleDate
+                                .isAfter(startDate.subtract(const Duration(days: 1))) &&
+                            s.saleDate.isBefore(endDate.add(const Duration(days: 1)));
+                      }).toList();
+                      return _buildSalesAnalysis(theme, filteredSales);
+                    },
+                    loading: () => const SizedBox.shrink(),
+                    error: (_, __) => const SizedBox.shrink(),
+                  ),
                 ],
               );
             },
@@ -238,6 +256,187 @@ class GazFinancialReportContentV2 extends ConsumerWidget {
               ),
             ),
           ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSalesAnalysis(ThemeData theme, List<GasSale> sales) {
+    // Séparer les ventes par type
+    final retailSales = sales.where((s) => s.saleType == SaleType.retail).toList();
+    final wholesaleSales = sales.where((s) => s.saleType == SaleType.wholesale).toList();
+
+    // Calculer les totaux
+    final retailTotal = retailSales.fold<double>(0, (sum, s) => sum + s.totalAmount);
+    final wholesaleTotal = wholesaleSales.fold<double>(0, (sum, s) => sum + s.totalAmount);
+
+    // Grouper les ventes en gros par tour
+    final wholesaleByTour = <String, ({int count, double total})>{};
+    for (final sale in wholesaleSales) {
+      final tourId = sale.tourId ?? 'Sans tour';
+      if (!wholesaleByTour.containsKey(tourId)) {
+        wholesaleByTour[tourId] = (count: 0, total: 0.0);
+      }
+      final current = wholesaleByTour[tourId]!;
+      wholesaleByTour[tourId] = (
+        count: current.count + 1,
+        total: current.total + sale.totalAmount,
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Analyse des Ventes',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 16),
+        // Répartition par type
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            children: [
+              _buildSalesTypeRow(
+                theme,
+                'Ventes au Détail',
+                retailSales.length,
+                retailTotal,
+                Colors.orange,
+              ),
+              const Divider(),
+              _buildSalesTypeRow(
+                theme,
+                'Ventes en Gros',
+                wholesaleSales.length,
+                wholesaleTotal,
+                Colors.purple,
+              ),
+            ],
+          ),
+        ),
+        // Détail des ventes en gros par tour
+        if (wholesaleByTour.isNotEmpty) ...[
+          const SizedBox(height: 24),
+          Text(
+            'Ventes en Gros par Tour',
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 12),
+          ...wholesaleByTour.entries.map((entry) {
+            return Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: theme.colorScheme.outline.withValues(alpha: 0.1),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.local_shipping,
+                        size: 16,
+                        color: Colors.purple,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        entry.key == 'Sans tour' ? 'Sans tour associé' : 'Tour ${entry.key.substring(0, 8)}...',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        CurrencyFormatter.formatDouble(entry.value.total),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        '${entry.value.count} vente${entry.value.count > 1 ? 's' : ''}',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          }),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildSalesTypeRow(
+    ThemeData theme,
+    String label,
+    int count,
+    double total,
+    Color color,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 12,
+                height: 12,
+                decoration: BoxDecoration(
+                  color: color,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                CurrencyFormatter.formatDouble(total),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
+              ),
+              Text(
+                '$count vente${count > 1 ? 's' : ''}',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );

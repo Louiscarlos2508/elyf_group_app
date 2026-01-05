@@ -9,12 +9,18 @@ import '../../domain/entities/cylinder.dart';
 class CylinderLeakFormDialog extends ConsumerStatefulWidget {
   const CylinderLeakFormDialog({
     super.key,
+    required this.enterpriseId,
+    required this.moduleId,
     this.cylinderId,
     this.weight,
+    this.tourId,
   });
 
+  final String enterpriseId;
+  final String moduleId;
   final String? cylinderId;
   final int? weight;
+  final String? tourId; // ID du tour d'approvisionnement (si signalé depuis un tour)
 
   @override
   ConsumerState<CylinderLeakFormDialog> createState() =>
@@ -27,9 +33,6 @@ class _CylinderLeakFormDialogState
   final _cylinderIdController = TextEditingController();
   int? _selectedWeight;
   final _notesController = TextEditingController();
-  String? _enterpriseId;
-
-  final List<int> _availableWeights = [3, 6, 10, 12];
 
   @override
   void initState() {
@@ -50,9 +53,7 @@ class _CylinderLeakFormDialogState
   }
 
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate() ||
-        _selectedWeight == null ||
-        _enterpriseId == null) {
+    if (!_formKey.currentState!.validate() || _selectedWeight == null) {
       return;
     }
 
@@ -61,7 +62,8 @@ class _CylinderLeakFormDialogState
       await controller.reportLeak(
         _cylinderIdController.text,
         _selectedWeight!,
-        _enterpriseId!,
+        widget.enterpriseId,
+        tourId: widget.tourId,
         notes: _notesController.text.isEmpty ? null : _notesController.text,
       );
 
@@ -77,12 +79,30 @@ class _CylinderLeakFormDialogState
     }
   }
 
+  /// Récupère les poids disponibles depuis les bouteilles créées.
+  List<int> _getAvailableWeights(WidgetRef ref) {
+    final cylindersAsync = ref.watch(cylindersProvider);
+    return cylindersAsync.when(
+      data: (cylinders) {
+        // Filtrer par entreprise et module, puis extraire les poids uniques
+        final filteredCylinders = cylinders
+            .where((c) =>
+                c.enterpriseId == widget.enterpriseId &&
+                c.moduleId == widget.moduleId)
+            .toList();
+        final weights = filteredCylinders.map((c) => c.weight).toSet().toList();
+        weights.sort();
+        return weights;
+      },
+      loading: () => [],
+      error: (_, __) => [],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
-    // TODO: Récupérer enterpriseId depuis le contexte/tenant
-    _enterpriseId ??= 'default_enterprise';
+    final availableWeights = _getAvailableWeights(ref);
 
     return Dialog(
       child: Container(
@@ -92,7 +112,7 @@ class _CylinderLeakFormDialogState
           key: _formKey,
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 'Signaler une Fuite',
@@ -101,66 +121,101 @@ class _CylinderLeakFormDialogState
                 ),
               ),
               const SizedBox(height: 24),
-              TextFormField(
-                controller: _cylinderIdController,
-                decoration: const InputDecoration(
-                  labelText: 'ID Bouteille',
-                  border: OutlineInputBorder(),
-                  helperText: 'Identifiant de la bouteille',
+              SizedBox(
+                width: double.infinity,
+                child: TextFormField(
+                  controller: _cylinderIdController,
+                  decoration: const InputDecoration(
+                    labelText: 'ID Bouteille',
+                    border: OutlineInputBorder(),
+                    helperText: 'Identifiant de la bouteille',
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'ID requis';
+                    }
+                    return null;
+                  },
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'ID requis';
-                  }
-                  return null;
-                },
               ),
               const SizedBox(height: 16),
-              DropdownButtonFormField<int>(
-                value: _selectedWeight,
-                decoration: const InputDecoration(
-                  labelText: 'Poids (kg)',
-                  border: OutlineInputBorder(),
-                ),
-                items: _availableWeights.map((weight) {
-                  return DropdownMenuItem(
-                    value: weight,
-                    child: Text('$weight kg'),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  setState(() => _selectedWeight = value);
-                },
-                validator: (value) {
-                  if (value == null) {
-                    return 'Poids requis';
-                  }
-                  return null;
-                },
+              SizedBox(
+                width: double.infinity,
+                child: availableWeights.isEmpty
+                    ? TextFormField(
+                        initialValue: _selectedWeight?.toString(),
+                        decoration: const InputDecoration(
+                          labelText: 'Poids (kg) *',
+                          border: OutlineInputBorder(),
+                          helperText: 'Aucune bouteille créée. Entrez le poids manuellement.',
+                        ),
+                        keyboardType: TextInputType.number,
+                        onChanged: (value) {
+                          _selectedWeight = int.tryParse(value);
+                        },
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Poids requis';
+                          }
+                          final weight = int.tryParse(value);
+                          if (weight == null || weight <= 0) {
+                            return 'Le poids doit être un nombre positif';
+                          }
+                          return null;
+                        },
+                      )
+                    : DropdownButtonFormField<int>(
+                        value: _selectedWeight,
+                        decoration: const InputDecoration(
+                          labelText: 'Poids (kg) *',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: availableWeights.map((weight) {
+                          return DropdownMenuItem(
+                            value: weight,
+                            child: Text('$weight kg'),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          setState(() => _selectedWeight = value);
+                        },
+                        validator: (value) {
+                          if (value == null) {
+                            return 'Poids requis';
+                          }
+                          return null;
+                        },
+                      ),
               ),
               const SizedBox(height: 16),
-              TextFormField(
-                controller: _notesController,
-                decoration: const InputDecoration(
-                  labelText: 'Notes (optionnel)',
-                  border: OutlineInputBorder(),
-                  helperText: 'Détails sur la fuite détectée',
+              SizedBox(
+                width: double.infinity,
+                child: TextFormField(
+                  controller: _notesController,
+                  decoration: const InputDecoration(
+                    labelText: 'Notes (optionnel)',
+                    border: OutlineInputBorder(),
+                    helperText: 'Détails sur la fuite détectée',
+                  ),
+                  maxLines: 3,
                 ),
-                maxLines: 3,
               ),
               const SizedBox(height: 24),
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
-                mainAxisSize: MainAxisSize.min,
                 children: [
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('Annuler'),
+                  Flexible(
+                    child: TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('Annuler'),
+                    ),
                   ),
                   const SizedBox(width: 12),
-                  FilledButton(
-                    onPressed: _submit,
-                    child: const Text('Signaler'),
+                  Flexible(
+                    child: FilledButton(
+                      onPressed: _submit,
+                      child: const Text('Signaler'),
+                    ),
                   ),
                 ],
               ),

@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../shared/presentation/widgets/gaz_button_styles.dart';
+import '../../../../shared/presentation/widgets/form_dialog_actions.dart';
+import '../../application/providers.dart';
 import '../../domain/entities/collection.dart';
 import '../../domain/entities/tour.dart';
 import 'collection_form/bottle_list_display.dart';
+import 'collection_form/bottle_manager.dart';
 import 'collection_form/bottle_quantity_input.dart';
 import 'collection_form/client_selector.dart';
+import 'collection_form/collection_form_header.dart';
 import 'collection_form/collection_submit_handler.dart';
 import 'collection_form/collection_type_selector.dart';
 
@@ -30,7 +33,6 @@ class _CollectionFormDialogState
   CollectionType _collectionType = CollectionType.wholesaler;
   Client? _selectedClient;
   final Map<int, int> _bottles = {}; // poids -> quantité
-  final List<int> _availableWeights = [3, 6, 10, 12];
   
   // Pour le formulaire d'ajout de bouteille
   int? _selectedWeight;
@@ -80,32 +82,26 @@ class _CollectionFormDialogState
   }
 
   void _addBottle() {
-    if (_selectedWeight == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sélectionnez un type de bouteille')),
-      );
-      return;
-    }
-
-    final qty = int.tryParse(_quantityController.text) ?? 0;
-    if (qty <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('La quantité doit être supérieure à 0')),
-      );
-      return;
-    }
-
-    setState(() {
-      _bottles[_selectedWeight!] = (_bottles[_selectedWeight!] ?? 0) + qty;
-      _selectedWeight = null;
-      _quantityController.text = '0';
-    });
+    BottleManager.addBottle(
+      context: context,
+      selectedWeight: _selectedWeight,
+      quantityText: _quantityController.text,
+      bottles: _bottles,
+      onBottlesChanged: () {
+        setState(() {
+          _selectedWeight = null;
+          _quantityController.text = '0';
+        });
+      },
+    );
   }
 
   void _removeBottle(int weight) {
-    setState(() {
-      _bottles.remove(weight);
-    });
+    BottleManager.removeBottle(
+      weight: weight,
+      bottles: _bottles,
+      onBottlesChanged: () => setState(() {}),
+    );
   }
 
   Future<void> _submit() async {
@@ -122,6 +118,7 @@ class _CollectionFormDialogState
       return;
     }
 
+    final availableWeights = _getAvailableWeights(ref);
     await CollectionSubmitHandler.submit(
       context: context,
       ref: ref,
@@ -129,14 +126,29 @@ class _CollectionFormDialogState
       collectionType: _collectionType,
       selectedClient: _selectedClient!,
       bottles: _bottles,
-      availableWeights: _availableWeights,
+      availableWeights: availableWeights,
+    );
+  }
+
+  /// Récupère les poids disponibles depuis les bouteilles créées.
+  List<int> _getAvailableWeights(WidgetRef ref) {
+    final cylindersAsync = ref.watch(cylindersProvider);
+    return cylindersAsync.when(
+      data: (cylinders) {
+        // Extraire les poids uniques des bouteilles existantes
+        final weights = cylinders.map((c) => c.weight).toSet().toList();
+        weights.sort();
+        return weights;
+      },
+      loading: () => [],
+      error: (_, __) => [],
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final textGray = const Color(0xFF717182);
+    final availableWeights = _getAvailableWeights(ref);
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -149,39 +161,7 @@ class _CollectionFormDialogState
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Header
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Ajouter une collecte',
-                          style: theme.textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
-                            color: const Color(0xFF0A0A0A),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Enregistrez les bouteilles vides collectées',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            fontSize: 14,
-                            color: textGray,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close, size: 16),
-                    onPressed: () => Navigator.of(context).pop(),
-                    color: const Color(0xFF0A0A0A).withValues(alpha: 0.7),
-                  ),
-                ],
-              ),
+              const CollectionFormHeader(),
               const SizedBox(height: 24),
               Expanded(
                 child: SingleChildScrollView(
@@ -236,7 +216,7 @@ class _CollectionFormDialogState
                       ],
                       // Formulaire d'ajout
                       BottleQuantityInput(
-                        availableWeights: _availableWeights,
+                        availableWeights: availableWeights,
                         selectedWeight: _selectedWeight,
                         quantityController: _quantityController,
                         onWeightSelected: (weight) {
@@ -251,36 +231,11 @@ class _CollectionFormDialogState
                 ),
               ),
               const SizedBox(height: 16),
-              // Boutons
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      style: GazButtonStyles.outlined,
-                      child: const Text(
-                        'Annuler',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Color(0xFF0A0A0A),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: FilledButton(
-                      onPressed: _bottles.isEmpty || _selectedClient == null
-                          ? null
-                          : _submit,
-                      style: GazButtonStyles.filledPrimary,
-                      child: const Text(
-                        'Ajouter',
-                        style: TextStyle(fontSize: 14),
-                      ),
-                    ),
-                  ),
-                ],
+              FormDialogActions(
+                onCancel: () => Navigator.of(context).pop(),
+                onSubmit: _submit,
+                submitLabel: 'Ajouter',
+                submitEnabled: _bottles.isNotEmpty && _selectedClient != null,
               ),
             ],
           ),

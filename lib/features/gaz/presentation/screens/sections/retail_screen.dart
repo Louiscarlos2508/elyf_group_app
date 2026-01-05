@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../domain/entities/cylinder.dart';
 import '../../../domain/entities/gas_sale.dart';
 import '../../widgets/gas_sale_form_dialog.dart';
-import 'retail/retail_header.dart';
 import 'retail/retail_new_sale_tab.dart';
 import 'retail/retail_statistics_tab.dart';
 import 'retail/retail_tab_bar.dart';
@@ -35,10 +34,12 @@ class _GazRetailScreenState extends ConsumerState<GazRetailScreen>
     super.dispose();
   }
 
+  /// Callback appelé lors du changement d'onglet.
+  /// Vérifie que le widget est toujours monté avant d'appeler setState()
+  /// pour éviter les erreurs si le listener se déclenche après dispose().
   void _onTabChanged() {
-    if (mounted) {
-      setState(() {});
-    }
+    if (!mounted) return;
+    setState(() {});
   }
 
   void _showSaleDialog(Cylinder cylinder) {
@@ -68,10 +69,11 @@ class _GazRetailScreenState extends ConsumerState<GazRetailScreen>
       color: const Color(0xFFF9FAFB),
       child: Column(
         children: [
-          // Header
-          const RetailHeader(),
           // Tabs
-          RetailTabBar(tabController: _tabController),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
+            child: RetailTabBar(tabController: _tabController),
+          ),
           // Content
           Expanded(
             child: TabBarView(

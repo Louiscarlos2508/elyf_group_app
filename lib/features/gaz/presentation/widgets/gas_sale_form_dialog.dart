@@ -1,14 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/tenant/tenant_provider.dart';
+import '../../../../shared/presentation/widgets/form_dialog_actions.dart';
+import '../../../../shared/presentation/widgets/form_dialog_header.dart';
 import '../../../../shared/presentation/widgets/gaz_button_styles.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/cylinder.dart';
 import '../../domain/entities/gas_sale.dart';
+import '../../domain/entities/tour.dart';
 import 'gas_sale_form/customer_info_widget.dart';
 import 'gas_sale_form/cylinder_selector_widget.dart';
 import 'gas_sale_form/gas_sale_submit_handler.dart';
+import 'gas_sale_form/price_stock_manager.dart';
 import 'gas_sale_form/quantity_and_total_widget.dart';
+import 'gas_sale_form/tour_wholesaler_selector_widget.dart';
 
 /// Dialog de formulaire pour créer une vente de gaz.
 class GasSaleFormDialog extends ConsumerStatefulWidget {
@@ -35,13 +41,21 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
   int _availableStock = 0;
   bool _isLoading = false;
   String? _enterpriseId;
+  Tour? _selectedTour;
+  String? _selectedWholesalerId;
+  String? _selectedWholesalerName;
 
   @override
   void initState() {
     super.initState();
     _quantityController.text = '1';
-    // TODO: Récupérer enterpriseId depuis le contexte/tenant
-    _enterpriseId ??= 'default_enterprise';
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Initialiser le prix unitaire si un cylinder est déjà sélectionné
+    // Note: enterpriseId sera récupéré dans le build via le provider
   }
 
   @override
@@ -53,36 +67,50 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
     super.dispose();
   }
 
+  double _unitPrice = 0.0;
+
   double get _totalAmount {
     if (_selectedCylinder == null) return 0.0;
     final quantity = int.tryParse(_quantityController.text) ?? 0;
-    return _selectedCylinder!.sellPrice * quantity;
+    return _unitPrice * quantity;
   }
 
-  Future<void> _updateAvailableStock() async {
-    if (_selectedCylinder == null || _enterpriseId == null) {
-      setState(() => _availableStock = 0);
+  Future<void> _updateUnitPrice(String? enterpriseId) async {
+    if (enterpriseId == null) return;
+    final price = await PriceStockManager.updateUnitPrice(
+      ref: ref,
+      cylinder: _selectedCylinder,
+      enterpriseId: enterpriseId,
+      isWholesale: widget.saleType == SaleType.wholesale,
+    );
+    if (mounted) {
+      setState(() => _unitPrice = price);
+    }
+  }
+
+  Future<void> _updateAvailableStock(String? enterpriseId) async {
+    if (enterpriseId == null) return;
+    final stock = await PriceStockManager.updateAvailableStock(
+      ref: ref,
+      cylinder: _selectedCylinder,
+      enterpriseId: enterpriseId,
+    );
+    if (mounted) {
+      setState(() => _availableStock = stock);
+    }
+  }
+
+  Future<void> _submit(String? enterpriseId) async {
+    if (!_formKey.currentState!.validate()) return;
+    if (enterpriseId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Aucune entreprise sélectionnée'),
+          backgroundColor: Colors.red,
+        ),
+      );
       return;
     }
-
-    try {
-      final controller = ref.read(cylinderStockControllerProvider);
-      _availableStock = await controller.getAvailableStock(
-        _enterpriseId!,
-        _selectedCylinder!.weight,
-      );
-      if (mounted) {
-        setState(() {});
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _availableStock = 0);
-      }
-    }
-  }
-
-  Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
     if (_selectedCylinder == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -101,7 +129,7 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
       selectedCylinder: _selectedCylinder!,
       quantity: quantity,
       availableStock: _availableStock,
-      enterpriseId: _enterpriseId!,
+      enterpriseId: enterpriseId,
       saleType: widget.saleType,
       customerName: _customerNameController.text.trim().isEmpty
           ? null
@@ -113,6 +141,13 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
           ? null
           : _notesController.text.trim(),
       totalAmount: _totalAmount,
+      unitPrice: _unitPrice,
+      tourId: widget.saleType == SaleType.wholesale ? _selectedTour?.id : null,
+      wholesalerId:
+          widget.saleType == SaleType.wholesale ? _selectedWholesalerId : null,
+      wholesalerName: widget.saleType == SaleType.wholesale
+          ? _selectedWholesalerName
+          : null,
       onLoadingChanged: () => setState(() => _isLoading = !_isLoading),
     );
   }
@@ -120,6 +155,14 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final activeEnterpriseAsync = ref.watch(activeEnterpriseProvider);
+    
+    // Récupérer l'ID de l'entreprise active
+    final enterpriseId = activeEnterpriseAsync.when(
+      data: (enterprise) => enterprise?.id,
+      loading: () => null,
+      error: (_, __) => null,
+    );
 
     try {
       return Dialog(
@@ -137,32 +180,50 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            widget.saleType == SaleType.retail
-                                ? 'Vente au Détail'
-                                : 'Vente en Gros',
-                            style: theme.textTheme.headlineSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.close),
-                          onPressed: () => Navigator.of(context).pop(),
-                        ),
-                      ],
+                    FormDialogHeader(
+                      title: widget.saleType == SaleType.retail
+                          ? 'Vente au Détail'
+                          : 'Vente en Gros',
                     ),
                     const SizedBox(height: 24),
+                    // Sélection du tour et grossiste (uniquement pour ventes en gros)
+                    if (widget.saleType == SaleType.wholesale && enterpriseId != null)
+                      TourWholesalerSelectorWidget(
+                        selectedTour: _selectedTour,
+                        selectedWholesalerId: _selectedWholesalerId,
+                        selectedWholesalerName: _selectedWholesalerName,
+                        enterpriseId: enterpriseId,
+                        onTourChanged: (tour) {
+                          setState(() {
+                            _selectedTour = tour;
+                            _selectedWholesalerId = null;
+                            _selectedWholesalerName = null;
+                          });
+                        },
+                        onWholesalerChanged: (wholesaler) {
+                          setState(() {
+                            if (wholesaler != null) {
+                              _selectedWholesalerId = wholesaler.id;
+                              _selectedWholesalerName = wholesaler.name;
+                            } else {
+                              _selectedWholesalerId = null;
+                              _selectedWholesalerName = null;
+                            }
+                          });
+                        },
+                      ),
+                    if (widget.saleType == SaleType.wholesale)
+                      const SizedBox(height: 16),
                     // Sélection de la bouteille
                     CylinderSelectorWidget(
                       selectedCylinder: _selectedCylinder,
                       onCylinderChanged: (value) {
                         setState(() {
                           _selectedCylinder = value;
-                          _updateAvailableStock();
+                          if (enterpriseId != null) {
+                            _updateAvailableStock(enterpriseId);
+                            _updateUnitPrice(enterpriseId);
+                          }
                         });
                       },
                     ),
@@ -172,6 +233,7 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
                       quantityController: _quantityController,
                       selectedCylinder: _selectedCylinder,
                       availableStock: _availableStock,
+                      unitPrice: _unitPrice,
                       onQuantityChanged: () => setState(() {}),
                     ),
                     const SizedBox(height: 16),
@@ -182,39 +244,12 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
                       notesController: _notesController,
                     ),
                     const SizedBox(height: 24),
-                    // Boutons d'action
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: _isLoading
-                                ? null
-                                : () => Navigator.of(context).pop(),
-                            style: GazButtonStyles.outlined,
-                            child: const Text('Annuler'),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          flex: 2,
-                          child: FilledButton.icon(
-                            onPressed: _isLoading ? null : _submit,
-                            style: GazButtonStyles.filledPrimary,
-                            icon: _isLoading
-                                ? const SizedBox(
-                                    width: 16,
-                                    height: 16,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      valueColor:
-                                          AlwaysStoppedAnimation<Color>(Colors.white),
-                                    ),
-                                  )
-                                : const Icon(Icons.check),
-                            label: const Text('Enregistrer la vente'),
-                          ),
-                        ),
-                      ],
+                    FormDialogActions(
+                      onCancel: () => Navigator.of(context).pop(),
+                      onSubmit: () => _submit(enterpriseId),
+                      submitLabel: 'Enregistrer la vente',
+                      isLoading: _isLoading,
+                      submitEnabled: !_isLoading && enterpriseId != null,
                     ),
                   ],
                 ),

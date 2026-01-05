@@ -141,7 +141,7 @@ class _CylinderStockRow extends StatelessWidget {
                 Row(
                   children: [
                     Text(
-                      'Achat: ${CurrencyFormatter.formatDouble(cylinder.buyPrice)}',
+                      'Prix détail: ${CurrencyFormatter.formatDouble(cylinder.sellPrice)}',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),

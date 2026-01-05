@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../shared/presentation/widgets/gaz_button_styles.dart';
+import '../../application/providers.dart';
 import '../../domain/entities/point_of_sale.dart';
 
 /// Dialogue pour créer ou modifier un point de vente.
@@ -37,7 +38,8 @@ class _PointOfSaleFormDialogState
   @override
   void initState() {
     super.initState();
-    _enterpriseId = widget.enterpriseId ?? 'default_enterprise';
+    // Utiliser les mêmes valeurs par défaut que dans les paramètres pour la cohérence
+    _enterpriseId = widget.enterpriseId ?? 'gaz_1';
     _moduleId = widget.moduleId ?? 'gaz';
 
     if (widget.pointOfSale != null) {
@@ -59,15 +61,49 @@ class _PointOfSaleFormDialogState
 
   Future<void> _savePointOfSale() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_enterpriseId == null || _moduleId == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Veuillez remplir tous les champs requis'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
 
     setState(() => _isLoading = true);
 
     try {
-      // TODO: Implémenter la sauvegarde via un controller/provider
-      // Pour l'instant, on simule juste la sauvegarde
-      await Future.delayed(const Duration(milliseconds: 500));
+      final controller = ref.read(pointOfSaleControllerProvider);
+      final pointOfSale = PointOfSale(
+        id: widget.pointOfSale?.id ??
+            'pos-${DateTime.now().millisecondsSinceEpoch}',
+        name: _nameController.text.trim(),
+        address: _addressController.text.trim(),
+        contact: _contactController.text.trim(),
+        enterpriseId: _enterpriseId!,
+        moduleId: _moduleId!,
+        isActive: widget.pointOfSale?.isActive ?? true,
+        createdAt: widget.pointOfSale?.createdAt ?? DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
+      if (widget.pointOfSale == null) {
+        await controller.addPointOfSale(pointOfSale);
+      } else {
+        await controller.updatePointOfSale(pointOfSale);
+      }
 
       if (!mounted) return;
+
+      // Invalider le provider pour rafraîchir la liste
+      ref.invalidate(
+        pointsOfSaleProvider(
+          (enterpriseId: _enterpriseId!, moduleId: _moduleId!),
+        ),
+      );
 
       Navigator.of(context).pop(true);
 

@@ -1,29 +1,24 @@
-/// Utility class for formatting currency values.
+/// Utilitaire pour le formatage des montants en devise.
 class CurrencyFormatter {
   CurrencyFormatter._();
 
-  /// Formats an amount in CFA francs.
-  /// 
-  /// Example: 150000 -> "150 000 FCFA"
-  static String format(int amount) {
-    final formatted = amount.toString().replaceAllMapped(
+  /// Formate un montant en FCFA avec séparateurs de milliers.
+  static String formatFCFA(int amount) {
+    return amount.toString().replaceAllMapped(
           RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
           (Match m) => '${m[1]} ',
-        );
-    return '$formatted FCFA';
+        ) + ' FCFA';
   }
 
-  /// Formats a double amount in CFA francs.
-  /// 
-  /// Example: 150000.0 -> "150 000 FCFA"
-  /// Example: 0.0 -> "0 FCFA"
+  /// Formate un montant (double) en FCFA avec séparateurs de milliers.
   static String formatDouble(double amount) {
-    if (amount == 0) return '0 FCFA';
-    return amount.toStringAsFixed(0).replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        ) +
-        ' FCFA';
+    final intAmount = amount.round();
+    return formatFCFA(intAmount);
+  }
+
+  /// Formate un montant (int) en FCFA avec séparateurs de milliers.
+  /// Alias pour formatFCFA pour compatibilité.
+  static String format(int amount) {
+    return formatFCFA(amount);
   }
 }
-

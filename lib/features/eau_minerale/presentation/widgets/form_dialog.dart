@@ -37,17 +37,20 @@ class _FormDialogState extends State<FormDialog> {
     final mediaQuery = MediaQuery.of(context);
     final keyboardHeight = mediaQuery.viewInsets.bottom;
     final screenHeight = mediaQuery.size.height;
+    final screenWidth = mediaQuery.size.width;
     final availableHeight = screenHeight - keyboardHeight - 100; // Réserver de l'espace pour le padding
+    // Largeur responsive : 90% de l'écran, min 320px, max 600px
+    final maxWidth = (screenWidth * 0.9).clamp(320.0, 600.0);
 
     return Dialog(
       insetPadding: EdgeInsets.symmetric(
-        horizontal: 16,
+        horizontal: screenWidth < 600 ? 16 : 24,
         vertical: keyboardHeight > 0 ? 16 : 24,
       ),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       child: ConstrainedBox(
         constraints: BoxConstraints(
-          maxWidth: 600,
+          maxWidth: maxWidth,
           maxHeight: availableHeight.clamp(300.0, screenHeight * 0.9),
         ),
         child: Column(

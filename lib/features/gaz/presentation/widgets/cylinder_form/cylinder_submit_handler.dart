@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../application/controllers/cylinder_controller.dart';
-import '../../../../application/providers.dart';
-import '../../../../domain/entities/cylinder.dart';
+import '../../../application/controllers/cylinder_controller.dart';
+import '../../../application/controllers/gaz_settings_controller.dart';
+import '../../../application/providers.dart';
+import '../../../domain/entities/cylinder.dart';
 
 /// Handler pour la soumission du formulaire de bouteille.
 class CylinderSubmitHandler {
@@ -14,8 +15,8 @@ class CylinderSubmitHandler {
     required WidgetRef ref,
     required int? selectedWeight,
     required String weightText,
-    required String buyPriceText,
     required String sellPriceText,
+    required String wholesalePriceText,
     required String? enterpriseId,
     required String? moduleId,
     required Cylinder? existingCylinder,
@@ -35,14 +36,13 @@ class CylinderSubmitHandler {
     try {
       final controller = ref.read(cylinderControllerProvider);
       final weight = int.tryParse(weightText) ?? selectedWeight;
-      final buyPrice = double.tryParse(buyPriceText) ?? 0.0;
       final sellPrice = double.tryParse(sellPriceText) ?? 0.0;
 
       final cylinder = Cylinder(
         id: existingCylinder?.id ??
             'cyl-${DateTime.now().millisecondsSinceEpoch}',
         weight: weight,
-        buyPrice: buyPrice,
+        buyPrice: 0.0, // Prix d'achat non utilisé, mis à 0
         sellPrice: sellPrice,
         enterpriseId: enterpriseId,
         moduleId: moduleId,
@@ -54,9 +54,40 @@ class CylinderSubmitHandler {
         await controller.updateCylinder(cylinder);
       }
 
+      // Sauvegarder ou supprimer le prix en gros
+      final settingsController = ref.read(gazSettingsControllerProvider);
+      if (wholesalePriceText.isNotEmpty) {
+        final wholesalePrice = double.tryParse(wholesalePriceText);
+        if (wholesalePrice != null && wholesalePrice > 0) {
+          await settingsController.setWholesalePrice(
+            enterpriseId: enterpriseId!,
+            moduleId: moduleId!,
+            weight: weight,
+            price: wholesalePrice,
+          );
+        }
+      } else {
+        // Supprimer le prix en gros si le champ est vide
+        await settingsController.removeWholesalePrice(
+          enterpriseId: enterpriseId!,
+          moduleId: moduleId!,
+          weight: weight,
+        );
+      }
+
       if (!context.mounted) return false;
 
+      // Invalider les providers pour forcer le rafraîchissement
       ref.invalidate(cylindersProvider);
+      
+      if (enterpriseId != null && moduleId != null) {
+        // Invalider le provider spécifique avec les bons paramètres
+        ref.invalidate(
+          gazSettingsProvider(
+            (enterpriseId: enterpriseId, moduleId: moduleId),
+          ),
+        );
+      }
       Navigator.of(context).pop();
 
       if (context.mounted) {

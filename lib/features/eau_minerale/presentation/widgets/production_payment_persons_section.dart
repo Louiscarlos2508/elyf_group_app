@@ -249,13 +249,30 @@ class ProductionPaymentPersonsSection extends ConsumerWidget {
             ),
           )
         else
-          ...List.generate(persons.length, (index) {
-            return ProductionPaymentPersonRow(
-              person: persons[index],
-              onChanged: (person) => onUpdatePerson(index, person),
-              onRemove: () => onRemovePerson(index),
-            );
-          }),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 500),
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: persons.length,
+              itemBuilder: (context, index) {
+                return ProductionPaymentPersonRow(
+                  person: persons[index],
+                  onChanged: (person) => onUpdatePerson(index, person),
+                  onRemove: () => onRemovePerson(index),
+                );
+              },
+            ),
+          ),
+        if (persons.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              '${persons.length} personne(s)',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
       ],
     );
   }

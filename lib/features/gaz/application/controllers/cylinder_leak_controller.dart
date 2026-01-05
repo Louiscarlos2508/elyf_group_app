@@ -31,6 +31,7 @@ class CylinderLeakController {
     String cylinderId,
     int weight,
     String enterpriseId, {
+    String? tourId,
     String? notes,
   }) async {
     // Créer l'enregistrement de fuite
@@ -40,6 +41,7 @@ class CylinderLeakController {
       weight: weight,
       reportedDate: DateTime.now(),
       status: LeakStatus.reported,
+      tourId: tourId,
       notes: notes,
     );
 

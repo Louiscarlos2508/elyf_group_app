@@ -57,8 +57,6 @@ class EauMineralePermissionAdapter {
         return hasPermission(EauMineralePermissions.viewSalaries.id);
       case EauMineraleSection.reports:
         return hasPermission(EauMineralePermissions.viewReports.id);
-      case EauMineraleSection.treasury:
-        return hasPermission(EauMineralePermissions.viewTreasury.id);
       case EauMineraleSection.profile:
         return hasPermission(EauMineralePermissions.viewProfile.id);
       case EauMineraleSection.settings:

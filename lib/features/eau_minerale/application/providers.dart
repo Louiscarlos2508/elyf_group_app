@@ -71,7 +71,6 @@ import '../presentation/screens/sections/clients_screen.dart';
 import '../presentation/screens/sections/finances_screen.dart';
 import '../presentation/screens/sections/salaries_screen.dart';
 import '../presentation/screens/sections/reports_screen.dart';
-import '../../../../shared/presentation/widgets/treasury/treasury_screen.dart' as shared_treasury;
 import '../presentation/screens/sections/profile_screen.dart';
 import '../presentation/screens/sections/settings_screen.dart';
 
@@ -483,15 +482,6 @@ final _allSections = [
     label: 'Rapports',
     icon: Icons.description,
     builder: () => const ReportsScreen(),
-  ),
-  EauMineraleSectionConfig(
-    id: EauMineraleSection.treasury,
-    label: 'Trésorerie',
-    icon: Icons.account_balance,
-    builder: () => shared_treasury.TreasuryScreen(
-      moduleId: 'eau_minerale',
-      moduleName: 'Eau Minérale',
-    ),
   ),
   EauMineraleSectionConfig(
     id: EauMineraleSection.profile,

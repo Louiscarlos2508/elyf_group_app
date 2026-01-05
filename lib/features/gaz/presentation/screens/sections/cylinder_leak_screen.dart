@@ -11,7 +11,14 @@ import 'cylinder_leak/leak_list_item.dart';
 
 /// Écran de gestion des bouteilles avec fuites.
 class CylinderLeakScreen extends ConsumerStatefulWidget {
-  const CylinderLeakScreen({super.key});
+  const CylinderLeakScreen({
+    super.key,
+    required this.enterpriseId,
+    required this.moduleId,
+  });
+
+  final String enterpriseId;
+  final String moduleId;
 
   @override
   ConsumerState<CylinderLeakScreen> createState() =>
@@ -19,19 +26,21 @@ class CylinderLeakScreen extends ConsumerStatefulWidget {
 }
 
 class _CylinderLeakScreenState extends ConsumerState<CylinderLeakScreen> {
-  String? _enterpriseId;
   LeakStatus? _filterStatus;
 
   void _showLeakDialog() {
     try {
       showDialog(
         context: context,
-        builder: (context) => const CylinderLeakFormDialog(),
+        builder: (context) => CylinderLeakFormDialog(
+          enterpriseId: widget.enterpriseId,
+          moduleId: widget.moduleId,
+        ),
       ).then((result) {
         if (result == true && mounted) {
           ref.invalidate(
             cylinderLeaksProvider(
-              (enterpriseId: _enterpriseId!, status: null),
+              (enterpriseId: widget.enterpriseId, status: null),
             ),
           );
         }
@@ -53,12 +62,9 @@ class _CylinderLeakScreenState extends ConsumerState<CylinderLeakScreen> {
   Widget build(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 600;
 
-    // TODO: Récupérer enterpriseId depuis le contexte/tenant
-    _enterpriseId ??= 'default_enterprise';
-
     final leaksAsync = ref.watch(
       cylinderLeaksProvider(
-        (enterpriseId: _enterpriseId!, status: _filterStatus),
+        (enterpriseId: widget.enterpriseId, status: _filterStatus),
       ),
     );
 

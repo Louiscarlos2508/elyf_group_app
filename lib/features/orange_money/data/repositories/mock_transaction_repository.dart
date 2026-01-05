@@ -57,13 +57,13 @@ class MockTransactionRepository implements TransactionRepository {
 
     if (startDate != null) {
       transactions = transactions
-          .where((t) => t.date.isAfter(startDate) || t.date.isAtSameMomentAs(startDate))
+          .where((t) => !t.date.isBefore(startDate))
           .toList();
     }
 
     if (endDate != null) {
       transactions = transactions
-          .where((t) => t.date.isBefore(endDate) || t.date.isAtSameMomentAs(endDate))
+          .where((t) => !t.date.isAfter(endDate))
           .toList();
     }
 
@@ -123,9 +123,20 @@ class MockTransactionRepository implements TransactionRepository {
     DateTime? endDate,
   }) async {
     await Future<void>.delayed(const Duration(milliseconds: 200));
+    
+    // Normalize dates to start/end of day for proper filtering
+    DateTime? normalizedStartDate;
+    DateTime? normalizedEndDate;
+    if (startDate != null) {
+      normalizedStartDate = DateTime(startDate.year, startDate.month, startDate.day);
+    }
+    if (endDate != null) {
+      normalizedEndDate = DateTime(endDate.year, endDate.month, endDate.day, 23, 59, 59);
+    }
+    
     final transactions = await fetchTransactions(
-      startDate: startDate,
-      endDate: endDate,
+      startDate: normalizedStartDate,
+      endDate: normalizedEndDate,
     );
 
     final cashInTotal = transactions

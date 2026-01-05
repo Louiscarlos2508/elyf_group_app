@@ -4,10 +4,150 @@ import 'package:go_router/go_router.dart';
 
 import '../../../application/providers.dart';
 import '../../../domain/entities/enterprise.dart';
+import 'dialogs/create_enterprise_dialog.dart';
+import 'dialogs/edit_enterprise_dialog.dart';
 
 /// Section pour gérer les entreprises
 class AdminEnterprisesSection extends ConsumerWidget {
   const AdminEnterprisesSection({super.key});
+
+  Future<void> _handleCreateEnterprise(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final result = await showDialog<Enterprise>(
+      context: context,
+      builder: (context) => const CreateEnterpriseDialog(),
+    );
+
+    if (result != null) {
+      try {
+        await ref
+            .read(enterpriseRepositoryProvider)
+            .createEnterprise(result);
+        ref.invalidate(enterprisesProvider);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Entreprise créée avec succès')),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Erreur: $e')),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _handleEditEnterprise(
+    BuildContext context,
+    WidgetRef ref,
+    Enterprise enterprise,
+  ) async {
+    final result = await showDialog<Enterprise>(
+      context: context,
+      builder: (context) => EditEnterpriseDialog(enterprise: enterprise),
+    );
+
+    if (result != null) {
+      try {
+        await ref
+            .read(enterpriseRepositoryProvider)
+            .updateEnterprise(result);
+        ref.invalidate(enterprisesProvider);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Entreprise modifiée avec succès')),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Erreur: $e')),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _handleToggleStatus(
+    BuildContext context,
+    WidgetRef ref,
+    Enterprise enterprise,
+  ) async {
+    try {
+      await ref
+          .read(enterpriseRepositoryProvider)
+          .toggleEnterpriseStatus(enterprise.id, !enterprise.isActive);
+      ref.invalidate(enterprisesProvider);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              enterprise.isActive
+                  ? 'Entreprise désactivée'
+                  : 'Entreprise activée',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleDeleteEnterprise(
+    BuildContext context,
+    WidgetRef ref,
+    Enterprise enterprise,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Supprimer l\'entreprise'),
+        content: Text(
+          'Êtes-vous sûr de vouloir supprimer "${enterprise.name}" ?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Annuler'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Supprimer'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await ref
+            .read(enterpriseRepositoryProvider)
+            .deleteEnterprise(enterprise.id);
+        ref.invalidate(enterprisesProvider);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Entreprise supprimée')),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Erreur: $e')),
+          );
+        }
+      }
+    }
+  }
 
   IconData _getTypeIcon(String type) {
     switch (type) {
@@ -85,14 +225,7 @@ class AdminEnterprisesSection extends ConsumerWidget {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: FilledButton.icon(
-              onPressed: () {
-                // TODO: Show create enterprise dialog
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Créer une entreprise - À implémenter'),
-                  ),
-                );
-              },
+              onPressed: () => _handleCreateEnterprise(context, ref),
               icon: const Icon(Icons.add_business),
               label: const Text('Nouvelle Entreprise'),
             ),
@@ -189,16 +322,36 @@ class AdminEnterprisesSection extends ConsumerWidget {
                           children: [
                             IconButton(
                               icon: const Icon(Icons.edit),
-                              onPressed: () {
-                                // TODO: Show edit dialog
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      'Modifier ${enterprise.name} - À implémenter',
-                                    ),
-                                  ),
-                                );
-                              },
+                              onPressed: () => _handleEditEnterprise(
+                                context,
+                                ref,
+                                enterprise,
+                              ),
+                              tooltip: 'Modifier',
+                            ),
+                            IconButton(
+                              icon: Icon(
+                                enterprise.isActive
+                                    ? Icons.block
+                                    : Icons.check_circle,
+                              ),
+                              onPressed: () => _handleToggleStatus(
+                                context,
+                                ref,
+                                enterprise,
+                              ),
+                              tooltip: enterprise.isActive
+                                  ? 'Désactiver'
+                                  : 'Activer',
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete, color: Colors.red),
+                              onPressed: () => _handleDeleteEnterprise(
+                                context,
+                                ref,
+                                enterprise,
+                              ),
+                              tooltip: 'Supprimer',
                             ),
                             IconButton(
                               icon: const Icon(Icons.open_in_new),

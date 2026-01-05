@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../shared/presentation/widgets/adaptive_navigation_scaffold.dart';
 import '../../../../shared/presentation/widgets/module_loading_animation.dart';
 import '../../../../shared/presentation/widgets/profile/profile_screen.dart' as shared;
-import '../../../../shared/presentation/widgets/treasury/treasury_screen.dart' as shared_treasury;
 import 'sections/catalog_screen.dart';
 import 'sections/dashboard_screen.dart';
 import 'sections/expenses_screen.dart';
@@ -83,17 +82,6 @@ class _BoutiqueShellScreenState extends ConsumerState<BoutiqueShellScreen> {
         label: 'Rapports',
         icon: Icons.assessment,
         builder: () => const ReportsScreen(),
-        enterpriseId: widget.enterpriseId,
-        moduleId: widget.moduleId,
-      ),
-      NavigationSection(
-        label: 'Trésorerie',
-        icon: Icons.account_balance,
-        builder: () => shared_treasury.TreasuryScreen(
-          moduleId: widget.moduleId,
-          moduleName: 'Boutique',
-        ),
-        isPrimary: true,
         enterpriseId: widget.enterpriseId,
         moduleId: widget.moduleId,
       ),

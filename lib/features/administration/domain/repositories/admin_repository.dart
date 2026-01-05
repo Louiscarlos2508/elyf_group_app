@@ -1,33 +1,54 @@
-import '../../../../core/permissions/entities/module_user.dart';
 import '../../../../core/permissions/entities/user_role.dart';
+import '../../../../core/auth/entities/enterprise_module_user.dart';
 
-/// Repository for administration operations.
+/// Repository for administration operations with multi-tenant support.
 abstract class AdminRepository {
-  /// Get all users in a module
-  Future<List<ModuleUser>> getModuleUsers(String moduleId);
+  /// Get all enterprise module users (all accesses)
+  Future<List<EnterpriseModuleUser>> getEnterpriseModuleUsers();
 
-  /// Add a user to a module
-  Future<void> addUserToModule(ModuleUser moduleUser);
+  /// Get enterprise module users for a specific user
+  Future<List<EnterpriseModuleUser>> getUserEnterpriseModuleUsers(String userId);
 
-  /// Update a user's role in a module
+  /// Get enterprise module users for a specific enterprise
+  Future<List<EnterpriseModuleUser>> getEnterpriseUsers(String enterpriseId);
+
+  /// Get enterprise module users for a specific enterprise and module
+  Future<List<EnterpriseModuleUser>> getEnterpriseModuleUsersByEnterpriseAndModule(
+    String enterpriseId,
+    String moduleId,
+  );
+
+  /// Assign a user to an enterprise and module with a role
+  Future<void> assignUserToEnterprise(EnterpriseModuleUser enterpriseModuleUser);
+
+  /// Update a user's role in an enterprise and module
   Future<void> updateUserRole(
     String userId,
+    String enterpriseId,
     String moduleId,
     String roleId,
   );
 
-  /// Update user's custom permissions
+  /// Update user's custom permissions in an enterprise and module
   Future<void> updateUserPermissions(
     String userId,
+    String enterpriseId,
     String moduleId,
     Set<String> permissions,
   );
 
-  /// Remove a user from a module
-  Future<void> removeUserFromModule(String userId, String moduleId);
+  /// Remove a user from an enterprise and module
+  Future<void> removeUserFromEnterprise(
+    String userId,
+    String enterpriseId,
+    String moduleId,
+  );
 
   /// Get all roles
   Future<List<UserRole>> getAllRoles();
+
+  /// Get roles for a module
+  Future<List<UserRole>> getModuleRoles(String moduleId);
 
   /// Create a new role
   Future<void> createRole(UserRole role);
@@ -37,8 +58,5 @@ abstract class AdminRepository {
 
   /// Delete a role (if not system role)
   Future<void> deleteRole(String roleId);
-
-  /// Get roles for a module
-  Future<List<UserRole>> getModuleRoles(String moduleId);
 }
 

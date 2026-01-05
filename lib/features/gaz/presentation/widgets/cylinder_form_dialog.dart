@@ -25,38 +25,61 @@ class CylinderFormDialog extends ConsumerStatefulWidget {
 class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
   final _formKey = GlobalKey<FormState>();
   final _weightController = TextEditingController();
-  final _buyPriceController = TextEditingController();
   final _sellPriceController = TextEditingController();
+  final _wholesalePriceController = TextEditingController();
 
   int? _selectedWeight;
   bool _isLoading = false;
   String? _enterpriseId;
   String? _moduleId;
 
-  final List<int> _availableWeights = [3, 6, 10, 12];
-
   @override
   void initState() {
     super.initState();
-    _enterpriseId ??= 'default_enterprise';
+    _enterpriseId ??= 'gaz_1';
     _moduleId ??= 'gaz';
 
     if (widget.cylinder != null) {
       _selectedWeight = widget.cylinder!.weight;
       _weightController.text = widget.cylinder!.weight.toString();
-      _buyPriceController.text = widget.cylinder!.buyPrice.toStringAsFixed(0);
       _sellPriceController.text = widget.cylinder!.sellPrice.toStringAsFixed(0);
       _enterpriseId = widget.cylinder!.enterpriseId;
       _moduleId = widget.cylinder!.moduleId;
+      
+      // Charger le prix en gros depuis les settings
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _loadWholesalePrice();
+      });
     }
   }
 
   @override
   void dispose() {
     _weightController.dispose();
-    _buyPriceController.dispose();
     _sellPriceController.dispose();
+    _wholesalePriceController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadWholesalePrice() async {
+    if (_enterpriseId == null || _moduleId == null || _selectedWeight == null) {
+      return;
+    }
+
+    try {
+      final settingsController = ref.read(gazSettingsControllerProvider);
+      final wholesalePrice = await settingsController.getWholesalePrice(
+        enterpriseId: _enterpriseId!,
+        moduleId: _moduleId!,
+        weight: _selectedWeight!,
+      );
+
+      if (wholesalePrice != null && wholesalePrice > 0 && mounted) {
+        _wholesalePriceController.text = wholesalePrice.toStringAsFixed(0);
+      }
+    } catch (e) {
+      // Ignorer les erreurs silencieusement
+    }
   }
 
   Future<void> _saveCylinder() async {
@@ -69,8 +92,8 @@ class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
       ref: ref,
       selectedWeight: _selectedWeight,
       weightText: _weightController.text,
-      buyPriceText: _buyPriceController.text,
       sellPriceText: _sellPriceController.text,
+      wholesalePriceText: _wholesalePriceController.text,
       enterpriseId: _enterpriseId,
       moduleId: _moduleId,
       existingCylinder: widget.cylinder,
@@ -102,75 +125,51 @@ class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
                 children: [
                   CylinderFormHeader(isEditing: widget.cylinder != null),
                   const SizedBox(height: 24),
-                  // Poids
-                  DropdownButtonFormField<int>(
-                    value: _selectedWeight,
+                  // Poids (saisie libre)
+                  TextFormField(
+                    controller: _weightController,
                     decoration: InputDecoration(
                       labelText: 'Poids (kg) *',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                       prefixIcon: const Icon(Icons.scale),
-                    ),
-                    items: _availableWeights.map((weight) {
-                      return DropdownMenuItem(
-                        value: weight,
-                        child: Text('$weight kg'),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedWeight = value;
-                        if (value != null) {
-                          _weightController.text = value.toString();
-                        }
-                      });
-                    },
-                    validator: (value) {
-                      if (value == null) {
-                        return 'Veuillez sélectionner un poids';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  // Prix d'achat
-                  TextFormField(
-                    controller: _buyPriceController,
-                    decoration: InputDecoration(
-                      labelText: 'Prix d\'achat (FCFA) *',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      prefixIcon: const Icon(Icons.shopping_cart),
-                      suffixText: 'FCFA',
+                      hintText: 'Ex: 3, 6, 10, 12...',
+                      helperText: 'Entrez le poids de la bouteille en kg',
                     ),
                     keyboardType: TextInputType.number,
                     inputFormatters: [
                       FilteringTextInputFormatter.digitsOnly,
                     ],
+                    onChanged: (value) {
+                      final weight = int.tryParse(value);
+                      setState(() {
+                        _selectedWeight = weight;
+                      });
+                    },
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Veuillez entrer un prix d\'achat';
+                        return 'Veuillez entrer un poids';
                       }
-                      final price = double.tryParse(value);
-                      if (price == null || price < 0) {
-                        return 'Prix invalide';
+                      final weight = int.tryParse(value);
+                      if (weight == null || weight <= 0) {
+                        return 'Le poids doit être un nombre positif';
                       }
                       return null;
                     },
                   ),
                   const SizedBox(height: 16),
-                  // Prix de vente
+                  // Prix détail
                   TextFormField(
                     controller: _sellPriceController,
                     decoration: InputDecoration(
-                      labelText: 'Prix de vente (FCFA) *',
+                      labelText: 'Prix détail (FCFA) *',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                       prefixIcon: const Icon(Icons.attach_money),
                       suffixText: 'FCFA',
+                      helperText: 'Prix de vente au détail',
                     ),
                     keyboardType: TextInputType.number,
                     inputFormatters: [
@@ -178,17 +177,44 @@ class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
                     ],
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Veuillez entrer un prix de vente';
+                        return 'Veuillez entrer un prix détail';
                       }
                       final price = double.tryParse(value);
                       if (price == null || price < 0) {
                         return 'Prix invalide';
                       }
-                      if (_buyPriceController.text.isNotEmpty) {
-                        final buyPrice =
-                            double.tryParse(_buyPriceController.text) ?? 0;
-                        if (price < buyPrice) {
-                          return 'Le prix de vente doit être supérieur au prix d\'achat';
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  // Prix en gros (optionnel)
+                  TextFormField(
+                    controller: _wholesalePriceController,
+                    decoration: InputDecoration(
+                      labelText: 'Prix en gros (FCFA)',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      prefixIcon: const Icon(Icons.store),
+                      suffixText: 'FCFA',
+                      helperText: 'Prix de vente en gros (optionnel)',
+                    ),
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                    ],
+                    validator: (value) {
+                      if (value != null && value.isNotEmpty) {
+                        final price = double.tryParse(value);
+                        if (price == null || price < 0) {
+                          return 'Prix invalide';
+                        }
+                        if (_sellPriceController.text.isNotEmpty) {
+                          final sellPrice =
+                              double.tryParse(_sellPriceController.text) ?? 0;
+                          if (price >= sellPrice) {
+                            return 'Le prix en gros doit être inférieur au prix détail';
+                          }
                         }
                       }
                       return null;

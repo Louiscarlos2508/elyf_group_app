@@ -1,10 +1,10 @@
-import '../../../../core/permissions/entities/module_user.dart';
 import '../../../../core/permissions/entities/user_role.dart';
+import '../../../../core/auth/entities/enterprise_module_user.dart';
 import '../../domain/repositories/admin_repository.dart';
 
-/// Mock implementation of AdminRepository.
+/// Mock implementation of AdminRepository with multi-tenant support.
 class MockAdminRepository implements AdminRepository {
-  final List<ModuleUser> _moduleUsers = [];
+  final List<EnterpriseModuleUser> _enterpriseModuleUsers = [];
   final List<UserRole> _roles = [];
 
   MockAdminRepository() {
@@ -15,22 +15,29 @@ class MockAdminRepository implements AdminRepository {
     // Add default roles
     _roles.addAll([
       UserRole(
-        id: 'responsable',
-        name: 'Responsable',
-        description: 'Accès complet au module',
+        id: 'admin',
+        name: 'Administrateur',
+        description: 'Accès complet',
         permissions: {'*'},
         isSystemRole: true,
       ),
       UserRole(
-        id: 'gestionnaire',
-        name: 'Gestionnaire',
-        description: 'Gestion des opérations courantes',
+        id: 'gestionnaire_eau_minerale',
+        name: 'Gestionnaire Eau Minérale',
+        description: 'Gestion complète du module eau minérale',
         permissions: {
           'view_dashboard',
           'view_production',
           'create_production',
+          'edit_production',
           'view_sales',
           'create_sale',
+          'edit_sale',
+          'view_stock',
+          'edit_stock',
+          'view_finances',
+          'create_expense',
+          'view_reports',
         },
       ),
       UserRole(
@@ -46,51 +53,99 @@ class MockAdminRepository implements AdminRepository {
       ),
     ]);
 
-    // Add some mock users
-    _moduleUsers.addAll([
-      ModuleUser(
+    // Add some mock enterprise module users
+    final now = DateTime.now();
+    _enterpriseModuleUsers.addAll([
+      EnterpriseModuleUser(
         userId: 'user-1',
+        enterpriseId: 'eau_sachet_1',
         moduleId: 'eau_minerale',
-        roleId: 'responsable',
+        roleId: 'admin',
         isActive: true,
-        createdAt: DateTime.now().subtract(const Duration(days: 30)),
+        createdAt: now.subtract(const Duration(days: 30)),
+        updatedAt: now,
       ),
-      ModuleUser(
+      EnterpriseModuleUser(
         userId: 'user-2',
+        enterpriseId: 'eau_sachet_1',
         moduleId: 'eau_minerale',
         roleId: 'vendeur',
         isActive: true,
-        createdAt: DateTime.now().subtract(const Duration(days: 15)),
+        createdAt: now.subtract(const Duration(days: 15)),
+        updatedAt: now,
+      ),
+      EnterpriseModuleUser(
+        userId: 'user-1',
+        enterpriseId: 'gaz_1',
+        moduleId: 'gaz',
+        roleId: 'admin',
+        isActive: true,
+        createdAt: now.subtract(const Duration(days: 20)),
+        updatedAt: now,
       ),
     ]);
   }
 
   @override
-  Future<List<ModuleUser>> getModuleUsers(String moduleId) async {
-    return _moduleUsers
-        .where((u) => u.moduleId == moduleId)
+  Future<List<EnterpriseModuleUser>> getEnterpriseModuleUsers() async {
+    return List.from(_enterpriseModuleUsers);
+  }
+
+  @override
+  Future<List<EnterpriseModuleUser>> getUserEnterpriseModuleUsers(
+    String userId,
+  ) async {
+    return _enterpriseModuleUsers
+        .where((u) => u.userId == userId)
         .toList();
   }
 
   @override
-  Future<void> addUserToModule(ModuleUser moduleUser) async {
-    _moduleUsers.removeWhere(
-      (u) => u.userId == moduleUser.userId && u.moduleId == moduleUser.moduleId,
+  Future<List<EnterpriseModuleUser>> getEnterpriseUsers(
+    String enterpriseId,
+  ) async {
+    return _enterpriseModuleUsers
+        .where((u) => u.enterpriseId == enterpriseId)
+        .toList();
+  }
+
+  @override
+  Future<List<EnterpriseModuleUser>>
+      getEnterpriseModuleUsersByEnterpriseAndModule(
+    String enterpriseId,
+    String moduleId,
+  ) async {
+    return _enterpriseModuleUsers
+        .where(
+          (u) => u.enterpriseId == enterpriseId && u.moduleId == moduleId,
+        )
+        .toList();
+  }
+
+  @override
+  Future<void> assignUserToEnterprise(
+    EnterpriseModuleUser enterpriseModuleUser,
+  ) async {
+    final documentId = enterpriseModuleUser.documentId;
+    _enterpriseModuleUsers.removeWhere(
+      (u) => u.documentId == documentId,
     );
-    _moduleUsers.add(moduleUser);
+    _enterpriseModuleUsers.add(enterpriseModuleUser);
   }
 
   @override
   Future<void> updateUserRole(
     String userId,
+    String enterpriseId,
     String moduleId,
     String roleId,
   ) async {
-    final index = _moduleUsers.indexWhere(
-      (u) => u.userId == userId && u.moduleId == moduleId,
+    final documentId = '${userId}_${enterpriseId}_$moduleId';
+    final index = _enterpriseModuleUsers.indexWhere(
+      (u) => u.documentId == documentId,
     );
     if (index != -1) {
-      _moduleUsers[index] = _moduleUsers[index].copyWith(
+      _enterpriseModuleUsers[index] = _enterpriseModuleUsers[index].copyWith(
         roleId: roleId,
         updatedAt: DateTime.now(),
       );
@@ -100,14 +155,16 @@ class MockAdminRepository implements AdminRepository {
   @override
   Future<void> updateUserPermissions(
     String userId,
+    String enterpriseId,
     String moduleId,
     Set<String> permissions,
   ) async {
-    final index = _moduleUsers.indexWhere(
-      (u) => u.userId == userId && u.moduleId == moduleId,
+    final documentId = '${userId}_${enterpriseId}_$moduleId';
+    final index = _enterpriseModuleUsers.indexWhere(
+      (u) => u.documentId == documentId,
     );
     if (index != -1) {
-      _moduleUsers[index] = _moduleUsers[index].copyWith(
+      _enterpriseModuleUsers[index] = _enterpriseModuleUsers[index].copyWith(
         customPermissions: permissions,
         updatedAt: DateTime.now(),
       );
@@ -115,14 +172,23 @@ class MockAdminRepository implements AdminRepository {
   }
 
   @override
-  Future<void> removeUserFromModule(String userId, String moduleId) async {
-    _moduleUsers.removeWhere(
-      (u) => u.userId == userId && u.moduleId == moduleId,
-    );
+  Future<void> removeUserFromEnterprise(
+    String userId,
+    String enterpriseId,
+    String moduleId,
+  ) async {
+    final documentId = '${userId}_${enterpriseId}_$moduleId';
+    _enterpriseModuleUsers.removeWhere((u) => u.documentId == documentId);
   }
 
   @override
   Future<List<UserRole>> getAllRoles() async {
+    return List.from(_roles);
+  }
+
+  @override
+  Future<List<UserRole>> getModuleRoles(String moduleId) async {
+    // For now, return all roles. In real implementation, filter by module
     return List.from(_roles);
   }
 
@@ -145,12 +211,6 @@ class MockAdminRepository implements AdminRepository {
     if (!role.isSystemRole) {
       _roles.removeWhere((r) => r.id == roleId);
     }
-  }
-
-  @override
-  Future<List<UserRole>> getModuleRoles(String moduleId) async {
-    // For now, return all roles. In real implementation, filter by module
-    return List.from(_roles);
   }
 }
 

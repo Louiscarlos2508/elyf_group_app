@@ -92,7 +92,6 @@ Les permissions sont définies dans `domain/permissions/eau_minerale_permissions
 - `viewFinances`, `createExpense`, `editExpense`, `deleteExpense`
 - `viewSalaries`, `createSalary`, `editSalary`, `deleteSalary`
 - `viewReports`, `downloadReports`
-- `viewTreasury` - Voir la trésorerie
 - `viewSettings`, `editSettings`, `manageProducts`, `configureProduction`
 - `viewProfile`, `editProfile`, `changePassword`
 

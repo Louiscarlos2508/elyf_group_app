@@ -42,6 +42,15 @@ class _WholesalePriceRowState extends ConsumerState<WholesalePriceRow> {
   }
 
   @override
+  void didUpdateWidget(WholesalePriceRow oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Mettre à jour le controller si le prix a changé et qu'on n'est pas en mode édition
+    if (oldWidget.price != widget.price && !_isEditing) {
+      _controller.text = widget.price > 0 ? widget.price.toStringAsFixed(0) : '';
+    }
+  }
+
+  @override
   void dispose() {
     _controller.dispose();
     super.dispose();

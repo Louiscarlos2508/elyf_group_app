@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../shared/presentation/widgets/adaptive_navigation_scaffold.dart';
 import '../../../../shared/presentation/widgets/module_loading_animation.dart';
-import '../../../../shared/presentation/widgets/treasury/treasury_screen.dart' as shared_treasury;
 import '../../application/providers.dart';
 import '../../domain/entities/eau_minerale_section.dart';
 
@@ -37,7 +36,6 @@ class _EauMineraleShellScreenState
       EauMineraleSection.sales,
       EauMineraleSection.stock,
       EauMineraleSection.clients,
-      EauMineraleSection.treasury,
     };
 
     return configs
@@ -45,12 +43,7 @@ class _EauMineraleShellScreenState
           (config) => NavigationSection(
             label: config.label,
             icon: config.icon,
-            builder: config.id == EauMineraleSection.treasury
-                ? () => shared_treasury.TreasuryScreen(
-                      moduleId: widget.moduleId,
-                      moduleName: 'Eau Minérale',
-                    )
-                : config.builder,
+            builder: config.builder,
             isPrimary: primarySectionIds.contains(config.id),
             enterpriseId: widget.enterpriseId,
             moduleId: widget.moduleId,

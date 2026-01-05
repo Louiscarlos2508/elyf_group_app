@@ -6,6 +6,7 @@ import '../../application/providers.dart';
 import '../../domain/entities/cylinder.dart';
 import '../../domain/entities/gaz_settings.dart';
 import '../../../../shared/presentation/widgets/gaz_button_styles.dart';
+import 'cylinder_form_dialog.dart';
 
 /// Tableau des tarifs des bouteilles selon le design Figma.
 class BottlePriceTable extends ConsumerWidget {
@@ -18,21 +19,90 @@ class BottlePriceTable extends ConsumerWidget {
   final String enterpriseId;
   final String moduleId;
 
+  Future<void> _deleteCylinder(
+    BuildContext context,
+    WidgetRef ref,
+    Cylinder cylinder,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Supprimer le type de bouteille'),
+        content: Text(
+          'Êtes-vous sûr de vouloir supprimer la bouteille de ${cylinder.weight}kg ?\n\nCette action est irréversible.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Annuler'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
+            child: const Text('Supprimer'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      final controller = ref.read(cylinderControllerProvider);
+      await controller.deleteCylinder(cylinder.id);
+
+      if (!context.mounted) return;
+
+      ref.invalidate(cylindersProvider);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Type de bouteille supprimé avec succès'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur lors de la suppression: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final cylindersAsync = ref.watch(cylindersProvider);
-    final settingsAsync = ref.watch(
-      gazSettingsProvider(
-        (enterpriseId: enterpriseId, moduleId: moduleId),
-      ),
-    );
 
     return cylindersAsync.when(
       data: (cylinders) {
-        return settingsAsync.when(
-          data: (settings) {
-            return Container(
+        if (cylinders.isEmpty) {
+          return Container(
+            padding: const EdgeInsets.fromLTRB(25.285, 25.285, 1.305, 1.305),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(
+                color: Colors.black.withValues(alpha: 0.1),
+                width: 1.305,
+              ),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: const Center(
+              child: Padding(
+                padding: EdgeInsets.all(24),
+                child: Text('Aucune bouteille créée'),
+              ),
+            ),
+          );
+        }
+
+        // Récupérer les settings pour chaque cylinder (peut avoir des enterpriseId/moduleId différents)
+        return Container(
               padding: const EdgeInsets.fromLTRB(25.285, 25.285, 1.305, 1.305),
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -67,20 +137,9 @@ class BottlePriceTable extends ConsumerWidget {
                           ),
                         ],
                       ),
-                      OutlinedButton.icon(
-                        style: GazButtonStyles.outlined,
-                        onPressed: () {
-                          // TODO: Ouvrir le formulaire de modification
-                        },
-                        icon: const Icon(Icons.edit, size: 16),
-                        label: const Text(
-                          'Modifier',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Color(0xFF0A0A0A),
-                          ),
-                        ),
-                      ),
+                      // Le bouton "Modifier" global n'est plus nécessaire
+                      // car chaque ligne a ses propres actions
+                      const SizedBox.shrink(),
                     ],
                   ),
                   const SizedBox(height: 42),
@@ -159,7 +218,7 @@ class BottlePriceTable extends ConsumerWidget {
                                 ),
                               ),
                               SizedBox(
-                                width: 80,
+                                width: 100,
                                 child: Text(
                                   'Actions',
                                   textAlign: TextAlign.right,
@@ -174,11 +233,23 @@ class BottlePriceTable extends ConsumerWidget {
                         ),
                         // Corps du tableau
                         ...cylinders.map((cylinder) {
-                          final wholesalePrice =
-                              settings?.getWholesalePrice(cylinder.weight) ?? 0.0;
-                          final numberFormat = NumberFormat('#,###', 'fr_FR');
+                          // Récupérer les settings pour ce cylinder spécifique
+                          final cylinderSettingsAsync = ref.watch(
+                            gazSettingsProvider(
+                              (
+                                enterpriseId: cylinder.enterpriseId,
+                                moduleId: cylinder.moduleId,
+                              ),
+                            ),
+                          );
 
-                          return Container(
+                          return cylinderSettingsAsync.when(
+                            data: (cylinderSettings) {
+                              final wholesalePrice =
+                                  cylinderSettings?.getWholesalePrice(cylinder.weight);
+                              final numberFormat = NumberFormat('#,###', 'fr_FR');
+
+                              return Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 7.99,
                               vertical: 14.64,
@@ -225,8 +296,8 @@ class BottlePriceTable extends ConsumerWidget {
                                 ),
                                 Expanded(
                                   child: Text(
-                                    wholesalePrice > 0
-                                        ? '${numberFormat.format(wholesalePrice.toInt())} FCFA'
+                                    wholesalePrice != null && wholesalePrice! > 0
+                                        ? '${numberFormat.format(wholesalePrice!.toInt())} FCFA'
                                         : '-',
                                     textAlign: TextAlign.right,
                                     style: theme.textTheme.bodyMedium?.copyWith(
@@ -258,37 +329,89 @@ class BottlePriceTable extends ConsumerWidget {
                                   ),
                                 ),
                                 SizedBox(
-                                  width: 80,
+                                  width: 100,
                                   child: Align(
                                     alignment: Alignment.centerRight,
-                                    child: IconButton(
-                                      icon: const Icon(
-                                        Icons.delete_outline,
-                                        size: 20,
-                                        color: Color(0xFFE7000B),
-                                      ),
-                                      onPressed: () {
-                                        // TODO: Supprimer le type
-                                      },
-                                      padding: EdgeInsets.zero,
-                                      constraints: const BoxConstraints(),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.end,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.edit,
+                                            size: 16,
+                                            color: Color(0xFF0A0A0A),
+                                          ),
+                                          onPressed: () {
+                                            showDialog(
+                                              context: context,
+                                              builder: (context) => CylinderFormDialog(
+                                                cylinder: cylinder,
+                                              ),
+                                            );
+                                          },
+                                          padding: EdgeInsets.zero,
+                                          constraints: const BoxConstraints(
+                                            minWidth: 24,
+                                            minHeight: 24,
+                                          ),
+                                          tooltip: 'Modifier',
+                                        ),
+                                        const SizedBox(width: 2),
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.delete_outline,
+                                            size: 16,
+                                            color: Color(0xFFE7000B),
+                                          ),
+                                          onPressed: () => _deleteCylinder(
+                                            context,
+                                            ref,
+                                            cylinder,
+                                          ),
+                                          padding: EdgeInsets.zero,
+                                          constraints: const BoxConstraints(
+                                            minWidth: 24,
+                                            minHeight: 24,
+                                          ),
+                                          tooltip: 'Supprimer',
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 ),
                               ],
                             ),
                           );
-                        }),
+                            },
+                            loading: () => Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 7.99,
+                                vertical: 14.64,
+                              ),
+                              child: const Center(
+                                child: SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                ),
+                              ),
+                            ),
+                            error: (e, _) => Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 7.99,
+                                vertical: 14.64,
+                              ),
+                              child: Text('Erreur: $e'),
+                            ),
+                          );
+                        }).toList(),
                       ],
                     ),
                   ),
                 ],
               ),
             );
-          },
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(child: Text('Erreur: $e')),
-        );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(child: Text('Erreur: $e')),

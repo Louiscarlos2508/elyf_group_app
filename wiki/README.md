@@ -22,6 +22,7 @@ Bienvenue dans le wiki de l'application ELYF Group App. Ce wiki contient toute l
 - [Guidelines](./04-development/guidelines.md) – Règles et bonnes pratiques
 - [Structure des modules](./04-development/module-structure.md) – Comment créer un module
 - [Widgets réutilisables](./04-development/reusable-widgets.md) – Composants partagés
+- [Formulaires dynamiques](./04-development/formulaires-dynamiques.md) – Formulaires avec champs dynamiques
 - [Tests](./04-development/testing.md) – Guide de test
 
 ### 05. Modules

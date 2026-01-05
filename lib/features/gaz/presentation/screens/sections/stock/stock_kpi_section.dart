@@ -22,6 +22,9 @@ class StockKpiSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Récupérer les poids disponibles depuis les bouteilles créées
+    final cylindersAsync = ref.watch(cylindersProvider);
+    
     // Calculate totals
     final fullStocks = allStocks
         .where((s) => s.status == CylinderStatus.full)
@@ -41,7 +44,7 @@ class StockKpiSection extends ConsumerWidget {
       (sum, s) => sum + s.quantity,
     );
 
-    // Group by weight for subtitle (6kg, 12kg, 38kg as per Figma)
+    // Group by weight for subtitle
     final fullByWeight = <int, int>{};
     final emptyByWeight = <int, int>{};
     for (final stock in fullStocks) {
@@ -53,14 +56,79 @@ class StockKpiSection extends ConsumerWidget {
           (emptyByWeight[stock.weight] ?? 0) + stock.quantity;
     }
 
-    // Use available weights (6kg, 12kg shown in Figma, but we'll use system weights)
-    final weightsToShow = [6, 12]; // Main weights shown in Figma
-    final fullSubtitle = weightsToShow
-        .map((w) => '${w}kg: ${fullByWeight[w] ?? 0}')
-        .join(' • ');
-    final emptySubtitle = weightsToShow
-        .map((w) => '${w}kg: ${emptyByWeight[w] ?? 0}')
-        .join(' • ');
+    // Utiliser les poids dynamiques des bouteilles créées
+    return cylindersAsync.when(
+      data: (cylinders) {
+        // Extraire les poids uniques des bouteilles existantes et les trier
+        final weightsToShow = cylinders
+            .map((c) => c.weight)
+            .toSet()
+            .toList()
+          ..sort();
+        
+        final fullSubtitle = weightsToShow.isEmpty
+            ? 'Aucune bouteille'
+            : weightsToShow
+                .map((w) => '${w}kg: ${fullByWeight[w] ?? 0}')
+                .join(' • ');
+        final emptySubtitle = weightsToShow.isEmpty
+            ? 'Aucune bouteille'
+            : weightsToShow
+                .map((w) => '${w}kg: ${emptyByWeight[w] ?? 0}')
+                .join(' • ');
+
+        return _buildKpiCards(
+          context: context,
+          activePointsOfSale: activePointsOfSale,
+          pointsOfSale: pointsOfSale,
+          totalFull: totalFull,
+          totalEmpty: totalEmpty,
+          fullSubtitle: fullSubtitle,
+          emptySubtitle: emptySubtitle,
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (_, __) {
+        // En cas d'erreur, utiliser tous les poids présents dans les stocks
+        final allWeights = <int>{};
+        for (final stock in allStocks) {
+          allWeights.add(stock.weight);
+        }
+        final weightsToShow = allWeights.toList()..sort();
+        
+        final fullSubtitle = weightsToShow.isEmpty
+            ? 'Aucune bouteille'
+            : weightsToShow
+                .map((w) => '${w}kg: ${fullByWeight[w] ?? 0}')
+                .join(' • ');
+        final emptySubtitle = weightsToShow.isEmpty
+            ? 'Aucune bouteille'
+            : weightsToShow
+                .map((w) => '${w}kg: ${emptyByWeight[w] ?? 0}')
+                .join(' • ');
+
+        return _buildKpiCards(
+          context: context,
+          activePointsOfSale: activePointsOfSale,
+          pointsOfSale: pointsOfSale,
+          totalFull: totalFull,
+          totalEmpty: totalEmpty,
+          fullSubtitle: fullSubtitle,
+          emptySubtitle: emptySubtitle,
+        );
+      },
+    );
+  }
+
+  Widget _buildKpiCards({
+    required BuildContext context,
+    required List<PointOfSale> activePointsOfSale,
+    required List<PointOfSale> pointsOfSale,
+    required int totalFull,
+    required int totalEmpty,
+    required String fullSubtitle,
+    required String emptySubtitle,
+  }) {
 
     return LayoutBuilder(
       builder: (context, constraints) {

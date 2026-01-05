@@ -11,18 +11,20 @@ class QuantityAndTotalWidget extends StatelessWidget {
     required this.quantityController,
     required this.selectedCylinder,
     required this.availableStock,
+    required this.unitPrice,
     required this.onQuantityChanged,
   });
 
   final TextEditingController quantityController;
   final Cylinder? selectedCylinder;
   final int availableStock;
+  final double unitPrice;
   final VoidCallback onQuantityChanged;
 
   double get _totalAmount {
-    if (selectedCylinder == null) return 0.0;
+    if (selectedCylinder == null || unitPrice == 0.0) return 0.0;
     final quantity = int.tryParse(quantityController.text) ?? 0;
-    return selectedCylinder!.sellPrice * quantity;
+    return unitPrice * quantity;
   }
 
   @override

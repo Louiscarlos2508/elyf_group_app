@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../application/providers.dart';
 import '../../domain/entities/point_of_sale.dart';
 import 'point_of_sale_table/pos_table_header.dart';
 import 'point_of_sale_table/pos_table_row.dart';
 
 /// Tableau des points de vente selon le design Figma.
-class PointOfSaleTable extends StatelessWidget {
+class PointOfSaleTable extends ConsumerWidget {
   const PointOfSaleTable({
     super.key,
     required this.enterpriseId,
@@ -16,13 +18,57 @@ class PointOfSaleTable extends StatelessWidget {
   final String moduleId;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    
-    // TODO: Remplacer par un provider réel
-    final pointsOfSale = _getMockPointsOfSale();
+    final pointsOfSaleAsync = ref.watch(
+      pointsOfSaleProvider(
+        (enterpriseId: enterpriseId, moduleId: moduleId),
+      ),
+    );
 
-    return Container(
+    return pointsOfSaleAsync.when(
+      data: (pointsOfSale) {
+        if (pointsOfSale.isEmpty) {
+          return Container(
+            padding: const EdgeInsets.all(25.285),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(
+                color: Colors.black.withValues(alpha: 0.1),
+                width: 1.305,
+              ),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.store_outlined,
+                    size: 48,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Aucun point de vente',
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Créez votre premier point de vente',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        return Container(
       padding: const EdgeInsets.fromLTRB(25.285, 25.285, 1.305, 1.305),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -69,36 +115,62 @@ class PointOfSaleTable extends StatelessWidget {
                 // En-tête du tableau
                 const PosTableHeader(),
                 // Corps du tableau
-                ...pointsOfSale.map((pos) => PosTableRow(pointOfSale: pos)),
+                ...pointsOfSale.map((pos) => PosTableRow(
+                      pointOfSale: pos,
+                      enterpriseId: enterpriseId,
+                      moduleId: moduleId,
+                    )),
               ],
             ),
           ),
         ],
       ),
     );
-  }
-
-  /// Retourne des points de vente mock pour le développement.
-  List<PointOfSale> _getMockPointsOfSale() {
-    return [
-      PointOfSale(
-        id: 'pos_1',
-        name: 'Point de vente 1',
-        address: '123 Rue de la Gaz',
-        contact: '0123456789',
-        enterpriseId: enterpriseId,
-        moduleId: moduleId,
-        isActive: true,
+      },
+      loading: () => Container(
+        padding: const EdgeInsets.all(25.285),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border.all(
+            color: Colors.black.withValues(alpha: 0.1),
+            width: 1.305,
+          ),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: const Center(
+          child: CircularProgressIndicator(),
+        ),
       ),
-      PointOfSale(
-        id: 'pos_2',
-        name: 'Point de vente 2',
-        address: '456 Rue de la Gaz',
-        contact: '0987654321',
-        enterpriseId: enterpriseId,
-        moduleId: moduleId,
-        isActive: true,
+      error: (error, stack) => Container(
+        padding: const EdgeInsets.all(25.285),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border.all(
+            color: Colors.black.withValues(alpha: 0.1),
+            width: 1.305,
+          ),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.error_outline,
+                size: 48,
+                color: theme.colorScheme.error,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Erreur de chargement',
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: theme.colorScheme.error,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
-    ];
+    );
   }
 }

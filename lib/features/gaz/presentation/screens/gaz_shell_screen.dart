@@ -75,7 +75,10 @@ class _GazShellScreenState extends State<GazShellScreen> {
       NavigationSection(
         label: 'Fuites',
         icon: Icons.warning_outlined,
-        builder: () => const CylinderLeakScreen(),
+        builder: () => CylinderLeakScreen(
+          enterpriseId: widget.enterpriseId,
+          moduleId: widget.moduleId,
+        ),
         enterpriseId: widget.enterpriseId,
         moduleId: widget.moduleId,
       ),

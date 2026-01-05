@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../shared/presentation/widgets/gaz_button_styles.dart';
+import '../../../../core/tenant/tenant_provider.dart';
+import '../../../../shared/presentation/widgets/form_dialog_actions.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/expense.dart';
 import 'expense_form/expense_amount_input.dart';
 import 'expense_form/expense_category_input.dart';
 import 'expense_form/expense_date_input.dart';
+import 'expense_form/expense_description_input.dart';
+import 'expense_form/expense_fixed_checkbox.dart';
 import 'expense_form/expense_form_header.dart';
+import 'expense_form/expense_notes_input.dart';
 
 /// Dialog de formulaire pour créer/modifier une dépense.
 class GazExpenseFormDialog extends ConsumerStatefulWidget {
@@ -51,9 +55,6 @@ class _GazExpenseFormDialogState
       _selectedDate = widget.expense!.date;
       _isFixed = widget.expense!.isFixed;
       _enterpriseId = widget.expense!.enterpriseId;
-    } else {
-      // TODO: Récupérer enterpriseId depuis le contexte/tenant
-      _enterpriseId = 'default_enterprise';
     }
   }
 
@@ -65,8 +66,18 @@ class _GazExpenseFormDialogState
     super.dispose();
   }
 
-  Future<void> _submit() async {
+  Future<void> _submit(String? enterpriseId) async {
     if (!_formKey.currentState!.validate()) return;
+
+    if (enterpriseId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Aucune entreprise sélectionnée'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
 
     setState(() => _isLoading = true);
 
@@ -90,7 +101,7 @@ class _GazExpenseFormDialogState
         amount: amount,
         category: _selectedCategory,
         date: _selectedDate,
-        enterpriseId: _enterpriseId ?? 'default_enterprise',
+        enterpriseId: enterpriseId,
         isFixed: _isFixed,
         notes: _notesController.text.trim().isEmpty
             ? null
@@ -134,6 +145,15 @@ class _GazExpenseFormDialogState
 
   @override
   Widget build(BuildContext context) {
+    final activeEnterpriseAsync = ref.watch(activeEnterpriseProvider);
+    
+    // Récupérer l'ID de l'entreprise active
+    final enterpriseId = activeEnterpriseAsync.when(
+      data: (enterprise) => enterprise?.id,
+      loading: () => null,
+      error: (_, __) => null,
+    );
+    
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       child: ConstrainedBox(
@@ -160,79 +180,30 @@ class _GazExpenseFormDialogState
                     },
                   ),
                   const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _descriptionController,
-                    decoration: const InputDecoration(
-                      labelText: 'Description',
-                      prefixIcon: Icon(Icons.description),
-                      border: OutlineInputBorder(),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Veuillez entrer une description';
-                      }
-                      return null;
-                    },
-                  ),
+                  ExpenseDescriptionInput(controller: _descriptionController),
                   const SizedBox(height: 16),
                   ExpenseDateInput(
                     selectedDate: _selectedDate,
                     onDateSelected: (date) => setState(() => _selectedDate = date),
                   ),
                   const SizedBox(height: 16),
-                  CheckboxListTile(
-                    title: const Text('Charge fixe'),
-                    subtitle: const Text(
-                      'Si coché, cette dépense est une charge fixe (ex: loyer). Sinon, c\'est une charge variable.',
-                    ),
+                  ExpenseFixedCheckbox(
                     value: _isFixed,
                     onChanged: (value) {
                       setState(() {
                         _isFixed = value ?? false;
                       });
                     },
-                    controlAffinity: ListTileControlAffinity.leading,
                   ),
                   const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _notesController,
-                    decoration: const InputDecoration(
-                      labelText: 'Notes (optionnel)',
-                      prefixIcon: Icon(Icons.note),
-                      border: OutlineInputBorder(),
-                    ),
-                    maxLines: 2,
-                  ),
+                  ExpenseNotesInput(controller: _notesController),
                   const SizedBox(height: 24),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          style: GazButtonStyles.outlined,
-                          child: const Text('Annuler'),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: FilledButton.icon(
-                          onPressed: _isLoading ? null : _submit,
-                          style: GazButtonStyles.filledPrimary,
-                          icon: _isLoading
-                              ? const SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor:
-                                        AlwaysStoppedAnimation<Color>(Colors.white),
-                                  ),
-                                )
-                              : Icon(isEditing ? Icons.save : Icons.add),
-                          label: Text(isEditing ? 'Enregistrer' : 'Ajouter'),
-                        ),
-                      ),
-                    ],
+                  FormDialogActions(
+                    onCancel: () => Navigator.of(context).pop(),
+                    onSubmit: () => _submit(enterpriseId),
+                    submitLabel: isEditing ? 'Enregistrer' : 'Ajouter',
+                    isLoading: _isLoading,
+                    submitEnabled: !_isLoading,
                   ),
                 ],
               ),

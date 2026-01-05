@@ -7,6 +7,7 @@ import 'controllers/expense_controller.dart';
 import 'controllers/financial_report_controller.dart';
 import 'controllers/gas_controller.dart';
 import 'controllers/gaz_settings_controller.dart';
+import 'controllers/point_of_sale_controller.dart';
 import 'controllers/tour_controller.dart';
 import '../data/repositories/mock_cylinder_leak_repository.dart';
 import '../data/repositories/mock_cylinder_stock_repository.dart';
@@ -14,6 +15,7 @@ import '../data/repositories/mock_expense_repository.dart';
 import '../data/repositories/mock_financial_report_repository.dart';
 import '../data/repositories/mock_gas_repository.dart';
 import '../data/repositories/mock_gaz_settings_repository.dart';
+import '../data/repositories/mock_point_of_sale_repository.dart';
 import '../data/repositories/mock_tour_repository.dart';
 import '../domain/entities/cylinder.dart';
 import '../domain/entities/cylinder_leak.dart';
@@ -22,6 +24,7 @@ import '../domain/entities/expense.dart';
 import '../domain/entities/financial_report.dart';
 import '../domain/entities/gas_sale.dart';
 import '../domain/entities/gaz_settings.dart';
+import '../domain/entities/point_of_sale.dart';
 import '../domain/entities/report_data.dart';
 import '../domain/entities/tour.dart';
 import '../domain/repositories/cylinder_leak_repository.dart';
@@ -30,10 +33,14 @@ import '../domain/repositories/expense_repository.dart';
 import '../domain/repositories/financial_report_repository.dart';
 import '../domain/repositories/gas_repository.dart';
 import '../domain/repositories/gaz_settings_repository.dart';
+import '../domain/repositories/point_of_sale_repository.dart';
 import '../domain/repositories/tour_repository.dart';
+import '../domain/services/data_consistency_service.dart';
 import '../domain/services/financial_calculation_service.dart';
+import '../domain/services/realtime_sync_service.dart';
 import '../domain/services/stock_service.dart';
 import '../domain/services/tour_service.dart';
+import '../domain/services/transaction_service.dart';
 
 // Repositories
 final gasRepositoryProvider = Provider<GasRepository>((ref) {
@@ -63,6 +70,14 @@ final gazSettingsRepositoryProvider =
   return MockGazSettingsRepository();
 });
 
+// Instance singleton du repository pour conserver les données
+final _mockPointOfSaleRepositoryInstance = MockPointOfSaleRepository();
+
+final pointOfSaleRepositoryProvider =
+    Provider<PointOfSaleRepository>((ref) {
+  return _mockPointOfSaleRepositoryInstance;
+});
+
 final financialReportRepositoryProvider =
     Provider<FinancialReportRepository>((ref) {
   return MockFinancialReportRepository();
@@ -85,6 +100,42 @@ final stockServiceProvider = Provider<StockService>((ref) {
 final tourServiceProvider = Provider<TourService>((ref) {
   final tourRepo = ref.watch(tourRepositoryProvider);
   return TourService(tourRepository: tourRepo);
+});
+
+// Data Consistency & Transaction Services
+final dataConsistencyServiceProvider = Provider<DataConsistencyService>((ref) {
+  final stockRepo = ref.watch(cylinderStockRepositoryProvider);
+  final gasRepo = ref.watch(gasRepositoryProvider);
+  final tourRepo = ref.watch(tourRepositoryProvider);
+  return DataConsistencyService(
+    stockRepository: stockRepo,
+    gasRepository: gasRepo,
+    tourRepository: tourRepo,
+  );
+});
+
+final transactionServiceProvider = Provider<TransactionService>((ref) {
+  final stockRepo = ref.watch(cylinderStockRepositoryProvider);
+  final gasRepo = ref.watch(gasRepositoryProvider);
+  final tourRepo = ref.watch(tourRepositoryProvider);
+  final consistencyService = ref.watch(dataConsistencyServiceProvider);
+  return TransactionService(
+    stockRepository: stockRepo,
+    gasRepository: gasRepo,
+    tourRepository: tourRepo,
+    consistencyService: consistencyService,
+  );
+});
+
+// Realtime Sync Service (nécessite enterpriseId et moduleId)
+final realtimeSyncServiceProvider = Provider.family<RealtimeSyncService, ({
+  String enterpriseId,
+  String moduleId,
+})>((ref, params) {
+  return RealtimeSyncService(
+    enterpriseId: params.enterpriseId,
+    moduleId: params.moduleId,
+  );
 });
 
 // Controllers
@@ -136,10 +187,61 @@ final gazSettingsControllerProvider =
   return GazSettingsController(repository: repo);
 });
 
+final pointOfSaleControllerProvider =
+    Provider<PointOfSaleController>((ref) {
+  final repo = ref.watch(pointOfSaleRepositoryProvider);
+  return PointOfSaleController(repo);
+});
+
 // Cylinders
 final cylindersProvider = FutureProvider<List<Cylinder>>((ref) async {
   final repo = ref.watch(gasRepositoryProvider);
   return repo.getCylinders();
+});
+
+/// Provider pour obtenir les types de bouteilles d'un point de vente spécifique.
+/// Retourne tous les types de bouteilles associés au point de vente via cylinderIds.
+final pointOfSaleCylindersProvider = FutureProvider.family<List<Cylinder>, ({
+  String pointOfSaleId,
+  String enterpriseId,
+  String moduleId,
+})>((ref, params) async {
+  final allCylinders = await ref.watch(cylindersProvider.future);
+  
+  // Récupérer le point de vente depuis le provider
+  final pointsOfSaleAsync = ref.watch(
+    pointsOfSaleProvider(
+      (enterpriseId: params.enterpriseId, moduleId: params.moduleId),
+    ),
+  );
+  
+  final pointOfSale = await pointsOfSaleAsync.when(
+    data: (pointsOfSale) => pointsOfSale.firstWhere(
+      (pos) => pos.id == params.pointOfSaleId,
+      orElse: () => throw Exception('Point de vente non trouvé'),
+    ),
+    loading: () => throw Exception('Chargement en cours'),
+    error: (e, _) => throw Exception('Erreur: $e'),
+  );
+  
+  // Filtrer les cylinders selon les IDs associés au point de vente
+  return allCylinders
+      .where((c) => pointOfSale.cylinderIds.contains(c.id))
+      .toList();
+});
+
+// Points of Sale
+final pointsOfSaleProvider = FutureProvider.family.autoDispose<
+    List<PointOfSale>,
+    ({
+      String enterpriseId,
+      String moduleId,
+    })>((ref, params) async {
+  final controller = ref.watch(pointOfSaleControllerProvider);
+  return controller.getPointsOfSale(
+    enterpriseId: params.enterpriseId,
+    moduleId: params.moduleId,
+  );
 });
 
 // Sales

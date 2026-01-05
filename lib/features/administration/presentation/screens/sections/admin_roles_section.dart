@@ -3,30 +3,118 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../application/providers.dart';
 import '../../../../../core/permissions/entities/user_role.dart';
+import 'dialogs/create_role_dialog.dart';
+import 'dialogs/edit_role_dialog.dart';
 
-/// Section for managing roles.
+/// Section pour gérer les rôles.
 class AdminRolesSection extends ConsumerWidget {
   const AdminRolesSection({super.key});
+
+  Future<void> _handleCreateRole(BuildContext context, WidgetRef ref) async {
+    final result = await showDialog<UserRole>(
+      context: context,
+      builder: (context) => const CreateRoleDialog(),
+    );
+
+    if (result != null) {
+      ref.invalidate(rolesProvider);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Rôle créé avec succès')),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleEditRole(
+    BuildContext context,
+    WidgetRef ref,
+    UserRole role,
+  ) async {
+    final result = await showDialog<UserRole>(
+      context: context,
+      builder: (context) => EditRoleDialog(role: role),
+    );
+
+    if (result != null) {
+      ref.invalidate(rolesProvider);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Rôle modifié avec succès')),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleDeleteRole(
+    BuildContext context,
+    WidgetRef ref,
+    UserRole role,
+  ) async {
+    if (role.isSystemRole) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Les rôles système ne peuvent pas être supprimés'),
+        ),
+      );
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Supprimer le rôle'),
+        content: Text('Êtes-vous sûr de vouloir supprimer "${role.name}" ?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Annuler'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Supprimer'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await ref.read(adminRepositoryProvider).deleteRole(role.id);
+        ref.invalidate(rolesProvider);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Rôle supprimé')),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Erreur: $e')),
+          );
+        }
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final adminRepo = ref.watch(adminRepositoryProvider);
+    final rolesAsync = ref.watch(rolesProvider);
+    final enterpriseModuleUsersAsync =
+        ref.watch(enterpriseModuleUsersProvider);
     
-    return FutureBuilder<List<UserRole>>(
-      future: adminRepo.getAllRoles(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        if (snapshot.hasError) {
-          return Center(
-            child: Text('Erreur: ${snapshot.error}'),
-          );
-        }
-
-        final roles = snapshot.data ?? [];
+    return rolesAsync.when(
+      data: (roles) {
+        return enterpriseModuleUsersAsync.when(
+          data: (assignments) {
+            // Compter les utilisateurs par rôle
+            final usersByRole = <String, int>{};
+            for (final assignment in assignments) {
+              usersByRole[assignment.roleId] =
+                  (usersByRole[assignment.roleId] ?? 0) + 1;
+            }
 
         return CustomScrollView(
           slivers: [
@@ -34,9 +122,6 @@ class AdminRolesSection extends ConsumerWidget {
               child: Padding(
                 padding: const EdgeInsets.all(24),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
@@ -53,36 +138,73 @@ class AdminRolesSection extends ConsumerWidget {
                           ),
                         ),
                         const SizedBox(height: 16),
-                        IntrinsicWidth(
-                          child: FilledButton.icon(
-                            onPressed: () {
-                              // TODO: Show create role dialog
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Créer un rôle - À implémenter')),
-                              );
-                            },
+                        FilledButton.icon(
+                          onPressed: () => _handleCreateRole(context, ref),
                             icon: const Icon(Icons.add),
                             label: const Text('Nouveau Rôle'),
-                          ),
                         ),
                       ],
                     ),
+                  ),
+                ),
+                if (roles.isEmpty)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.shield_outlined,
+                              size: 64,
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Aucun rôle',
+                              style: theme.textTheme.titleLarge,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Créez votre premier rôle',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
                   ],
                 ),
               ),
             ),
+                  )
+                else
             SliverList(
               delegate: SliverChildBuilderDelegate(
                 (context, index) {
                   final role = roles[index];
+                        final userCount = usersByRole[role.id] ?? 0;
+
                   return Card(
                     margin: const EdgeInsets.fromLTRB(24, 0, 24, 12),
                     child: ListTile(
-                      title: Text(
+                            title: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
                         role.name,
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
+                                  ),
+                                ),
+                                if (role.isSystemRole)
+                                  Chip(
+                                    label: const Text('Système'),
+                                    visualDensity: VisualDensity.compact,
+                                    backgroundColor:
+                                        theme.colorScheme.primaryContainer,
+                                  ),
+                              ],
                       ),
                       subtitle: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -101,25 +223,38 @@ class AdminRolesSection extends ConsumerWidget {
                                 ),
                                 visualDensity: VisualDensity.compact,
                               ),
-                              if (role.isSystemRole)
+                                    if (userCount > 0)
                                 Chip(
-                                  label: const Text('Système'),
+                                        label: Text(
+                                          '$userCount utilisateur${userCount > 1 ? 's' : ''}',
+                                          style: theme.textTheme.labelSmall,
+                                        ),
                                   visualDensity: VisualDensity.compact,
-                                  backgroundColor: theme.colorScheme.primaryContainer,
+                                        backgroundColor:
+                                            theme.colorScheme.secondaryContainer,
                                 ),
                             ],
                           ),
                         ],
                       ),
-                      trailing: IconButton(
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
                         icon: const Icon(Icons.edit),
-                        onPressed: () {
-                          // TODO: Show edit role dialog
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Modifier ${role.name} - À implémenter')),
-                          );
-                        },
+                                  onPressed: () => _handleEditRole(context, ref, role),
+                                  tooltip: 'Modifier',
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.delete, color: Colors.red),
+                                  onPressed: role.isSystemRole
+                                      ? null
+                                      : () => _handleDeleteRole(context, ref, role),
+                                  tooltip: 'Supprimer',
+                                ),
+                              ],
                       ),
+                            isThreeLine: true,
                     ),
                   );
                 },
@@ -130,7 +265,39 @@ class AdminRolesSection extends ConsumerWidget {
           ],
         );
       },
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, stack) => Center(child: Text('Erreur: $error')),
     );
-  }
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, stack) => Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.error_outline,
+                size: 64,
+                color: theme.colorScheme.error,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Erreur de chargement',
+                style: theme.textTheme.titleLarge,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                error.toString(),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
 }
-
+}

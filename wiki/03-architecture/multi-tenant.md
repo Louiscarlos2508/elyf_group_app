@@ -36,39 +36,41 @@ Chaque entreprise a ses collections locales avec `enterpriseId` comme filtre.
 
 ## Gestion du tenant actif
 
-### Provider de tenant
+### Providers implémentés
 
-```dart
-final currentEnterpriseProvider = StateProvider<Enterprise?>((ref) => null);
+Le système utilise les providers suivants (dans `lib/core/tenant/tenant_provider.dart`) :
 
-final currentEnterpriseIdProvider = Provider<String?>((ref) {
-  return ref.watch(currentEnterpriseProvider)?.id;
-});
-```
+- **`activeEnterpriseIdProvider`** : Stocke l'ID de l'entreprise active (Notifier avec persistance via SharedPreferences)
+- **`activeEnterpriseProvider`** : Récupère l'objet Enterprise complet (FutureProvider)
+- **`userAccessibleEnterprisesProvider`** : Liste des entreprises accessibles à l'utilisateur (utilise `currentUserIdProvider`)
+- **`autoSelectEnterpriseProvider`** : Sélectionne automatiquement l'entreprise si l'utilisateur n'en a qu'une seule
+- **`currentUserIdProvider`** : Provider pour l'ID de l'utilisateur connecté (dans `lib/core/auth/providers.dart`)
 
 ### Sélection de tenant
 
+Le widget `EnterpriseSelectorWidget` (dans `lib/core/tenant/enterprise_selector_widget.dart`) permet de sélectionner l'entreprise active :
+
 ```dart
-class TenantSelector extends ConsumerWidget {
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final enterprises = ref.watch(userEnterprisesProvider);
-    final current = ref.watch(currentEnterpriseProvider);
-    
-    return DropdownButton<Enterprise>(
-      value: current,
-      items: enterprises.map((e) => 
-        DropdownMenuItem(value: e, child: Text(e.name))
-      ).toList(),
-      onChanged: (enterprise) {
-        ref.read(currentEnterpriseProvider.notifier).state = enterprise;
-        // Recharger les données pour la nouvelle entreprise
-        ref.invalidate(allDataProviders);
-      },
-    );
-  }
-}
+// Utilisation dans l'AppBar
+EnterpriseSelectorWidget(
+  compact: true, // Icône seulement
+)
+
+// Ou affichage complet
+EnterpriseSelectorWidget(
+  showLabel: true, // Affiche le nom de l'entreprise
+)
+
+// Méthode statique pour afficher depuis n'importe où
+EnterpriseSelectorWidget.showSelector(context, ref);
 ```
+
+**Fonctionnalités :**
+- Mode compact : Icône seulement (pour AppBar)
+- Mode normal : Affiche le nom de l'entreprise actuelle
+- Méthode statique `showSelector()` : Affiche le sélecteur depuis n'importe quel contexte
+- Affiche un snackbar de confirmation lors du changement d'entreprise
+- Persistance : L'entreprise sélectionnée est sauvegardée localement
 
 ## Filtrage des données
 
@@ -195,24 +197,39 @@ final userEnterprisePermissionsProvider = Provider.family<List<String>, String>(
 
 ## Switch d'entreprise
 
-### Flux
+### Flux utilisateur
 
-1. Utilisateur sélectionne une nouvelle entreprise
-2. Mettre à jour `currentEnterpriseProvider`
-3. Invalider tous les providers de données
-4. Recharger les données pour la nouvelle entreprise
-5. Naviguer vers le menu des modules
+1. **Connexion** : L'utilisateur se connecte
+2. **Vérification des accès** : Le système récupère toutes les entreprises accessibles via `userAccessibleEnterprisesProvider`
+3. **Sélection initiale** :
+   - Si une entreprise était sauvegardée → elle est restaurée automatiquement
+   - Si l'utilisateur n'a qu'une seule entreprise → elle est sélectionnée automatiquement (via `autoSelectEnterpriseProvider`)
+   - Sinon → l'utilisateur doit en sélectionner une via le widget de sélection
+4. **Travail** : L'utilisateur travaille avec l'entreprise sélectionnée
+5. **Changement** : L'utilisateur peut changer d'entreprise à tout moment via l'icône dans l'AppBar
+   - Un snackbar de confirmation s'affiche avec le nom de l'entreprise sélectionnée
+   - L'utilisateur est redirigé vers le menu des modules pour recharger avec la nouvelle entreprise
+
+### Implémentation
 
 ```dart
-void switchEnterprise(Enterprise enterprise) {
-  ref.read(currentEnterpriseProvider.notifier).state = enterprise;
-  
-  // Invalider tous les providers
-  ref.invalidate(productsProvider);
-  ref.invalidate(salesProvider);
-  // ...
-  
-  // Naviguer vers le menu
+// Dans EnterpriseSelectorWidget
+if (selected != null && context.mounted) {
+  final tenantNotifier = ref.read(activeEnterpriseIdProvider.notifier);
+  await tenantNotifier.setActiveEnterpriseId(selected.id);
+
+  // Rafraîchir les providers qui dépendent de l'entreprise active
+  ref.invalidate(activeEnterpriseProvider);
+
+  // Afficher un message de confirmation
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text('Entreprise sélectionnée : ${selected.name}'),
+      backgroundColor: Theme.of(context).colorScheme.primary,
+    ),
+  );
+
+  // Rediriger vers le menu des modules
   context.go('/modules');
 }
 ```
@@ -245,6 +262,57 @@ Future<void> createProduct(Product product) async {
 }
 ```
 
+## Intégration dans les routes
+
+Les routes des modules utilisent automatiquement l'entreprise active via des wrappers (dans `lib/app/router/module_route_wrappers.dart`) :
+
+- `/modules/eau_sachet` → `EauMineraleRouteWrapper` utilise `activeEnterpriseProvider`
+- `/modules/gaz` → `GazRouteWrapper` utilise `activeEnterpriseProvider`
+- `/modules/orange_money` → `OrangeMoneyRouteWrapper` utilise `activeEnterpriseProvider`
+- `/modules/immobilier` → `ImmobilierRouteWrapper` utilise `activeEnterpriseProvider`
+- `/modules/boutique` → `BoutiqueRouteWrapper` utilise `activeEnterpriseProvider`
+
+**Gestion du cas "aucune entreprise sélectionnée"** :
+- Si aucune entreprise n'est sélectionnée, un écran s'affiche avec :
+  - Un message explicatif
+  - Un bouton pour sélectionner une entreprise (redirige vers `/modules`)
+  - Un bouton pour retourner au menu
+
+## Utilisation dans les widgets
+
+Pour utiliser l'entreprise active dans un widget, utilisez `activeEnterpriseProvider` :
+
+```dart
+class MyWidget extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final activeEnterpriseAsync = ref.watch(activeEnterpriseProvider);
+    
+    return activeEnterpriseAsync.when(
+      data: (enterprise) {
+        if (enterprise == null) {
+          return const Text('Aucune entreprise sélectionnée');
+        }
+        // Utiliser enterprise.id pour filtrer les données
+        return MyContent(enterpriseId: enterprise.id);
+      },
+      loading: () => const CircularProgressIndicator(),
+      error: (error, stack) => Text('Erreur: $error'),
+    );
+  }
+}
+```
+
+**Important** : Ne plus utiliser d'IDs hardcodés ! Tous les widgets doivent utiliser `activeEnterpriseProvider`.
+
+## Améliorations implémentées
+
+✅ **Sélection automatique** : Si l'utilisateur n'a qu'une seule entreprise, elle est sélectionnée automatiquement au démarrage  
+✅ **Confirmation visuelle** : Un snackbar s'affiche lors du changement d'entreprise  
+✅ **Gestion des erreurs** : Écran dédié si aucune entreprise n'est sélectionnée  
+✅ **Provider utilisateur** : `currentUserIdProvider` pour récupérer l'ID de l'utilisateur connecté  
+✅ **Wrappers de routes** : Tous les modules utilisent l'entreprise active automatiquement
+
 ## Bonnes pratiques
 
 1. **Toujours filtrer par enterpriseId** – Ne jamais oublier le filtre
@@ -252,6 +320,7 @@ Future<void> createProduct(Product product) async {
 3. **Isolation stricte** – Une entreprise ne doit jamais voir les données d'une autre
 4. **Switch propre** – Invalider les providers lors du switch
 5. **Cache séparé** – Cache Isar séparé par entreprise
+6. **Utiliser les providers** – Ne jamais hardcoder les IDs d'entreprise
 
 ## Prochaines étapes
 

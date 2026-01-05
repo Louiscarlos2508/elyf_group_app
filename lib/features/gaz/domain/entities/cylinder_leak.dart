@@ -16,6 +16,7 @@ class CylinderLeak {
     required this.weight,
     required this.reportedDate,
     required this.status,
+    this.tourId,
     this.exchangeDate,
     this.notes,
   });
@@ -25,6 +26,7 @@ class CylinderLeak {
   final int weight; // 3, 6, 10, 12
   final DateTime reportedDate;
   final LeakStatus status;
+  final String? tourId; // ID du tour d'approvisionnement où la fuite a été signalée
   final DateTime? exchangeDate;
   final String? notes;
 
@@ -34,6 +36,7 @@ class CylinderLeak {
     int? weight,
     DateTime? reportedDate,
     LeakStatus? status,
+    String? tourId,
     DateTime? exchangeDate,
     String? notes,
   }) {
@@ -43,6 +46,7 @@ class CylinderLeak {
       weight: weight ?? this.weight,
       reportedDate: reportedDate ?? this.reportedDate,
       status: status ?? this.status,
+      tourId: tourId ?? this.tourId,
       exchangeDate: exchangeDate ?? this.exchangeDate,
       notes: notes ?? this.notes,
     );

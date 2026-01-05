@@ -1,19 +1,119 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../application/providers.dart';
 import '../../../domain/entities/point_of_sale.dart';
 import '../../../../../shared/presentation/widgets/gaz_button_styles.dart';
+import '../point_of_sale_form_dialog.dart';
+import 'pos_stock_dialog.dart';
+import 'pos_types_dialog.dart';
 
 /// Ligne du tableau des points de vente.
-class PosTableRow extends StatelessWidget {
+class PosTableRow extends ConsumerWidget {
   const PosTableRow({
     super.key,
     required this.pointOfSale,
+    required this.enterpriseId,
+    required this.moduleId,
   });
 
   final PointOfSale pointOfSale;
+  final String enterpriseId;
+  final String moduleId;
+
+  Future<void> _showStockDialog(BuildContext context, WidgetRef ref) async {
+    await showDialog(
+      context: context,
+      builder: (dialogContext) => PosStockDialog(
+        pointOfSale: pointOfSale,
+        enterpriseId: enterpriseId,
+      ),
+    );
+  }
+
+  Future<void> _showTypesDialog(BuildContext context, WidgetRef ref) async {
+    await showDialog(
+      context: context,
+      builder: (dialogContext) => PosTypesDialog(
+        pointOfSale: pointOfSale,
+        enterpriseId: enterpriseId,
+        moduleId: moduleId,
+      ),
+    );
+  }
+
+  Future<void> _editPointOfSale(BuildContext context) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => PointOfSaleFormDialog(
+        pointOfSale: pointOfSale,
+        enterpriseId: enterpriseId,
+        moduleId: moduleId,
+      ),
+    );
+
+    if (result == true && context.mounted) {
+      // Le provider sera invalidé dans le dialog
+    }
+  }
+
+  Future<void> _deletePointOfSale(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Supprimer le point de vente'),
+        content: Text(
+          'Êtes-vous sûr de vouloir supprimer "${pointOfSale.name}" ?\n\nCette action est irréversible.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Annuler'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
+            child: const Text('Supprimer'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      final controller = ref.read(pointOfSaleControllerProvider);
+      await controller.deletePointOfSale(pointOfSale.id);
+
+      if (!context.mounted) return;
+
+      ref.invalidate(
+        pointsOfSaleProvider(
+          (enterpriseId: enterpriseId, moduleId: moduleId),
+        ),
+      );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Point de vente supprimé avec succès'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur lors de la suppression: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
 
     return Container(
@@ -134,9 +234,7 @@ class PosTableRow extends StatelessWidget {
                       minimumSize: const MaterialStatePropertyAll(Size(60, 28)),
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
-                    onPressed: () {
-                      // TODO: Ouvrir le stock
-                    },
+                    onPressed: () => _showStockDialog(context, ref),
                     icon: const Icon(Icons.inventory_2, size: 14),
                     label: const Text(
                       'Stock',
@@ -155,9 +253,7 @@ class PosTableRow extends StatelessWidget {
                       minimumSize: const MaterialStatePropertyAll(Size(60, 28)),
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
-                    onPressed: () {
-                      // TODO: Ouvrir les types
-                    },
+                    onPressed: () => _showTypesDialog(context, ref),
                     icon: const Icon(Icons.settings, size: 14),
                     label: const Text(
                       'Types',
@@ -174,9 +270,7 @@ class PosTableRow extends StatelessWidget {
                       size: 16,
                       color: Color(0xFF0A0A0A),
                     ),
-                    onPressed: () {
-                      // TODO: Modifier le point de vente
-                    },
+                    onPressed: () => _editPointOfSale(context),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(
                       minWidth: 28,
@@ -191,9 +285,7 @@ class PosTableRow extends StatelessWidget {
                       size: 16,
                       color: Color(0xFFE7000B),
                     ),
-                    onPressed: () {
-                      // TODO: Supprimer le point de vente
-                    },
+                    onPressed: () => _deletePointOfSale(context, ref),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(
                       minWidth: 28,
@@ -210,4 +302,3 @@ class PosTableRow extends StatelessWidget {
     );
   }
 }
-

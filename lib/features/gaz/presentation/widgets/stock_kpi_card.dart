@@ -22,7 +22,7 @@ class StockKpiCard extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
@@ -33,6 +33,7 @@ class StockKpiCard extends StatelessWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           // Title with icon
           Row(
@@ -43,21 +44,23 @@ class StockKpiCard extends StatelessWidget {
                 color: const Color(0xFF4A5565),
               ),
               const SizedBox(width: 8),
-              Text(
-                title,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontSize: 14,
-                  color: const Color(0xFF4A5565),
+              Expanded(
+                child: Text(
+                  title,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontSize: 14,
+                    color: const Color(0xFF4A5565),
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 62),
+          const SizedBox(height: 12),
           // Value
           Text(
             value,
             style: theme.textTheme.headlineMedium?.copyWith(
-              fontSize: 30,
+              fontSize: 28,
               fontWeight: FontWeight.normal,
               color: valueColor ?? const Color(0xFF0A0A0A),
             ),

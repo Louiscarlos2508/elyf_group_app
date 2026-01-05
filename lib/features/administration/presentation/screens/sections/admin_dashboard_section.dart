@@ -77,7 +77,9 @@ class AdminDashboardSection extends ConsumerWidget {
           data: (stats) => SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Row(
+              child: Column(
+                children: [
+                  Row(
                 children: [
                   Expanded(
                     child: _StatCard(
@@ -97,6 +99,32 @@ class AdminDashboardSection extends ConsumerWidget {
                       icon: Icons.shield,
                       color: theme.colorScheme.secondary,
                     ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _StatCard(
+                          title: 'Utilisateurs',
+                          value: stats.totalUsers.toString(),
+                          subtitle: '${stats.activeUsers} actifs',
+                          icon: Icons.people,
+                          color: theme.colorScheme.tertiary,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _StatCard(
+                          title: 'Attributions',
+                          value: stats.totalAssignments.toString(),
+                          subtitle: 'Accès entreprises/modules',
+                          icon: Icons.link,
+                          color: theme.colorScheme.primaryContainer,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),

@@ -3,10 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../shared/presentation/widgets/adaptive_navigation_scaffold.dart';
-import '../../application/providers.dart';
 import 'sections/admin_dashboard_section.dart';
 import 'sections/admin_enterprises_section.dart';
-import 'sections/admin_modules_list.dart';
+import 'sections/admin_modules_section.dart';
 import 'sections/admin_users_section.dart';
 import 'sections/admin_roles_section.dart';
 
@@ -44,7 +43,11 @@ class _AdminHomeScreenState extends ConsumerState<AdminHomeScreen> {
     );
 
     if (confirmed == true && context.mounted) {
-      // TODO: Implement actual logout logic (clear auth state, etc.)
+      final authService = ref.read(authServiceProvider);
+      await authService.signOut();
+      // Rafraîchir les providers
+      ref.invalidate(currentUserProvider);
+      ref.invalidate(currentUserIdProvider);
       context.go('/login');
     }
   }
@@ -66,7 +69,7 @@ class _AdminHomeScreenState extends ConsumerState<AdminHomeScreen> {
       NavigationSection(
         label: 'Modules',
         icon: Icons.apps_outlined,
-        builder: () => const AdminModulesList(),
+        builder: () => const AdminModulesSection(),
         isPrimary: true,
       ),
       NavigationSection(

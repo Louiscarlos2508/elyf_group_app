@@ -23,6 +23,10 @@ class GasSaleSubmitHandler {
     required String? customerPhone,
     required String? notes,
     required double totalAmount,
+    required double unitPrice,
+    String? tourId,
+    String? wholesalerId,
+    String? wholesalerName,
     required VoidCallback onLoadingChanged,
   }) async {
     // Vérifier le stock disponible
@@ -46,13 +50,16 @@ class GasSaleSubmitHandler {
         id: 'sale-${DateTime.now().millisecondsSinceEpoch}',
         cylinderId: selectedCylinder.id,
         quantity: quantity,
-        unitPrice: selectedCylinder.sellPrice,
+        unitPrice: unitPrice,
         totalAmount: totalAmount,
         saleDate: DateTime.now(),
         saleType: saleType,
         customerName: customerName,
         customerPhone: customerPhone,
         notes: notes,
+        tourId: tourId,
+        wholesalerId: wholesalerId,
+        wholesalerName: wholesalerName,
       );
 
       // Ajouter la vente

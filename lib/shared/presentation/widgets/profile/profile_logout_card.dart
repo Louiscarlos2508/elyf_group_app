@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/auth/services/auth_service.dart';
+
 /// Logout card for profile screen.
-class ProfileLogoutCard extends StatelessWidget {
+class ProfileLogoutCard extends ConsumerWidget {
   const ProfileLogoutCard({super.key});
 
-  Future<void> _handleLogout(BuildContext context) async {
+  Future<void> _handleLogout(BuildContext context, WidgetRef ref) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -30,12 +33,12 @@ class ProfileLogoutCard extends StatelessWidget {
     if (confirmed == true && context.mounted) {
       // TODO: Implement actual logout logic (clear auth state, etc.)
       // For now, just navigate to login
-      context.go('/login');
+      context.go('/modules');
     }
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.all(24),
@@ -83,7 +86,7 @@ class ProfileLogoutCard extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
-              onPressed: () => _handleLogout(context),
+              onPressed: () => _handleLogout(context, ref),
               icon: const Icon(Icons.logout),
               label: const Text('Se déconnecter'),
               style: OutlinedButton.styleFrom(

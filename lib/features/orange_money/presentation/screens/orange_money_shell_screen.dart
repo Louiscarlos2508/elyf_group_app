@@ -3,12 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../shared/presentation/widgets/adaptive_navigation_scaffold.dart';
 import '../../../../shared/presentation/widgets/profile/profile_screen.dart' as shared;
-import '../../../../shared/presentation/widgets/treasury/treasury_screen.dart' as shared_treasury;
-import 'sections/dashboard_screen.dart';
-import 'sections/transactions_screen.dart';
-import 'sections/cash_in_screen.dart';
-import 'sections/cash_out_screen.dart';
+import 'sections/agents_screen.dart';
+import 'sections/commissions_screen.dart';
+import 'sections/liquidity_screen.dart';
 import 'sections/reports_screen.dart';
+import 'sections/settings_screen.dart';
+import 'sections/transactions_v2_screen.dart';
 
 class OrangeMoneyShellScreen extends ConsumerStatefulWidget {
   const OrangeMoneyShellScreen({
@@ -32,43 +32,40 @@ class _OrangeMoneyShellScreenState
   List<NavigationSection> _buildSections() {
     return [
       NavigationSection(
-        label: 'Tableau',
-        icon: Icons.dashboard_outlined,
-        builder: () => const DashboardScreen(),
-        isPrimary: true,
-      ),
-      NavigationSection(
         label: 'Transactions',
-        icon: Icons.history,
-        builder: () => const TransactionsScreen(),
+        icon: Icons.swap_horiz,
+        builder: () => const TransactionsV2Screen(),
         isPrimary: true,
       ),
       NavigationSection(
-        label: 'Cash-In',
-        icon: Icons.arrow_downward,
-        builder: () => const CashInScreen(),
+        label: 'Agents Affiliés',
+        icon: Icons.people_outline,
+        builder: () => AgentsScreen(enterpriseId: widget.enterpriseId),
         isPrimary: true,
       ),
       NavigationSection(
-        label: 'Cash-Out',
-        icon: Icons.arrow_upward,
-        builder: () => const CashOutScreen(),
+        label: 'Liquidité',
+        icon: Icons.wallet,
+        builder: () => LiquidityScreen(enterpriseId: widget.enterpriseId),
+        isPrimary: true,
+      ),
+      NavigationSection(
+        label: 'Commissions',
+        icon: Icons.account_balance_wallet,
+        builder: () => CommissionsScreen(enterpriseId: widget.enterpriseId),
         isPrimary: true,
       ),
       NavigationSection(
         label: 'Rapports',
         icon: Icons.description,
-        builder: () => const ReportsScreen(),
+        builder: () => ReportsScreen(enterpriseId: widget.enterpriseId),
         isPrimary: false,
       ),
       NavigationSection(
-        label: 'Trésorerie',
-        icon: Icons.account_balance,
-        builder: () => shared_treasury.TreasuryScreen(
-          moduleId: widget.moduleId,
-          moduleName: 'Orange Money',
-        ),
-        isPrimary: true,
+        label: 'Paramètres',
+        icon: Icons.settings,
+        builder: () => SettingsScreen(enterpriseId: widget.enterpriseId),
+        isPrimary: false,
       ),
       NavigationSection(
         label: 'Profil',

@@ -6,6 +6,7 @@ import '../../../domain/entities/gas_sale.dart';
 import '../../widgets/wholesale_date_filter_card.dart';
 import '../../widgets/wholesale_empty_state.dart';
 import '../../widgets/wholesale_kpi_card.dart';
+import '../../widgets/wholesale_sale_card.dart';
 
 /// Écran des ventes en gros - matches Figma design.
 class GazWholesaleScreen extends ConsumerStatefulWidget {
@@ -245,8 +246,25 @@ class _GazWholesaleScreenState extends ConsumerState<GazWholesaleScreen> {
                   return const WholesaleEmptyState();
                 }
 
-                // TODO: Add sales list view here if needed
-                return const WholesaleEmptyState();
+                // Liste des ventes
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Ventes enregistrées (${filteredSales.length})',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF101828),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    ...filteredSales.map((sale) => Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: WholesaleSaleCard(sale: sale),
+                        )),
+                  ],
+                );
               },
               loading: () => const SizedBox(
                 height: 163,

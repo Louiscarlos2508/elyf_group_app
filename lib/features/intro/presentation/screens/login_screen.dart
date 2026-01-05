@@ -1,16 +1,19 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-class LoginScreen extends StatefulWidget {
+import '../../../../core/auth/services/auth_service.dart';
+
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen>
+class _LoginScreenState extends ConsumerState<LoginScreen>
     with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
@@ -103,10 +106,37 @@ class _LoginScreenState extends State<LoginScreen>
     });
     
     setState(() => _isLoading = true);
-    await Future<void>.delayed(const Duration(milliseconds: 800));
-    if (!mounted) return;
-    setState(() => _isLoading = false);
-    context.go('/modules');
+
+    try {
+      final authService = ref.read(authServiceProvider);
+      final email = _emailController.text.trim();
+      final password = _passwordController.text.trim();
+
+      await authService.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      if (!mounted) return;
+
+      // Rafraîchir les providers
+      ref.invalidate(currentUserProvider);
+      ref.invalidate(currentUserIdProvider);
+
+      // Naviguer vers le menu des modules
+      context.go('/modules');
+    } catch (e) {
+      if (!mounted) return;
+      
+      setState(() => _isLoading = false);
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur de connexion: ${e.toString()}'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+    }
   }
 
   @override
@@ -217,15 +247,6 @@ class _LoginScreenState extends State<LoginScreen>
                                   isLoading: _isLoading,
                                   scaleAnimation: _buttonScale,
                                   buttonController: _buttonController,
-                                ),
-                                const SizedBox(height: 16),
-                                // Skip button
-                                FadeTransition(
-                                  opacity: _fadeAnimation,
-                                  child: TextButton(
-                                    onPressed: () => context.go('/modules'),
-                                    child: const Text('Continuer sans compte'),
-                                  ),
                                 ),
                               ],
                             ),

@@ -11,7 +11,7 @@ class Cylinder {
   });
 
   final String id;
-  final int weight; // Poids en kg: 3, 6, 10, 12
+  final int weight; // Poids en kg (dynamique, récupéré depuis les bouteilles créées)
   final double buyPrice;
   final double sellPrice;
   final String enterpriseId;
@@ -41,22 +41,6 @@ class Cylinder {
   String get label {
     return '${weight}kg';
   }
-
-  /// Returns the cylinder type based on weight.
-  CylinderWeight get type {
-    switch (weight) {
-      case 3:
-        return CylinderWeight.threeKg;
-      case 6:
-        return CylinderWeight.sixKg;
-      case 10:
-        return CylinderWeight.tenKg;
-      case 12:
-        return CylinderWeight.twelveKg;
-      default:
-        return CylinderWeight.threeKg;
-    }
-  }
 }
 
 /// Statut d'une bouteille dans le circuit logistique.
@@ -69,18 +53,4 @@ enum CylinderStatus {
 
   const CylinderStatus(this.label);
   final String label;
-}
-
-/// Poids disponibles pour les bouteilles.
-enum CylinderWeight {
-  threeKg(3, '3 kg'),
-  sixKg(6, '6 kg'),
-  tenKg(10, '10 kg'),
-  twelveKg(12, '12 kg');
-
-  const CylinderWeight(this.value, this.label);
-  final int value;
-  final String label;
-
-  static List<int> get availableWeights => [3, 6, 10, 12];
 }

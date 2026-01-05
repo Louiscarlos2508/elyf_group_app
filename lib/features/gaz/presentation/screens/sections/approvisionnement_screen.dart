@@ -37,10 +37,12 @@ class _ApprovisionnementScreenState
     super.dispose();
   }
 
+  /// Callback appelé lors du changement d'onglet.
+  /// Vérifie que le widget est toujours monté avant d'appeler setState()
+  /// pour éviter les erreurs si le listener se déclenche après dispose().
   void _onTabChanged() {
-    if (mounted) {
-      setState(() {});
-    }
+    if (!mounted) return;
+    setState(() {});
   }
 
   void _showNewTourDialog() async {

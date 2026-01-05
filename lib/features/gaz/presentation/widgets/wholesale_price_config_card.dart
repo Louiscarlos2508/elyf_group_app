@@ -18,10 +18,26 @@ class WholesalePriceConfigCard extends ConsumerWidget {
   final String enterpriseId;
   final String moduleId;
 
+  /// Récupère les poids disponibles depuis les bouteilles créées.
+  List<int> _getAvailableWeights(WidgetRef ref) {
+    final cylindersAsync = ref.watch(cylindersProvider);
+    return cylindersAsync.when(
+      data: (cylinders) {
+        // Extraire les poids uniques des bouteilles existantes
+        final weights = cylinders.map((c) => c.weight).toSet().toList();
+        weights.sort();
+        return weights;
+      },
+      loading: () => [],
+      error: (_, __) => [],
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
+    final availableWeights = _getAvailableWeights(ref);
     final settingsAsync = ref.watch(
       gazSettingsProvider(
         (enterpriseId: enterpriseId, moduleId: moduleId),
@@ -46,20 +62,50 @@ class WholesalePriceConfigCard extends ConsumerWidget {
               children: [
                 const WholesalePriceHeader(),
                 const SizedBox(height: 24),
-                // Liste des prix par poids
-                ...CylinderWeight.availableWeights.map((weight) {
-                  final price = settings?.getWholesalePrice(weight) ?? 0.0;
-                  return WholesalePriceRow(
-                    weight: weight,
-                    price: price,
-                    settings: settings,
-                    enterpriseId: enterpriseId,
-                    moduleId: moduleId,
-                    onPriceSaved: () {
-                      // Le provider sera invalidé dans le widget
-                    },
-                  );
-                }),
+                // Liste des prix par poids (basée sur les bouteilles créées)
+                availableWeights.isEmpty
+                    ? Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Center(
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.info_outline,
+                                size: 48,
+                                color: colors.onSurfaceVariant,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'Aucune bouteille créée',
+                                style: theme.textTheme.bodyLarge?.copyWith(
+                                  color: colors.onSurfaceVariant,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Créez d\'abord des types de bouteilles dans la section "Configuration des prix"',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: colors.onSurfaceVariant,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    : ...availableWeights.map((weight) {
+                        final price = settings?.getWholesalePrice(weight) ?? 0.0;
+                        return WholesalePriceRow(
+                          weight: weight,
+                          price: price,
+                          settings: settings,
+                          enterpriseId: enterpriseId,
+                          moduleId: moduleId,
+                          onPriceSaved: () {
+                            // Le provider sera invalidé dans le widget
+                          },
+                        );
+                      }),
               ],
             ),
           ),

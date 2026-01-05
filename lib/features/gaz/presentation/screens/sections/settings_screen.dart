@@ -107,7 +107,10 @@ class GazSettingsScreen extends ConsumerWidget {
                 minimumSize: const Size(136.947, 36),
               ),
               onPressed: () {
-                // TODO: Ouvrir le formulaire d'ajout de type
+                showDialog(
+                  context: context,
+                  builder: (context) => const CylinderFormDialog(),
+                );
               },
               icon: const Icon(Icons.add, size: 16),
               label: const Text(
@@ -177,7 +180,13 @@ class GazSettingsScreen extends ConsumerWidget {
                 minimumSize: const Size(201.057, 36),
               ),
               onPressed: () {
-                // TODO: Ouvrir le formulaire d'ajout de point de vente
+                showDialog(
+                  context: context,
+                  builder: (context) => PointOfSaleFormDialog(
+                    enterpriseId: enterpriseId,
+                    moduleId: moduleId,
+                  ),
+                );
               },
               icon: const Icon(Icons.add, size: 16),
               label: const Text(
