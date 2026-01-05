@@ -6,6 +6,8 @@
 /// - Conflict resolution using `updated_at` timestamps
 /// - Network connectivity monitoring
 /// - Pending operations queue with retry logic
+/// - Data sanitization and security
+/// - Exponential backoff for retries
 ///
 /// ## Quick Start
 ///
@@ -28,6 +30,13 @@
 ///   // ... implement abstract methods
 /// }
 /// ```
+///
+/// ## Security Features
+///
+/// - Input sanitization prevents injection attacks
+/// - Sensitive fields are automatically removed from sync data
+/// - Data size limits prevent DoS attacks
+/// - ID validation ensures data integrity
 library offline;
 
 // Core services
@@ -43,6 +52,13 @@ export 'offline_repository.dart';
 
 // Riverpod providers
 export 'providers.dart';
+
+// Security
+export 'security/data_sanitizer.dart';
+export 'security/secure_storage.dart';
+
+// Sync handlers
+export 'handlers/firebase_sync_handler.dart';
 
 // Collections
 export 'collections/enterprise_collection.dart';

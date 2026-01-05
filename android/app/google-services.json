@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "343526894268",
+    "project_id": "elyf-group-app",
+    "storage_bucket": "elyf-group-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:343526894268:android:3e7b21f657acd7c9e33eb9",
+        "android_client_info": {
+          "package_name": "com.example.elyf_groupe_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA9cRbvG7QRJtmZQjrawNLMq6XQVQq9o20"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

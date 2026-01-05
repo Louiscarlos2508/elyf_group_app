@@ -1,12 +1,50 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:developer' as developer;
+import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:isar/isar.dart';
 
 import 'connectivity_service.dart';
 import 'isar_service.dart';
 import 'sync_status.dart';
+import 'security/data_sanitizer.dart';
+import 'security/secure_storage.dart';
+
+/// Configuration for sync behavior.
+class SyncConfig {
+  const SyncConfig({
+    this.maxRetryAttempts = 5,
+    this.baseRetryDelayMs = 1000,
+    this.maxRetryDelayMs = 60000,
+    this.syncIntervalMinutes = 5,
+    this.operationTimeoutMs = 30000,
+    this.maxOperationAgeHours = 72,
+    this.batchSize = 50,
+  });
+
+  /// Maximum number of retry attempts before giving up.
+  final int maxRetryAttempts;
+
+  /// Base delay for exponential backoff (in milliseconds).
+  final int baseRetryDelayMs;
+
+  /// Maximum delay between retries (in milliseconds).
+  final int maxRetryDelayMs;
+
+  /// Interval between automatic sync attempts (in minutes).
+  final int syncIntervalMinutes;
+
+  /// Timeout for individual operations (in milliseconds).
+  final int operationTimeoutMs;
+
+  /// Maximum age of pending operations before cleanup (in hours).
+  final int maxOperationAgeHours;
+
+  /// Number of operations to process in a single batch.
+  final int batchSize;
+}
 
 /// Manages offline-first data synchronization.
 ///
@@ -15,19 +53,29 @@ import 'sync_status.dart';
 /// - Background sync when online
 /// - Conflict resolution using `updated_at` timestamps
 /// - Automatic retry with exponential backoff
+/// - Data sanitization and validation
 class SyncManager {
   SyncManager({
     required IsarService isarService,
     required ConnectivityService connectivityService,
+    this.config = const SyncConfig(),
+    this.syncHandler,
   })  : _isarService = isarService,
         _connectivityService = connectivityService;
 
   final IsarService _isarService;
   final ConnectivityService _connectivityService;
+  final SyncConfig config;
+
+  /// Custom handler for processing sync operations.
+  /// If null, operations will be marked as synced (for testing).
+  final SyncOperationHandler? syncHandler;
 
   StreamSubscription<ConnectivityStatus>? _connectivitySubscription;
   Timer? _syncTimer;
+  Timer? _cleanupTimer;
   bool _isSyncing = false;
+  bool _isDisposed = false;
 
   final _syncStatusController = StreamController<SyncProgress>.broadcast();
 
@@ -41,25 +89,74 @@ class SyncManager {
   ///
   /// Starts listening to connectivity changes and schedules periodic syncs.
   Future<void> initialize() async {
+    if (_isDisposed) {
+      throw StateError('SyncManager has been disposed');
+    }
+
     _connectivitySubscription = _connectivityService.statusStream.listen(
       _onConnectivityChanged,
     );
 
-    // Schedule periodic sync every 5 minutes when online
+    // Schedule periodic sync
     _syncTimer = Timer.periodic(
-      const Duration(minutes: 5),
+      Duration(minutes: config.syncIntervalMinutes),
       (_) => _attemptSync(),
+    );
+
+    // Schedule periodic cleanup of old operations
+    _cleanupTimer = Timer.periodic(
+      const Duration(hours: 1),
+      (_) => _cleanupOldOperations(),
     );
 
     // Attempt initial sync if online
     if (_connectivityService.isOnline) {
-      await _attemptSync();
+      unawaited(_attemptSync());
     }
 
+    // Run initial cleanup
+    unawaited(_cleanupOldOperations());
+
     developer.log(
-      'SyncManager initialized',
+      'SyncManager initialized with config: '
+      'maxRetry=${config.maxRetryAttempts}, '
+      'interval=${config.syncIntervalMinutes}min',
       name: 'offline.sync',
     );
+  }
+
+  /// Cleans up old pending operations that have exceeded max age.
+  Future<void> _cleanupOldOperations() async {
+    try {
+      final cutoffDate = DateTime.now().subtract(
+        Duration(hours: config.maxOperationAgeHours),
+      );
+
+      final isar = _isarService.isar;
+      final oldOps = await isar.syncOperations
+          .filter()
+          .createdAtLessThan(cutoffDate)
+          .findAll();
+
+      if (oldOps.isNotEmpty) {
+        await isar.writeTxn(() async {
+          for (final op in oldOps) {
+            await isar.syncOperations.delete(op.id);
+          }
+        });
+
+        developer.log(
+          'Cleaned up ${oldOps.length} old sync operations',
+          name: 'offline.sync',
+        );
+      }
+    } catch (error) {
+      developer.log(
+        'Failed to cleanup old operations',
+        name: 'offline.sync',
+        error: error,
+      );
+    }
   }
 
   void _onConnectivityChanged(ConnectivityStatus status) {
@@ -202,10 +299,35 @@ class SyncManager {
     }
   }
 
-  /// Processes a single sync operation.
+  /// Processes a single sync operation with retry logic.
   Future<void> _processSyncOperation(SyncOperation operation) async {
-    // This is where you would integrate with Firebase or your backend
-    // For now, this is a placeholder that simulates the sync
+    // Validate operation data
+    if (!DataSanitizer.isValidId(operation.localId)) {
+      throw SyncException('Invalid local ID: ${operation.localId}');
+    }
+
+    if (operation.remoteId != null &&
+        !DataSanitizer.isValidId(operation.remoteId)) {
+      throw SyncException('Invalid remote ID: ${operation.remoteId}');
+    }
+
+    // Check if max retries exceeded
+    if (operation.retryCount >= config.maxRetryAttempts) {
+      throw SyncException(
+        'Max retry attempts (${config.maxRetryAttempts}) exceeded',
+      );
+    }
+
+    // Calculate delay with exponential backoff
+    if (operation.retryCount > 0) {
+      final delayMs = _calculateBackoffDelay(operation.retryCount);
+      developer.log(
+        'Retry ${operation.retryCount}/${config.maxRetryAttempts}, '
+        'waiting ${delayMs}ms',
+        name: 'offline.sync',
+      );
+      await Future<void>.delayed(Duration(milliseconds: delayMs));
+    }
 
     developer.log(
       'Processing ${operation.operationType} for '
@@ -213,28 +335,67 @@ class SyncManager {
       name: 'offline.sync',
     );
 
-    // Simulate network delay
-    await Future<void>.delayed(const Duration(milliseconds: 100));
+    // Use custom handler if provided, otherwise use default behavior
+    if (syncHandler != null) {
+      await syncHandler!.processOperation(operation).timeout(
+            Duration(milliseconds: config.operationTimeoutMs),
+            onTimeout: () =>
+                throw TimeoutException('Operation timed out', operation),
+          );
+    } else {
+      // Default: mark as synced (useful for testing)
+      developer.log(
+        'No sync handler configured, marking as synced',
+        name: 'offline.sync',
+      );
+    }
+  }
 
-    // In a real implementation, you would:
-    // 1. Parse the operation data
-    // 2. Call the appropriate Firebase/API method
-    // 3. Handle conflicts using updated_at comparison
-    // 4. Update local sync metadata
+  /// Calculates exponential backoff delay with jitter.
+  int _calculateBackoffDelay(int retryCount) {
+    // Exponential backoff: base * 2^retryCount
+    final exponentialDelay =
+        config.baseRetryDelayMs * math.pow(2, retryCount).toInt();
+
+    // Cap at max delay
+    final cappedDelay = math.min(exponentialDelay, config.maxRetryDelayMs);
+
+    // Add jitter (±25%)
+    final jitter = (cappedDelay * 0.25 * (math.Random().nextDouble() - 0.5))
+        .toInt();
+
+    return cappedDelay + jitter;
   }
 
   /// Queues a create operation for sync.
+  ///
+  /// Throws [DataValidationException] if data is invalid.
   Future<void> queueCreate({
     required String collectionName,
     required String localId,
     required Map<String, dynamic> data,
     String? enterpriseId,
   }) async {
+    // Validate inputs
+    final sanitizedLocalId = DataSanitizer.sanitizeId(localId);
+    if (sanitizedLocalId == null) {
+      throw DataValidationException('Invalid local ID: $localId');
+    }
+
+    final sanitizedEnterpriseId = enterpriseId != null
+        ? DataSanitizer.sanitizeId(enterpriseId)
+        : null;
+
+    // Sanitize data and remove sensitive fields
+    final sanitizedData = SecureDataHandler.removeSensitiveData(
+      DataSanitizer.sanitizeMap(data),
+    );
+
     final operation = SyncOperation.create(
-      collectionName: collectionName,
-      localId: localId,
-      data: jsonEncode(data),
-      enterpriseId: enterpriseId,
+      collectionName: DataSanitizer.sanitizeString(collectionName, maxLength: 50),
+      localId: sanitizedLocalId,
+      data: DataSanitizer.toSafeJson(sanitizedData),
+      enterpriseId: sanitizedEnterpriseId,
     );
 
     await _isarService.isar.writeTxn(() async {
@@ -242,17 +403,19 @@ class SyncManager {
     });
 
     developer.log(
-      'Queued create for $collectionName/$localId',
+      'Queued create for $collectionName/$sanitizedLocalId',
       name: 'offline.sync',
     );
 
-    // Attempt immediate sync if online
+    // Attempt immediate sync if online (fire and forget)
     if (_connectivityService.isOnline) {
-      _attemptSync();
+      unawaited(_attemptSync());
     }
   }
 
   /// Queues an update operation for sync.
+  ///
+  /// Throws [DataValidationException] if data is invalid.
   Future<void> queueUpdate({
     required String collectionName,
     required String localId,
@@ -260,12 +423,32 @@ class SyncManager {
     required Map<String, dynamic> data,
     String? enterpriseId,
   }) async {
+    // Validate inputs
+    final sanitizedLocalId = DataSanitizer.sanitizeId(localId);
+    final sanitizedRemoteId = DataSanitizer.sanitizeId(remoteId);
+
+    if (sanitizedLocalId == null) {
+      throw DataValidationException('Invalid local ID: $localId');
+    }
+    if (sanitizedRemoteId == null) {
+      throw DataValidationException('Invalid remote ID: $remoteId');
+    }
+
+    final sanitizedEnterpriseId = enterpriseId != null
+        ? DataSanitizer.sanitizeId(enterpriseId)
+        : null;
+
+    // Sanitize data and remove sensitive fields
+    final sanitizedData = SecureDataHandler.removeSensitiveData(
+      DataSanitizer.sanitizeMap(data),
+    );
+
     final operation = SyncOperation.update(
-      collectionName: collectionName,
-      localId: localId,
-      remoteId: remoteId,
-      data: jsonEncode(data),
-      enterpriseId: enterpriseId,
+      collectionName: DataSanitizer.sanitizeString(collectionName, maxLength: 50),
+      localId: sanitizedLocalId,
+      remoteId: sanitizedRemoteId,
+      data: DataSanitizer.toSafeJson(sanitizedData),
+      enterpriseId: sanitizedEnterpriseId,
     );
 
     await _isarService.isar.writeTxn(() async {
@@ -273,27 +456,44 @@ class SyncManager {
     });
 
     developer.log(
-      'Queued update for $collectionName/$localId',
+      'Queued update for $collectionName/$sanitizedLocalId',
       name: 'offline.sync',
     );
 
     if (_connectivityService.isOnline) {
-      _attemptSync();
+      unawaited(_attemptSync());
     }
   }
 
   /// Queues a delete operation for sync.
+  ///
+  /// Throws [DataValidationException] if IDs are invalid.
   Future<void> queueDelete({
     required String collectionName,
     required String localId,
     required String remoteId,
     String? enterpriseId,
   }) async {
+    // Validate inputs
+    final sanitizedLocalId = DataSanitizer.sanitizeId(localId);
+    final sanitizedRemoteId = DataSanitizer.sanitizeId(remoteId);
+
+    if (sanitizedLocalId == null) {
+      throw DataValidationException('Invalid local ID: $localId');
+    }
+    if (sanitizedRemoteId == null) {
+      throw DataValidationException('Invalid remote ID: $remoteId');
+    }
+
+    final sanitizedEnterpriseId = enterpriseId != null
+        ? DataSanitizer.sanitizeId(enterpriseId)
+        : null;
+
     final operation = SyncOperation.delete(
-      collectionName: collectionName,
-      localId: localId,
-      remoteId: remoteId,
-      enterpriseId: enterpriseId,
+      collectionName: DataSanitizer.sanitizeString(collectionName, maxLength: 50),
+      localId: sanitizedLocalId,
+      remoteId: sanitizedRemoteId,
+      enterpriseId: sanitizedEnterpriseId,
     );
 
     await _isarService.isar.writeTxn(() async {
@@ -301,12 +501,12 @@ class SyncManager {
     });
 
     developer.log(
-      'Queued delete for $collectionName/$localId',
+      'Queued delete for $collectionName/$sanitizedLocalId',
       name: 'offline.sync',
     );
 
     if (_connectivityService.isOnline) {
-      _attemptSync();
+      unawaited(_attemptSync());
     }
   }
 
@@ -339,10 +539,48 @@ class SyncManager {
 
   /// Disposes resources.
   Future<void> dispose() async {
+    if (_isDisposed) return;
+    _isDisposed = true;
+
     _syncTimer?.cancel();
+    _cleanupTimer?.cancel();
     await _connectivitySubscription?.cancel();
     await _syncStatusController.close();
+
+    developer.log(
+      'SyncManager disposed',
+      name: 'offline.sync',
+    );
   }
+}
+
+/// Interface for handling sync operations.
+///
+/// Implement this to integrate with Firebase or your backend.
+abstract class SyncOperationHandler {
+  /// Processes a sync operation.
+  ///
+  /// Should throw on failure for retry logic to work.
+  Future<void> processOperation(SyncOperation operation);
+}
+
+/// Exception thrown during sync operations.
+class SyncException implements Exception {
+  const SyncException(this.message);
+  final String message;
+
+  @override
+  String toString() => 'SyncException: $message';
+}
+
+/// Exception thrown when an operation times out.
+class TimeoutException implements Exception {
+  const TimeoutException(this.message, this.operation);
+  final String message;
+  final SyncOperation operation;
+
+  @override
+  String toString() => 'TimeoutException: $message';
 }
 
 /// Represents the result of a sync operation.
