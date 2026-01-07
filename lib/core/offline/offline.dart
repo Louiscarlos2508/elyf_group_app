@@ -65,6 +65,3 @@ export 'collections/enterprise_collection.dart';
 export 'collections/expense_collection.dart';
 export 'collections/product_collection.dart';
 export 'collections/sale_collection.dart';
-
-// Widgets
-export 'widgets/sync_status_indicator.dart';

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../../../../shared/presentation/widgets/gaz_button_styles.dart';
+import '../../../../../shared.dart';
 
 /// En-tête de l'écran des dépenses avec bouton d'ajout.
 class ExpensesHeader extends StatelessWidget {

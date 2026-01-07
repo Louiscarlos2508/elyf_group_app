@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import '../../../../domain/entities/liquidity_checkpoint.dart';
+import '../../../domain/entities/liquidity_checkpoint.dart';
 
 /// Widget affichant la liste des pointages de liquidité.
 class LiquidityCheckpointsList extends StatelessWidget {

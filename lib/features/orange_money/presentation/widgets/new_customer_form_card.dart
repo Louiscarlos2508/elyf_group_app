@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import '../../../../../shared/utils/currency_formatter.dart';
 import '../../domain/entities/transaction.dart';
 import '../../domain/services/customer_service.dart';
+import 'new_customer_form/transaction_info_card.dart';
+import 'new_customer_form/customer_name_fields.dart';
+import 'new_customer_form/id_type_field.dart';
+import 'new_customer_form/id_date_fields.dart';
 
 /// Widget pour afficher le formulaire d'enregistrement d'une nouvelle personne.
 /// Affiche une carte avec les informations de transaction et un formulaire d'enregistrement.
@@ -158,218 +161,24 @@ class _NewCustomerFormCardState extends State<NewCustomerFormCard> {
               ),
               const SizedBox(height: 24),
               // Carte d'information transaction
-              Container(
-                padding: const EdgeInsets.all(17.219),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF9FAFB),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: Colors.black.withValues(alpha: 0.1),
-                    width: 1.219,
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Téléphone',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Color(0xFF4A5565),
-                          ),
-                        ),
-                        Text(
-                          widget.phoneNumber,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            color: Color(0xFF101828),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Montant',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Color(0xFF4A5565),
-                          ),
-                        ),
-                        Text(
-                          CurrencyFormatter.formatFCFA(widget.amount),
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF101828),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Type',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Color(0xFF4A5565),
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 9,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
-                            color: widget.type == TransactionType.cashIn
-                                ? const Color(0xFFDCFCE7)
-                                : const Color(0xFFFEE2E2),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: Colors.transparent,
-                              width: 1.219,
-                            ),
-                          ),
-                          child: Text(
-                            widget.type == TransactionType.cashIn
-                                ? 'Dépôt'
-                                : 'Retrait',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: widget.type == TransactionType.cashIn
-                                  ? const Color(0xFF016630)
-                                  : const Color(0xFF991B1B),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+              TransactionInfoCard(
+                phoneNumber: widget.phoneNumber,
+                amount: widget.amount,
+                type: widget.type,
               ),
               const SizedBox(height: 16),
               // Prénom et Nom
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Prénom *',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Color(0xFF0A0A0A),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        TextFormField(
-                          controller: _firstNameController,
-                          decoration: InputDecoration(
-                            hintText: 'Ex: Jean',
-                            hintStyle: const TextStyle(
-                              fontSize: 14,
-                              color: Color(0xFF717182),
-                            ),
-                            filled: true,
-                            fillColor: const Color(0xFFF3F3F5),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide.none,
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 8,
-                            ),
-                          ),
-                          validator: CustomerService.validateFirstName,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Nom *',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Color(0xFF0A0A0A),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        TextFormField(
-                          controller: _lastNameController,
-                          decoration: InputDecoration(
-                            hintText: 'Ex: Dupont',
-                            hintStyle: const TextStyle(
-                              fontSize: 14,
-                              color: Color(0xFF717182),
-                            ),
-                            filled: true,
-                            fillColor: const Color(0xFFF3F3F5),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide.none,
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 8,
-                            ),
-                          ),
-                          validator: CustomerService.validateLastName,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+              CustomerNameFields(
+                firstNameController: _firstNameController,
+                lastNameController: _lastNameController,
               ),
               const SizedBox(height: 16),
               // Type de pièce d'identité
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Type de pièce d'identité *",
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF0A0A0A),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF3F3F5),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          _idType,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: Color(0xFF0A0A0A),
-                          ),
-                        ),
-                        const Icon(
-                          Icons.keyboard_arrow_down,
-                          size: 16,
-                          color: Color(0xFF0A0A0A),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+              IdTypeField(
+                idType: _idType,
+                onTap: () {
+                  // TODO: Show ID type selector dialog
+                },
               ),
               const SizedBox(height: 16),
               // Numéro de pièce

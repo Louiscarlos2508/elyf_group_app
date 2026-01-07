@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../../shared/presentation/screens/expense_balance_screen.dart';
-import '../../../../../shared/presentation/widgets/refresh_button.dart';
+import '../../../../shared.dart';
 import '../../../application/providers.dart';
 import '../../../domain/adapters/expense_balance_adapter.dart';
 import '../../../domain/entities/expense.dart';
@@ -226,9 +225,21 @@ class ExpensesScreen extends ConsumerWidget {
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: MonthlyExpenseSummary(expenses: expenses),
-                        ),
+                      child: Builder(
+                        builder: (context) {
+                          final calculationService = ref.read(
+                            boutiqueDashboardCalculationServiceProvider,
+                          );
+                          final metrics = calculationService
+                              .calculateMonthlyExpenseMetrics(expenses);
+                          return MonthlyExpenseSummary(
+                            metrics: metrics,
+                            calculationService: calculationService,
+                          );
+                        },
                       ),
+                    ),
+                  ),
 
                   const SliverToBoxAdapter(
                     child: SizedBox(height: 24),

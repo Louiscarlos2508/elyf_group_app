@@ -42,6 +42,14 @@ class MockSaleRepository implements SaleRepository {
   }
 
   @override
+  Future<List<Sale>> fetchRecentSales({int limit = 50}) async {
+    await Future<void>.delayed(const Duration(milliseconds: 200));
+    final sales = _sales.values.toList();
+    sales.sort((a, b) => b.date.compareTo(a.date));
+    return sales.take(limit).toList();
+  }
+
+  @override
   Future<Sale?> getSale(String id) async {
     await Future<void>.delayed(const Duration(milliseconds: 100));
     return _sales[id];

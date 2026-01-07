@@ -4,11 +4,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/controllers/clients_controller.dart';
 import '../../application/controllers/finances_controller.dart';
 import '../../application/controllers/sales_controller.dart';
+import '../../application/providers.dart';
+import '../../domain/entities/customer_account.dart';
+import '../../domain/repositories/customer_repository.dart';
+import '../../domain/services/dashboard_calculation_service.dart';
 import 'dashboard_kpi_card.dart';
 
 /// Section displaying monthly KPIs.
 /// TODO: Réimplémenter avec productionSessionsStateProvider
-class DashboardMonthSection extends StatelessWidget {
+class DashboardMonthSection extends ConsumerWidget {
   const DashboardMonthSection({
     super.key,
     required this.salesState,
@@ -35,32 +39,27 @@ class DashboardMonthSection extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     // TODO: Réimplémenter avec les sessions de production
     return salesState.when(
       data: (sales) => clientsState.when(
         data: (clients) => financesState.when(
           data: (finances) {
-              final now = DateTime.now();
-              final monthStart = DateTime(now.year, now.month, 1);
-              final monthSales = sales.sales
-                  .where((s) => s.date.isAfter(monthStart))
-                  .toList();
-              final monthRevenue = monthSales.fold(
-                0,
-                (sum, s) => sum + s.totalPrice,
+              final calculationService = ref.read(dashboardCalculationServiceProvider);
+              // Convert CustomerSummary to CustomerAccount for the calculation service
+              final customerAccounts = clients.customers.map((c) => CustomerAccount(
+                id: c.id,
+                name: c.name,
+                outstandingCredit: c.totalCredit,
+                lastOrderDate: c.lastPurchaseDate ?? DateTime.now(),
+                phone: c.phone,
+              )).toList();
+              // Use the method that accepts ExpenseRecord list
+              final metrics = calculationService.calculateMonthlyMetricsFromRecords(
+                sales: sales.sales,
+                customers: customerAccounts,
+                expenses: finances.expenses,
               );
-              final monthCollections = monthSales
-                  .where((s) => s.isFullyPaid)
-                  .fold(0, (sum, s) => sum + s.amountPaid);
-              final collectionRate = monthRevenue > 0
-                  ? ((monthCollections / monthRevenue) * 100)
-                  : 0.0;
-              final totalCredits = clients.totalCredit;
-              final creditCustomersCount = clients.customers
-                  .where((c) => c.totalCredit > 0)
-                  .length;
-              final monthResult = monthCollections - finances.totalCharges;
 
               return LayoutBuilder(
                 builder: (context, constraints) {
@@ -69,16 +68,16 @@ class DashboardMonthSection extends StatelessWidget {
                   final cards = [
                     DashboardKpiCard(
                       label: 'Chiffre d\'Affaires',
-                      value: _formatCurrency(monthRevenue),
-                      subtitle: '${monthSales.length} ventes',
+                      value: _formatCurrency(metrics.revenue),
+                      subtitle: '${metrics.salesCount} ventes',
                       icon: Icons.trending_up,
                       iconColor: Colors.blue,
                       backgroundColor: Colors.blue,
                     ),
                     DashboardKpiCard(
                       label: 'Encaissé',
-                      value: _formatCurrency(monthCollections),
-                      subtitle: '${collectionRate.toStringAsFixed(0)}%',
+                      value: _formatCurrency(metrics.collections),
+                      subtitle: '${metrics.collectionRate.toStringAsFixed(0)}%',
                       icon: Icons.attach_money,
                       iconColor: Colors.green,
                       valueColor: Colors.green.shade700,
@@ -86,22 +85,22 @@ class DashboardMonthSection extends StatelessWidget {
                     ),
                     DashboardKpiCard(
                       label: 'Crédits en Cours',
-                      value: _formatCurrency(totalCredits),
-                      subtitle: '$creditCustomersCount client',
+                      value: _formatCurrency(metrics.totalCredits),
+                      subtitle: '${metrics.creditCustomersCount} client',
                       icon: Icons.calendar_today,
                       iconColor: Colors.orange,
                       backgroundColor: Colors.orange,
                     ),
                     DashboardKpiCard(
                       label: 'Résultat',
-                      value: _formatCurrency(monthResult),
-                      subtitle: monthResult >= 0 ? 'Bénéfice' : 'Déficit',
+                      value: _formatCurrency(metrics.result),
+                      subtitle: metrics.isProfit ? 'Bénéfice' : 'Déficit',
                       icon: Icons.account_balance_wallet,
-                      iconColor: monthResult >= 0 ? Colors.green : Colors.red,
-                      valueColor: monthResult >= 0
+                      iconColor: metrics.isProfit ? Colors.green : Colors.red,
+                      valueColor: metrics.isProfit
                           ? Colors.green.shade700
                           : Colors.red.shade700,
-                      backgroundColor: monthResult >= 0 ? Colors.green : Colors.red,
+                      backgroundColor: metrics.isProfit ? Colors.green : Colors.red,
                     ),
                   ];
 

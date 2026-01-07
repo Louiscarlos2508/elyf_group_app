@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../../domain/entities/bobine_usage.dart';
+import '../../../domain/entities/bobine_usage.dart';
 import 'production_session_form_helpers.dart';
 
 /// Section pour l'installation des bobines sur les machines.

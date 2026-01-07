@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../domain/entities/user.dart';
-import '../../../../../../core/auth/entities/enterprise_module_user.dart';
+import '../../../../../core.dart';
 import '../../../../application/providers.dart';
 import '../../../../domain/entities/admin_module.dart';
 

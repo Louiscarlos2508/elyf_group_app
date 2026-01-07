@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../shared/presentation/widgets/form_dialog.dart';
-import '../../../../shared/utils/validators.dart';
+import '../../../../shared.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/expense.dart';
 import '../../domain/entities/property.dart';

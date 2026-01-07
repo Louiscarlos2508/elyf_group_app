@@ -522,17 +522,3 @@ class _ProductionSessionReportContent extends ConsumerWidget {
   }
 }
 
-/// Provider pour récupérer une session par son ID.
-final productionSessionDetailProvider =
-    FutureProvider.autoDispose.family<ProductionSession, String>(
-  (ref, sessionId) async {
-    final session = await ref
-        .read(productionSessionControllerProvider)
-        .fetchSessionById(sessionId);
-    if (session == null) {
-      throw Exception('Session non trouvée');
-    }
-    return session;
-  },
-);
-

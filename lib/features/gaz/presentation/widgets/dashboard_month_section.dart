@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../../shared/utils/currency_formatter.dart';
+import '../../../../shared.dart';
 import '../../domain/entities/expense.dart';
 import '../../domain/entities/gas_sale.dart';
 import 'dashboard_kpi_card.dart';

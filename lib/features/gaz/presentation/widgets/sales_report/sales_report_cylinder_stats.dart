@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../../../shared/utils/currency_formatter.dart';
-import '../../domain/entities/cylinder.dart';
-import '../../domain/entities/gas_sale.dart';
+import '../../../../shared.dart';
+import '../../../domain/entities/cylinder.dart';
+import '../../../domain/entities/gas_sale.dart';
 
 /// Statistiques des ventes par type de bouteille.
 class SalesReportCylinderStats extends StatelessWidget {

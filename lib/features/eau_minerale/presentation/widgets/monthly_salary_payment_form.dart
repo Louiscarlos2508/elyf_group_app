@@ -3,7 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../shared/utils/date_formatter.dart';
+import '../../../../shared.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/employee.dart';
 import '../../domain/entities/salary_payment.dart';

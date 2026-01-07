@@ -3,7 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../../domain/entities/liquidity_checkpoint.dart';
 import '../../domain/services/liquidity_checkpoint_service.dart';
-import '../../../../../shared/utils/currency_formatter.dart';
+import '../../../shared.dart';
 import 'form_field_with_label.dart';
 
 /// Dialog pour créer ou modifier un pointage de liquidité.

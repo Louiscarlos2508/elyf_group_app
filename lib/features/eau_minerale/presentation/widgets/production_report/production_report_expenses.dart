@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../domain/entities/expense_record.dart';
+import '../../../domain/entities/expense_record.dart';
 import 'production_report_helpers.dart';
 
 /// Section dépenses liées du rapport.

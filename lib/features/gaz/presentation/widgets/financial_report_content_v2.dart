@@ -6,7 +6,7 @@ import '../../application/providers.dart';
 import '../../domain/entities/gas_sale.dart';
 import '../../domain/services/financial_calculation_service.dart';
 import 'financial_summary_card.dart';
-import '../../../../shared/utils/currency_formatter.dart';
+import '../../../../shared.dart';
 
 /// Contenu de rapport financier avec charges fixes/variables et reliquat siège.
 class GazFinancialReportContentV2 extends ConsumerWidget {

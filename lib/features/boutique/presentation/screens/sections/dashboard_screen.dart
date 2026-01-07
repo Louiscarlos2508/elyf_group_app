@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../../shared/presentation/widgets/refresh_button.dart';
+import '../../../../shared.dart';
 import '../../../application/providers.dart';
+import '../../../domain/entities/expense.dart';
+import '../../../domain/entities/purchase.dart';
 import '../../../domain/entities/sale.dart';
 import '../../widgets/dashboard_header.dart';
 import '../../widgets/dashboard_low_stock_list.dart';
@@ -60,14 +62,13 @@ class DashboardScreen extends ConsumerWidget {
             sliver: SliverToBoxAdapter(
               child: salesAsync.when(
                   data: (sales) {
-                      final today = DateTime.now();
-                  final todaySales = sales
-                      .where((s) =>
-                          s.date.year == today.year &&
-                          s.date.month == today.month &&
-                          s.date.day == today.day)
-                      .toList();
-                  return DashboardTodaySection(todaySales: todaySales);
+                  final calculationService = ref.read(
+                    boutiqueDashboardCalculationServiceProvider,
+                  );
+                  final metrics = calculationService.calculateTodayMetrics(
+                    sales,
+                  );
+                  return DashboardTodaySection(metrics: metrics);
                 },
                 loading: () => const SizedBox(
                   height: 120,
@@ -86,6 +87,7 @@ class DashboardScreen extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
             sliver: SliverToBoxAdapter(
               child: _buildMonthKpis(
+                ref,
                 salesAsync,
                 purchasesAsync,
                 expensesAsync,
@@ -140,77 +142,51 @@ class DashboardScreen extends ConsumerWidget {
   }
 
   Widget _buildMonthKpis(
+    WidgetRef ref,
     AsyncValue<List<Sale>> salesAsync,
-    AsyncValue purchasesAsync,
-    AsyncValue expensesAsync,
+    AsyncValue<List<Purchase>> purchasesAsync,
+    AsyncValue<List<Expense>> expensesAsync,
   ) {
     return salesAsync.when(
-      data: (sales) {
-                    final now = DateTime.now();
-                    final monthStart = DateTime(now.year, now.month, 1);
-                    
-        final monthSales = sales
-            .where((s) => s.date.isAfter(monthStart.subtract(
-                  const Duration(days: 1),
-                )))
-            .toList();
-        final monthRevenue =
-            monthSales.fold(0, (sum, s) => sum + s.totalAmount);
-                    
-                    return purchasesAsync.when(
-                      data: (purchases) {
-            final monthPurchases = (purchases as List)
-                .where((p) => p.date.isAfter(monthStart.subtract(
-                      const Duration(days: 1),
-                    )))
-                .toList();
-            final monthPurchasesAmount = monthPurchases.fold<int>(
-              0,
-              (sum, p) => sum + (p.totalAmount as int),
+      data: (sales) => purchasesAsync.when(
+        data: (purchases) => expensesAsync.when(
+          data: (expenses) {
+            final calculationService = ref.read(
+              boutiqueDashboardCalculationServiceProvider,
             );
 
-                        return expensesAsync.when(
-                          data: (expenses) {
-                final monthExpenses = (expenses as List)
-                    .where((e) => e.date.isAfter(monthStart.subtract(
-                          const Duration(days: 1),
-                        )))
-                    .toList();
-                final monthExpensesAmount = monthExpenses.fold<int>(
-                  0,
-                  (sum, e) => sum + (e.amountCfa as int),
-                );
-                            
-                final monthProfit =
-                    monthRevenue - monthPurchasesAmount - monthExpensesAmount;
+            // Use the calculation service for monthly metrics
+            final metrics = calculationService.calculateMonthlyMetricsWithPurchases(
+              sales: sales,
+              expenses: expenses,
+              purchases: purchases,
+            );
 
-                return DashboardMonthSection(
-                      monthRevenue: monthRevenue,
-                      monthSalesCount: monthSales.length,
-                      monthPurchasesAmount: monthPurchasesAmount,
-                      monthExpensesAmount: monthExpensesAmount,
-                      monthProfit: monthProfit,
-                    );
-                          },
-              loading: () => const SizedBox(
-                height: 200,
-                child: Center(child: CircularProgressIndicator()),
-              ),
-                          error: (_, __) => const SizedBox.shrink(),
-                        );
-                      },
+            return DashboardMonthSection(
+              monthRevenue: metrics.revenue,
+              monthSalesCount: metrics.salesCount,
+              monthPurchasesAmount: metrics.purchasesAmount,
+              monthExpensesAmount: metrics.expensesAmount,
+              monthProfit: metrics.profit,
+            );
+          },
           loading: () => const SizedBox(
             height: 200,
             child: Center(child: CircularProgressIndicator()),
           ),
-                      error: (_, __) => const SizedBox.shrink(),
-                    );
-                  },
+          error: (_, __) => const SizedBox.shrink(),
+        ),
+        loading: () => const SizedBox(
+          height: 200,
+          child: Center(child: CircularProgressIndicator()),
+        ),
+        error: (_, __) => const SizedBox.shrink(),
+      ),
       loading: () => const SizedBox(
         height: 200,
         child: Center(child: CircularProgressIndicator()),
       ),
-                  error: (_, __) => const SizedBox.shrink(),
-                );
+      error: (_, __) => const SizedBox.shrink(),
+    );
   }
 }

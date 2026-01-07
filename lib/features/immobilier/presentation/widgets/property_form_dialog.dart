@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/providers.dart';
 import '../../domain/entities/property.dart';
-import '../../../../shared/presentation/widgets/form_dialog.dart';
+import '../../../../shared.dart';
 
 class PropertyFormDialog extends ConsumerStatefulWidget {
   const PropertyFormDialog({

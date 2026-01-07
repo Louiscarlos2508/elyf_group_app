@@ -1,4 +1,4 @@
-import 'production_period_formatter.dart';
+import '../production_period_formatter.dart';
 
 /// Helpers pour le formatage des rapports de production.
 class ProductionReportHelpers {

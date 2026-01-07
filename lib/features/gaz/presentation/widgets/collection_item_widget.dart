@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import '../../../../shared/utils/currency_formatter.dart';
+import '../../../../shared.dart';
 import '../../domain/entities/collection.dart';
 import '../../domain/entities/tour.dart';
 

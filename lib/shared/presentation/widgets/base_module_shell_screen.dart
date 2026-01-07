@@ -4,6 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'adaptive_navigation_scaffold.dart';
 import 'module_loading_animation.dart';
 
+// Re-export NavigationSection so subclasses can use it
+export 'adaptive_navigation_scaffold.dart' show NavigationSection;
+
 /// Classe de base pour les shell screens de modules.
 /// 
 /// Gère la logique commune :

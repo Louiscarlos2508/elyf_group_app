@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../application/providers.dart';
-import '../../../../../core/permissions/entities/user_role.dart';
+import '../../../../../core.dart';
 import 'dialogs/create_role_dialog.dart';
 import 'dialogs/edit_role_dialog.dart';
 

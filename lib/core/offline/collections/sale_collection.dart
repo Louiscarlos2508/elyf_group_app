@@ -1,199 +1,107 @@
-import 'package:isar/isar.dart';
-
-part 'sale_collection.g.dart';
-
-/// Isar collection for storing Sale entities offline.
-///
-/// This is a unified sale collection that can store sales from
-/// multiple modules (boutique, eau_minerale, gaz, etc.).
-@collection
+/// Stub SaleCollection - Isar temporarily disabled.
+/// TODO: Migrate to ObjectBox.
 class SaleCollection {
-  Id id = Isar.autoIncrement;
-
-  /// Remote Firebase document ID.
-  @Index()
-  String? remoteId;
-
-  /// Local unique identifier (UUID).
-  @Index(unique: true)
+  int id = 0;
   late String localId;
-
-  /// Enterprise this sale belongs to.
-  @Index()
+  String? remoteId;
   late String enterpriseId;
-
-  /// Module type (boutique, eau_minerale, gaz).
-  @Index()
   late String moduleType;
-
-  /// Sale date.
-  @Index()
-  late DateTime saleDate;
-
-  /// Total amount of the sale.
-  late double totalAmount;
-
-  /// Amount paid.
-  double paidAmount = 0;
-
-  /// Payment method (cash, credit, mobile_money).
-  String? paymentMethod;
-
-  /// Customer name (if applicable).
-  String? customerName;
-
-  /// Customer ID (if registered customer).
   String? customerId;
-
-  /// Notes or comments.
+  String? customerName;
+  late DateTime saleDate;
+  double totalAmount = 0;
+  double paidAmount = 0;
+  String paymentMethod = 'cash';
+  String status = 'completed';
   String? notes;
-
-  /// User who made the sale.
-  String? soldBy;
-
-  /// Whether the sale is complete or pending.
-  @Index()
-  bool isComplete = true;
-
-  /// Timestamp when created on the server.
   DateTime? createdAt;
-
-  /// Timestamp when last updated on the server.
   DateTime? updatedAt;
-
-  /// Local timestamp when this record was last modified.
-  @Index()
   late DateTime localUpdatedAt;
 
-  /// Creates an empty collection instance.
   SaleCollection();
 
-  /// Creates a sale from a map.
+  /// Creates a SaleCollection from a map.
   factory SaleCollection.fromMap(
     Map<String, dynamic> map, {
     required String enterpriseId,
     required String moduleType,
     required String localId,
   }) {
-    return SaleCollection()
-      ..remoteId = map['id'] as String?
+    final collection = SaleCollection()
       ..localId = localId
       ..enterpriseId = enterpriseId
       ..moduleType = moduleType
+      ..customerId = map['customerId'] as String?
+      ..customerName = map['customerName'] as String?
       ..saleDate = map['saleDate'] != null
           ? DateTime.parse(map['saleDate'] as String)
-          : DateTime.now()
+          : (map['date'] != null
+              ? DateTime.parse(map['date'] as String)
+              : DateTime.now())
       ..totalAmount = (map['totalAmount'] as num?)?.toDouble() ?? 0
-      ..paidAmount = (map['paidAmount'] as num?)?.toDouble() ?? 0
-      ..paymentMethod = map['paymentMethod'] as String?
-      ..customerName = map['customerName'] as String?
-      ..customerId = map['customerId'] as String?
+      ..paidAmount = (map['paidAmount'] as num?)?.toDouble() ??
+          (map['amountPaid'] as num?)?.toDouble() ??
+          0
+      ..paymentMethod = map['paymentMethod'] as String? ?? 'cash'
+      ..status = map['status'] as String? ?? 'completed'
       ..notes = map['notes'] as String?
-      ..soldBy = map['soldBy'] as String?
-      ..isComplete = map['isComplete'] as bool? ?? true
-      ..createdAt = map['createdAt'] != null
-          ? DateTime.parse(map['createdAt'] as String)
-          : null
-      ..updatedAt = map['updatedAt'] != null
-          ? DateTime.parse(map['updatedAt'] as String)
-          : null
       ..localUpdatedAt = DateTime.now();
+    return collection;
   }
 
-  /// Converts to a map.
-  Map<String, dynamic> toMap() {
-    return {
-      'id': remoteId,
-      'localId': localId,
-      'enterpriseId': enterpriseId,
-      'saleDate': saleDate.toIso8601String(),
-      'totalAmount': totalAmount,
-      'paidAmount': paidAmount,
-      'paymentMethod': paymentMethod,
-      'customerName': customerName,
-      'customerId': customerId,
-      'notes': notes,
-      'soldBy': soldBy,
-      'isComplete': isComplete,
-      'createdAt': createdAt?.toIso8601String(),
-      'updatedAt': updatedAt?.toIso8601String(),
-    };
-  }
+  Map<String, dynamic> toMap() => {
+        'id': remoteId ?? localId,
+        'localId': localId,
+        'enterpriseId': enterpriseId,
+        'customerId': customerId,
+        'customerName': customerName,
+        'saleDate': saleDate.toIso8601String(),
+        'date': saleDate.toIso8601String(),
+        'totalAmount': totalAmount,
+        'paidAmount': paidAmount,
+        'paymentMethod': paymentMethod,
+        'status': status,
+        'notes': notes,
+      };
 
-  /// Remaining balance for partial payments.
-  double get balance => totalAmount - paidAmount;
-
-  /// Whether the sale is fully paid.
-  bool get isFullyPaid => paidAmount >= totalAmount;
-
-  /// Whether this is a credit sale.
-  bool get isCredit => paymentMethod == 'credit' || !isFullyPaid;
+  double get remainingAmount => totalAmount - paidAmount;
+  bool get isPaid => paidAmount >= totalAmount;
 }
 
-/// Isar collection for sale items (line items).
-@collection
+/// Stub SaleItemCollection.
 class SaleItemCollection {
-  Id id = Isar.autoIncrement;
-
-  /// Reference to the parent sale (local ID).
-  @Index()
+  int id = 0;
   late String saleLocalId;
-
-  /// Product ID.
   late String productId;
-
-  /// Product name (denormalized for offline display).
   late String productName;
+  double quantity = 0;
+  double unitPrice = 0;
+  double totalPrice = 0;
+  late DateTime localUpdatedAt;
 
-  /// Quantity sold.
-  late double quantity;
-
-  /// Unit price at time of sale.
-  late double unitPrice;
-
-  /// Total price (quantity * unitPrice).
-  late double totalPrice;
-
-  /// Unit of measurement.
-  String? unit;
-
-  /// Discount applied (if any).
-  double discount = 0;
-
-  /// Notes for this item.
-  String? notes;
-
-  /// Creates an empty collection instance.
   SaleItemCollection();
 
-  /// Creates from a map.
+  /// Creates a SaleItemCollection from a map.
   factory SaleItemCollection.fromMap(
     Map<String, dynamic> map, {
     required String saleLocalId,
   }) {
-    return SaleItemCollection()
+    final collection = SaleItemCollection()
       ..saleLocalId = saleLocalId
-      ..productId = map['productId'] as String
-      ..productName = map['productName'] as String
-      ..quantity = (map['quantity'] as num).toDouble()
-      ..unitPrice = (map['unitPrice'] as num).toDouble()
-      ..totalPrice = (map['totalPrice'] as num).toDouble()
-      ..unit = map['unit'] as String?
-      ..discount = (map['discount'] as num?)?.toDouble() ?? 0
-      ..notes = map['notes'] as String?;
+      ..productId = map['productId'] as String? ?? ''
+      ..productName = map['productName'] as String? ?? ''
+      ..quantity = (map['quantity'] as num?)?.toDouble() ?? 0
+      ..unitPrice = (map['unitPrice'] as num?)?.toDouble() ?? 0
+      ..totalPrice = (map['totalPrice'] as num?)?.toDouble() ?? 0
+      ..localUpdatedAt = DateTime.now();
+    return collection;
   }
 
-  /// Converts to a map.
-  Map<String, dynamic> toMap() {
-    return {
-      'productId': productId,
-      'productName': productName,
-      'quantity': quantity,
-      'unitPrice': unitPrice,
-      'totalPrice': totalPrice,
-      'unit': unit,
-      'discount': discount,
-      'notes': notes,
-    };
-  }
+  Map<String, dynamic> toMap() => {
+        'productId': productId,
+        'productName': productName,
+        'quantity': quantity,
+        'unitPrice': unitPrice,
+        'totalPrice': totalPrice,
+      };
 }

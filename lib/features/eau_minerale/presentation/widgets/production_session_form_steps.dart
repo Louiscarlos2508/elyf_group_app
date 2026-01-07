@@ -8,10 +8,9 @@ import '../../domain/entities/machine.dart';
 import '../../domain/entities/production_day.dart';
 import '../../domain/entities/production_session.dart';
 import '../../domain/entities/production_session_status.dart';
-import '../screens/sections/production_session_detail_screen.dart'
-    show productionSessionDetailProvider;
 import 'bobine_installation_form.dart';
 import 'bobine_usage_form_field.dart' show bobineStocksDisponiblesProvider;
+import 'daily_personnel_form.dart';
 import 'machine_breakdown_dialog.dart';
 import 'machine_selector_field.dart';
 import 'production_session_form_steps/production_session_form_helpers.dart';
@@ -81,9 +80,7 @@ class ProductionSessionFormStepsState
 
   /// Vérifie l'état de chaque machine sélectionnée et charge les bobines appropriées.
   /// 
-  /// Pour chaque machine sélectionnée :
-  /// - Si la machine a une bobine non finie dans une session précédente → réutiliser (pas de décrémentation)
-  /// - Si la machine n'a pas de bobine non finie → installer une nouvelle bobine (décrémentation)
+  /// Utilise ProductionService pour charger les bobines non finies.
   Future<void> _chargerBobinesNonFinies() async {
     if (_machinesSelectionnees.isEmpty) {
       setState(() {
@@ -99,110 +96,22 @@ class ProductionSessionFormStepsState
       
       // Récupérer les machines et les stocks pour les noms et types disponibles
       final machines = await ref.read(machinesProvider.future);
-      final machinesMap = <String, Machine>{for (var m in machines) m.id: m};
       final bobineStocks = await ref.read(bobineStocksDisponiblesProvider.future);
       
-      // Map pour stocker les bobines non finies trouvées par machine
-      final Map<String, BobineUsage> bobinesNonFiniesParMachine = {};
-      
-      // Parcourir TOUTES les sessions de la plus récente à la plus ancienne
-      // pour vérifier l'état de chaque machine sélectionnée
-      final sessionsTriees = sessions.toList()
-        ..sort((a, b) => b.date.compareTo(a.date));
-      
-      debugPrint('Vérification de l\'état de ${_machinesSelectionnees.length} machines sélectionnées');
-      
-      // Pour chaque machine sélectionnée, vérifier si elle a une bobine non finie
-      for (final machineId in _machinesSelectionnees) {
-        // Chercher dans toutes les sessions si cette machine a une bobine non finie
-        for (final session in sessionsTriees) {
-          // Chercher une bobine non finie sur cette machine
-          try {
-            final bobineNonFinie = session.bobinesUtilisees.firstWhere(
-              (b) => b.machineId == machineId && !b.estFinie,
-            );
-            
-            // Si on trouve une bobine non finie pour cette machine, la stocker et arrêter
-            bobinesNonFiniesParMachine[machineId] = bobineNonFinie;
-            debugPrint('✓ Machine ${machinesMap[machineId]?.nom ?? machineId} a une bobine non finie: ${bobineNonFinie.bobineType}');
-            break; // Une machine ne peut avoir qu'une bobine à la fois
-          } catch (_) {
-            // Pas de bobine non finie trouvée dans cette session, continuer
-          }
-        }
-      }
-      
-      debugPrint('Machines avec bobines non finies: ${bobinesNonFiniesParMachine.length}/${_machinesSelectionnees.length}');
-      
-      // Vérifier que toutes les machines sélectionnées ont été traitées
-      for (final machineId in _machinesSelectionnees) {
-        if (bobinesNonFiniesParMachine.containsKey(machineId)) {
-          final bobine = bobinesNonFiniesParMachine[machineId]!;
-          debugPrint('  ✓ Machine ${machinesMap[machineId]?.nom ?? machineId}: bobine ${bobine.bobineType} (non finie)');
-        } else {
-          debugPrint('  → Machine ${machinesMap[machineId]?.nom ?? machineId}: nouvelle bobine nécessaire');
-        }
-      }
-      
-      // Stocker les machines avec bobines non finies pour affichage
-      setState(() {
-        _machinesAvecBobineNonFinie = bobinesNonFiniesParMachine;
-      });
-
-      // Identifier les machines qui ont déjà une bobine dans la liste actuelle
-      final machinesAvecBobine = _bobinesUtilisees.map((b) => b.machineId).toSet();
-      
-      // Construire la nouvelle liste des bobines utilisées
-      final nouvellesBobines = <BobineUsage>[];
-      
-      // Conserver les bobines existantes qui sont toujours sur des machines sélectionnées
-      for (final bobineExistante in _bobinesUtilisees) {
-        if (_machinesSelectionnees.contains(bobineExistante.machineId)) {
-          nouvellesBobines.add(bobineExistante);
-        }
-      }
-      
-      // Pour chaque machine sélectionnée, déterminer quelle bobine utiliser
-      for (final machineId in _machinesSelectionnees) {
-        // Si cette machine a déjà une bobine dans la liste actuelle, on la garde
-        if (machinesAvecBobine.contains(machineId)) {
-          continue;
-        }
-        
-        final machine = machinesMap[machineId];
-        if (machine == null) continue;
-        
-        // Vérifier l'état de la machine : a-t-elle une bobine non finie ?
-        if (bobinesNonFiniesParMachine.containsKey(machineId)) {
-          // Machine avec bobine non finie : réutiliser (pas de décrémentation)
-          final bobineNonFinie = bobinesNonFiniesParMachine[machineId]!;
-          final maintenant = DateTime.now();
-          nouvellesBobines.add(bobineNonFinie.copyWith(
-            dateInstallation: maintenant,
-            heureInstallation: maintenant,
-          ));
-          debugPrint('→ Machine ${machine.nom}: réutilisation bobine ${bobineNonFinie.bobineType} (non finie)');
-        } else if (bobineStocks.isNotEmpty) {
-          // Machine sans bobine non finie : installer une nouvelle bobine (décrémentation)
-          final bobineStock = bobineStocks.first;
-          final maintenant = DateTime.now();
-          final nouvelleBobineUsage = BobineUsage(
-            bobineType: bobineStock.type,
-            machineId: machineId,
-            machineName: machine.nom,
-            dateInstallation: maintenant,
-            heureInstallation: maintenant,
-            estInstallee: true,
-            estFinie: false,
-          );
-          nouvellesBobines.add(nouvelleBobineUsage);
-          debugPrint('→ Machine ${machine.nom}: nouvelle bobine ${bobineStock.type} (décrémentation nécessaire)');
-        }
-      }
+      // Utiliser ProductionService pour charger les bobines non finies
+      final productionService = ref.read(productionServiceProvider);
+      final result = await productionService.chargerBobinesNonFinies(
+        machinesSelectionnees: _machinesSelectionnees,
+        sessionsPrecedentes: sessions.toList(),
+        machines: machines,
+        bobineStocksDisponibles: bobineStocks,
+        // Bobines are managed separately
+      );
 
       // Mettre à jour la liste des bobines utilisées
       setState(() {
-        _bobinesUtilisees = nouvellesBobines;
+        _bobinesUtilisees = result.bobinesUtilisees;
+        _machinesAvecBobineNonFinie = result.machinesAvecBobineNonFinie;
       });
       
       debugPrint('Bobines assignées: ${_bobinesUtilisees.length} pour ${_machinesSelectionnees.length} machines');
@@ -474,25 +383,18 @@ class ProductionSessionFormStepsState
 
   /// Calcule le statut de progression basé sur les données saisies
   ProductionSessionStatus _calculateStatus() {
-    // Si quantité produite > 0 et heure fin > heure début, la production est terminée
-    final quantite = int.tryParse(_quantiteController.text) ?? 0;
-    // Le statut completed sera défini lors de la finalisation avec heureFin
-    if (quantite > 0 && widget.session?.heureFin != null) {
-      return ProductionSessionStatus.completed;
-    }
+    // Utiliser ProductionService pour calculer le statut
+    final productionService = ref.read(productionServiceProvider);
+    final quantiteProduite = int.tryParse(_quantiteController.text) ?? 0;
+    final heureFin = widget.session?.heureFin;
     
-    // Si machines ou bobines sont sélectionnées, la production est en cours
-    if (_machinesSelectionnees.isNotEmpty || _bobinesUtilisees.isNotEmpty) {
-      return ProductionSessionStatus.inProgress;
-    }
-    
-    // Si heure début est définie et dans le passé, la production est démarrée
-    if (_heureDebut.isBefore(DateTime.now())) {
-      return ProductionSessionStatus.started;
-    }
-    
-    // Sinon, c'est un brouillon
-    return ProductionSessionStatus.draft;
+    return productionService.calculateStatus(
+      quantiteProduite: quantiteProduite,
+      heureFin: heureFin,
+      heureDebut: _heureDebut,
+      machinesUtilisees: _machinesSelectionnees,
+      bobinesUtilisees: _bobinesUtilisees,
+    );
   }
 
 
@@ -522,7 +424,7 @@ class ProductionSessionFormStepsState
           bobinesUtilisees: _bobinesUtilisees,
           machinesAvecBobineNonFinie: _machinesAvecBobineNonFinie,
           indexCompteurInitialController: _indexCompteurInitialController,
-          onDateSelected: (date) => setState(() => _selectedDate = date),
+          onDateChanged: (date) => setState(() => _selectedDate = date),
           onHeureDebutChanged: (heure) => setState(() => _heureDebut = heure),
           onMachinesChanged: (machines) async {
             setState(() => _machinesSelectionnees = machines);

@@ -37,10 +37,68 @@ import '../domain/repositories/point_of_sale_repository.dart';
 import '../domain/repositories/tour_repository.dart';
 import '../domain/services/data_consistency_service.dart';
 import '../domain/services/financial_calculation_service.dart';
+import '../domain/services/gaz_calculation_service.dart' as gaz_calc;
 import '../domain/services/realtime_sync_service.dart';
 import '../domain/services/stock_service.dart';
 import '../domain/services/tour_service.dart';
 import '../domain/services/transaction_service.dart';
+
+/// Provider for GazDashboardCalculationService.
+final gazDashboardCalculationServiceProvider =
+    Provider<GazDashboardCalculationService>(
+  (ref) => GazDashboardCalculationService(),
+);
+
+/// Service for Gaz dashboard calculations.
+///
+/// Wraps static methods from [gaz_calc.GazCalculationService] for dependency
+/// injection and testability.
+class GazDashboardCalculationService {
+  /// Calculates today's sales.
+  List<GasSale> calculateTodaySales(List<GasSale> sales) =>
+      gaz_calc.GazCalculationService.calculateTodaySales(sales);
+
+  /// Calculates today's revenue.
+  double calculateTodayRevenue(List<GasSale> sales) =>
+      gaz_calc.GazCalculationService.calculateTodayRevenue(sales);
+
+  /// Calculates average ticket.
+  double calculateAverageTicket(List<GasSale> sales) {
+    final count = sales.length;
+    if (count == 0) return 0;
+    final revenue = sales.fold<double>(0, (sum, s) => sum + s.totalAmount);
+    return revenue / count;
+  }
+
+  /// Calculates today's metrics for dashboard.
+  GazDashboardTodayMetrics calculateTodayMetrics(List<GasSale> allSales) {
+    final todaySales = gaz_calc.GazCalculationService.calculateTodaySales(
+      allSales,
+    );
+    final revenue = todaySales.fold<double>(0, (sum, s) => sum + s.totalAmount);
+    final count = todaySales.length;
+    final avgTicket = count > 0 ? revenue / count : 0.0;
+
+    return GazDashboardTodayMetrics(
+      revenue: revenue,
+      salesCount: count,
+      averageTicket: avgTicket,
+    );
+  }
+}
+
+/// Today's dashboard metrics for Gaz.
+class GazDashboardTodayMetrics {
+  const GazDashboardTodayMetrics({
+    required this.revenue,
+    required this.salesCount,
+    required this.averageTicket,
+  });
+
+  final double revenue;
+  final int salesCount;
+  final double averageTicket;
+}
 
 // Repositories
 final gasRepositoryProvider = Provider<GasRepository>((ref) {

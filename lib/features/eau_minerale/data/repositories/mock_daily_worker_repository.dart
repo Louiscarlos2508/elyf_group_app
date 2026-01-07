@@ -1,6 +1,6 @@
 import '../../domain/entities/daily_worker.dart';
 import '../../domain/repositories/daily_worker_repository.dart';
-import '../services/daily_worker_storage_service.dart';
+import '../../domain/services/daily_worker_storage_service.dart';
 
 /// Repository mock pour les ouvriers journaliers.
 /// Utilise DailyWorkerStorageService pour le stockage persistant.

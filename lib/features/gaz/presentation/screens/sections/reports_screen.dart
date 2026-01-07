@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../../shared/presentation/widgets/refresh_button.dart';
+import '../../../../shared.dart';
 import '../../../application/providers.dart';
 import '../../../domain/entities/report_data.dart';
 import '../../widgets/expenses_report_content_v2.dart';

@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../application/providers.dart';
 import '../../domain/entities/production_payment_person.dart';
+import '../../domain/services/production_payment_calculation_service.dart';
 
 /// Row widget for editing a production payment person.
-class ProductionPaymentPersonRow extends StatefulWidget {
+class ProductionPaymentPersonRow extends ConsumerStatefulWidget {
   const ProductionPaymentPersonRow({
     super.key,
     required this.person,
@@ -16,12 +19,12 @@ class ProductionPaymentPersonRow extends StatefulWidget {
   final VoidCallback onRemove;
 
   @override
-  State<ProductionPaymentPersonRow> createState() =>
+  ConsumerState<ProductionPaymentPersonRow> createState() =>
       _ProductionPaymentPersonRowState();
 }
 
 class _ProductionPaymentPersonRowState
-    extends State<ProductionPaymentPersonRow> {
+    extends ConsumerState<ProductionPaymentPersonRow> {
   late final TextEditingController _nameController;
   late final TextEditingController _pricePerDayController;
   late final TextEditingController _daysController;
@@ -36,8 +39,8 @@ class _ProductionPaymentPersonRowState
     _daysController =
         TextEditingController(text: widget.person.daysWorked.toString());
     _totalController = TextEditingController(
-      text: widget.person.totalAmount > 0
-          ? widget.person.totalAmount.toString()
+      text: widget.person.effectiveTotalAmount > 0
+          ? widget.person.effectiveTotalAmount.toString()
           : '',
     );
 
@@ -61,16 +64,21 @@ class _ProductionPaymentPersonRowState
     final pricePerDay = int.tryParse(_pricePerDayController.text) ?? 0;
     final days = int.tryParse(_daysController.text) ?? 0;
 
-    final total = pricePerDay * days;
-    if (total > 0 && _totalController.text != total.toString()) {
-      _totalController.text = total.toString();
+    // Utiliser le service de calcul pour extraire la logique métier
+    final calculationService = ref.read(productionPaymentCalculationServiceProvider);
+    final updatedPerson = calculationService.updatePersonCalculations(
+      person: widget.person,
+      newPricePerDay: pricePerDay,
+      newDaysWorked: days,
+    );
+
+    // Mettre à jour le champ total si calculé automatiquement
+    if (updatedPerson.effectiveTotalAmount > 0 &&
+        _totalController.text != updatedPerson.effectiveTotalAmount.toString()) {
+      _totalController.text = updatedPerson.effectiveTotalAmount.toString();
     }
 
-    widget.onChanged(ProductionPaymentPerson(
-      name: name,
-      pricePerDay: pricePerDay,
-      daysWorked: days,
-    ));
+    widget.onChanged(updatedPerson.copyWith(name: name));
   }
 
   void _updateTotal() {
@@ -78,10 +86,24 @@ class _ProductionPaymentPersonRowState
     final days = int.tryParse(_daysController.text) ?? 0;
 
     if (total > 0 && days > 0) {
-      final pricePerDay = (total / days).round();
-      if (_pricePerDayController.text != pricePerDay.toString()) {
-        _pricePerDayController.text = pricePerDay.toString();
+      // Utiliser le service de calcul pour extraire la logique métier
+      final calculationService = ref.read(productionPaymentCalculationServiceProvider);
+      final calculatedPricePerDay = calculationService.calculatePricePerDay(
+        totalAmount: total,
+        daysWorked: days,
+      );
+
+      if (_pricePerDayController.text != calculatedPricePerDay.toString()) {
+        _pricePerDayController.text = calculatedPricePerDay.toString();
       }
+
+      // Mettre à jour la personne avec le nouveau calcul
+      final updatedPerson = calculationService.updatePersonCalculations(
+        person: widget.person,
+        newTotalAmount: total,
+        newDaysWorked: days,
+      );
+      widget.onChanged(updatedPerson);
     }
   }
 

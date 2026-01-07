@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../../../../shared/utils/currency_formatter.dart';
+import '../../../../../shared.dart';
 import '../../../../domain/entities/expense.dart';
 import '../../../widgets/expenses_empty_state.dart';
 

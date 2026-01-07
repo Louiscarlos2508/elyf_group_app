@@ -1,6 +1,6 @@
 import '../../domain/entities/payment.dart';
 import '../../domain/repositories/payment_repository.dart';
-import '../services/immobilier_validation_service.dart';
+import '../../domain/services/immobilier_validation_service.dart';
 
 class PaymentController {
   PaymentController(

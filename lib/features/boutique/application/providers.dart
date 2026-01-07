@@ -1,11 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../data/repositories/mock_expense_repository.dart';
-import '../data/repositories/mock_product_repository.dart';
+import '../../../core/offline/isar_service.dart';
+import '../../../core/offline/providers.dart';
+import '../../../../core/tenant/tenant_provider.dart';
+import '../data/repositories/expense_offline_repository.dart';
 import '../data/repositories/mock_purchase_repository.dart';
 import '../data/repositories/mock_report_repository.dart';
-import '../data/repositories/mock_sale_repository.dart';
 import '../data/repositories/mock_stock_repository.dart';
+import '../data/repositories/product_offline_repository.dart';
+import '../data/repositories/sale_offline_repository.dart';
 import '../domain/adapters/expense_balance_adapter.dart';
 import '../domain/entities/report_data.dart';
 import '../domain/repositories/expense_repository.dart';
@@ -15,14 +18,66 @@ import '../domain/repositories/purchase_repository.dart';
 import '../domain/repositories/report_repository.dart';
 import '../domain/repositories/sale_repository.dart';
 import '../domain/repositories/stock_repository.dart';
+import '../domain/services/dashboard_calculation_service.dart';
+import '../domain/services/product_calculation_service.dart';
+import '../domain/services/report_calculation_service.dart';
 import 'controllers/store_controller.dart';
 
-final productRepositoryProvider = Provider<ProductRepository>(
-  (ref) => MockProductRepository(),
+/// Provider for BoutiqueDashboardCalculationService.
+final boutiqueDashboardCalculationServiceProvider =
+    Provider<BoutiqueDashboardCalculationService>(
+  (ref) => BoutiqueDashboardCalculationService(),
 );
 
+/// Provider for ProductCalculationService.
+final productCalculationServiceProvider = Provider<ProductCalculationService>(
+  (ref) => ProductCalculationService(),
+);
+
+/// Provider for BoutiqueReportCalculationService.
+final boutiqueReportCalculationServiceProvider =
+    Provider<BoutiqueReportCalculationService>(
+  (ref) => BoutiqueReportCalculationService(),
+);
+
+/// Provider for ProductOfflineRepository.
+/// 
+/// Requires active enterprise to be set.
+final productRepositoryProvider = Provider<ProductRepository>(
+  (ref) {
+    final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+    final isarService = IsarService.instance;
+    final syncManager = ref.watch(syncManagerProvider);
+    final connectivityService = ref.watch(connectivityServiceProvider);
+    
+    return ProductOfflineRepository(
+      isarService: isarService,
+      syncManager: syncManager,
+      connectivityService: connectivityService,
+      enterpriseId: enterpriseId,
+      moduleType: 'boutique',
+    );
+  },
+);
+
+/// Provider for SaleOfflineRepository.
+/// 
+/// Requires active enterprise to be set.
 final saleRepositoryProvider = Provider<SaleRepository>(
-  (ref) => MockSaleRepository(),
+  (ref) {
+    final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+    final isarService = IsarService.instance;
+    final syncManager = ref.watch(syncManagerProvider);
+    final connectivityService = ref.watch(connectivityServiceProvider);
+    
+    return SaleOfflineRepository(
+      isarService: isarService,
+      syncManager: syncManager,
+      connectivityService: connectivityService,
+      enterpriseId: enterpriseId,
+      moduleType: 'boutique',
+    );
+  },
 );
 
 final stockRepositoryProvider = Provider<StockRepository>(
@@ -33,8 +88,24 @@ final purchaseRepositoryProvider = Provider<PurchaseRepository>(
   (ref) => MockPurchaseRepository(),
 );
 
+/// Provider for ExpenseOfflineRepository.
+/// 
+/// Requires active enterprise to be set.
 final expenseRepositoryProvider = Provider<ExpenseRepository>(
-  (ref) => MockExpenseRepository(),
+  (ref) {
+    final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+    final isarService = IsarService.instance;
+    final syncManager = ref.watch(syncManagerProvider);
+    final connectivityService = ref.watch(connectivityServiceProvider);
+    
+    return ExpenseOfflineRepository(
+      isarService: isarService,
+      syncManager: syncManager,
+      connectivityService: connectivityService,
+      enterpriseId: enterpriseId,
+      moduleType: 'boutique',
+    );
+  },
 );
 
 final reportRepositoryProvider = Provider<ReportRepository>(

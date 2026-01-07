@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../../shared/utils/date_formatter.dart';
+import '../../../../shared.dart';
 
 /// Professional dashboard header with date and role.
 class GazDashboardHeader extends StatelessWidget {

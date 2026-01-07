@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../domain/permissions/eau_minerale_permissions.dart';
+import '../../../../core.dart';
 import '../../widgets/centralized_permission_guard.dart';
 import '../../widgets/electricity_meter_config_card.dart';
 import '../../widgets/machine_breakdown_report_card.dart';

@@ -5,7 +5,7 @@ import 'isar_service.dart';
 import 'sync_manager.dart';
 import 'sync_status.dart';
 
-/// Provider for the Isar service singleton.
+/// Provider for the Isar service singleton (stub).
 final isarServiceProvider = Provider<IsarService>((ref) {
   return IsarService.instance;
 });
@@ -34,7 +34,7 @@ final isOnlineProvider = Provider<bool>((ref) {
   );
 });
 
-/// Provider for the sync manager.
+/// Provider for the sync manager (stub).
 final syncManagerProvider = Provider<SyncManager>((ref) {
   final isarService = ref.watch(isarServiceProvider);
   final connectivityService = ref.watch(connectivityServiceProvider);
@@ -73,7 +73,6 @@ final isSyncingProvider = Provider<bool>((ref) {
 class OfflineModeNotifier extends Notifier<bool> {
   @override
   bool build() {
-    // Check initial connectivity
     final isOnline = ref.watch(isOnlineProvider);
     return !isOnline;
   }
@@ -88,18 +87,11 @@ class OfflineModeNotifier extends Notifier<bool> {
 final offlineModeProvider =
     NotifierProvider<OfflineModeNotifier, bool>(OfflineModeNotifier.new);
 
-/// Provider for sync metadata for a specific entity.
+/// Provider for sync metadata for a specific entity (stub returns null).
 final syncMetadataProvider =
     FutureProvider.family<SyncMetadata?, (String, String)>((ref, params) async {
-  final (collectionName, localId) = params;
-  final isar = ref.watch(isarServiceProvider).isar;
-
-  return isar.syncMetadatas
-      .filter()
-      .collectionNameEqualTo(collectionName)
-      .and()
-      .localIdEqualTo(localId)
-      .findFirst();
+  // Stub: return null since Isar is disabled
+  return null;
 });
 
 /// Actions provider for triggering sync operations.

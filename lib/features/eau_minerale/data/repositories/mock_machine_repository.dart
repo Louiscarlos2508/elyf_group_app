@@ -1,6 +1,6 @@
 import '../../domain/entities/machine.dart';
 import '../../domain/repositories/machine_repository.dart';
-import '../services/machine_storage_service.dart';
+import '../../domain/services/machine_storage_service.dart';
 
 /// Repository mock pour les machines.
 /// Utilise MachineStorageService pour le stockage persistant.

@@ -109,6 +109,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
     try {
       final authService = ref.read(authServiceProvider);
+      
+      // Initialiser le service avant de l'utiliser
+      await authService.initialize();
+      
       final email = _emailController.text.trim();
       final password = _passwordController.text.trim();
 
@@ -130,10 +134,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       
       setState(() => _isLoading = false);
       
+      // Afficher un message d'erreur plus clair
+      final errorMessage = e.toString().replaceAll('Exception: ', '');
+      
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Erreur de connexion: ${e.toString()}'),
+          content: Text('Erreur de connexion: $errorMessage'),
           backgroundColor: Theme.of(context).colorScheme.error,
+          duration: const Duration(seconds: 5),
         ),
       );
     }

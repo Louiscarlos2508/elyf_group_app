@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../../domain/entities/bobine_usage.dart';
+import '../../../domain/entities/bobine_usage.dart';
 import 'production_session_form_helpers.dart';
 
 /// Widget d'alerte pour informer l'utilisateur des machines avec bobines non finies.

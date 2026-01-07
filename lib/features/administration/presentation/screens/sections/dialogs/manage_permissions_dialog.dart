@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../../../core/auth/entities/enterprise_module_user.dart';
+import '../../../../../core.dart';
 import '../../../../application/providers.dart';
 
 /// Dialogue pour gérer les permissions personnalisées d'un utilisateur.

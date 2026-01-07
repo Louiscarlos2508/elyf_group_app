@@ -2,8 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../../../../shared/presentation/widgets/module_loading_animation.dart';
-import '../../../../shared/presentation/widgets/profile/profile_screen.dart';
+import '../../../../shared.dart';
 
 class ModuleHomeScaffold extends StatefulWidget {
   const ModuleHomeScaffold({

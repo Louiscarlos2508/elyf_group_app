@@ -2,13 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/domain/entities/attached_file.dart';
-import '../../../../shared/presentation/widgets/file_attachment_field.dart';
+import '../../../../shared.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/contract.dart';
 import '../../domain/entities/property.dart';
 import '../../domain/entities/tenant.dart';
 import 'contract_form_fields.dart';
-import '../../../../shared/presentation/widgets/form_dialog.dart';
 
 class ContractFormDialog extends ConsumerStatefulWidget {
   const ContractFormDialog({

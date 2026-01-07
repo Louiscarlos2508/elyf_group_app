@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/expense.dart';
 import '../../domain/entities/report_data.dart';
-import '../../../../shared/utils/currency_formatter.dart';
+import '../../../../shared.dart';
 
 /// Content widget for expenses report tab - style eau_minerale.
 class GazExpensesReportContentV2 extends ConsumerWidget {

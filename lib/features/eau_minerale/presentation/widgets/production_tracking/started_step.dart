@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../domain/entities/production_session.dart';
+import '../../../domain/entities/production_session.dart';
 import 'info_row.dart';
 import 'tracking_helpers.dart';
 import 'tracking_actions.dart';

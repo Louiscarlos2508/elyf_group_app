@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../shared/presentation/widgets/adaptive_navigation_scaffold.dart';
-import '../../../../shared/presentation/widgets/module_loading_animation.dart';
+import '../../../../shared.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/eau_minerale_section.dart';
 

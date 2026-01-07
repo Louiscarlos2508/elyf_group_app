@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../../shared/utils/currency_formatter.dart';
+import '../../../../shared.dart';
 import '../../domain/entities/cylinder.dart';
 
 /// Card displaying a cylinder for sale - matches Figma design.

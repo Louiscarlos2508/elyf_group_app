@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../../../../shared/utils/currency_formatter.dart';
+import '../../../../shared.dart';
 
 /// Item de dépense pour l'étape de clôture.
 class ClosureExpenseItem extends StatelessWidget {

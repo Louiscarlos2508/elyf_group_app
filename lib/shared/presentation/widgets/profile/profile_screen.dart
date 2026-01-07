@@ -5,7 +5,7 @@ import 'profile_logout_card.dart';
 import 'profile_personal_info_card.dart';
 import 'profile_security_card.dart';
 import 'profile_security_note_card.dart';
-import '../../../../core/entities/user_profile.dart';
+import '../../../../core/domain/entities/user_profile.dart';
 
 /// Reusable profile screen for all modules.
 class ProfileScreen extends ConsumerWidget {

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../domain/entities/production_day.dart';
-import '../../../../domain/entities/production_session.dart';
+import '../../../domain/entities/production_day.dart';
+import '../../../domain/entities/production_session.dart';
+import '../../../domain/entities/bobine_usage.dart';
 import '../../../application/providers.dart';
-import '../../daily_personnel_form.dart';
+import '../daily_personnel_form.dart';
 import 'production_session_form_helpers.dart';
 
 /// Section pour gérer le personnel journalier.
@@ -115,7 +117,7 @@ class PersonnelSection extends ConsumerWidget {
           heureDebut: selectedDate,
           consommationCourant: 0,
           machinesUtilisees: machinesSelectionnees,
-          bobinesUtilisees: bobinesUtilisees,
+          bobinesUtilisees: bobinesUtilisees.cast<BobineUsage>(),
           quantiteProduite: 0,
           quantiteProduiteUnite: 'pack',
           productionDays: productionDays,

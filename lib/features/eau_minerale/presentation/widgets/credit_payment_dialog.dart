@@ -5,7 +5,7 @@ import 'package:open_file/open_file.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/credit_payment.dart';
 import '../../domain/entities/sale.dart';
-import 'invoice_print_service.dart';
+import 'invoice_print/invoice_print_service.dart';
 
 /// Dialog for recording a credit payment.
 class CreditPaymentDialog extends ConsumerStatefulWidget {

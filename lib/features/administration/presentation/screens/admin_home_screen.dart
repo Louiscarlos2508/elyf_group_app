@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../shared/presentation/widgets/adaptive_navigation_scaffold.dart';
+import '../../../../core/auth/providers.dart' show authServiceProvider, currentUserProvider, currentUserIdProvider;
+import '../../../../shared.dart';
 import 'sections/admin_dashboard_section.dart';
 import 'sections/admin_enterprises_section.dart';
 import 'sections/admin_modules_section.dart';

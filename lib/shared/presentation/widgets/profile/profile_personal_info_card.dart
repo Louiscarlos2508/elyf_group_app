@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/entities/user_profile.dart';
+import '../../../../core/domain/entities/user_profile.dart';
 
 /// Personal information card for profile screen.
 class ProfilePersonalInfoCard extends StatelessWidget {

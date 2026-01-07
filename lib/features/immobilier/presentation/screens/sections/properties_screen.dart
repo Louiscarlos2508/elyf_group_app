@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:open_file/open_file.dart';
 
-import '../../../../../core/pdf/immobilier_stock_report_pdf_service.dart';
-import '../../../../../shared/presentation/widgets/refresh_button.dart';
+import '../../../../core.dart';
+import '../../../../shared.dart';
 import '../../../application/providers.dart';
 import '../../../domain/entities/property.dart';
 import '../../widgets/property_detail_dialog.dart';

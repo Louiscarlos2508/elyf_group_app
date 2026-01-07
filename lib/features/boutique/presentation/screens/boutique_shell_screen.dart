@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../shared/presentation/widgets/base_module_shell_screen.dart';
-import '../../../../shared/presentation/widgets/module_loading_animation.dart';
-import '../../../../shared/presentation/widgets/profile/profile_screen.dart' as shared;
+import '../../../../shared.dart';
 import 'sections/catalog_screen.dart';
 import 'sections/dashboard_screen.dart';
 import 'sections/expenses_screen.dart';

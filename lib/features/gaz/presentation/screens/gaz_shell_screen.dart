@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../shared/presentation/widgets/adaptive_navigation_scaffold.dart';
-import '../../../../shared/presentation/widgets/base_module_shell_screen.dart';
+import '../../../../shared.dart';
 import 'sections/approvisionnement_screen.dart';
 import 'sections/cylinder_leak_screen.dart';
 import 'sections/dashboard_screen.dart';

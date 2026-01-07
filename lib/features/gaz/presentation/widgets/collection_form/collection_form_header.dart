@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../../shared/presentation/widgets/form_dialog_header.dart';
+import '../../../../shared.dart';
 
 /// En-tête du formulaire de collecte.
 class CollectionFormHeader extends StatelessWidget {

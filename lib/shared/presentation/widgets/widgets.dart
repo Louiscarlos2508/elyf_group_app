@@ -1,0 +1,49 @@
+// Barrel file for shared presentation widgets
+// This file exports commonly used shared widgets to reduce import depth
+
+// Core widgets
+export 'adaptive_navigation_scaffold.dart';
+export 'auth_guard.dart';
+export 'base_module_shell_screen.dart';
+export 'enterprise_selector_widget.dart';
+export 'form_dialog.dart';
+export 'form_dialog_actions.dart';
+export 'form_dialog_header.dart';
+export 'refresh_button.dart';
+export 'sync_status_indicator.dart';
+
+// Form fields
+export 'form_fields/amount_input_field.dart';
+export 'form_fields/category_selector_field.dart';
+export 'form_fields/customer_form_fields.dart';
+export 'form_fields/date_picker_field.dart';
+
+// Expense widgets
+export 'expense_form_dialog.dart';
+export 'expense_balance_chart.dart';
+export 'expense_balance_filters.dart';
+export 'expense_balance_summary.dart';
+export 'expense_balance_table.dart';
+
+// File and attachment widgets
+export 'attached_file_item.dart';
+export 'file_attachment_field.dart';
+
+// Print widgets
+export 'print_receipt_button.dart';
+
+// Stock widgets
+export 'stock_report_summary.dart';
+export 'stock_report_table.dart';
+
+// Other widgets
+export 'gaz_button_styles.dart';
+export 'module_loading_animation.dart';
+
+// Profile widgets
+export 'profile/profile_logout_card.dart';
+export 'profile/profile_personal_info_card.dart';
+export 'profile/profile_screen.dart';
+export 'profile/profile_security_card.dart';
+export 'profile/profile_security_note_card.dart';
+

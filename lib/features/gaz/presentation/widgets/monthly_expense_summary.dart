@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/entities/expense.dart';
-import '../../../../shared/utils/currency_formatter.dart';
+import '../../../../shared.dart';
 
 /// Résumé mensuel des dépenses avec graphique par catégorie.
 class GazMonthlyExpenseSummary extends StatelessWidget {
@@ -25,12 +25,6 @@ class GazMonthlyExpenseSummary extends StatelessWidget {
       'décembre'
     ];
     return '${months[date.month - 1]} ${date.year}';
-  }
-
-)+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        ) +
-        ' F';
   }
 
   Map<ExpenseCategory, double> _getCategoryTotals() {

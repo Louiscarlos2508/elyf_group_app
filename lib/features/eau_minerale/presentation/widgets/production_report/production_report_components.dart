@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../domain/entities/production_session_status.dart';
+import '../../../domain/entities/production_session_status.dart';
 
 /// Composants réutilisables pour les rapports de production.
 class ProductionReportComponents {

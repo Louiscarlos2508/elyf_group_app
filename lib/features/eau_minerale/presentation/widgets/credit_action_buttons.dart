@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/providers.dart';
-import '../../domain/permissions/eau_minerale_permissions.dart';
+import '../../../core.dart';
 
 /// Action buttons for credit card with permission checks.
 class CreditActionButtons extends ConsumerWidget {

@@ -1,19 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../../shared/presentation/screens/expense_balance_screen.dart';
-import '../../../../../shared/presentation/widgets/refresh_button.dart';
+import '../../../../shared.dart';
 import '../../../application/controllers/finances_controller.dart';
 import '../../../application/providers.dart';
 import '../../../domain/adapters/expense_balance_adapter.dart';
 import '../../../domain/entities/expense_record.dart';
-import '../../../domain/permissions/eau_minerale_permissions.dart';
+import '../../../../core.dart';
 import '../../widgets/centralized_permission_guard.dart';
 import '../../widgets/daily_expense_summary_card.dart';
 import '../../widgets/expense_detail_dialog.dart';
 import '../../widgets/expense_form.dart';
 import '../../widgets/expenses_table.dart';
-import '../../../../../../shared/presentation/widgets/form_dialog.dart';
+import '../../../../shared.dart';
 import '../../widgets/monthly_expense_summary.dart';
 import '../../widgets/section_placeholder.dart';
 

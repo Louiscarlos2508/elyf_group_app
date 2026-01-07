@@ -18,7 +18,7 @@ class ProductionPaymentTotalSummary extends StatelessWidget {
         ) + ' FCFA';
   }
 
-  int get _totalAmount => persons.fold(0, (sum, p) => sum + p.totalAmount);
+  int get _totalAmount => persons.fold(0, (sum, p) => sum + p.effectiveTotalAmount);
 
   @override
   Widget build(BuildContext context) {

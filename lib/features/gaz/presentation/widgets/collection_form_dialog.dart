@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../shared/presentation/widgets/form_dialog_actions.dart';
+import '../../../../shared.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/collection.dart';
 import '../../domain/entities/tour.dart';

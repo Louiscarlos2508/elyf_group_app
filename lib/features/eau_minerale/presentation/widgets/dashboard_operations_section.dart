@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/controllers/finances_controller.dart' show FinancesState;
+import '../../application/providers.dart';
+import '../../domain/services/dashboard_calculation_service.dart';
 import 'dashboard_kpi_card.dart';
 
 /// Section displaying operations KPIs.
 /// TODO: Réimplémenter avec productionSessionsStateProvider
-class DashboardOperationsSection extends StatelessWidget {
+class DashboardOperationsSection extends ConsumerWidget {
   const DashboardOperationsSection({
     super.key,
     required this.productionState,
@@ -29,19 +31,25 @@ class DashboardOperationsSection extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     // TODO: Réimplémenter avec les sessions de production
     return financesState.when(
       data: (finances) {
+        final calculationService = ref.read(dashboardCalculationServiceProvider);
         final now = DateTime.now();
-        final monthStart = DateTime(now.year, now.month, 1);
+        final monthStart = calculationService.getMonthStart(now);
         // TODO: Calculer avec les sessions de production
         final monthProduction = 0;
         final monthProductions = <dynamic>[];
-          final monthExpenses = finances.expenses
-              .where((e) => e.date.isAfter(monthStart))
-              .fold(0, (sum, e) => sum + e.amountCfa);
-          final monthSalaries = 0; // TODO: Add salaries
+        final monthExpenses = calculationService.calculateMonthlyExpensesFromRecords(
+          finances.expenses,
+          monthStart,
+        );
+        final monthSalaries = 0; // TODO: Add salaries
+        final expensesCount = calculationService.countMonthlyExpensesFromRecords(
+          finances.expenses,
+          monthStart,
+        );
 
           return LayoutBuilder(
             builder: (context, constraints) {
@@ -59,7 +67,7 @@ class DashboardOperationsSection extends StatelessWidget {
                 DashboardKpiCard(
                   label: 'Dépenses',
                   value: _formatCurrency(monthExpenses),
-                  subtitle: '${finances.expenses.where((e) => e.date.isAfter(monthStart)).length} transaction',
+                  subtitle: '$expensesCount transaction',
                   icon: Icons.receipt_long,
                   iconColor: Colors.red,
                   backgroundColor: Colors.red,

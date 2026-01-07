@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../domain/entities/production_event.dart';
-import '../../../../domain/entities/production_session.dart';
-import '../../../../domain/entities/production_session_status.dart';
+import '../../../domain/entities/production_event.dart';
+import '../../../domain/entities/production_session.dart';
+import '../../../domain/entities/production_session_status.dart';
 import '../../../application/providers.dart';
-import '../../production_event_dialog.dart';
-import '../../production_finalization_dialog.dart';
-import '../../production_resume_dialog.dart';
-import '../../../screens/sections/production_session_detail_screen.dart' show productionSessionDetailProvider;
+import '../production_event_dialog.dart';
+import '../production_finalization_dialog.dart';
+import '../production_resume_dialog.dart';
+import '../../screens/sections/production_session_detail_screen.dart' show productionSessionDetailProvider;
 
 /// Dialogs pour la gestion de la session de production.
 class SessionDialogs {

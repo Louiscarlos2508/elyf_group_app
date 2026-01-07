@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'tracking_helpers.dart';
-import '../../../../domain/entities/production_day.dart';
+import '../../../domain/entities/production_day.dart';
 
 /// Dialog de confirmation pour supprimer un jour de production.
 class PersonnelDeleteDialog {

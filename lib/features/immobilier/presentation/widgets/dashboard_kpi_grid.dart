@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../application/providers.dart';
 import '../../domain/entities/contract.dart';
 import '../../domain/entities/expense.dart';
 import '../../domain/entities/payment.dart';
@@ -8,7 +10,7 @@ import '../../domain/entities/tenant.dart';
 import 'enhanced_kpi_card.dart';
 
 /// Widget pour afficher la grille de KPIs du dashboard.
-class DashboardKpiGrid extends StatelessWidget {
+class DashboardKpiGrid extends ConsumerWidget {
   const DashboardKpiGrid({
     super.key,
     required this.properties,
@@ -32,109 +34,69 @@ class DashboardKpiGrid extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
-    final now = DateTime.now();
-    final monthStart = DateTime(now.year, now.month, 1);
-
-    // Calculs des KPIs
-    final totalProperties = properties.length;
-    final availableProperties = properties
-        .where((p) => p.status == PropertyStatus.available)
-        .length;
-    final rentedProperties = properties
-        .where((p) => p.status == PropertyStatus.rented)
-        .length;
-
-    final totalTenants = tenants.length;
-
-    final activeContracts = contracts
-        .where((c) => c.status == ContractStatus.active)
-        .toList();
-    final activeContractsCount = activeContracts.length;
-
-    // Loyers mensuels totaux (contrats actifs)
-    final totalMonthlyRent = activeContracts.fold<int>(
-      0,
-      (sum, c) => sum + c.monthlyRent,
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Utiliser le service de calcul pour extraire la logique métier
+    final calculationService = ref.read(immobilierDashboardCalculationServiceProvider);
+    final metrics = calculationService.calculateMonthlyMetrics(
+      properties: properties,
+      tenants: tenants,
+      contracts: contracts,
+      payments: payments,
+      expenses: expenses,
     );
-
-    // Paiements du mois
-    final monthPayments = payments.where((p) {
-      return p.paymentDate.isAfter(monthStart.subtract(const Duration(days: 1))) &&
-          p.status == PaymentStatus.paid;
-    }).toList();
-    final monthRevenue = monthPayments.fold<int>(
-      0,
-      (sum, p) => sum + p.amount,
-    );
-
-    // Dépenses du mois
-    final monthExpenses = expenses.where((e) {
-      return e.expenseDate.isAfter(monthStart.subtract(const Duration(days: 1)));
-    }).toList();
-    final monthExpensesTotal = monthExpenses.fold<int>(
-      0,
-      (sum, e) => sum + e.amount,
-    );
-
-    final netRevenue = monthRevenue - monthExpensesTotal;
-
-    final occupancyRate = totalProperties > 0
-        ? (rentedProperties / totalProperties) * 100
-        : 0.0;
 
     final cards = [
       EnhancedKpiCard(
         label: 'Propriétés',
-        value: totalProperties.toString(),
+        value: metrics.totalProperties.toString(),
         icon: Icons.home,
         color: Colors.blue,
       ),
       EnhancedKpiCard(
         label: 'Disponibles',
-        value: availableProperties.toString(),
+        value: metrics.availableProperties.toString(),
         icon: Icons.check_circle,
         color: Colors.green,
       ),
       EnhancedKpiCard(
         label: 'Locataires',
-        value: totalTenants.toString(),
+        value: metrics.totalTenants.toString(),
         icon: Icons.people,
         color: Colors.purple,
       ),
       EnhancedKpiCard(
         label: 'Contrats actifs',
-        value: activeContractsCount.toString(),
+        value: metrics.activeContractsCount.toString(),
         icon: Icons.description,
         color: Colors.orange,
       ),
       EnhancedKpiCard(
         label: 'Revenus du mois',
-        value: _formatCurrency(monthRevenue),
+        value: _formatCurrency(metrics.monthRevenue),
         icon: Icons.trending_up,
         color: Colors.green,
       ),
       EnhancedKpiCard(
         label: 'Dépenses du mois',
-        value: _formatCurrency(monthExpensesTotal),
+        value: _formatCurrency(metrics.monthExpensesTotal),
         icon: Icons.trending_down,
         color: Colors.red,
       ),
       EnhancedKpiCard(
         label: 'Résultat net',
-        value: _formatCurrency(netRevenue),
+        value: _formatCurrency(metrics.netRevenue),
         icon: Icons.account_balance_wallet,
-        color: netRevenue >= 0 ? Colors.green : Colors.red,
+        color: metrics.netRevenue >= 0 ? Colors.green : Colors.red,
       ),
       EnhancedKpiCard(
         label: 'Taux d\'occupation',
-        value: '${occupancyRate.toStringAsFixed(0)}%',
+        value: '${metrics.occupancyRate.toStringAsFixed(0)}%',
         icon: Icons.percent,
         color: Colors.indigo,
       ),
       EnhancedKpiCard(
         label: 'Loyers mensuels',
-        value: _formatCurrency(totalMonthlyRent),
+        value: _formatCurrency(metrics.totalMonthlyRent),
         icon: Icons.attach_money,
         color: Colors.teal,
       ),

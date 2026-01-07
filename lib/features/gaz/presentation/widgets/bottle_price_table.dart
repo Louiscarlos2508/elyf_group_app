@@ -5,7 +5,7 @@ import 'package:intl/intl.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/cylinder.dart';
 import '../../domain/entities/gaz_settings.dart';
-import '../../../../shared/presentation/widgets/gaz_button_styles.dart';
+import '../../../../shared.dart';
 import 'cylinder_form_dialog.dart';
 
 /// Tableau des tarifs des bouteilles selon le design Figma.

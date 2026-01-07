@@ -6,7 +6,8 @@ import '../../domain/repositories/product_repository.dart';
 import '../../domain/repositories/purchase_repository.dart';
 import '../../domain/repositories/report_repository.dart';
 import '../../domain/repositories/sale_repository.dart';
-import 'report_calculator.dart';
+import '../../domain/services/report_calculator.dart';
+import '../../domain/services/report_calculation_service.dart';
 
 class MockReportRepository implements ReportRepository {
   MockReportRepository(
@@ -14,12 +15,13 @@ class MockReportRepository implements ReportRepository {
     this._purchaseRepository,
     this._expenseRepository,
     this._productRepository,
-  );
+  ) : _reportCalculationService = BoutiqueReportCalculationService();
 
   final SaleRepository _saleRepository;
   final PurchaseRepository _purchaseRepository;
   final ExpenseRepository _expenseRepository;
   final ProductRepository _productRepository;
+  final BoutiqueReportCalculationService _reportCalculationService;
 
 
   @override
@@ -216,32 +218,11 @@ class MockReportRepository implements ReportRepository {
     final filteredPurchases = ReportCalculator.filterPurchases(purchases, start, end);
     final filteredExpenses = ReportCalculator.filterExpenses(expenses, start, end);
     
-    final totalRevenue = filteredSales.fold(0, (sum, s) => sum + s.totalAmount);
-    
-    // Calculate COGS (Cost of Goods Sold) from purchases
-    // For simplicity, we'll use total purchases as COGS
-    // In a real system, you'd track which products were sold and their purchase prices
-    final totalCostOfGoodsSold = filteredPurchases.fold(0, (sum, p) => sum + p.totalAmount);
-    final totalExpenses = filteredExpenses.fold(0, (sum, e) => sum + e.amountCfa);
-    
-    final grossProfit = totalRevenue - totalCostOfGoodsSold;
-    final netProfit = grossProfit - totalExpenses;
-    
-    final grossMarginPercentage = totalRevenue == 0
-        ? 0.0
-        : (grossProfit / totalRevenue) * 100;
-    final netMarginPercentage = totalRevenue == 0
-        ? 0.0
-        : (netProfit / totalRevenue) * 100;
-    
-    return ProfitReportData(
-      totalRevenue: totalRevenue,
-      totalCostOfGoodsSold: totalCostOfGoodsSold,
-      totalExpenses: totalExpenses,
-      grossProfit: grossProfit,
-      netProfit: netProfit,
-      grossMarginPercentage: grossMarginPercentage,
-      netMarginPercentage: netMarginPercentage,
+    // Use the calculation service to extract business logic
+    return _reportCalculationService.calculateProfitReportData(
+      filteredSales: filteredSales,
+      filteredPurchases: filteredPurchases,
+      filteredExpenses: filteredExpenses,
     );
   }
 

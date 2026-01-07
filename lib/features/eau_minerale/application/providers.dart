@@ -2,19 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/repositories/mock_activity_repository.dart';
-import '../data/repositories/mock_customer_repository.dart';
+import '../data/repositories/customer_offline_repository.dart';
 import '../data/repositories/mock_finance_repository.dart';
 import '../data/repositories/mock_inventory_repository.dart';
-import '../data/repositories/mock_product_repository.dart';
+import '../data/repositories/product_offline_repository.dart';
 import '../domain/services/production_period_service.dart';
 import '../domain/services/electricity_meter_config_service.dart';
 import '../domain/entities/electricity_meter_type.dart';
-import '../data/repositories/mock_production_session_repository.dart';
+export '../domain/entities/electricity_meter_type.dart';
+import '../data/repositories/production_session_offline_repository.dart';
 import '../data/repositories/mock_bobine_stock_quantity_repository.dart';
-import '../data/repositories/mock_machine_repository.dart';
+import '../data/repositories/machine_offline_repository.dart';
+import '../../../../core/offline/isar_service.dart';
+import '../../../../core/offline/providers.dart';
+import '../../../../core/tenant/tenant_provider.dart';
 import '../data/repositories/mock_packaging_stock_repository.dart';
 import '../data/repositories/mock_daily_worker_repository.dart';
-import '../data/repositories/mock_sale_repository.dart';
+import '../data/repositories/sale_offline_repository.dart';
 import '../data/repositories/mock_stock_repository.dart';
 import '../data/repositories/mock_credit_repository.dart';
 import '../data/repositories/mock_report_repository.dart';
@@ -50,11 +54,16 @@ import '../domain/repositories/stock_repository.dart';
 import '../domain/repositories/credit_repository.dart';
 import '../domain/services/sale_service.dart';
 import '../domain/services/credit_service.dart';
+import '../domain/services/dashboard_calculation_service.dart';
+import '../domain/services/profitability_calculation_service.dart';
+import '../domain/services/report_calculation_service.dart';
+import '../domain/services/production_service.dart';
+import '../domain/services/production_payment_calculation_service.dart';
 import '../domain/repositories/salary_repository.dart';
 import 'package:elyf_groupe_app/features/administration/application/providers.dart'
     show permissionServiceProvider;
 import '../../../core/permissions/services/permission_service.dart';
-import '../application/adapters/eau_minerale_permission_adapter.dart';
+import '../domain/adapters/eau_minerale_permission_adapter.dart';
 import 'controllers/activity_controller.dart';
 import 'controllers/clients_controller.dart';
 import 'controllers/finances_controller.dart';
@@ -75,7 +84,19 @@ import '../presentation/screens/sections/profile_screen.dart';
 import '../presentation/screens/sections/settings_screen.dart';
 
 final saleRepositoryProvider = Provider<SaleRepository>(
-  (ref) => MockSaleRepository(),
+  (ref) {
+    final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+    final isarService = IsarService.instance;
+    final syncManager = ref.watch(syncManagerProvider);
+    final connectivityService = ref.watch(connectivityServiceProvider);
+    
+    return SaleOfflineRepository(
+      isarService: isarService,
+      syncManager: syncManager,
+      connectivityService: connectivityService,
+      enterpriseId: enterpriseId,
+    );
+  },
 );
 
 final stockRepositoryProvider = Provider<StockRepository>(
@@ -91,14 +112,12 @@ final creditRepositoryProvider = Provider<CreditRepository>(
 
 final saleServiceProvider = Provider<SaleService>(
   (ref) {
-    final saleRepo = ref.watch(saleRepositoryProvider);
     final stockRepo = ref.watch(stockRepositoryProvider);
-    final creditRepo = ref.watch(creditRepositoryProvider);
+    final customerRepo = ref.watch(customerRepositoryProvider);
     
     return SaleService(
-      saleRepository: saleRepo,
       stockRepository: stockRepo,
-      creditRepository: creditRepo,
+      customerRepository: customerRepo,
     );
   },
 );
@@ -115,12 +134,48 @@ final creditServiceProvider = Provider<CreditService>(
   },
 );
 
+final dashboardCalculationServiceProvider = Provider<DashboardCalculationService>(
+  (ref) => DashboardCalculationService(),
+);
+
+final productionPaymentCalculationServiceProvider =
+    Provider<ProductionPaymentCalculationService>(
+  (ref) => ProductionPaymentCalculationService(),
+);
+
+final reportCalculationServiceProvider = Provider<ReportCalculationService>(
+  (ref) => ReportCalculationService(),
+);
+
+final productionServiceProvider = Provider<ProductionService>(
+  (ref) => ProductionService(),
+);
+
+final profitabilityCalculationServiceProvider =
+    Provider<ProfitabilityCalculationService>(
+  (ref) => ProfitabilityCalculationService(),
+);
+
 final inventoryRepositoryProvider = Provider<InventoryRepository>(
   (ref) => MockInventoryRepository(),
 );
 
 final customerRepositoryProvider = Provider<CustomerRepository>(
-  (ref) => MockCustomerRepository(saleRepository: ref.watch(saleRepositoryProvider)),
+  (ref) {
+    final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+    final isarService = IsarService.instance;
+    final syncManager = ref.watch(syncManagerProvider);
+    final connectivityService = ref.watch(connectivityServiceProvider);
+    final saleRepo = ref.watch(saleRepositoryProvider);
+    
+    return CustomerOfflineRepository(
+      isarService: isarService,
+      syncManager: syncManager,
+      connectivityService: connectivityService,
+      enterpriseId: enterpriseId,
+      saleRepository: saleRepo,
+    );
+  },
 );
 
 final financeRepositoryProvider = Provider<FinanceRepository>(
@@ -128,7 +183,19 @@ final financeRepositoryProvider = Provider<FinanceRepository>(
 );
 
 final productRepositoryProvider = Provider<ProductRepository>(
-  (ref) => MockProductRepository(),
+  (ref) {
+    final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+    final isarService = IsarService.instance;
+    final syncManager = ref.watch(syncManagerProvider);
+    final connectivityService = ref.watch(connectivityServiceProvider);
+    
+    return ProductOfflineRepository(
+      isarService: isarService,
+      syncManager: syncManager,
+      connectivityService: connectivityService,
+      enterpriseId: enterpriseId,
+    );
+  },
 );
 
 final activityRepositoryProvider = Provider<ActivityRepository>(
@@ -155,12 +222,36 @@ final electricityMeterTypeProvider = FutureProvider.autoDispose<ElectricityMeter
 
 final productionSessionRepositoryProvider =
     Provider<ProductionSessionRepository>(
-  (ref) => MockProductionSessionRepository(),
+  (ref) {
+    final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+    final isarService = IsarService.instance;
+    final syncManager = ref.watch(syncManagerProvider);
+    final connectivityService = ref.watch(connectivityServiceProvider);
+    
+    return ProductionSessionOfflineRepository(
+      isarService: isarService,
+      syncManager: syncManager,
+      connectivityService: connectivityService,
+      enterpriseId: enterpriseId,
+    );
+  },
 );
 
 
 final machineRepositoryProvider = Provider<MachineRepository>(
-  (ref) => MockMachineRepository(),
+  (ref) {
+    final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+    final isarService = IsarService.instance;
+    final syncManager = ref.watch(syncManagerProvider);
+    final connectivityService = ref.watch(connectivityServiceProvider);
+    
+    return MachineOfflineRepository(
+      isarService: isarService,
+      syncManager: syncManager,
+      connectivityService: connectivityService,
+      enterpriseId: enterpriseId,
+    );
+  },
 );
 
 /// Provider pour récupérer toutes les machines (sans filtre).
@@ -331,6 +422,42 @@ final productionSessionsStateProvider = FutureProvider.autoDispose<
     List<ProductionSession>>(
   (ref) async {
     return ref.read(productionSessionControllerProvider).fetchSessions();
+  },
+);
+
+/// Provider pour récupérer une session par son ID.
+final productionSessionDetailProvider =
+    FutureProvider.autoDispose.family<ProductionSession, String>(
+  (ref, sessionId) async {
+    final session = await ref
+        .read(productionSessionControllerProvider)
+        .fetchSessionById(sessionId);
+    if (session == null) {
+      throw Exception('Session non trouvée: $sessionId');
+    }
+    return session;
+  },
+);
+
+/// Provider pour récupérer les ventes liées à une session.
+final ventesParSessionProvider = FutureProvider.autoDispose.family<
+    List<Sale>,
+    String>(
+  (ref, sessionId) async {
+    // Pour l'instant, on filtre les ventes par date de la session
+    final session = await ref.read(productionSessionDetailProvider(sessionId).future);
+    final allSales = await ref.read(saleRepositoryProvider).fetchRecentSales();
+    
+    // Filtrer les ventes du même jour que la session
+    return allSales.where((sale) {
+      final saleDate = DateTime(sale.date.year, sale.date.month, sale.date.day);
+      final sessionDate = DateTime(
+        session.date.year,
+        session.date.month,
+        session.date.day,
+      );
+      return saleDate == sessionDate;
+    }).toList();
   },
 );
 

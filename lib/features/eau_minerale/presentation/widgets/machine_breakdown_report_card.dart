@@ -7,7 +7,7 @@ import '../../domain/entities/machine.dart';
 import '../../domain/entities/production_event.dart';
 import '../../domain/entities/production_session.dart';
 import '../../domain/entities/production_session_status.dart';
-import '../../domain/permissions/eau_minerale_permissions.dart';
+import '../../../core.dart';
 import '../screens/sections/production_session_detail_screen.dart'
     show productionSessionDetailProvider;
 import 'centralized_permission_guard.dart';

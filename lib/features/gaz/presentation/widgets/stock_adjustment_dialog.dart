@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../shared/presentation/widgets/gaz_button_styles.dart';
+import '../../../../shared.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/cylinder.dart';
 import '../../domain/entities/cylinder_stock.dart';
 import '../../domain/entities/point_of_sale.dart';
+import 'stock_adjustment/stock_adjustment_header.dart';
+import 'stock_adjustment/cylinder_selector_field.dart';
+import 'stock_adjustment/current_stock_info.dart';
 
 /// Dialog pour ajuster le stock de bouteilles.
 class StockAdjustmentDialog extends ConsumerStatefulWidget {
@@ -171,186 +174,6 @@ class _StockAdjustmentDialogState
     }
   }
 
-  Widget _buildCylinderSelector() {
-    // Si un point de vente est sélectionné, utiliser ses cylinders
-    if (_selectedPointOfSale != null) {
-      final cylindersAsync = ref.watch(
-        pointOfSaleCylindersProvider(
-          (
-            pointOfSaleId: _selectedPointOfSale!.id,
-            enterpriseId: widget.enterpriseId,
-            moduleId: widget.moduleId,
-          ),
-        ),
-      );
-
-      return cylindersAsync.when(
-        data: (cylinders) {
-          if (cylinders.isEmpty) {
-            return Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.orange[50],
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.orange[300]!),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.warning_amber_rounded,
-                      color: Colors.orange[700], size: 20),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Aucun type de bouteille configuré pour ce point de vente',
-                      style: TextStyle(color: Colors.orange[900], fontSize: 12),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          return DropdownButtonFormField<Cylinder>(
-            value: _selectedCylinder,
-            decoration: const InputDecoration(
-              labelText: 'Type de bouteille *',
-              prefixIcon: Icon(Icons.scale),
-              border: OutlineInputBorder(),
-              helperText: 'Sélectionnez le type de bouteille',
-            ),
-            items: cylinders.map((cylinder) {
-              return DropdownMenuItem<Cylinder>(
-                value: cylinder,
-                child: Text('${cylinder.weight} kg'),
-              );
-            }).toList(),
-            onChanged: (value) {
-              setState(() {
-                _selectedCylinder = value;
-                _existingStock = null;
-                _quantityController.text = '';
-              });
-              _loadExistingStock();
-            },
-            validator: (value) {
-              if (value == null) {
-                return 'Veuillez sélectionner un type de bouteille';
-              }
-              return null;
-            },
-          );
-        },
-        loading: () => const SizedBox(
-          height: 56,
-          child: Center(child: CircularProgressIndicator()),
-        ),
-        error: (e, _) => Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.red[50],
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.red[300]!),
-          ),
-          child: Row(
-            children: [
-              Icon(Icons.error_outline, color: Colors.red[700], size: 20),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Erreur de chargement: $e',
-                  style: TextStyle(color: Colors.red[900], fontSize: 12),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    // Si aucun point de vente n'est sélectionné, afficher tous les cylinders
-    final allCylindersAsync = ref.watch(cylindersProvider);
-    return allCylindersAsync.when(
-      data: (cylinders) {
-        if (cylinders.isEmpty) {
-          return Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.orange[50],
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.orange[300]!),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.warning_amber_rounded,
-                    color: Colors.orange[700], size: 20),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Aucun type de bouteille disponible',
-                    style: TextStyle(color: Colors.orange[900], fontSize: 12),
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
-
-        return DropdownButtonFormField<Cylinder>(
-          value: _selectedCylinder,
-          decoration: const InputDecoration(
-            labelText: 'Type de bouteille *',
-            prefixIcon: Icon(Icons.scale),
-            border: OutlineInputBorder(),
-            helperText: 'Sélectionnez le type de bouteille',
-          ),
-          items: cylinders.map((cylinder) {
-            return DropdownMenuItem<Cylinder>(
-              value: cylinder,
-              child: Text('${cylinder.weight} kg'),
-            );
-          }).toList(),
-          onChanged: (value) {
-            setState(() {
-              _selectedCylinder = value;
-              _existingStock = null;
-              _quantityController.text = '';
-            });
-            _loadExistingStock();
-          },
-          validator: (value) {
-            if (value == null) {
-              return 'Veuillez sélectionner un type de bouteille';
-            }
-            return null;
-          },
-        );
-      },
-      loading: () => const SizedBox(
-        height: 56,
-        child: Center(child: CircularProgressIndicator()),
-      ),
-      error: (e, _) => Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.red[50],
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.red[300]!),
-        ),
-        child: Row(
-          children: [
-            Icon(Icons.error_outline, color: Colors.red[700], size: 20),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                'Erreur de chargement: $e',
-                style: TextStyle(color: Colors.red[900], fontSize: 12),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -378,44 +201,7 @@ class _StockAdjustmentDialogState
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Header
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF0F9FF),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(
-                          Icons.inventory_2,
-                          color: Color(0xFF0EA5E9),
-                          size: 24,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Ajuster le stock',
-                              style: theme.textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: const Color(0xFF101828),
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Modifiez la quantité de bouteilles en stock',
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: const Color(0xFF6A7282),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+                  const StockAdjustmentHeader(),
                   const SizedBox(height: 24),
 
                   // Point de vente (optionnel)
@@ -464,7 +250,26 @@ class _StockAdjustmentDialogState
                   const SizedBox(height: 16),
 
                   // Type de bouteille (selon le point de vente)
-                  _buildCylinderSelector(),
+                  CylinderSelectorField(
+                    enterpriseId: widget.enterpriseId,
+                    moduleId: widget.moduleId,
+                    selectedPointOfSale: _selectedPointOfSale,
+                    selectedCylinder: _selectedCylinder,
+                    onCylinderChanged: (value) {
+                      setState(() {
+                        _selectedCylinder = value;
+                        _existingStock = null;
+                        _quantityController.text = '';
+                      });
+                      _loadExistingStock();
+                    },
+                    validator: (value) {
+                      if (value == null) {
+                        return 'Veuillez sélectionner un type de bouteille';
+                      }
+                      return null;
+                    },
+                  ),
                   const SizedBox(height: 16),
 
                   // Statut
@@ -499,34 +304,10 @@ class _StockAdjustmentDialogState
                   const SizedBox(height: 16),
 
                   // Quantité actuelle (si stock existe)
-                  if (_existingStock != null)
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF0F9FF),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: const Color(0xFF0EA5E9).withValues(alpha: 0.3),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.info_outline,
-                            color: Color(0xFF0EA5E9),
-                            size: 20,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Quantité actuelle: ${_existingStock!.quantity}',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: const Color(0xFF0EA5E9),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  if (_existingStock != null) const SizedBox(height: 16),
+                  if (_existingStock != null) ...[
+                    CurrentStockInfo(quantity: _existingStock!.quantity),
+                    const SizedBox(height: 16),
+                  ],
 
                   // Nouvelle quantité
                   TextFormField(

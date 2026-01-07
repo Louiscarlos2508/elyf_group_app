@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../domain/entities/production_session.dart';
+import '../../../domain/entities/production_session.dart';
 import 'production_report_components.dart';
 import 'production_report_helpers.dart';
 

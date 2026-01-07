@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../domain/entities/bobine_usage.dart';
+import '../../../domain/entities/bobine_usage.dart';
 import '../../../application/providers.dart';
-import '../../machine_selector_field.dart';
-import '../../time_picker_field.dart';
+import '../machine_selector_field.dart';
+import '../time_picker_field.dart';
 import 'bobines_installation_section.dart';
 import 'bobine_non_finie_alert.dart';
 import 'index_compteur_initial_field.dart';
@@ -30,6 +30,7 @@ class StepStartup extends ConsumerWidget {
     required this.onDateChanged,
     required this.onHeureDebutChanged,
     required this.onMachinesChanged,
+    required this.onBobinesChanged,
     required this.onInstallerBobine,
     required this.onSignalerPanne,
     required this.onRetirerBobine,
@@ -42,7 +43,7 @@ class StepStartup extends ConsumerWidget {
   final List<BobineUsage> bobinesUtilisees;
   final Map<String, BobineUsage> machinesAvecBobineNonFinie;
   final TextEditingController indexCompteurInitialController;
-  final ValueChanged<DateTime> onDateSelected;
+  final ValueChanged<DateTime> onDateChanged;
   final ValueChanged<DateTime> onHeureDebutChanged;
   final ValueChanged<List<String>> onMachinesChanged;
   final ValueChanged<List<BobineUsage>> onBobinesChanged;
@@ -58,7 +59,7 @@ class StepStartup extends ConsumerWidget {
       lastDate: DateTime.now(),
     );
     if (picked != null) {
-      onDateSelected(picked);
+      onDateChanged(picked);
     }
   }
 

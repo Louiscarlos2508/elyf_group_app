@@ -1,27 +1,26 @@
 import 'package:flutter/material.dart';
 
-import '../../../../shared/utils/currency_formatter.dart';
-import '../../domain/entities/gas_sale.dart';
+import '../../../../shared.dart';
+import '../../application/providers.dart';
 import 'dashboard_kpi_card.dart';
 
 /// Section displaying today's KPIs for gaz module.
+///
+/// Uses [GazDashboardTodayMetrics] from the calculation service.
 class GazDashboardTodaySection extends StatelessWidget {
   const GazDashboardTodaySection({
     super.key,
-    required this.todaySales,
+    required this.metrics,
   });
 
-  final List<GasSale> todaySales;
-
+  /// Pre-calculated today metrics from [GazDashboardCalculationService].
+  final GazDashboardTodayMetrics metrics;
 
   @override
   Widget build(BuildContext context) {
-    final todayRevenue = todaySales.fold<double>(
-      0,
-      (sum, s) => sum + s.totalAmount,
-    );
-    final todayCount = todaySales.length;
-    final avgTicket = todayCount > 0 ? todayRevenue / todayCount : 0.0;
+    final todayRevenue = metrics.revenue;
+    final todayCount = metrics.salesCount;
+    final avgTicket = metrics.averageTicket;
 
     return LayoutBuilder(
       builder: (context, constraints) {

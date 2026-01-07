@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../../shared/utils/currency_formatter.dart';
-import '../../domain/entities/report_data.dart';
+import '../../../../shared.dart';
+import '../../../domain/entities/report_data.dart';
 
 /// En-tête du rapport de vente avec titre et résumé.
 class SalesReportHeader extends StatelessWidget {

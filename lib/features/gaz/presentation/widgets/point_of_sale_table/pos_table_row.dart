@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../application/providers.dart';
 import '../../../domain/entities/point_of_sale.dart';
-import '../../../../../shared/presentation/widgets/gaz_button_styles.dart';
+import '../../../../shared.dart';
 import '../point_of_sale_form_dialog.dart';
 import 'pos_stock_dialog.dart';
 import 'pos_types_dialog.dart';

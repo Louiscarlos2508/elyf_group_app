@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../../domain/entities/production_session.dart';
+import '../../../domain/entities/production_session.dart';
 
 /// Widget affichant les informations de base de la session de production.
 class ProductionTrackingSessionInfo extends StatelessWidget {

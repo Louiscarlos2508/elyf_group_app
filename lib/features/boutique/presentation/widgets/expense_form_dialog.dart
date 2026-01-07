@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../shared/presentation/widgets/expense_form_dialog.dart' as shared;
+import '../../../../shared.dart' as shared;
 import '../../application/providers.dart';
 import '../../domain/entities/expense.dart';
 

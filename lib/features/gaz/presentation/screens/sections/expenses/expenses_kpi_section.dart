@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../../../../shared/utils/currency_formatter.dart';
+import '../../../../../shared.dart';
 import '../../../widgets/expense_kpi_card.dart';
 
 /// Section des KPI cards pour les dépenses.

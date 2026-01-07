@@ -1,6 +1,6 @@
-import '../../domain/entities/gas_sale.dart';
-import '../../domain/entities/cylinder.dart';
-import '../../../../shared/utils/currency_formatter.dart';
+import '../../../domain/entities/gas_sale.dart';
+import '../../../domain/entities/cylinder.dart';
+import '../../../../shared.dart';
 
 /// Helpers pour les calculs et formatage des rapports de vente.
 class SalesReportHelpers {

@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:open_file/open_file.dart';
 
-import '../../../../../core/pdf/boutique_report_pdf_service.dart';
-import '../../../../../shared/presentation/widgets/refresh_button.dart';
+import '../../../../core.dart';
+import '../../../../shared.dart';
 import '../../../application/providers.dart';
 import '../../../domain/entities/report_data.dart';
 import '../../widgets/expenses_report_content_v2.dart';

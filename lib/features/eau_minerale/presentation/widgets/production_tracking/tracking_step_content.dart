@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../domain/entities/production_session.dart';
-import '../../../../domain/entities/production_session_status.dart';
+import '../../../domain/entities/production_session.dart';
+import '../../../domain/entities/production_session_status.dart';
 import 'draft_step.dart';
 import 'started_step.dart';
 import 'in_progress_step.dart';

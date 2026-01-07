@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../../shared/utils/currency_formatter.dart';
-import '../../domain/entities/gas_sale.dart';
+import '../../../../shared.dart';
+import '../../../domain/entities/gas_sale.dart';
 
 /// Statistiques des ventes en gros.
 class SalesReportWholesaleStats extends StatelessWidget {

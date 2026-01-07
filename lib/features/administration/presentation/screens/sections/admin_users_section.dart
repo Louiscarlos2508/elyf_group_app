@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../application/providers.dart';
 import '../../../domain/entities/user.dart';
-import '../../../../../core/auth/entities/enterprise_module_user.dart';
+import '../../../../../core.dart';
 import 'dialogs/create_user_dialog.dart';
 import 'dialogs/edit_user_dialog.dart';
 import 'dialogs/assign_enterprise_dialog.dart';

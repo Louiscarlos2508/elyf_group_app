@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../../../../shared/utils/currency_formatter.dart';
+import '../../../../shared.dart';
 
 /// Cartes de résumé pour l'étape de clôture.
 class ClosureSummaryCards extends StatelessWidget {

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../../shared/utils/currency_formatter.dart';
+import '../../../../shared.dart';
 
 /// Widget to display the payment amount in a consistent format.
 class PaymentAmountDisplay extends StatelessWidget {

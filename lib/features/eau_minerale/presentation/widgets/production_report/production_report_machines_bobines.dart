@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../application/providers.dart';
-import '../../domain/entities/bobine_usage.dart';
-import '../../domain/entities/production_session.dart';
-import '../../domain/entities/production_session_status.dart';
+import '../../../domain/entities/bobine_usage.dart';
+import '../../../domain/entities/production_session.dart';
+import '../../../domain/entities/production_session_status.dart';
 import 'production_report_helpers.dart';
 
 /// Section machines et bobines du rapport.

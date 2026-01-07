@@ -3,9 +3,12 @@ import 'dart:developer' as developer;
 import 'package:flutter/widgets.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../core/offline/connectivity_service.dart';
 import '../core/offline/isar_service.dart';
 import '../core/offline/sync_manager.dart';
+import '../core/offline/handlers/firebase_sync_handler.dart';
 
 /// Global connectivity service instance.
 ///
@@ -43,7 +46,27 @@ Future<void> _initializeOfflineServices() async {
     globalConnectivityService = ConnectivityService();
     await globalConnectivityService!.initialize();
 
-    // Initialize sync manager
+    // Initialize sync manager with Firebase handler
+    // Note: Firebase must be initialized before this point
+    final firebaseHandler = FirebaseSyncHandler(
+      firestore: FirebaseFirestore.instance,
+      collectionPaths: {
+        'sales': (enterpriseId) => 'enterprises/$enterpriseId/sales',
+        'products': (enterpriseId) => 'enterprises/$enterpriseId/products',
+        'expenses': (enterpriseId) => 'enterprises/$enterpriseId/expenses',
+        'customers': (enterpriseId) => 'enterprises/$enterpriseId/customers',
+        'agents': (enterpriseId) => 'enterprises/$enterpriseId/agents',
+        'transactions': (enterpriseId) => 'enterprises/$enterpriseId/transactions',
+        'properties': (enterpriseId) => 'enterprises/$enterpriseId/properties',
+        'tenants': (enterpriseId) => 'enterprises/$enterpriseId/tenants',
+        'contracts': (enterpriseId) => 'enterprises/$enterpriseId/contracts',
+        'payments': (enterpriseId) => 'enterprises/$enterpriseId/payments',
+        'machines': (enterpriseId) => 'enterprises/$enterpriseId/machines',
+        'bobines': (enterpriseId) => 'enterprises/$enterpriseId/bobines',
+        'productionSessions': (enterpriseId) => 'enterprises/$enterpriseId/productionSessions',
+      },
+    );
+
     globalSyncManager = SyncManager(
       isarService: IsarService.instance,
       connectivityService: globalConnectivityService!,
@@ -52,8 +75,7 @@ Future<void> _initializeOfflineServices() async {
         syncIntervalMinutes: 5,
         maxOperationAgeHours: 72,
       ),
-      // Note: Set syncHandler when Firebase is initialized
-      // syncHandler: FirebaseSyncHandler(...),
+      syncHandler: firebaseHandler,
     );
     await globalSyncManager!.initialize();
 

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/tenant/enterprise_selector_widget.dart';
+import '../../shared/presentation/widgets/enterprise_selector_widget.dart';
 import '../../core/tenant/tenant_provider.dart';
 import '../../features/boutique/presentation/screens/boutique_shell_screen.dart';
 import '../../features/eau_minerale/presentation/screens/eau_minerale_shell_screen.dart';

@@ -1,0 +1,119 @@
+# Configuration for dependency_validator
+# This file defines the allowed and forbidden dependencies between layers
+
+# Ignore these packages (external dependencies)
+ignore:
+  - flutter
+  - flutter_test
+  - dart:async
+  - dart:collection
+  - dart:convert
+  - dart:core
+  - dart:developer
+  - dart:io
+  - dart:math
+  - dart:typed_data
+  - package:*
+
+# Rules for features (modules should not depend on each other)
+forbidden:
+  # Features cannot import from other features
+  - from: 'lib/features/gaz/**'
+    to: 'lib/features/boutique/**'
+  - from: 'lib/features/gaz/**'
+    to: 'lib/features/eau_minerale/**'
+  - from: 'lib/features/gaz/**'
+    to: 'lib/features/immobilier/**'
+  - from: 'lib/features/gaz/**'
+    to: 'lib/features/orange_money/**'
+  - from: 'lib/features/gaz/**'
+    to: 'lib/features/administration/**'
+  - from: 'lib/features/boutique/**'
+    to: 'lib/features/gaz/**'
+  - from: 'lib/features/boutique/**'
+    to: 'lib/features/eau_minerale/**'
+  - from: 'lib/features/boutique/**'
+    to: 'lib/features/immobilier/**'
+  - from: 'lib/features/boutique/**'
+    to: 'lib/features/orange_money/**'
+  - from: 'lib/features/boutique/**'
+    to: 'lib/features/administration/**'
+  - from: 'lib/features/eau_minerale/**'
+    to: 'lib/features/gaz/**'
+  - from: 'lib/features/eau_minerale/**'
+    to: 'lib/features/boutique/**'
+  - from: 'lib/features/eau_minerale/**'
+    to: 'lib/features/immobilier/**'
+  - from: 'lib/features/eau_minerale/**'
+    to: 'lib/features/orange_money/**'
+  - from: 'lib/features/eau_minerale/**'
+    to: 'lib/features/administration/**'
+  - from: 'lib/features/immobilier/**'
+    to: 'lib/features/gaz/**'
+  - from: 'lib/features/immobilier/**'
+    to: 'lib/features/boutique/**'
+  - from: 'lib/features/immobilier/**'
+    to: 'lib/features/eau_minerale/**'
+  - from: 'lib/features/immobilier/**'
+    to: 'lib/features/orange_money/**'
+  - from: 'lib/features/immobilier/**'
+    to: 'lib/features/administration/**'
+  - from: 'lib/features/orange_money/**'
+    to: 'lib/features/gaz/**'
+  - from: 'lib/features/orange_money/**'
+    to: 'lib/features/boutique/**'
+  - from: 'lib/features/orange_money/**'
+    to: 'lib/features/eau_minerale/**'
+  - from: 'lib/features/orange_money/**'
+    to: 'lib/features/immobilier/**'
+  - from: 'lib/features/orange_money/**'
+    to: 'lib/features/administration/**'
+  - from: 'lib/features/administration/**'
+    to: 'lib/features/gaz/**'
+  - from: 'lib/features/administration/**'
+    to: 'lib/features/boutique/**'
+  - from: 'lib/features/administration/**'
+    to: 'lib/features/eau_minerale/**'
+  - from: 'lib/features/administration/**'
+    to: 'lib/features/immobilier/**'
+  - from: 'lib/features/administration/**'
+    to: 'lib/features/orange_money/**'
+  
+  # Presentation layer cannot import from data layer
+  - from: 'lib/features/*/presentation/**'
+    to: 'lib/features/*/data/**'
+  
+  # Domain layer cannot import from presentation or data
+  - from: 'lib/features/*/domain/**'
+    to: 'lib/features/*/presentation/**'
+  - from: 'lib/features/*/domain/**'
+    to: 'lib/features/*/data/**'
+  
+  # Data layer cannot import from presentation or application
+  - from: 'lib/features/*/data/**'
+    to: 'lib/features/*/presentation/**'
+  - from: 'lib/features/*/data/**'
+    to: 'lib/features/*/application/**'
+
+# Allowed dependencies (explicitly allowed)
+allowed:
+  # Features can import from shared and core
+  - from: 'lib/features/**'
+    to: 'lib/shared/**'
+  - from: 'lib/features/**'
+    to: 'lib/core/**'
+  - from: 'lib/features/**'
+    to: 'lib/app/**'
+  
+  # Application can import from domain
+  - from: 'lib/features/*/application/**'
+    to: 'lib/features/*/domain/**'
+  
+  # Presentation can import from application
+  - from: 'lib/features/*/presentation/**'
+    to: 'lib/features/*/application/**'
+  
+  # Data can import from domain (to implement repositories)
+  - from: 'lib/features/*/data/**'
+    to: 'lib/features/*/domain/**'
+

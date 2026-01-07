@@ -6,7 +6,7 @@ import '../../application/providers.dart';
 import '../../domain/entities/cylinder.dart';
 import 'cylinder_form_dialog.dart';
 import 'cylinder_list_item.dart';
-import '../../../../shared/presentation/widgets/gaz_button_styles.dart';
+import '../../../../shared.dart';
 
 /// Carte de gestion des bouteilles de gaz dans les paramètres.
 class CylinderManagementCard extends ConsumerStatefulWidget {

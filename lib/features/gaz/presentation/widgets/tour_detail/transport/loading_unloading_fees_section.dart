@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../../../../shared/utils/currency_formatter.dart';
+import '../../../../../shared.dart';
 import '../../../../domain/entities/tour.dart';
 
 /// Section des frais de chargement et déchargement.

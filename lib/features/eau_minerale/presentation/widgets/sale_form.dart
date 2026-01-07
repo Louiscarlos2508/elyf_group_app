@@ -5,6 +5,7 @@ import '../../application/providers.dart';
 import '../../domain/entities/sale.dart';
 import '../../domain/entities/product.dart';
 import '../../domain/repositories/customer_repository.dart';
+import '../../domain/services/sale_service.dart';
 import 'sale_product_selector.dart';
 import 'sale_customer_selector.dart';
 import 'simple_payment_splitter.dart';
@@ -129,14 +130,20 @@ class SaleFormState extends ConsumerState<SaleForm> {
       return;
     }
 
-    // Vérifier le stock avant de créer la vente
-    final stockRepository = ref.read(stockRepositoryProvider);
-    final currentStock = await stockRepository.getStock(_selectedProduct!.id);
-    if (_quantity! > currentStock) {
+    // Utiliser SaleService pour valider la vente
+    final saleService = ref.read(saleServiceProvider);
+    final validationError = await saleService.validateSale(
+      productId: _selectedProduct!.id,
+      quantity: _quantity,
+      totalPrice: _totalPrice,
+      amountPaid: _amountPaid,
+    );
+    
+    if (validationError != null) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Stock insuffisant. Disponible: $currentStock'),
+          content: Text(validationError),
           backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
@@ -162,6 +169,9 @@ class SaleFormState extends ConsumerState<SaleForm> {
         customerId = 'anonymous-${DateTime.now().millisecondsSinceEpoch}';
       }
       
+      // Utiliser SaleService pour déterminer le statut
+      final saleStatus = saleService.determineSaleStatus(_totalPrice!, _amountPaid!);
+      
       final sale = Sale(
         id: '',
         productId: _selectedProduct!.id,
@@ -175,9 +185,7 @@ class SaleFormState extends ConsumerState<SaleForm> {
         customerId: customerId,
         customerCnib: null,
         date: DateTime.now(),
-        status: (_totalPrice! - _amountPaid!) == 0
-            ? SaleStatus.fullyPaid
-            : SaleStatus.validated, // Direct validation for credit sales
+        status: saleStatus,
         createdBy: 'user-1',
         notes: null,
         cashAmount: _cashAmount,
@@ -259,7 +267,7 @@ class SaleFormState extends ConsumerState<SaleForm> {
             // Quantité avec validation du stock
             if (_selectedProduct != null)
               FutureBuilder<int>(
-                future: ref.read(stockRepositoryProvider).getStock(_selectedProduct!.id),
+                future: ref.read(saleServiceProvider).getCurrentStock(_selectedProduct!.id),
                 builder: (context, snapshot) {
                   final stock = snapshot.data ?? 0;
                   final stockError = _quantity != null && stock < _quantity!;

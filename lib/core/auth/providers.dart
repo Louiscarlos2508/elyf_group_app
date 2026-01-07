@@ -4,6 +4,7 @@
 // Ce fichier est conservé pour compatibilité mais sera supprimé plus tard.
 
 export 'services/auth_service.dart' show
+    authServiceProvider,
     currentUserIdProvider,
     isAuthenticatedProvider,
     currentUserProvider,

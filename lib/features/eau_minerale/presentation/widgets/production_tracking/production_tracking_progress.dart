@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../../domain/entities/production_session_status.dart';
+import '../../../domain/entities/production_session_status.dart';
 
 /// Indicateur de progression pour le suivi de production.
 class ProductionTrackingProgress extends StatelessWidget {

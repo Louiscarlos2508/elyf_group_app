@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 
-import '../../domain/entities/sale.dart';
+import '../../domain/services/dashboard_calculation_service.dart';
 import 'dashboard_kpi_card.dart';
 
 /// Section displaying today's KPIs for boutique.
+///
+/// Uses [DashboardTodayMetrics] from the calculation service.
 class DashboardTodaySection extends StatelessWidget {
   const DashboardTodaySection({
     super.key,
-    required this.todaySales,
+    required this.metrics,
   });
 
-  final List<Sale> todaySales;
+  /// Pre-calculated today metrics from [BoutiqueDashboardCalculationService].
+  final DashboardTodayMetrics metrics;
 
   String _formatCurrency(int amount) {
     final amountStr = amount.toString();
@@ -26,9 +29,9 @@ class DashboardTodaySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final todayRevenue = todaySales.fold(0, (sum, s) => sum + s.totalAmount);
-    final todayCount = todaySales.length;
-    final avgTicket = todayCount > 0 ? todayRevenue ~/ todayCount : 0;
+    final todayRevenue = metrics.revenue;
+    final todayCount = metrics.salesCount;
+    final avgTicket = metrics.averageTicket;
 
     return LayoutBuilder(
       builder: (context, constraints) {

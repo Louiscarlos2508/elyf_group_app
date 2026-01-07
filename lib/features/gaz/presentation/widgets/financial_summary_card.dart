@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../shared/utils/currency_formatter.dart';
+import '../../../../shared.dart';
 
 /// Carte résumé financier (revenus, dépenses, reliquat).
 class FinancialSummaryCard extends StatelessWidget {

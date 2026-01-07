@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../../app/theme/app_theme.dart';
-import '../../../../domain/entities/production_session.dart';
+import '../../../domain/entities/production_session.dart';
 import 'info_row.dart';
 
 /// Widget pour l'étape "Completed" (terminée) de la session de production.

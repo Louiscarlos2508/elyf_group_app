@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../../domain/entities/machine.dart';
+import '../../../domain/entities/machine.dart';
 
 /// Dialog pour sélectionner une machine parmi les machines disponibles.
 class MachineSelectionDialog {

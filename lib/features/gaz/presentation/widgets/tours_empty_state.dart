@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../shared/presentation/widgets/gaz_button_styles.dart';
+import '../../../../shared.dart';
 
 /// Empty state widget when no tours are in progress - matches Figma design.
 class ToursEmptyState extends StatelessWidget {

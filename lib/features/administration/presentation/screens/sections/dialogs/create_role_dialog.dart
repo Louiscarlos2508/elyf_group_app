@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../../../core/permissions/entities/user_role.dart';
+import '../../../../../core.dart';
 import '../../../../application/providers.dart';
 
 /// Dialogue pour créer un nouveau rôle.

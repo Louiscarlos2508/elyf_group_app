@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/auth/widgets/auth_guard.dart';
+import '../../shared/presentation/widgets/auth_guard.dart';
 import '../../features/administration/presentation/screens/admin_home_screen.dart';
 import '../../features/intro/presentation/screens/login_screen.dart';
 import '../../features/intro/presentation/screens/onboarding_screen.dart';

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../../shared/utils/validators.dart';
+import '../../../shared.dart';
 import '../../application/providers.dart';
 
 /// Form for creating/editing a customer account.

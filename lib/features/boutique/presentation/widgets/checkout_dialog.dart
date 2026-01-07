@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/printing/widgets/print_receipt_button.dart';
+import '../../../shared.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/cart_item.dart';
 import '../../domain/entities/sale.dart';

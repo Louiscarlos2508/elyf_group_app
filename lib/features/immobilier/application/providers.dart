@@ -1,10 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../data/repositories/mock_contract_repository.dart';
-import '../data/repositories/mock_expense_repository.dart';
-import '../data/repositories/mock_payment_repository.dart';
-import '../data/repositories/mock_property_repository.dart';
-import '../data/repositories/mock_tenant_repository.dart';
+import '../../../../core/offline/isar_service.dart';
+import '../../../../core/offline/providers.dart';
+import '../../../../core/tenant/tenant_provider.dart';
+import '../data/repositories/contract_offline_repository.dart';
+import '../data/repositories/property_expense_offline_repository.dart';
+import '../data/repositories/payment_offline_repository.dart';
+import '../data/repositories/property_offline_repository.dart';
+import '../data/repositories/tenant_offline_repository.dart';
 import '../domain/entities/contract.dart';
 import '../domain/adapters/expense_balance_adapter.dart';
 import '../domain/entities/expense.dart';
@@ -22,27 +25,88 @@ import 'controllers/expense_controller.dart';
 import 'controllers/payment_controller.dart';
 import 'controllers/property_controller.dart';
 import 'controllers/tenant_controller.dart';
-import 'services/immobilier_validation_service.dart';
+import '../domain/services/immobilier_validation_service.dart';
+import '../domain/services/dashboard_calculation_service.dart';
 
 // Repositories
 final propertyRepositoryProvider = Provider<PropertyRepository>(
-  (ref) => MockPropertyRepository(),
+  (ref) {
+    final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+    final isarService = IsarService.instance;
+    final syncManager = ref.watch(syncManagerProvider);
+    final connectivityService = ref.watch(connectivityServiceProvider);
+    
+    return PropertyOfflineRepository(
+      isarService: isarService,
+      syncManager: syncManager,
+      connectivityService: connectivityService,
+      enterpriseId: enterpriseId,
+    );
+  },
 );
 
 final tenantRepositoryProvider = Provider<TenantRepository>(
-  (ref) => MockTenantRepository(),
+  (ref) {
+    final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+    final isarService = IsarService.instance;
+    final syncManager = ref.watch(syncManagerProvider);
+    final connectivityService = ref.watch(connectivityServiceProvider);
+    
+    return TenantOfflineRepository(
+      isarService: isarService,
+      syncManager: syncManager,
+      connectivityService: connectivityService,
+      enterpriseId: enterpriseId,
+    );
+  },
 );
 
 final contractRepositoryProvider = Provider<ContractRepository>(
-  (ref) => MockContractRepository(),
+  (ref) {
+    final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+    final isarService = IsarService.instance;
+    final syncManager = ref.watch(syncManagerProvider);
+    final connectivityService = ref.watch(connectivityServiceProvider);
+    
+    return ContractOfflineRepository(
+      isarService: isarService,
+      syncManager: syncManager,
+      connectivityService: connectivityService,
+      enterpriseId: enterpriseId,
+    );
+  },
 );
 
 final paymentRepositoryProvider = Provider<PaymentRepository>(
-  (ref) => MockPaymentRepository(),
+  (ref) {
+    final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+    final isarService = IsarService.instance;
+    final syncManager = ref.watch(syncManagerProvider);
+    final connectivityService = ref.watch(connectivityServiceProvider);
+    
+    return PaymentOfflineRepository(
+      isarService: isarService,
+      syncManager: syncManager,
+      connectivityService: connectivityService,
+      enterpriseId: enterpriseId,
+    );
+  },
 );
 
 final expenseRepositoryProvider = Provider<PropertyExpenseRepository>(
-  (ref) => MockPropertyExpenseRepository(),
+  (ref) {
+    final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+    final isarService = IsarService.instance;
+    final syncManager = ref.watch(syncManagerProvider);
+    final connectivityService = ref.watch(connectivityServiceProvider);
+    
+    return PropertyExpenseOfflineRepository(
+      isarService: isarService,
+      syncManager: syncManager,
+      connectivityService: connectivityService,
+      enterpriseId: enterpriseId,
+    );
+  },
 );
 
 // Validation Service
@@ -52,6 +116,12 @@ final immobilierValidationServiceProvider = Provider<ImmobilierValidationService
     ref.watch(contractRepositoryProvider),
     ref.watch(paymentRepositoryProvider),
   ),
+);
+
+// Dashboard Calculation Service
+final immobilierDashboardCalculationServiceProvider =
+    Provider<ImmobilierDashboardCalculationService>(
+  (ref) => ImmobilierDashboardCalculationService(),
 );
 
 // Controllers

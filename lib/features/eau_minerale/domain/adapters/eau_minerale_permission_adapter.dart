@@ -1,0 +1,65 @@
+import '../../../core.dart';
+import '../../domain/entities/eau_minerale_section.dart';
+
+/// Adapter to use centralized permission system for eau_minerale module.
+class EauMineralePermissionAdapter {
+  EauMineralePermissionAdapter({
+    required this.permissionService,
+    required this.userId,
+  });
+
+  final PermissionService permissionService;
+  final String userId;
+
+  static const String moduleId = 'eau_minerale';
+
+  /// Initialize and register permissions
+  static void initialize() {
+    PermissionRegistry.instance.registerModulePermissions(
+      moduleId,
+      EauMineralePermissions.all,
+    );
+  }
+
+  /// Check if user has a specific permission
+  Future<bool> hasPermission(String permissionId) async {
+    return await permissionService.hasPermission(userId, moduleId, permissionId);
+  }
+
+  /// Check if user has any of the specified permissions
+  Future<bool> hasAnyPermission(Set<String> permissionIds) async {
+    return await permissionService.hasAnyPermission(userId, moduleId, permissionIds);
+  }
+
+  /// Check if user has all specified permissions
+  Future<bool> hasAllPermissions(Set<String> permissionIds) async {
+    return await permissionService.hasAllPermissions(userId, moduleId, permissionIds);
+  }
+
+  /// Check if user can access a section
+  Future<bool> canAccessSection(EauMineraleSection section) async {
+    switch (section) {
+      case EauMineraleSection.activity:
+        return hasPermission(EauMineralePermissions.viewDashboard.id);
+      case EauMineraleSection.production:
+        return hasPermission(EauMineralePermissions.viewProduction.id);
+      case EauMineraleSection.sales:
+        return hasPermission(EauMineralePermissions.viewSales.id);
+      case EauMineraleSection.stock:
+        return hasPermission(EauMineralePermissions.viewStock.id);
+      case EauMineraleSection.clients:
+        return hasPermission(EauMineralePermissions.viewCredits.id);
+      case EauMineraleSection.finances:
+        return hasPermission(EauMineralePermissions.viewFinances.id);
+      case EauMineraleSection.salaries:
+        return hasPermission(EauMineralePermissions.viewSalaries.id);
+      case EauMineraleSection.reports:
+        return hasPermission(EauMineralePermissions.viewReports.id);
+      case EauMineraleSection.profile:
+        return hasPermission(EauMineralePermissions.viewProfile.id);
+      case EauMineraleSection.settings:
+        return hasPermission(EauMineralePermissions.viewSettings.id);
+    }
+  }
+}
+

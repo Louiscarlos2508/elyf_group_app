@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../../core/permissions/entities/module_permission.dart';
+import '../../../core.dart';
 import '../../application/providers.dart';
-import '../../domain/permissions/eau_minerale_permissions.dart';
 
 /// Widget that shows child only if user has required permission (using centralized system).
 class CentralizedPermissionGuard extends ConsumerWidget {

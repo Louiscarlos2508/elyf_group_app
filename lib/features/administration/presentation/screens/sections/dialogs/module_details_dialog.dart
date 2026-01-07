@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../application/providers.dart';
 import '../../../../domain/entities/admin_module.dart';
 import '../../../../domain/entities/module_sections_info.dart';
-import '../../../../../../core/auth/entities/enterprise_module_user.dart';
+import '../../../../../core.dart';
 import '../admin_modules_section.dart';
 
 /// Dialogue pour afficher les détails d'un module

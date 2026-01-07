@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 
-import '../../../../shared/utils/currency_formatter.dart';
-import '../../domain/entities/gas_sale.dart';
+import '../../../../shared.dart';
+import '../../../domain/entities/gas_sale.dart';
+import 'sales_report_helpers.dart';
 
 /// Cartes affichant les statistiques par type de vente (détail/gros).
+///
+/// Uses [SalesReportHelpers] for calculations.
 class SalesReportTypeCards extends StatelessWidget {
   const SalesReportTypeCards({
     super.key,
@@ -35,7 +38,7 @@ class SalesReportTypeCards extends StatelessWidget {
                 theme: theme,
                 type: 'Détail',
                 count: retailSales.length,
-                total: _calculateTotal(retailSales),
+                total: SalesReportHelpers.calculateTotal(retailSales),
                 color: Colors.orange,
               ),
             ),
@@ -45,7 +48,7 @@ class SalesReportTypeCards extends StatelessWidget {
                 theme: theme,
                 type: 'Gros',
                 count: wholesaleSales.length,
-                total: _calculateTotal(wholesaleSales),
+                total: SalesReportHelpers.calculateTotal(wholesaleSales),
                 color: Colors.purple,
               ),
             ),
@@ -53,10 +56,6 @@ class SalesReportTypeCards extends StatelessWidget {
         ),
       ],
     );
-  }
-
-  double _calculateTotal(List<GasSale> sales) {
-    return sales.fold<double>(0, (sum, s) => sum + s.totalAmount);
   }
 }
 

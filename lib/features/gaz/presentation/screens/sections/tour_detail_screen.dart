@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../../shared/presentation/widgets/gaz_button_styles.dart';
-import '../../../../../shared/utils/responsive_helper.dart';
+import '../../../../shared.dart';
 import '../../../application/providers.dart';
 import '../../../domain/entities/tour.dart';
 import '../../widgets/tour_detail/closure_step_content.dart';

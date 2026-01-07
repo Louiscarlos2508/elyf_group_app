@@ -2,7 +2,7 @@ import '../../domain/entities/contract.dart';
 import '../../domain/entities/property.dart';
 import '../../domain/repositories/contract_repository.dart';
 import '../../domain/repositories/property_repository.dart';
-import '../services/immobilier_validation_service.dart';
+import '../../domain/services/immobilier_validation_service.dart';
 
 class ContractController {
   ContractController(

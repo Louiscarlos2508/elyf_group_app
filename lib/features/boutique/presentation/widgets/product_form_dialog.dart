@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/expense.dart';
 import '../../domain/entities/product.dart';
+import '../../domain/services/product_calculation_service.dart';
 import 'product_form_fields.dart';
 import 'product_form_footer.dart';
 import 'product_image_selector.dart';
@@ -81,10 +82,12 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
           ? null
           : int.tryParse(_purchasePriceController.text);
       
-      // Calculer le prix unitaire d'achat
-      final unitPurchasePrice = (stockInitial > 0 && totalPurchasePrice != null)
-          ? (totalPurchasePrice / stockInitial).round()
-          : null;
+      // Utiliser ProductCalculationService pour calculer le prix unitaire d'achat
+      final calculationService = ref.read(productCalculationServiceProvider);
+      final unitPurchasePrice = calculationService.calculateUnitPurchasePrice(
+        stockInitial: stockInitial,
+        totalPurchasePrice: totalPurchasePrice,
+      );
 
       final product = Product(
         id: widget.product?.id ?? 'prod-${DateTime.now().millisecondsSinceEpoch}',

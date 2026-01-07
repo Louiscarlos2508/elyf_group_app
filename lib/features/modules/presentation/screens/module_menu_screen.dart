@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/tenant/enterprise_selector_widget.dart';
+import '../../../../shared.dart';
 import '../../../../core/tenant/tenant_provider.dart';
 import '../../../administration/domain/entities/admin_module.dart';
 

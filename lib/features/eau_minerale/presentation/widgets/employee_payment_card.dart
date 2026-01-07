@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../shared/utils/currency_formatter.dart';
+import '../../../../shared.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/employee.dart';
 import '../../domain/entities/salary_payment.dart';
-import '../../../../../shared/presentation/widgets/form_dialog.dart';
+import '../../../shared.dart';
 import 'monthly_salary_payment_form.dart';
 import 'salary_receipt_dialog.dart';
 

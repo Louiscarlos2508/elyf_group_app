@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:open_file/open_file.dart';
 
-import '../../../../../shared/presentation/widgets/refresh_button.dart';
-import '../../../../../core/pdf/eau_minerale_report_pdf_service.dart';
+import '../../../../shared.dart';
+import '../../../../core.dart';
 import '../../../application/providers.dart';
 import '../../../domain/entities/report_period.dart';
 import '../../widgets/expense_report_content.dart';

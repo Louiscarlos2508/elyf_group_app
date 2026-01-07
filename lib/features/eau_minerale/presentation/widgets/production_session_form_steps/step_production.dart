@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../../../domain/entities/production_day.dart';
-import '../../../../domain/entities/production_session.dart';
-import '../../../../domain/entities/bobine_usage.dart';
+import '../../../domain/entities/production_day.dart';
+import '../../../domain/entities/production_session.dart';
+import '../../../domain/entities/bobine_usage.dart';
 import 'personnel_section.dart';
 import 'production_form_fields.dart';
 
@@ -23,6 +23,9 @@ class StepProduction extends StatelessWidget {
     required this.selectedDate,
     required this.onProductionDayAdded,
     required this.onProductionDayRemoved,
+    this.session,
+    this.machinesSelectionnees = const [],
+    this.bobinesUtilisees = const [],
   });
 
   final TextEditingController quantiteController;

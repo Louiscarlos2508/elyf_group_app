@@ -7,16 +7,27 @@ class DatePickerField extends StatelessWidget {
   const DatePickerField({
     super.key,
     required this.selectedDate,
-    required this.onTap,
+    this.onTap,
+    this.onDateSelected,
     this.label = 'Date',
     this.firstDate,
     this.lastDate,
     this.validator,
     this.enabled = true,
-  });
+  }) : assert(
+          onTap != null || onDateSelected != null,
+          'Either onTap or onDateSelected must be provided',
+        );
 
   final DateTime selectedDate;
-  final VoidCallback onTap;
+
+  /// Simple tap callback (legacy support).
+  final VoidCallback? onTap;
+
+  /// Callback invoked when a date is selected.
+  /// If provided, automatically shows a date picker on tap.
+  final ValueChanged<DateTime?>? onDateSelected;
+
   final String label;
   final DateTime? firstDate;
   final DateTime? lastDate;
@@ -27,10 +38,27 @@ class DatePickerField extends StatelessWidget {
     return DateFormatter.formatDate(date);
   }
 
+  Future<void> _handleTap(BuildContext context) async {
+    if (onTap != null) {
+      onTap!();
+      return;
+    }
+
+    if (onDateSelected != null) {
+      final picked = await showDatePicker(
+        context: context,
+        initialDate: selectedDate,
+        firstDate: firstDate ?? DateTime(2000),
+        lastDate: lastDate ?? DateTime(2100),
+      );
+      onDateSelected!(picked);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: enabled ? onTap : null,
+      onTap: enabled ? () => _handleTap(context) : null,
       child: InputDecorator(
         decoration: InputDecoration(
           labelText: label,

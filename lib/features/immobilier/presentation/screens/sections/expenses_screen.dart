@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../../shared/presentation/screens/expense_balance_screen.dart';
-import '../../../../../shared/presentation/widgets/refresh_button.dart';
+import '../../../../shared.dart';
 import '../../../application/providers.dart';
 import '../../../domain/adapters/expense_balance_adapter.dart';
 import '../../../domain/entities/expense.dart';

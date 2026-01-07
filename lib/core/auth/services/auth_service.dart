@@ -183,6 +183,11 @@ class AuthService {
       isAdmin: true,
     );
 
+    // S'assurer que le service est initialisé avant de sauvegarder
+    if (!_isInitialized) {
+      await initialize();
+    }
+    
     // Sauvegarder dans le stockage sécurisé
     await _saveUser(user);
     _currentUser = user;

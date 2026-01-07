@@ -18,10 +18,10 @@ class SalesController {
     return SalesState(sales: sales.take(6).toList());
   }
 
-  /// Creates a sale using SaleService which handles stock validation and decrement.
-  /// Sales are now created directly without validation workflow.
+  /// Creates a sale using the repository.
+  /// Note: Stock validation should be done before calling this method.
   Future<String> createSale(Sale sale, String userId) async {
-    return await _saleService.createSale(sale, userId);
+    return await _saleRepository.createSale(sale);
   }
 }
 

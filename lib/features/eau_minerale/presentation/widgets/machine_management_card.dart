@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/providers.dart';
 import '../../domain/entities/machine.dart';
-import '../../domain/permissions/eau_minerale_permissions.dart';
+import '../../../core.dart';
 import 'centralized_permission_guard.dart';
 import 'machine_form_dialog.dart';
 import 'machine_list_item.dart';

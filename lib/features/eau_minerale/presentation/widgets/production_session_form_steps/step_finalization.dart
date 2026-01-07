@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../application/providers.dart';
-import '../../production_session_form/production_session_summary_card.dart';
+import '../production_session_form/production_session_summary_card.dart';
 import 'index_compteur_final_field.dart';
 import 'consommation_field.dart';
 import 'production_session_form_helpers.dart';

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../application/providers.dart';
-import '../../domain/entities/production_session.dart';
+import '../../../domain/entities/production_session.dart';
 import 'production_report_components.dart';
 
 /// Section consommation électrique du rapport.

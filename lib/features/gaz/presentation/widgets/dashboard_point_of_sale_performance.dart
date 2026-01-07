@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../../shared/utils/currency_formatter.dart';
+import '../../../../shared.dart';
 import '../../domain/entities/point_of_sale.dart';
 
 /// Widget displaying performance by point of sale for today.

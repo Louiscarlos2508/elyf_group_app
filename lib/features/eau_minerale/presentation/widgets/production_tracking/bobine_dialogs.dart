@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../domain/entities/bobine_usage.dart';
-import '../../../../domain/entities/machine.dart';
-import '../../../../domain/entities/production_session.dart';
+import '../../../domain/entities/bobine_usage.dart';
+import '../../../domain/entities/machine.dart';
+import '../../../domain/entities/production_session.dart';
 import '../../../application/providers.dart';
-import '../../bobine_finish_dialog.dart';
-import '../../machine_breakdown_dialog.dart';
-import '../../../screens/sections/production_session_detail_screen.dart' show productionSessionDetailProvider;
+import '../bobine_finish_dialog.dart';
+import '../machine_breakdown_dialog.dart';
+import '../../screens/sections/production_session_detail_screen.dart' show productionSessionDetailProvider;
 
 /// Dialogs pour la gestion des bobines.
 class BobineDialogs {

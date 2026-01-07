@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/entities/sale.dart';
-import 'invoice_print_service.dart';
+import 'invoice_print/invoice_print_button.dart';
 import 'sale_detail_helpers.dart';
 
 /// Dialog showing sale details.

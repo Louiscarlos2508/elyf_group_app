@@ -5,11 +5,14 @@ import '../application/controllers/commissions_controller.dart';
 import '../application/controllers/liquidity_controller.dart';
 import '../application/controllers/orange_money_controller.dart';
 import '../application/controllers/settings_controller.dart';
-import '../data/repositories/mock_agent_repository.dart';
+import '../../../../core/offline/isar_service.dart';
+import '../../../../core/offline/providers.dart';
+import '../../../../core/tenant/tenant_provider.dart';
+import '../data/repositories/agent_offline_repository.dart';
 import '../data/repositories/mock_commission_repository.dart';
 import '../data/repositories/mock_liquidity_repository.dart';
 import '../data/repositories/mock_settings_repository.dart';
-import '../data/repositories/mock_transaction_repository.dart';
+import '../data/repositories/transaction_offline_repository.dart';
 import '../domain/entities/agent.dart';
 import '../domain/entities/commission.dart';
 import '../domain/entities/liquidity_checkpoint.dart';
@@ -22,7 +25,19 @@ import '../domain/repositories/transaction_repository.dart';
 
 /// Provider for transaction repository.
 final transactionRepositoryProvider = Provider<TransactionRepository>(
-  (ref) => MockTransactionRepository(),
+  (ref) {
+    final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+    final isarService = IsarService.instance;
+    final syncManager = ref.watch(syncManagerProvider);
+    final connectivityService = ref.watch(connectivityServiceProvider);
+    
+    return TransactionOfflineRepository(
+      isarService: isarService,
+      syncManager: syncManager,
+      connectivityService: connectivityService,
+      enterpriseId: enterpriseId,
+    );
+  },
 );
 
 /// Provider for Orange Money controller.
@@ -90,7 +105,19 @@ final filteredTransactionsProvider = FutureProvider.autoDispose
 
 /// Provider for agent repository.
 final agentRepositoryProvider = Provider<AgentRepository>(
-  (ref) => MockAgentRepository(),
+  (ref) {
+    final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+    final isarService = IsarService.instance;
+    final syncManager = ref.watch(syncManagerProvider);
+    final connectivityService = ref.watch(connectivityServiceProvider);
+    
+    return AgentOfflineRepository(
+      isarService: isarService,
+      syncManager: syncManager,
+      connectivityService: connectivityService,
+      enterpriseId: enterpriseId,
+    );
+  },
 );
 
 /// Provider for agents controller.

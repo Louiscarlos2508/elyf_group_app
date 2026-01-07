@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/cylinder.dart';
 import '../../domain/entities/cylinder_stock.dart';
-import '../../../../shared/utils/currency_formatter.dart';
+import '../../../../shared.dart';
 
 /// Carte récapitulative du stock de bouteilles.
 class StockSummaryCard extends ConsumerWidget {
@@ -99,12 +99,6 @@ class _CylinderStockRow extends StatelessWidget {
   final Cylinder cylinder;
   final int fullStock;
   final Color stockColor;
-
-)+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        ) +
-        ' F';
-  }
 
   @override
   Widget build(BuildContext context) {

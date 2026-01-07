@@ -1,6 +1,6 @@
 import '../../domain/entities/tenant.dart';
 import '../../domain/repositories/tenant_repository.dart';
-import '../services/immobilier_validation_service.dart';
+import '../../domain/services/immobilier_validation_service.dart';
 
 class TenantController {
   TenantController(

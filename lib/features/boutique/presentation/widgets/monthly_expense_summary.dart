@@ -1,62 +1,29 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/entities/expense.dart';
+import '../../domain/services/dashboard_calculation_service.dart';
 
 /// Widget displaying monthly expense summary - style eau_minerale.
+///
+/// Uses [MonthlyExpenseMetrics] from the calculation service.
 class MonthlyExpenseSummary extends StatelessWidget {
   const MonthlyExpenseSummary({
     super.key,
-    required this.expenses,
+    required this.metrics,
+    required this.calculationService,
   });
 
-  final List<Expense> expenses;
+  /// Pre-calculated monthly expense metrics.
+  final MonthlyExpenseMetrics metrics;
+  
+  /// Service for getting category labels.
+  final BoutiqueDashboardCalculationService calculationService;
 
   String _formatCurrency(int amount) {
     return '${amount.toString().replaceAllMapped(
           RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
           (Match m) => '${m[1]} ',
         )} FCFA';
-  }
-
-  int _calculateMonthlyTotal() {
-    final now = DateTime.now();
-    final monthStart = DateTime(now.year, now.month, 1);
-    final monthExpenses = expenses.where(
-      (e) => e.date.isAfter(monthStart.subtract(const Duration(days: 1))),
-    );
-    return monthExpenses.fold(0, (sum, e) => sum + e.amountCfa);
-  }
-
-  Map<ExpenseCategory, int> _getByCategory() {
-    final now = DateTime.now();
-    final monthStart = DateTime(now.year, now.month, 1);
-    final monthExpenses = expenses.where(
-      (e) => e.date.isAfter(monthStart.subtract(const Duration(days: 1))),
-    );
-
-    final byCategory = <ExpenseCategory, int>{};
-    for (final expense in monthExpenses) {
-      byCategory[expense.category] =
-          (byCategory[expense.category] ?? 0) + expense.amountCfa;
-    }
-    return byCategory;
-  }
-
-  String _getCategoryLabel(ExpenseCategory category) {
-    switch (category) {
-      case ExpenseCategory.stock:
-        return 'Stock/Achats';
-      case ExpenseCategory.rent:
-        return 'Loyer';
-      case ExpenseCategory.utilities:
-        return 'Services publics';
-      case ExpenseCategory.maintenance:
-        return 'Maintenance';
-      case ExpenseCategory.marketing:
-        return 'Marketing';
-      case ExpenseCategory.other:
-        return 'Autres';
-    }
   }
 
   Color _getCategoryColor(ExpenseCategory category) {
@@ -79,8 +46,8 @@ class MonthlyExpenseSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final monthlyTotal = _calculateMonthlyTotal();
-    final byCategory = _getByCategory();
+    final monthlyTotal = metrics.totalAmount;
+    final byCategory = metrics.byCategory;
 
     return Container(
       decoration: BoxDecoration(
@@ -163,7 +130,7 @@ class MonthlyExpenseSummary extends StatelessWidget {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        _getCategoryLabel(entry.key),
+                        calculationService.getCategoryLabel(entry.key),
                         style: theme.textTheme.bodyMedium,
                       ),
                     ),

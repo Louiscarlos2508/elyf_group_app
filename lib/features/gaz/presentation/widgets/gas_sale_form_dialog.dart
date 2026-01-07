@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/tenant/tenant_provider.dart';
-import '../../../../shared/presentation/widgets/form_dialog_actions.dart';
-import '../../../../shared/presentation/widgets/form_dialog_header.dart';
-import '../../../../shared/presentation/widgets/gaz_button_styles.dart';
+import '../../../../shared.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/cylinder.dart';
 import '../../domain/entities/gas_sale.dart';

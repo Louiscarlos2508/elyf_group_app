@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../domain/entities/bobine_usage.dart';
-import '../../../../domain/entities/machine.dart';
-import '../../../../domain/entities/production_session.dart';
+import '../../../domain/entities/bobine_usage.dart';
+import '../../../domain/entities/machine.dart';
+import '../../../domain/entities/production_session.dart';
 import '../../../application/providers.dart';
-import '../../../screens/sections/production_session_detail_screen.dart' show productionSessionDetailProvider;
+import '../../screens/sections/production_session_detail_screen.dart' show productionSessionDetailProvider;
 
 /// Helpers pour l'ajout de machines.
 class MachineAddHelpers {

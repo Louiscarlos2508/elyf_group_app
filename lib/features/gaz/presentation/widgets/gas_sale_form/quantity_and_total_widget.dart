@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../../../../../shared/utils/currency_formatter.dart';
+import '../../../../shared.dart';
 import '../../../domain/entities/cylinder.dart';
 
 /// Widget pour saisir la quantité et afficher le total.
