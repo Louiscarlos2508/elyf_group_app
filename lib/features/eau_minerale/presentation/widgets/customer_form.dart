@@ -42,14 +42,10 @@ class CustomerFormState extends ConsumerState<CustomerForm> {
       if (!mounted) return;
       Navigator.of(context).pop();
       ref.invalidate(clientsStateProvider);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Client enregistré avec succès')),
-      );
+      NotificationService.showSuccess(context, 'Client enregistré avec succès');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur: ${e.toString()}')),
-      );
+      NotificationService.showError(context, e.toString());
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

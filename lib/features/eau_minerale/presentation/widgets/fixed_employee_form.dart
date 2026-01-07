@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/providers.dart';
 import '../../domain/entities/employee.dart';
+import '../../../shared.dart';
 
 /// Form for creating/editing a fixed employee.
 class FixedEmployeeForm extends ConsumerStatefulWidget {
@@ -71,18 +72,12 @@ class FixedEmployeeFormState extends ConsumerState<FixedEmployeeForm> {
       if (!mounted) return;
       Navigator.of(context).pop();
       ref.invalidate(salaryStateProvider);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(widget.employee == null
+      NotificationService.showInfo(context, widget.employee == null
               ? 'Employé créé'
-              : 'Employé modifié'),
-        ),
-      );
+              : 'Employé modifié');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur: ${e.toString()}')),
-      );
+      NotificationService.showError(context, e.toString());
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

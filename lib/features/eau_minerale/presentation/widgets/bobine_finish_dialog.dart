@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/bobine_usage.dart';
 import '../../domain/entities/production_session.dart';
+import '../../../shared.dart';
 
 /// Dialog pour signaler qu'une bobine est finie.
 class BobineFinishDialog extends ConsumerStatefulWidget {
@@ -58,22 +59,12 @@ class _BobineFinishDialogState extends ConsumerState<BobineFinishDialog> {
       Navigator.of(context).pop();
       widget.onFinished(sessionSauvegardee);
       
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
+      NotificationService.showSuccess(context, 
             'Bobine ${widget.bobine.bobineType} marquée comme finie',
-          ),
-          backgroundColor: Colors.green,
-        ),
-      );
+          );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      NotificationService.showError(context, e.toString());
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

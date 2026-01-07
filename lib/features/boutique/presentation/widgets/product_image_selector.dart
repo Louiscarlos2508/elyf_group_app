@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../shared.dart';
+
 class ProductImageSelector extends StatefulWidget {
   const ProductImageSelector({
     super.key,
@@ -64,26 +66,14 @@ class _ProductImageSelectorState extends State<ProductImageSelector> {
         errorMessage = 'Erreur: ${e.message ?? e.code}';
       }
       
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(errorMessage),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 5),
-        ),
-      );
+      NotificationService.showError(context, errorMessage);
     } catch (e) {
       if (!mounted) return;
       String errorMessage = 'Erreur inattendue: ${e.toString()}';
       if (e.toString().contains('channel') || e.toString().contains('connection')) {
         errorMessage = 'Erreur de connexion avec le plugin. Veuillez redémarrer complètement l\'application (Hot Restart ou rebuild).';
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(errorMessage),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 5),
-        ),
-      );
+      NotificationService.showError(context, errorMessage);
     } finally {
       if (mounted) {
         setState(() => _isPickingImage = false);

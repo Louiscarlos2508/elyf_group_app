@@ -110,20 +110,13 @@ class _RestockDialogState extends ConsumerState<RestockDialog> {
       ref.invalidate(productsProvider);
       ref.invalidate(lowStockProductsProvider);
       ref.invalidate(expensesProvider);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('+$qty ${widget.product.name} ajouté au stock (dépense enregistrée)'),
-          backgroundColor: Colors.green,
-        ),
+      NotificationService.showSuccess(
+        context,
+        '+$qty ${widget.product.name} ajouté au stock (dépense enregistrée)',
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      NotificationService.showError(context, e.toString());
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

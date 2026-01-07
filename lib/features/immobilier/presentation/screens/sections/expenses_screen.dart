@@ -15,10 +15,7 @@ class ExpensesScreen extends ConsumerWidget {
   const ExpensesScreen({super.key});
 
   String _formatCurrency(int amount) {
-    return '${amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        )} FCFA';
+    return CurrencyFormatter.formatFCFA(amount);
   }
 
   List<PropertyExpense> _getTodayExpenses(List<PropertyExpense> expenses) {
@@ -367,12 +364,7 @@ class ExpensesScreen extends ConsumerWidget {
               ref.invalidate(expensesProvider);
               if (context.mounted) {
                 Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Dépense supprimée'),
-                    backgroundColor: Colors.green,
-                  ),
-                );
+                NotificationService.showSuccess(context, 'Dépense supprimée');
               }
             },
             style: FilledButton.styleFrom(

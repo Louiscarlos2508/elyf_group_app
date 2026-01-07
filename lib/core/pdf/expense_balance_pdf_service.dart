@@ -6,6 +6,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 import '../../core/domain/entities/expense_balance_data.dart';
+import '../../shared.dart';
 
 /// Service pour générer le PDF du bilan des dépenses.
 class ExpenseBalancePdfService {
@@ -265,10 +266,7 @@ class ExpenseBalancePdfService {
   }
 
   String _formatCurrency(int amount) {
-    return amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        ) + ' FCFA';
+    return CurrencyFormatter.formatFCFA(amount);
   }
 }
 

@@ -117,12 +117,7 @@ class MonthlySalaryPaymentFormState
         message = 'Erreur de validation: ${e.toString()}';
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: Colors.orange,
-        ),
-      );
+      NotificationService.showWarning(context, message);
       return;
     }
 
@@ -164,9 +159,7 @@ class MonthlySalaryPaymentFormState
       if (!mounted) return;
       Navigator.of(context).pop();
       ref.invalidate(salaryStateProvider);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Paiement de salaire enregistré avec signature'),
+      NotificationService.showSuccess(context, 'Paiement de salaire enregistré avec signature');
           backgroundColor: Colors.green,
         ),
       );
@@ -183,12 +176,7 @@ class MonthlySalaryPaymentFormState
         message = 'Erreur: ${e.toString()}';
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: Colors.red,
-        ),
-      );
+      NotificationService.showError(context, message);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

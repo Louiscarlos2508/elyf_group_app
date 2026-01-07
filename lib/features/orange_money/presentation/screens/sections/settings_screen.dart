@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../shared.dart';
 import '../../../application/providers.dart';
 import '../../../domain/entities/settings.dart';
 import '../../widgets/settings_account_card.dart';
@@ -9,6 +10,7 @@ import '../../widgets/settings_sim_card.dart';
 import '../../widgets/settings_system_info_card.dart';
 import '../../widgets/settings_thresholds_card.dart';
 import '../../widgets/settings_tips_card.dart';
+import '../../../../shared.dart';
 
 /// Settings screen for Orange Money configuration.
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -54,12 +56,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur lors du chargement: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        NotificationService.showError(context, 'Erreur lors du chargement: $e');
       }
     } finally {
       if (mounted) {
@@ -111,21 +108,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           _hasChanges = false;
         });
         
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Paramètres enregistrés avec succès'),
-            backgroundColor: Color(0xFF00A63E),
-          ),
-        );
+        NotificationService.showSuccess(context, 'Paramètres enregistrés avec succès');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        NotificationService.showError(context, 'Erreur: $e');
       }
     } finally {
       if (mounted) {

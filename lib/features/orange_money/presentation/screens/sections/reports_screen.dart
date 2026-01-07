@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../../../application/providers.dart';
 import '../../widgets/kpi_card.dart';
+import '../../../../shared.dart';
 
 /// Enhanced reports screen with period selector and detailed statistics.
 class ReportsScreen extends ConsumerStatefulWidget {
@@ -507,11 +508,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 OutlinedButton.icon(
                   onPressed: () {
                     // TODO: Export to PDF
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Export PDF - À implémenter'),
-                      ),
-                    );
+                    NotificationService.showInfo(context, 'Export PDF - À implémenter');
                   },
                   icon: const Icon(Icons.picture_as_pdf, size: 16),
                   label: const Text('Exporter (PDF)'),

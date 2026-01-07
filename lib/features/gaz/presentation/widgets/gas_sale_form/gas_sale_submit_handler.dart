@@ -32,14 +32,9 @@ class GasSaleSubmitHandler {
     // Vérifier le stock disponible
     if (quantity > availableStock) {
       if (!context.mounted) return false;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
+      NotificationService.showError(context, 
             'Stock insuffisant. Stock disponible: $availableStock',
-          ),
-          backgroundColor: Colors.red,
-        ),
-      );
+          );
       return false;
     }
 
@@ -107,24 +102,15 @@ class GasSaleSubmitHandler {
 
       Navigator.of(context).pop();
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Vente enregistrée avec succès: ${CurrencyFormatter.formatDouble(totalAmount)}',
-          ),
-          backgroundColor: Colors.green,
-        ),
+      NotificationService.showSuccess(
+        context,
+        'Vente enregistrée avec succès: ${CurrencyFormatter.formatDouble(totalAmount)}',
       );
 
       return true;
     } catch (e) {
       if (!context.mounted) return false;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      NotificationService.showError(context, e.toString());
       return false;
     } finally {
       onLoadingChanged();

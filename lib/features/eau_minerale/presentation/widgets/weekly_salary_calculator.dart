@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../shared.dart';
 import '../../application/controllers/production_session_controller.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/daily_worker.dart';
@@ -56,9 +57,7 @@ class _WeeklySalaryCalculatorState
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur: $e')),
-        );
+        NotificationService.showError(context, e.toString());
       }
     }
   }
@@ -271,12 +270,7 @@ class _WeeklySalaryCalculatorState
         onPaid: (signature) {
           // TODO: Enregistrer le paiement avec la signature
           Navigator.of(context).pop();
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Paiement enregistré avec signature'),
-              backgroundColor: Colors.green,
-            ),
-          );
+          NotificationService.showSuccess(context, 'Paiement enregistré avec signature');
         },
       ),
     );
@@ -301,12 +295,7 @@ class _WeeklySalaryCalculatorState
         onPaid: (signature) {
           // TODO: Enregistrer tous les paiements avec la signature
           Navigator.of(context).pop();
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Tous les paiements enregistrés avec signature'),
-              backgroundColor: Colors.green,
-            ),
-          );
+          NotificationService.showSuccess(context, 'Tous les paiements enregistrés avec signature');
         },
       ),
     );

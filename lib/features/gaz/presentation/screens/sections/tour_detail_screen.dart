@@ -139,12 +139,7 @@ class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
                                   }
                                 } catch (e) {
                                   if (mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text('Erreur: $e'),
-                                        backgroundColor: Colors.red,
-                                      ),
-                                    );
+                                    NotificationService.showError(context, 'Erreur: $e');
                                   }
                                 }
                               },

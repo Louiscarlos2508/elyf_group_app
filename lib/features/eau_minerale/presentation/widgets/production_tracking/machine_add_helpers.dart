@@ -6,6 +6,7 @@ import '../../../domain/entities/machine.dart';
 import '../../../domain/entities/production_session.dart';
 import '../../../application/providers.dart';
 import '../../screens/sections/production_session_detail_screen.dart' show productionSessionDetailProvider;
+import '../../../../shared.dart';
 
 /// Helpers pour l'ajout de machines.
 class MachineAddHelpers {
@@ -53,14 +54,9 @@ class MachineAddHelpers {
 
     if (context.mounted) {
       ref.invalidate(productionSessionDetailProvider(session.id));
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
+      NotificationService.showSuccess(context, 
             'Machine ${machine.nom} ajoutée. Bobine non finie réutilisée: ${bobineNonFinie.bobineType}',
-          ),
-          backgroundColor: Colors.green,
-        ),
-      );
+          );
     }
   }
 
@@ -87,14 +83,9 @@ class MachineAddHelpers {
 
     if (context.mounted) {
       ref.invalidate(productionSessionDetailProvider(session.id));
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
+      NotificationService.showSuccess(context, 
             'Machine ${machine.nom} ajoutée avec succès',
-          ),
-          backgroundColor: Colors.green,
-        ),
-      );
+          );
     }
   }
 }

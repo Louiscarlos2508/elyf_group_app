@@ -7,6 +7,7 @@ import '../daily_personnel_form.dart';
 import '../../screens/sections/production_session_detail_screen.dart' show productionSessionDetailProvider;
 import '../../../domain/entities/production_session.dart';
 import 'tracking_helpers.dart';
+import '../../../../shared.dart';
 
 /// Widget pour afficher une carte de jour de production.
 class PersonnelDayCard extends ConsumerWidget {
@@ -152,11 +153,7 @@ class PersonnelDayCard extends ConsumerWidget {
                 Navigator.of(context).pop();
                 ref.invalidate(productionSessionDetailProvider(session.id));
                 ref.invalidate(stockStateProvider);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Personnel enregistré avec succès'),
-                  ),
-                );
+                NotificationService.showInfo(context, 'Personnel enregistré avec succès');
               }
             },
           ),

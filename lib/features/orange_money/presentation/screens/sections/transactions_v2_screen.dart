@@ -85,13 +85,9 @@ class _TransactionsV2ScreenState extends ConsumerState<TransactionsV2Screen>
 
       if (mounted) {
         final amount = int.parse(amountStr);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Transaction ${_selectedType == TransactionType.cashIn ? "dépôt" : "retrait"} de ${CurrencyFormatter.formatFCFA(amount)} créée avec succès',
-            ),
-            backgroundColor: Colors.green,
-          ),
+        NotificationService.showSuccess(
+          context,
+          'Transaction ${_selectedType == TransactionType.cashIn ? "dépôt" : "retrait"} de ${CurrencyFormatter.formatFCFA(amount)} créée avec succès',
         );
 
         // Reset form
@@ -107,21 +103,11 @@ class _TransactionsV2ScreenState extends ConsumerState<TransactionsV2Screen>
       }
     } on ArgumentError catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.message ?? 'Erreur de validation'),
-            backgroundColor: Colors.orange,
-          ),
-        );
+        NotificationService.showWarning(context, e.message ?? 'Erreur de validation');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur lors de la création: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        NotificationService.showError(context, 'Erreur lors de la création: $e');
       }
     }
   }

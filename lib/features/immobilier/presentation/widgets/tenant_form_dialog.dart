@@ -59,7 +59,7 @@ class _TenantFormDialogState extends ConsumerState<TenantFormDialog> {
 
     try {
       final tenant = Tenant(
-        id: widget.tenant?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+        id: widget.tenant?.id ?? IdGenerator.generate(),
         fullName: _fullNameController.text.trim(),
         phone: _phoneController.text.trim(),
         email: _emailController.text.trim(),
@@ -89,24 +89,16 @@ class _TenantFormDialogState extends ConsumerState<TenantFormDialog> {
       if (mounted) {
         ref.invalidate(tenantsProvider);
         Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              widget.tenant == null
-                  ? 'Locataire créé avec succès'
-                  : 'Locataire mis à jour avec succès',
-            ),
-          ),
+        NotificationService.showSuccess(
+          context,
+          widget.tenant == null
+              ? 'Locataire créé avec succès'
+              : 'Locataire mis à jour avec succès',
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        NotificationService.showError(context, e.toString());
       }
     }
   }

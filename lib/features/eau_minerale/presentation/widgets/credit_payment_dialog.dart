@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:open_file/open_file.dart';
 
+import '../../../../shared.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/credit_payment.dart';
 import '../../domain/entities/sale.dart';
@@ -67,22 +68,17 @@ class _CreditPaymentDialogState extends ConsumerState<CreditPaymentDialog> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoadingSales = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur lors du chargement: ${e.toString()}')),
-      );
+      NotificationService.showError(context, 'Erreur lors du chargement: ${e.toString()}');
     }
   }
 
   String _formatCurrency(int amount) {
-    final formatted = amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        );
-    return '$formatted CFA';
+    // Utiliser CurrencyFormatter mais avec " CFA" au lieu de " FCFA" pour compatibilité
+    return CurrencyFormatter.formatFCFA(amount).replaceAll(' FCFA', ' CFA');
   }
 
   String _formatDate(DateTime date) {
-    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+    return DateFormatter.formatDate(date);
   }
 
   Future<void> _showPrintOption(int paymentAmount, int remainingAfterPayment) async {
@@ -140,32 +136,22 @@ class _CreditPaymentDialogState extends ConsumerState<CreditPaymentDialog> {
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur d\'impression: $e'),
-          backgroundColor: Colors.orange,
-        ),
-      );
+      NotificationService.showWarning(context, 'Erreur d\'impression: $e');
     }
   }
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedSale == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Veuillez sélectionner une vente')),
-      );
+      NotificationService.showWarning(context, 'Veuillez sélectionner une vente');
       return;
     }
 
     final amount = int.parse(_amountController.text);
     if (amount > _selectedSale!.remainingAmount) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Le montant ne peut pas dépasser le reste à payer (${_formatCurrency(_selectedSale!.remainingAmount)})',
-          ),
-        ),
+      NotificationService.showWarning(
+        context,
+        'Le montant ne peut pas dépasser le reste à payer (${_formatCurrency(_selectedSale!.remainingAmount)})',
       );
       return;
     }
@@ -194,20 +180,10 @@ class _CreditPaymentDialogState extends ConsumerState<CreditPaymentDialog> {
       if (!mounted) return;
       Navigator.of(context).pop();
       ref.invalidate(clientsStateProvider);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Paiement de ${_formatCurrency(amount)} enregistré'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      NotificationService.showSuccess(context, 'Paiement de ${_formatCurrency(amount)} enregistré');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      NotificationService.showError(context, e.toString());
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

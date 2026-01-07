@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../../core.dart';
 import '../../../../application/providers.dart';
+import '../../../../../shared.dart';
 
 /// Dialogue pour modifier un rôle existant.
 class EditRoleDialog extends ConsumerStatefulWidget {
@@ -45,20 +46,12 @@ class _EditRoleDialogState extends ConsumerState<EditRoleDialog> {
   Future<void> _handleSubmit() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedPermissions.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Sélectionnez au moins une permission'),
-        ),
-      );
+      NotificationService.showInfo(context, 'Sélectionnez au moins une permission');
       return;
     }
 
     if (widget.role.isSystemRole) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Les rôles système ne peuvent pas être modifiés'),
-        ),
-      );
+      NotificationService.showInfo(context, 'Les rôles système ne peuvent pas être modifiés');
       return;
     }
 
@@ -75,15 +68,11 @@ class _EditRoleDialogState extends ConsumerState<EditRoleDialog> {
 
       if (mounted) {
         Navigator.of(context).pop(updatedRole);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Rôle modifié avec succès')),
-        );
+        NotificationService.showSuccess(context, 'Rôle modifié avec succès');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur: $e')),
-        );
+        NotificationService.showError(context, e.toString());
       }
     } finally {
       if (mounted) {

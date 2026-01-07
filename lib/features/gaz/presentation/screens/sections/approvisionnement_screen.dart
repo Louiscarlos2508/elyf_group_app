@@ -7,6 +7,7 @@ import '../../widgets/tour_form_dialog.dart';
 import 'approvisionnement/approvisionnement_header.dart';
 import 'approvisionnement/approvisionnement_tab_bar.dart';
 import 'approvisionnement/tours_list_tab.dart';
+import '../../../../shared.dart';
 
 /// Écran de gestion des tours d'approvisionnement.
 class ApprovisionnementScreen extends ConsumerStatefulWidget {
@@ -61,12 +62,7 @@ class _ApprovisionnementScreenState
     } catch (e) {
       debugPrint('Erreur: $e');
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      NotificationService.showError(context, 'Erreur: $e');
     }
   }
 

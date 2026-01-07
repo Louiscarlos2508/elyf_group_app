@@ -57,12 +57,7 @@ class _GazExpensesScreenState extends ConsumerState<GazExpensesScreen>
     } catch (e) {
       debugPrint('Erreur lors de l\'ouverture du dialog: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        NotificationService.showError(context, 'Erreur: $e');
       }
     }
   }

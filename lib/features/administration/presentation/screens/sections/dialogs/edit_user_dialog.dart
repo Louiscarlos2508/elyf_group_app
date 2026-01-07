@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../../../../../shared.dart';
 import '../../../../domain/entities/user.dart';
 
 /// Dialogue pour modifier un utilisateur existant.
@@ -75,9 +76,7 @@ class _EditUserDialogState extends State<EditUserDialog> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur: $e')),
-        );
+        NotificationService.showError(context, e.toString());
       }
     } finally {
       if (mounted) {

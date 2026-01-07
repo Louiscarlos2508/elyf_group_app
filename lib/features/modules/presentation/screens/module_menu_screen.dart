@@ -86,13 +86,9 @@ class ModuleMenuScreen extends ConsumerWidget {
                           FilledButton.icon(
                             onPressed: () {
                               // Le sélecteur d'entreprise est dans l'AppBar
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
+                              NotificationService.showInfo(context, 
                                     'Cliquez sur l\'icône entreprise en haut à droite',
-                                  ),
-                                ),
-                              );
+                                  );
                             },
                             icon: const Icon(Icons.business),
                             label: const Text('Sélectionner une entreprise'),

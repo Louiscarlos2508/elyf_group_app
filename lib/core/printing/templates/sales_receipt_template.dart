@@ -1,4 +1,5 @@
 import '../../../../features/boutique/domain/entities/sale.dart';
+import '../../../../shared.dart';
 
 /// Template pour l'impression de factures de vente sur imprimante thermique.
 class SalesReceiptTemplate {
@@ -134,9 +135,7 @@ class SalesReceiptTemplate {
   }
 
   String _formatDate(DateTime date) {
-    return '${date.day.toString().padLeft(2, '0')}/'
-        '${date.month.toString().padLeft(2, '0')}/'
-        '${date.year}';
+    return DateFormatter.formatDate(date);
   }
 
   String _formatTime(DateTime date) {
@@ -145,10 +144,8 @@ class SalesReceiptTemplate {
   }
 
   String _formatCurrency(int amount) {
-    return amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        ) + ' F';
+    // Utiliser CurrencyFormatter mais avec " F" au lieu de " FCFA" pour l'impression
+    return CurrencyFormatter.formatFCFA(amount).replaceAll(' FCFA', ' F');
   }
 
   String _getPaymentMethodLabel(PaymentMethod method) {

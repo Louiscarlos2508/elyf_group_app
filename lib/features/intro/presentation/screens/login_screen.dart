@@ -2,6 +2,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../shared.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/auth/services/auth_service.dart';
@@ -137,12 +139,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       // Afficher un message d'erreur plus clair
       final errorMessage = e.toString().replaceAll('Exception: ', '');
       
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur de connexion: $errorMessage'),
-          backgroundColor: Theme.of(context).colorScheme.error,
-          duration: const Duration(seconds: 5),
-        ),
+      NotificationService.showError(context, 'Erreur de connexion: $errorMessage');
       );
     }
   }

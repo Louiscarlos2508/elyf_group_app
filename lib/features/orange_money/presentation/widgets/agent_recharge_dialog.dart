@@ -44,17 +44,13 @@ class _AgentRechargeDialogState extends State<AgentRechargeDialog> {
     }
 
     if (_selectedAgent == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Veuillez sélectionner un agent')),
-      );
+      NotificationService.showWarning(context, 'Veuillez sélectionner un agent');
       return;
     }
 
     final amount = int.tryParse(_amountController.text.trim()) ?? 0;
     if (amount <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Le montant doit être supérieur à 0')),
-      );
+      NotificationService.showWarning(context, 'Le montant doit être supérieur à 0');
       return;
     }
 

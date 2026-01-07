@@ -5,6 +5,7 @@ import '../../../application/controllers/cylinder_controller.dart';
 import '../../../application/controllers/gaz_settings_controller.dart';
 import '../../../application/providers.dart';
 import '../../../domain/entities/cylinder.dart';
+import '../../../../shared.dart';
 
 /// Handler pour la soumission du formulaire de bouteille.
 class CylinderSubmitHandler {
@@ -23,12 +24,7 @@ class CylinderSubmitHandler {
   }) async {
     if (selectedWeight == null || enterpriseId == null || moduleId == null) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Veuillez remplir tous les champs requis'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        NotificationService.showError(context, 'Veuillez remplir tous les champs requis');
       }
       return false;
     }
@@ -91,26 +87,16 @@ class CylinderSubmitHandler {
       Navigator.of(context).pop();
 
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
+        NotificationService.showSuccess(context, 
               existingCylinder == null
                   ? 'Bouteille créée avec succès'
                   : 'Bouteille mise à jour',
-            ),
-            backgroundColor: Colors.green,
-          ),
-        );
+            );
       }
       return true;
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        NotificationService.showError(context, e.toString());
       }
       return false;
     }

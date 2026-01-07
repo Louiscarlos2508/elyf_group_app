@@ -73,15 +73,11 @@ class ProductionSessionFormState
   Future<void> submit() async {
     if (!_formKey.currentState!.validate()) return;
     if (_machinesSelectionnees.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sélectionnez au moins une machine')),
-      );
+      NotificationService.showWarning(context, 'Sélectionnez au moins une machine');
       return;
     }
     if (_bobinesUtilisees.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ajoutez au moins une bobine utilisée')),
-      );
+      NotificationService.showWarning(context, 'Ajoutez au moins une bobine utilisée');
       return;
     }
 
@@ -117,18 +113,12 @@ class ProductionSessionFormState
       if (!mounted) return;
       Navigator.of(context).pop();
       ref.invalidate(productionSessionsStateProvider);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(widget.session == null
+      NotificationService.showInfo(context, widget.session == null
               ? 'Session créée avec succès'
-              : 'Session mise à jour'),
-        ),
-      );
+              : 'Session mise à jour');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur: ${e.toString()}')),
-      );
+      NotificationService.showError(context, e.toString());
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -312,9 +302,7 @@ class ProductionSessionFormState
   }
 
   String _formatDate(DateTime date) {
-    return '${date.day.toString().padLeft(2, '0')}/'
-        '${date.month.toString().padLeft(2, '0')}/'
-        '${date.year}';
+    return DateFormatter.formatDate(date);
   }
 }
 

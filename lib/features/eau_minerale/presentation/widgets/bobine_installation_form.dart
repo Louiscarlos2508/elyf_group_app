@@ -8,6 +8,7 @@ import '../../domain/entities/bobine_usage.dart';
 import '../../domain/entities/machine.dart';
 import '../../domain/entities/production_session_status.dart';
 import 'bobine_usage_form_field.dart' show bobineStocksDisponiblesProvider;
+import '../../../shared.dart';
 
 /// Formulaire pour installer une bobine.
 /// Crée automatiquement une nouvelle bobine et l'installe sur la machine.
@@ -113,12 +114,7 @@ class _BobineInstallationFormState
         final bobineStocks = await ref.read(bobineStocksDisponiblesProvider.future);
         if (bobineStocks.isEmpty) {
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Aucune bobine disponible en stock'),
-                backgroundColor: Colors.red,
-              ),
-            );
+            NotificationService.showError(context, 'Aucune bobine disponible en stock');
           }
           setState(() => _isLoading = false);
           return;
@@ -142,12 +138,7 @@ class _BobineInstallationFormState
           ref.invalidate(stockStateProvider);
         } catch (e) {
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Erreur lors de la décrémentation du stock: $e'),
-                backgroundColor: Colors.red,
-              ),
-            );
+            NotificationService.showError(context, 'Erreur lors de la décrémentation du stock: $e');
           }
           setState(() => _isLoading = false);
           return;
@@ -167,25 +158,15 @@ class _BobineInstallationFormState
       widget.onInstalled?.call(usage);
       if (mounted) {
         Navigator.of(context).pop(usage);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
+        NotificationService.showSuccess(context, 
               _bobineNonFinieExistante != null
                   ? 'Bobine non finie réutilisée: ${_bobineNonFinieExistante!.bobineType}'
                   : 'Bobine installée: ${usage.bobineType}',
-            ),
-            backgroundColor: Colors.green,
-          ),
-        );
+            );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur lors de l\'installation de la bobine: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        NotificationService.showError(context, 'Erreur lors de l\'installation de la bobine: $e');
       }
     } finally {
       if (mounted) {

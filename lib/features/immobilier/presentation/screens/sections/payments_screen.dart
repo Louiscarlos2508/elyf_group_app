@@ -483,18 +483,11 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
         await controller.deletePayment(payment.id);
         ref.invalidate(paymentsProvider);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Paiement supprimé avec succès'),
-              backgroundColor: Colors.green,
-            ),
-          );
+          NotificationService.showSuccess(context, 'Paiement supprimé avec succès');
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Erreur: $e'), backgroundColor: Colors.red),
-          );
+          NotificationService.showError(context, 'Erreur: $e');
         }
       }
     }

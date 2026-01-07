@@ -12,6 +12,7 @@ import '../screens/sections/production_session_detail_screen.dart'
     show productionSessionDetailProvider;
 import 'centralized_permission_guard.dart';
 import 'machine_breakdown_dialog.dart';
+import '../../../shared.dart';
 
 /// Carte pour signaler une panne de machine dans les paramètres.
 class MachineBreakdownReportCard extends ConsumerWidget {
@@ -225,11 +226,7 @@ class MachineBreakdownReportCard extends ConsumerWidget {
           if (session != null) {
             ref.invalidate(productionSessionDetailProvider(session.id));
           }
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Panne signalée avec succès'),
-            ),
-          );
+          NotificationService.showInfo(context, 'Panne signalée avec succès');
         },
       ),
     );

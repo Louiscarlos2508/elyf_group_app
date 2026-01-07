@@ -17,6 +17,7 @@ import 'production_session_form_steps/production_session_form_helpers.dart';
 import 'production_session_form_steps/step_startup.dart';
 import 'production_session_form_steps/step_production.dart';
 import 'production_session_form_steps/step_finalization.dart';
+import '../../../shared.dart';
 
 /// Formulaire de session de production divisé en étapes.
 class ProductionSessionFormSteps extends ConsumerStatefulWidget {
@@ -145,20 +146,15 @@ class ProductionSessionFormStepsState
     
     // Validation : au moins une machine
     if (_machinesSelectionnees.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sélectionnez au moins une machine')),
-      );
+      NotificationService.showWarning(context, 'Sélectionnez au moins une machine');
       return;
     }
     
     // Validation : nombre de bobines = nombre de machines
     if (_bobinesUtilisees.length != _machinesSelectionnees.length) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Le nombre de bobines (${_bobinesUtilisees.length}) doit être égal au nombre de machines (${_machinesSelectionnees.length})',
-          ),
-        ),
+      NotificationService.showWarning(
+        context,
+        'Le nombre de bobines (${_bobinesUtilisees.length}) doit être égal au nombre de machines (${_machinesSelectionnees.length})',
       );
       return;
     }
@@ -166,9 +162,7 @@ class ProductionSessionFormStepsState
     // Validation : index compteur initial requis
     if (_indexCompteurInitialController.text.isEmpty) {
       final meterType = await ref.read(electricityMeterTypeProvider.future);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('L\'${meterType.initialLabel.toLowerCase()} est requis')),
-      );
+      NotificationService.showWarning(context, 'L\'${meterType.initialLabel.toLowerCase()} est requis');
       return;
     }
 
@@ -246,18 +240,12 @@ class ProductionSessionFormStepsState
       if (!mounted) return;
       Navigator.of(context).pop();
       ref.invalidate(productionSessionsStateProvider);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(widget.session == null
+      NotificationService.showInfo(context, widget.session == null
               ? 'Session créée avec succès'
-              : 'Session mise à jour'),
-        ),
-      );
+              : 'Session mise à jour');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur: ${e.toString()}')),
-      );
+      NotificationService.showError(context, e.toString());
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -326,12 +314,7 @@ class ProductionSessionFormStepsState
         final createdSession = await controller.createSession(session);
         _createdSessionId = createdSession.id; // Stocker l'ID pour les prochaines sauvegardes
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('État sauvegardé'),
-              duration: Duration(seconds: 2),
-            ),
-          );
+          NotificationService.showInfo(context, 'État sauvegardé');
         }
       } else {
         // Mettre à jour la session existante (soit widget.session, soit _createdSessionId, soit session trouvée)
@@ -493,9 +476,7 @@ class ProductionSessionFormStepsState
         .toList();
 
     if (machinesSansBobine.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Toutes les machines ont une bobine')),
-      );
+      NotificationService.showInfo(context, 'Toutes les machines ont une bobine');
       return;
     }
 

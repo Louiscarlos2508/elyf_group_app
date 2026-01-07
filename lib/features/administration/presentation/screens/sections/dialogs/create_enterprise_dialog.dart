@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../../../../../shared.dart';
 import '../../../../domain/entities/enterprise.dart';
 
 /// Dialogue pour créer une nouvelle entreprise.
@@ -65,9 +66,7 @@ class _CreateEnterpriseDialogState extends State<CreateEnterpriseDialog> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur: $e')),
-        );
+        NotificationService.showError(context, e.toString());
       }
     } finally {
       if (mounted) {

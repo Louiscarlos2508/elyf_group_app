@@ -135,24 +135,15 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
       Navigator.of(context).pop();
       ref.invalidate(productsProvider);
       ref.invalidate(lowStockProductsProvider);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            widget.product == null
-                ? 'Produit créé avec succès${stockInitial > 0 && totalPurchasePrice != null ? ' (dépense enregistrée)' : ''}'
-                : 'Produit mis à jour',
-          ),
-          backgroundColor: Colors.green,
-        ),
+      NotificationService.showSuccess(
+        context,
+        widget.product == null
+            ? 'Produit créé avec succès${stockInitial > 0 && totalPurchasePrice != null ? ' (dépense enregistrée)' : ''}'
+            : 'Produit mis à jour',
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      NotificationService.showError(context, e.toString());
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

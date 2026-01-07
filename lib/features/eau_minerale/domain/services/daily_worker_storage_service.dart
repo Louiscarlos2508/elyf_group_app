@@ -1,3 +1,4 @@
+import '../../../../shared.dart';
 import '../../domain/entities/daily_worker.dart';
 
 /// Service de stockage pour les ouvriers journaliers.
@@ -24,7 +25,7 @@ class DailyWorkerStorageService {
   /// Ajoute un nouvel ouvrier.
   Future<DailyWorker> addWorker(DailyWorker worker) async {
     final newWorker = DailyWorker(
-      id: worker.id.isEmpty ? DateTime.now().millisecondsSinceEpoch.toString() : worker.id,
+      id: worker.id.isEmpty ? IdGenerator.generate() : worker.id,
       name: worker.name,
       phone: worker.phone,
       salaireJournalier: worker.salaireJournalier,

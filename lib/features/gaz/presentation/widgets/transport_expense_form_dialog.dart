@@ -40,9 +40,7 @@ class _TransportExpenseFormDialogState
 
     final amount = double.tryParse(_amountController.text) ?? 0.0;
     if (amount <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Le montant doit être supérieur à 0')),
-      );
+      NotificationService.showWarning(context, 'Le montant doit être supérieur à 0');
       return;
     }
 
@@ -67,12 +65,7 @@ class _TransportExpenseFormDialogState
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        NotificationService.showError(context, 'Erreur: $e');
       }
     }
   }

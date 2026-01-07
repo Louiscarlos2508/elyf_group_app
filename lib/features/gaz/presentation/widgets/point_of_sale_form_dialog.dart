@@ -63,12 +63,7 @@ class _PointOfSaleFormDialogState
     if (!_formKey.currentState!.validate()) return;
     if (_enterpriseId == null || _moduleId == null) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Veuillez remplir tous les champs requis'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        NotificationService.showError(context, 'Veuillez remplir tous les champs requis');
       }
       return;
     }
@@ -107,24 +102,14 @@ class _PointOfSaleFormDialogState
 
       Navigator.of(context).pop(true);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
+      NotificationService.showSuccess(context, 
             widget.pointOfSale == null
                 ? 'Point de vente créé avec succès'
                 : 'Point de vente mis à jour',
-          ),
-          backgroundColor: Colors.green,
-        ),
-      );
+          );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      NotificationService.showError(context, e.toString());
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);

@@ -70,12 +70,7 @@ class _GazExpenseFormDialogState
     if (!_formKey.currentState!.validate()) return;
 
     if (enterpriseId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Aucune entreprise sélectionnée'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      NotificationService.showError(context, 'Aucune entreprise sélectionnée');
       return;
     }
 
@@ -85,12 +80,7 @@ class _GazExpenseFormDialogState
       final amount = double.tryParse(_amountController.text);
       if (amount == null || amount <= 0) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Montant invalide'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        NotificationService.showError(context, 'Montant invalide');
         return;
       }
 
@@ -120,24 +110,14 @@ class _GazExpenseFormDialogState
       ref.invalidate(gazExpensesProvider);
       Navigator.of(context).pop();
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
+      NotificationService.showSuccess(context, 
             widget.expense == null
                 ? 'Dépense créée avec succès'
                 : 'Dépense mise à jour',
-          ),
-          backgroundColor: Colors.green,
-        ),
-      );
+          );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      NotificationService.showError(context, e.toString());
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

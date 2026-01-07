@@ -8,6 +8,7 @@ import 'cylinder_leak/leak_empty_state.dart';
 import 'cylinder_leak/leak_filters.dart';
 import 'cylinder_leak/leak_header.dart';
 import 'cylinder_leak/leak_list_item.dart';
+import '../../../../shared.dart';
 
 /// Écran de gestion des bouteilles avec fuites.
 class CylinderLeakScreen extends ConsumerStatefulWidget {
@@ -48,12 +49,7 @@ class _CylinderLeakScreenState extends ConsumerState<CylinderLeakScreen> {
     } catch (e) {
       debugPrint('Erreur lors de l\'ouverture du dialog: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        NotificationService.showError(context, 'Erreur: $e');
       }
     }
   }

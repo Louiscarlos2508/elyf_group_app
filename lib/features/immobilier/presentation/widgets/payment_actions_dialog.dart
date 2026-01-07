@@ -6,6 +6,7 @@ import '../../../../core/printing/sunmi_v3_service.dart';
 import '../../../../core/printing/templates/payment_receipt_template.dart';
 import '../../domain/entities/payment.dart';
 import 'payment_form_helpers.dart';
+import '../../../shared.dart';
 
 /// Dialog pour les actions sur un paiement (impression, PDF).
 class PaymentActionsDialog extends StatefulWidget {
@@ -74,25 +75,23 @@ class _PaymentActionsDialogState extends State<PaymentActionsDialog> {
       final success = await SunmiV3Service.instance.printPaymentReceipt(content);
       if (mounted) {
         Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
+        if (success ) {
+        NotificationService.showSuccess(context, 
               success
                   ? 'Reçu imprimé avec succès'
                   : 'Erreur lors de l\'impression',
-            ),
-            backgroundColor: success ? Colors.green : Colors.red,
-          ),
-        );
+            );
+      } else {
+        NotificationService.showError(context, 
+              success
+                  ? 'Reçu imprimé avec succès'
+                  : 'Erreur lors de l\'impression',
+            );
+      }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        NotificationService.showError(context, 'Erreur: $e');
       }
     } finally {
       if (mounted) {
@@ -116,22 +115,13 @@ class _PaymentActionsDialogState extends State<PaymentActionsDialog> {
         Navigator.of(context).pop();
         final result = await OpenFile.open(file.path);
         if (result.type != ResultType.done && mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('PDF généré: ${file.path}'),
-            ),
-          );
+          NotificationService.showInfo(context, 'PDF généré: ${file.path}');
         }
       }
     } catch (e) {
       if (mounted) {
         Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur lors de la génération PDF: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        NotificationService.showError(context, 'Erreur lors de la génération PDF: $e');
       }
     } finally {
       if (mounted) {

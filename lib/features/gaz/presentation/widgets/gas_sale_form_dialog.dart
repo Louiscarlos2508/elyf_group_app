@@ -101,21 +101,11 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
   Future<void> _submit(String? enterpriseId) async {
     if (!_formKey.currentState!.validate()) return;
     if (enterpriseId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Aucune entreprise sélectionnée'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      NotificationService.showError(context, 'Aucune entreprise sélectionnée');
       return;
     }
     if (_selectedCylinder == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Veuillez sélectionner une bouteille'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      NotificationService.showError(context, 'Veuillez sélectionner une bouteille');
       return;
     }
 

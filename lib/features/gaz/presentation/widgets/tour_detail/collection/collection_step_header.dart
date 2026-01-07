@@ -60,12 +60,7 @@ class CollectionStepHeader extends ConsumerWidget {
             } catch (e) {
               debugPrint('Erreur: $e');
               if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Erreur: $e'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
+                NotificationService.showError(context, 'Erreur: $e');
               }
             }
           },

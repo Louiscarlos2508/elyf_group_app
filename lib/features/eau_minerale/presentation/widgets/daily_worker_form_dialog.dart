@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../shared.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/daily_worker.dart';
 
@@ -56,9 +57,7 @@ class _DailyWorkerFormDialogState
     final salaire = int.tryParse(_salaireController.text);
 
     if (salaire == null || salaire <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Salaire journalier invalide')),
-      );
+      NotificationService.showWarning(context, 'Salaire journalier invalide');
       return;
     }
 
@@ -80,22 +79,12 @@ class _DailyWorkerFormDialogState
       if (widget.worker == null) {
         await repository.createWorker(worker);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Ouvrier ajouté avec succès'),
-              backgroundColor: Colors.green,
-            ),
-          );
+          NotificationService.showSuccess(context, 'Ouvrier ajouté avec succès');
         }
       } else {
         await repository.updateWorker(worker);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Ouvrier mis à jour avec succès'),
-              backgroundColor: Colors.green,
-            ),
-          );
+          NotificationService.showSuccess(context, 'Ouvrier mis à jour avec succès');
         }
       }
 
@@ -107,12 +96,7 @@ class _DailyWorkerFormDialogState
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        NotificationService.showError(context, e.toString());
       }
     } finally {
       if (mounted) {

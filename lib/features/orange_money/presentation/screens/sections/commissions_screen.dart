@@ -5,6 +5,7 @@ import '../../../application/providers.dart';
 import '../../../domain/entities/commission.dart';
 import '../../widgets/commission_form_dialog.dart';
 import '../../widgets/kpi_card.dart';
+import '../../../../shared.dart';
 
 /// Screen for managing commissions.
 class CommissionsScreen extends ConsumerWidget {
@@ -439,21 +440,11 @@ class CommissionsScreen extends ConsumerWidget {
             ref.invalidate(currentMonthCommissionProvider(enterpriseId));
 
             if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Commission enregistrée avec succès'),
-                  backgroundColor: Color(0xFF00A63E),
-                ),
-              );
+              NotificationService.showSuccess(context, 'Commission enregistrée avec succès');
             }
           } catch (e) {
             if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Erreur lors de l\'enregistrement: $e'),
-                  backgroundColor: Colors.red,
-                ),
-              );
+              NotificationService.showError(context, 'Erreur lors de l\'enregistrement: $e');
             }
           }
         },

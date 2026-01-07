@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../../shared.dart';
+
 /// Widget pour afficher le résumé du bilan des dépenses.
 class ExpenseBalanceSummary extends StatelessWidget {
   const ExpenseBalanceSummary({
@@ -17,10 +19,7 @@ class ExpenseBalanceSummary extends StatelessWidget {
   final DateTime endDate;
 
   String _formatCurrency(int amount) {
-    return amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        ) + ' FCFA';
+    return CurrencyFormatter.formatFCFA(amount);
   }
 
   String _formatDateRange() {

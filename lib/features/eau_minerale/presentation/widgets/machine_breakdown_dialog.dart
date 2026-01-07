@@ -6,6 +6,7 @@ import '../../domain/entities/bobine_usage.dart';
 import '../../domain/entities/machine.dart';
 import '../../domain/entities/production_event.dart';
 import '../../domain/entities/production_session.dart';
+import '../../../shared.dart';
 
 /// Dialog pour signaler une panne de machine et retirer la bobine.
 class MachineBreakdownDialog extends ConsumerStatefulWidget {
@@ -121,13 +122,9 @@ class _MachineBreakdownDialogState
     widget.onPanneSignaled(event);
     Navigator.of(context).pop();
     
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(_retirerBobine && _hasBobine
+    NotificationService.showInfo(context, _retirerBobine && _hasBobine
             ? 'Panne signalée et bobine retirée'
-            : 'Panne signalée'),
-      ),
-    );
+            : 'Panne signalée');
   }
 
   @override

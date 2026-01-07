@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../shared.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/electricity_meter_type.dart';
 import '../../domain/services/electricity_meter_config_service.dart';
@@ -206,14 +207,7 @@ class ElectricityMeterConfigCard extends ConsumerWidget {
     
     if (context.mounted) {
       ref.invalidate(electricityMeterTypeProvider);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Type de compteur configuré: ${type.label}',
-          ),
-          duration: const Duration(seconds: 2),
-        ),
-      );
+      NotificationService.showInfo(context, 'Type de compteur configuré: ${type.label}');
     }
   }
 }

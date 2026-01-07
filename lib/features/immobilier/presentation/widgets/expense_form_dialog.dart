@@ -64,15 +64,13 @@ class _ExpenseFormDialogState extends ConsumerState<ExpenseFormDialog> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedProperty == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Veuillez sélectionner une propriété')),
-      );
+      NotificationService.showWarning(context, 'Veuillez sélectionner une propriété');
       return;
     }
 
     try {
       final expense = PropertyExpense(
-        id: widget.expense?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+        id: widget.expense?.id ?? IdGenerator.generate(),
         propertyId: _selectedProperty!.id,
         amount: int.parse(_amountController.text),
         expenseDate: _expenseDate,
@@ -96,24 +94,15 @@ class _ExpenseFormDialogState extends ConsumerState<ExpenseFormDialog> {
       if (mounted) {
         ref.invalidate(expensesProvider);
         Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
+        NotificationService.showInfo(context, 
               widget.expense == null
                   ? 'Dépense enregistrée avec succès'
                   : 'Dépense mise à jour avec succès',
-            ),
-          ),
-        );
+            );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        NotificationService.showError(context, 'Erreur: $e');
       }
     }
   }

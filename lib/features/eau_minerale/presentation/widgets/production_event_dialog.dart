@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../shared.dart';
 import '../../domain/entities/production_event.dart';
 
 /// Dialog pour enregistrer un événement (panne, coupure, arrêt forcé)
@@ -36,9 +37,7 @@ class _ProductionEventDialogState extends State<ProductionEventDialog> {
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedType == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sélectionnez un type d\'événement')),
-      );
+      NotificationService.showWarning(context, 'Sélectionnez un type d\'événement');
       return;
     }
 

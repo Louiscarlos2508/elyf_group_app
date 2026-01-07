@@ -62,7 +62,7 @@ class _PropertyFormDialogState extends ConsumerState<PropertyFormDialog> {
 
     try {
       final property = Property(
-        id: widget.property?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+        id: widget.property?.id ?? IdGenerator.generate(),
         address: _addressController.text.trim(),
         city: _cityController.text.trim(),
         propertyType: _selectedType,
@@ -87,24 +87,16 @@ class _PropertyFormDialogState extends ConsumerState<PropertyFormDialog> {
       if (mounted) {
         ref.invalidate(propertiesProvider);
         Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              widget.property == null
-                  ? 'Propriété créée avec succès'
-                  : 'Propriété mise à jour avec succès',
-            ),
-          ),
+        NotificationService.showSuccess(
+          context,
+          widget.property == null
+              ? 'Propriété créée avec succès'
+              : 'Propriété mise à jour avec succès',
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur: ${e.toString().replaceAll('Exception: ', '')}'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        NotificationService.showError(context, e.toString());
       }
     }
   }

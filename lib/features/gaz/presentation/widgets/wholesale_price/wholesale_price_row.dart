@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../../../application/providers.dart';
 import '../../../domain/entities/gaz_settings.dart';
+import '../../../../shared.dart';
 
 /// Ligne d'édition de prix pour un poids de bouteille.
 class WholesalePriceRow extends ConsumerStatefulWidget {
@@ -62,12 +63,7 @@ class _WholesalePriceRowState extends ConsumerState<WholesalePriceRow> {
 
     if (price <= 0) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Le prix doit être supérieur à 0'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        NotificationService.showError(context, 'Le prix doit être supérieur à 0');
       }
       return;
     }
@@ -92,23 +88,13 @@ class _WholesalePriceRowState extends ConsumerState<WholesalePriceRow> {
           _isEditing = false;
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Prix en gros enregistré avec succès'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        NotificationService.showSuccess(context, 'Prix en gros enregistré avec succès');
 
         widget.onPriceSaved();
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        NotificationService.showError(context, e.toString());
       }
     }
   }

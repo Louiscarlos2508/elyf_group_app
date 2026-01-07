@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../shared.dart';
 import '../../../domain/entities/bobine_usage.dart';
 import '../../../domain/entities/machine.dart';
 import '../../../domain/entities/production_session.dart';
@@ -10,6 +11,7 @@ import '../bobine_installation_form.dart';
 import 'machine_add_helpers.dart';
 import 'machine_installation_form_dialog.dart';
 import 'machine_selection_dialog.dart';
+import '../../../../shared.dart';
 
 /// Dialogs pour la gestion des machines.
 class MachineDialogs {
@@ -30,12 +32,7 @@ class MachineDialogs {
 
         if (machinesDisponibles.isEmpty) {
           if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Toutes les machines actives sont déjà utilisées'),
-                backgroundColor: Colors.orange,
-              ),
-            );
+            NotificationService.showWarning(context, 'Toutes les machines actives sont déjà utilisées');
           }
           return;
         }
@@ -86,11 +83,7 @@ class MachineDialogs {
       },
       error: (error, stack) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Erreur lors du chargement des machines: $error'),
-            ),
-          );
+          NotificationService.showInfo(context, 'Erreur lors du chargement des machines: $error');
         }
       },
     );
@@ -134,13 +127,9 @@ class MachineDialogs {
 
               if (aBobineActive) {
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        'Cette machine a déjà une bobine active. Finalisez d\'abord la bobine en cours.',
-                      ),
-                      backgroundColor: Colors.orange,
-                    ),
+                  NotificationService.showWarning(
+                    context,
+                    'Cette machine a déjà une bobine active. Finalisez d\'abord la bobine en cours.',
                   );
                 }
                 return;
@@ -169,12 +158,7 @@ class MachineDialogs {
               if (context.mounted) {
                 ref.invalidate(productionSessionDetailProvider(session.id));
                 ref.invalidate(productionSessionsStateProvider);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Nouvelle bobine installée avec succès'),
-                    backgroundColor: Colors.green,
-                  ),
-                );
+                NotificationService.showSuccess(context, 'Nouvelle bobine installée avec succès');
               }
             },
           ),

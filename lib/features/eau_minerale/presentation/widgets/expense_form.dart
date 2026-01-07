@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/providers.dart';
 import '../../domain/entities/expense_record.dart';
+import '../../../shared.dart';
 
 /// Form for creating/editing an expense record.
 class ExpenseForm extends ConsumerStatefulWidget {
@@ -81,24 +82,17 @@ class ExpenseFormState extends ConsumerState<ExpenseForm> {
       if (!mounted) return;
       Navigator.of(context).pop();
       ref.invalidate(financesStateProvider);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(widget.expense == null
+      NotificationService.showSuccess(context, widget.expense == null
               ? 'Dépense enregistrée'
-              : 'Dépense modifiée'),
-          backgroundColor: Colors.green,
-        ),
-      );
+              : 'Dépense modifiée');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur: ${e.toString()}')),
-      );
+      NotificationService.showError(context, e.toString());
     }
   }
 
   String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year}';
+    return DateFormatter.formatDate(date);
   }
 
   IconData _getCategoryIcon(ExpenseCategory category) {

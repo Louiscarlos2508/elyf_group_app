@@ -7,6 +7,7 @@ import '../../widgets/gas_sale_form_dialog.dart';
 import 'retail/retail_new_sale_tab.dart';
 import 'retail/retail_statistics_tab.dart';
 import 'retail/retail_tab_bar.dart';
+import '../../../../shared.dart';
 
 /// Écran de vente au détail - matches Figma design.
 class GazRetailScreen extends ConsumerStatefulWidget {
@@ -53,12 +54,7 @@ class _GazRetailScreenState extends ConsumerState<GazRetailScreen>
     } catch (e) {
       debugPrint('Erreur lors de l\'ouverture du dialog: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        NotificationService.showError(context, 'Erreur: $e');
       }
     }
   }

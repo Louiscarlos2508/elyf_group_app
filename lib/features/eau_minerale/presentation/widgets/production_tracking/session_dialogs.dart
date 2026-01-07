@@ -9,6 +9,7 @@ import '../production_event_dialog.dart';
 import '../production_finalization_dialog.dart';
 import '../production_resume_dialog.dart';
 import '../../screens/sections/production_session_detail_screen.dart' show productionSessionDetailProvider;
+import '../../../../shared.dart';
 
 /// Dialogs pour la gestion de la session de production.
 class SessionDialogs {
@@ -56,11 +57,7 @@ class SessionDialogs {
             if (context.mounted) {
               Navigator.of(context).pop();
               ref.invalidate(productionSessionDetailProvider(session.id));
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Événement enregistré. Production suspendue.'),
-                ),
-              );
+              NotificationService.showInfo(context, 'Événement enregistré. Production suspendue.');
             }
           },
         ),
@@ -96,11 +93,7 @@ class SessionDialogs {
 
           if (context.mounted) {
             ref.invalidate(productionSessionDetailProvider(session.id));
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Production reprise avec succès.'),
-              ),
-            );
+            NotificationService.showInfo(context, 'Production reprise avec succès.');
           }
         },
       ),

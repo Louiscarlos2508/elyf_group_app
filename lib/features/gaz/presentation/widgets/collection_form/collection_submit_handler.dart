@@ -5,6 +5,7 @@ import '../../../application/providers.dart';
 import '../../../domain/entities/collection.dart';
 import '../../../domain/entities/tour.dart';
 import 'client_selector.dart';
+import '../../../../shared.dart';
 
 /// Handler pour la soumission du formulaire de collecte.
 class CollectionSubmitHandler {
@@ -21,9 +22,7 @@ class CollectionSubmitHandler {
   }) async {
     if (bottles.isEmpty) {
       if (!context.mounted) return false;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ajoutez au moins un type de bouteille')),
-      );
+      NotificationService.showWarning(context, 'Ajoutez au moins un type de bouteille');
       return false;
     }
 
@@ -38,12 +37,7 @@ class CollectionSubmitHandler {
       if (collectionType == CollectionType.wholesaler) {
         if (cylinders.isEmpty) {
           if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Aucune bouteille configurée. Veuillez d\'abord configurer les bouteilles dans les paramètres.'),
-                backgroundColor: Colors.red,
-              ),
-            );
+            NotificationService.showError(context, 'Aucune bouteille configurée. Veuillez d\'abord configurer les bouteilles dans les paramètres.');
           }
           return false;
         }
@@ -111,12 +105,7 @@ class CollectionSubmitHandler {
       return true;
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        NotificationService.showError(context, 'Erreur: $e');
       }
       return false;
     }

@@ -6,6 +6,7 @@ import '../../domain/entities/daily_worker.dart';
 import '../../domain/entities/production_day.dart';
 import '../../domain/entities/production_session.dart';
 import 'daily_worker_form_dialog.dart';
+import '../../../shared.dart';
 
 /// Formulaire pour enregistrer le personnel journalier pour un jour de production.
 class DailyPersonnelForm extends ConsumerStatefulWidget {
@@ -96,16 +97,12 @@ class _DailyPersonnelFormState extends ConsumerState<DailyPersonnelForm> {
 
     final salaire = int.tryParse(_salaireController.text);
     if (salaire == null || salaire <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Salaire journalier invalide')),
-      );
+      NotificationService.showWarning(context, 'Salaire journalier invalide');
       return;
     }
 
     if (_selectedWorkerIds.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sélectionnez au moins une personne')),
-      );
+      NotificationService.showWarning(context, 'Sélectionnez au moins une personne');
       return;
     }
 
@@ -113,20 +110,12 @@ class _DailyPersonnelFormState extends ConsumerState<DailyPersonnelForm> {
     final emballages = int.tryParse(_emballagesController.text.trim());
 
     if (packs == null || packs < 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Le nombre de packs produits doit être un entier positif'),
-        ),
-      );
+      NotificationService.showInfo(context, 'Le nombre de packs produits doit être un entier positif');
       return;
     }
 
     if (emballages == null || emballages < 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Le nombre d\'emballages utilisés doit être un entier positif'),
-        ),
-      );
+      NotificationService.showInfo(context, 'Le nombre d\'emballages utilisés doit être un entier positif');
       return;
     }
 

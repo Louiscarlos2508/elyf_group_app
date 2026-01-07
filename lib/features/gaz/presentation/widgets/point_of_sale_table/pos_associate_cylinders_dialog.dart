@@ -70,12 +70,7 @@ class _PosAssociateCylindersDialogState
       Navigator.of(widget.dialogContext).pop();
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Types associés avec succès'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        NotificationService.showSuccess(context, 'Types associés avec succès');
       }
     } catch (e) {
       if (!mounted) return;

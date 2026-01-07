@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../shared.dart';
 import '../../application/providers.dart';
 import '../../domain/repositories/customer_repository.dart';
 
@@ -20,9 +21,7 @@ class SaleCustomerSelector extends ConsumerWidget {
 
     if (customers.isEmpty) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Aucun client disponible')),
-      );
+      NotificationService.showInfo(context, 'Aucun client disponible');
       return;
     }
 

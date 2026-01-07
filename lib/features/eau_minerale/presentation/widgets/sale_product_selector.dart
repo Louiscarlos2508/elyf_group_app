@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../shared.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/product.dart';
 
@@ -21,9 +22,7 @@ class SaleProductSelector extends ConsumerWidget {
 
     if (finishedGoods.isEmpty) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Aucun produit disponible')),
-      );
+      NotificationService.showInfo(context, 'Aucun produit disponible');
       return;
     }
 

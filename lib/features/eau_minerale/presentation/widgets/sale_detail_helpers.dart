@@ -1,18 +1,17 @@
 import 'package:flutter/material.dart';
 
+import '../../../../shared.dart';
 import '../../domain/entities/sale.dart';
 
 /// Helper functions for sale detail display.
 class SaleDetailHelpers {
   static String formatCurrency(int amount) {
-    return amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        ) + ' CFA';
+    // Utiliser CurrencyFormatter mais avec " CFA" au lieu de " FCFA" pour compatibilité
+    return CurrencyFormatter.formatFCFA(amount).replaceAll(' FCFA', ' CFA');
   }
 
   static String formatDate(DateTime date) {
-    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+    return DateFormatter.formatDate(date);
   }
 
   static String getStatusLabel(SaleStatus status) {

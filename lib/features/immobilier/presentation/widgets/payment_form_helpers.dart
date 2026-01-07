@@ -1,3 +1,4 @@
+import '../../../../shared.dart';
 import '../../domain/entities/payment.dart';
 
 /// Helpers pour le formulaire de paiement.
@@ -5,16 +6,12 @@ class PaymentFormHelpers {
   PaymentFormHelpers._();
 
   static String formatDate(DateTime date) {
-    return '${date.day.toString().padLeft(2, '0')}/'
-        '${date.month.toString().padLeft(2, '0')}/'
-        '${date.year}';
+    return DateFormatter.formatDate(date);
   }
 
   static String formatCurrency(int amount) {
-    return amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        );
+    // Retourner sans " FCFA" pour compatibilité avec l'usage existant
+    return CurrencyFormatter.formatFCFA(amount).replaceAll(' FCFA', '');
   }
 
   static String getMonthName(int month) {

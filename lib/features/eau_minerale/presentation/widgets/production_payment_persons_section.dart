@@ -6,6 +6,7 @@ import '../../domain/entities/production_day.dart';
 import '../../domain/entities/production_payment_person.dart';
 import 'production_payment_person_row.dart';
 import 'production_period_formatter.dart';
+import '../../../shared.dart';
 
 /// Section for managing persons to pay in production payment.
 class ProductionPaymentPersonsSection extends ConsumerWidget {
@@ -38,12 +39,7 @@ class ProductionPaymentPersonsSection extends ConsumerWidget {
       
       if (periodDates == null) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Impossible de parser la période. Veuillez sélectionner une période valide.'),
-              backgroundColor: Colors.orange,
-            ),
-          );
+          NotificationService.showWarning(context, 'Impossible de parser la période. Veuillez sélectionner une période valide.');
         }
         return;
       }
@@ -56,12 +52,7 @@ class ProductionPaymentPersonsSection extends ConsumerWidget {
       
       if (sessionsInPeriod.isEmpty) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Aucune session de production trouvée pour cette période.'),
-              backgroundColor: Colors.orange,
-            ),
-          );
+          NotificationService.showWarning(context, 'Aucune session de production trouvée pour cette période.');
         }
         return;
       }
@@ -74,12 +65,7 @@ class ProductionPaymentPersonsSection extends ConsumerWidget {
       
       if (productionDays.isEmpty) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Aucun personnel journalier enregistré pour cette période.'),
-              backgroundColor: Colors.orange,
-            ),
-          );
+          NotificationService.showWarning(context, 'Aucun personnel journalier enregistré pour cette période.');
         }
         return;
       }
@@ -123,12 +109,7 @@ class ProductionPaymentPersonsSection extends ConsumerWidget {
       
       if (personsToPay.isEmpty) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Aucun ouvrier trouvé pour cette période.'),
-              backgroundColor: Colors.orange,
-            ),
-          );
+          NotificationService.showWarning(context, 'Aucun ouvrier trouvé pour cette période.');
         }
         return;
       }
@@ -140,21 +121,11 @@ class ProductionPaymentPersonsSection extends ConsumerWidget {
       onLoadFromProduction(personsToPay);
       
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${personsToPay.length} personne(s) chargée(s) depuis les sessions de production.'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        NotificationService.showSuccess(context, '${personsToPay.length} personne(s) chargée(s) depuis les sessions de production.');
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur lors du chargement: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        NotificationService.showError(context, 'Erreur lors du chargement: $e');
       }
     }
   }

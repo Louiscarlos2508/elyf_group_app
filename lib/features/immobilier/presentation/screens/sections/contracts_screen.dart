@@ -133,18 +133,11 @@ class _ContractsScreenState extends ConsumerState<ContractsScreen> {
         await controller.deleteContract(contract.id);
         ref.invalidate(contractsProvider);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Contrat supprimé avec succès'),
-              backgroundColor: Colors.green,
-            ),
-          );
+          NotificationService.showSuccess(context, 'Contrat supprimé avec succès');
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Erreur: $e'), backgroundColor: Colors.red),
-          );
+          NotificationService.showError(context, 'Erreur: $e');
         }
       }
     }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../shared.dart';
 import '../../../application/controllers/clients_controller.dart';
 import '../../../application/providers.dart';
 import '../../../domain/entities/customer_credit.dart';
@@ -32,9 +33,7 @@ class ClientsScreen extends ConsumerWidget {
       
       if (customerCreditSales.isEmpty) {
         if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Ce client n\'a pas de crédit en cours')),
-        );
+        NotificationService.showInfo(context, 'Ce client n\'a pas de crédit en cours');
         return;
       }
       
@@ -50,9 +49,7 @@ class ClientsScreen extends ConsumerWidget {
       
       if (totalCreditReal <= 0) {
         if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Ce client n\'a pas de crédit en cours')),
-        );
+        NotificationService.showInfo(context, 'Ce client n\'a pas de crédit en cours');
         return;
       }
       
@@ -73,9 +70,7 @@ class ClientsScreen extends ConsumerWidget {
       );
     } catch (e) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur: ${e.toString()}')),
-      );
+      NotificationService.showError(context, e.toString());
     }
   }
 
@@ -110,9 +105,7 @@ class ClientsScreen extends ConsumerWidget {
       );
     } catch (e) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur: ${e.toString()}')),
-      );
+      NotificationService.showError(context, e.toString());
     }
   }
 

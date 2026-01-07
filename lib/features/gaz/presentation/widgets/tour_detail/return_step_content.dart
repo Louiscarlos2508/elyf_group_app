@@ -6,6 +6,7 @@ import '../../../domain/entities/collection.dart';
 import '../../../domain/entities/tour.dart';
 import '../payment_form_dialog.dart';
 import '../wholesaler_payment_card.dart';
+import '../../../../shared.dart';
 
 /// Contenu de l'étape retour du tour.
 class ReturnStepContent extends ConsumerWidget {
@@ -115,12 +116,7 @@ class ReturnStepContent extends ConsumerWidget {
                         } catch (e) {
                           debugPrint('Erreur: $e');
                           if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Erreur: $e'),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
+                            NotificationService.showError(context, 'Erreur: $e');
                           }
                         }
                       },

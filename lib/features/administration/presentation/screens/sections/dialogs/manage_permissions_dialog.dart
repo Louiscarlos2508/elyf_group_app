@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../../core.dart';
 import '../../../../application/providers.dart';
+import '../../../../../shared.dart';
 
 /// Dialogue pour gérer les permissions personnalisées d'un utilisateur.
 class ManagePermissionsDialog extends ConsumerStatefulWidget {
@@ -42,17 +43,11 @@ class _ManagePermissionsDialogState
 
       if (mounted) {
         Navigator.of(context).pop(_customPermissions);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Permissions mises à jour avec succès'),
-          ),
-        );
+        NotificationService.showInfo(context, 'Permissions mises à jour avec succès');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur: $e')),
-        );
+        NotificationService.showError(context, e.toString());
       }
     } finally {
       if (mounted) {

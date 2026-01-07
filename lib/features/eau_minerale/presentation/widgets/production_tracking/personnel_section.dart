@@ -11,6 +11,7 @@ import 'personnel_delete_dialog.dart';
 import 'personnel_empty_state.dart';
 import 'personnel_header.dart';
 import 'personnel_total_cost.dart';
+import '../../../../shared.dart';
 
 /// Widget pour la section personnel et production journalière.
 class PersonnelSection extends ConsumerWidget {
@@ -79,11 +80,7 @@ class PersonnelSection extends ConsumerWidget {
 
     if (context.mounted) {
       ref.invalidate(productionSessionDetailProvider(session.id));
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Jour de production supprimé avec succès'),
-        ),
-      );
+      NotificationService.showInfo(context, 'Jour de production supprimé avec succès');
     }
   }
 
@@ -124,11 +121,7 @@ class PersonnelSection extends ConsumerWidget {
                 Navigator.of(context).pop();
                 ref.invalidate(productionSessionDetailProvider(session.id));
                 ref.invalidate(stockStateProvider);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Personnel enregistré avec succès'),
-                  ),
-                );
+                NotificationService.showInfo(context, 'Personnel enregistré avec succès');
               }
             },
           ),

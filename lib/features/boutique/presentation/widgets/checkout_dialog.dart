@@ -45,10 +45,7 @@ class _CheckoutDialogState extends ConsumerState<CheckoutDialog> {
   }
 
   String _formatCurrency(int amount) {
-    return amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        ) + ' FCFA';
+    return CurrencyFormatter.formatFCFA(amount);
   }
 
   int? get _amountPaid => int.tryParse(_amountPaidController.text);
@@ -93,20 +90,10 @@ class _CheckoutDialogState extends ConsumerState<CheckoutDialog> {
       ref.invalidate(lowStockProductsProvider);
       
       // Ne pas fermer le dialog immédiatement pour permettre l'impression
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Vente enregistrée avec succès'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      NotificationService.showSuccess(context, 'Vente enregistrée avec succès');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      NotificationService.showError(context, e.toString());
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

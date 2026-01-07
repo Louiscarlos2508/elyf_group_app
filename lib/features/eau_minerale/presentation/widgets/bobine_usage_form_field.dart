@@ -6,6 +6,7 @@ import '../../domain/entities/bobine_stock.dart';
 import '../../domain/entities/bobine_usage.dart';
 import 'bobine_usage_item_form.dart';
 import 'machine_selector_field.dart' show machinesProvider;
+import '../../../shared.dart';
 
 /// Champ pour gérer les bobines utilisées dans une session.
 class BobineUsageFormField extends ConsumerWidget {
@@ -29,12 +30,7 @@ class BobineUsageFormField extends ConsumerWidget {
   ) async {
     if (bobinesUtilisees.length >= maxBobines) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Maximum $maxBobines bobines autorisées'),
-          backgroundColor: Theme.of(context).colorScheme.error,
-        ),
-      );
+      NotificationService.showError(context, 'Maximum $maxBobines bobines autorisées');
       return;
     }
 
@@ -50,21 +46,13 @@ class BobineUsageFormField extends ConsumerWidget {
     
     if (machinesDisponiblesFiltrees.isEmpty) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Toutes les machines ont déjà une bobine'),
-        ),
-      );
+      NotificationService.showInfo(context, 'Toutes les machines ont déjà une bobine');
       return;
     }
 
     if (bobineStocks.isEmpty) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Aucune bobine disponible en stock'),
-        ),
-      );
+      NotificationService.showInfo(context, 'Aucune bobine disponible en stock');
       return;
     }
 

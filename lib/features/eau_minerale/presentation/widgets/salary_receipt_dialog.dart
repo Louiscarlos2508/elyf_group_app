@@ -9,6 +9,7 @@ import 'package:open_file/open_file.dart';
 
 import '../../domain/entities/employee.dart';
 import '../../domain/entities/salary_payment.dart';
+import '../../../shared.dart';
 
 /// Dialog pour générer et afficher un reçu de paiement de salaire.
 class SalaryReceiptDialog extends StatelessWidget {
@@ -197,11 +198,7 @@ class SalaryReceiptDialog extends StatelessWidget {
     await OpenFile.open(file.path);
     
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Reçu généré: ${file.path}'),
-        ),
-      );
+      NotificationService.showInfo(context, 'Reçu généré: ${file.path}');
     }
   }
 

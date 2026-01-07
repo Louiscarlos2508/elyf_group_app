@@ -5,6 +5,7 @@ import 'package:open_file/open_file.dart';
 
 import '../../../domain/entities/sale.dart';
 import 'invoice_print_service.dart';
+import '../../../../shared.dart';
 
 /// Widget bouton d'impression pour les factures eau minérale.
 class EauMineralePrintButton extends StatefulWidget {
@@ -76,34 +77,21 @@ class _EauMineralePrintButtonState extends State<EauMineralePrintButton> {
         if (!mounted) return;
         await OpenFile.open(file.path);
         if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('PDF généré avec succès'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        NotificationService.showSuccess(context, 'PDF généré avec succès');
       } else if (result == 'sunmi') {
         final success = await EauMineraleInvoiceService.instance
             .printSaleInvoice(widget.sale);
         if (!mounted) return;
         if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              success ? 'Facture imprimée' : 'Erreur d\'impression',
-            ),
-            backgroundColor: success ? Colors.green : Colors.red,
-          ),
-        );
+        if (success) {
+          NotificationService.showSuccess(context, 'Facture imprimée');
+        } else {
+          NotificationService.showError(context, 'Erreur d\'impression');
+        }
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      NotificationService.showError(context, 'Erreur: $e');
     } finally {
       if (mounted) setState(() => _isPrinting = false);
     }

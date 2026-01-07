@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../shared.dart';
 import '../../domain/entities/bobine_stock.dart';
 import '../../domain/entities/bobine_usage.dart';
 import '../../domain/entities/machine.dart';
@@ -29,15 +30,11 @@ class _BobineUsageItemFormState
   void _submit() {
     if (!formKey.currentState!.validate()) return;
     if (widget.bobineStocksDisponibles.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Aucune bobine disponible en stock')),
-      );
+      NotificationService.showWarning(context, 'Aucune bobine disponible en stock');
       return;
     }
     if (_machineSelectionnee == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sélectionnez une machine')),
-      );
+      NotificationService.showWarning(context, 'Sélectionnez une machine');
       return;
     }
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../shared.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/product.dart';
 
@@ -63,9 +64,7 @@ class _PackPriceConfigCardState extends ConsumerState<PackPriceConfigCard> {
     final newPrice = int.tryParse(_priceController.text);
     if (newPrice == null || newPrice <= 0) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Prix invalide')),
-      );
+      NotificationService.showWarning(context, 'Prix invalide');
       return;
     }
 
@@ -87,18 +86,14 @@ class _PackPriceConfigCardState extends ConsumerState<PackPriceConfigCard> {
       ref.invalidate(productsProvider);
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Prix du pack mis à jour')),
-      );
+      NotificationService.showSuccess(context, 'Prix du pack mis à jour');
       
       setState(() {
         _packProduct = updatedProduct;
       });
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur: ${e.toString()}')),
-      );
+      NotificationService.showError(context, e.toString());
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);

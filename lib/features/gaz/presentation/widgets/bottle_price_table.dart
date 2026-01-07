@@ -57,20 +57,10 @@ class BottlePriceTable extends ConsumerWidget {
 
       ref.invalidate(cylindersProvider);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Type de bouteille supprimé avec succès'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      NotificationService.showSuccess(context, 'Type de bouteille supprimé avec succès');
     } catch (e) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur lors de la suppression: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      NotificationService.showError(context, 'Erreur lors de la suppression: ${e.toString()}');
     }
   }
 

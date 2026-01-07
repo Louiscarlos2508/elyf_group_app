@@ -85,9 +85,7 @@ class _PaymentFormDialogState extends ConsumerState<PaymentFormDialog> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedContract == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Veuillez sélectionner un contrat')),
-      );
+      NotificationService.showWarning(context, 'Veuillez sélectionner un contrat');
       return;
     }
 
@@ -95,7 +93,7 @@ class _PaymentFormDialogState extends ConsumerState<PaymentFormDialog> {
 
     try {
       final payment = Payment(
-        id: widget.payment?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+        id: widget.payment?.id ?? IdGenerator.generate(),
         contractId: _selectedContract!.id,
         amount: int.parse(_amountController.text),
         paymentDate: _paymentDate,
@@ -130,21 +128,12 @@ class _PaymentFormDialogState extends ConsumerState<PaymentFormDialog> {
         if (widget.payment == null) {
           _showInvoiceDialog(payment);
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Paiement mis à jour avec succès'),
-            ),
-          );
+          NotificationService.showSuccess(context, 'Paiement mis à jour avec succès');
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur: ${e.toString().replaceAll('Exception: ', '')}'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        NotificationService.showError(context, e.toString());
       }
     } finally {
       if (mounted) {
@@ -182,17 +171,14 @@ class _PaymentFormDialogState extends ConsumerState<PaymentFormDialog> {
 
     if (shouldGenerate == true && mounted) {
       await _generateInvoice(payment);
-    } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            widget.payment == null
-                ? 'Paiement enregistré avec succès'
-                : 'Paiement mis à jour avec succès',
-          ),
-        ),
-      );
-    }
+    } else       if (mounted) {
+        NotificationService.showSuccess(
+          context,
+          widget.payment == null
+              ? 'Paiement enregistré avec succès'
+              : 'Paiement mis à jour avec succès',
+        );
+      }
   }
 
   Future<void> _generateInvoice(Payment payment) async {
@@ -218,22 +204,13 @@ class _PaymentFormDialogState extends ConsumerState<PaymentFormDialog> {
       if (mounted) {
         final result = await OpenFile.open(file.path);
         if (result.type != ResultType.done && mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Facture générée: ${file.path}'),
-            ),
-          );
+          NotificationService.showInfo(context, 'Facture générée: ${file.path}');
         }
       }
     } catch (e) {
       if (mounted) {
         Navigator.of(context).pop(); // Fermer le dialog de chargement
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur lors de la génération de la facture: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        NotificationService.showError(context, 'Erreur lors de la génération de la facture: $e');
       }
     }
   }

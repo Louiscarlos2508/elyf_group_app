@@ -245,11 +245,7 @@ class GazFinancialReportContentV2 extends ConsumerWidget {
               child: FilledButton.icon(
                 onPressed: () {
                   // TODO: Implémenter action de versement
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Fonctionnalité de versement à implémenter'),
-                    ),
-                  );
+                  NotificationService.showInfo(context, 'Fonctionnalité de versement à implémenter');
                 },
                 icon: const Icon(Icons.account_balance_wallet),
                 label: const Text('Préparer versement siège'),

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../../core.dart';
 import '../../../../application/providers.dart';
+import '../../../../../shared.dart';
 
 /// Dialogue pour créer un nouveau rôle.
 class CreateRoleDialog extends ConsumerStatefulWidget {
@@ -35,11 +36,7 @@ class _CreateRoleDialogState extends ConsumerState<CreateRoleDialog> {
   Future<void> _handleSubmit() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedPermissions.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Sélectionnez au moins une permission'),
-        ),
-      );
+      NotificationService.showInfo(context, 'Sélectionnez au moins une permission');
       return;
     }
 
@@ -58,15 +55,11 @@ class _CreateRoleDialogState extends ConsumerState<CreateRoleDialog> {
 
       if (mounted) {
         Navigator.of(context).pop(role);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Rôle créé avec succès')),
-        );
+        NotificationService.showSuccess(context, 'Rôle créé avec succès');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur: $e')),
-        );
+        NotificationService.showError(context, e.toString());
       }
     } finally {
       if (mounted) {

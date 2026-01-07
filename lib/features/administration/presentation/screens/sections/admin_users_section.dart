@@ -8,6 +8,7 @@ import 'dialogs/create_user_dialog.dart';
 import 'dialogs/edit_user_dialog.dart';
 import 'dialogs/assign_enterprise_dialog.dart';
 import 'dialogs/manage_permissions_dialog.dart';
+import '../../../../shared.dart';
 
 /// Section pour gérer les utilisateurs.
 class AdminUsersSection extends ConsumerStatefulWidget {
@@ -40,15 +41,11 @@ class _AdminUsersSectionState extends ConsumerState<AdminUsersSection> {
         await ref.read(userRepositoryProvider).createUser(result);
         ref.invalidate(usersProvider);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Utilisateur créé avec succès')),
-          );
+          NotificationService.showSuccess(context, 'Utilisateur créé avec succès');
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Erreur: $e')),
-          );
+          NotificationService.showError(context, e.toString());
         }
       }
     }
@@ -65,15 +62,11 @@ class _AdminUsersSectionState extends ConsumerState<AdminUsersSection> {
         await ref.read(userRepositoryProvider).updateUser(result);
         ref.invalidate(usersProvider);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Utilisateur modifié avec succès')),
-          );
+          NotificationService.showSuccess(context, 'Utilisateur modifié avec succès');
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Erreur: $e')),
-          );
+          NotificationService.showError(context, e.toString());
         }
       }
     }
@@ -118,15 +111,11 @@ class _AdminUsersSectionState extends ConsumerState<AdminUsersSection> {
         await ref.read(userRepositoryProvider).deleteUser(user.id);
         ref.invalidate(usersProvider);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Utilisateur supprimé')),
-          );
+          NotificationService.showSuccess(context, 'Utilisateur supprimé');
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Erreur: $e')),
-          );
+          NotificationService.showError(context, e.toString());
         }
       }
     }
@@ -139,21 +128,15 @@ class _AdminUsersSectionState extends ConsumerState<AdminUsersSection> {
           .toggleUserStatus(user.id, !user.isActive);
       ref.invalidate(usersProvider);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
+        NotificationService.showInfo(context, 
               user.isActive
                   ? 'Utilisateur désactivé'
                   : 'Utilisateur activé',
-            ),
-          ),
-        );
+            );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur: $e')),
-        );
+        NotificationService.showError(context, e.toString());
       }
     }
   }

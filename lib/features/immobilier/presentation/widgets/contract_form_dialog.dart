@@ -94,26 +94,17 @@ class _ContractFormDialogState extends ConsumerState<ContractFormDialog> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedProperty == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Veuillez sélectionner une propriété')),
-      );
+      NotificationService.showWarning(context, 'Veuillez sélectionner une propriété');
       return;
     }
     if (_selectedTenant == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Veuillez sélectionner un locataire')),
-      );
+      NotificationService.showWarning(context, 'Veuillez sélectionner un locataire');
       return;
     }
 
     // Validation supplémentaire des dates
     if (_endDate.isBefore(_startDate) || _endDate.isAtSameMomentAs(_startDate)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('La date de fin doit être après la date de début'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      NotificationService.showError(context, 'La date de fin doit être après la date de début');
       return;
     }
 
@@ -127,7 +118,7 @@ class _ContractFormDialogState extends ConsumerState<ContractFormDialog> {
           : int.parse(_depositController.text);
 
       final contract = Contract(
-        id: widget.contract?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+        id: widget.contract?.id ?? IdGenerator.generate(),
         propertyId: _selectedProperty!.id,
         tenantId: _selectedTenant!.id,
         startDate: _startDate,
@@ -159,24 +150,16 @@ class _ContractFormDialogState extends ConsumerState<ContractFormDialog> {
       if (mounted) {
         ref.invalidate(contractsProvider);
         Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              widget.contract == null
-                  ? 'Contrat créé avec succès'
-                  : 'Contrat mis à jour avec succès',
-            ),
-          ),
+        NotificationService.showSuccess(
+          context,
+          widget.contract == null
+              ? 'Contrat créé avec succès'
+              : 'Contrat mis à jour avec succès',
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur: ${e.toString().replaceAll('Exception: ', '')}'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        NotificationService.showError(context, e.toString());
       }
     }
   }

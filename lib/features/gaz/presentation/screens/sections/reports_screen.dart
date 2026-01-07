@@ -55,11 +55,7 @@ class _GazReportsScreenState extends ConsumerState<GazReportsScreen> {
   Future<void> _downloadReport() async {
     // TODO: Implement PDF generation
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Génération PDF - À implémenter'),
-        ),
-      );
+      NotificationService.showInfo(context, 'Génération PDF - À implémenter');
     }
   }
 

@@ -6,6 +6,7 @@ import '../../../application/providers.dart';
 import '../../../domain/entities/enterprise.dart';
 import 'dialogs/create_enterprise_dialog.dart';
 import 'dialogs/edit_enterprise_dialog.dart';
+import '../../../../shared.dart';
 
 /// Section pour gérer les entreprises
 class AdminEnterprisesSection extends ConsumerWidget {
@@ -27,15 +28,11 @@ class AdminEnterprisesSection extends ConsumerWidget {
             .createEnterprise(result);
         ref.invalidate(enterprisesProvider);
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Entreprise créée avec succès')),
-          );
+          NotificationService.showSuccess(context, 'Entreprise créée avec succès');
         }
       } catch (e) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Erreur: $e')),
-          );
+          NotificationService.showError(context, e.toString());
         }
       }
     }
@@ -58,15 +55,11 @@ class AdminEnterprisesSection extends ConsumerWidget {
             .updateEnterprise(result);
         ref.invalidate(enterprisesProvider);
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Entreprise modifiée avec succès')),
-          );
+          NotificationService.showSuccess(context, 'Entreprise modifiée avec succès');
         }
       } catch (e) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Erreur: $e')),
-          );
+          NotificationService.showError(context, e.toString());
         }
       }
     }
@@ -83,21 +76,15 @@ class AdminEnterprisesSection extends ConsumerWidget {
           .toggleEnterpriseStatus(enterprise.id, !enterprise.isActive);
       ref.invalidate(enterprisesProvider);
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
+        NotificationService.showInfo(context, 
               enterprise.isActive
                   ? 'Entreprise désactivée'
                   : 'Entreprise activée',
-            ),
-          ),
-        );
+            );
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur: $e')),
-        );
+        NotificationService.showError(context, e.toString());
       }
     }
   }
@@ -135,15 +122,11 @@ class AdminEnterprisesSection extends ConsumerWidget {
             .deleteEnterprise(enterprise.id);
         ref.invalidate(enterprisesProvider);
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Entreprise supprimée')),
-          );
+          NotificationService.showSuccess(context, 'Entreprise supprimée');
         }
       } catch (e) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Erreur: $e')),
-          );
+          NotificationService.showError(context, e.toString());
         }
       }
     }

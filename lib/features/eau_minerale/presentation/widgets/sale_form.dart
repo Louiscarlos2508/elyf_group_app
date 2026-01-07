@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../shared.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/sale.dart';
 import '../../domain/entities/product.dart';
@@ -117,16 +118,12 @@ class SaleFormState extends ConsumerState<SaleForm> {
   Future<void> submit() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedProduct == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Veuillez sélectionner un produit')),
-      );
+      NotificationService.showWarning(context, 'Veuillez sélectionner un produit');
       return;
     }
 
     if (_totalPrice == null || _amountPaid == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Veuillez remplir tous les champs')),
-      );
+      NotificationService.showWarning(context, 'Veuillez remplir tous les champs');
       return;
     }
 
@@ -141,12 +138,7 @@ class SaleFormState extends ConsumerState<SaleForm> {
     
     if (validationError != null) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(validationError),
-          backgroundColor: Theme.of(context).colorScheme.error,
-        ),
-      );
+      NotificationService.showError(context, validationError);
       return;
     }
 
@@ -203,24 +195,18 @@ class SaleFormState extends ConsumerState<SaleForm> {
       ref.invalidate(clientsStateProvider);
       Navigator.of(context).pop();
       ref.invalidate(salesStateProvider);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vente enregistrée')),
-      );
+      NotificationService.showSuccess(context, 'Vente enregistrée');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur: ${e.toString()}')),
-      );
+      NotificationService.showError(context, e.toString());
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
   String _formatCurrency(int amount) {
-    return amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        ) + ' CFA';
+    // Utiliser CurrencyFormatter mais avec " CFA" au lieu de " FCFA" pour compatibilité
+    return CurrencyFormatter.formatFCFA(amount).replaceAll(' FCFA', ' CFA');
   }
 
   @override

@@ -5,6 +5,7 @@ import '../../../application/providers.dart';
 import '../../../../../core.dart';
 import 'dialogs/create_role_dialog.dart';
 import 'dialogs/edit_role_dialog.dart';
+import '../../../../shared.dart';
 
 /// Section pour gérer les rôles.
 class AdminRolesSection extends ConsumerWidget {
@@ -19,9 +20,7 @@ class AdminRolesSection extends ConsumerWidget {
     if (result != null) {
       ref.invalidate(rolesProvider);
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Rôle créé avec succès')),
-        );
+        NotificationService.showSuccess(context, 'Rôle créé avec succès');
       }
     }
   }
@@ -39,9 +38,7 @@ class AdminRolesSection extends ConsumerWidget {
     if (result != null) {
       ref.invalidate(rolesProvider);
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Rôle modifié avec succès')),
-        );
+        NotificationService.showSuccess(context, 'Rôle modifié avec succès');
       }
     }
   }
@@ -52,11 +49,7 @@ class AdminRolesSection extends ConsumerWidget {
     UserRole role,
   ) async {
     if (role.isSystemRole) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Les rôles système ne peuvent pas être supprimés'),
-        ),
-      );
+      NotificationService.showInfo(context, 'Les rôles système ne peuvent pas être supprimés');
       return;
     }
 
@@ -84,15 +77,11 @@ class AdminRolesSection extends ConsumerWidget {
         await ref.read(adminRepositoryProvider).deleteRole(role.id);
         ref.invalidate(rolesProvider);
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Rôle supprimé')),
-          );
+          NotificationService.showSuccess(context, 'Rôle supprimé');
         }
       } catch (e) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Erreur: $e')),
-          );
+          NotificationService.showError(context, e.toString());
         }
       }
     }

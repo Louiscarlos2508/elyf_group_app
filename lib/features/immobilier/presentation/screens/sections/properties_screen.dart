@@ -50,21 +50,11 @@ class _PropertiesScreenState extends ConsumerState<PropertiesScreen> {
       await controller.deleteProperty(property.id);
       if (mounted) {
         ref.invalidate(propertiesProvider);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Propriété supprimée avec succès'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        NotificationService.showSuccess(context, 'Propriété supprimée avec succès');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur: ${e.toString().replaceAll('Exception: ', '')}'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        NotificationService.showError(context, e.toString());
       }
     }
   }
@@ -111,20 +101,13 @@ class _PropertiesScreenState extends ConsumerState<PropertiesScreen> {
         Navigator.of(context).pop();
         final result = await OpenFile.open(file.path);
         if (result.type != ResultType.done && context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('PDF généré: ${file.path}')),
-          );
+          NotificationService.showInfo(context, 'PDF généré: ${file.path}');
         }
       }
     } catch (e) {
       if (context.mounted) {
         Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur lors de la génération PDF: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        NotificationService.showError(context, 'Erreur lors de la génération PDF: $e');
       }
     }
   }

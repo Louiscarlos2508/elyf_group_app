@@ -5,6 +5,7 @@ import '../../../application/providers.dart';
 import '../../../domain/entities/collection.dart';
 import '../../../domain/entities/tour.dart';
 import '../../../domain/services/collection_calculation_service.dart';
+import '../../../../shared.dart';
 
 /// Handler pour la soumission du formulaire de paiement.
 class PaymentSubmitHandler {
@@ -20,12 +21,7 @@ class PaymentSubmitHandler {
   }) async {
     if (amount <= 0) {
       if (!context.mounted) return false;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Le montant doit être supérieur à 0'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      NotificationService.showError(context, 'Le montant doit être supérieur à 0');
       return false;
     }
 
@@ -36,13 +32,9 @@ class PaymentSubmitHandler {
 
     if (amount > newAmountDue) {
       if (!context.mounted) return false;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Le montant ne peut pas dépasser ${newAmountDue.toStringAsFixed(0)} FCFA',
-          ),
-          backgroundColor: Colors.red,
-        ),
+      NotificationService.showError(
+        context,
+        'Le montant ne peut pas dépasser ${newAmountDue.toStringAsFixed(0)} FCFA',
       );
       return false;
     }
@@ -115,22 +107,12 @@ class PaymentSubmitHandler {
       if (!context.mounted) return false;
 
       Navigator.of(context).pop(true);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Paiement enregistré avec succès'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      NotificationService.showSuccess(context, 'Paiement enregistré avec succès');
 
       return true;
     } catch (e) {
       if (!context.mounted) return false;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      NotificationService.showError(context, 'Erreur: $e');
       return false;
     }
   }

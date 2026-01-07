@@ -1,3 +1,4 @@
+import '../../../../shared.dart';
 import '../../domain/entities/machine.dart';
 
 /// Service de stockage pour les machines.
@@ -24,7 +25,7 @@ class MachineStorageService {
   /// Ajoute une nouvelle machine.
   Future<Machine> addMachine(Machine machine) async {
     final newMachine = machine.copyWith(
-      id: machine.id.isEmpty ? DateTime.now().millisecondsSinceEpoch.toString() : machine.id,
+      id: machine.id.isEmpty ? IdGenerator.generate() : machine.id,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );

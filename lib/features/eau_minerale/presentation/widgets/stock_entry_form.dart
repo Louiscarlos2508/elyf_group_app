@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../shared.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/bobine_stock.dart';
 import '../../domain/entities/packaging_stock.dart';
@@ -173,28 +174,17 @@ class _StockEntryFormState extends ConsumerState<StockEntryForm> {
       if (!mounted) return;
       Navigator.of(context).pop();
       ref.invalidate(stockStateProvider);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            _selectedType == _StockEntryType.bobine
-                ? '${quantite.toInt()} bobine(s) ajoutée(s)'
-                : _selectedType == _StockEntryType.emballage
-                    ? '${quantite.toInt()} emballage(s) ajouté(s)'
-                    : _movementType == StockMovementType.entry
-                        ? '${quantite.toStringAsFixed(0)} pack(s) ajouté(s) au stock'
-                        : '${quantite.toStringAsFixed(0)} pack(s) retiré(s) du stock',
-          ),
-          backgroundColor: Colors.green,
-        ),
-      );
+      final message = _selectedType == _StockEntryType.bobine
+          ? '${quantite.toInt()} bobine(s) ajoutée(s)'
+          : _selectedType == _StockEntryType.emballage
+              ? '${quantite.toInt()} emballage(s) ajouté(s)'
+              : _movementType == StockMovementType.entry
+                  ? '${quantite.toStringAsFixed(0)} pack(s) ajouté(s) au stock'
+                  : '${quantite.toStringAsFixed(0)} pack(s) retiré(s) du stock';
+      NotificationService.showSuccess(context, message);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      NotificationService.showError(context, e.toString());
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

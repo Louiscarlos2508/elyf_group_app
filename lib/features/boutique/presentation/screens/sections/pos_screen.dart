@@ -7,6 +7,7 @@ import '../../../domain/entities/product.dart';
 import '../../widgets/cart_summary.dart';
 import '../../widgets/checkout_dialog.dart';
 import '../../widgets/product_tile.dart';
+import '../../../../shared.dart';
 
 class PosScreen extends ConsumerStatefulWidget {
   const PosScreen({super.key});
@@ -38,21 +39,13 @@ class _PosScreenState extends ConsumerState<PosScreen> {
             quantity: existing.quantity + 1,
           );
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Stock insuffisant'),
-            ),
-          );
+          NotificationService.showInfo(context, 'Stock insuffisant');
         }
       } else {
         if (product.stock > 0) {
           _cartItems.add(CartItem(product: product, quantity: 1));
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Produit en rupture de stock'),
-            ),
-          );
+          NotificationService.showInfo(context, 'Produit en rupture de stock');
         }
       }
     });
@@ -74,11 +67,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
       if (quantity <= item.product.stock) {
         _cartItems[index] = item.copyWith(quantity: quantity);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Stock insuffisant'),
-          ),
-        );
+        NotificationService.showInfo(context, 'Stock insuffisant');
       }
     });
   }
@@ -91,11 +80,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
 
   void _showCheckout(BuildContext context) {
     if (_cartItems.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Le panier est vide'),
-        ),
-      );
+      NotificationService.showInfo(context, 'Le panier est vide');
       return;
     }
     final total = ref.read(storeControllerProvider).calculateCartTotal(_cartItems);
@@ -210,11 +195,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                             icon: const Icon(Icons.qr_code_scanner),
                             onPressed: () {
                               // TODO: Implement barcode scanning
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Scan de code-barres - À implémenter'),
-                                ),
-                              );
+                              NotificationService.showInfo(context, 'Scan de code-barres - À implémenter');
                             },
                             tooltip: 'Scanner un code-barres',
                             style: IconButton.styleFrom(

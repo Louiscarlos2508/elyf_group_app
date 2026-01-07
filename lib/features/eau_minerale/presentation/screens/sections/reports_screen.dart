@@ -93,22 +93,13 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       if (mounted) {
         final result = await OpenFile.open(file.path);
         if (result.type != ResultType.done && mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('PDF généré: ${file.path}'),
-            ),
-          );
+          NotificationService.showInfo(context, 'PDF généré: ${file.path}');
         }
       }
     } catch (e) {
       if (mounted) {
         Navigator.of(context).pop(); // Fermer le dialog de chargement
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur lors de la génération PDF: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        NotificationService.showError(context, 'Erreur lors de la génération PDF: $e');
       }
     }
   }

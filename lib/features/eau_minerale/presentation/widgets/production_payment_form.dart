@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../shared.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/production_payment.dart';
 import '../../domain/entities/production_payment_person.dart';
@@ -79,24 +80,18 @@ class ProductionPaymentFormState
   Future<void> submit() async {
     if (!_formKey.currentState!.validate()) return;
     if (_persons.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ajoutez au moins une personne à payer')),
-      );
+      NotificationService.showWarning(context, 'Ajoutez au moins une personne à payer');
       return;
     }
 
     // Validate all persons
     for (final person in _persons) {
       if (person.name.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Tous les noms doivent être remplis')),
-        );
+        NotificationService.showWarning(context, 'Tous les noms doivent être remplis');
         return;
       }
       if (person.pricePerDay <= 0 || person.daysWorked <= 0) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Vérifiez les montants et jours')),
-        );
+      NotificationService.showWarning(context, 'Vérifiez les montants et jours');
         return;
       }
     }
@@ -116,14 +111,10 @@ class ProductionPaymentFormState
       if (!mounted) return;
       Navigator.of(context).pop();
       ref.invalidate(salaryStateProvider);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Paiements enregistrés')),
-      );
+      NotificationService.showSuccess(context, 'Paiements enregistrés');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur: ${e.toString()}')),
-      );
+      NotificationService.showError(context, e.toString());
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

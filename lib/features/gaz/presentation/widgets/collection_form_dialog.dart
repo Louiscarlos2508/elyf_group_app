@@ -106,15 +106,11 @@ class _CollectionFormDialogState
 
   Future<void> _submit() async {
     if (_selectedClient == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
+      NotificationService.showInfo(context, 
             _collectionType == CollectionType.wholesaler
                 ? 'Sélectionnez un grossiste'
                 : 'Sélectionnez un point de vente',
-          ),
-        ),
-      );
+          );
       return;
     }
 

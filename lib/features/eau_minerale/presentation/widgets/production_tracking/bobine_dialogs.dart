@@ -8,6 +8,7 @@ import '../../../application/providers.dart';
 import '../bobine_finish_dialog.dart';
 import '../machine_breakdown_dialog.dart';
 import '../../screens/sections/production_session_detail_screen.dart' show productionSessionDetailProvider;
+import '../../../../shared.dart';
 
 /// Dialogs pour la gestion des bobines.
 class BobineDialogs {
@@ -32,11 +33,7 @@ class BobineDialogs {
         bobine: bobine,
         onPanneSignaled: (event) {
           ref.invalidate(productionSessionDetailProvider(session.id));
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Panne signalée avec succès'),
-            ),
-          );
+          NotificationService.showInfo(context, 'Panne signalée avec succès');
         },
       ),
     );

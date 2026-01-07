@@ -9,6 +9,7 @@ import '../../domain/entities/packaging_stock.dart';
 import '../../domain/entities/production_session.dart';
 import '../../domain/entities/production_session_status.dart';
 import 'time_picker_field.dart';
+import '../../../shared.dart';
 
 /// Dialog pour finaliser une production.
 class ProductionFinalizationDialog extends ConsumerStatefulWidget {
@@ -83,12 +84,7 @@ class _ProductionFinalizationDialogState
       final cleanedValue = _indexCompteurFinalKwhController.text.trim().replaceAll(',', '.');
       final doubleValue = double.tryParse(cleanedValue);
       if (doubleValue == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('L\'index compteur final est invalide'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        NotificationService.showError(context, 'L\'index compteur final est invalide');
         setState(() => _isLoading = false);
         return;
       }
@@ -99,14 +95,9 @@ class _ProductionFinalizationDialogState
       final totalEmb = widget.session.totalEmballagesUtilisesJournalier;
 
       if (totalPacks <= 0) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
+        NotificationService.showError(context, 
               'Veuillez renseigner le nombre de packs produits pour au moins un jour de production.',
-            ),
-            backgroundColor: Colors.red,
-          ),
-        );
+            );
         setState(() => _isLoading = false);
         return;
       }
@@ -123,14 +114,9 @@ class _ProductionFinalizationDialogState
       }
 
       if (totalEmb <= 0) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
+        NotificationService.showError(context, 
               'Veuillez renseigner le nombre d\'emballages utilisés pour au moins un jour de production.',
-            ),
-            backgroundColor: Colors.red,
-          ),
-        );
+            );
         setState(() => _isLoading = false);
         return;
       }
@@ -173,12 +159,7 @@ class _ProductionFinalizationDialogState
           } catch (e) {
             debugPrint('Erreur lors de la mise à jour du stock de produits finis: $e');
             if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Attention: Erreur lors de la mise à jour du stock de produits finis: $e'),
-                  backgroundColor: Colors.orange,
-                ),
-              );
+              NotificationService.showWarning(context, 'Attention: Erreur lors de la mise à jour du stock de produits finis: $e');
             }
           }
         }
@@ -206,14 +187,10 @@ class _ProductionFinalizationDialogState
             // Vérifier que le stock est suffisant
             if (!stockEmballage.peutSatisfaire(savedSession.emballagesUtilises!)) {
               if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      'Stock d\'emballages insuffisant. Disponible: ${stockEmballage.quantity}, '
-                      'Demandé: ${savedSession.emballagesUtilises}',
-                    ),
-                    backgroundColor: Colors.orange,
-                  ),
+                NotificationService.showWarning(
+                  context,
+                  'Stock d\'emballages insuffisant. Disponible: ${stockEmballage.quantity}, '
+                  'Demandé: ${savedSession.emballagesUtilises}',
                 );
                 setState(() => _isLoading = false);
                 return;
@@ -254,12 +231,7 @@ class _ProductionFinalizationDialogState
           // Si le stock n'existe pas, on continue quand même (l'utilisateur pourra le créer plus tard)
           debugPrint('Erreur lors de la mise à jour du stock d\'emballages: $e');
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Attention: Erreur lors de la mise à jour du stock d\'emballages: $e'),
-                backgroundColor: Colors.orange,
-              ),
-            );
+            NotificationService.showWarning(context, 'Attention: Erreur lors de la mise à jour du stock d\'emballages: $e');
           }
         }
         }
@@ -271,21 +243,11 @@ class _ProductionFinalizationDialogState
       if (mounted) {
         widget.onFinalized(savedSession);
         Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Production finalisée avec succès'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        NotificationService.showSuccess(context, 'Production finalisée avec succès');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        NotificationService.showError(context, 'Erreur: $e');
       }
     } finally {
       if (mounted) {

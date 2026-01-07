@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/tenant/tenant_provider.dart';
+import '../../../../shared.dart';
 import '../../domain/entities/agent.dart';
 
 /// Dialog for creating or editing an agent.
@@ -61,16 +62,12 @@ class _AgentFormDialogState extends ConsumerState<AgentFormDialog> {
     }
 
     if (enterpriseId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Aucune entreprise sélectionnée'),
-        ),
-      );
+      NotificationService.showInfo(context, 'Aucune entreprise sélectionnée');
       return;
     }
 
     final agent = Agent(
-      id: widget.agent?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+      id: widget.agent?.id ?? IdGenerator.generate(),
       name: _nameController.text.trim(),
       phoneNumber: _phoneController.text.trim(),
       simNumber: _simController.text.trim(),

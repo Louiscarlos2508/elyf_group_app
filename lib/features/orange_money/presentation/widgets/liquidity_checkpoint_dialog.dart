@@ -94,12 +94,7 @@ class _LiquidityCheckpointDialogState
       simAmount,
     );
     if (validationError != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(validationError),
-          backgroundColor: Colors.orange,
-        ),
-      );
+      NotificationService.showWarning(context, validationError);
       return;
     }
 

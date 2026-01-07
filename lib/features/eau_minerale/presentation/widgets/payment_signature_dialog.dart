@@ -2,6 +2,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'dart:ui' as ui;
+import '../../../shared.dart';
 
 /// Dialog pour enregistrer une signature numérique après paiement.
 class PaymentSignatureDialog extends StatefulWidget {
@@ -61,12 +62,7 @@ class _PaymentSignatureDialogState extends State<PaymentSignatureDialog> {
 
   Future<void> _submit() async {
     if (!_hasSignature) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Veuillez signer avant de valider'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      NotificationService.showError(context, 'Veuillez signer avant de valider');
       return;
     }
 
@@ -74,12 +70,7 @@ class _PaymentSignatureDialogState extends State<PaymentSignatureDialog> {
     if (signature != null) {
       widget.onPaid(signature);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Erreur lors de la capture de la signature'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      NotificationService.showError(context, 'Erreur lors de la capture de la signature');
     }
   }
 

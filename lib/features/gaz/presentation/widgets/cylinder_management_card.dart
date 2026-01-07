@@ -29,20 +29,10 @@ class _CylinderManagementCardState
       ref.invalidate(cylindersProvider);
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Bouteille supprimée avec succès'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      NotificationService.showSuccess(context, 'Bouteille supprimée avec succès');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      NotificationService.showError(context, e.toString());
     }
   }
 
@@ -196,12 +186,7 @@ class _CylinderManagementCardState
       );
     } catch (e) {
       debugPrint('Erreur lors de l\'ouverture du dialog: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      NotificationService.showError(context, 'Erreur: $e');
     }
   }
 
@@ -215,12 +200,7 @@ class _CylinderManagementCardState
       );
     } catch (e) {
       debugPrint('Erreur lors de l\'ouverture du dialog: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      NotificationService.showError(context, 'Erreur: $e');
     }
   }
 

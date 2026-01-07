@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import '../../../shared.dart';
 
 /// Dialog for recording a manual commission entry.
 class CommissionFormDialog extends StatefulWidget {
@@ -103,12 +104,7 @@ class _CommissionFormDialogState extends State<CommissionFormDialog> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur lors de la sélection: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        NotificationService.showError(context, 'Erreur lors de la sélection: $e');
       }
     }
   }
@@ -119,17 +115,13 @@ class _CommissionFormDialogState extends State<CommissionFormDialog> {
     }
 
     if (_selectedMonth == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Veuillez sélectionner un mois')),
-      );
+      NotificationService.showWarning(context, 'Veuillez sélectionner un mois');
       return;
     }
 
     final amount = int.tryParse(_amountController.text.trim()) ?? 0;
     if (amount <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Le montant doit être supérieur à 0')),
-      );
+      NotificationService.showWarning(context, 'Le montant doit être supérieur à 0');
       return;
     }
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../shared.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/machine.dart';
 import 'machine_selector_field.dart';
@@ -93,18 +94,13 @@ class _MachineFormDialogState extends ConsumerState<MachineFormDialog> {
       Navigator.of(context).pop();
       ref.invalidate(allMachinesProvider);
       ref.invalidate(machinesProvider);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(widget.machine == null
-              ? 'Machine créée'
-              : 'Machine modifiée'),
-        ),
+      NotificationService.showSuccess(
+        context,
+        widget.machine == null ? 'Machine créée' : 'Machine modifiée',
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur: ${e.toString()}')),
-      );
+      NotificationService.showError(context, e.toString());
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

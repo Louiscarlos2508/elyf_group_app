@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../../../shared.dart';
 import '../../../../domain/entities/user.dart';
 import '../../../../../core.dart';
 import '../../../../application/providers.dart';
 import '../../../../domain/entities/admin_module.dart';
+import '../../../../../shared.dart';
 
 /// Dialogue pour attribuer un utilisateur à une entreprise et un module.
 class AssignEnterpriseDialog extends ConsumerStatefulWidget {
@@ -290,17 +292,11 @@ class _AssignEnterpriseDialogState
 
       if (mounted) {
         Navigator.of(context).pop(enterpriseModuleUser);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Utilisateur attribué avec succès'),
-          ),
-        );
+        NotificationService.showInfo(context, 'Utilisateur attribué avec succès');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur: $e')),
-        );
+        NotificationService.showError(context, e.toString());
       }
     } finally {
       if (mounted) {

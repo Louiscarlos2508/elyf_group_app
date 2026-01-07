@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../shared.dart';
 import '../../../application/providers.dart';
 import '../../../domain/entities/agent.dart';
 import '../agent_form_dialog.dart';
@@ -54,9 +55,7 @@ class AgentsDialogs {
 
     agentsAsync.whenData((agents) {
       if (agents.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Aucun agent disponible')),
-        );
+        NotificationService.showInfo(context, 'Aucun agent disponible');
         return;
       }
 

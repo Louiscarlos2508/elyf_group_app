@@ -246,21 +246,11 @@ class _ClosureActionButtons extends ConsumerWidget {
                 await controller.moveToNextStep(tour.id);
                 onTourClosed();
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Tour clôturé avec succès'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
+                  NotificationService.showSuccess(context, 'Tour clôturé avec succès');
                 }
               } catch (e) {
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Erreur: $e'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
+                  NotificationService.showError(context, 'Erreur: $e');
                 }
               }
             },

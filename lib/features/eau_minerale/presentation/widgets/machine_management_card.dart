@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../shared.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/machine.dart';
 import '../../../core.dart';
@@ -8,6 +9,7 @@ import 'centralized_permission_guard.dart';
 import 'machine_form_dialog.dart';
 import 'machine_list_item.dart';
 import 'machine_selector_field.dart';
+import '../../../shared.dart';
 
 /// Carte de gestion des machines.
 class MachineManagementCard extends ConsumerStatefulWidget {
@@ -156,19 +158,11 @@ class _MachineManagementCardState
                 ref.invalidate(allMachinesProvider);
                 ref.invalidate(machinesProvider);
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Machine supprimée'),
-                    ),
-                  );
+                  NotificationService.showInfo(context, 'Machine supprimée');
                 }
               } catch (e) {
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Erreur: ${e.toString()}'),
-                    ),
-                  );
+                  NotificationService.showError(context, e.toString());
                 }
               }
             },

@@ -92,12 +92,7 @@ class _StockAdjustmentDialogState
 
     if (_selectedCylinder == null || _selectedStatus == null) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Veuillez sélectionner un type de bouteille et un statut'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      NotificationService.showError(context, 'Veuillez sélectionner un type de bouteille et un statut');
       return;
     }
 
@@ -107,12 +102,7 @@ class _StockAdjustmentDialogState
       final newQuantity = int.tryParse(_quantityController.text);
       if (newQuantity == null || newQuantity < 0) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Quantité invalide'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        NotificationService.showError(context, 'Quantité invalide');
         return;
       }
 
@@ -155,20 +145,10 @@ class _StockAdjustmentDialogState
 
       Navigator.of(context).pop();
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Stock ajusté avec succès'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      NotificationService.showSuccess(context, 'Stock ajusté avec succès');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      NotificationService.showError(context, e.toString());
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
