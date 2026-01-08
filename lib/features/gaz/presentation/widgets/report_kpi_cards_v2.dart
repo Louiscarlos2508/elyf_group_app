@@ -4,8 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/report_data.dart';
 import 'dashboard_kpi_card.dart';
-import '../../../../shared.dart';
-
+import 'package:elyf_groupe_app/shared.dart';
+import '../../../../../shared/utils/currency_formatter.dart';
 /// KPI cards for gaz reports module - style eau_minerale.
 class GazReportKpiCardsV2 extends ConsumerWidget {
   const GazReportKpiCardsV2({

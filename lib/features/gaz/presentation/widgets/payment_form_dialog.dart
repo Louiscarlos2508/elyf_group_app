@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../shared.dart';
+import 'package:elyf_groupe_app/shared.dart';
 import '../../domain/entities/collection.dart';
 import '../../domain/entities/tour.dart';
 import '../../domain/services/collection_calculation_service.dart';
 import 'payment_form/leak_report_section.dart';
 import 'payment_form/payment_amount_input.dart';
 import 'payment_form/payment_submit_handler.dart';
+import 'package:elyf_groupe_app/shared/presentation/widgets/form_dialog.dart';
 
 /// Dialog pour enregistrer un paiement pour une collecte.
 class PaymentFormDialog extends ConsumerStatefulWidget {

@@ -2,8 +2,8 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'dart:ui' as ui;
-import '../../../shared.dart';
-
+import 'package:elyf_groupe_app/shared.dart';
+import '../../../../../shared/utils/notification_service.dart';
 /// Dialog pour enregistrer une signature numérique après paiement.
 class PaymentSignatureDialog extends StatefulWidget {
   const PaymentSignatureDialog({

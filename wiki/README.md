@@ -41,7 +41,7 @@ Bienvenue dans le wiki de l'application ELYF Group App. Ce wiki contient toute l
 
 ### 07. Offline
 - [Synchronisation](./07-offline/synchronization.md) – Mode offline-first
-- [Isar Database](./07-offline/isar-database.md) – Base de données locale
+- [Drift Database](./07-offline/drift-database.md) – Base de données locale (SQLite)
 - [Gestion des conflits](./07-offline/conflict-resolution.md) – Résolution des conflits
 
 ### 08. Impression

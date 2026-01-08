@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../shared.dart';
-import '../../../application/providers.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import '../../../domain/entities/cylinder.dart';
 import '../../../domain/entities/expense.dart';
 import '../../../domain/entities/gas_sale.dart';
@@ -10,6 +10,7 @@ import '../../widgets/dashboard_stock_by_capacity.dart';
 import 'dashboard/dashboard_kpi_section.dart';
 import 'dashboard/dashboard_performance_section.dart';
 import 'dashboard/dashboard_pos_performance_section.dart';
+import 'package:elyf_groupe_app/shared/presentation/widgets/refresh_button.dart';
 
 /// Professional dashboard screen for gaz module - matches Figma design.
 class GazDashboardScreen extends ConsumerWidget {

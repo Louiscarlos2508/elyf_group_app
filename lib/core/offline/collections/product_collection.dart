@@ -1,5 +1,5 @@
-/// Stub ProductCollection - Isar temporarily disabled.
-/// TODO: Migrate to ObjectBox.
+/// Legacy ProductCollection model (kept for compatibility).
+/// Note: Drift est utilisé exclusivement pour le stockage offline (pas ObjectBox).
 class ProductCollection {
   int id = 0;
   late String localId;

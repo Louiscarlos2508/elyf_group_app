@@ -67,6 +67,7 @@ class GazSalesReportContentV2 extends ConsumerWidget {
                   return pointsOfSaleAsync.when(
                     data: (pointsOfSale) {
                       return _buildContent(
+                        ref,
                         theme,
                         sales,
                         cylinders,
@@ -77,6 +78,7 @@ class GazSalesReportContentV2 extends ConsumerWidget {
                     },
                     loading: () => const Center(child: CircularProgressIndicator()),
                     error: (_, __) => _buildContent(
+                      ref,
                       theme,
                       sales,
                       cylinders,
@@ -89,6 +91,7 @@ class GazSalesReportContentV2 extends ConsumerWidget {
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (_, __) => salesAsync.when(
                   data: (sales) => _buildContent(
+                    ref,
                     theme,
                     sales,
                     [],
@@ -112,6 +115,7 @@ class GazSalesReportContentV2 extends ConsumerWidget {
   }
 
   Widget _buildContent(
+    WidgetRef ref,
     ThemeData theme,
     List<GasSale> sales,
     List<Cylinder> cylinders,
@@ -119,12 +123,14 @@ class GazSalesReportContentV2 extends ConsumerWidget {
     GazReportData reportData,
     bool isWide,
   ) {
-    final filteredSales = SalesReportHelpers.filterSalesByPeriod(
-      sales,
-      startDate,
-      endDate,
+    // Utiliser le service de calcul pour extraire la logique métier
+    final reportService = ref.read(gazReportCalculationServiceProvider);
+    final filteredSales = reportService.filterSalesByDateRange(
+      sales: sales,
+      startDate: startDate,
+      endDate: endDate,
     );
-    final groupedSales = SalesReportHelpers.groupSalesByType(filteredSales);
+    final groupedSales = reportService.separateSalesByType(filteredSales);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -133,8 +139,8 @@ class GazSalesReportContentV2 extends ConsumerWidget {
         SalesReportHeader(reportData: reportData),
         const SizedBox(height: 24),
         SalesReportTypeCards(
-          retailSales: groupedSales.retail,
-          wholesaleSales: groupedSales.wholesale,
+          retailSales: groupedSales.retailSales,
+          wholesaleSales: groupedSales.wholesaleSales,
         ),
         const SizedBox(height: 24),
         Text(
@@ -149,7 +155,7 @@ class GazSalesReportContentV2 extends ConsumerWidget {
           cylinders: cylinders,
         ),
         const SizedBox(height: 24),
-        if (groupedSales.retail.isNotEmpty) ...[
+        if (groupedSales.retailSales.isNotEmpty) ...[
           Text(
             'Statistiques Ventes au Détail',
             style: theme.textTheme.titleMedium?.copyWith(
@@ -157,10 +163,10 @@ class GazSalesReportContentV2 extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 16),
-          SalesReportRetailStats(retailSales: groupedSales.retail),
+          SalesReportRetailStats(retailSales: groupedSales.retailSales),
           const SizedBox(height: 24),
         ],
-        if (groupedSales.wholesale.isNotEmpty) ...[
+        if (groupedSales.wholesaleSales.isNotEmpty) ...[
           Text(
             'Statistiques Ventes en Gros',
             style: theme.textTheme.titleMedium?.copyWith(
@@ -168,7 +174,7 @@ class GazSalesReportContentV2 extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 16),
-          SalesReportWholesaleStats(wholesaleSales: groupedSales.wholesale),
+          SalesReportWholesaleStats(wholesaleSales: groupedSales.wholesaleSales),
           const SizedBox(height: 24),
         ],
         SalesReportRecentSales(sales: filteredSales),

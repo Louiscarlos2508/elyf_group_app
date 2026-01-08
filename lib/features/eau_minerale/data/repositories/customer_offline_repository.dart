@@ -3,10 +3,9 @@ import 'dart:developer' as developer;
 
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/offline/connectivity_service.dart';
-import '../../../../core/offline/isar_service.dart';
+import '../../../../core/offline/drift_service.dart';
 import '../../../../core/offline/offline_repository.dart';
 import '../../../../core/offline/sync_manager.dart';
-import '../../../../core/offline/collections/customer_collection.dart';
 import '../../domain/entities/sale.dart';
 import '../../domain/repositories/customer_repository.dart';
 import '../../domain/repositories/sale_repository.dart';
@@ -17,14 +16,14 @@ import '../../domain/repositories/sale_repository.dart';
 /// from sales data. It requires a SaleRepository to compute summaries.
 class CustomerOfflineRepository implements CustomerRepository {
   CustomerOfflineRepository({
-    required this.isarService,
+    required this.driftService,
     required this.syncManager,
     required this.connectivityService,
     required this.enterpriseId,
     required this.saleRepository,
   });
 
-  final IsarService isarService;
+  final DriftService driftService;
   final SyncManager syncManager;
   final ConnectivityService connectivityService;
   final String enterpriseId;
@@ -32,26 +31,8 @@ class CustomerOfflineRepository implements CustomerRepository {
 
   String get collectionName => 'customers';
 
-  /// Converts CustomerCollection to a basic customer map.
-  Map<String, dynamic> _collectionToMap(CustomerCollection collection) {
-    // Extract CNIB from email field if stored there, or from a JSON in notes
-    String? cnib;
-    if (collection.email != null && collection.email!.startsWith('{')) {
-      try {
-        final metadata = jsonDecode(collection.email!) as Map<String, dynamic>;
-        cnib = metadata['cnib'] as String?;
-      } catch (e) {
-        // Not JSON
-      }
-    }
-
-    return {
-      'id': collection.remoteId ?? collection.localId,
-      'name': collection.name,
-      'phone': collection.phoneNumber,
-      'phoneNumber': collection.phoneNumber,
-      'cnib': cnib,
-    };
+  Map<String, dynamic> _recordToMap(String dataJson) {
+    return jsonDecode(dataJson) as Map<String, dynamic>;
   }
 
   /// Saves a customer to local storage.
@@ -62,79 +43,58 @@ class CustomerOfflineRepository implements CustomerRepository {
     String? cnib,
     bool isLocal = false,
   }) async {
-    // Store CNIB in email field as JSON if needed, or use a separate approach
-    String? emailJson;
-    if (cnib != null) {
-      emailJson = jsonEncode({'cnib': cnib});
-    }
+    final localId = isLocal ? id : LocalIdGenerator.generate();
+    final remoteId = isLocal ? null : id;
 
-    final collection = CustomerCollection.fromMap(
-      {
-        'id': isLocal ? null : id,
-        'phoneNumber': phone,
-        'name': name,
-        'email': emailJson,
-        'totalTransactions': 0,
-        'totalAmount': 0,
-      },
+    final map = <String, dynamic>{
+      'id': remoteId ?? localId,
+      'localId': localId,
+      'remoteId': remoteId,
+      'name': name,
+      'phone': phone,
+      'phoneNumber': phone,
+      'cnib': cnib,
+    };
+
+    await driftService.records.upsert(
+      collectionName: collectionName,
+      localId: localId,
+      remoteId: remoteId,
       enterpriseId: enterpriseId,
       moduleType: 'eau_minerale',
-      localId: isLocal ? id : LocalIdGenerator.generate(),
+      dataJson: jsonEncode(map),
+      localUpdatedAt: DateTime.now(),
     );
-    
-    if (!isLocal) {
-      collection.remoteId = id;
-    }
-    collection.localUpdatedAt = DateTime.now();
-
-    await isarService.isar.writeTxn(() async {
-      await isarService.isar.customerCollections.put(collection);
-    });
   }
 
   /// Gets a customer by ID from local storage.
   Future<Map<String, dynamic>?> _getCustomerById(String id) async {
-    // Try by remoteId first
-    var collection = await isarService.isar.customerCollections
-        .filter()
-        .remoteIdEqualTo(id)
-        .and()
-        .enterpriseIdEqualTo(enterpriseId)
-        .and()
-        .moduleTypeEqualTo('eau_minerale')
-        .findFirst();
+    final byRemote = await driftService.records.findByRemoteId(
+      collectionName: collectionName,
+      remoteId: id,
+      enterpriseId: enterpriseId,
+      moduleType: 'eau_minerale',
+    );
+    if (byRemote != null) return _recordToMap(byRemote.dataJson);
 
-    if (collection != null) {
-      return _collectionToMap(collection);
-    }
-
-    // Try by localId
-    collection = await isarService.isar.customerCollections
-        .filter()
-        .localIdEqualTo(id)
-        .and()
-        .enterpriseIdEqualTo(enterpriseId)
-        .and()
-        .moduleTypeEqualTo('eau_minerale')
-        .findFirst();
-
-    if (collection != null) {
-      return _collectionToMap(collection);
-    }
-
-    return null;
+    final byLocal = await driftService.records.findByLocalId(
+      collectionName: collectionName,
+      localId: id,
+      enterpriseId: enterpriseId,
+      moduleType: 'eau_minerale',
+    );
+    if (byLocal == null) return null;
+    return _recordToMap(byLocal.dataJson);
   }
 
   /// Gets all customers for the enterprise.
   Future<List<Map<String, dynamic>>> _getAllCustomers() async {
-    final collections = await isarService.isar.customerCollections
-        .filter()
-        .enterpriseIdEqualTo(enterpriseId)
-        .and()
-        .moduleTypeEqualTo('eau_minerale')
-        .findAll();
-
-    return collections.map((c) => _collectionToMap(c)).toList();
+    final rows = await driftService.records.listForEnterprise(
+      collectionName: collectionName,
+      enterpriseId: enterpriseId,
+      moduleType: 'eau_minerale',
+    );
+    return rows.map((r) => _recordToMap(r.dataJson)).toList();
   }
 
   // CustomerRepository interface implementation

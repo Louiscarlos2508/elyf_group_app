@@ -1,12 +1,14 @@
 import 'dart:developer' as developer;
 
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/widgets.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../firebase_options.dart';
 import '../core/offline/connectivity_service.dart';
-import '../core/offline/isar_service.dart';
+import '../core/offline/drift_service.dart';
 import '../core/offline/sync_manager.dart';
 import '../core/offline/handlers/firebase_sync_handler.dart';
 
@@ -22,25 +24,29 @@ SyncManager? globalSyncManager;
 
 /// Performs global asynchronous initialization before the app renders.
 ///
-/// This is where we initialize Firebase, Isar, Remote Config,
+/// This is where we initialize Firebase, Drift, Remote Config,
 /// crash reporting, and any other shared services.
 Future<void> bootstrap() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Firebase
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  developer.log('Firebase initialized', name: 'bootstrap');
 
   // Initialize date formatting for French locale
   await initializeDateFormatting('fr', null);
 
   // Initialize offline-first infrastructure
   await _initializeOfflineServices();
-
-  // TODO(carlo): wire Firebase.initializeApp and background jobs.
 }
 
-/// Initializes offline-first services (Isar database and connectivity).
+/// Initializes offline-first services (Drift database and connectivity).
 Future<void> _initializeOfflineServices() async {
   try {
-    // Initialize Isar database
-    await IsarService.instance.initialize();
+    // Initialize Drift database
+    await DriftService.instance.initialize();
 
     // Initialize connectivity monitoring
     globalConnectivityService = ConnectivityService();
@@ -68,7 +74,7 @@ Future<void> _initializeOfflineServices() async {
     );
 
     globalSyncManager = SyncManager(
-      isarService: IsarService.instance,
+      driftService: DriftService.instance,
       connectivityService: globalConnectivityService!,
       config: const SyncConfig(
         maxRetryAttempts: 5,
@@ -101,5 +107,5 @@ Future<void> _initializeOfflineServices() async {
 Future<void> disposeOfflineServices() async {
   await globalSyncManager?.dispose();
   await globalConnectivityService?.dispose();
-  await IsarService.dispose();
+  await DriftService.dispose();
 }

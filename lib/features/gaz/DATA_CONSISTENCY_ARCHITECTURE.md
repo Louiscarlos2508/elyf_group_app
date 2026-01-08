@@ -39,7 +39,7 @@ Ce document décrit l'architecture mise en place pour assurer la cohérence des 
 **Solutions :**
 - ✅ `RealtimeSyncService` : Service de synchronisation temps réel
 - ⏳ À implémenter : Repositories Firestore avec Stream
-- ⏳ À implémenter : Synchronisation Isar ↔ Firestore
+- ⏳ À implémenter : Synchronisation Drift ↔ Firestore
 
 ## Architecture des services
 
@@ -121,7 +121,7 @@ final salesStream = syncService.watchSales(
 **Fonctionnalités :**
 - ⏳ Stream Firestore pour chaque entité
 - ⏳ Résolution de conflits (last-write-wins avec updated_at)
-- ⏳ Synchronisation bidirectionnelle Isar ↔ Firestore
+- ⏳ Synchronisation bidirectionnelle Drift ↔ Firestore
 
 ## Intégration Firestore (À implémenter)
 
@@ -199,14 +199,14 @@ class FirestoreTourRepository implements TourRepository {
 }
 ```
 
-### Synchronisation Isar ↔ Firestore
+### Synchronisation Drift ↔ Firestore
 
 ```dart
 class SyncManager {
   final IsarDatabase isar;
   final RealtimeSyncService syncService;
 
-  // Écouter Firestore et mettre à jour Isar
+  // Écouter Firestore et mettre à jour Drift
   void setupFirestoreListener() {
     syncService.watchTours().listen((tours) {
       for (final tour in tours) {
@@ -217,9 +217,9 @@ class SyncManager {
     });
   }
 
-  // Écrire dans Isar puis synchroniser avec Firestore
+  // Écrire dans Drift puis synchroniser avec Firestore
   Future<void> saveTour(Tour tour) async {
-    // 1. Sauvegarder localement (Isar)
+    // 1. Sauvegarder localement (Drift)
     await isar.writeTxn(() {
       isar.tours.put(tour);
     });
@@ -290,8 +290,8 @@ class TourController {
 - [ ] FirestoreCylinderStockRepository avec Stream
 - [ ] FirestoreCollectionRepository avec Stream
 
-### Phase 3 : Synchronisation Isar (⏳ À faire)
-- [ ] Modèles Isar pour toutes les entités
+### Phase 3 : Synchronisation Drift (⏳ À faire)
+- [ ] Tables/DAO Drift pour les entités (ou stockage générique renforcé)
 - [ ] SyncManager pour synchronisation bidirectionnelle
 - [ ] Gestion des conflits (updated_at)
 
@@ -332,7 +332,7 @@ class TourController {
 ## Prochaines étapes
 
 1. Implémenter les repositories Firestore avec Stream
-2. Créer les modèles Isar
+2. Créer les tables/DAO Drift
 3. Implémenter le SyncManager
 4. Migrer les controllers pour utiliser les nouveaux services
 5. Ajouter des tests de cohérence

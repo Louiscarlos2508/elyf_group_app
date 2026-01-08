@@ -5,30 +5,21 @@ Ce guide explique comment migrer les MockRepositories vers des OfflineRepositori
 ## Vue d'ensemble
 
 L'infrastructure offline-first est déjà en place :
-- `IsarService` : Base de données locale Isar
+- `DriftService` : Base de données locale Drift (SQLite)
 - `SyncManager` : Gestionnaire de synchronisation avec Firestore
 - `ConnectivityService` : Surveillance de la connectivité
 - `OfflineRepository<T>` : Classe de base pour repositories offline-first
 
 ## Architecture
 
-### Collections Isar
+### Stockage local (Drift)
 
-Les collections Isar stockent les données localement. Collections disponibles :
-- `EnterpriseCollection`
-- `SaleCollection`
-- `ProductCollection`
-- `ExpenseCollection`
-- `CustomerCollection`
-- `AgentCollection`
-- `TransactionCollection`
-- `PropertyCollection`
-- `TenantCollection`
-- `ContractCollection`
-- `PaymentCollection`
-- `MachineCollection`
-- `BobineCollection`
-- `ProductionSessionCollection`
+Les entités sont stockées dans une table SQLite générique `OfflineRecords` :
+- `collectionName` (ex: `products`, `sales`)
+- `enterpriseId` + `moduleType` (multi-tenant)
+- `localId` + `remoteId` (liaison Firestore)
+- `dataJson` (payload JSON complet)
+- `localUpdatedAt` (tri & conflits)
 
 ### OfflineRepository
 
@@ -49,17 +40,16 @@ Exemple pour `ProductOfflineRepository` :
 
 ```dart
 import '../../../../core/offline/connectivity_service.dart';
-import '../../../../core/offline/isar_service.dart';
+import '../../../../core/offline/drift_service.dart';
 import '../../../../core/offline/offline_repository.dart';
 import '../../../../core/offline/sync_manager.dart';
-import '../../../../core/offline/collections/product_collection.dart';
 import '../../domain/entities/product.dart';
 import '../../domain/repositories/product_repository.dart';
 
 class ProductOfflineRepository extends OfflineRepository<Product>
     implements ProductRepository {
   ProductOfflineRepository({
-    required super.isarService,
+    required super.driftService,
     required super.syncManager,
     required super.connectivityService,
     required this.enterpriseId,
@@ -86,12 +76,12 @@ Dans `lib/features/*/application/providers.dart` :
 final productRepositoryProvider = Provider<ProductRepository>(
   (ref) {
     final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
-    final isarService = IsarService.instance;
+    final driftService = DriftService.instance;
     final syncManager = ref.watch(syncManagerProvider);
     final connectivityService = ref.watch(connectivityServiceProvider);
     
     return ProductOfflineRepository(
-      isarService: isarService,
+      driftService: driftService,
       syncManager: syncManager,
       connectivityService: connectivityService,
       enterpriseId: enterpriseId,
@@ -109,66 +99,10 @@ final productRepositoryProvider = Provider<ProductRepository>(
 4. Désactiver le mode avion
 5. Vérifier la synchronisation avec Firestore
 
-## Collections Manquantes
+## Évolution du stockage
 
-Si une entité n'a pas de collection Isar, créer `*_collection.dart` dans `lib/core/offline/collections/` :
-
-```dart
-import 'package:isar/isar.dart';
-
-part 'my_entity_collection.g.dart';
-
-@collection
-class MyEntityCollection {
-  Id id = Isar.autoIncrement;
-  
-  @Index()
-  String? remoteId;
-  
-  @Index(unique: true)
-  late String localId;
-  
-  @Index()
-  late String enterpriseId;
-  
-  @Index()
-  late String moduleType;
-  
-  // Champs de l'entité
-  late String name;
-  // ...
-  
-  DateTime? createdAt;
-  DateTime? updatedAt;
-  @Index()
-  late DateTime localUpdatedAt;
-  
-  factory MyEntityCollection.fromMap(
-    Map<String, dynamic> map, {
-    required String enterpriseId,
-    required String moduleType,
-    required String localId,
-  }) {
-    // ...
-  }
-  
-  Map<String, dynamic> toMap() {
-    // ...
-  }
-}
-```
-
-Puis ajouter la collection dans `isar_service.dart` :
-
-```dart
-_isar = await Isar.open(
-  [
-    // ... autres collections
-    MyEntityCollectionSchema,
-  ],
-  // ...
-);
-```
+Le stockage actuel est **générique (JSON)**. Si une entité nécessite des requêtes avancées
+ou des contraintes fortes, on peut évoluer vers une **table Drift dédiée** (future amélioration).
 
 ## Synchronisation
 
@@ -199,9 +133,9 @@ Les conflits sont résolus avec la stratégie "last write wins" basée sur `upda
 - Vérifier les opérations en attente avec `pendingSyncCountProvider`
 
 ### Les données ne persistent pas localement
-- Vérifier que la collection Isar est ajoutée dans `isar_service.dart`
+- Vérifier que `DriftService` est bien initialisé dans `bootstrap.dart`
 - Vérifier que `saveToLocal()` est appelé
-- Vérifier les logs Isar en mode debug
+- Vérifier les logs `offline.drift` en mode debug
 
 ### Erreurs de synchronisation
 - Vérifier les logs dans `sync_manager.dart`

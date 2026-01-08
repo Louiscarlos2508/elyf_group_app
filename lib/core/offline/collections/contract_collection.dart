@@ -1,5 +1,5 @@
-/// Stub ContractCollection - Isar temporarily disabled.
-/// TODO: Migrate to ObjectBox.
+/// Legacy ContractCollection model (kept for compatibility).
+/// Note: Drift est utilisé exclusivement pour le stockage offline (pas ObjectBox).
 class ContractCollection {
   int id = 0;
   late String localId;

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/controllers/finances_controller.dart' show FinancesState;
-import '../../application/providers.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../domain/services/dashboard_calculation_service.dart';
 import 'dashboard_kpi_card.dart';
 

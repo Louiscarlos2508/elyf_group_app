@@ -91,14 +91,15 @@ Widget pour afficher une erreur de manière uniforme.
 
 ### Offline
 
-#### `IsarService`
+#### `DriftService`
 
-Service pour gérer la base de données Isar locale.
+Service pour gérer la base de données locale Drift (SQLite).
 
 **Méthodes principales** :
 
-- `initialize()` : Initialise la base de données Isar
-- `getIsar()` : Récupère l'instance Isar
+- `initialize()` : Initialise la base SQLite via Drift
+- `db` : Accès à la base Drift
+- `records` : DAO générique (`OfflineRecords`) utilisé par les repositories offline
 
 #### `ConnectivityService`
 
@@ -358,14 +359,15 @@ Widget pour afficher une erreur de manière uniforme.
 
 ### Offline
 
-#### `IsarService`
+#### `DriftService`
 
-Service pour gérer la base de données Isar locale.
+Service pour gérer la base de données locale Drift (SQLite).
 
 **Méthodes principales** :
 
-- `initialize()` : Initialise la base de données Isar
-- `getIsar()` : Récupère l'instance Isar
+- `initialize()` : Initialise la base SQLite via Drift
+- `db` : Accès à la base Drift
+- `records` : DAO générique (`OfflineRecords`) utilisé par les repositories offline
 
 #### `ConnectivityService`
 

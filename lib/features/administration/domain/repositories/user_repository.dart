@@ -25,5 +25,17 @@ abstract class UserRepository {
 
   /// Active ou désactive un utilisateur.
   Future<void> toggleUserStatus(String userId, bool isActive);
+
+  /// Vérifie et crée le premier utilisateur admin par défaut si aucun utilisateur n'existe.
+  /// 
+  /// Cette méthode est appelée lors de la première connexion pour s'assurer
+  /// qu'un utilisateur admin existe dans le système.
+  /// 
+  /// Retourne l'utilisateur admin (créé ou existant).
+  Future<User> ensureDefaultAdminExists({
+    required String adminId,
+    required String adminEmail,
+    String? adminPasswordHash,
+  });
 }
 

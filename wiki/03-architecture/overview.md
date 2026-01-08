@@ -35,7 +35,7 @@ L'application suit les principes de Clean Architecture avec séparation en couch
 - **Presentation** : Affichage et interaction utilisateur
 - **Application** : Logique métier et gestion d'état
 - **Domain** : Entités et règles métier pures
-- **Data** : Accès aux données (Firestore, Isar)
+- **Data** : Accès aux données (Firestore, Drift)
 
 ## Structure des modules
 
@@ -65,7 +65,7 @@ Services partagés par tous les modules :
 
 - `auth/` – Authentification Firebase
 - `firebase/` – Wrappers Firestore, Functions, FCM
-- `offline/` – Isar DB et synchronisation
+- `offline/` – Drift (SQLite) et synchronisation
 - `printing/` – Intégration Sunmi V3
 - `permissions/` – Système de permissions
 - `tenant/` – Gestion multi-tenant
@@ -120,7 +120,7 @@ Voir [Multi-tenant](./multi-tenant.md) pour plus de détails.
 
 ### Stratégie
 
-1. **Stockage local** – Isar pour données critiques
+1. **Stockage local** – Drift (SQLite) pour données critiques
 2. **Synchronisation** – Automatique quand connexion disponible
 3. **Résolution de conflits** – Basée sur `updated_at` et logique métier
 
@@ -131,15 +131,15 @@ Voir [Synchronisation](../07-offline/synchronization.md) pour plus de détails.
 ### Lecture
 
 ```
-UI → Provider → Repository → Firestore/Isar
+UI → Provider → Repository → Firestore/Drift
                 ↓
-            Cache (Isar)
+            Cache (Drift)
 ```
 
 ### Écriture
 
 ```
-UI → Provider → Repository → Isar (immédiat)
+UI → Provider → Repository → Drift (immédiat)
                 ↓
             Firestore (async)
                 ↓

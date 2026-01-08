@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../application/providers.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../domain/entities/daily_worker.dart';
 import '../../domain/entities/production_day.dart';
 import '../../domain/entities/production_session.dart';
 import 'daily_worker_form_dialog.dart';
-import '../../../shared.dart';
-
+import 'package:elyf_groupe_app/shared.dart';
+import '../../../../../shared/utils/notification_service.dart';
 /// Formulaire pour enregistrer le personnel journalier pour un jour de production.
 class DailyPersonnelForm extends ConsumerStatefulWidget {
   const DailyPersonnelForm({
@@ -319,7 +319,7 @@ class _DailyPersonnelFormState extends ConsumerState<DailyPersonnelForm> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: FutureBuilder<int>(
-                    future: ref.read(packagingStockRepositoryProvider).fetchByType('Emballage').then((stock) => stock?.quantity ?? 0),
+                    future: ref.read(packagingStockControllerProvider).fetchByType('Emballage').then((stock) => stock?.quantity ?? 0),
                     builder: (context, snapshot) {
                       final stockDisponible = snapshot.data ?? 0;
                       return TextFormField(

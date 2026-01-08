@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../../app/theme/app_theme.dart';
-import '../../../application/providers.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../../domain/entities/electricity_meter_type.dart';
 import '../../../domain/entities/production_session.dart';
 import '../../../domain/entities/sale.dart';
 import '../../../domain/services/production_margin_calculator.dart';
 import '../../widgets/production_detail_report.dart';
 import '../../widgets/section_placeholder.dart';
-import 'production_sessions_screen.dart' show ventesParSessionProvider;
+// Removed: ventesParSessionProvider is imported from providers.dart
 import 'production_session_form_screen.dart';
 
 /// Écran de détail d'une session de production.
@@ -46,9 +46,9 @@ class _ProductionSessionDetailScreenState
   @override
   Widget build(BuildContext context) {
     final sessionAsync = ref.watch(
-      productionSessionDetailProvider(widget.sessionId),
+      productionSessionDetailProvider((widget.sessionId)),
     );
-    final ventesAsync = ref.watch(ventesParSessionProvider(widget.sessionId));
+    final ventesAsync = ref.watch(ventesParSessionProvider((widget.sessionId)));
 
     return Scaffold(
       appBar: AppBar(
@@ -86,7 +86,7 @@ class _ProductionSessionDetailScreenState
               title: 'Erreur de chargement',
               subtitle: 'Impossible de charger les détails de la session.',
               primaryActionLabel: 'Réessayer',
-              onPrimaryAction: () => ref.invalidate(productionSessionDetailProvider(widget.sessionId)),
+              onPrimaryAction: () => ref.invalidate(productionSessionDetailProvider((widget.sessionId))),
             ),
           ),
           // Onglet Rapport
@@ -120,7 +120,7 @@ class _ProductionSessionDetailContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final sessionAsync = ref.watch(productionSessionDetailProvider(sessionId));
+    final sessionAsync = ref.watch(productionSessionDetailProvider((sessionId)));
     
     return sessionAsync.when(
       data: (session) => SingleChildScrollView(
@@ -154,7 +154,7 @@ class _ProductionSessionDetailContent extends ConsumerWidget {
         title: 'Erreur de chargement',
         subtitle: 'Impossible de charger les détails de la session.',
         primaryActionLabel: 'Réessayer',
-        onPrimaryAction: () => ref.invalidate(productionSessionDetailProvider(sessionId)),
+        onPrimaryAction: () => ref.invalidate(productionSessionDetailProvider((sessionId))),
       ),
     );
   }
@@ -503,7 +503,7 @@ class _ProductionSessionReportContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final sessionAsync = ref.watch(productionSessionDetailProvider(sessionId));
+    final sessionAsync = ref.watch(productionSessionDetailProvider((sessionId)));
     
     return sessionAsync.when(
       data: (session) => SingleChildScrollView(
@@ -516,7 +516,7 @@ class _ProductionSessionReportContent extends ConsumerWidget {
         title: 'Erreur de chargement',
         subtitle: 'Impossible de charger les détails de la session.',
         primaryActionLabel: 'Réessayer',
-        onPrimaryAction: () => ref.invalidate(productionSessionDetailProvider(sessionId)),
+        onPrimaryAction: () => ref.invalidate(productionSessionDetailProvider((sessionId))),
       ),
     );
   }

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../../core.dart';
+import 'package:elyf_groupe_app/core.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
 import '../../../../application/providers.dart';
-import '../../../../../shared.dart';
+import 'package:elyf_groupe_app/shared/utils/form_helper_mixin.dart';
 
 /// Dialogue pour créer un nouveau rôle.
 class CreateRoleDialog extends ConsumerStatefulWidget {
@@ -18,7 +20,8 @@ class CreateRoleDialog extends ConsumerStatefulWidget {
   ConsumerState<CreateRoleDialog> createState() => _CreateRoleDialogState();
 }
 
-class _CreateRoleDialogState extends ConsumerState<CreateRoleDialog> {
+class _CreateRoleDialogState extends ConsumerState<CreateRoleDialog>
+    with FormHelperMixin {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
@@ -34,38 +37,33 @@ class _CreateRoleDialogState extends ConsumerState<CreateRoleDialog> {
   }
 
   Future<void> _handleSubmit() async {
-    if (!_formKey.currentState!.validate()) return;
     if (_selectedPermissions.isEmpty) {
       NotificationService.showInfo(context, 'Sélectionnez au moins une permission');
       return;
     }
 
-    setState(() => _isLoading = true);
+    await handleFormSubmit(
+      context: context,
+      formKey: _formKey,
+      onLoadingChanged: (isLoading) => setState(() => _isLoading = isLoading),
+      onSubmit: () async {
+        final role = UserRole(
+          id: 'role_${DateTime.now().millisecondsSinceEpoch}',
+          name: _nameController.text.trim(),
+          description: _descriptionController.text.trim(),
+          permissions: _selectedPermissions,
+          isSystemRole: false,
+        );
 
-    try {
-      final role = UserRole(
-        id: 'role_${DateTime.now().millisecondsSinceEpoch}',
-        name: _nameController.text.trim(),
-        description: _descriptionController.text.trim(),
-        permissions: _selectedPermissions,
-        isSystemRole: false,
-      );
+        await ref.read(adminControllerProvider).createRole(role);
 
-      await ref.read(adminRepositoryProvider).createRole(role);
+        if (mounted) {
+          Navigator.of(context).pop(role);
+        }
 
-      if (mounted) {
-        Navigator.of(context).pop(role);
-        NotificationService.showSuccess(context, 'Rôle créé avec succès');
-      }
-    } catch (e) {
-      if (mounted) {
-        NotificationService.showError(context, e.toString());
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
+        return 'Rôle créé avec succès';
+      },
+    );
   }
 
   @override

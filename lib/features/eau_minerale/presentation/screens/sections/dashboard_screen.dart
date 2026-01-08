@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../shared.dart';
-import '../../../application/providers.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../../domain/entities/stock_item.dart';
 import '../../widgets/dashboard_header.dart';
 import '../../widgets/dashboard_month_kpis.dart';
@@ -11,6 +11,7 @@ import '../../widgets/dashboard_today_section.dart';
 import '../../widgets/dashboard_trends_chart.dart';
 import '../../widgets/section_placeholder.dart';
 import '../../widgets/stock_alert_banner.dart';
+import 'package:elyf_groupe_app/shared/presentation/widgets/refresh_button.dart';
 
 /// Professional dashboard screen with organized sections and responsive layout.
 class DashboardScreen extends ConsumerWidget {

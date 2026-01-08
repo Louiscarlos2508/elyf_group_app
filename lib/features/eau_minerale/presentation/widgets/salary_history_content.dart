@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../application/providers.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../domain/entities/production_payment.dart';
 import '../../domain/entities/salary_payment.dart';
 import 'salary_history_item.dart';

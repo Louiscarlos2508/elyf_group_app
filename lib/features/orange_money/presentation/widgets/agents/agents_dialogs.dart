@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../shared.dart';
-import '../../../application/providers.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
+import 'package:elyf_groupe_app/features/orange_money/application/providers.dart';
 import '../../../domain/entities/agent.dart';
 import '../agent_form_dialog.dart';
 import '../agent_recharge_dialog.dart' show AgentRechargeDialog, AgentTransactionType;
@@ -33,7 +34,7 @@ class AgentsDialogs {
           }
           if (context.mounted) {
             final agentsKey = '$enterpriseId|${statusFilter?.name ?? ''}|$searchQuery';
-            ref.invalidate(agentsProvider(agentsKey));
+            ref.invalidate(agentsProvider((agentsKey)));
             onSuccess();
           }
         },
@@ -51,7 +52,7 @@ class AgentsDialogs {
     void Function() onSuccess,
   ) {
     final agentsKey = '$enterpriseId||';
-    final agentsAsync = ref.read(agentsProvider(agentsKey));
+    final agentsAsync = ref.read(agentsProvider((agentsKey)));
 
     agentsAsync.whenData((agents) {
       if (agents.isEmpty) {
@@ -72,8 +73,8 @@ class AgentsDialogs {
             );
             if (context.mounted) {
               final currentAgentsKey = '$enterpriseId|${statusFilter?.name ?? ''}|$searchQuery';
-              ref.invalidate(agentsProvider(currentAgentsKey));
-              ref.invalidate(agentsDailyStatisticsProvider(enterpriseId ?? ''));
+              ref.invalidate(agentsProvider((currentAgentsKey)));
+              ref.invalidate(agentsDailyStatisticsProvider((enterpriseId ?? '')));
               onSuccess();
 
               if (dialogContext.mounted) {

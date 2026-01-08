@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../../../../../shared.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
 import '../../../../domain/entities/enterprise.dart';
+import 'package:elyf_groupe_app/shared/utils/form_helper_mixin.dart';
 
 /// Dialogue pour modifier une entreprise existante.
 class EditEnterpriseDialog extends StatefulWidget {
@@ -17,7 +19,8 @@ class EditEnterpriseDialog extends StatefulWidget {
   State<EditEnterpriseDialog> createState() => _EditEnterpriseDialogState();
 }
 
-class _EditEnterpriseDialogState extends State<EditEnterpriseDialog> {
+class _EditEnterpriseDialogState extends State<EditEnterpriseDialog>
+    with FormHelperMixin {
   late final GlobalKey<FormState> _formKey;
   late final TextEditingController _nameController;
   late final TextEditingController _descriptionController;
@@ -55,42 +58,37 @@ class _EditEnterpriseDialogState extends State<EditEnterpriseDialog> {
   }
 
   Future<void> _handleSubmit() async {
-    if (!_formKey.currentState!.validate()) return;
+    await handleFormSubmit(
+      context: context,
+      formKey: _formKey,
+      onLoadingChanged: (isLoading) => setState(() => _isLoading = isLoading),
+      onSubmit: () async {
+        final updatedEnterprise = widget.enterprise.copyWith(
+          name: _nameController.text.trim(),
+          type: _selectedType,
+          description: _descriptionController.text.trim().isEmpty
+              ? null
+              : _descriptionController.text.trim(),
+          address: _addressController.text.trim().isEmpty
+              ? null
+              : _addressController.text.trim(),
+          phone: _phoneController.text.trim().isEmpty
+              ? null
+              : _phoneController.text.trim(),
+          email: _emailController.text.trim().isEmpty
+              ? null
+              : _emailController.text.trim(),
+          isActive: _isActive,
+          updatedAt: DateTime.now(),
+        );
 
-    setState(() => _isLoading = true);
+        if (mounted) {
+          Navigator.of(context).pop(updatedEnterprise);
+        }
 
-    try {
-      final updatedEnterprise = widget.enterprise.copyWith(
-        name: _nameController.text.trim(),
-        type: _selectedType,
-        description: _descriptionController.text.trim().isEmpty
-            ? null
-            : _descriptionController.text.trim(),
-        address: _addressController.text.trim().isEmpty
-            ? null
-            : _addressController.text.trim(),
-        phone: _phoneController.text.trim().isEmpty
-            ? null
-            : _phoneController.text.trim(),
-        email: _emailController.text.trim().isEmpty
-            ? null
-            : _emailController.text.trim(),
-        isActive: _isActive,
-        updatedAt: DateTime.now(),
-      );
-
-      if (mounted) {
-        Navigator.of(context).pop(updatedEnterprise);
-      }
-    } catch (e) {
-      if (mounted) {
-        NotificationService.showError(context, e.toString());
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
+        return 'Entreprise modifiée avec succès';
+      },
+    );
   }
 
   String? _validateEmail(String? value) {

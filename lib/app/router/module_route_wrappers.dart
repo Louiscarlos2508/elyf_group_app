@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../shared/presentation/widgets/enterprise_selector_widget.dart';
 import '../../core/tenant/tenant_provider.dart';
 import '../../features/boutique/presentation/screens/boutique_shell_screen.dart';
 import '../../features/eau_minerale/presentation/screens/eau_minerale_shell_screen.dart';
@@ -130,7 +129,7 @@ class GazRouteWrapper extends ConsumerWidget {
         return GazShellScreen(
           enterpriseId: enterprise.id,
           moduleId: 'gaz',
-        );
+        ) as Widget;
       },
       loading: () => const Scaffold(
         body: Center(
@@ -177,7 +176,7 @@ class OrangeMoneyRouteWrapper extends ConsumerWidget {
         return OrangeMoneyShellScreen(
           enterpriseId: enterprise.id,
           moduleId: 'orange_money',
-        );
+        ) as Widget;
       },
       loading: () => const Scaffold(
         body: Center(
@@ -224,7 +223,7 @@ class ImmobilierRouteWrapper extends ConsumerWidget {
         return ImmobilierShellScreen(
           enterpriseId: enterprise.id,
           moduleId: 'immobilier',
-        );
+        ) as Widget;
       },
       loading: () => const Scaffold(
         body: Center(
@@ -271,7 +270,7 @@ class BoutiqueRouteWrapper extends ConsumerWidget {
         return BoutiqueShellScreen(
           enterpriseId: enterprise.id,
           moduleId: 'boutique',
-        );
+        ) as Widget;
       },
       loading: () => const Scaffold(
         body: Center(

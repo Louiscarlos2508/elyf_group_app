@@ -4,8 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/expense.dart';
 import '../../domain/entities/report_data.dart';
-import '../../../../shared.dart';
-
+import '../../domain/services/gaz_report_calculation_service.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import '../../../../../shared/utils/currency_formatter.dart';
 /// Content widget for expenses report tab - style eau_minerale.
 class GazExpensesReportContentV2 extends ConsumerWidget {
   const GazExpensesReportContentV2({
@@ -48,19 +49,13 @@ class GazExpensesReportContentV2 extends ConsumerWidget {
         data: (reportData) {
           return expensesAsync.when(
             data: (expenses) {
-              // Filter expenses by period
-              final filteredExpenses = expenses.where((e) {
-                return e.date
-                        .isAfter(startDate.subtract(const Duration(days: 1))) &&
-                    e.date.isBefore(endDate.add(const Duration(days: 1)));
-              }).toList();
-
-              // Group by category
-              final byCategory = <ExpenseCategory, double>{};
-              for (final expense in filteredExpenses) {
-                byCategory[expense.category] =
-                    (byCategory[expense.category] ?? 0) + expense.amount;
-              }
+              // Utiliser le service de calcul pour extraire la logique métier
+              final reportService = ref.read(gazReportCalculationServiceProvider);
+              final expensesAnalysis = reportService.calculateExpensesAnalysis(
+                expenses: expenses,
+                startDate: startDate,
+                endDate: endDate,
+              );
 
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -74,7 +69,7 @@ class GazExpensesReportContentV2 extends ConsumerWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '${reportData.expensesCount} dépenses • Total: ${CurrencyFormatter.formatDouble(reportData.expensesAmount)}',
+                    '${expensesAnalysis.totalExpenses} dépenses • Total: ${CurrencyFormatter.formatDouble(expensesAnalysis.totalAmount)}',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -89,7 +84,7 @@ class GazExpensesReportContentV2 extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  _buildCategoryBreakdown(theme, byCategory, reportData.expensesAmount),
+                  _buildCategoryBreakdown(theme, expensesAnalysis.byCategory, expensesAnalysis.totalAmount),
 
                   const SizedBox(height: 24),
 
@@ -101,7 +96,7 @@ class GazExpensesReportContentV2 extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  _buildStatistics(theme, filteredExpenses),
+                  _buildStatistics(theme, expensesAnalysis),
                 ],
               );
             },
@@ -200,13 +195,10 @@ class GazExpensesReportContentV2 extends ConsumerWidget {
     );
   }
 
-  Widget _buildStatistics(ThemeData theme, List<GazExpense> expenses) {
-    if (expenses.isEmpty) {
+  Widget _buildStatistics(ThemeData theme, ExpensesAnalysis analysis) {
+    if (analysis.totalExpenses == 0) {
       return const SizedBox.shrink();
     }
-
-    final avgAmount = expenses.fold<double>(0, (sum, e) => sum + e.amount) /
-        expenses.length;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -227,7 +219,7 @@ class GazExpensesReportContentV2 extends ConsumerWidget {
                   ),
                 ),
                 Text(
-                  CurrencyFormatter.formatDouble(avgAmount),
+                  CurrencyFormatter.formatDouble(analysis.averageAmount),
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -246,10 +238,7 @@ class GazExpensesReportContentV2 extends ConsumerWidget {
                   ),
                 ),
                 Text(
-                  CurrencyFormatter.formatDouble(expenses.fold<double>(
-                    0,
-                    (sum, e) => sum + e.amount,
-                  )),
+                  CurrencyFormatter.formatDouble(analysis.totalAmount),
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: Colors.red,

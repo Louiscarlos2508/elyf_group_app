@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../shared.dart';
-import '../../application/providers.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
+import 'package:elyf_groupe_app/shared/utils/validators.dart';
+import 'package:elyf_groupe_app/shared/utils/form_helper_mixin.dart';
 
 /// Form for creating/editing a customer account.
 class CustomerForm extends ConsumerStatefulWidget {
@@ -12,7 +14,8 @@ class CustomerForm extends ConsumerStatefulWidget {
   ConsumerState<CustomerForm> createState() => CustomerFormState();
 }
 
-class CustomerFormState extends ConsumerState<CustomerForm> {
+class CustomerFormState extends ConsumerState<CustomerForm>
+    with FormHelperMixin {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
@@ -29,26 +32,25 @@ class CustomerFormState extends ConsumerState<CustomerForm> {
 
 
   Future<void> submit() async {
-    if (!_formKey.currentState!.validate()) return;
+    await handleFormSubmit(
+      context: context,
+      formKey: _formKey,
+      onLoadingChanged: (isLoading) => setState(() => _isLoading = isLoading),
+      onSubmit: () async {
+        await ref.read(clientsControllerProvider).createCustomer(
+          _nameController.text.trim(),
+          _phoneController.text.trim(),
+          cnib: _cnibController.text.isEmpty ? null : _cnibController.text.trim(),
+        );
 
-    setState(() => _isLoading = true);
-    try {
-      await ref.read(clientsControllerProvider).createCustomer(
-        _nameController.text.trim(),
-        _phoneController.text.trim(),
-        cnib: _cnibController.text.isEmpty ? null : _cnibController.text.trim(),
-      );
+        if (mounted) {
+          Navigator.of(context).pop();
+          ref.invalidate(clientsStateProvider);
+        }
 
-      if (!mounted) return;
-      Navigator.of(context).pop();
-      ref.invalidate(clientsStateProvider);
-      NotificationService.showSuccess(context, 'Client enregistré avec succès');
-    } catch (e) {
-      if (!mounted) return;
-      NotificationService.showError(context, e.toString());
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
+        return 'Client enregistré avec succès';
+      },
+    );
   }
 
   @override

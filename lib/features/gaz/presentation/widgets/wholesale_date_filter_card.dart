@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import '../../../../shared.dart';
-
+import 'package:elyf_groupe_app/shared.dart';
+import '../../../../../shared/utils/date_formatter.dart';
 /// Card for filtering sales by date period - matches Figma design.
 class WholesaleDateFilterCard extends StatelessWidget {
   const WholesaleDateFilterCard({

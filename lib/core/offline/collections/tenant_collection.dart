@@ -1,5 +1,5 @@
-/// Stub TenantCollection - Isar temporarily disabled.
-/// TODO: Migrate to ObjectBox.
+/// Legacy TenantCollection model (kept for compatibility).
+/// Note: Drift est utilisé exclusivement pour le stockage offline (pas ObjectBox).
 class TenantCollection {
   int id = 0;
   late String localId;

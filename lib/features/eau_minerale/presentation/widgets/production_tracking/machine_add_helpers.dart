@@ -4,10 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../domain/entities/bobine_usage.dart';
 import '../../../domain/entities/machine.dart';
 import '../../../domain/entities/production_session.dart';
-import '../../../application/providers.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../screens/sections/production_session_detail_screen.dart' show productionSessionDetailProvider;
-import '../../../../shared.dart';
-
+import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
 /// Helpers pour l'ajout de machines.
 class MachineAddHelpers {
   /// Recherche une bobine non finie existante pour une machine donnée.
@@ -53,7 +53,7 @@ class MachineAddHelpers {
     await controller.updateSession(updatedSession);
 
     if (context.mounted) {
-      ref.invalidate(productionSessionDetailProvider(session.id));
+      ref.invalidate(productionSessionDetailProvider((session.id)));
       NotificationService.showSuccess(context, 
             'Machine ${machine.nom} ajoutée. Bobine non finie réutilisée: ${bobineNonFinie.bobineType}',
           );
@@ -82,7 +82,7 @@ class MachineAddHelpers {
     await controller.updateSession(updatedSession);
 
     if (context.mounted) {
-      ref.invalidate(productionSessionDetailProvider(session.id));
+      ref.invalidate(productionSessionDetailProvider((session.id)));
       NotificationService.showSuccess(context, 
             'Machine ${machine.nom} ajoutée avec succès',
           );

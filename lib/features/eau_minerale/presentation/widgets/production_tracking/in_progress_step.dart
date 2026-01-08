@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../domain/entities/production_session.dart';
-import '../../../application/providers.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../../domain/entities/electricity_meter_type.dart';
 import 'bobines_status_list.dart';
 import 'info_row.dart';

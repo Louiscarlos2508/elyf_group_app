@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../application/providers.dart';
+import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import '../../../domain/entities/collection.dart';
 import '../../../domain/entities/tour.dart';
 import '../payment_form_dialog.dart';
 import '../wholesaler_payment_card.dart';
-import '../../../../shared.dart';
-
+import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
 /// Contenu de l'étape retour du tour.
 class ReturnStepContent extends ConsumerWidget {
   const ReturnStepContent({

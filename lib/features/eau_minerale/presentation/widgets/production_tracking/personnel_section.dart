@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../domain/entities/production_day.dart';
 import '../../../domain/entities/production_session.dart';
-import '../../../application/providers.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../daily_personnel_form.dart';
 import '../../screens/sections/production_session_detail_screen.dart' show productionSessionDetailProvider;
 import 'personnel_day_card.dart';
@@ -11,8 +11,8 @@ import 'personnel_delete_dialog.dart';
 import 'personnel_empty_state.dart';
 import 'personnel_header.dart';
 import 'personnel_total_cost.dart';
-import '../../../../shared.dart';
-
+import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
 /// Widget pour la section personnel et production journalière.
 class PersonnelSection extends ConsumerWidget {
   const PersonnelSection({
@@ -79,7 +79,7 @@ class PersonnelSection extends ConsumerWidget {
     await controller.updateSession(updatedSession);
 
     if (context.mounted) {
-      ref.invalidate(productionSessionDetailProvider(session.id));
+      ref.invalidate(productionSessionDetailProvider((session.id)));
       NotificationService.showInfo(context, 'Jour de production supprimé avec succès');
     }
   }
@@ -119,7 +119,7 @@ class PersonnelSection extends ConsumerWidget {
 
               if (context.mounted) {
                 Navigator.of(context).pop();
-                ref.invalidate(productionSessionDetailProvider(session.id));
+                ref.invalidate(productionSessionDetailProvider((session.id)));
                 ref.invalidate(stockStateProvider);
                 NotificationService.showInfo(context, 'Personnel enregistré avec succès');
               }

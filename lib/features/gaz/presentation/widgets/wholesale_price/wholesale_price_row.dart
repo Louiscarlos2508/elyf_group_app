@@ -3,10 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../../../application/providers.dart';
+import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import '../../../domain/entities/gaz_settings.dart';
-import '../../../../shared.dart';
-
+import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
 /// Ligne d'édition de prix pour un poids de bouteille.
 class WholesalePriceRow extends ConsumerStatefulWidget {
   const WholesalePriceRow({

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../shared.dart';
+import 'package:elyf_groupe_app/shared.dart' as shared;
 import 'sections/agents_screen.dart';
+import 'package:elyf_groupe_app/shared/presentation/widgets/base_module_shell_screen.dart';
 import 'sections/commissions_screen.dart';
 import 'sections/liquidity_screen.dart';
 import 'sections/reports_screen.dart';

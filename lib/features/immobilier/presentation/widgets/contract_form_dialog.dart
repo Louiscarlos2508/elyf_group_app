@@ -2,12 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/domain/entities/attached_file.dart';
-import '../../../../shared.dart';
-import '../../application/providers.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import '../../../../../shared/utils/notification_service.dart';
+import 'package:elyf_groupe_app/features/immobilier/application/providers.dart';
 import '../../domain/entities/contract.dart';
 import '../../domain/entities/property.dart';
 import '../../domain/entities/tenant.dart';
 import 'contract_form_fields.dart';
+import 'package:elyf_groupe_app/shared/presentation/widgets/form_dialog.dart';
+import 'package:elyf_groupe_app/shared/utils/validators.dart';
+import 'package:elyf_groupe_app/shared/utils/form_helper_mixin.dart';
 
 class ContractFormDialog extends ConsumerStatefulWidget {
   const ContractFormDialog({
@@ -21,7 +25,8 @@ class ContractFormDialog extends ConsumerStatefulWidget {
   ConsumerState<ContractFormDialog> createState() => _ContractFormDialogState();
 }
 
-class _ContractFormDialogState extends ConsumerState<ContractFormDialog> {
+class _ContractFormDialogState extends ConsumerState<ContractFormDialog>
+    with FormHelperMixin {
   final _formKey = GlobalKey<FormState>();
   Property? _selectedProperty;
   Tenant? _selectedTenant;
@@ -92,76 +97,83 @@ class _ContractFormDialogState extends ConsumerState<ContractFormDialog> {
   }
 
   Future<void> _save() async {
-    if (!_formKey.currentState!.validate()) return;
-    if (_selectedProperty == null) {
+    // Utiliser le service de validation pour extraire la logique métier
+    final validationService = ref.read(contractValidationServiceProvider);
+    
+    if (!validationService.isPropertySelected(_selectedProperty)) {
       NotificationService.showWarning(context, 'Veuillez sélectionner une propriété');
       return;
     }
-    if (_selectedTenant == null) {
+    if (!validationService.isTenantSelected(_selectedTenant)) {
       NotificationService.showWarning(context, 'Veuillez sélectionner un locataire');
       return;
     }
 
     // Validation supplémentaire des dates
-    if (_endDate.isBefore(_startDate) || _endDate.isAtSameMomentAs(_startDate)) {
-      NotificationService.showError(context, 'La date de fin doit être après la date de début');
+    final dateError = validationService.validateDates(
+      startDate: _startDate,
+      endDate: _endDate,
+    );
+    if (dateError != null) {
+      NotificationService.showError(context, dateError);
       return;
     }
 
-    try {
-      // Déterminer si la caution est en mois ou montant fixe
-      final depositInMonths = _depositInMonthsController.text.trim().isNotEmpty
-          ? int.tryParse(_depositInMonthsController.text.trim())
-          : null;
-      final deposit = depositInMonths != null && depositInMonths > 0
-          ? int.parse(_monthlyRentController.text) * depositInMonths
-          : int.parse(_depositController.text);
-
-      final contract = Contract(
-        id: widget.contract?.id ?? IdGenerator.generate(),
-        propertyId: _selectedProperty!.id,
-        tenantId: _selectedTenant!.id,
-        startDate: _startDate,
-        endDate: _endDate,
-        monthlyRent: int.parse(_monthlyRentController.text),
-        deposit: deposit,
-        status: _status,
-        property: _selectedProperty,
-        tenant: _selectedTenant,
-        paymentDay: _paymentDay,
-        notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
-        depositInMonths: depositInMonths,
-        createdAt: widget.contract?.createdAt ?? DateTime.now(),
-        updatedAt: DateTime.now(),
-        attachedFiles: _attachedFiles.isEmpty ? null : _attachedFiles,
-      );
-
-      final controller = ref.read(contractControllerProvider);
-      if (widget.contract == null) {
-        await controller.createContract(contract);
-        // Invalider aussi les propriétés pour mettre à jour le statut
-        ref.invalidate(propertiesProvider);
-      } else {
-        await controller.updateContract(contract);
-        // Invalider aussi les propriétés pour mettre à jour le statut
-        ref.invalidate(propertiesProvider);
-      }
-
-      if (mounted) {
-        ref.invalidate(contractsProvider);
-        Navigator.of(context).pop();
-        NotificationService.showSuccess(
-          context,
-          widget.contract == null
-              ? 'Contrat créé avec succès'
-              : 'Contrat mis à jour avec succès',
+    await handleFormSubmit(
+      context: context,
+      formKey: _formKey,
+      onLoadingChanged: (_) {}, // Pas besoin de gestion d'état de chargement séparée
+      onSubmit: () async {
+        // Déterminer si la caution est en mois ou montant fixe
+        final depositInMonths = _depositInMonthsController.text.trim().isNotEmpty
+            ? int.tryParse(_depositInMonthsController.text.trim())
+            : null;
+        final deposit = validationService.calculateDeposit(
+          monthlyRent: int.parse(_monthlyRentController.text),
+          depositInMonths: depositInMonths,
+          depositAmount: int.tryParse(_depositController.text),
         );
-      }
-    } catch (e) {
-      if (mounted) {
-        NotificationService.showError(context, e.toString());
-      }
-    }
+
+        final contract = Contract(
+          id: widget.contract?.id ?? IdGenerator.generate(),
+          propertyId: _selectedProperty!.id,
+          tenantId: _selectedTenant!.id,
+          startDate: _startDate,
+          endDate: _endDate,
+          monthlyRent: int.parse(_monthlyRentController.text),
+          deposit: deposit,
+          status: _status,
+          property: _selectedProperty,
+          tenant: _selectedTenant,
+          paymentDay: _paymentDay,
+          notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+          depositInMonths: depositInMonths,
+          createdAt: widget.contract?.createdAt ?? DateTime.now(),
+          updatedAt: DateTime.now(),
+          attachedFiles: _attachedFiles.isEmpty ? null : _attachedFiles,
+        );
+
+        final controller = ref.read(contractControllerProvider);
+        if (widget.contract == null) {
+          await controller.createContract(contract);
+          // Invalider aussi les propriétés pour mettre à jour le statut
+          ref.invalidate(propertiesProvider);
+        } else {
+          await controller.updateContract(contract);
+          // Invalider aussi les propriétés pour mettre à jour le statut
+          ref.invalidate(propertiesProvider);
+        }
+
+        if (mounted) {
+          ref.invalidate(contractsProvider);
+          Navigator.of(context).pop();
+        }
+
+        return widget.contract == null
+            ? 'Contrat créé avec succès'
+            : 'Contrat mis à jour avec succès';
+      },
+    );
   }
 
 

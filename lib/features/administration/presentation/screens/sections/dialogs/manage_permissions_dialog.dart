@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../../core.dart';
+import 'package:elyf_groupe_app/core.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
 import '../../../../application/providers.dart';
-import '../../../../../shared.dart';
+import 'package:elyf_groupe_app/core/auth/entities/enterprise_module_user.dart';
 
 /// Dialogue pour gérer les permissions personnalisées d'un utilisateur.
 class ManagePermissionsDialog extends ConsumerStatefulWidget {
@@ -34,7 +36,7 @@ class _ManagePermissionsDialogState
     setState(() => _isLoading = true);
 
     try {
-      await ref.read(adminRepositoryProvider).updateUserPermissions(
+      await ref.read(adminControllerProvider).updateUserPermissions(
             widget.enterpriseModuleUser.userId,
             widget.enterpriseModuleUser.enterpriseId,
             widget.enterpriseModuleUser.moduleId,

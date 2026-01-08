@@ -1,12 +1,12 @@
 import 'dart:developer' as developer;
+import 'dart:convert';
 
 import '../../../../core/errors/app_exceptions.dart';
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/offline/connectivity_service.dart';
-import '../../../../core/offline/isar_service.dart';
+import '../../../../core/offline/drift_service.dart';
 import '../../../../core/offline/offline_repository.dart';
 import '../../../../core/offline/sync_manager.dart';
-import '../../../../core/offline/collections/expense_collection.dart';
 import '../../domain/entities/expense.dart';
 import '../../domain/repositories/expense_repository.dart';
 
@@ -14,7 +14,7 @@ import '../../domain/repositories/expense_repository.dart';
 class ExpenseOfflineRepository extends OfflineRepository<Expense>
     implements ExpenseRepository {
   ExpenseOfflineRepository({
-    required super.isarService,
+    required super.driftService,
     required super.syncManager,
     required super.connectivityService,
     required this.enterpriseId,
@@ -100,18 +100,17 @@ class ExpenseOfflineRepository extends OfflineRepository<Expense>
 
   @override
   Future<void> saveToLocal(Expense entity) async {
-    final collection = ExpenseCollection.fromMap(
-      toMap(entity),
+    final localId = getLocalId(entity);
+    final map = toMap(entity)..['localId'] = localId;
+    await driftService.records.upsert(
+      collectionName: collectionName,
+      localId: localId,
+      remoteId: getRemoteId(entity),
       enterpriseId: enterpriseId,
       moduleType: moduleType,
-      localId: getLocalId(entity),
+      dataJson: jsonEncode(map),
+      localUpdatedAt: DateTime.now(),
     );
-    collection.remoteId = getRemoteId(entity);
-    collection.localUpdatedAt = DateTime.now();
-
-    await isarService.isar.writeTxn(() async {
-      await isarService.isar.expenseCollections.put(collection);
-    });
   }
 
   @override
@@ -119,58 +118,57 @@ class ExpenseOfflineRepository extends OfflineRepository<Expense>
     final remoteId = getRemoteId(entity);
     final localId = getLocalId(entity);
 
-    await isarService.isar.writeTxn(() async {
-      if (remoteId != null) {
-        await isarService.isar.expenseCollections
-            .filter()
-            .remoteIdEqualTo(remoteId)
-            .and()
-            .enterpriseIdEqualTo(enterpriseId)
-            .deleteAll();
-      } else {
-        await isarService.isar.expenseCollections
-            .filter()
-            .localIdEqualTo(localId)
-            .and()
-            .enterpriseIdEqualTo(enterpriseId)
-            .deleteAll();
-      }
-    });
+    if (remoteId != null) {
+      await driftService.records.deleteByRemoteId(
+        collectionName: collectionName,
+        remoteId: remoteId,
+        enterpriseId: enterpriseId,
+        moduleType: moduleType,
+      );
+      return;
+    }
+    await driftService.records.deleteByLocalId(
+      collectionName: collectionName,
+      localId: localId,
+      enterpriseId: enterpriseId,
+      moduleType: moduleType,
+    );
   }
 
   @override
   Future<Expense?> getByLocalId(String localId) async {
-    var collection = await isarService.isar.expenseCollections
-        .filter()
-        .localIdEqualTo(localId)
-        .and()
-        .enterpriseIdEqualTo(enterpriseId)
-        .findFirst();
-
-    if (collection == null) {
-      collection = await isarService.isar.expenseCollections
-          .filter()
-          .remoteIdEqualTo(localId)
-          .and()
-          .enterpriseIdEqualTo(enterpriseId)
-          .findFirst();
+    final byLocal = await driftService.records.findByLocalId(
+      collectionName: collectionName,
+      localId: localId,
+      enterpriseId: enterpriseId,
+      moduleType: moduleType,
+    );
+    if (byLocal != null) {
+      return fromMap(jsonDecode(byLocal.dataJson) as Map<String, dynamic>);
     }
 
-    if (collection == null) return null;
-    return fromMap(collection.toMap());
+    final byRemote = await driftService.records.findByRemoteId(
+      collectionName: collectionName,
+      remoteId: localId,
+      enterpriseId: enterpriseId,
+      moduleType: moduleType,
+    );
+    if (byRemote == null) return null;
+    return fromMap(jsonDecode(byRemote.dataJson) as Map<String, dynamic>);
   }
 
   @override
   Future<List<Expense>> getAllForEnterprise(String enterpriseId) async {
-    final collections = await isarService.isar.expenseCollections
-        .filter()
-        .enterpriseIdEqualTo(enterpriseId)
-        .and()
-        .moduleTypeEqualTo(moduleType)
-        .sortByExpenseDateDesc()
-        .findAll();
-
-    return collections.map((c) => fromMap(c.toMap())).toList();
+    final rows = await driftService.records.listForEnterprise(
+      collectionName: collectionName,
+      enterpriseId: enterpriseId,
+      moduleType: moduleType,
+    );
+    final expenses = rows
+        .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+        .toList();
+    expenses.sort((a, b) => b.date.compareTo(a.date));
+    return expenses;
   }
 
   // ExpenseRepository interface implementation

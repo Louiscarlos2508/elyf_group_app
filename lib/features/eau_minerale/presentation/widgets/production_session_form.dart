@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../application/providers.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../domain/entities/bobine_usage.dart';
 import '../../domain/entities/machine.dart';
 import '../../domain/entities/production_period_config.dart';
 import '../../domain/entities/production_session.dart';
 import 'bobine_usage_form_field.dart';
-import '../../../shared.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import '../../../../../shared/utils/date_formatter.dart';
+import '../../../../../shared/utils/notification_service.dart';
 import 'machine_selector_field.dart';
 import 'time_picker_field.dart';
 

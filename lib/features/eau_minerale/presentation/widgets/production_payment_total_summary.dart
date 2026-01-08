@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../domain/entities/production_payment_person.dart';
 
 /// Summary widget showing total amount and number of persons.
-class ProductionPaymentTotalSummary extends StatelessWidget {
+class ProductionPaymentTotalSummary extends ConsumerWidget {
   const ProductionPaymentTotalSummary({
     super.key,
     required this.persons,
@@ -18,12 +20,14 @@ class ProductionPaymentTotalSummary extends StatelessWidget {
         ) + ' FCFA';
   }
 
-  int get _totalAmount => persons.fold(0, (sum, p) => sum + p.effectiveTotalAmount);
-
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     if (persons.isEmpty) return const SizedBox.shrink();
+    
+    // Utiliser le service de calcul pour extraire la logique métier
+    final calculationService = ref.read(productionPaymentCalculationServiceProvider);
+    final totalAmount = calculationService.calculateTotalAmountForPersons(persons);
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -59,7 +63,7 @@ class ProductionPaymentTotalSummary extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                _formatCurrency(_totalAmount),
+                _formatCurrency(totalAmount),
                 style: theme.textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: theme.colorScheme.primary,

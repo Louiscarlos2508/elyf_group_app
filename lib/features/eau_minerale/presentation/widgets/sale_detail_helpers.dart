@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 
-import '../../../../shared.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import '../../../../../shared/utils/date_formatter.dart';
+import '../../../../../shared/utils/currency_formatter.dart';
 import '../../domain/entities/sale.dart';
 
 /// Helper functions for sale detail display.
 class SaleDetailHelpers {
   static String formatCurrency(int amount) {
-    // Utiliser CurrencyFormatter mais avec " CFA" au lieu de " FCFA" pour compatibilité
-    return CurrencyFormatter.formatFCFA(amount).replaceAll(' FCFA', ' CFA');
+    // Utilise CurrencyFormatter partagé avec format CFA
+    return CurrencyFormatter.formatCFA(amount);
   }
 
   static String formatDate(DateTime date) {

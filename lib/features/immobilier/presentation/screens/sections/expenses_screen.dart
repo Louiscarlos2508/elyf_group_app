@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../shared.dart';
-import '../../../application/providers.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
+import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
+import 'package:elyf_groupe_app/features/immobilier/application/providers.dart';
 import '../../../domain/adapters/expense_balance_adapter.dart';
 import '../../../domain/entities/expense.dart';
 import '../../widgets/daily_expense_summary_card_v2.dart';
-import '../../widgets/expense_form_dialog.dart';
+import '../../widgets/expense_form_dialog.dart' as immobilier_widgets;
 import '../../widgets/expenses_table_v2.dart';
 import '../../widgets/monthly_expense_summary_v2.dart';
+import 'package:elyf_groupe_app/shared/presentation/widgets/refresh_button.dart';
 
 /// Expenses screen with professional UI - style Boutique/Eau Minérale.
 class ExpensesScreen extends ConsumerWidget {
@@ -18,18 +21,16 @@ class ExpensesScreen extends ConsumerWidget {
     return CurrencyFormatter.formatFCFA(amount);
   }
 
-  List<PropertyExpense> _getTodayExpenses(List<PropertyExpense> expenses) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    return expenses.where((e) {
-      final expenseDate =
-          DateTime(e.expenseDate.year, e.expenseDate.month, e.expenseDate.day);
-      return expenseDate.isAtSameMomentAs(today);
-    }).toList();
+  List<PropertyExpense> _getTodayExpenses(List<PropertyExpense> expenses, WidgetRef ref) {
+    // Utiliser le service de filtrage pour extraire la logique métier
+    final filterService = ref.read(expenseFilterServiceProvider);
+    return filterService.filterTodayExpenses(expenses);
   }
 
-  int _getTodayTotal(List<PropertyExpense> expenses) {
-    return _getTodayExpenses(expenses).fold(0, (sum, e) => sum + e.amount);
+  int _getTodayTotal(List<PropertyExpense> expenses, WidgetRef ref) {
+    // Utiliser le service de filtrage pour extraire la logique métier
+    final filterService = ref.read(expenseFilterServiceProvider);
+    return filterService.calculateTodayTotal(expenses);
   }
 
   @override
@@ -40,8 +41,8 @@ class ExpensesScreen extends ConsumerWidget {
     return Scaffold(
       body: expensesAsync.when(
         data: (expenses) {
-          final todayExpenses = _getTodayExpenses(expenses);
-          final todayTotal = _getTodayTotal(expenses);
+          final todayExpenses = _getTodayExpenses(expenses, ref);
+          final todayTotal = _getTodayTotal(expenses, ref);
 
           return LayoutBuilder(
             builder: (context, constraints) {
@@ -99,7 +100,7 @@ class ExpensesScreen extends ConsumerWidget {
                                       showDialog(
                                         context: context,
                                         builder: (_) =>
-                                            const ExpenseFormDialog(),
+                                            const immobilier_widgets.ExpenseFormDialog(),
                                       );
                                     },
                                     icon: const Icon(Icons.add),
@@ -155,7 +156,7 @@ class ExpensesScreen extends ConsumerWidget {
                                       showDialog(
                                         context: context,
                                         builder: (_) =>
-                                            const ExpenseFormDialog(),
+                                            const immobilier_widgets.ExpenseFormDialog(),
                                       );
                                     },
                                     icon: const Icon(Icons.add),

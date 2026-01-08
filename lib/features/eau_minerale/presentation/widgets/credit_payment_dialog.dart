@@ -1,12 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:open_file/open_file.dart';
 
-import '../../../../shared.dart';
-import '../../application/providers.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import '../../../../../shared/utils/currency_formatter.dart';
+import '../../../../../shared/utils/notification_service.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../domain/entities/credit_payment.dart';
 import '../../domain/entities/sale.dart';
-import 'invoice_print/invoice_print_service.dart';
+import 'credit_payment/credit_payment_footer.dart';
+import 'credit_payment/credit_payment_form_fields.dart';
+import 'credit_payment/credit_payment_header.dart';
+import 'credit_payment/credit_payment_info_card.dart';
+import 'credit_payment/credit_payment_print_helper.dart';
+import 'credit_payment/credit_sales_list.dart';
+import 'package:elyf_groupe_app/shared/utils/form_helper_mixin.dart';
 
 /// Dialog for recording a credit payment.
 class CreditPaymentDialog extends ConsumerStatefulWidget {
@@ -26,7 +33,8 @@ class CreditPaymentDialog extends ConsumerStatefulWidget {
       _CreditPaymentDialogState();
 }
 
-class _CreditPaymentDialogState extends ConsumerState<CreditPaymentDialog> {
+class _CreditPaymentDialogState extends ConsumerState<CreditPaymentDialog>
+    with FormHelperMixin {
   final _formKey = GlobalKey<FormState>();
   final _amountController = TextEditingController();
   final _notesController = TextEditingController();
@@ -72,76 +80,8 @@ class _CreditPaymentDialogState extends ConsumerState<CreditPaymentDialog> {
     }
   }
 
-  String _formatCurrency(int amount) {
-    // Utiliser CurrencyFormatter mais avec " CFA" au lieu de " FCFA" pour compatibilité
-    return CurrencyFormatter.formatFCFA(amount).replaceAll(' FCFA', ' CFA');
-  }
-
-  String _formatDate(DateTime date) {
-    return DateFormatter.formatDate(date);
-  }
-
-  Future<void> _showPrintOption(int paymentAmount, int remainingAfterPayment) async {
-    final result = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Imprimer le reçu ?'),
-        content: const Text('Voulez-vous imprimer ou générer un PDF du reçu de paiement ?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, 'skip'),
-            child: const Text('Non merci'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, 'pdf'),
-            child: const Text('PDF'),
-          ),
-          FutureBuilder<bool>(
-            future: EauMineraleInvoiceService.instance.isSunmiAvailable(),
-            builder: (context, snapshot) {
-              if (snapshot.data == true) {
-                return FilledButton(
-                  onPressed: () => Navigator.pop(context, 'sunmi'),
-                  child: const Text('Imprimer'),
-                );
-              }
-              return const SizedBox.shrink();
-            },
-          ),
-        ],
-      ),
-    );
-
-    if (result == null || result == 'skip' || !mounted) return;
-
-    try {
-      if (result == 'pdf') {
-        final file = await EauMineraleInvoiceService.instance.generateCreditPaymentPdf(
-          customerName: widget.customerName,
-          sale: _selectedSale!,
-          paymentAmount: paymentAmount,
-          remainingAfterPayment: remainingAfterPayment,
-          notes: _notesController.text.isEmpty ? null : _notesController.text,
-        );
-        if (!mounted) return;
-        await OpenFile.open(file.path);
-      } else if (result == 'sunmi') {
-        await EauMineraleInvoiceService.instance.printCreditPaymentReceipt(
-          customerName: widget.customerName,
-          sale: _selectedSale!,
-          paymentAmount: paymentAmount,
-          remainingAfterPayment: remainingAfterPayment,
-          notes: _notesController.text.isEmpty ? null : _notesController.text,
-        );
-      }
-    } catch (e) {
-      if (!mounted) return;
-      NotificationService.showWarning(context, 'Erreur d\'impression: $e');
-    }
-  }
 
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
     if (_selectedSale == null) {
       NotificationService.showWarning(context, 'Veuillez sélectionner une vente');
       return;
@@ -151,42 +91,53 @@ class _CreditPaymentDialogState extends ConsumerState<CreditPaymentDialog> {
     if (amount > _selectedSale!.remainingAmount) {
       NotificationService.showWarning(
         context,
-        'Le montant ne peut pas dépasser le reste à payer (${_formatCurrency(_selectedSale!.remainingAmount)})',
+        'Le montant ne peut pas dépasser le reste à payer (${CurrencyFormatter.formatCFA(_selectedSale!.remainingAmount)})',
       );
       return;
     }
 
-    setState(() => _isLoading = true);
-    try {
-      final creditService = ref.read(creditServiceProvider);
-      final payment = CreditPayment(
-        id: '',
-        saleId: _selectedSale!.id,
-        amount: amount,
-        date: DateTime.now(),
-        notes: _notesController.text.isEmpty ? null : _notesController.text,
-      );
+    await handleFormSubmit(
+      context: context,
+      formKey: _formKey,
+      onLoadingChanged: (isLoading) => setState(() => _isLoading = isLoading),
+      onSubmit: () async {
+        final creditService = ref.read(creditServiceProvider);
+        final payment = CreditPayment(
+          id: '',
+          saleId: _selectedSale!.id,
+          amount: amount,
+          date: DateTime.now(),
+          notes: _notesController.text.isEmpty ? null : _notesController.text,
+        );
 
-      await creditService.recordPayment(payment);
+        await creditService.recordPayment(payment);
 
-      if (!mounted) return;
-      // Invalider les providers pour rafraîchir les données
-      ref.invalidate(clientsStateProvider);
+        if (mounted) {
+          // Invalider les providers pour rafraîchir les données
+          ref.invalidate(clientsStateProvider);
+        }
 
-      // Proposer d'imprimer le reçu
-      final remainingAfterPayment = _selectedSale!.remainingAmount - amount;
-      await _showPrintOption(amount, remainingAfterPayment);
+        // Proposer d'imprimer le reçu
+        final remainingAfterPayment = _selectedSale!.remainingAmount - amount;
+        if (mounted) {
+          await CreditPaymentPrintHelper.showPrintOption(
+            context: context,
+            customerName: widget.customerName,
+            sale: _selectedSale!,
+            paymentAmount: amount,
+            remainingAfterPayment: remainingAfterPayment,
+            notes: _notesController.text.isEmpty ? null : _notesController.text,
+          );
+        }
 
-      if (!mounted) return;
-      Navigator.of(context).pop();
-      ref.invalidate(clientsStateProvider);
-      NotificationService.showSuccess(context, 'Paiement de ${_formatCurrency(amount)} enregistré');
-    } catch (e) {
-      if (!mounted) return;
-      NotificationService.showError(context, e.toString());
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
+        if (mounted) {
+          Navigator.of(context).pop();
+          ref.invalidate(clientsStateProvider);
+        }
+
+        return 'Paiement de ${CurrencyFormatter.formatCFA(amount)} enregistré';
+      },
+    );
   }
 
   @override
@@ -201,57 +152,9 @@ class _CreditPaymentDialogState extends ConsumerState<CreditPaymentDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Header
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primaryContainer.withValues(alpha: 0.1),
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(24),
-                    topRight: Radius.circular(24),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(
-                        Icons.payment,
-                        color: theme.colorScheme.primary,
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Encaisser un Paiement',
-                            style: theme.textTheme.headlineSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            widget.customerName,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                  ],
-                ),
+              CreditPaymentHeader(
+                customerName: widget.customerName,
+                onClose: () => Navigator.of(context).pop(),
               ),
               // Content
               Flexible(
@@ -260,267 +163,38 @@ class _CreditPaymentDialogState extends ConsumerState<CreditPaymentDialog> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // Customer info card
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.surfaceContainerHighest,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: theme.colorScheme.outline.withValues(alpha: 0.2),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Crédit total',
-                                  style: theme.textTheme.labelMedium?.copyWith(
-                                    color: theme.colorScheme.onSurfaceVariant,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  _formatCurrency(widget.totalCredit),
-                                  style: theme.textTheme.headlineSmall?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: theme.colorScheme.error,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: theme.colorScheme.errorContainer,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                '${_creditSales.length} vente${_creditSales.length > 1 ? 's' : ''}',
-                                style: theme.textTheme.labelMedium?.copyWith(
-                                  color: theme.colorScheme.onErrorContainer,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                      CreditPaymentInfoCard(
+                        totalCredit: widget.totalCredit,
+                        creditSalesCount: _creditSales.length,
                       ),
                       const SizedBox(height: 24),
-                      // Sales selection
-                      if (_isLoadingSales)
-                        const Center(
-                          child: Padding(
-                            padding: EdgeInsets.all(24),
-                            child: CircularProgressIndicator(),
-                          ),
-                        )
-                      else if (_creditSales.isEmpty)
-                        Container(
-                          padding: const EdgeInsets.all(24),
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.surfaceContainerHighest,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Column(
-                            children: [
-                              Icon(
-                                Icons.info_outline,
-                                size: 48,
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                              const SizedBox(height: 12),
-                              Text(
-                                'Aucune vente en crédit',
-                                style: theme.textTheme.bodyLarge?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                            ],
-                          ),
-                        )
-                      else ...[
-                        Text(
-                          'Sélectionner la vente',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        ..._creditSales.map((sale) {
-                          final isSelected = _selectedSale?.id == sale.id;
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: InkWell(
-                              onTap: () => setState(() => _selectedSale = sale),
-                              borderRadius: BorderRadius.circular(12),
-                              child: Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: isSelected
-                                      ? theme.colorScheme.primaryContainer.withValues(alpha: 0.3)
-                                      : theme.colorScheme.surfaceContainerHighest,
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: isSelected
-                                        ? theme.colorScheme.primary
-                                        : theme.colorScheme.outline.withValues(alpha: 0.2),
-                                    width: isSelected ? 2 : 1,
-                                  ),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.all(8),
-                                      decoration: BoxDecoration(
-                                        color: isSelected
-                                            ? theme.colorScheme.primary
-                                            : theme.colorScheme.surfaceContainerHighest,
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: Icon(
-                                        isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
-                                        size: 20,
-                                        color: isSelected
-                                            ? theme.colorScheme.onPrimary
-                                            : theme.colorScheme.onSurfaceVariant,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            sale.productName,
-                                            style: theme.textTheme.bodyLarge?.copyWith(
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            '${_formatDate(sale.date)} • ${sale.quantity} unités',
-                                            style: theme.textTheme.bodySmall?.copyWith(
-                                              color: theme.colorScheme.onSurfaceVariant,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    Column(
-                                      crossAxisAlignment: CrossAxisAlignment.end,
-                                      children: [
-                                        Text(
-                                          _formatCurrency(sale.remainingAmount),
-                                          style: theme.textTheme.bodyLarge?.copyWith(
-                                            fontWeight: FontWeight.bold,
-                                            color: theme.colorScheme.error,
-                                          ),
-                                        ),
-                                        Text(
-                                          'Restant',
-                                          style: theme.textTheme.labelSmall?.copyWith(
-                                            color: theme.colorScheme.onSurfaceVariant,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          );
-                        }),
-                      ],
+                      CreditSalesList(
+                        creditSales: _creditSales,
+                        selectedSale: _selectedSale,
+                        onSaleSelected: (sale) => setState(() => _selectedSale = sale),
+                        isLoading: _isLoadingSales,
+                      ),
                       const SizedBox(height: 24),
-                      // Amount input
-                      TextFormField(
-                        controller: _amountController,
-                        decoration: InputDecoration(
-                          labelText: 'Montant payé (CFA)',
-                          prefixIcon: const Icon(Icons.attach_money),
-                          helperText: _selectedSale != null
-                              ? 'Maximum: ${_formatCurrency(_selectedSale!.remainingAmount)}'
-                              : 'Sélectionnez une vente',
-                          suffixIcon: _selectedSale != null
-                              ? IconButton(
-                                  icon: const Icon(Icons.check_circle_outline),
-                                  onPressed: () {
-                                    _amountController.text = _selectedSale!.remainingAmount.toString();
-                                  },
-                                  tooltip: 'Remplir le montant total',
-                                )
-                              : null,
-                        ),
-                        keyboardType: TextInputType.number,
-                        enabled: _selectedSale != null && !_isLoadingSales,
-                        validator: (v) {
-                          if (v == null || v.isEmpty) return 'Requis';
-                          final amount = int.tryParse(v);
-                          if (amount == null || amount <= 0) return 'Montant invalide';
-                          if (_selectedSale != null && amount > _selectedSale!.remainingAmount) {
-                            return 'Ne peut pas dépasser le reste à payer';
+                      CreditPaymentFormFields(
+                        amountController: _amountController,
+                        notesController: _notesController,
+                        selectedSale: _selectedSale,
+                        isLoadingSales: _isLoadingSales,
+                        onFillFullAmount: () {
+                          if (_selectedSale != null) {
+                            _amountController.text = _selectedSale!.remainingAmount.toString();
                           }
-                          return null;
                         },
-                      ),
-                      const SizedBox(height: 16),
-                      // Notes input
-                      TextFormField(
-                        controller: _notesController,
-                        decoration: const InputDecoration(
-                          labelText: 'Notes (optionnel)',
-                          prefixIcon: Icon(Icons.note_outlined),
-                          helperText: 'Ajouter une note pour ce paiement',
-                        ),
-                        maxLines: 2,
-                        enabled: !_isLoadingSales,
                       ),
                     ],
                   ),
                 ),
               ),
-              // Footer
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  border: Border(
-                    top: BorderSide(
-                      color: theme.colorScheme.outline.withValues(alpha: 0.2),
-                    ),
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton(
-                      onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
-                      child: const Text('Annuler'),
-                    ),
-                    const SizedBox(width: 12),
-                    Flexible(
-                      child: FilledButton.icon(
-                        onPressed: (_isLoading || _selectedSale == null || _isLoadingSales)
-                            ? null
-                            : _submit,
-                        icon: _isLoading
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              )
-                            : const Icon(Icons.check),
-                        label: const Text('Enregistrer'),
-                      ),
-                    ),
-                  ],
-                ),
+              CreditPaymentFooter(
+                isLoading: _isLoading,
+                canSubmit: _selectedSale != null && !_isLoadingSales,
+                onCancel: () => Navigator.of(context).pop(),
+                onSubmit: _submit,
               ),
             ],
           ),

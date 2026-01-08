@@ -139,7 +139,7 @@ Future<void> bootstrap() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
   
-  // Initialiser Isar (base de données locale)
+  // Initialiser Drift (base de données locale)
   // ...
 }
 ```

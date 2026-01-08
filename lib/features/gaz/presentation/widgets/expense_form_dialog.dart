@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/tenant/tenant_provider.dart';
-import '../../../../shared.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import '../../../../../shared/utils/notification_service.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/expense.dart';
 import 'expense_form/expense_amount_input.dart';
@@ -12,6 +13,8 @@ import 'expense_form/expense_description_input.dart';
 import 'expense_form/expense_fixed_checkbox.dart';
 import 'expense_form/expense_form_header.dart';
 import 'expense_form/expense_notes_input.dart';
+import 'package:elyf_groupe_app/shared/presentation/widgets/form_dialog.dart';
+import 'package:elyf_groupe_app/shared/utils/form_helper_mixin.dart';
 
 /// Dialog de formulaire pour créer/modifier une dépense.
 class GazExpenseFormDialog extends ConsumerStatefulWidget {
@@ -25,7 +28,7 @@ class GazExpenseFormDialog extends ConsumerStatefulWidget {
 }
 
 class _GazExpenseFormDialogState
-    extends ConsumerState<GazExpenseFormDialog> {
+    extends ConsumerState<GazExpenseFormDialog> with FormHelperMixin {
   bool _isLoading = false;
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _amountController;
@@ -67,60 +70,52 @@ class _GazExpenseFormDialogState
   }
 
   Future<void> _submit(String? enterpriseId) async {
-    if (!_formKey.currentState!.validate()) return;
-
     if (enterpriseId == null) {
       NotificationService.showError(context, 'Aucune entreprise sélectionnée');
       return;
     }
 
-    setState(() => _isLoading = true);
+    await handleFormSubmit(
+      context: context,
+      formKey: _formKey,
+      onLoadingChanged: (isLoading) => setState(() => _isLoading = isLoading),
+      onSubmit: () async {
+        final amount = double.tryParse(_amountController.text);
+        if (amount == null || amount <= 0) {
+          throw Exception('Montant invalide');
+        }
 
-    try {
-      final amount = double.tryParse(_amountController.text);
-      if (amount == null || amount <= 0) {
-        if (!mounted) return;
-        NotificationService.showError(context, 'Montant invalide');
-        return;
-      }
+        final expense = GazExpense(
+          id: widget.expense?.id ??
+              'exp-${DateTime.now().millisecondsSinceEpoch}',
+          description: _descriptionController.text.trim(),
+          amount: amount,
+          category: _selectedCategory,
+          date: _selectedDate,
+          enterpriseId: enterpriseId,
+          isFixed: _isFixed,
+          notes: _notesController.text.trim().isEmpty
+              ? null
+              : _notesController.text.trim(),
+        );
 
-      final expense = GazExpense(
-        id: widget.expense?.id ??
-            'exp-${DateTime.now().millisecondsSinceEpoch}',
-        description: _descriptionController.text.trim(),
-        amount: amount,
-        category: _selectedCategory,
-        date: _selectedDate,
-        enterpriseId: enterpriseId,
-        isFixed: _isFixed,
-        notes: _notesController.text.trim().isEmpty
-            ? null
-            : _notesController.text.trim(),
-      );
+        final controller = ref.read(expenseControllerProvider);
+        if (widget.expense == null) {
+          await controller.addExpense(expense);
+        } else {
+          await controller.updateExpense(expense);
+        }
 
-      final controller = ref.read(expenseControllerProvider);
-      if (widget.expense == null) {
-        await controller.addExpense(expense);
-      } else {
-        await controller.updateExpense(expense);
-      }
+        if (mounted) {
+          ref.invalidate(gazExpensesProvider);
+          Navigator.of(context).pop();
+        }
 
-      if (!mounted) return;
-
-      ref.invalidate(gazExpensesProvider);
-      Navigator.of(context).pop();
-
-      NotificationService.showSuccess(context, 
-            widget.expense == null
-                ? 'Dépense créée avec succès'
-                : 'Dépense mise à jour',
-          );
-    } catch (e) {
-      if (!mounted) return;
-      NotificationService.showError(context, e.toString());
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
+        return widget.expense == null
+            ? 'Dépense créée avec succès'
+            : 'Dépense mise à jour';
+      },
+    );
   }
 
   @override

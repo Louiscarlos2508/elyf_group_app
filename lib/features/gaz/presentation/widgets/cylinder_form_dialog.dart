@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../shared.dart';
+import 'package:elyf_groupe_app/shared.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/cylinder.dart';
 import 'cylinder_form/cylinder_form_header.dart';
 import 'cylinder_form/cylinder_submit_handler.dart';
+import 'package:elyf_groupe_app/shared/presentation/widgets/form_dialog.dart';
 
 /// Dialogue pour créer ou modifier une bouteille de gaz.
 class CylinderFormDialog extends ConsumerStatefulWidget {

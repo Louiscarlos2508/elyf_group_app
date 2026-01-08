@@ -51,9 +51,10 @@ dependencies:
   firebase_core: ^3.8.1
   cloud_firestore: ^5.6.8
 
-  # Offline-first (TODO: migrate to ObjectBox)
-  # isar: ^3.1.0+1  # Deprecated - not compatible with Dart 3.10+
-  # isar_flutter_libs: ^3.1.0+1
+  # Offline-first with Drift
+  drift: ^2.18.0
+  sqlite3_flutter_libs: ^0.5.20
+  path: ^1.9.0
   connectivity_plus: ^6.1.4
   
   # Secure storage and environment
@@ -66,7 +67,7 @@ dev_dependencies:
     sdk: flutter
 
   # Code generation
-  # isar_generator: ^3.1.0+1  # Deprecated
+  drift_dev: ^2.18.0
   build_runner: ^2.4.14
 
   # The "flutter_lints" package below contains a set of recommended lints to
@@ -77,7 +78,7 @@ dev_dependencies:
   flutter_lints: ^5.0.0
   
   # Architecture validation
-  dependency_validator: ^4.0.0
+  dependency_validator: ^5.0.3
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

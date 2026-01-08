@@ -1,9 +1,12 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../utils/password_hasher.dart';
 import '../../storage/secure_storage_service.dart';
+import '../../firebase/firestore_user_service.dart';
 
 /// Modèle utilisateur simple
 class AppUser {
@@ -34,13 +37,13 @@ class AppUser {
       );
 }
 
-/// Service d'authentification
+/// Service d'authentification avec Firebase Auth et Firestore.
 /// 
-/// Utilise flutter_secure_storage pour stocker les données sensibles,
-/// des variables d'environnement pour les credentials, et le hashage
-/// pour les mots de passe.
+/// Utilise Firebase Auth pour l'authentification et Firestore
+/// pour stocker les profils utilisateurs.
 /// 
-/// Plus tard, ce service sera remplacé par Firebase Auth.
+/// Crée automatiquement le premier utilisateur admin dans Firestore
+/// lors de la première connexion si aucun admin n'existe.
 class AuthService {
   static const String _secureKeyCurrentUserId = 'auth_current_user_id';
   static const String _secureKeyCurrentUserEmail = 'auth_current_user_email';
@@ -49,45 +52,95 @@ class AuthService {
   static const String _secureKeyIsLoggedIn = 'auth_is_logged_in';
   static const String _prefsKeyMigrationDone = 'auth_migration_to_secure_storage_done';
 
-  static const String _adminId = 'admin_user_1';
-
+  final FirebaseAuth _firebaseAuth;
+  final FirestoreUserService _firestoreUserService;
   final SecureStorageService _secureStorage = SecureStorageService();
   AppUser? _currentUser;
   bool _isInitialized = false;
+
+  AuthService({
+    FirebaseAuth? firebaseAuth,
+    FirestoreUserService? firestoreUserService,
+    FirebaseFirestore? firestore,
+  })  : _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance,
+        _firestoreUserService = firestoreUserService ??
+            FirestoreUserService(
+              firestore: firestore ?? FirebaseFirestore.instance,
+            );
 
   /// Récupère l'email admin depuis les variables d'environnement.
   String get _adminEmail {
     return dotenv.env['ADMIN_EMAIL'] ?? 'admin@elyf.com';
   }
 
-  /// Récupère le hash du mot de passe admin depuis les variables d'environnement.
-  String? get _adminPasswordHash {
-    return dotenv.env['ADMIN_PASSWORD_HASH'];
+  /// Récupère le mot de passe admin depuis les variables d'environnement.
+  String? get _adminPassword {
+    return dotenv.env['ADMIN_PASSWORD'];
   }
 
-  /// Initialiser le service (charger l'utilisateur depuis le stockage sécurisé)
+  /// Initialiser le service (charger l'utilisateur depuis Firebase Auth et Firestore)
   Future<void> initialize() async {
     if (_isInitialized) return;
 
     // Migrer les données depuis SharedPreferences si nécessaire
     await _migrateFromSharedPreferences();
 
-    // Charger l'utilisateur depuis le stockage sécurisé
-    final isLoggedIn = await _secureStorage.read(_secureKeyIsLoggedIn);
-    if (isLoggedIn == 'true') {
-      final userId = await _secureStorage.read(_secureKeyCurrentUserId);
-      final email = await _secureStorage.read(_secureKeyCurrentUserEmail);
-      final displayName = await _secureStorage.read(_secureKeyCurrentUserDisplayName);
-      final isAdminStr = await _secureStorage.read(_secureKeyCurrentUserIsAdmin);
-      final isAdmin = isAdminStr == 'true';
-
-      if (userId != null && email != null) {
+    // Vérifier si un utilisateur Firebase est connecté
+    final firebaseUser = _firebaseAuth.currentUser;
+    if (firebaseUser != null) {
+      // Récupérer les données depuis Firestore
+      final userData = await _firestoreUserService.getUserById(firebaseUser.uid);
+      
+      if (userData != null) {
         _currentUser = AppUser(
-          id: userId,
-          email: email,
-          displayName: displayName?.isEmpty ?? true ? null : displayName,
-          isAdmin: isAdmin,
+          id: firebaseUser.uid,
+          email: firebaseUser.email ?? '',
+          displayName: userData['firstName'] != null && userData['lastName'] != null
+              ? '${userData['firstName']} ${userData['lastName']}'
+              : userData['username'] as String?,
+          isAdmin: userData['isAdmin'] as bool? ?? false,
         );
+        
+        // Sauvegarder dans le stockage sécurisé
+        await _saveUser(_currentUser!);
+      } else {
+        // Utilisateur Firebase existe mais pas dans Firestore, charger depuis SecureStorage
+        final isLoggedIn = await _secureStorage.read(_secureKeyIsLoggedIn);
+        if (isLoggedIn == 'true') {
+          final userId = await _secureStorage.read(_secureKeyCurrentUserId);
+          final email = await _secureStorage.read(_secureKeyCurrentUserEmail);
+          final displayName = await _secureStorage.read(_secureKeyCurrentUserDisplayName);
+          final isAdminStr = await _secureStorage.read(_secureKeyCurrentUserIsAdmin);
+          final isAdmin = isAdminStr == 'true';
+
+          if (userId != null && email != null) {
+            _currentUser = AppUser(
+              id: userId,
+              email: email,
+              displayName: displayName?.isEmpty ?? true ? null : displayName,
+              isAdmin: isAdmin,
+            );
+          }
+        }
+      }
+    } else {
+      // Pas d'utilisateur Firebase, charger depuis SecureStorage
+      final isLoggedIn = await _secureStorage.read(_secureKeyIsLoggedIn);
+      if (isLoggedIn == 'true') {
+        final userId = await _secureStorage.read(_secureKeyCurrentUserId);
+        final email = await _secureStorage.read(_secureKeyCurrentUserEmail);
+        final displayName = await _secureStorage.read(_secureKeyCurrentUserDisplayName);
+        final isAdminStr = await _secureStorage.read(_secureKeyCurrentUserIsAdmin);
+        final isAdmin = isAdminStr == 'true';
+
+        if (userId != null && email != null) {
+          _currentUser = AppUser(
+            id: userId,
+            email: email,
+            displayName: displayName?.isEmpty ?? true ? null : displayName,
+            isAdmin: isAdmin,
+          );
+        }
       }
     }
 
@@ -152,50 +205,164 @@ class AuthService {
     }
   }
 
-  /// Se connecter avec email et mot de passe
+  /// Se connecter avec email et mot de passe via Firebase Auth.
+  /// 
+  /// Crée automatiquement le premier utilisateur admin dans Firestore
+  /// lors de la première connexion si aucun admin n'existe.
   Future<AppUser> signInWithEmailAndPassword({
     required String email,
     required String password,
   }) async {
-    // Vérifier l'email
-    if (email != _adminEmail) {
-      throw Exception('Email ou mot de passe incorrect');
-    }
+    try {
+      // S'assurer que le service est initialisé
+      if (!_isInitialized) {
+        await initialize();
+      }
 
-    // Vérifier le hash du mot de passe
-    final passwordHash = _adminPasswordHash;
-    if (passwordHash == null || passwordHash.isEmpty) {
-      throw Exception(
-        'Configuration d\'authentification manquante. '
-        'Vérifiez que le fichier .env contient ADMIN_PASSWORD_HASH.',
+      // Authentifier avec Firebase Auth
+      final userCredential = await _firebaseAuth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
       );
-    }
 
-    if (!PasswordHasher.verifyPassword(password, passwordHash)) {
-      throw Exception('Email ou mot de passe incorrect');
-    }
+      final firebaseUser = userCredential.user;
+      if (firebaseUser == null) {
+        throw Exception('Échec de l\'authentification');
+      }
 
-    // Créer l'utilisateur
-    final user = AppUser(
-      id: _adminId,
-      email: _adminEmail,
-      displayName: 'Administrateur',
-      isAdmin: true,
-    );
+      // Vérifier si c'est le premier admin et créer le profil dans Firestore
+      final isFirstAdmin = await _firestoreUserService.adminExists();
+      final shouldBeAdmin = !isFirstAdmin || email == _adminEmail;
 
-    // S'assurer que le service est initialisé avant de sauvegarder
-    if (!_isInitialized) {
-      await initialize();
+      // Créer ou mettre à jour le profil utilisateur dans Firestore
+      await _firestoreUserService.createOrUpdateUser(
+        userId: firebaseUser.uid,
+        email: firebaseUser.email ?? email,
+        firstName: 'Admin',
+        lastName: 'System',
+        username: email.split('@').first,
+        isActive: true,
+        isAdmin: shouldBeAdmin,
+      );
+
+      // Récupérer les données utilisateur depuis Firestore
+      final userData = await _firestoreUserService.getUserById(firebaseUser.uid);
+      
+      final appUser = AppUser(
+        id: firebaseUser.uid,
+        email: firebaseUser.email ?? email,
+        displayName: userData?['firstName'] != null && userData?['lastName'] != null
+            ? '${userData!['firstName']} ${userData['lastName']}'
+            : 'Administrateur',
+        isAdmin: userData?['isAdmin'] as bool? ?? shouldBeAdmin,
+      );
+
+      // Sauvegarder dans le stockage sécurisé
+      await _saveUser(appUser);
+      _currentUser = appUser;
+
+      return appUser;
+    } on FirebaseAuthException catch (e) {
+      String errorMessage;
+      switch (e.code) {
+        case 'user-not-found':
+          errorMessage = 'Aucun utilisateur trouvé avec cet email.';
+          break;
+        case 'wrong-password':
+          errorMessage = 'Mot de passe incorrect.';
+          break;
+        case 'invalid-email':
+          errorMessage = 'Email invalide.';
+          break;
+        case 'user-disabled':
+          errorMessage = 'Ce compte utilisateur a été désactivé.';
+          break;
+        case 'too-many-requests':
+          errorMessage = 'Trop de tentatives. Réessayez plus tard.';
+          break;
+        default:
+          errorMessage = 'Erreur d\'authentification: ${e.message}';
+      }
+      throw Exception(errorMessage);
+    } catch (e) {
+      throw Exception('Erreur de connexion: ${e.toString()}');
     }
-    
-    // Sauvegarder dans le stockage sécurisé
-    await _saveUser(user);
-    _currentUser = user;
-    return user;
   }
+
+  /// Crée le premier utilisateur admin dans Firebase Auth et Firestore.
+  /// 
+  /// Cette méthode est appelée lors de la première installation
+  /// pour créer le compte admin par défaut.
+  Future<AppUser> createFirstAdmin({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      // Créer le compte dans Firebase Auth
+      final userCredential = await _firebaseAuth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      final firebaseUser = userCredential.user;
+      if (firebaseUser == null) {
+        throw Exception('Échec de la création du compte');
+      }
+
+      // Créer le profil admin dans Firestore
+      await _firestoreUserService.createOrUpdateUser(
+        userId: firebaseUser.uid,
+        email: email,
+        firstName: 'Admin',
+        lastName: 'System',
+        username: email.split('@').first,
+        isActive: true,
+        isAdmin: true,
+      );
+
+      // Récupérer les données depuis Firestore
+      final userData = await _firestoreUserService.getUserById(firebaseUser.uid);
+
+      final appUser = AppUser(
+        id: firebaseUser.uid,
+        email: email,
+        displayName: 'Administrateur',
+        isAdmin: true,
+      );
+
+      // Sauvegarder dans le stockage sécurisé
+      await _saveUser(appUser);
+      _currentUser = appUser;
+
+      return appUser;
+    } on FirebaseAuthException catch (e) {
+      String errorMessage;
+      switch (e.code) {
+        case 'email-already-in-use':
+          errorMessage = 'Cet email est déjà utilisé.';
+          break;
+        case 'invalid-email':
+          errorMessage = 'Email invalide.';
+          break;
+        case 'weak-password':
+          errorMessage = 'Le mot de passe est trop faible.';
+          break;
+        default:
+          errorMessage = 'Erreur de création: ${e.message}';
+      }
+      throw Exception(errorMessage);
+    } catch (e) {
+      throw Exception('Erreur lors de la création du compte: ${e.toString()}');
+    }
+  }
+
 
   /// Se déconnecter
   Future<void> signOut() async {
+    // Déconnecter de Firebase Auth
+    await _firebaseAuth.signOut();
+    
+    // Supprimer les données du stockage sécurisé
     await _secureStorage.delete(_secureKeyCurrentUserId);
     await _secureStorage.delete(_secureKeyCurrentUserEmail);
     await _secureStorage.delete(_secureKeyCurrentUserDisplayName);
@@ -251,13 +418,22 @@ class AuthService {
   }
 }
 
+/// Provider pour le service Firestore des utilisateurs
+final firestoreUserServiceProvider = Provider<FirestoreUserService>((ref) {
+  return FirestoreUserService(
+    firestore: FirebaseFirestore.instance,
+  );
+});
+
 /// Provider pour le service d'authentification
 /// 
 /// Le service est initialisé de manière lazy lors du premier accès.
 /// L'initialisation est gérée par le provider currentUserProvider qui attend
 /// que le service soit initialisé avant de l'utiliser.
 final authServiceProvider = Provider<AuthService>((ref) {
-  return AuthService();
+  return AuthService(
+    firestoreUserService: ref.watch(firestoreUserServiceProvider),
+  );
 });
 
 /// Provider pour l'utilisateur actuel

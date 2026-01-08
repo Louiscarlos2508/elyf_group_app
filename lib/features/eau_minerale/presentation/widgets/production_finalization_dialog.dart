@@ -3,14 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/controllers/production_session_controller.dart';
 import '../../application/controllers/stock_controller.dart';
-import '../../application/providers.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../domain/entities/electricity_meter_type.dart';
 import '../../domain/entities/packaging_stock.dart';
 import '../../domain/entities/production_session.dart';
 import '../../domain/entities/production_session_status.dart';
 import 'time_picker_field.dart';
-import '../../../shared.dart';
-
+import 'package:elyf_groupe_app/shared.dart';
+import '../../../../../shared/utils/notification_service.dart';
 /// Dialog pour finaliser une production.
 class ProductionFinalizationDialog extends ConsumerStatefulWidget {
   const ProductionFinalizationDialog({
@@ -168,13 +168,13 @@ class _ProductionFinalizationDialogState
         if (savedSession.emballagesUtilises != null && savedSession.emballagesUtilises! > 0) {
           try {
           // Vérifier la disponibilité du stock d'emballages
-          final packagingRepository = ref.read(packagingStockRepositoryProvider);
-          final stocksEmballages = await packagingRepository.fetchAll();
+          final packagingController = ref.read(packagingStockControllerProvider);
+          final stocksEmballages = await packagingController.fetchAll();
           
           // Chercher le stock d'emballages (type "Emballage")
           PackagingStock? stockEmballage;
           try {
-            stockEmballage = await packagingRepository.fetchByType('Pack 12 sachets');
+            stockEmballage = await packagingController.fetchByType('Pack 12 sachets');
           } catch (_) {
             // Si pas trouvé par type, utiliser le premier disponible ou créer
           }
@@ -210,7 +210,7 @@ class _ProductionFinalizationDialogState
             if (mounted) {
               debugPrint('Aucun stock d\'emballages trouvé. Création d\'un nouveau stock.');
               // Créer un stock par défaut
-              final nouveauStock = await packagingRepository.save(
+              final nouveauStock = await packagingController.save(
                 PackagingStock(
                   id: 'packaging-default',
                   type: 'Emballage',

@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../shared.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import '../../../../../shared/utils/notification_service.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/point_of_sale.dart';
+import 'package:elyf_groupe_app/shared/presentation/widgets/form_dialog.dart';
+import 'package:elyf_groupe_app/shared/utils/form_helper_mixin.dart';
 
 /// Dialogue pour créer ou modifier un point de vente.
 class PointOfSaleFormDialog extends ConsumerStatefulWidget {
@@ -25,7 +28,7 @@ class PointOfSaleFormDialog extends ConsumerStatefulWidget {
 }
 
 class _PointOfSaleFormDialogState
-    extends ConsumerState<PointOfSaleFormDialog> {
+    extends ConsumerState<PointOfSaleFormDialog> with FormHelperMixin {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _addressController = TextEditingController();
@@ -60,61 +63,51 @@ class _PointOfSaleFormDialogState
   }
 
   Future<void> _savePointOfSale() async {
-    if (!_formKey.currentState!.validate()) return;
     if (_enterpriseId == null || _moduleId == null) {
-      if (mounted) {
-        NotificationService.showError(context, 'Veuillez remplir tous les champs requis');
-      }
+      NotificationService.showError(context, 'Veuillez remplir tous les champs requis');
       return;
     }
 
-    setState(() => _isLoading = true);
+    await handleFormSubmit(
+      context: context,
+      formKey: _formKey,
+      onLoadingChanged: (isLoading) => setState(() => _isLoading = isLoading),
+      onSubmit: () async {
+        final controller = ref.read(pointOfSaleControllerProvider);
+        final pointOfSale = PointOfSale(
+          id: widget.pointOfSale?.id ??
+              'pos-${DateTime.now().millisecondsSinceEpoch}',
+          name: _nameController.text.trim(),
+          address: _addressController.text.trim(),
+          contact: _contactController.text.trim(),
+          enterpriseId: _enterpriseId!,
+          moduleId: _moduleId!,
+          isActive: widget.pointOfSale?.isActive ?? true,
+          createdAt: widget.pointOfSale?.createdAt ?? DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
 
-    try {
-      final controller = ref.read(pointOfSaleControllerProvider);
-      final pointOfSale = PointOfSale(
-        id: widget.pointOfSale?.id ??
-            'pos-${DateTime.now().millisecondsSinceEpoch}',
-        name: _nameController.text.trim(),
-        address: _addressController.text.trim(),
-        contact: _contactController.text.trim(),
-        enterpriseId: _enterpriseId!,
-        moduleId: _moduleId!,
-        isActive: widget.pointOfSale?.isActive ?? true,
-        createdAt: widget.pointOfSale?.createdAt ?? DateTime.now(),
-        updatedAt: DateTime.now(),
-      );
+        if (widget.pointOfSale == null) {
+          await controller.addPointOfSale(pointOfSale);
+        } else {
+          await controller.updatePointOfSale(pointOfSale);
+        }
 
-      if (widget.pointOfSale == null) {
-        await controller.addPointOfSale(pointOfSale);
-      } else {
-        await controller.updatePointOfSale(pointOfSale);
-      }
-
-      if (!mounted) return;
-
-      // Invalider le provider pour rafraîchir la liste
-      ref.invalidate(
-        pointsOfSaleProvider(
-          (enterpriseId: _enterpriseId!, moduleId: _moduleId!),
-        ),
-      );
-
-      Navigator.of(context).pop(true);
-
-      NotificationService.showSuccess(context, 
-            widget.pointOfSale == null
-                ? 'Point de vente créé avec succès'
-                : 'Point de vente mis à jour',
+        if (mounted) {
+          // Invalider le provider pour rafraîchir la liste
+          ref.invalidate(
+            pointsOfSaleProvider(
+              (enterpriseId: _enterpriseId!, moduleId: _moduleId!),
+            ),
           );
-    } catch (e) {
-      if (!mounted) return;
-      NotificationService.showError(context, e.toString());
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
+          Navigator.of(context).pop(true);
+        }
+
+        return widget.pointOfSale == null
+            ? 'Point de vente créé avec succès'
+            : 'Point de vente mis à jour';
+      },
+    );
   }
 
   @override

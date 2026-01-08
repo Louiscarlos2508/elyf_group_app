@@ -4,7 +4,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
-import '../../../core.dart';
+import 'package:elyf_groupe_app/core.dart';
+import 'package:elyf_groupe_app/core/printing/sunmi_v3_service.dart';
 import '../../../domain/entities/sale.dart';
 import 'invoice_thermal_receipts.dart';
 import 'invoice_pdf_builder.dart';

@@ -1,5 +1,5 @@
-/// Stub AgentCollection - Isar temporarily disabled.
-/// TODO: Migrate to ObjectBox.
+/// Legacy AgentCollection model (kept for compatibility).
+/// Note: Drift est utilisé exclusivement pour le stockage offline (pas ObjectBox).
 class AgentCollection {
   int id = 0;
   late String localId;

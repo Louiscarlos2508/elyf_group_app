@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../application/providers.dart';
+import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import '../../../domain/entities/cylinder_leak.dart';
 import '../../widgets/cylinder_leak_form_dialog.dart';
 import 'cylinder_leak/leak_empty_state.dart';
 import 'cylinder_leak/leak_filters.dart';
 import 'cylinder_leak/leak_header.dart';
 import 'cylinder_leak/leak_list_item.dart';
-import '../../../../shared.dart';
-
+import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
 /// Écran de gestion des bouteilles avec fuites.
 class CylinderLeakScreen extends ConsumerStatefulWidget {
   const CylinderLeakScreen({

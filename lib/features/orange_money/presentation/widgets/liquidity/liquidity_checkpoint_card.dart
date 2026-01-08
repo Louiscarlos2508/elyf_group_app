@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../../shared.dart';
-
+import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 /// Card widget displaying a single liquidity checkpoint (morning or evening).
 class LiquidityCheckpointCard extends StatelessWidget {
   const LiquidityCheckpointCard({

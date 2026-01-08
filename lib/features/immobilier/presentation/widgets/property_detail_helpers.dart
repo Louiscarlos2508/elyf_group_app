@@ -1,3 +1,5 @@
+import 'package:elyf_groupe_app/shared.dart';
+import '../../../../../shared/utils/currency_formatter.dart';
 import '../../domain/entities/property.dart';
 
 /// Helpers pour le dialog de détails de propriété.
@@ -5,10 +7,8 @@ class PropertyDetailHelpers {
   PropertyDetailHelpers._();
 
   static String formatCurrency(int amount) {
-    return amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        ) + ' F';
+    // Utilise CurrencyFormatter partagé
+    return CurrencyFormatter.formatShort(amount);
   }
 
   static String getTypeLabel(PropertyType type) {

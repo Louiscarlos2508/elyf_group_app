@@ -7,8 +7,8 @@ import '../../widgets/gas_sale_form_dialog.dart';
 import 'retail/retail_new_sale_tab.dart';
 import 'retail/retail_statistics_tab.dart';
 import 'retail/retail_tab_bar.dart';
-import '../../../../shared.dart';
-
+import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
 /// Écran de vente au détail - matches Figma design.
 class GazRetailScreen extends ConsumerStatefulWidget {
   const GazRetailScreen({super.key});

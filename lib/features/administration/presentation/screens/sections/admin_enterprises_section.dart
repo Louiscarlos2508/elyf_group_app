@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../application/providers.dart';
+import 'package:elyf_groupe_app/features/administration/application/providers.dart';
 import '../../../domain/entities/enterprise.dart';
 import 'dialogs/create_enterprise_dialog.dart';
 import 'dialogs/edit_enterprise_dialog.dart';
-import '../../../../shared.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import '../../../../../shared/utils/notification_service.dart';
 
 /// Section pour gérer les entreprises
 class AdminEnterprisesSection extends ConsumerWidget {
@@ -24,7 +25,7 @@ class AdminEnterprisesSection extends ConsumerWidget {
     if (result != null) {
       try {
         await ref
-            .read(enterpriseRepositoryProvider)
+            .read(enterpriseControllerProvider)
             .createEnterprise(result);
         ref.invalidate(enterprisesProvider);
         if (context.mounted) {
@@ -51,7 +52,7 @@ class AdminEnterprisesSection extends ConsumerWidget {
     if (result != null) {
       try {
         await ref
-            .read(enterpriseRepositoryProvider)
+            .read(enterpriseControllerProvider)
             .updateEnterprise(result);
         ref.invalidate(enterprisesProvider);
         if (context.mounted) {
@@ -72,7 +73,7 @@ class AdminEnterprisesSection extends ConsumerWidget {
   ) async {
     try {
       await ref
-          .read(enterpriseRepositoryProvider)
+          .read(enterpriseControllerProvider)
           .toggleEnterpriseStatus(enterprise.id, !enterprise.isActive);
       ref.invalidate(enterprisesProvider);
       if (context.mounted) {
@@ -118,7 +119,7 @@ class AdminEnterprisesSection extends ConsumerWidget {
     if (confirmed == true) {
       try {
         await ref
-            .read(enterpriseRepositoryProvider)
+            .read(enterpriseControllerProvider)
             .deleteEnterprise(enterprise.id);
         ref.invalidate(enterprisesProvider);
         if (context.mounted) {

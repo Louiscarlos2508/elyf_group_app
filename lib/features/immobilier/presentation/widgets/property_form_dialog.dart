@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../application/providers.dart';
+import 'package:elyf_groupe_app/features/immobilier/application/providers.dart';
 import '../../domain/entities/property.dart';
-import '../../../../shared.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/shared/presentation/widgets/form_dialog.dart';
+import 'package:elyf_groupe_app/shared/utils/form_helper_mixin.dart';
 
 class PropertyFormDialog extends ConsumerStatefulWidget {
   const PropertyFormDialog({
@@ -18,7 +20,8 @@ class PropertyFormDialog extends ConsumerStatefulWidget {
   ConsumerState<PropertyFormDialog> createState() => _PropertyFormDialogState();
 }
 
-class _PropertyFormDialogState extends ConsumerState<PropertyFormDialog> {
+class _PropertyFormDialogState extends ConsumerState<PropertyFormDialog>
+    with FormHelperMixin {
   final _formKey = GlobalKey<FormState>();
   final _addressController = TextEditingController();
   final _cityController = TextEditingController();
@@ -58,47 +61,44 @@ class _PropertyFormDialogState extends ConsumerState<PropertyFormDialog> {
   }
 
   Future<void> _save() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    try {
-      final property = Property(
-        id: widget.property?.id ?? IdGenerator.generate(),
-        address: _addressController.text.trim(),
-        city: _cityController.text.trim(),
-        propertyType: _selectedType,
-        rooms: int.parse(_roomsController.text),
-        area: int.parse(_areaController.text),
-        price: int.parse(_priceController.text),
-        status: _selectedStatus,
-        description: _descriptionController.text.trim().isEmpty
-            ? null
-            : _descriptionController.text.trim(),
-        createdAt: widget.property?.createdAt ?? DateTime.now(),
-        updatedAt: DateTime.now(),
-      );
-
-      final controller = ref.read(propertyControllerProvider);
-      if (widget.property == null) {
-        await controller.createProperty(property);
-      } else {
-        await controller.updateProperty(property);
-      }
-
-      if (mounted) {
-        ref.invalidate(propertiesProvider);
-        Navigator.of(context).pop();
-        NotificationService.showSuccess(
-          context,
-          widget.property == null
-              ? 'Propriété créée avec succès'
-              : 'Propriété mise à jour avec succès',
+    await handleFormSubmit(
+      context: context,
+      formKey: _formKey,
+      onLoadingChanged: (_) {}, // Pas besoin de gestion d'état de chargement séparée
+      onSubmit: () async {
+        final property = Property(
+          id: widget.property?.id ?? IdGenerator.generate(),
+          address: _addressController.text.trim(),
+          city: _cityController.text.trim(),
+          propertyType: _selectedType,
+          rooms: int.parse(_roomsController.text),
+          area: int.parse(_areaController.text),
+          price: int.parse(_priceController.text),
+          status: _selectedStatus,
+          description: _descriptionController.text.trim().isEmpty
+              ? null
+              : _descriptionController.text.trim(),
+          createdAt: widget.property?.createdAt ?? DateTime.now(),
+          updatedAt: DateTime.now(),
         );
-      }
-    } catch (e) {
-      if (mounted) {
-        NotificationService.showError(context, e.toString());
-      }
-    }
+
+        final controller = ref.read(propertyControllerProvider);
+        if (widget.property == null) {
+          await controller.createProperty(property);
+        } else {
+          await controller.updateProperty(property);
+        }
+
+        if (mounted) {
+          ref.invalidate(propertiesProvider);
+          Navigator.of(context).pop();
+        }
+
+        return widget.property == null
+            ? 'Propriété créée avec succès'
+            : 'Propriété mise à jour avec succès';
+      },
+    );
   }
 
   @override

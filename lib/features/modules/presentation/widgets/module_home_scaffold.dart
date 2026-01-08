@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../../../../shared.dart';
+import 'package:elyf_groupe_app/shared.dart';
 
 class ModuleHomeScaffold extends StatefulWidget {
   const ModuleHomeScaffold({

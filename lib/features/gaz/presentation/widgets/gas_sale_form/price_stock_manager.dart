@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../application/providers.dart';
+import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import '../../../domain/entities/cylinder.dart';
 
 /// Gestionnaire de prix et stock pour le formulaire de vente.

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../shared.dart';
-import '../../../application/providers.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/features/immobilier/application/providers.dart';
 import '../../../domain/entities/contract.dart';
 import '../../../domain/entities/payment.dart';
 import '../../../domain/entities/property.dart';
@@ -10,6 +10,7 @@ import '../../widgets/dashboard_alerts_section.dart';
 import '../../widgets/dashboard_header_v2.dart';
 import '../../widgets/dashboard_month_section_v2.dart';
 import '../../widgets/dashboard_today_section_v2.dart';
+import 'package:elyf_groupe_app/shared/presentation/widgets/refresh_button.dart';
 
 /// Professional dashboard screen for immobilier module.
 class DashboardScreen extends ConsumerWidget {

@@ -1,5 +1,5 @@
-/// Stub SaleCollection - Isar temporarily disabled.
-/// TODO: Migrate to ObjectBox.
+/// Legacy SaleCollection model (kept for compatibility).
+/// Note: Drift est utilisé exclusivement pour le stockage offline (pas ObjectBox).
 class SaleCollection {
   int id = 0;
   late String localId;

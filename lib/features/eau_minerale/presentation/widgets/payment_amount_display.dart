@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../../shared.dart';
-
+import 'package:elyf_groupe_app/shared.dart';
+import '../../../../../shared/utils/currency_formatter.dart';
 /// Widget to display the payment amount in a consistent format.
 class PaymentAmountDisplay extends StatelessWidget {
   const PaymentAmountDisplay({

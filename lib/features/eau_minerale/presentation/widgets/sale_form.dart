@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../shared.dart';
-import '../../application/providers.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import '../../../../../shared/utils/currency_formatter.dart';
+import '../../../../../shared/utils/notification_service.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../domain/entities/sale.dart';
 import '../../domain/entities/product.dart';
 import '../../domain/repositories/customer_repository.dart';
@@ -10,6 +12,7 @@ import '../../domain/services/sale_service.dart';
 import 'sale_product_selector.dart';
 import 'sale_customer_selector.dart';
 import 'simple_payment_splitter.dart';
+import 'package:elyf_groupe_app/shared/utils/form_helper_mixin.dart';
 
 /// Form for creating/editing a sale record.
 class SaleForm extends ConsumerStatefulWidget {
@@ -19,7 +22,7 @@ class SaleForm extends ConsumerStatefulWidget {
   ConsumerState<SaleForm> createState() => SaleFormState();
 }
 
-class SaleFormState extends ConsumerState<SaleForm> {
+class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
   final _formKey = GlobalKey<FormState>();
   final _customerNameController = TextEditingController();
   final _customerPhoneController = TextEditingController();
@@ -116,7 +119,6 @@ class SaleFormState extends ConsumerState<SaleForm> {
   }
 
   Future<void> submit() async {
-    if (!_formKey.currentState!.validate()) return;
     if (_selectedProduct == null) {
       NotificationService.showWarning(context, 'Veuillez sélectionner un produit');
       return;
@@ -127,7 +129,7 @@ class SaleFormState extends ConsumerState<SaleForm> {
       return;
     }
 
-    // Utiliser SaleService pour valider la vente
+    // Utiliser SaleService pour valider la vente (logique métier dans le service)
     final saleService = ref.read(saleServiceProvider);
     final validationError = await saleService.validateSale(
       productId: _selectedProduct!.id,
@@ -137,76 +139,76 @@ class SaleFormState extends ConsumerState<SaleForm> {
     );
     
     if (validationError != null) {
-      if (!mounted) return;
       NotificationService.showError(context, validationError);
       return;
     }
 
-    setState(() => _isLoading = true);
-    try {
-      // Si pas de client sélectionné mais nom renseigné, créer un nouveau client
-      String customerId = _selectedCustomer?.id ?? '';
-      final customerName = _customerNameController.text.trim();
-      final customerPhone = _customerPhoneController.text.trim();
-      
-      if (customerId.isEmpty && customerName.isNotEmpty) {
-        // Créer le nouveau client dans le repository
-        final clientsController = ref.read(clientsControllerProvider);
-        customerId = await clientsController.createCustomer(
-          customerName,
-          customerPhone,
+    await handleFormSubmit(
+      context: context,
+      formKey: _formKey,
+      onLoadingChanged: (isLoading) => setState(() => _isLoading = isLoading),
+      onSubmit: () async {
+        // Si pas de client sélectionné mais nom renseigné, créer un nouveau client
+        String customerId = _selectedCustomer?.id ?? '';
+        final customerName = _customerNameController.text.trim();
+        final customerPhone = _customerPhoneController.text.trim();
+        
+        if (customerId.isEmpty && customerName.isNotEmpty) {
+          // Créer le nouveau client via le controller (logique métier dans le controller)
+          final clientsController = ref.read(clientsControllerProvider);
+          customerId = await clientsController.createCustomer(
+            customerName,
+            customerPhone,
+          );
+        } else if (customerId.isEmpty) {
+          // Client anonyme (logique métier simple)
+          customerId = 'anonymous-${DateTime.now().millisecondsSinceEpoch}';
+        }
+        
+        // Utiliser SaleService pour déterminer le statut (logique métier dans le service)
+        final saleStatus = saleService.determineSaleStatus(_totalPrice!, _amountPaid!);
+        
+        final sale = Sale(
+          id: '',
+          productId: _selectedProduct!.id,
+          productName: _selectedProduct!.name,
+          quantity: _quantity!,
+          unitPrice: _unitPrice!,
+          totalPrice: _totalPrice!,
+          amountPaid: _amountPaid!,
+          customerName: customerName,
+          customerPhone: customerPhone,
+          customerId: customerId,
+          customerCnib: null,
+          date: DateTime.now(),
+          status: saleStatus,
+          createdBy: 'user-1',
+          notes: null,
+          cashAmount: _cashAmount,
+          orangeMoneyAmount: _orangeMoneyAmount,
         );
-      } else if (customerId.isEmpty) {
-        // Client anonyme
-        customerId = 'anonymous-${DateTime.now().millisecondsSinceEpoch}';
-      }
-      
-      // Utiliser SaleService pour déterminer le statut
-      final saleStatus = saleService.determineSaleStatus(_totalPrice!, _amountPaid!);
-      
-      final sale = Sale(
-        id: '',
-        productId: _selectedProduct!.id,
-        productName: _selectedProduct!.name,
-        quantity: _quantity!,
-        unitPrice: _unitPrice!,
-        totalPrice: _totalPrice!,
-        amountPaid: _amountPaid!,
-        customerName: customerName,
-        customerPhone: customerPhone,
-        customerId: customerId,
-        customerCnib: null,
-        date: DateTime.now(),
-        status: saleStatus,
-        createdBy: 'user-1',
-        notes: null,
-        cashAmount: _cashAmount,
-        orangeMoneyAmount: _orangeMoneyAmount,
-      );
 
-      final userId = ref.read(currentUserIdProvider);
-      
-      await ref.read(salesControllerProvider).createSale(sale, userId);
+        final userId = ref.read(currentUserIdProvider);
+        
+        await ref.read(salesControllerProvider).createSale(sale, userId);
 
-      if (!mounted) return;
-      // Invalider les providers pour rafraîchir les données
-      ref.invalidate(salesStateProvider);
-      ref.invalidate(stockStateProvider);
-      ref.invalidate(clientsStateProvider);
-      Navigator.of(context).pop();
-      ref.invalidate(salesStateProvider);
-      NotificationService.showSuccess(context, 'Vente enregistrée');
-    } catch (e) {
-      if (!mounted) return;
-      NotificationService.showError(context, e.toString());
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
+        if (mounted) {
+          // Invalider les providers pour rafraîchir les données
+          ref.invalidate(salesStateProvider);
+          ref.invalidate(stockStateProvider);
+          ref.invalidate(clientsStateProvider);
+          Navigator.of(context).pop();
+          ref.invalidate(salesStateProvider);
+        }
+
+        return 'Vente enregistrée';
+      },
+    );
   }
 
   String _formatCurrency(int amount) {
-    // Utiliser CurrencyFormatter mais avec " CFA" au lieu de " FCFA" pour compatibilité
-    return CurrencyFormatter.formatFCFA(amount).replaceAll(' FCFA', ' CFA');
+    // Utilise CurrencyFormatter partagé avec format CFA
+    return CurrencyFormatter.formatCFA(amount);
   }
 
   @override

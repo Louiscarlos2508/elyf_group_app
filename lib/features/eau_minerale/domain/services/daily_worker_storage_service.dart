@@ -1,10 +1,10 @@
-import '../../../../shared.dart';
+import 'package:elyf_groupe_app/shared.dart';
 import '../../domain/entities/daily_worker.dart';
 
 /// Service de stockage pour les ouvriers journaliers.
 /// 
 /// Utilise un stockage en mémoire pour le moment.
-/// TODO: Migrer vers ObjectBox pour la persistence.
+/// Note: Drift est utilisé exclusivement pour le stockage offline (pas ObjectBox).
 class DailyWorkerStorageService {
   DailyWorkerStorageService._();
   

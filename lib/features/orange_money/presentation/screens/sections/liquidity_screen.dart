@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../../../application/providers.dart';
+import 'package:elyf_groupe_app/features/orange_money/application/providers.dart';
 import '../../../domain/entities/liquidity_checkpoint.dart';
 import '../../widgets/liquidity_checkpoint_dialog.dart';
 import '../../widgets/liquidity/liquidity_daily_activity_section.dart';
@@ -39,11 +39,11 @@ class _LiquidityScreenState extends ConsumerState<LiquidityScreen> {
     final recentCheckpointsKey =
         '$enterpriseKey|${sevenDaysAgo.millisecondsSinceEpoch}|${today.millisecondsSinceEpoch}';
     final recentCheckpointsAsync =
-        ref.watch(liquidityCheckpointsProvider(recentCheckpointsKey));
+        ref.watch(liquidityCheckpointsProvider((recentCheckpointsKey)));
 
     final allCheckpointsKey = enterpriseKey.isEmpty ? '' : '$enterpriseKey||';
     final allCheckpointsAsync =
-        ref.watch(liquidityCheckpointsProvider(allCheckpointsKey));
+        ref.watch(liquidityCheckpointsProvider((allCheckpointsKey)));
 
     return Container(
       color: const Color(0xFFF9FAFB),
@@ -361,8 +361,8 @@ class _LiquidityScreenState extends ConsumerState<LiquidityScreen> {
         '$enterpriseKey|${sevenDaysAgo.millisecondsSinceEpoch}|${today.millisecondsSinceEpoch}';
     final allCheckpointsKey = enterpriseKey.isEmpty ? '' : '$enterpriseKey||';
 
-    ref.invalidate(liquidityCheckpointsProvider(recentCheckpointsKey));
-    ref.invalidate(liquidityCheckpointsProvider(allCheckpointsKey));
+    ref.invalidate(liquidityCheckpointsProvider((recentCheckpointsKey)));
+    ref.invalidate(liquidityCheckpointsProvider((allCheckpointsKey)));
   }
 }
 

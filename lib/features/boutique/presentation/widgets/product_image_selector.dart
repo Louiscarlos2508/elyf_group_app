@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../../../shared.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import '../../../../shared/utils/notification_service.dart';
 
 class ProductImageSelector extends StatefulWidget {
   const ProductImageSelector({

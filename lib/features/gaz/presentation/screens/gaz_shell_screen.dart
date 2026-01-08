@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../shared.dart';
+import 'package:elyf_groupe_app/shared.dart';
 import 'sections/approvisionnement_screen.dart';
 import 'sections/cylinder_leak_screen.dart';
 import 'sections/dashboard_screen.dart';

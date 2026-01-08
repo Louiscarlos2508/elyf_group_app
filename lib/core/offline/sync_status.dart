@@ -1,6 +1,6 @@
-/// Stub sync status classes - Isar temporarily disabled.
-/// 
-/// TODO: Migrate to ObjectBox.
+/// Stub sync status classes.
+///
+/// TODO: implement Drift-backed sync queue + metadata storage.
 
 /// Enum for sync status.
 enum SyncStatus {

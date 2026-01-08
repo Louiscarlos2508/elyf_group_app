@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../shared.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import '../../../../../shared/utils/notification_service.dart';
 import '../../../application/controllers/clients_controller.dart';
-import '../../../application/providers.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../../domain/entities/customer_credit.dart';
 import '../../../domain/entities/sale.dart';
 import '../../../domain/repositories/customer_repository.dart';

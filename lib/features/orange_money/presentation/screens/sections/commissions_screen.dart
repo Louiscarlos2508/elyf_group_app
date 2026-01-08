@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../application/providers.dart';
+import 'package:elyf_groupe_app/features/orange_money/application/providers.dart';
 import '../../../domain/entities/commission.dart';
 import '../../widgets/commission_form_dialog.dart';
 import '../../widgets/kpi_card.dart';
-import '../../../../shared.dart';
-
+import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
 /// Screen for managing commissions.
 class CommissionsScreen extends ConsumerWidget {
   const CommissionsScreen({super.key, this.enterpriseId});
@@ -19,7 +19,7 @@ class CommissionsScreen extends ConsumerWidget {
     
     final statsAsync = ref.watch(commissionsStatisticsProvider(enterpriseKey));
     final commissionsAsync = ref.watch(commissionsProvider(enterpriseKey));
-    final currentMonthAsync = ref.watch(currentMonthCommissionProvider(enterpriseKey));
+    final currentMonthAsync = ref.watch(currentMonthCommissionProvider((enterpriseKey)));
 
     return CustomScrollView(
       slivers: [
@@ -437,7 +437,7 @@ class CommissionsScreen extends ConsumerWidget {
             // Invalidate providers to refresh the list
             ref.invalidate(commissionsProvider(enterpriseId));
             ref.invalidate(commissionsStatisticsProvider(enterpriseId));
-            ref.invalidate(currentMonthCommissionProvider(enterpriseId));
+            ref.invalidate(currentMonthCommissionProvider((enterpriseId)));
 
             if (context.mounted) {
               NotificationService.showSuccess(context, 'Commission enregistrée avec succès');

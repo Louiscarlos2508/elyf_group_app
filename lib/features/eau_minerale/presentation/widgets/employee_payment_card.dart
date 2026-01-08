@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../shared.dart';
-import '../../application/providers.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import '../../../../../shared/utils/currency_formatter.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../domain/entities/employee.dart';
 import '../../domain/entities/salary_payment.dart';
-import '../../../shared.dart';
 import 'monthly_salary_payment_form.dart';
 import 'salary_receipt_dialog.dart';
+import 'package:elyf_groupe_app/shared/presentation/widgets/form_dialog.dart';
 
 /// Card widget displaying employee info and payment history.
 class EmployeePaymentCard extends ConsumerWidget {

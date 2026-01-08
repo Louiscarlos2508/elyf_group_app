@@ -1,4 +1,7 @@
-import '../../../../shared.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import '../../../../../shared/domain/entities/payment_method.dart';
+import '../../../../../shared/utils/date_formatter.dart';
+import '../../../../../shared/utils/currency_formatter.dart';
 import '../../domain/entities/payment.dart';
 
 /// Helpers pour le formulaire de paiement.
@@ -10,8 +13,8 @@ class PaymentFormHelpers {
   }
 
   static String formatCurrency(int amount) {
-    // Retourner sans " FCFA" pour compatibilité avec l'usage existant
-    return CurrencyFormatter.formatFCFA(amount).replaceAll(' FCFA', '');
+    // Utilise CurrencyFormatter partagé sans suffixe
+    return CurrencyFormatter.formatPlain(amount);
   }
 
   static String getMonthName(int month) {
@@ -33,16 +36,8 @@ class PaymentFormHelpers {
   }
 
   static String getMethodLabel(PaymentMethod method) {
-    switch (method) {
-      case PaymentMethod.cash:
-        return 'Espèces';
-      case PaymentMethod.mobileMoney:
-        return 'Mobile Money';
-      case PaymentMethod.bankTransfer:
-        return 'Virement bancaire';
-      case PaymentMethod.check:
-        return 'Chèque';
-    }
+    // Utilise l'extension partagée
+    return method.label;
   }
 
   static String getStatusLabel(PaymentStatus status) {

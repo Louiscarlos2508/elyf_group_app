@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:developer' as developer;
 
 import 'connectivity_service.dart';
-import 'isar_service.dart';
+import 'drift_service.dart';
 import 'sync_status.dart';
 
 /// Configuration for sync behavior.
@@ -26,16 +26,17 @@ class SyncConfig {
   final int batchSize;
 }
 
-/// Stub SyncManager - Isar temporarily disabled.
-/// TODO: Migrate to ObjectBox.
+/// Stub SyncManager - Drift-based sync queue integration pending.
 class SyncManager {
   SyncManager({
-    required IsarService isarService,
+    required DriftService driftService,
     required ConnectivityService connectivityService,
     this.config = const SyncConfig(),
     this.syncHandler,
-  })  : _connectivityService = connectivityService;
+  })  : _driftService = driftService,
+        _connectivityService = connectivityService;
 
+  final DriftService _driftService;
   final ConnectivityService _connectivityService;
   final SyncConfig config;
   final SyncOperationHandler? syncHandler;

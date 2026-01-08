@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../shared.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import '../../../../../shared/utils/notification_service.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/tour.dart';
 import 'tour_form/tour_date_picker.dart';
 import 'tour_form/tour_fee_input.dart';
 import 'tour_form/tour_form_header.dart';
+import 'package:elyf_groupe_app/shared/presentation/widgets/form_dialog.dart';
+import 'package:elyf_groupe_app/shared/utils/form_helper_mixin.dart';
 
 /// Formulaire de création d'un nouveau tour.
 class TourFormDialog extends ConsumerStatefulWidget {
@@ -16,7 +19,8 @@ class TourFormDialog extends ConsumerStatefulWidget {
   ConsumerState<TourFormDialog> createState() => _TourFormDialogState();
 }
 
-class _TourFormDialogState extends ConsumerState<TourFormDialog> {
+class _TourFormDialogState extends ConsumerState<TourFormDialog>
+    with FormHelperMixin {
   final _formKey = GlobalKey<FormState>();
   DateTime _selectedDate = DateTime.now();
   final _loadingFeeController = TextEditingController(text: '200');
@@ -31,34 +35,38 @@ class _TourFormDialogState extends ConsumerState<TourFormDialog> {
   }
 
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate() || _enterpriseId == null) {
+    if (_enterpriseId == null) {
+      NotificationService.showError(context, 'Entreprise non définie');
       return;
     }
 
-    try {
-      final controller = ref.read(tourControllerProvider);
+    await handleFormSubmit(
+      context: context,
+      formKey: _formKey,
+      onLoadingChanged: (_) {}, // Pas besoin de gestion d'état de chargement séparée
+      onSubmit: () async {
+        final controller = ref.read(tourControllerProvider);
 
-      final tour = Tour(
-        id: '',
-        enterpriseId: _enterpriseId!,
-        tourDate: _selectedDate,
-        status: TourStatus.collection,
-        collections: const [],
-        loadingFeePerBottle: double.tryParse(_loadingFeeController.text) ?? 0.0,
-        unloadingFeePerBottle:
-            double.tryParse(_unloadingFeeController.text) ?? 0.0,
-      );
+        final tour = Tour(
+          id: '',
+          enterpriseId: _enterpriseId!,
+          tourDate: _selectedDate,
+          status: TourStatus.collection,
+          collections: const [],
+          loadingFeePerBottle: double.tryParse(_loadingFeeController.text) ?? 0.0,
+          unloadingFeePerBottle:
+              double.tryParse(_unloadingFeeController.text) ?? 0.0,
+        );
 
-      await controller.createTour(tour);
+        await controller.createTour(tour);
 
-      if (mounted) {
-        Navigator.of(context).pop(true);
-      }
-    } catch (e) {
-      if (mounted) {
-        NotificationService.showError(context, 'Erreur: $e');
-      }
-    }
+        if (mounted) {
+          Navigator.of(context).pop(true);
+        }
+
+        return 'Tour créé avec succès';
+      },
+    );
   }
 
   @override

@@ -3,10 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../application/controllers/cylinder_controller.dart';
 import '../../../application/controllers/gaz_settings_controller.dart';
-import '../../../application/providers.dart';
+import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import '../../../domain/entities/cylinder.dart';
-import '../../../../shared.dart';
-
+import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
 /// Handler pour la soumission du formulaire de bouteille.
 class CylinderSubmitHandler {
   CylinderSubmitHandler._();

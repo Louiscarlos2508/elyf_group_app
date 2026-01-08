@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/controllers/clients_controller.dart';
 import '../../application/controllers/finances_controller.dart';
 import '../../application/controllers/sales_controller.dart';
-import '../../application/providers.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../domain/entities/customer_account.dart';
 import '../../domain/repositories/customer_repository.dart';
 import '../../domain/services/dashboard_calculation_service.dart';

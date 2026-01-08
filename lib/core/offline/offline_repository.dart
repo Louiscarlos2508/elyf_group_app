@@ -1,20 +1,19 @@
 import 'dart:developer' as developer;
 
 import 'connectivity_service.dart';
-import 'isar_service.dart';
+import 'drift_service.dart';
 import 'sync_manager.dart';
 import 'sync_status.dart';
 
-/// Stub OfflineRepository - Isar temporarily disabled.
-/// TODO: Migrate to ObjectBox.
+/// Stub OfflineRepository - Drift integration pending.
 abstract class OfflineRepository<T> {
   OfflineRepository({
-    required this.isarService,
+    required this.driftService,
     required this.syncManager,
     required this.connectivityService,
   });
 
-  final IsarService isarService;
+  final DriftService driftService;
   final SyncManager syncManager;
   final ConnectivityService connectivityService;
 

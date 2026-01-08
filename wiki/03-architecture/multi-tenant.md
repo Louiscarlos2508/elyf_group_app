@@ -30,7 +30,7 @@ enterprises/
       ...
 ```
 
-### Isar (local)
+### Drift (local)
 
 Chaque entreprise a ses collections locales avec `enterpriseId` comme filtre.
 
@@ -134,7 +134,7 @@ if (!hasAccess) {
 
 ## Synchronisation
 
-### Isar avec enterpriseId
+### Drift avec enterpriseId
 
 Toutes les entités locales incluent `enterpriseId` :
 
@@ -319,7 +319,7 @@ class MyWidget extends ConsumerWidget {
 2. **Valider l'accès** – Vérifier les permissions avant les opérations
 3. **Isolation stricte** – Une entreprise ne doit jamais voir les données d'une autre
 4. **Switch propre** – Invalider les providers lors du switch
-5. **Cache séparé** – Cache Isar séparé par entreprise
+5. **Cache séparé** – Cache Drift séparé par entreprise
 6. **Utiliser les providers** – Ne jamais hardcoder les IDs d'entreprise
 
 ## Prochaines étapes

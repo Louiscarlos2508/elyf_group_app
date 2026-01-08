@@ -2,14 +2,14 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../application/providers.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../domain/entities/bobine_stock.dart';
 import '../../domain/entities/bobine_usage.dart';
 import '../../domain/entities/machine.dart';
 import '../../domain/entities/production_session_status.dart';
 import 'bobine_usage_form_field.dart' show bobineStocksDisponiblesProvider;
-import '../../../shared.dart';
-
+import 'package:elyf_groupe_app/shared.dart';
+import '../../../../../shared/utils/notification_service.dart';
 /// Formulaire pour installer une bobine.
 /// Crée automatiquement une nouvelle bobine et l'installe sur la machine.
 class BobineInstallationForm extends ConsumerStatefulWidget {

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../application/providers.dart';
+import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import '../../../domain/entities/point_of_sale.dart';
-import '../../../../shared.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import '../../../../../shared/presentation/widgets/gaz_button_styles.dart';
+import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
 import '../point_of_sale_form_dialog.dart';
 import 'pos_stock_dialog.dart';
 import 'pos_types_dialog.dart';

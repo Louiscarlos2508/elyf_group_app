@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../application/providers.dart';
+import 'package:elyf_groupe_app/features/orange_money/application/providers.dart';
 import '../../../domain/entities/transaction.dart';
 import '../../widgets/transactions_history/transactions_history_header.dart';
 import '../../widgets/transactions_history/transactions_history_filters.dart';
@@ -73,7 +73,7 @@ class _TransactionsHistoryScreenState
   Widget build(BuildContext context) {
     final providerKey = _buildProviderKey();
     final transactionsAsync = ref.watch(
-      filteredTransactionsProvider(providerKey),
+      filteredTransactionsProvider((providerKey)),
     );
 
     return Container(

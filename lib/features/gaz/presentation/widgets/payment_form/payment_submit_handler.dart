@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../application/providers.dart';
+import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import '../../../domain/entities/collection.dart';
+import '../../../domain/entities/cylinder.dart';
 import '../../../domain/entities/tour.dart';
 import '../../../domain/services/collection_calculation_service.dart';
-import '../../../../shared.dart';
-
+import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
 /// Handler pour la soumission du formulaire de paiement.
 class PaymentSubmitHandler {
   PaymentSubmitHandler._();
@@ -63,7 +64,7 @@ class PaymentSubmitHandler {
       if (leaks.isNotEmpty) {
         try {
           // Récupérer tous les cylindres pour trouver les IDs par poids
-          final cylinders = await ref.read(cylindersProvider.future);
+          final cylinders = await ref.read(cylindersProvider.future) as List<Cylinder>;
           
           // Filtrer par entreprise
           final enterpriseCylinders = cylinders

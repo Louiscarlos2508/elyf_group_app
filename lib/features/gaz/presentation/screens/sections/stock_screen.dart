@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../application/providers.dart';
+import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import '../../../domain/entities/point_of_sale.dart';
 import '../../widgets/point_of_sale_stock_card.dart';
 import '../../widgets/stock_adjustment_dialog.dart';

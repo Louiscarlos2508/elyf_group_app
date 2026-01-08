@@ -1,12 +1,13 @@
 import 'dart:developer' as developer;
+import 'dart:convert';
 
 import '../../../../core/errors/app_exceptions.dart';
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/offline/connectivity_service.dart';
-import '../../../../core/offline/isar_service.dart';
+import '../../../../core/offline/drift_service.dart';
 import '../../../../core/offline/offline_repository.dart';
 import '../../../../core/offline/sync_manager.dart';
-import '../../../../core/offline/collections/payment_collection.dart';
+import '../../../../shared/domain/entities/payment_method.dart';
 import '../../domain/entities/payment.dart';
 import '../../domain/repositories/payment_repository.dart';
 
@@ -14,7 +15,7 @@ import '../../domain/repositories/payment_repository.dart';
 class PaymentOfflineRepository extends OfflineRepository<Payment>
     implements PaymentRepository {
   PaymentOfflineRepository({
-    required super.isarService,
+    required super.driftService,
     required super.syncManager,
     required super.connectivityService,
     required this.enterpriseId,
@@ -42,6 +43,12 @@ class PaymentOfflineRepository extends OfflineRepository<Payment>
       paymentType: map['paymentType'] != null
           ? _parsePaymentType(map['paymentType'] as String)
           : null,
+      cashAmount: map['cashAmount'] != null
+          ? (map['cashAmount'] as num).toInt()
+          : null,
+      mobileMoneyAmount: map['mobileMoneyAmount'] != null
+          ? (map['mobileMoneyAmount'] as num).toInt()
+          : null,
       createdAt: map['createdAt'] != null
           ? DateTime.parse(map['createdAt'] as String)
           : null,
@@ -65,6 +72,8 @@ class PaymentOfflineRepository extends OfflineRepository<Payment>
       'receiptNumber': entity.receiptNumber,
       'notes': entity.notes,
       'paymentType': entity.paymentType?.name,
+      'cashAmount': entity.cashAmount?.toDouble(),
+      'mobileMoneyAmount': entity.mobileMoneyAmount?.toDouble(),
       'createdAt': entity.createdAt?.toIso8601String(),
       'updatedAt': entity.updatedAt?.toIso8601String(),
     };
@@ -91,77 +100,72 @@ class PaymentOfflineRepository extends OfflineRepository<Payment>
 
   @override
   Future<void> saveToLocal(Payment entity) async {
-    final collection = PaymentCollection.fromMap(
-      toMap(entity),
+    final localId = getLocalId(entity);
+    final map = toMap(entity)..['localId'] = localId;
+    await driftService.records.upsert(
+      collectionName: collectionName,
+      localId: localId,
+      remoteId: getRemoteId(entity),
       enterpriseId: enterpriseId,
-      localId: getLocalId(entity),
+      moduleType: 'immobilier',
+      dataJson: jsonEncode(map),
+      localUpdatedAt: DateTime.now(),
     );
-    collection.remoteId = getRemoteId(entity);
-    collection.localUpdatedAt = DateTime.now();
-
-    await isarService.isar.writeTxn(() async {
-      await isarService.isar.paymentCollections.put(collection);
-    });
   }
 
   @override
   Future<void> deleteFromLocal(Payment entity) async {
     final remoteId = getRemoteId(entity);
-    await isarService.isar.writeTxn(() async {
-      if (remoteId != null) {
-        await isarService.isar.paymentCollections
-            .filter()
-            .remoteIdEqualTo(remoteId)
-            .and()
-            .enterpriseIdEqualTo(enterpriseId)
-            .deleteAll();
-      } else {
-        final localId = getLocalId(entity);
-        await isarService.isar.paymentCollections
-            .filter()
-            .localIdEqualTo(localId)
-            .and()
-            .enterpriseIdEqualTo(enterpriseId)
-            .deleteAll();
-      }
-    });
+    if (remoteId != null) {
+      await driftService.records.deleteByRemoteId(
+        collectionName: collectionName,
+        remoteId: remoteId,
+        enterpriseId: enterpriseId,
+        moduleType: 'immobilier',
+      );
+      return;
+    }
+    final localId = getLocalId(entity);
+    await driftService.records.deleteByLocalId(
+      collectionName: collectionName,
+      localId: localId,
+      enterpriseId: enterpriseId,
+      moduleType: 'immobilier',
+    );
   }
 
   @override
   Future<Payment?> getByLocalId(String localId) async {
-    var collection = await isarService.isar.paymentCollections
-        .filter()
-        .remoteIdEqualTo(localId)
-        .and()
-        .enterpriseIdEqualTo(enterpriseId)
-        .findFirst();
-
-    if (collection != null) {
-      return fromMap(collection.toMap());
+    final byRemote = await driftService.records.findByRemoteId(
+      collectionName: collectionName,
+      remoteId: localId,
+      enterpriseId: enterpriseId,
+      moduleType: 'immobilier',
+    );
+    if (byRemote != null) {
+      return fromMap(jsonDecode(byRemote.dataJson) as Map<String, dynamic>);
     }
 
-    collection = await isarService.isar.paymentCollections
-        .filter()
-        .localIdEqualTo(localId)
-        .and()
-        .enterpriseIdEqualTo(enterpriseId)
-        .findFirst();
-
-    if (collection != null) {
-      return fromMap(collection.toMap());
-    }
-
-    return null;
+    final byLocal = await driftService.records.findByLocalId(
+      collectionName: collectionName,
+      localId: localId,
+      enterpriseId: enterpriseId,
+      moduleType: 'immobilier',
+    );
+    if (byLocal == null) return null;
+    return fromMap(jsonDecode(byLocal.dataJson) as Map<String, dynamic>);
   }
 
   @override
   Future<List<Payment>> getAllForEnterprise(String enterpriseId) async {
-    final collections = await isarService.isar.paymentCollections
-        .filter()
-        .enterpriseIdEqualTo(enterpriseId)
-        .findAll();
-
-    return collections.map((c) => fromMap(c.toMap())).toList();
+    final rows = await driftService.records.listForEnterprise(
+      collectionName: collectionName,
+      enterpriseId: enterpriseId,
+      moduleType: 'immobilier',
+    );
+    return rows
+        .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+        .toList();
   }
 
   // PaymentRepository interface implementation
@@ -189,17 +193,6 @@ class PaymentOfflineRepository extends OfflineRepository<Payment>
   @override
   Future<Payment?> getPaymentById(String id) async {
     try {
-      final collection = await isarService.isar.paymentCollections
-          .filter()
-          .remoteIdEqualTo(id)
-          .and()
-          .enterpriseIdEqualTo(enterpriseId)
-          .findFirst();
-
-      if (collection != null) {
-        return fromMap(collection.toMap());
-      }
-
       return await getByLocalId(id);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
@@ -272,6 +265,8 @@ class PaymentOfflineRepository extends OfflineRepository<Payment>
         receiptNumber: payment.receiptNumber,
         notes: payment.notes,
         paymentType: payment.paymentType,
+        cashAmount: payment.cashAmount,
+        mobileMoneyAmount: payment.mobileMoneyAmount,
         createdAt: payment.createdAt,
         updatedAt: payment.updatedAt,
       );
@@ -331,10 +326,8 @@ class PaymentOfflineRepository extends OfflineRepository<Payment>
         return PaymentMethod.cash;
       case 'mobileMoney':
         return PaymentMethod.mobileMoney;
-      case 'bankTransfer':
-        return PaymentMethod.bankTransfer;
-      case 'check':
-        return PaymentMethod.check;
+      case 'both':
+        return PaymentMethod.both;
       default:
         return PaymentMethod.cash;
     }

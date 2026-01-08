@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../application/providers.dart';
+import 'package:elyf_groupe_app/features/immobilier/application/providers.dart';
 import '../../../domain/entities/payment.dart';
 import '../contract_card_helpers.dart';
 import 'contract_detail_components.dart';
@@ -18,7 +18,7 @@ class ContractPaymentsSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final paymentsAsync = ref.watch(paymentsByContractProvider(contractId));
+    final paymentsAsync = ref.watch(paymentsByContractProvider((contractId)));
     final theme = Theme.of(context);
 
     return ContractSectionCard(

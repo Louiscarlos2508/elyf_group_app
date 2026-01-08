@@ -1,12 +1,12 @@
 import 'dart:developer' as developer;
+import 'dart:convert';
 
 import '../../../../core/errors/app_exceptions.dart';
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/offline/connectivity_service.dart';
-import '../../../../core/offline/isar_service.dart';
+import '../../../../core/offline/drift_service.dart';
 import '../../../../core/offline/offline_repository.dart';
 import '../../../../core/offline/sync_manager.dart';
-import '../../../../core/offline/collections/product_collection.dart';
 import '../../domain/entities/product.dart';
 import '../../domain/repositories/product_repository.dart';
 
@@ -14,7 +14,7 @@ import '../../domain/repositories/product_repository.dart';
 class ProductOfflineRepository extends OfflineRepository<Product>
     implements ProductRepository {
   ProductOfflineRepository({
-    required super.isarService,
+    required super.driftService,
     required super.syncManager,
     required super.connectivityService,
     required this.enterpriseId,
@@ -83,87 +83,73 @@ class ProductOfflineRepository extends OfflineRepository<Product>
 
   @override
   Future<void> saveToLocal(Product entity) async {
-    final collection = ProductCollection.fromMap(
-      toMap(entity),
+    final localId = getLocalId(entity);
+    final remoteId = getRemoteId(entity);
+    final map = toMap(entity)..['localId'] = localId;
+    await driftService.records.upsert(
+      collectionName: collectionName,
+      localId: localId,
+      remoteId: remoteId,
       enterpriseId: enterpriseId,
       moduleType: moduleType,
-      localId: getLocalId(entity),
+      dataJson: jsonEncode(map),
+      localUpdatedAt: DateTime.now(),
     );
-    collection.remoteId = getRemoteId(entity) ?? getLocalId(entity);
-    collection.localUpdatedAt = DateTime.now();
-
-    await isarService.isar.writeTxn(() async {
-      await isarService.isar.productCollections.put(collection);
-    });
   }
 
   @override
   Future<void> deleteFromLocal(Product entity) async {
     final remoteId = getRemoteId(entity);
-    await isarService.isar.writeTxn(() async {
-      if (remoteId != null) {
-        await isarService.isar.productCollections
-            .filter()
-            .remoteIdEqualTo(remoteId)
-            .and()
-            .enterpriseIdEqualTo(enterpriseId)
-            .deleteAll();
-      } else {
-        final localId = getLocalId(entity);
-        await isarService.isar.productCollections
-            .filter()
-            .remoteIdEqualTo(localId)
-            .and()
-            .enterpriseIdEqualTo(enterpriseId)
-            .deleteAll();
-      }
-    });
+    if (remoteId != null) {
+      await driftService.records.deleteByRemoteId(
+        collectionName: collectionName,
+        remoteId: remoteId,
+        enterpriseId: enterpriseId,
+        moduleType: moduleType,
+      );
+      return;
+    }
+    final localId = getLocalId(entity);
+    await driftService.records.deleteByLocalId(
+      collectionName: collectionName,
+      localId: localId,
+      enterpriseId: enterpriseId,
+      moduleType: moduleType,
+    );
   }
 
   @override
   Future<Product?> getByLocalId(String localId) async {
-    // Try to find by remote ID first (in case localId is actually a remote ID)
-    var collection = await isarService.isar.productCollections
-        .filter()
-        .remoteIdEqualTo(localId)
-        .and()
-        .enterpriseIdEqualTo(enterpriseId)
-        .findFirst();
-
-    if (collection != null) {
-      return fromMap(collection.toMap());
+    final byRemote = await driftService.records.findByRemoteId(
+      collectionName: collectionName,
+      remoteId: localId,
+      enterpriseId: enterpriseId,
+      moduleType: moduleType,
+    );
+    if (byRemote != null) {
+      return fromMap(jsonDecode(byRemote.dataJson) as Map<String, dynamic>);
     }
 
-    // If not found, search all collections and match by any ID field
-    // Note: Isar doesn't support searching by localId directly in this schema
-    // So we need to search all and filter manually
-    final allCollections = await isarService.isar.productCollections
-        .filter()
-        .enterpriseIdEqualTo(enterpriseId)
-        .findAll();
-
-    // Try to find a collection that matches (this is a workaround)
-    // In a real implementation, we'd store localId in the collection
-    for (final c in allCollections) {
-      final product = fromMap(c.toMap());
-      if (getLocalId(product) == localId || getRemoteId(product) == localId) {
-        return product;
-      }
-    }
-
-    return null;
+    final byLocal = await driftService.records.findByLocalId(
+      collectionName: collectionName,
+      localId: localId,
+      enterpriseId: enterpriseId,
+      moduleType: moduleType,
+    );
+    if (byLocal == null) return null;
+    return fromMap(jsonDecode(byLocal.dataJson) as Map<String, dynamic>);
   }
 
   @override
   Future<List<Product>> getAllForEnterprise(String enterpriseId) async {
-    final collections = await isarService.isar.productCollections
-        .filter()
-        .enterpriseIdEqualTo(enterpriseId)
-        .and()
-        .moduleTypeEqualTo(moduleType)
-        .findAll();
-
-    return collections.map((c) => fromMap(c.toMap())).toList();
+    final rows = await driftService.records.listForEnterprise(
+      collectionName: collectionName,
+      enterpriseId: enterpriseId,
+      moduleType: moduleType,
+    );
+    return rows
+        .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+        .toList();
   }
 
   // ProductRepository interface implementation
@@ -191,18 +177,6 @@ class ProductOfflineRepository extends OfflineRepository<Product>
   @override
   Future<Product?> getProduct(String id) async {
     try {
-      // Try to find by remote ID first
-      final collection = await isarService.isar.productCollections
-          .filter()
-          .remoteIdEqualTo(id)
-          .and()
-          .enterpriseIdEqualTo(enterpriseId)
-          .findFirst();
-
-      if (collection != null) {
-        return fromMap(collection.toMap());
-      }
-
       // Try to find by local ID
       return await getByLocalId(id);
     } catch (error, stackTrace) {
@@ -220,17 +194,12 @@ class ProductOfflineRepository extends OfflineRepository<Product>
   @override
   Future<Product?> getProductByBarcode(String barcode) async {
     try {
-      final collection = await isarService.isar.productCollections
-          .filter()
-          .barcodeEqualTo(barcode)
-          .and()
-          .enterpriseIdEqualTo(enterpriseId)
-          .and()
-          .moduleTypeEqualTo(moduleType)
-          .findFirst();
-
-      if (collection == null) return null;
-      return fromMap(collection.toMap());
+      final products = await getAllForEnterprise(enterpriseId);
+      try {
+        return products.firstWhere((p) => p.barcode == barcode);
+      } catch (_) {
+        return null;
+      }
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(

@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../../../shared.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
 import '../../../../domain/entities/user.dart';
-import '../../../../../core.dart';
+import 'package:elyf_groupe_app/core.dart';
 import '../../../../application/providers.dart';
 import '../../../../domain/entities/admin_module.dart';
-import '../../../../../shared.dart';
+import 'package:elyf_groupe_app/core/auth/entities/enterprise_module_user.dart';
 
 /// Dialogue pour attribuer un utilisateur à une entreprise et un module.
 class AssignEnterpriseDialog extends ConsumerStatefulWidget {
@@ -287,7 +288,7 @@ class _AssignEnterpriseDialogState
       );
 
       await ref
-          .read(adminRepositoryProvider)
+          .read(adminControllerProvider)
           .assignUserToEnterprise(enterpriseModuleUser);
 
       if (mounted) {

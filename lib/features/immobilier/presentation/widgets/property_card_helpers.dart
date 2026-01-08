@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:elyf_groupe_app/shared.dart';
+import '../../../../../shared/utils/currency_formatter.dart';
 import '../../domain/entities/property.dart';
 
 /// Helpers pour les cartes de propriété.
@@ -7,10 +9,8 @@ class PropertyCardHelpers {
   PropertyCardHelpers._();
 
   static String formatCurrency(int amount) {
-    return amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        ) + ' F';
+    // Utilise CurrencyFormatter partagé
+    return CurrencyFormatter.formatShort(amount);
   }
 
   static String getStatusLabel(PropertyStatus status) {

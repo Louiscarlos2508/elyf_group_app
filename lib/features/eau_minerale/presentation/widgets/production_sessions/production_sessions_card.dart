@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../../app/theme/app_theme.dart';
-import '../../../application/providers.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../../domain/entities/production_session.dart';
 import '../../../domain/entities/production_session_status.dart';
 import '../../../domain/services/production_margin_calculator.dart';
@@ -24,7 +24,7 @@ class ProductionSessionsCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final ventesAsync = ref.watch(ventesParSessionProvider(session.id));
+    final ventesAsync = ref.watch(ventesParSessionProvider((session.id)));
 
     return Card(
       elevation: 2,

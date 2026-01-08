@@ -1,38 +1,15 @@
 import '../../../domain/entities/gas_sale.dart';
 import '../../../domain/entities/cylinder.dart';
-import '../../../../shared.dart';
+import 'package:elyf_groupe_app/shared.dart';
 
-/// Helpers pour les calculs et formatage des rapports de vente.
+/// Helpers pour le formatage des rapports de vente.
+///
+/// Note: Les calculs sont maintenant dans GazReportCalculationService.
+/// Ce helper ne contient que le formatage pour l'affichage.
 class SalesReportHelpers {
-  /// Filtre les ventes par période.
-  static List<GasSale> filterSalesByPeriod(
-    List<GasSale> sales,
-    DateTime startDate,
-    DateTime endDate,
-  ) {
-    return sales.where((s) {
-      return s.saleDate.isAfter(startDate.subtract(const Duration(days: 1))) &&
-          s.saleDate.isBefore(endDate.add(const Duration(days: 1)));
-    }).toList();
-  }
-
-  /// Groupe les ventes par type.
-  static ({
-    List<GasSale> retail,
-    List<GasSale> wholesale,
-  }) groupSalesByType(List<GasSale> sales) {
-    return (
-      retail: sales.where((s) => s.saleType == SaleType.retail).toList(),
-      wholesale: sales.where((s) => s.saleType == SaleType.wholesale).toList(),
-    );
-  }
-
-  /// Calcule le total des ventes.
-  static double calculateTotal(List<GasSale> sales) {
-    return sales.fold<double>(0, (sum, s) => sum + s.totalAmount);
-  }
-
-  /// Calcule la quantité totale.
+  /// Calcule la quantité totale (utilisé pour l'affichage uniquement).
+  ///
+  /// Note: Pour les calculs métier, utiliser GazReportCalculationService.
   static int calculateTotalQuantity(List<GasSale> sales) {
     return sales.fold<int>(0, (sum, s) => sum + s.quantity);
   }

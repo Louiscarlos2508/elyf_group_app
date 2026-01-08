@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/entities/machine.dart';
-import '../../../core.dart';
+import 'package:elyf_groupe_app/core.dart';
+import '../../../../../core/permissions/modules/eau_minerale_permissions.dart';
 import 'centralized_permission_guard.dart';
 
 /// Widget pour afficher une machine dans la liste.

@@ -71,7 +71,7 @@ lib/
 ├── core/                   # Services transverses
 │   ├── auth/              # Authentification Firebase
 │   ├── firebase/          # Wrappers Firestore, Functions, FCM
-│   ├── offline/           # Isar DB et synchronisation
+│   ├── offline/           # Drift (SQLite) et synchronisation
 │   ├── printing/          # Intégration Sunmi V3
 │   ├── permissions/       # Système de permissions
 │   ├── tenant/            # Gestion multi-tenant
@@ -97,7 +97,7 @@ Chaque module suit la même architecture :
 - `presentation/` – Écrans et widgets UI (< 200 lignes par fichier)
 - `application/` – Contrôleurs Riverpod (StateNotifier, AsyncNotifier)
 - `domain/` – Entités, value objects, use cases
-- `data/` – Repositories et data sources (Firestore/Isar)
+- `data/` – Repositories et data sources (Firestore/Drift)
 
 ## 🛠️ Technologies utilisées
 
@@ -113,7 +113,7 @@ Chaque module suit la même architecture :
 - **Cloud Functions** – Logique serveur
 - **Firebase Cloud Messaging** – Notifications push
 - **Firebase Storage** – Stockage de fichiers
-- **Isar** – Base de données locale (offline-first)
+- **Drift (SQLite)** – Base de données locale (offline-first)
 
 ### UI & Design
 - **Material Design 3** – Design system

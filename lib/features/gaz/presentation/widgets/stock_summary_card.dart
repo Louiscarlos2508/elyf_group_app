@@ -4,8 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/cylinder.dart';
 import '../../domain/entities/cylinder_stock.dart';
-import '../../../../shared.dart';
-
+import '../../domain/services/gaz_dashboard_calculation_service.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import '../../../../../shared/utils/currency_formatter.dart';
 /// Carte récapitulative du stock de bouteilles.
 class StockSummaryCard extends ConsumerWidget {
   const StockSummaryCard({super.key, required this.cylinders});
@@ -41,6 +42,8 @@ class StockSummaryCard extends ConsumerWidget {
 
     return stocksAsync.when(
       data: (allStocks) {
+        // Utiliser le service de calcul pour extraire la logique métier
+        final calculationService = ref.read(gazDashboardCalculationServiceProvider);
         return Container(
           decoration: BoxDecoration(
             color: theme.colorScheme.surface,
@@ -59,16 +62,19 @@ class StockSummaryCard extends ConsumerWidget {
           child: Column(
             children: [
               for (var i = 0; i < cylinders.length; i++) ...[
-                _CylinderStockRow(
-                  cylinder: cylinders[i],
-                  fullStock: allStocks
-                      .where((s) => s.weight == cylinders[i].weight)
-                      .fold<int>(0, (sum, stock) => sum + stock.quantity),
-                  stockColor: _getStockColor(
-                    allStocks
+                Builder(
+                  builder: (context) {
+                    // Filtrer le stock par poids et calculer le total
+                    final stocksForWeight = allStocks
                         .where((s) => s.weight == cylinders[i].weight)
-                        .fold<int>(0, (sum, stock) => sum + stock.quantity),
-                  ),
+                        .toList();
+                    final fullStock = calculationService.calculateTotalStock(stocksForWeight);
+                    return _CylinderStockRow(
+                      cylinder: cylinders[i],
+                      fullStock: fullStock,
+                      stockColor: _getStockColor(fullStock),
+                    );
+                  },
                 ),
                 if (i < cylinders.length - 1)
                   Divider(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../../shared.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import '../../../../../shared/utils/currency_formatter.dart';
 import '../../domain/entities/employee.dart';
 
 /// Header section showing employee info and monthly salary.

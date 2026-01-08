@@ -1,23 +1,23 @@
 import 'dart:async';
 import 'dart:developer' as developer;
 
-import 'isar_service.dart';
+import 'drift_service.dart';
 import 'security/data_sanitizer.dart';
 import 'sync_manager.dart';
 import 'sync_status.dart';
 import 'retry_handler.dart';
 
-/// Stub SyncOperationProcessor - Isar temporarily disabled.
-/// TODO: Migrate to ObjectBox.
+/// Stub SyncOperationProcessor.
+/// TODO: Persist sync operations in Drift and process them in background.
 class SyncOperationProcessor {
   SyncOperationProcessor({
-    required this.isarService,
+    required this.driftService,
     required this.config,
     required this.retryHandler,
     this.syncHandler,
   });
 
-  final IsarService isarService;
+  final DriftService driftService;
   final SyncConfig config;
   final RetryHandler retryHandler;
   final SyncOperationHandler? syncHandler;

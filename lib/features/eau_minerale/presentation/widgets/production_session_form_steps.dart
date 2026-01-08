@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../application/providers.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../domain/entities/bobine_usage.dart';
 import '../../domain/entities/machine.dart';
 import '../../domain/entities/production_day.dart';
@@ -13,12 +13,14 @@ import 'bobine_usage_form_field.dart' show bobineStocksDisponiblesProvider;
 import 'daily_personnel_form.dart';
 import 'machine_breakdown_dialog.dart';
 import 'machine_selector_field.dart';
+import 'production_session_form_steps/production_session_form_actions.dart';
+import 'production_session_form_steps/production_session_form_dialogs.dart';
 import 'production_session_form_steps/production_session_form_helpers.dart';
 import 'production_session_form_steps/step_startup.dart';
 import 'production_session_form_steps/step_production.dart';
 import 'production_session_form_steps/step_finalization.dart';
-import '../../../shared.dart';
-
+import 'package:elyf_groupe_app/shared.dart';
+import '../../../../../shared/utils/notification_service.dart';
 /// Formulaire de session de production divisé en étapes.
 class ProductionSessionFormSteps extends ConsumerStatefulWidget {
   const ProductionSessionFormSteps({
@@ -80,45 +82,13 @@ class ProductionSessionFormStepsState
   }
 
   /// Vérifie l'état de chaque machine sélectionnée et charge les bobines appropriées.
-  /// 
-  /// Utilise ProductionService pour charger les bobines non finies.
   Future<void> _chargerBobinesNonFinies() async {
-    if (_machinesSelectionnees.isEmpty) {
-      setState(() {
-        _bobinesUtilisees = [];
-        _machinesAvecBobineNonFinie = {};
-      });
-      return;
-    }
-
-    try {
-      // Récupérer toutes les sessions précédentes pour vérifier l'état des machines
-      final sessions = await ref.read(productionSessionsStateProvider.future);
-      
-      // Récupérer les machines et les stocks pour les noms et types disponibles
-      final machines = await ref.read(machinesProvider.future);
-      final bobineStocks = await ref.read(bobineStocksDisponiblesProvider.future);
-      
-      // Utiliser ProductionService pour charger les bobines non finies
-      final productionService = ref.read(productionServiceProvider);
-      final result = await productionService.chargerBobinesNonFinies(
-        machinesSelectionnees: _machinesSelectionnees,
-        sessionsPrecedentes: sessions.toList(),
-        machines: machines,
-        bobineStocksDisponibles: bobineStocks,
-        // Bobines are managed separately
-      );
-
-      // Mettre à jour la liste des bobines utilisées
-      setState(() {
-        _bobinesUtilisees = result.bobinesUtilisees;
-        _machinesAvecBobineNonFinie = result.machinesAvecBobineNonFinie;
-      });
-      
-      debugPrint('Bobines assignées: ${_bobinesUtilisees.length} pour ${_machinesSelectionnees.length} machines');
-    } catch (e) {
-      debugPrint('Erreur lors de la vérification de l\'état des machines: $e');
-    }
+    await ProductionSessionFormActions.chargerBobinesNonFinies(
+      ref: ref,
+      machinesSelectionnees: _machinesSelectionnees,
+      onBobinesChanged: (bobines) => setState(() => _bobinesUtilisees = bobines),
+      onMachinesAvecBobineChanged: (machines) => setState(() => _machinesAvecBobineNonFinie = machines),
+    );
   }
 
   @override
@@ -171,55 +141,49 @@ class ProductionSessionFormStepsState
       final config = await ref.read(productionPeriodConfigProvider.future);
       
       // Calculer le statut basé sur les données disponibles
-      final status = _calculateStatus();
+      final status = ProductionSessionFormActions.calculateStatus(
+        ref: ref,
+        quantiteProduite: int.tryParse(_quantiteController.text) ?? 0,
+        heureFin: null,
+        heureDebut: _heureDebut,
+        machinesUtilisees: _machinesSelectionnees,
+        bobinesUtilisees: _bobinesUtilisees,
+      );
       
       // Récupérer l'index compteur initial si disponible
-      // Accepter les décimales et arrondir
       final indexInitialKwh = _indexCompteurInitialKwh;
-      
-      // Accepter les décimales et arrondir
       final indexFinalKwh = _indexCompteurFinalKwh;
       
       // Déterminer l'ID de la session à utiliser
-      // Priorité: widget.session?.id > _createdSessionId > vérifier sessions existantes
       String? sessionId = widget.session?.id ?? _createdSessionId;
-      
-      // Si pas d'ID, vérifier s'il existe déjà une session non terminée
       if (sessionId == null || sessionId.isEmpty) {
-        final sessions = await ref.read(productionSessionsStateProvider.future);
-        final sessionsNonTerminees = sessions.where(
-          (s) {
-            final effectiveStatus = s.effectiveStatus;
-            return effectiveStatus != ProductionSessionStatus.completed;
-          },
-        ).toList();
-        
-        if (sessionsNonTerminees.isNotEmpty) {
-          // Utiliser la session existante au lieu d'en créer une nouvelle
-          sessionId = sessionsNonTerminees.first.id;
-          _createdSessionId = sessionId; // Stocker pour référence future
+        sessionId = await ProductionSessionFormActions.findExistingUnfinishedSessionId(
+          ref: ref,
+          currentSessionId: sessionId,
+        );
+        if (sessionId != null) {
+          _createdSessionId = sessionId;
         }
       }
       
-      final session = ProductionSession(
-        id: sessionId ?? '',
-        date: _selectedDate,
-        period: config.getPeriodForDate(_selectedDate),
+      final session = ProductionSessionFormActions.buildSession(
+        sessionId: sessionId,
+        selectedDate: _selectedDate,
         heureDebut: _heureDebut,
-        heureFin: null, // Sera défini lors de la finalisation
+        heureFin: null,
         indexCompteurInitialKwh: indexInitialKwh,
         indexCompteurFinalKwh: indexFinalKwh,
         consommationCourant: double.tryParse(_consommationController.text.replaceAll(',', '.')) ?? 0.0,
         machinesUtilisees: _machinesSelectionnees,
         bobinesUtilisees: _bobinesUtilisees,
         quantiteProduite: int.tryParse(_quantiteController.text) ?? 0,
-        quantiteProduiteUnite: 'pack',
         emballagesUtilises: _emballagesController.text.trim().isNotEmpty
             ? int.tryParse(_emballagesController.text.trim())
             : null,
         notes: _notesController.text.isEmpty ? null : _notesController.text,
         status: status,
         productionDays: _productionDays,
+        period: config.getPeriodForDate(_selectedDate),
       );
 
       final controller = ref.read(productionSessionControllerProvider);
@@ -260,36 +224,30 @@ class ProductionSessionFormStepsState
     _isSavingDraft = true;
     try {
       final config = await ref.read(productionPeriodConfigProvider.future);
-      final status = _calculateStatus();
-      // Accepter les décimales et arrondir
-      final indexInitialKwh = _indexCompteurInitialKwh;
-
-      // Déterminer l'ID de la session à utiliser
-      // Vérifier d'abord si une session a déjà été créée dans cette instance
-      final sessionId = widget.session?.id ?? _createdSessionId ?? '';
+      final status = ProductionSessionFormActions.calculateStatus(
+        ref: ref,
+        quantiteProduite: int.tryParse(_quantiteController.text) ?? 0,
+        heureFin: widget.session?.heureFin,
+        heureDebut: _heureDebut,
+        machinesUtilisees: _machinesSelectionnees,
+        bobinesUtilisees: _bobinesUtilisees,
+      );
       
-      // Si pas d'ID, vérifier s'il existe déjà une session non terminée
-      String? existingSessionId = sessionId;
-      if (sessionId.isEmpty) {
-        final sessions = await ref.read(productionSessionsStateProvider.future);
-        final sessionsNonTerminees = sessions.where(
-          (s) {
-            final effectiveStatus = s.effectiveStatus;
-            return effectiveStatus != ProductionSessionStatus.completed;
-          },
-        ).toList();
-        
-        // Si une session non terminée existe, l'utiliser
-        if (sessionsNonTerminees.isNotEmpty) {
-          existingSessionId = sessionsNonTerminees.first.id;
-          _createdSessionId = existingSessionId; // Stocker pour éviter les créations futures
+      final indexInitialKwh = _indexCompteurInitialKwh;
+      String? existingSessionId = widget.session?.id ?? _createdSessionId ?? '';
+      if (existingSessionId.isEmpty) {
+        existingSessionId = await ProductionSessionFormActions.findExistingUnfinishedSessionId(
+          ref: ref,
+          currentSessionId: existingSessionId,
+        );
+        if (existingSessionId != null) {
+          _createdSessionId = existingSessionId;
         }
       }
       
-      final session = ProductionSession(
-        id: existingSessionId ?? '',
-        date: _selectedDate,
-        period: config.getPeriodForDate(_selectedDate),
+      final session = ProductionSessionFormActions.buildSession(
+        sessionId: existingSessionId,
+        selectedDate: _selectedDate,
         heureDebut: _heureDebut,
         heureFin: widget.session?.heureFin,
         indexCompteurInitialKwh: indexInitialKwh,
@@ -298,13 +256,13 @@ class ProductionSessionFormStepsState
         machinesUtilisees: _machinesSelectionnees,
         bobinesUtilisees: _bobinesUtilisees,
         quantiteProduite: int.tryParse(_quantiteController.text) ?? 0,
-        quantiteProduiteUnite: 'pack',
         emballagesUtilises: _emballagesController.text.trim().isNotEmpty
             ? int.tryParse(_emballagesController.text.trim())
             : null,
         notes: _notesController.text.isEmpty ? null : _notesController.text,
         status: status,
         productionDays: _productionDays,
+        period: config.getPeriodForDate(_selectedDate),
       );
 
       final controller = ref.read(productionSessionControllerProvider);
@@ -334,49 +292,16 @@ class ProductionSessionFormStepsState
 
   /// Valide l'étape actuelle du formulaire.
   bool validateCurrentStep() {
-    if (!(_formKey.currentState?.validate() ?? false)) {
-      return false;
-    }
-    
-    final isEditing = widget.session != null;
-    
-    switch (widget.currentStep) {
-      case 0:
-        // Démarrage : date, machines, index initial kWh
-        // Pour une nouvelle session, on n'exige pas les bobines (elles seront installées dans le suivi)
-        // Pour une session existante, on exige les bobines si on est en mode édition
-        if (isEditing) {
-          return _machinesSelectionnees.isNotEmpty &&
-              _bobinesUtilisees.length == _machinesSelectionnees.length &&
-              _indexCompteurInitialKwh != null;
-        } else {
-          return _machinesSelectionnees.isNotEmpty &&
-              _indexCompteurInitialKwh != null;
-        }
-      case 1:
-        // Production : quantité produite (seulement en mode édition)
-        return isEditing && _quantiteController.text.isNotEmpty;
-      case 2:
-        // Finalisation : index final, consommation (seulement en mode édition)
-        return isEditing && _indexCompteurFinalKwh != null && _consommationController.text.isNotEmpty;
-      default:
-        return true;
-    }
-  }
-
-  /// Calcule le statut de progression basé sur les données saisies
-  ProductionSessionStatus _calculateStatus() {
-    // Utiliser ProductionService pour calculer le statut
-    final productionService = ref.read(productionServiceProvider);
-    final quantiteProduite = int.tryParse(_quantiteController.text) ?? 0;
-    final heureFin = widget.session?.heureFin;
-    
-    return productionService.calculateStatus(
-      quantiteProduite: quantiteProduite,
-      heureFin: heureFin,
-      heureDebut: _heureDebut,
-      machinesUtilisees: _machinesSelectionnees,
+    return ProductionSessionFormActions.validateStep(
+      formState: _formKey.currentState,
+      session: widget.session,
+      currentStep: widget.currentStep,
+      machinesSelectionnees: _machinesSelectionnees,
       bobinesUtilisees: _bobinesUtilisees,
+      indexCompteurInitialKwh: _indexCompteurInitialKwh,
+      quantiteText: _quantiteController.text,
+      indexCompteurFinalKwh: _indexCompteurFinalKwh,
+      consommationText: _consommationController.text,
     );
   }
 
@@ -414,8 +339,25 @@ class ProductionSessionFormStepsState
             await _chargerBobinesNonFinies();
           },
           onBobinesChanged: (bobines) => setState(() => _bobinesUtilisees = bobines),
-          onInstallerBobine: () => _installerBobine(context),
-          onSignalerPanne: _signalerPanne,
+          onInstallerBobine: () => ProductionSessionFormDialogs.showBobineInstallation(
+            context: context,
+            ref: ref,
+            machinesSelectionnees: _machinesSelectionnees,
+            bobinesUtilisees: _bobinesUtilisees,
+            onBobinesChanged: (bobines) => setState(() => _bobinesUtilisees = bobines),
+          ),
+          onSignalerPanne: (context, bobine, index) => ProductionSessionFormDialogs.showMachineBreakdown(
+            context: context,
+            ref: ref,
+            session: widget.session,
+            selectedDate: _selectedDate,
+            heureDebut: _heureDebut,
+            machinesUtilisees: _machinesSelectionnees,
+            bobinesUtilisees: _bobinesUtilisees,
+            bobine: bobine,
+            bobineIndex: index,
+            onBobineRemoved: () => setState(() => _bobinesUtilisees.removeAt(index)),
+          ),
           onRetirerBobine: (index) {
             setState(() => _bobinesUtilisees.removeAt(index));
           },
@@ -468,175 +410,6 @@ class ProductionSessionFormStepsState
 
 
 
-  Future<void> _installerBobine(BuildContext context) async {
-    // Trouver une machine sans bobine
-    final machinesAvecBobine = _bobinesUtilisees.map((b) => b.machineId).toSet();
-    final machinesSansBobine = _machinesSelectionnees
-        .where((mId) => !machinesAvecBobine.contains(mId))
-        .toList();
-
-    if (machinesSansBobine.isEmpty) {
-      NotificationService.showInfo(context, 'Toutes les machines ont une bobine');
-      return;
-    }
-
-    // Récupérer les machines
-    final machines = await ref.read(machinesProvider.future);
-    
-    final machine = machines.firstWhere((m) => m.id == machinesSansBobine.first);
-
-    if (!context.mounted) return;
-    final result = await showDialog<BobineUsage>(
-      context: context,
-      builder: (dialogContext) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        child: BobineInstallationForm(
-          machine: machine,
-          // Le formulaire vérifiera automatiquement s'il y a une bobine non finie à réutiliser
-        ),
-      ),
-    );
-
-    if (result != null && mounted) {
-      // Vérifier si cette bobine n'est pas déjà dans la liste (cas de réutilisation)
-      final existeDeja = _bobinesUtilisees.any(
-        (b) => b.bobineType == result.bobineType && b.machineId == result.machineId,
-      );
-      
-      if (!existeDeja) {
-        // Le stock est déjà décrémenté dans BobineInstallationForm pour les nouvelles bobines
-        // Les bobines non finie réutilisées n'ont pas besoin de décrément
-        setState(() {
-          _bobinesUtilisees.add(result);
-        });
-      }
-    }
-  }
-
-
-  void _showPersonnelForm(BuildContext context, DateTime date) {
-    // Créer une session temporaire pour le formulaire
-    final tempSession = ProductionSession(
-      id: widget.session?.id ?? 'temp',
-      date: _selectedDate,
-      period: 1,
-      heureDebut: _heureDebut,
-      consommationCourant: 0,
-      machinesUtilisees: _machinesSelectionnees,
-      bobinesUtilisees: _bobinesUtilisees,
-      quantiteProduite: 0,
-      quantiteProduiteUnite: 'pack',
-      productionDays: _productionDays,
-    );
-
-    // Vérifier si un jour existe déjà pour cette date
-    ProductionDay? existingDay;
-    try {
-      existingDay = _productionDays.firstWhere(
-        (d) =>
-            d.date.year == date.year &&
-            d.date.month == date.month &&
-            d.date.day == date.day,
-      );
-    } catch (e) {
-      existingDay = null;
-    }
-
-    showDialog(
-      context: context,
-      builder: (dialogContext) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 600, maxHeight: 700),
-          child: DailyPersonnelForm(
-            session: tempSession,
-            date: date,
-            existingDay: existingDay,
-            onSaved: (productionDay) async {
-              // Calculer la différence pour gérer les modifications
-              int ancienPacksProduits = 0;
-              int ancienEmballagesUtilises = 0;
-              
-              if (existingDay != null) {
-                ancienPacksProduits = existingDay.packsProduits;
-                ancienEmballagesUtilises = existingDay.emballagesUtilises;
-              }
-              
-              setState(() {
-                if (existingDay != null) {
-                  final index = _productionDays.indexWhere((d) => d.id == existingDay!.id);
-                  if (index != -1) {
-                    _productionDays[index] = productionDay;
-                  }
-                } else {
-                  _productionDays.add(productionDay);
-                }
-              });
-              
-              // IMPORTANT: Ne pas mettre à jour les stocks ici
-              // Les mouvements de stock seront enregistrés UNIQUEMENT lors de la finalisation
-              // pour éviter les duplications et garantir un historique cohérent
-              // Les modifications des jours de production sont juste sauvegardées dans la session
-              
-              if (mounted) {
-                ref.invalidate(stockStateProvider);
-                Navigator.of(context).pop();
-              }
-            },
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// Signale une panne de machine et permet de retirer la bobine.
-  Future<void> _signalerPanne(
-    BuildContext context,
-    BobineUsage bobine,
-    int index,
-  ) async {
-    // Créer un objet Machine à partir des infos de la bobine
-    final machine = Machine(
-      id: bobine.machineId,
-      nom: bobine.machineName,
-      reference: bobine.machineId,
-    );
-    
-    // Créer une session temporaire pour le dialog
-    final tempSession = ProductionSession(
-      id: widget.session?.id ?? 'temp',
-      date: _selectedDate,
-      period: 1,
-      heureDebut: _heureDebut,
-      consommationCourant: 0,
-      machinesUtilisees: _machinesSelectionnees,
-      bobinesUtilisees: _bobinesUtilisees,
-      quantiteProduite: 0,
-      quantiteProduiteUnite: 'pack',
-      events: widget.session?.events ?? [],
-    );
-
-    if (!context.mounted) return;
-    await showDialog(
-      context: context,
-      builder: (dialogContext) => MachineBreakdownDialog(
-        machine: machine,
-        session: tempSession,
-        bobine: bobine,
-        onPanneSignaled: (event) {
-          // Retirer la bobine de la liste si elle a été retirée
-          setState(() {
-            _bobinesUtilisees.removeAt(index);
-          });
-          // Invalider les providers pour rafraîchir les données
-          ref.invalidate(productionSessionsStateProvider);
-          if (widget.session != null) {
-            ref.invalidate(productionSessionDetailProvider(widget.session!.id));
-          }
-        },
-      ),
-    );
-  }
 
 }
 

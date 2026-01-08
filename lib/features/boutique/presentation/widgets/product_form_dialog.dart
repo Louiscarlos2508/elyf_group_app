@@ -11,6 +11,8 @@ import '../../domain/services/product_calculation_service.dart';
 import 'product_form_fields.dart';
 import 'product_form_footer.dart';
 import 'product_image_selector.dart';
+import 'package:elyf_groupe_app/shared/presentation/widgets/form_dialog.dart';
+import 'package:elyf_groupe_app/shared/utils/form_helper_mixin.dart';
 
 class ProductFormDialog extends ConsumerStatefulWidget {
   const ProductFormDialog({
@@ -24,7 +26,8 @@ class ProductFormDialog extends ConsumerStatefulWidget {
   ConsumerState<ProductFormDialog> createState() => _ProductFormDialogState();
 }
 
-class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
+class _ProductFormDialogState extends ConsumerState<ProductFormDialog>
+    with FormHelperMixin {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _priceController = TextEditingController();
@@ -68,85 +71,81 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
   }
 
   Future<void> _saveProduct() async {
-    if (!_formKey.currentState!.validate()) return;
+    await handleFormSubmit(
+      context: context,
+      formKey: _formKey,
+      onLoadingChanged: (isLoading) => setState(() => _isLoading = isLoading),
+      onSubmit: () async {
+        // Stock initial (optionnel, 0 par défaut)
+        final stockInitial = widget.product == null
+            ? (int.tryParse(_stockController.text) ?? 0)
+            : widget.product!.stock;
 
-    setState(() => _isLoading = true);
-    try {
-      // Stock initial (optionnel, 0 par défaut)
-      final stockInitial = widget.product == null
-          ? (int.tryParse(_stockController.text) ?? 0)
-          : widget.product!.stock;
-
-      // Prix total d'achat (si stock > 0)
-      final totalPurchasePrice = _purchasePriceController.text.isEmpty
-          ? null
-          : int.tryParse(_purchasePriceController.text);
-      
-      // Utiliser ProductCalculationService pour calculer le prix unitaire d'achat
-      final calculationService = ref.read(productCalculationServiceProvider);
-      final unitPurchasePrice = calculationService.calculateUnitPurchasePrice(
-        stockInitial: stockInitial,
-        totalPurchasePrice: totalPurchasePrice,
-      );
-
-      final product = Product(
-        id: widget.product?.id ?? 'prod-${DateTime.now().millisecondsSinceEpoch}',
-        name: _nameController.text.trim(),
-        price: int.parse(_priceController.text),
-        stock: stockInitial,
-        purchasePrice: unitPurchasePrice,
-        description: _descriptionController.text.isEmpty
+        // Prix total d'achat (si stock > 0)
+        final totalPurchasePrice = _purchasePriceController.text.isEmpty
             ? null
-            : _descriptionController.text.trim(),
-        category: _categoryController.text.isEmpty
-            ? null
-            : _categoryController.text.trim(),
-        barcode: _barcodeController.text.isEmpty
-            ? null
-            : _barcodeController.text.trim(),
-        imageUrl: _selectedImage != null
-            ? _selectedImage!.path
-            : (_imageUrlController.text.isEmpty
-                ? null
-                : _imageUrlController.text.trim()),
-      );
-
-      if (widget.product == null) {
-        await ref.read(storeControllerProvider).createProduct(product);
+            : int.tryParse(_purchasePriceController.text);
         
-        // Si stock initial et prix total sont définis, créer une dépense automatique
-        if (stockInitial > 0 && totalPurchasePrice != null) {
-          final expense = Expense(
-            id: 'expense-stock-${product.id}',
-            label: 'Stock initial: ${product.name}',
-            amountCfa: totalPurchasePrice,
-            category: ExpenseCategory.other,
-            date: DateTime.now(),
-            notes: 'Stock initial de $stockInitial unité(s) à $unitPurchasePrice FCFA/unité',
-          );
-          await ref.read(storeControllerProvider).createExpense(expense);
-          ref.invalidate(expensesProvider);
-        }
-      } else {
-        await ref.read(storeControllerProvider).updateProduct(product);
-      }
+        // Utiliser ProductCalculationService pour calculer le prix unitaire d'achat
+        final calculationService = ref.read(productCalculationServiceProvider);
+        final unitPurchasePrice = calculationService.calculateUnitPurchasePrice(
+          stockInitial: stockInitial,
+          totalPurchasePrice: totalPurchasePrice,
+        );
 
-      if (!mounted) return;
-      Navigator.of(context).pop();
-      ref.invalidate(productsProvider);
-      ref.invalidate(lowStockProductsProvider);
-      NotificationService.showSuccess(
-        context,
-        widget.product == null
+        final product = Product(
+          id: widget.product?.id ?? 'prod-${DateTime.now().millisecondsSinceEpoch}',
+          name: _nameController.text.trim(),
+          price: int.parse(_priceController.text),
+          stock: stockInitial,
+          purchasePrice: unitPurchasePrice,
+          description: _descriptionController.text.isEmpty
+              ? null
+              : _descriptionController.text.trim(),
+          category: _categoryController.text.isEmpty
+              ? null
+              : _categoryController.text.trim(),
+          barcode: _barcodeController.text.isEmpty
+              ? null
+              : _barcodeController.text.trim(),
+          imageUrl: _selectedImage != null
+              ? _selectedImage!.path
+              : (_imageUrlController.text.isEmpty
+                  ? null
+                  : _imageUrlController.text.trim()),
+        );
+
+        if (widget.product == null) {
+          await ref.read(storeControllerProvider).createProduct(product);
+          
+          // Si stock initial et prix total sont définis, créer une dépense automatique
+          if (stockInitial > 0 && totalPurchasePrice != null) {
+            final expense = Expense(
+              id: 'expense-stock-${product.id}',
+              label: 'Stock initial: ${product.name}',
+              amountCfa: totalPurchasePrice,
+              category: ExpenseCategory.other,
+              date: DateTime.now(),
+              notes: 'Stock initial de $stockInitial unité(s) à $unitPurchasePrice FCFA/unité',
+            );
+            await ref.read(storeControllerProvider).createExpense(expense);
+            ref.invalidate(expensesProvider);
+          }
+        } else {
+          await ref.read(storeControllerProvider).updateProduct(product);
+        }
+
+        if (mounted) {
+          Navigator.of(context).pop();
+          ref.invalidate(productsProvider);
+          ref.invalidate(lowStockProductsProvider);
+        }
+
+        return widget.product == null
             ? 'Produit créé avec succès${stockInitial > 0 && totalPurchasePrice != null ? ' (dépense enregistrée)' : ''}'
-            : 'Produit mis à jour',
-      );
-    } catch (e) {
-      if (!mounted) return;
-      NotificationService.showError(context, e.toString());
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
+            : 'Produit mis à jour';
+      },
+    );
   }
 
   @override

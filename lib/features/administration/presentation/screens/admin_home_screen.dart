@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/auth/providers.dart' show authServiceProvider, currentUserProvider, currentUserIdProvider;
-import '../../../../shared.dart';
+import '../../../../core/auth/providers.dart' show authControllerProvider, currentUserProvider, currentUserIdProvider;
+import 'package:elyf_groupe_app/shared.dart';
+import '../../../../../shared/utils/notification_service.dart';
 import 'sections/admin_dashboard_section.dart';
 import 'sections/admin_enterprises_section.dart';
 import 'sections/admin_modules_section.dart';
@@ -44,8 +45,8 @@ class _AdminHomeScreenState extends ConsumerState<AdminHomeScreen> {
     );
 
     if (confirmed == true && context.mounted) {
-      final authService = ref.read(authServiceProvider);
-      await authService.signOut();
+      final authController = ref.read(authControllerProvider);
+      await authController.signOut();
       // Rafraîchir les providers
       ref.invalidate(currentUserProvider);
       ref.invalidate(currentUserIdProvider);

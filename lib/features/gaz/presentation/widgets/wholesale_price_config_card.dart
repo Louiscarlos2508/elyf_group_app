@@ -63,49 +63,50 @@ class WholesalePriceConfigCard extends ConsumerWidget {
                 const WholesalePriceHeader(),
                 const SizedBox(height: 24),
                 // Liste des prix par poids (basée sur les bouteilles créées)
-                availableWeights.isEmpty
-                    ? Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Center(
-                          child: Column(
-                            children: [
-                              Icon(
-                                Icons.info_outline,
-                                size: 48,
-                                color: colors.onSurfaceVariant,
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'Aucune bouteille créée',
-                                style: theme.textTheme.bodyLarge?.copyWith(
-                                  color: colors.onSurfaceVariant,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Créez d\'abord des types de bouteilles dans la section "Configuration des prix"',
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: colors.onSurfaceVariant,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
+                if (availableWeights.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Center(
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.info_outline,
+                            size: 48,
+                            color: colors.onSurfaceVariant,
                           ),
-                        ),
-                      )
-                    : ...availableWeights.map((weight) {
-                        final price = settings?.getWholesalePrice(weight) ?? 0.0;
-                        return WholesalePriceRow(
-                          weight: weight,
-                          price: price,
-                          settings: settings,
-                          enterpriseId: enterpriseId,
-                          moduleId: moduleId,
-                          onPriceSaved: () {
-                            // Le provider sera invalidé dans le widget
-                          },
-                        );
-                      }),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Aucune bouteille créée',
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                              color: colors.onSurfaceVariant,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Créez d\'abord des types de bouteilles dans la section "Configuration des prix"',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: colors.onSurfaceVariant,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                else
+                  ...availableWeights.map((weight) {
+                    final price = settings?.getWholesalePrice(weight) ?? 0.0;
+                    return WholesalePriceRow(
+                      weight: weight,
+                      price: price,
+                      settings: settings,
+                      enterpriseId: enterpriseId,
+                      moduleId: moduleId,
+                      onPriceSaved: () {
+                        // Le provider sera invalidé dans le widget
+                      },
+                    );
+                  }).toList(),
               ],
             ),
           ),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../application/providers.dart';
+import 'package:elyf_groupe_app/features/administration/application/providers.dart';
 import '../../../domain/entities/enterprise.dart';
 
 /// Dashboard avec statistiques et vue d'ensemble

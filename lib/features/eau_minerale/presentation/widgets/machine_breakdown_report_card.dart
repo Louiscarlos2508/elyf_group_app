@@ -1,19 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../application/providers.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../domain/entities/bobine_usage.dart';
 import '../../domain/entities/machine.dart';
 import '../../domain/entities/production_event.dart';
 import '../../domain/entities/production_session.dart';
 import '../../domain/entities/production_session_status.dart';
-import '../../../core.dart';
-import '../screens/sections/production_session_detail_screen.dart'
-    show productionSessionDetailProvider;
+import 'package:elyf_groupe_app/core.dart';
+import '../screens/sections/production_session_detail_screen.dart' show productionSessionDetailProvider;
 import 'centralized_permission_guard.dart';
 import 'machine_breakdown_dialog.dart';
-import '../../../shared.dart';
-
+import 'package:elyf_groupe_app/shared.dart';
+import '../../../../../shared/utils/notification_service.dart';
 /// Carte pour signaler une panne de machine dans les paramètres.
 class MachineBreakdownReportCard extends ConsumerWidget {
   const MachineBreakdownReportCard({super.key});
@@ -224,7 +223,7 @@ class MachineBreakdownReportCard extends ConsumerWidget {
         onPanneSignaled: (event) {
           ref.invalidate(productionSessionsStateProvider);
           if (session != null) {
-            ref.invalidate(productionSessionDetailProvider(session.id));
+            ref.invalidate(productionSessionDetailProvider((session.id)));
           }
           NotificationService.showInfo(context, 'Panne signalée avec succès');
         },

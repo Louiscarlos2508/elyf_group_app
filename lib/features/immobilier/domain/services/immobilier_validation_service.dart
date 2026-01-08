@@ -92,6 +92,30 @@ class ImmobilierValidationService {
       return 'Le montant doit être supérieur à 0';
     }
 
+    // Valider le cas du paiement mixte (both)
+    if (payment.paymentMethod.name == 'both') {
+      // Vérifier que les montants cashAmount et mobileMoneyAmount sont présents
+      if (payment.cashAmount == null || payment.mobileMoneyAmount == null) {
+        return 'Les montants en espèces et en mobile money sont requis pour un paiement mixte';
+      }
+
+      // Vérifier que les montants sont positifs
+      if (payment.cashAmount! <= 0 || payment.mobileMoneyAmount! <= 0) {
+        return 'Les montants en espèces et en mobile money doivent être supérieurs à 0';
+      }
+
+      // Vérifier que la somme correspond au montant total
+      final totalSplit = payment.cashAmount! + payment.mobileMoneyAmount!;
+      if (totalSplit != payment.amount) {
+        return 'La somme des montants en espèces (${payment.cashAmount}) et en mobile money (${payment.mobileMoneyAmount}) doit être égale au montant total (${payment.amount})';
+      }
+    } else {
+      // Si ce n'est pas "both", s'assurer que cashAmount et mobileMoneyAmount sont null
+      if (payment.cashAmount != null || payment.mobileMoneyAmount != null) {
+        return 'Les montants séparés ne doivent être renseignés que pour un paiement mixte';
+      }
+    }
+
     return null;
   }
 
@@ -189,6 +213,8 @@ class ImmobilierValidationService {
           receiptNumber: payment.receiptNumber,
           notes: payment.notes,
           paymentType: payment.paymentType,
+          cashAmount: payment.cashAmount,
+          mobileMoneyAmount: payment.mobileMoneyAmount,
           createdAt: payment.createdAt,
           updatedAt: DateTime.now(),
         );

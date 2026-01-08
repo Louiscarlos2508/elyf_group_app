@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../../shared.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import '../../../domain/entities/gas_sale.dart';
 
 /// Statistiques des ventes en gros.

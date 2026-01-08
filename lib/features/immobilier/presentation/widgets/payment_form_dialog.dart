@@ -2,12 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:open_file/open_file.dart';
 
-import '../../../core.dart';
-import '../../../../shared.dart';
-import '../../application/providers.dart';
+import 'package:elyf_groupe_app/core.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import '../../../../../shared/domain/entities/payment_method.dart';
+import '../../../../../shared/utils/notification_service.dart';
+import '../../../../core/pdf/unified_payment_pdf_service.dart';
+import 'package:elyf_groupe_app/features/immobilier/application/providers.dart';
 import '../../domain/entities/contract.dart';
 import '../../domain/entities/payment.dart';
 import 'payment_form_fields.dart';
+import 'package:elyf_groupe_app/shared/presentation/widgets/form_dialog.dart';
+import 'package:elyf_groupe_app/shared/utils/validators.dart';
+import 'package:elyf_groupe_app/shared/utils/form_helper_mixin.dart';
 
 class PaymentFormDialog extends ConsumerStatefulWidget {
   const PaymentFormDialog({
@@ -21,7 +27,8 @@ class PaymentFormDialog extends ConsumerStatefulWidget {
   ConsumerState<PaymentFormDialog> createState() => _PaymentFormDialogState();
 }
 
-class _PaymentFormDialogState extends ConsumerState<PaymentFormDialog> {
+class _PaymentFormDialogState extends ConsumerState<PaymentFormDialog>
+    with FormHelperMixin {
   final _formKey = GlobalKey<FormState>();
   Contract? _selectedContract;
   DateTime _paymentDate = DateTime.now();
@@ -83,63 +90,59 @@ class _PaymentFormDialogState extends ConsumerState<PaymentFormDialog> {
   }
 
   Future<void> _save() async {
-    if (!_formKey.currentState!.validate()) return;
     if (_selectedContract == null) {
       NotificationService.showWarning(context, 'Veuillez sélectionner un contrat');
       return;
     }
 
-    setState(() => _isSaving = true);
+    final success = await handleFormSubmit(
+      context: context,
+      formKey: _formKey,
+      onLoadingChanged: (isLoading) => setState(() => _isSaving = isLoading),
+      onSubmit: () async {
+        final payment = Payment(
+          id: widget.payment?.id ?? IdGenerator.generate(),
+          contractId: _selectedContract!.id,
+          amount: int.parse(_amountController.text),
+          paymentDate: _paymentDate,
+          paymentMethod: _paymentMethod,
+          status: _status,
+          contract: _selectedContract,
+          month: _month,
+          year: _year,
+          receiptNumber: _receiptNumberController.text.trim().isEmpty
+              ? null
+              : _receiptNumberController.text.trim(),
+          notes: _notesController.text.trim().isEmpty
+              ? null
+              : _notesController.text.trim(),
+          paymentType: _paymentType,
+          createdAt: widget.payment?.createdAt ?? DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
 
-    try {
-      final payment = Payment(
-        id: widget.payment?.id ?? IdGenerator.generate(),
-        contractId: _selectedContract!.id,
-        amount: int.parse(_amountController.text),
-        paymentDate: _paymentDate,
-        paymentMethod: _paymentMethod,
-        status: _status,
-        contract: _selectedContract,
-        month: _month,
-        year: _year,
-        receiptNumber: _receiptNumberController.text.trim().isEmpty
-            ? null
-            : _receiptNumberController.text.trim(),
-        notes: _notesController.text.trim().isEmpty
-            ? null
-            : _notesController.text.trim(),
-        paymentType: _paymentType,
-        createdAt: widget.payment?.createdAt ?? DateTime.now(),
-        updatedAt: DateTime.now(),
-      );
-
-      final controller = ref.read(paymentControllerProvider);
-      if (widget.payment == null) {
-        await controller.createPayment(payment);
-      } else {
-        await controller.updatePayment(payment);
-      }
-
-      if (mounted) {
-        ref.invalidate(paymentsProvider);
-        Navigator.of(context).pop(payment);
-
-        // Proposer de générer la facture uniquement pour les nouveaux paiements
+        final controller = ref.read(paymentControllerProvider);
         if (widget.payment == null) {
-          _showInvoiceDialog(payment);
+          await controller.createPayment(payment);
         } else {
-          NotificationService.showSuccess(context, 'Paiement mis à jour avec succès');
+          await controller.updatePayment(payment);
         }
-      }
-    } catch (e) {
-      if (mounted) {
-        NotificationService.showError(context, e.toString());
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isSaving = false);
-      }
-    }
+
+        if (mounted) {
+          ref.invalidate(paymentsProvider);
+          Navigator.of(context).pop(payment);
+
+          // Proposer de générer la facture uniquement pour les nouveaux paiements
+          if (widget.payment == null) {
+            _showInvoiceDialog(payment);
+          }
+        }
+
+        return widget.payment == null
+            ? 'Paiement enregistré avec succès'
+            : 'Paiement mis à jour avec succès';
+      },
+    );
   }
 
   Future<void> _showInvoiceDialog(Payment payment) async {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../shared/domain/entities/payment_method.dart';
 import '../../domain/entities/payment.dart';
 
 /// Widget pour les filtres de paiement.
@@ -33,16 +34,8 @@ class PaymentFilters extends StatelessWidget {
   }
 
   String _getMethodLabel(PaymentMethod method) {
-    switch (method) {
-      case PaymentMethod.cash:
-        return 'Espèces';
-      case PaymentMethod.mobileMoney:
-        return 'Mobile Money';
-      case PaymentMethod.bankTransfer:
-        return 'Virement bancaire';
-      case PaymentMethod.check:
-        return 'Chèque';
-    }
+    // Utilise l'extension partagée
+    return method.label;
   }
 
   @override

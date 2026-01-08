@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../shared.dart';
-import '../../application/providers.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import '../../../../../shared/utils/notification_service.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../domain/entities/product.dart';
 
 /// Widget pour configurer le prix du pack dans les paramètres.
@@ -79,8 +80,8 @@ class _PackPriceConfigCardState extends ConsumerState<PackPriceConfigCard> {
         description: _packProduct!.description,
       );
 
-      final productRepo = ref.read(productRepositoryProvider);
-      await productRepo.updateProduct(updatedProduct);
+      final productController = ref.read(productControllerProvider);
+      await productController.updateProduct(updatedProduct);
       
       // Invalider le provider pour recharger les produits
       ref.invalidate(productsProvider);

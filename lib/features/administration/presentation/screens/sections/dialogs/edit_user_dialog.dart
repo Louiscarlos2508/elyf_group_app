@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../../../../../shared.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
 import '../../../../domain/entities/user.dart';
+import 'package:elyf_groupe_app/shared/utils/form_helper_mixin.dart';
 
 /// Dialogue pour modifier un utilisateur existant.
 class EditUserDialog extends StatefulWidget {
@@ -17,7 +19,8 @@ class EditUserDialog extends StatefulWidget {
   State<EditUserDialog> createState() => _EditUserDialogState();
 }
 
-class _EditUserDialogState extends State<EditUserDialog> {
+class _EditUserDialogState extends State<EditUserDialog>
+    with FormHelperMixin {
   late final GlobalKey<FormState> _formKey;
   late final TextEditingController _firstNameController;
   late final TextEditingController _lastNameController;
@@ -52,37 +55,32 @@ class _EditUserDialogState extends State<EditUserDialog> {
   }
 
   Future<void> _handleSubmit() async {
-    if (!_formKey.currentState!.validate()) return;
+    await handleFormSubmit(
+      context: context,
+      formKey: _formKey,
+      onLoadingChanged: (isLoading) => setState(() => _isLoading = isLoading),
+      onSubmit: () async {
+        final updatedUser = widget.user.copyWith(
+          firstName: _firstNameController.text.trim(),
+          lastName: _lastNameController.text.trim(),
+          username: _usernameController.text.trim(),
+          email: _emailController.text.trim().isEmpty
+              ? null
+              : _emailController.text.trim(),
+          phone: _phoneController.text.trim().isEmpty
+              ? null
+              : _phoneController.text.trim(),
+          isActive: _isActive,
+          updatedAt: DateTime.now(),
+        );
 
-    setState(() => _isLoading = true);
+        if (mounted) {
+          Navigator.of(context).pop(updatedUser);
+        }
 
-    try {
-      final updatedUser = widget.user.copyWith(
-        firstName: _firstNameController.text.trim(),
-        lastName: _lastNameController.text.trim(),
-        username: _usernameController.text.trim(),
-        email: _emailController.text.trim().isEmpty
-            ? null
-            : _emailController.text.trim(),
-        phone: _phoneController.text.trim().isEmpty
-            ? null
-            : _phoneController.text.trim(),
-        isActive: _isActive,
-        updatedAt: DateTime.now(),
-      );
-
-      if (mounted) {
-        Navigator.of(context).pop(updatedUser);
-      }
-    } catch (e) {
-      if (mounted) {
-        NotificationService.showError(context, e.toString());
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
+        return 'Utilisateur modifié avec succès';
+      },
+    );
   }
 
   String? _validateEmail(String? value) {

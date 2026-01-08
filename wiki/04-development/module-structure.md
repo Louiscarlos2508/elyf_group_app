@@ -87,7 +87,7 @@ Implémenter le repository :
 // lib/features/mon_module/data/repositories/mon_repository_impl.dart
 class MonRepositoryImpl implements MonRepository {
   final FirebaseFirestore firestore;
-  final Isar isar;
+  final DriftService driftService;
   
   MonRepositoryImpl({
     required this.firestore,
@@ -96,7 +96,7 @@ class MonRepositoryImpl implements MonRepository {
   
   @override
   Future<List<MonEntity>> getAll(String enterpriseId) async {
-    // 1. Essayer de récupérer depuis Isar (offline)
+    // 1. Essayer de récupérer depuis Drift (offline)
     final local = await isar.monEntities
       .filter()
       .enterpriseIdEqualTo(enterpriseId)
@@ -352,7 +352,7 @@ PermissionRegistry.instance.registerModulePermissions(
 - [ ] Structure de dossiers créée
 - [ ] Entities définies
 - [ ] Repository interface créée
-- [ ] Repository implémenté (Firestore + Isar)
+- [ ] Repository implémenté (Firestore + Drift)
 - [ ] Providers créés
 - [ ] Controllers créés
 - [ ] Screens créés

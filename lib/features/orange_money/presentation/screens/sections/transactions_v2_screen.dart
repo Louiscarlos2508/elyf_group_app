@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../shared.dart';
-import '../../../application/providers.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
+import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
+import 'package:elyf_groupe_app/features/orange_money/application/providers.dart';
 import '../../../domain/entities/transaction.dart';
 import '../../../domain/services/transaction_service.dart';
 import '../../widgets/form_field_with_label.dart';

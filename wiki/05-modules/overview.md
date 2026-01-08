@@ -268,7 +268,7 @@ Tous les modules utilisent une navigation adaptative :
 ### Support offline
 
 Tous les modules fonctionnent en mode offline :
-- Données stockées localement (Isar)
+- Données stockées localement (Drift / SQLite)
 - Synchronisation automatique
 - Indicateurs de synchronisation
 

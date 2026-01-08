@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../shared.dart';
+import 'package:elyf_groupe_app/shared.dart';
 
 /// En-tête du formulaire de collecte.
 class CollectionFormHeader extends StatelessWidget {

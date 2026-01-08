@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/controllers/clients_controller.dart';
 import '../../application/controllers/finances_controller.dart';
 import '../../application/controllers/sales_controller.dart';
-import '../../application/providers.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../domain/entities/production_session.dart';
 import 'dashboard_kpi_card.dart';
 
@@ -41,6 +41,7 @@ class DashboardMonthKpis extends ConsumerWidget {
               clients,
               finances,
               sessions,
+              ref,
             ),
             loading: () => _buildLoadingState(),
             error: (_, __) => const SizedBox.shrink(),
@@ -69,18 +70,16 @@ class DashboardMonthKpis extends ConsumerWidget {
     ClientsState clients,
     FinancesState finances,
     List<ProductionSession> sessions,
+    WidgetRef ref,
   ) {
+    // Utiliser le service de calcul pour extraire la logique métier
+    final calculationService = ref.read(dashboardCalculationServiceProvider);
     final now = DateTime.now();
-    final monthStart = DateTime(now.year, now.month, 1);
+    final monthStart = calculationService.getMonthStart(now);
 
     // Ventes du mois
-    final monthSales = sales.sales
-        .where((s) => s.date.isAfter(monthStart))
-        .toList();
-    final monthRevenue = monthSales.fold(0, (sum, s) => sum + s.totalPrice);
-    final monthCollections = monthSales
-        .where((s) => s.isFullyPaid)
-        .fold(0, (sum, s) => sum + s.amountPaid);
+    final monthRevenue = calculationService.calculateMonthlyRevenue(sales.sales, monthStart);
+    final monthCollections = calculationService.calculateMonthlyCollections(sales.sales, monthStart);
 
     // Production du mois
     final monthSessions = sessions
@@ -92,12 +91,14 @@ class DashboardMonthKpis extends ConsumerWidget {
     );
 
     // Dépenses du mois
-    final monthExpenses = finances.expenses
-        .where((e) => e.date.isAfter(monthStart))
-        .fold(0, (sum, e) => sum + e.amountCfa);
+    final monthExpenses = calculationService.calculateMonthlyExpensesFromRecords(
+      finances.expenses,
+      monthStart,
+    );
 
     // Résultat net
-    final monthResult = monthCollections - monthExpenses;
+    final monthResult = calculationService.calculateMonthlyResult(monthCollections, monthExpenses);
+    final monthSales = sales.sales.where((s) => s.date.isAfter(monthStart)).toList();
 
     return LayoutBuilder(
       builder: (context, constraints) {

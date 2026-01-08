@@ -109,12 +109,12 @@ Tester les repositories :
 void main() {
   group('ProductRepositoryImpl', () {
     late FirebaseFirestore firestore;
-    late Isar isar;
+    late DriftService driftService;
     late ProductRepositoryImpl repository;
     
     setUp(() {
       firestore = FirebaseFirestore.instance;
-      isar = /* setup test Isar */;
+      driftService = DriftService.instance;
       repository = ProductRepositoryImpl(
         firestore: firestore,
         isar: isar,

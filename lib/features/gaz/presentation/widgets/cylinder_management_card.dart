@@ -6,8 +6,8 @@ import '../../application/providers.dart';
 import '../../domain/entities/cylinder.dart';
 import 'cylinder_form_dialog.dart';
 import 'cylinder_list_item.dart';
-import '../../../../shared.dart';
-
+import 'package:elyf_groupe_app/shared.dart';
+import '../../../../../shared/utils/notification_service.dart';
 /// Carte de gestion des bouteilles de gaz dans les paramètres.
 class CylinderManagementCard extends ConsumerStatefulWidget {
   const CylinderManagementCard({super.key});

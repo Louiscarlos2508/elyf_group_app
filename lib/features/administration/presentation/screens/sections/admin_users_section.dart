@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../application/providers.dart';
+import 'package:elyf_groupe_app/features/administration/application/providers.dart';
 import '../../../domain/entities/user.dart';
-import '../../../../../core.dart';
+import 'package:elyf_groupe_app/core.dart';
 import 'dialogs/create_user_dialog.dart';
 import 'dialogs/edit_user_dialog.dart';
 import 'dialogs/assign_enterprise_dialog.dart';
 import 'dialogs/manage_permissions_dialog.dart';
-import '../../../../shared.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import '../../../../../shared/utils/notification_service.dart';
+import 'package:elyf_groupe_app/core/auth/entities/enterprise_module_user.dart';
 
 /// Section pour gérer les utilisateurs.
 class AdminUsersSection extends ConsumerStatefulWidget {
@@ -38,7 +40,7 @@ class _AdminUsersSectionState extends ConsumerState<AdminUsersSection> {
 
     if (result != null && mounted) {
       try {
-        await ref.read(userRepositoryProvider).createUser(result);
+        await ref.read(userControllerProvider).createUser(result);
         ref.invalidate(usersProvider);
         if (mounted) {
           NotificationService.showSuccess(context, 'Utilisateur créé avec succès');
@@ -59,7 +61,7 @@ class _AdminUsersSectionState extends ConsumerState<AdminUsersSection> {
 
     if (result != null && mounted) {
       try {
-        await ref.read(userRepositoryProvider).updateUser(result);
+        await ref.read(userControllerProvider).updateUser(result);
         ref.invalidate(usersProvider);
         if (mounted) {
           NotificationService.showSuccess(context, 'Utilisateur modifié avec succès');
@@ -108,7 +110,7 @@ class _AdminUsersSectionState extends ConsumerState<AdminUsersSection> {
 
     if (confirmed == true && mounted) {
       try {
-        await ref.read(userRepositoryProvider).deleteUser(user.id);
+        await ref.read(userControllerProvider).deleteUser(user.id);
         ref.invalidate(usersProvider);
         if (mounted) {
           NotificationService.showSuccess(context, 'Utilisateur supprimé');
@@ -124,7 +126,7 @@ class _AdminUsersSectionState extends ConsumerState<AdminUsersSection> {
   Future<void> _handleToggleStatus(User user) async {
     try {
       await ref
-          .read(userRepositoryProvider)
+          .read(userControllerProvider)
           .toggleUserStatus(user.id, !user.isActive);
       ref.invalidate(usersProvider);
       if (mounted) {

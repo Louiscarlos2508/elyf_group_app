@@ -19,6 +19,14 @@ class ProductionPaymentCalculationService {
     return pricePerDay * daysWorked;
   }
 
+  /// Calcule le montant total pour une liste de personnes.
+  ///
+  /// [persons] : Liste des personnes de paiement
+  /// Retourne le montant total de toutes les personnes
+  int calculateTotalAmountForPersons(List<ProductionPaymentPerson> persons) {
+    return persons.fold(0, (sum, p) => sum + p.effectiveTotalAmount);
+  }
+
   /// Calcule le prix par jour à partir du montant total et du nombre de jours.
   ///
   /// [totalAmount] : Montant total en FCFA

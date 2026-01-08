@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../../shared.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import '../../../domain/entities/report_data.dart';
 
 /// En-tête du rapport de vente avec titre et résumé.

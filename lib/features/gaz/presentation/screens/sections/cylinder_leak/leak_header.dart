@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../../../shared.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/shared/presentation/widgets/gaz_button_styles.dart';
 
 /// En-tête de l'écran de gestion des fuites.
 class LeakHeader extends StatelessWidget {

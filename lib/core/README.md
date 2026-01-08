@@ -8,7 +8,7 @@ Services et utilitaires transverses partagés par tous les modules.
 - `constants/` – chemins Firestore, rôles, flags, noms de collections.
 - `firebase/` – wrappers Firestore, Cloud Functions, Messaging, Storage.
 - `logging/` – intégration `dart:developer`, audit trail, crash reporting.
-- `offline/` – Isar collections, synchronisation avec Firestore, job queue.
+- `offline/` – Drift (SQLite) + synchronisation avec Firestore, job queue.
 - `printing/` – intégration Sunmi V3, widgets d’impression, templates.
 - `tenant/` – contexte multi-entreprises, sélecteur, repository tenants.
 

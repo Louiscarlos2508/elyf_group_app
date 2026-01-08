@@ -1,3 +1,4 @@
+import '../../../../shared/domain/entities/payment_method.dart';
 import '../../domain/entities/payment.dart';
 import '../../domain/repositories/payment_repository.dart';
 

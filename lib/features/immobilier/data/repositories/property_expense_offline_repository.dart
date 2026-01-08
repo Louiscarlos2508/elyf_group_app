@@ -1,8 +1,9 @@
 import 'dart:developer' as developer;
+import 'dart:convert';
 
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/offline/offline_repository.dart';
-import '../../../../core/offline/collections/expense_collection.dart';
+import '../../../../core/offline/drift_service.dart';
 import '../../domain/entities/expense.dart';
 import '../../domain/repositories/expense_repository.dart';
 
@@ -10,7 +11,7 @@ import '../../domain/repositories/expense_repository.dart';
 class PropertyExpenseOfflineRepository extends OfflineRepository<PropertyExpense>
     implements PropertyExpenseRepository {
   PropertyExpenseOfflineRepository({
-    required super.isarService,
+    required super.driftService,
     required super.syncManager,
     required super.connectivityService,
     required this.enterpriseId,
@@ -90,18 +91,17 @@ class PropertyExpenseOfflineRepository extends OfflineRepository<PropertyExpense
   @override
   Future<void> saveToLocal(PropertyExpense entity) async {
     final map = toMap(entity);
-    final collection = ExpenseCollection.fromMap(
-      map,
+    final localId = getLocalId(entity);
+    map['localId'] = localId;
+    await driftService.records.upsert(
+      collectionName: collectionName,
+      localId: localId,
+      remoteId: getRemoteId(entity),
       enterpriseId: enterpriseId,
       moduleType: 'immobilier',
-      localId: getLocalId(entity),
+      dataJson: jsonEncode(map),
+      localUpdatedAt: DateTime.now(),
     );
-    collection.remoteId = getRemoteId(entity);
-    collection.localUpdatedAt = DateTime.now();
-
-    await isarService.isar.writeTxn(() async {
-      await isarService.isar.expenseCollections.put(collection);
-    });
   }
 
   @override
@@ -109,76 +109,57 @@ class PropertyExpenseOfflineRepository extends OfflineRepository<PropertyExpense
     final remoteId = getRemoteId(entity);
     final localId = getLocalId(entity);
 
-    await isarService.isar.writeTxn(() async {
-      if (remoteId != null) {
-        await isarService.isar.expenseCollections
-            .filter()
-            .remoteIdEqualTo(remoteId)
-            .and()
-            .enterpriseIdEqualTo(enterpriseId)
-            .and()
-            .moduleTypeEqualTo('immobilier')
-            .and()
-            .relatedEntityTypeEqualTo('property')
-            .deleteAll();
-      } else {
-        await isarService.isar.expenseCollections
-            .filter()
-            .localIdEqualTo(localId)
-            .and()
-            .enterpriseIdEqualTo(enterpriseId)
-            .and()
-            .moduleTypeEqualTo('immobilier')
-            .and()
-            .relatedEntityTypeEqualTo('property')
-            .deleteAll();
-      }
-    });
+    if (remoteId != null) {
+      await driftService.records.deleteByRemoteId(
+        collectionName: collectionName,
+        remoteId: remoteId,
+        enterpriseId: enterpriseId,
+        moduleType: 'immobilier',
+      );
+      return;
+    }
+    await driftService.records.deleteByLocalId(
+      collectionName: collectionName,
+      localId: localId,
+      enterpriseId: enterpriseId,
+      moduleType: 'immobilier',
+    );
   }
 
   @override
   Future<PropertyExpense?> getByLocalId(String localId) async {
-    var collection = await isarService.isar.expenseCollections
-        .filter()
-        .remoteIdEqualTo(localId)
-        .and()
-        .enterpriseIdEqualTo(enterpriseId)
-        .and()
-        .moduleTypeEqualTo('immobilier')
-        .and()
-        .relatedEntityTypeEqualTo('property')
-        .findFirst();
-
-    if (collection == null) {
-      collection = await isarService.isar.expenseCollections
-          .filter()
-          .localIdEqualTo(localId)
-          .and()
-          .enterpriseIdEqualTo(enterpriseId)
-          .and()
-          .moduleTypeEqualTo('immobilier')
-          .and()
-          .relatedEntityTypeEqualTo('property')
-          .findFirst();
+    final byRemote = await driftService.records.findByRemoteId(
+      collectionName: collectionName,
+      remoteId: localId,
+      enterpriseId: enterpriseId,
+      moduleType: 'immobilier',
+    );
+    if (byRemote != null) {
+      return fromMap(jsonDecode(byRemote.dataJson) as Map<String, dynamic>);
     }
 
-    if (collection == null) return null;
-    return fromMap(collection.toMap());
+    final byLocal = await driftService.records.findByLocalId(
+      collectionName: collectionName,
+      localId: localId,
+      enterpriseId: enterpriseId,
+      moduleType: 'immobilier',
+    );
+    if (byLocal == null) return null;
+    return fromMap(jsonDecode(byLocal.dataJson) as Map<String, dynamic>);
   }
 
   @override
   Future<List<PropertyExpense>> getAllForEnterprise(String enterpriseId) async {
-    final collections = await isarService.isar.expenseCollections
-        .filter()
-        .enterpriseIdEqualTo(enterpriseId)
-        .and()
-        .moduleTypeEqualTo('immobilier')
-        .and()
-        .relatedEntityTypeEqualTo('property')
-        .findAll();
-
-    return collections.map((c) => fromMap(c.toMap())).toList()
+    final rows = await driftService.records.listForEnterprise(
+      collectionName: collectionName,
+      enterpriseId: enterpriseId,
+      moduleType: 'immobilier',
+    );
+    final expenses = rows
+        .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+        .toList()
       ..sort((a, b) => b.expenseDate.compareTo(a.expenseDate));
+    return expenses;
   }
 
   // PropertyExpenseRepository interface implementation
@@ -222,19 +203,10 @@ class PropertyExpenseOfflineRepository extends OfflineRepository<PropertyExpense
   @override
   Future<List<PropertyExpense>> getExpensesByProperty(String propertyId) async {
     try {
-      final collections = await isarService.isar.expenseCollections
-          .filter()
-          .enterpriseIdEqualTo(enterpriseId)
-          .and()
-          .moduleTypeEqualTo('immobilier')
-          .and()
-          .relatedEntityTypeEqualTo('property')
-          .and()
-          .relatedEntityIdEqualTo(propertyId)
-          .findAll();
-
-      return collections.map((c) => fromMap(c.toMap())).toList()
+      final all = await getAllForEnterprise(enterpriseId);
+      final filtered = all.where((e) => e.propertyId == propertyId).toList()
         ..sort((a, b) => b.expenseDate.compareTo(a.expenseDate));
+      return filtered;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
@@ -252,19 +224,10 @@ class PropertyExpenseOfflineRepository extends OfflineRepository<PropertyExpense
     ExpenseCategory category,
   ) async {
     try {
-      final collections = await isarService.isar.expenseCollections
-          .filter()
-          .enterpriseIdEqualTo(enterpriseId)
-          .and()
-          .moduleTypeEqualTo('immobilier')
-          .and()
-          .relatedEntityTypeEqualTo('property')
-          .and()
-          .categoryEqualTo(category.name)
-          .findAll();
-
-      return collections.map((c) => fromMap(c.toMap())).toList()
+      final all = await getAllForEnterprise(enterpriseId);
+      final filtered = all.where((e) => e.category == category).toList()
         ..sort((a, b) => b.expenseDate.compareTo(a.expenseDate));
+      return filtered;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
@@ -283,21 +246,14 @@ class PropertyExpenseOfflineRepository extends OfflineRepository<PropertyExpense
     DateTime end,
   ) async {
     try {
-      final collections = await isarService.isar.expenseCollections
-          .filter()
-          .enterpriseIdEqualTo(enterpriseId)
-          .and()
-          .moduleTypeEqualTo('immobilier')
-          .and()
-          .relatedEntityTypeEqualTo('property')
-          .and()
-          .expenseDateGreaterThan(start.subtract(const Duration(days: 1)))
-          .and()
-          .expenseDateLessThan(end.add(const Duration(days: 1)))
-          .findAll();
-
-      return collections.map((c) => fromMap(c.toMap())).toList()
+      final all = await getAllForEnterprise(enterpriseId);
+      final filtered = all.where((e) {
+        return (e.expenseDate.isAfter(start) ||
+                e.expenseDate.isAtSameMomentAs(start)) &&
+            (e.expenseDate.isBefore(end) || e.expenseDate.isAtSameMomentAs(end));
+      }).toList()
         ..sort((a, b) => b.expenseDate.compareTo(a.expenseDate));
+      return filtered;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(

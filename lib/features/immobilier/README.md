@@ -7,7 +7,7 @@ Module de gestion immobilière pour la location de maisons.
 - `presentation/` — écrans et widgets (shell + sous-modules).
 - `application/` — providers Riverpod, contrôleurs et navigation interne.
 - `domain/` — entités, value objects et interfaces de repository.
-- `data/` — implémentations mock (Isar/Firestore seront branchés plus tard).
+- `data/` — implémentations mock (Drift/Firestore seront branchés plus tard).
 
 ## Entités
 

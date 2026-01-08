@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../../../shared/domain/entities/payment_method.dart';
 import '../../domain/entities/contract.dart';
 import '../../domain/entities/payment.dart';
 import 'payment_form_helpers.dart';

@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../shared.dart';
-import '../../application/providers.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import '../../../../../shared/utils/notification_service.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../domain/entities/bobine_stock.dart';
 import '../../domain/entities/packaging_stock.dart';
 import '../../domain/entities/stock_item.dart';
@@ -90,8 +91,8 @@ class _StockEntryFormState extends ConsumerState<StockEntryForm> {
               : int.tryParse(_priceController.text);
           
           // Récupérer ou créer le stock d'emballages
-          final packagingRepo = ref.read(packagingStockRepositoryProvider);
-          var stockEmballage = await packagingRepo.fetchByType('Emballage');
+          final packagingController = ref.read(packagingStockControllerProvider);
+          var stockEmballage = await packagingController.fetchByType('Emballage');
           
           if (stockEmballage == null) {
             // Créer un nouveau stock d'emballages
@@ -105,7 +106,7 @@ class _StockEntryFormState extends ConsumerState<StockEntryForm> {
               createdAt: _selectedDate,
               updatedAt: _selectedDate,
             );
-            stockEmballage = await packagingRepo.save(stockEmballage);
+            stockEmballage = await packagingController.save(stockEmballage);
           }
           
           // Enregistrer l'entrée
@@ -147,10 +148,10 @@ class _StockEntryFormState extends ConsumerState<StockEntryForm> {
               );
               // Le stock sera créé lors de la première mise à jour via recordItemMovement
               // Mais on doit d'abord l'enregistrer dans le repository
-              final inventoryRepo = ref.read(inventoryRepositoryProvider);
-              final allItems = await inventoryRepo.fetchStockItems();
+              final inventoryController = ref.read(inventoryControllerProvider);
+              final allItems = await inventoryController.fetchStockItems();
               if (!allItems.any((item) => item.id == packStock.id)) {
-                await inventoryRepo.updateStockItem(packStock);
+                await inventoryController.updateStockItem(packStock);
               }
             }
           }

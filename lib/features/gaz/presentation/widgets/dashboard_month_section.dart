@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../../shared.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import '../../../../../shared/utils/currency_formatter.dart';
 import '../../domain/entities/expense.dart';
 import '../../domain/entities/gas_sale.dart';
 import 'dashboard_kpi_card.dart';

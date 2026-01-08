@@ -157,7 +157,7 @@ lib/features/eau_minerale/
 │   ├── permissions/       # Définition des permissions
 │   └── exceptions/       # Exceptions métier
 ├── data/
-│   └── repositories/      # Implémentations mock (à remplacer par Firestore/Isar)
+│   └── repositories/      # Implémentations mock (à remplacer par Firestore/Drift)
 ├── application/
 │   ├── controllers/       # Contrôleurs Riverpod
 │   ├── providers.dart    # Configuration des providers

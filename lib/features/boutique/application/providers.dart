@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/offline/isar_service.dart';
+import '../../../core/offline/drift_service.dart';
 import '../../../core/offline/providers.dart';
 import '../../../../core/tenant/tenant_provider.dart';
 import '../data/repositories/expense_offline_repository.dart';
@@ -18,9 +18,11 @@ import '../domain/repositories/purchase_repository.dart';
 import '../domain/repositories/report_repository.dart';
 import '../domain/repositories/sale_repository.dart';
 import '../domain/repositories/stock_repository.dart';
+import '../domain/services/calculation/cart_calculation_service.dart';
 import '../domain/services/dashboard_calculation_service.dart';
 import '../domain/services/product_calculation_service.dart';
 import '../domain/services/report_calculation_service.dart';
+import '../domain/services/validation/product_validation_service.dart';
 import 'controllers/store_controller.dart';
 
 /// Provider for BoutiqueDashboardCalculationService.
@@ -40,18 +42,28 @@ final boutiqueReportCalculationServiceProvider =
   (ref) => BoutiqueReportCalculationService(),
 );
 
+/// Provider for CartCalculationService.
+final cartCalculationServiceProvider = Provider<CartCalculationService>(
+  (ref) => CartCalculationService(),
+);
+
+/// Provider for ProductValidationService.
+final productValidationServiceProvider = Provider<ProductValidationService>(
+  (ref) => ProductValidationService(),
+);
+
 /// Provider for ProductOfflineRepository.
 /// 
 /// Requires active enterprise to be set.
 final productRepositoryProvider = Provider<ProductRepository>(
   (ref) {
     final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
-    final isarService = IsarService.instance;
+    final driftService = DriftService.instance;
     final syncManager = ref.watch(syncManagerProvider);
     final connectivityService = ref.watch(connectivityServiceProvider);
     
     return ProductOfflineRepository(
-      isarService: isarService,
+      driftService: driftService,
       syncManager: syncManager,
       connectivityService: connectivityService,
       enterpriseId: enterpriseId,
@@ -66,12 +78,12 @@ final productRepositoryProvider = Provider<ProductRepository>(
 final saleRepositoryProvider = Provider<SaleRepository>(
   (ref) {
     final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
-    final isarService = IsarService.instance;
+    final driftService = DriftService.instance;
     final syncManager = ref.watch(syncManagerProvider);
     final connectivityService = ref.watch(connectivityServiceProvider);
     
     return SaleOfflineRepository(
-      isarService: isarService,
+      driftService: driftService,
       syncManager: syncManager,
       connectivityService: connectivityService,
       enterpriseId: enterpriseId,
@@ -94,12 +106,12 @@ final purchaseRepositoryProvider = Provider<PurchaseRepository>(
 final expenseRepositoryProvider = Provider<ExpenseRepository>(
   (ref) {
     final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
-    final isarService = IsarService.instance;
+    final driftService = DriftService.instance;
     final syncManager = ref.watch(syncManagerProvider);
     final connectivityService = ref.watch(connectivityServiceProvider);
     
     return ExpenseOfflineRepository(
-      isarService: isarService,
+      driftService: driftService,
       syncManager: syncManager,
       connectivityService: connectivityService,
       enterpriseId: enterpriseId,

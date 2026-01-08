@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../application/providers.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../domain/entities/customer_credit.dart';
 import '../../domain/repositories/customer_repository.dart' show CustomerSummary;
+import '../../domain/services/credit_service.dart';
 import 'credit_action_buttons.dart';
 import 'customer_credit_header.dart';
 import 'customer_credit_item.dart';
@@ -46,12 +47,14 @@ class CustomerCreditCard extends ConsumerWidget {
     return '${date.day}/${date.month}/${date.year}';
   }
 
-  int get totalCredit => credits.fold(0, (sum, credit) => sum + credit.remainingAmount);
+  int _calculateTotalCredit(List<CustomerCredit> credits) {
+    return credits.fold(0, (sum, credit) => sum + credit.remainingAmount);
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final totalCredit = this.totalCredit;
+    final totalCredit = _calculateTotalCredit(credits);
     
     // Ne pas afficher si aucun crédit réel avec montant restant > 0
     if (totalCredit <= 0) {

@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../application/providers.dart' show gazReportCalculationServiceProvider;
 import '../../domain/entities/expense.dart';
-import '../../../../shared.dart';
-
+import '../../domain/services/gaz_report_calculation_service.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import '../../../../../shared/utils/currency_formatter.dart';
 /// Résumé mensuel des dépenses avec graphique par catégorie.
-class GazMonthlyExpenseSummary extends StatelessWidget {
+class GazMonthlyExpenseSummary extends ConsumerWidget {
   const GazMonthlyExpenseSummary({super.key, required this.expenses});
 
   final List<GazExpense> expenses;
@@ -27,19 +30,6 @@ class GazMonthlyExpenseSummary extends StatelessWidget {
     return '${months[date.month - 1]} ${date.year}';
   }
 
-  Map<ExpenseCategory, double> _getCategoryTotals() {
-    final now = DateTime.now();
-    final monthStart = DateTime(now.year, now.month, 1);
-    final monthExpenses = expenses.where((e) {
-      return e.date.isAfter(monthStart.subtract(const Duration(days: 1)));
-    });
-
-    final totals = <ExpenseCategory, double>{};
-    for (final expense in monthExpenses) {
-      totals[expense.category] = (totals[expense.category] ?? 0) + expense.amount;
-    }
-    return totals;
-  }
 
   Color _getCategoryColor(ExpenseCategory category) {
     switch (category) {
@@ -65,10 +55,20 @@ class GazMonthlyExpenseSummary extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final categoryTotals = _getCategoryTotals();
-    final totalMonth = categoryTotals.values.fold<double>(0, (a, b) => a + b);
+    // Utiliser le service de calcul pour extraire la logique métier
+    final reportService = ref.read(gazReportCalculationServiceProvider);
+    final now = DateTime.now();
+    final monthStart = DateTime(now.year, now.month, 1);
+    final monthEnd = DateTime(now.year, now.month + 1, 0);
+    final expensesAnalysis = reportService.calculateExpensesAnalysis(
+      expenses: expenses,
+      startDate: monthStart,
+      endDate: monthEnd,
+    );
+    final categoryTotals = expensesAnalysis.byCategory;
+    final totalMonth = expensesAnalysis.totalAmount;
     final sortedCategories = categoryTotals.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
 

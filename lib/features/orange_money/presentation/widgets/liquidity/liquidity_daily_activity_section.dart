@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../domain/entities/liquidity_checkpoint.dart';
-import '../../../../shared.dart';
-
+import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 /// Section affichant l'activité journalière (dépôts, retraits, transactions).
 class LiquidityDailyActivitySection extends StatelessWidget {
   const LiquidityDailyActivitySection({

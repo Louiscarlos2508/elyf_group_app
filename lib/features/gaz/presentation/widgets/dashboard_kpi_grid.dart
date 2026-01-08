@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../shared.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import '../../../../../shared/utils/currency_formatter.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/cylinder.dart';
 import '../../domain/entities/cylinder_stock.dart';
@@ -25,11 +26,6 @@ class GazDashboardKpiGrid extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final monthStart = DateTime(now.year, now.month, 1);
-    final weekStart = now.subtract(Duration(days: now.weekday - 1));
-
     // Récupérer le stock total (pleines) depuis CylinderStock
     String? enterpriseId = cylinders.isNotEmpty
         ? cylinders.first.enterpriseId
@@ -47,106 +43,66 @@ class GazDashboardKpiGrid extends ConsumerWidget {
 
     return stocksAsync.when(
       data: (stocks) {
-        // Calculer le stock total (pleines)
-        final totalStock = stocks.fold<int>(0, (sum, s) => sum + s.quantity);
-
-        // Ventes du jour
-        final todaySales = sales.where((s) {
-          final saleDate = DateTime(
-            s.saleDate.year,
-            s.saleDate.month,
-            s.saleDate.day,
-          );
-          return saleDate.isAtSameMomentAs(today);
-        }).toList();
-        final todayRevenue =
-            todaySales.fold<double>(0, (sum, s) => sum + s.totalAmount);
-
-        // Ventes de la semaine
-        final weekSales = sales.where((s) {
-          return s.saleDate
-              .isAfter(weekStart.subtract(const Duration(days: 1)));
-        }).toList();
-        final weekRevenue =
-            weekSales.fold<double>(0, (sum, s) => sum + s.totalAmount);
-
-        // Ventes du mois
-        final monthSales = sales.where((s) {
-          return s.saleDate
-              .isAfter(monthStart.subtract(const Duration(days: 1)));
-        }).toList();
-        final monthRevenue =
-            monthSales.fold<double>(0, (sum, s) => sum + s.totalAmount);
-
-        // Dépenses du mois
-        final monthExpenses = expenses.where((e) {
-          return e.date.isAfter(monthStart.subtract(const Duration(days: 1)));
-        }).toList();
-        final monthExpensesTotal =
-            monthExpenses.fold<double>(0, (sum, e) => sum + e.amount);
-
-        // Bénéfice du mois
-        final monthProfit = monthRevenue - monthExpensesTotal;
-
-        // Ventes détail vs gros
-        final retailSales = monthSales
-            .where((s) => s.saleType == SaleType.retail)
-            .length;
-        final wholesaleSales = monthSales
-            .where((s) => s.saleType == SaleType.wholesale)
-            .length;
+        // Utiliser le service de calcul pour extraire la logique métier
+        final calculationService = ref.read(gazDashboardCalculationServiceProvider);
+        final metrics = calculationService.calculateMetrics(
+          stocks: stocks,
+          sales: sales,
+          expenses: expenses,
+          cylinderTypesCount: cylinders.length,
+        );
 
         final cards = [
           GazEnhancedKpiCard(
             label: 'Stock total',
-            value: '$totalStock',
-            subtitle: '${cylinders.length} types',
+            value: '${metrics.totalStock}',
+            subtitle: '${metrics.cylinderTypesCount} types',
             icon: Icons.inventory_2,
             color: Colors.blue,
           ),
           GazEnhancedKpiCard(
             label: 'Ventes du jour',
-            value: CurrencyFormatter.formatDouble(todayRevenue).replaceAll(' FCFA', ' F'),
-            subtitle: '${todaySales.length} ventes',
+            value: CurrencyFormatter.formatDouble(metrics.todayRevenue).replaceAll(' FCFA', ' F'),
+            subtitle: '${metrics.todaySalesCount} ventes',
             icon: Icons.today,
             color: Colors.green,
           ),
           GazEnhancedKpiCard(
             label: 'Ventes semaine',
-            value: CurrencyFormatter.formatDouble(weekRevenue).replaceAll(' FCFA', ' F'),
-            subtitle: '${weekSales.length} ventes',
+            value: CurrencyFormatter.formatDouble(metrics.weekRevenue).replaceAll(' FCFA', ' F'),
+            subtitle: '${metrics.weekSalesCount} ventes',
             icon: Icons.date_range,
             color: Colors.teal,
           ),
           GazEnhancedKpiCard(
             label: 'Revenus du mois',
-            value: CurrencyFormatter.formatDouble(monthRevenue).replaceAll(' FCFA', ' F'),
-            subtitle: '${monthSales.length} ventes',
+            value: CurrencyFormatter.formatDouble(metrics.monthRevenue).replaceAll(' FCFA', ' F'),
+            subtitle: '${metrics.monthSalesCount} ventes',
             icon: Icons.trending_up,
             color: Colors.indigo,
           ),
           GazEnhancedKpiCard(
             label: 'Dépenses du mois',
-            value: CurrencyFormatter.formatDouble(monthExpensesTotal).replaceAll(' FCFA', ' F'),
-            subtitle: '${monthExpenses.length} dépenses',
+            value: CurrencyFormatter.formatDouble(metrics.monthExpensesTotal).replaceAll(' FCFA', ' F'),
+            subtitle: '${metrics.monthExpensesCount} dépenses',
             icon: Icons.trending_down,
             color: Colors.red,
           ),
           GazEnhancedKpiCard(
             label: 'Bénéfice net',
-            value: CurrencyFormatter.formatDouble(monthProfit).replaceAll(' FCFA', ' F'),
+            value: CurrencyFormatter.formatDouble(metrics.monthProfit).replaceAll(' FCFA', ' F'),
             icon: Icons.account_balance_wallet,
-            color: monthProfit >= 0 ? Colors.green : Colors.red,
+            color: metrics.isProfit ? Colors.green : Colors.red,
           ),
           GazEnhancedKpiCard(
             label: 'Ventes détail',
-            value: '$retailSales',
+            value: '${metrics.retailSalesCount}',
             icon: Icons.store,
             color: Colors.orange,
           ),
           GazEnhancedKpiCard(
             label: 'Ventes gros',
-            value: '$wholesaleSales',
+            value: '${metrics.wholesaleSalesCount}',
             icon: Icons.local_shipping,
             color: Colors.purple,
           ),

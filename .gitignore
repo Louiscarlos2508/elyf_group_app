@@ -35,6 +35,12 @@ migrate_working_dir/
 /build/
 /coverage/
 
+# Generated files (Drift, Freezed, etc.)
+*.g.dart
+*.freezed.dart
+*.mocks.dart
+*.config.dart
+
 # Environment variables
 .env
 

@@ -1,13 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'connectivity_service.dart';
-import 'isar_service.dart';
+import 'drift_service.dart';
 import 'sync_manager.dart';
 import 'sync_status.dart';
 
-/// Provider for the Isar service singleton (stub).
-final isarServiceProvider = Provider<IsarService>((ref) {
-  return IsarService.instance;
+/// Provider for the Drift service singleton.
+final driftServiceProvider = Provider<DriftService>((ref) {
+  return DriftService.instance;
 });
 
 /// Provider for the connectivity service.
@@ -36,11 +36,11 @@ final isOnlineProvider = Provider<bool>((ref) {
 
 /// Provider for the sync manager (stub).
 final syncManagerProvider = Provider<SyncManager>((ref) {
-  final isarService = ref.watch(isarServiceProvider);
+  final driftService = ref.watch(driftServiceProvider);
   final connectivityService = ref.watch(connectivityServiceProvider);
 
   final manager = SyncManager(
-    isarService: isarService,
+    driftService: driftService,
     connectivityService: connectivityService,
   );
 
@@ -90,7 +90,7 @@ final offlineModeProvider =
 /// Provider for sync metadata for a specific entity (stub returns null).
 final syncMetadataProvider =
     FutureProvider.family<SyncMetadata?, (String, String)>((ref, params) async {
-  // Stub: return null since Isar is disabled
+  // Stub: return null (sync metadata persistence not implemented yet).
   return null;
 });
 

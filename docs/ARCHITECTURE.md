@@ -164,13 +164,13 @@ L'application fonctionne en mode **offline-first** :
 sequenceDiagram
     participant UI as Presentation Layer
     participant Repo as OfflineRepository
-    participant Isar as Isar Database
+    participant Drift as Drift (SQLite)
     participant Sync as SyncManager
     participant Firestore as Firebase Firestore
     
     UI->>Repo: save(entity)
-    Repo->>Isar: saveToLocal(entity)
-    Isar-->>Repo: saved
+    Repo->>Drift: saveToLocal(entity)
+    Drift-->>Repo: saved
     Repo->>Sync: queueSyncOperation(operation)
     Repo-->>UI: success (immediate)
     
@@ -178,7 +178,7 @@ sequenceDiagram
     Sync->>Firestore: sync(operation)
     alt Online
         Firestore-->>Sync: success
-        Sync->>Isar: updateSyncStatus(synced)
+        Sync->>Drift: updateSyncStatus(synced)
     else Offline
         Sync->>Sync: retry later (exponential backoff)
     end
@@ -190,35 +190,27 @@ sequenceDiagram
     alt Local is newer
         Sync->>Firestore: push local
     else Remote is newer
-        Sync->>Isar: updateLocal(remoteEntity)
+        Sync->>Drift: updateLocal(remoteEntity)
     end
 ```
 
 ### Composants
 
-- **IsarService** : Base de données locale Isar
+- **DriftService** : Base de données locale Drift (SQLite)
+- **AppDatabase / OfflineRecordDao** : Stockage générique `OfflineRecords` (JSON) + CRUD
 - **SyncManager** : Gestionnaire de synchronisation
 - **ConnectivityService** : Surveillance de la connectivité
 - **OfflineRepository<T>** : Classe de base pour repositories offline-first
 - **FirebaseSyncHandler** : Handler de synchronisation Firestore
 
-### Collections Isar
+### Stockage local (Drift)
 
-Les collections Isar stockent les données localement :
-- `EnterpriseCollection`
-- `SaleCollection`
-- `ProductCollection`
-- `ExpenseCollection`
-- `CustomerCollection`
-- `AgentCollection`
-- `TransactionCollection`
-- `PropertyCollection`
-- `TenantCollection`
-- `ContractCollection`
-- `PaymentCollection`
-- `MachineCollection`
-- `BobineCollection`
-- `ProductionSessionCollection`
+Les entités sont stockées dans une table SQLite unique `OfflineRecords` :
+- `collectionName` (ex: `products`, `sales`)
+- `enterpriseId`, `moduleType` (multi-tenant)
+- `localId`, `remoteId` (liaison Firestore)
+- `dataJson` (payload JSON complet)
+- `localUpdatedAt` (tri & conflits)
 
 ## Multi-Tenant Architecture
 
@@ -307,7 +299,7 @@ graph LR
     
     subgraph Data["Data Layer"]
         RepoImpl[Repository Implementation]
-        Isar[Isar DB]
+    Drift[Drift (SQLite)]
     end
     
     Widget -->|watch| Provider
@@ -315,7 +307,7 @@ graph LR
     Controller -->|calls| Service
     Service -->|uses| Repository
     Repository -->|implemented by| RepoImpl
-    RepoImpl -->|reads/writes| Isar
+RepoImpl -->|reads/writes| Drift
     
     style UI fill:#e3f2fd
     style Riverpod fill:#f3e5f5
@@ -471,7 +463,7 @@ Les modules (features) sont conçus pour être **complètement indépendants** :
 
 3. **Communication entre modules** :
    - Via `shared/` : Composants UI réutilisables (FormDialog, ExpenseFormDialog, etc.)
-   - Via `core/` : Services partagés (AuthService, PermissionService, IsarService, etc.)
+   - Via `core/` : Services partagés (AuthService, PermissionService, DriftService, etc.)
    - Via `app/router/` : Navigation entre modules
 
 ### Diagramme de Dépendances
@@ -564,7 +556,7 @@ Services partagés dans `core/` utilisés par tous les modules :
 
 - **`AuthService`** : Authentification et gestion de session
 - **`PermissionService`** : Gestion centralisée des permissions par module
-- **`IsarService`** : Base de données locale Isar
+- **`DriftService`** : Base de données locale Drift (SQLite)
 - **`SyncManager`** : Synchronisation avec Firestore
 - **`ConnectivityService`** : Surveillance de la connectivité réseau
 - **`TenantProvider`** : Gestion multi-tenant (entreprise active)
@@ -622,6 +614,6 @@ dart scripts/check_architecture.dart
 1. **Migration complète vers OfflineRepositories** : Remplacer tous les MockRepositories
 2. **Tests** : Ajouter des tests unitaires et d'intégration
 3. **Documentation** : Améliorer la documentation des APIs
-4. **Performance** : Optimiser les requêtes Isar
+4. **Performance** : Optimiser les requêtes locales (Drift/SQLite)
 5. **Sécurité** : Migration vers Firebase Auth
 

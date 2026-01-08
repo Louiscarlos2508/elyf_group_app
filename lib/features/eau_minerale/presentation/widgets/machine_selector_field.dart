@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../application/providers.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../domain/entities/machine.dart';
 
 /// Champ pour sélectionner les machines utilisées.
@@ -70,7 +70,7 @@ class MachineSelectorField extends ConsumerWidget {
 /// Provider pour récupérer les machines.
 final machinesProvider = FutureProvider.autoDispose<List<Machine>>(
   (ref) async {
-    return ref.read(machineRepositoryProvider).fetchMachines(estActive: true);
+    return ref.read(machineControllerProvider).fetchMachines(estActive: true);
   },
 );
 

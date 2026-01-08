@@ -5,9 +5,11 @@ import '../../application/controllers/financial_report_controller.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/gas_sale.dart';
 import '../../domain/services/financial_calculation_service.dart';
+import '../../domain/services/gaz_report_calculation_service.dart';
 import 'financial_summary_card.dart';
-import '../../../../shared.dart';
-
+import 'package:elyf_groupe_app/shared.dart';
+import '../../../../../shared/utils/currency_formatter.dart';
+import '../../../../../shared/utils/notification_service.dart';
 /// Contenu de rapport financier avec charges fixes/variables et reliquat siège.
 class GazFinancialReportContentV2 extends ConsumerWidget {
   const GazFinancialReportContentV2({
@@ -100,12 +102,14 @@ class GazFinancialReportContentV2 extends ConsumerWidget {
                   // Analyse des ventes par type
                   salesAsync.when(
                     data: (sales) {
-                      final filteredSales = sales.where((s) {
-                        return s.saleDate
-                                .isAfter(startDate.subtract(const Duration(days: 1))) &&
-                            s.saleDate.isBefore(endDate.add(const Duration(days: 1)));
-                      }).toList();
-                      return _buildSalesAnalysis(theme, filteredSales);
+                      // Utiliser le service de calcul pour extraire la logique métier
+                      final reportService = ref.read(gazReportCalculationServiceProvider);
+                      final salesAnalysis = reportService.calculateSalesAnalysis(
+                        sales: sales,
+                        startDate: startDate,
+                        endDate: endDate,
+                      );
+                      return _buildSalesAnalysis(theme, salesAnalysis);
                     },
                     loading: () => const SizedBox.shrink(),
                     error: (_, __) => const SizedBox.shrink(),
@@ -257,28 +261,7 @@ class GazFinancialReportContentV2 extends ConsumerWidget {
     );
   }
 
-  Widget _buildSalesAnalysis(ThemeData theme, List<GasSale> sales) {
-    // Séparer les ventes par type
-    final retailSales = sales.where((s) => s.saleType == SaleType.retail).toList();
-    final wholesaleSales = sales.where((s) => s.saleType == SaleType.wholesale).toList();
-
-    // Calculer les totaux
-    final retailTotal = retailSales.fold<double>(0, (sum, s) => sum + s.totalAmount);
-    final wholesaleTotal = wholesaleSales.fold<double>(0, (sum, s) => sum + s.totalAmount);
-
-    // Grouper les ventes en gros par tour
-    final wholesaleByTour = <String, ({int count, double total})>{};
-    for (final sale in wholesaleSales) {
-      final tourId = sale.tourId ?? 'Sans tour';
-      if (!wholesaleByTour.containsKey(tourId)) {
-        wholesaleByTour[tourId] = (count: 0, total: 0.0);
-      }
-      final current = wholesaleByTour[tourId]!;
-      wholesaleByTour[tourId] = (
-        count: current.count + 1,
-        total: current.total + sale.totalAmount,
-      );
-    }
+  Widget _buildSalesAnalysis(ThemeData theme, SalesAnalysis analysis) {
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -302,23 +285,23 @@ class GazFinancialReportContentV2 extends ConsumerWidget {
               _buildSalesTypeRow(
                 theme,
                 'Ventes au Détail',
-                retailSales.length,
-                retailTotal,
+                analysis.retailSales.length,
+                analysis.retailTotal,
                 Colors.orange,
               ),
               const Divider(),
               _buildSalesTypeRow(
                 theme,
                 'Ventes en Gros',
-                wholesaleSales.length,
-                wholesaleTotal,
+                analysis.wholesaleSales.length,
+                analysis.wholesaleTotal,
                 Colors.purple,
               ),
             ],
           ),
         ),
         // Détail des ventes en gros par tour
-        if (wholesaleByTour.isNotEmpty) ...[
+        if (analysis.wholesaleByTour.isNotEmpty) ...[
           const SizedBox(height: 24),
           Text(
             'Ventes en Gros par Tour',
@@ -328,7 +311,7 @@ class GazFinancialReportContentV2 extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 12),
-          ...wholesaleByTour.entries.map((entry) {
+          ...analysis.wholesaleByTour.entries.map((entry) {
             return Container(
               margin: const EdgeInsets.only(bottom: 8),
               padding: const EdgeInsets.all(12),

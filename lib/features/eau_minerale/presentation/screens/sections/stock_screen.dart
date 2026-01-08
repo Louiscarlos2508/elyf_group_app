@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../shared.dart';
+import 'package:elyf_groupe_app/shared.dart';
 import '../../../application/controllers/stock_controller.dart';
-import '../../../application/providers.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../widgets/finished_products_card.dart';
-import '../../../../shared.dart';
 import '../../widgets/raw_materials_card.dart';
 import '../../widgets/section_placeholder.dart';
 import '../../widgets/stock_alerts_widget.dart';
@@ -13,6 +12,7 @@ import '../../widgets/stock_movement_table.dart';
 import '../../widgets/stock_movement_filters.dart';
 import '../../widgets/stock_entry_form.dart';
 import '../../../domain/entities/stock_movement.dart';
+import 'package:elyf_groupe_app/shared/presentation/widgets/form_dialog.dart';
 
 class StockScreen extends ConsumerWidget {
   const StockScreen({super.key});
@@ -138,7 +138,7 @@ class _StockContentWithFiltersState
           type: _selectedType,
           productName: _selectedProduct,
         );
-        final movementsAsync = ref.watch(stockMovementsProvider(filterParams));
+        final movementsAsync = ref.watch(stockMovementsProvider((filterParams)));
         
         return CustomScrollView(
           slivers: [
@@ -170,7 +170,7 @@ class _StockContentWithFiltersState
                                 type: _selectedType,
                                 productName: _selectedProduct,
                               );
-                              ref.invalidate(stockMovementsProvider(filterParams));
+                              ref.invalidate(stockMovementsProvider((filterParams)));
                             },
                             tooltip: 'Actualiser les stocks',
                           ),
@@ -212,7 +212,7 @@ class _StockContentWithFiltersState
                                     type: _selectedType,
                                     productName: _selectedProduct,
                                   );
-                                  ref.invalidate(stockMovementsProvider(filterParams));
+                                  ref.invalidate(stockMovementsProvider((filterParams)));
                                 },
                                 tooltip: 'Actualiser les stocks',
                               ),
@@ -354,7 +354,7 @@ class _StockContentWithFiltersState
                                   type: _selectedType,
                                   productName: _selectedProduct,
                                 );
-                                ref.invalidate(stockMovementsProvider(filterParams));
+                                ref.invalidate(stockMovementsProvider((filterParams)));
                               },
                               icon: const Icon(Icons.refresh),
                               label: const Text('Réessayer'),

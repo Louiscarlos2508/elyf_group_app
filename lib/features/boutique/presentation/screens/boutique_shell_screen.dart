@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../shared.dart';
+import 'package:elyf_groupe_app/shared.dart';
 import 'sections/catalog_screen.dart';
 import 'sections/dashboard_screen.dart';
 import 'sections/expenses_screen.dart';
@@ -87,7 +87,7 @@ class _BoutiqueShellScreenState
       NavigationSection(
         label: 'Profil',
         icon: Icons.person_outline,
-        builder: () => const shared.ProfileScreen(),
+        builder: () => const ProfileScreen(),
         enterpriseId: widget.enterpriseId,
         moduleId: widget.moduleId,
       ),

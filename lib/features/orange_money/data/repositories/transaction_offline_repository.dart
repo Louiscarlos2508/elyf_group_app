@@ -1,12 +1,12 @@
 import 'dart:developer' as developer;
+import 'dart:convert';
 
 import '../../../../core/errors/app_exceptions.dart';
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/offline/connectivity_service.dart';
-import '../../../../core/offline/isar_service.dart';
+import '../../../../core/offline/drift_service.dart';
 import '../../../../core/offline/offline_repository.dart';
 import '../../../../core/offline/sync_manager.dart';
-import '../../../../core/offline/collections/transaction_collection.dart';
 import '../../domain/entities/transaction.dart';
 import '../../domain/repositories/transaction_repository.dart';
 
@@ -14,7 +14,7 @@ import '../../domain/repositories/transaction_repository.dart';
 class TransactionOfflineRepository extends OfflineRepository<Transaction>
     implements TransactionRepository {
   TransactionOfflineRepository({
-    required super.isarService,
+    required super.driftService,
     required super.syncManager,
     required super.connectivityService,
     required this.enterpriseId,
@@ -84,77 +84,72 @@ class TransactionOfflineRepository extends OfflineRepository<Transaction>
 
   @override
   Future<void> saveToLocal(Transaction entity) async {
-    final collection = TransactionCollection.fromMap(
-      toMap(entity),
+    final localId = getLocalId(entity);
+    final map = toMap(entity)..['localId'] = localId;
+    await driftService.records.upsert(
+      collectionName: collectionName,
+      localId: localId,
+      remoteId: getRemoteId(entity),
       enterpriseId: enterpriseId,
-      localId: getLocalId(entity),
+      moduleType: 'orange_money',
+      dataJson: jsonEncode(map),
+      localUpdatedAt: DateTime.now(),
     );
-    collection.remoteId = getRemoteId(entity);
-    collection.localUpdatedAt = DateTime.now();
-
-    await isarService.isar.writeTxn(() async {
-      await isarService.isar.transactionCollections.put(collection);
-    });
   }
 
   @override
   Future<void> deleteFromLocal(Transaction entity) async {
     final remoteId = getRemoteId(entity);
-    await isarService.isar.writeTxn(() async {
-      if (remoteId != null) {
-        await isarService.isar.transactionCollections
-            .filter()
-            .remoteIdEqualTo(remoteId)
-            .and()
-            .enterpriseIdEqualTo(enterpriseId)
-            .deleteAll();
-      } else {
-        final localId = getLocalId(entity);
-        await isarService.isar.transactionCollections
-            .filter()
-            .localIdEqualTo(localId)
-            .and()
-            .enterpriseIdEqualTo(enterpriseId)
-            .deleteAll();
-      }
-    });
+    if (remoteId != null) {
+      await driftService.records.deleteByRemoteId(
+        collectionName: collectionName,
+        remoteId: remoteId,
+        enterpriseId: enterpriseId,
+        moduleType: 'orange_money',
+      );
+      return;
+    }
+    final localId = getLocalId(entity);
+    await driftService.records.deleteByLocalId(
+      collectionName: collectionName,
+      localId: localId,
+      enterpriseId: enterpriseId,
+      moduleType: 'orange_money',
+    );
   }
 
   @override
   Future<Transaction?> getByLocalId(String localId) async {
-    var collection = await isarService.isar.transactionCollections
-        .filter()
-        .remoteIdEqualTo(localId)
-        .and()
-        .enterpriseIdEqualTo(enterpriseId)
-        .findFirst();
-
-    if (collection != null) {
-      return fromMap(collection.toMap());
+    final byRemote = await driftService.records.findByRemoteId(
+      collectionName: collectionName,
+      remoteId: localId,
+      enterpriseId: enterpriseId,
+      moduleType: 'orange_money',
+    );
+    if (byRemote != null) {
+      return fromMap(jsonDecode(byRemote.dataJson) as Map<String, dynamic>);
     }
 
-    collection = await isarService.isar.transactionCollections
-        .filter()
-        .localIdEqualTo(localId)
-        .and()
-        .enterpriseIdEqualTo(enterpriseId)
-        .findFirst();
-
-    if (collection != null) {
-      return fromMap(collection.toMap());
-    }
-
-    return null;
+    final byLocal = await driftService.records.findByLocalId(
+      collectionName: collectionName,
+      localId: localId,
+      enterpriseId: enterpriseId,
+      moduleType: 'orange_money',
+    );
+    if (byLocal == null) return null;
+    return fromMap(jsonDecode(byLocal.dataJson) as Map<String, dynamic>);
   }
 
   @override
   Future<List<Transaction>> getAllForEnterprise(String enterpriseId) async {
-    final collections = await isarService.isar.transactionCollections
-        .filter()
-        .enterpriseIdEqualTo(enterpriseId)
-        .findAll();
-
-    return collections.map((c) => fromMap(c.toMap())).toList();
+    final rows = await driftService.records.listForEnterprise(
+      collectionName: collectionName,
+      enterpriseId: enterpriseId,
+      moduleType: 'orange_money',
+    );
+    return rows
+        .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+        .toList();
   }
 
   // TransactionRepository interface implementation
@@ -216,17 +211,6 @@ class TransactionOfflineRepository extends OfflineRepository<Transaction>
   @override
   Future<Transaction?> getTransaction(String transactionId) async {
     try {
-      final collection = await isarService.isar.transactionCollections
-          .filter()
-          .remoteIdEqualTo(transactionId)
-          .and()
-          .enterpriseIdEqualTo(enterpriseId)
-          .findFirst();
-
-      if (collection != null) {
-        return fromMap(collection.toMap());
-      }
-
       return await getByLocalId(transactionId);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);

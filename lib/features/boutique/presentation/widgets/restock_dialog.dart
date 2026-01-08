@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:elyf_groupe_app/shared.dart';
+import '../../../../shared/utils/notification_service.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/expense.dart';
 import '../../domain/entities/product.dart';

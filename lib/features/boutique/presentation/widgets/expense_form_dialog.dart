@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../shared.dart' as shared;
+import 'package:elyf_groupe_app/shared.dart' as shared;
 import '../../application/providers.dart';
 import '../../domain/entities/expense.dart';
+import 'package:elyf_groupe_app/shared/presentation/widgets/form_dialog.dart';
 
 /// Dialog pour créer une dépense dans le module Boutique.
 class ExpenseFormDialog extends ConsumerStatefulWidget {

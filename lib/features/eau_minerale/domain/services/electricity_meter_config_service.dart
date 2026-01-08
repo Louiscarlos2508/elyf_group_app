@@ -1,7 +1,7 @@
 import '../entities/electricity_meter_type.dart';
 
 /// Service pour gérer la configuration du type de compteur électrique.
-/// TODO: Implémenter avec un stockage persistant (Isar/SharedPreferences) quand disponible.
+/// TODO: Implémenter avec un stockage persistant (Drift/SharedPreferences) quand disponible.
 class ElectricityMeterConfigService {
   static final ElectricityMeterConfigService instance =
       ElectricityMeterConfigService._();

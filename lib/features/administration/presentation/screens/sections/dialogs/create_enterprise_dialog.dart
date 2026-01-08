@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../../../../../shared.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
 import '../../../../domain/entities/enterprise.dart';
+import 'package:elyf_groupe_app/shared/utils/form_helper_mixin.dart';
 
 /// Dialogue pour créer une nouvelle entreprise.
 class CreateEnterpriseDialog extends StatefulWidget {
@@ -12,7 +14,8 @@ class CreateEnterpriseDialog extends StatefulWidget {
   State<CreateEnterpriseDialog> createState() => _CreateEnterpriseDialogState();
 }
 
-class _CreateEnterpriseDialogState extends State<CreateEnterpriseDialog> {
+class _CreateEnterpriseDialogState extends State<CreateEnterpriseDialog>
+    with FormHelperMixin {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
@@ -35,44 +38,39 @@ class _CreateEnterpriseDialogState extends State<CreateEnterpriseDialog> {
   }
 
   Future<void> _handleSubmit() async {
-    if (!_formKey.currentState!.validate()) return;
+    await handleFormSubmit(
+      context: context,
+      formKey: _formKey,
+      onLoadingChanged: (isLoading) => setState(() => _isLoading = isLoading),
+      onSubmit: () async {
+        final enterprise = Enterprise(
+          id: '${_selectedType}_${DateTime.now().millisecondsSinceEpoch}',
+          name: _nameController.text.trim(),
+          type: _selectedType,
+          description: _descriptionController.text.trim().isEmpty
+              ? null
+              : _descriptionController.text.trim(),
+          address: _addressController.text.trim().isEmpty
+              ? null
+              : _addressController.text.trim(),
+          phone: _phoneController.text.trim().isEmpty
+              ? null
+              : _phoneController.text.trim(),
+          email: _emailController.text.trim().isEmpty
+              ? null
+              : _emailController.text.trim(),
+          isActive: _isActive,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
 
-    setState(() => _isLoading = true);
+        if (mounted) {
+          Navigator.of(context).pop(enterprise);
+        }
 
-    try {
-      final enterprise = Enterprise(
-        id: '${_selectedType}_${DateTime.now().millisecondsSinceEpoch}',
-        name: _nameController.text.trim(),
-        type: _selectedType,
-        description: _descriptionController.text.trim().isEmpty
-            ? null
-            : _descriptionController.text.trim(),
-        address: _addressController.text.trim().isEmpty
-            ? null
-            : _addressController.text.trim(),
-        phone: _phoneController.text.trim().isEmpty
-            ? null
-            : _phoneController.text.trim(),
-        email: _emailController.text.trim().isEmpty
-            ? null
-            : _emailController.text.trim(),
-        isActive: _isActive,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      );
-
-      if (mounted) {
-        Navigator.of(context).pop(enterprise);
-      }
-    } catch (e) {
-      if (mounted) {
-        NotificationService.showError(context, e.toString());
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
+        return 'Entreprise créée avec succès';
+      },
+    );
   }
 
   String? _validateEmail(String? value) {

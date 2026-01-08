@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import 'package:elyf_groupe_app/shared.dart';
+import '../../../../../shared/utils/currency_formatter.dart';
+import '../../../../shared/domain/entities/payment_method.dart';
 import '../../domain/entities/payment.dart';
 
 /// Helpers pour les cartes de paiement.
@@ -7,10 +10,8 @@ class PaymentCardHelpers {
   PaymentCardHelpers._();
 
   static String formatCurrency(int amount) {
-    return amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        ) + ' F';
+    // Utilise CurrencyFormatter partagé
+    return CurrencyFormatter.formatShort(amount);
   }
 
   static String formatDate(DateTime date) {
@@ -20,16 +21,8 @@ class PaymentCardHelpers {
   }
 
   static String getMethodLabel(PaymentMethod method) {
-    switch (method) {
-      case PaymentMethod.cash:
-        return 'Espèces';
-      case PaymentMethod.mobileMoney:
-        return 'Mobile Money';
-      case PaymentMethod.bankTransfer:
-        return 'Virement bancaire';
-      case PaymentMethod.check:
-        return 'Chèque';
-    }
+    // Utilise l'extension partagée
+    return method.label;
   }
 
   static IconData getMethodIcon(PaymentMethod method) {
@@ -38,10 +31,8 @@ class PaymentCardHelpers {
         return Icons.money;
       case PaymentMethod.mobileMoney:
         return Icons.phone_android;
-      case PaymentMethod.bankTransfer:
-        return Icons.account_balance;
-      case PaymentMethod.check:
-        return Icons.description;
+      case PaymentMethod.both:
+        return Icons.payment;
     }
   }
 

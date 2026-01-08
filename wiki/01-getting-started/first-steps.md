@@ -83,7 +83,7 @@ La plupart des listes supportent :
 ### Mode offline
 
 L'application fonctionne en mode offline :
-- Les données sont stockées localement (Isar)
+- Les données sont stockées localement (Drift / SQLite)
 - La synchronisation se fait automatiquement quand la connexion revient
 - Un indicateur de synchronisation est visible dans l'UI
 

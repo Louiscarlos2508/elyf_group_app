@@ -1,3 +1,4 @@
+import '../../../../shared/domain/entities/payment_method.dart';
 import 'contract.dart';
 
 /// Entité représentant un paiement de loyer.
@@ -15,6 +16,8 @@ class Payment {
     this.receiptNumber,
     this.notes,
     this.paymentType,
+    this.cashAmount,
+    this.mobileMoneyAmount,
     this.createdAt,
     this.updatedAt,
   });
@@ -31,6 +34,8 @@ class Payment {
   final String? receiptNumber;
   final String? notes;
   final PaymentType? paymentType; // Type de paiement (loyer, caution, etc.)
+  final int? cashAmount; // Montant payé en espèces (si paymentMethod == both)
+  final int? mobileMoneyAmount; // Montant payé en mobile money (si paymentMethod == both)
   final DateTime? createdAt;
   final DateTime? updatedAt;
 }
@@ -38,13 +43,6 @@ class Payment {
 enum PaymentType {
   rent, // Paiement de loyer
   deposit, // Paiement de caution
-}
-
-enum PaymentMethod {
-  cash,
-  mobileMoney,
-  bankTransfer,
-  check,
 }
 
 enum PaymentStatus {

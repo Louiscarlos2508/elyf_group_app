@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../shared.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import '../../../../../shared/utils/notification_service.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../domain/entities/bobine_stock.dart';
 import '../../domain/entities/bobine_usage.dart';
 import '../../domain/entities/machine.dart';
@@ -137,8 +139,11 @@ class _BobineUsageItemFormState
             onChanged: (machine) {
               setState(() => _machineSelectionnee = machine);
             },
-            validator: (value) =>
-                value == null ? 'Sélectionnez une machine' : null,
+            validator: (value) {
+              // Utiliser le service de validation pour extraire la logique métier
+              final validationService = ref.read(productionValidationServiceProvider);
+              return validationService.validateMachineSelection(value);
+            },
           ),
           const SizedBox(height: 24),
           ElevatedButton(

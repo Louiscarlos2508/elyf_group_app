@@ -5,8 +5,8 @@ import 'package:open_file/open_file.dart';
 
 import '../../../domain/entities/sale.dart';
 import 'invoice_print_service.dart';
-import '../../../../shared.dart';
-
+import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
 /// Widget bouton d'impression pour les factures eau minérale.
 class EauMineralePrintButton extends StatefulWidget {
   const EauMineralePrintButton({

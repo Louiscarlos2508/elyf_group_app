@@ -1,12 +1,12 @@
 import 'dart:developer' as developer;
+import 'dart:convert';
 
 import '../../../../core/errors/app_exceptions.dart';
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/offline/connectivity_service.dart';
-import '../../../../core/offline/isar_service.dart';
+import '../../../../core/offline/drift_service.dart';
 import '../../../../core/offline/offline_repository.dart';
 import '../../../../core/offline/sync_manager.dart';
-import '../../../../core/offline/collections/machine_collection.dart';
 import '../../domain/entities/machine.dart';
 import '../../domain/repositories/machine_repository.dart';
 
@@ -14,7 +14,7 @@ import '../../domain/repositories/machine_repository.dart';
 class MachineOfflineRepository extends OfflineRepository<Machine>
     implements MachineRepository {
   MachineOfflineRepository({
-    required super.isarService,
+    required super.driftService,
     required super.syncManager,
     required super.connectivityService,
     required this.enterpriseId,
@@ -82,77 +82,72 @@ class MachineOfflineRepository extends OfflineRepository<Machine>
 
   @override
   Future<void> saveToLocal(Machine entity) async {
-    final collection = MachineCollection.fromMap(
-      toMap(entity),
+    final localId = getLocalId(entity);
+    final map = toMap(entity)..['localId'] = localId;
+    await driftService.records.upsert(
+      collectionName: collectionName,
+      localId: localId,
+      remoteId: getRemoteId(entity),
       enterpriseId: enterpriseId,
-      localId: getLocalId(entity),
+      moduleType: 'eau_minerale',
+      dataJson: jsonEncode(map),
+      localUpdatedAt: DateTime.now(),
     );
-    collection.remoteId = getRemoteId(entity) ?? getLocalId(entity);
-    collection.localUpdatedAt = DateTime.now();
-
-    await isarService.isar.writeTxn(() async {
-      await isarService.isar.machineCollections.put(collection);
-    });
   }
 
   @override
   Future<void> deleteFromLocal(Machine entity) async {
     final remoteId = getRemoteId(entity);
-    await isarService.isar.writeTxn(() async {
-      if (remoteId != null) {
-        await isarService.isar.machineCollections
-            .filter()
-            .remoteIdEqualTo(remoteId)
-            .and()
-            .enterpriseIdEqualTo(enterpriseId)
-            .deleteAll();
-      } else {
-        final localId = getLocalId(entity);
-        await isarService.isar.machineCollections
-            .filter()
-            .localIdEqualTo(localId)
-            .and()
-            .enterpriseIdEqualTo(enterpriseId)
-            .deleteAll();
-      }
-    });
+    if (remoteId != null) {
+      await driftService.records.deleteByRemoteId(
+        collectionName: collectionName,
+        remoteId: remoteId,
+        enterpriseId: enterpriseId,
+        moduleType: 'eau_minerale',
+      );
+      return;
+    }
+    final localId = getLocalId(entity);
+    await driftService.records.deleteByLocalId(
+      collectionName: collectionName,
+      localId: localId,
+      enterpriseId: enterpriseId,
+      moduleType: 'eau_minerale',
+    );
   }
 
   @override
   Future<Machine?> getByLocalId(String localId) async {
-    var collection = await isarService.isar.machineCollections
-        .filter()
-        .remoteIdEqualTo(localId)
-        .and()
-        .enterpriseIdEqualTo(enterpriseId)
-        .findFirst();
-
-    if (collection != null) {
-      return fromMap(collection.toMap());
+    final byRemote = await driftService.records.findByRemoteId(
+      collectionName: collectionName,
+      remoteId: localId,
+      enterpriseId: enterpriseId,
+      moduleType: 'eau_minerale',
+    );
+    if (byRemote != null) {
+      return fromMap(jsonDecode(byRemote.dataJson) as Map<String, dynamic>);
     }
 
-    collection = await isarService.isar.machineCollections
-        .filter()
-        .localIdEqualTo(localId)
-        .and()
-        .enterpriseIdEqualTo(enterpriseId)
-        .findFirst();
-
-    if (collection != null) {
-      return fromMap(collection.toMap());
-    }
-
-    return null;
+    final byLocal = await driftService.records.findByLocalId(
+      collectionName: collectionName,
+      localId: localId,
+      enterpriseId: enterpriseId,
+      moduleType: 'eau_minerale',
+    );
+    if (byLocal == null) return null;
+    return fromMap(jsonDecode(byLocal.dataJson) as Map<String, dynamic>);
   }
 
   @override
   Future<List<Machine>> getAllForEnterprise(String enterpriseId) async {
-    final collections = await isarService.isar.machineCollections
-        .filter()
-        .enterpriseIdEqualTo(enterpriseId)
-        .findAll();
-
-    return collections.map((c) => fromMap(c.toMap())).toList();
+    final rows = await driftService.records.listForEnterprise(
+      collectionName: collectionName,
+      enterpriseId: enterpriseId,
+      moduleType: 'eau_minerale',
+    );
+    return rows
+        .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+        .toList();
   }
 
   // MachineRepository interface implementation
@@ -184,17 +179,6 @@ class MachineOfflineRepository extends OfflineRepository<Machine>
   @override
   Future<Machine?> fetchMachineById(String id) async {
     try {
-      final collection = await isarService.isar.machineCollections
-          .filter()
-          .remoteIdEqualTo(id)
-          .and()
-          .enterpriseIdEqualTo(enterpriseId)
-          .findFirst();
-
-      if (collection != null) {
-        return fromMap(collection.toMap());
-      }
-
       return await getByLocalId(id);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);

@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../application/providers.dart';
+import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import '../../../domain/entities/tour.dart';
 import '../../widgets/tour_form_dialog.dart';
 import 'approvisionnement/approvisionnement_header.dart';
 import 'approvisionnement/approvisionnement_tab_bar.dart';
 import 'approvisionnement/tours_list_tab.dart';
-import '../../../../shared.dart';
-
+import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
 /// Écran de gestion des tours d'approvisionnement.
 class ApprovisionnementScreen extends ConsumerStatefulWidget {
   const ApprovisionnementScreen({super.key});

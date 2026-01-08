@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../application/providers.dart';
+import 'package:elyf_groupe_app/features/boutique/application/providers.dart';
 import '../../../domain/entities/product.dart';
 import '../../widgets/product_form_dialog.dart';
 import '../../widgets/product_tile.dart';

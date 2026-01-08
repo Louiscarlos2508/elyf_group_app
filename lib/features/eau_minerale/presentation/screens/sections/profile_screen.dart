@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../shared.dart' as shared;
+import 'package:elyf_groupe_app/shared.dart' as shared;
 
 /// Profile screen for Eau Minérale module using shared component.
 class ProfileScreen extends ConsumerWidget {

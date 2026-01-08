@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../shared.dart';
-import '../../application/providers.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import '../../../../../shared/utils/notification_service.dart';
+import 'package:elyf_groupe_app/features/immobilier/application/providers.dart';
 import '../../domain/entities/expense.dart';
 import '../../domain/entities/property.dart';
 import 'expense_form_fields.dart';
+import 'package:elyf_groupe_app/shared/presentation/widgets/form_dialog.dart';
+import 'package:elyf_groupe_app/shared/utils/validators.dart';
+import 'package:elyf_groupe_app/shared/utils/form_helper_mixin.dart';
 
 class ExpenseFormDialog extends ConsumerStatefulWidget {
   const ExpenseFormDialog({
@@ -19,7 +23,8 @@ class ExpenseFormDialog extends ConsumerStatefulWidget {
   ConsumerState<ExpenseFormDialog> createState() => _ExpenseFormDialogState();
 }
 
-class _ExpenseFormDialogState extends ConsumerState<ExpenseFormDialog> {
+class _ExpenseFormDialogState extends ConsumerState<ExpenseFormDialog>
+    with FormHelperMixin {
   final _formKey = GlobalKey<FormState>();
   Property? _selectedProperty;
   DateTime _expenseDate = DateTime.now();
@@ -62,49 +67,48 @@ class _ExpenseFormDialogState extends ConsumerState<ExpenseFormDialog> {
   }
 
   Future<void> _save() async {
-    if (!_formKey.currentState!.validate()) return;
     if (_selectedProperty == null) {
       NotificationService.showWarning(context, 'Veuillez sélectionner une propriété');
       return;
     }
 
-    try {
-      final expense = PropertyExpense(
-        id: widget.expense?.id ?? IdGenerator.generate(),
-        propertyId: _selectedProperty!.id,
-        amount: int.parse(_amountController.text),
-        expenseDate: _expenseDate,
-        category: _category,
-        description: _descriptionController.text.trim(),
-        property: _selectedProperty!.address,
-        receipt: _receiptController.text.trim().isEmpty
-            ? null
-            : _receiptController.text.trim(),
-        createdAt: widget.expense?.createdAt ?? DateTime.now(),
-        updatedAt: DateTime.now(),
-      );
+    await handleFormSubmit(
+      context: context,
+      formKey: _formKey,
+      onLoadingChanged: (_) {}, // Pas besoin de gestion d'état de chargement séparée
+      onSubmit: () async {
+        final expense = PropertyExpense(
+          id: widget.expense?.id ?? IdGenerator.generate(),
+          propertyId: _selectedProperty!.id,
+          amount: int.parse(_amountController.text),
+          expenseDate: _expenseDate,
+          category: _category,
+          description: _descriptionController.text.trim(),
+          property: _selectedProperty!.address,
+          receipt: _receiptController.text.trim().isEmpty
+              ? null
+              : _receiptController.text.trim(),
+          createdAt: widget.expense?.createdAt ?? DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
 
-      final controller = ref.read(expenseControllerProvider);
-      if (widget.expense == null) {
-        await controller.createExpense(expense);
-      } else {
-        await controller.updateExpense(expense);
-      }
+        final controller = ref.read(expenseControllerProvider);
+        if (widget.expense == null) {
+          await controller.createExpense(expense);
+        } else {
+          await controller.updateExpense(expense);
+        }
 
-      if (mounted) {
-        ref.invalidate(expensesProvider);
-        Navigator.of(context).pop();
-        NotificationService.showInfo(context, 
-              widget.expense == null
-                  ? 'Dépense enregistrée avec succès'
-                  : 'Dépense mise à jour avec succès',
-            );
-      }
-    } catch (e) {
-      if (mounted) {
-        NotificationService.showError(context, 'Erreur: $e');
-      }
-    }
+        if (mounted) {
+          ref.invalidate(expensesProvider);
+          Navigator.of(context).pop();
+        }
+
+        return widget.expense == null
+            ? 'Dépense enregistrée avec succès'
+            : 'Dépense mise à jour avec succès';
+      },
+    );
   }
 
 

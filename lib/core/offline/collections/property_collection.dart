@@ -1,5 +1,5 @@
-/// Stub PropertyCollection - Isar temporarily disabled.
-/// TODO: Migrate to ObjectBox.
+/// Legacy PropertyCollection model (kept for compatibility).
+/// Note: Drift est utilisé exclusivement pour le stockage offline (pas ObjectBox).
 class PropertyCollection {
   int id = 0;
   late String localId;

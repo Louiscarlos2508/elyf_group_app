@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../shared.dart';
-import '../../../application/providers.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/features/boutique/application/providers.dart';
 import '../../../domain/entities/expense.dart';
 import '../../../domain/entities/purchase.dart';
 import '../../../domain/entities/sale.dart';
@@ -11,6 +11,7 @@ import '../../widgets/dashboard_low_stock_list.dart';
 import '../../widgets/dashboard_month_section.dart';
 import '../../widgets/dashboard_today_section.dart';
 import '../../widgets/restock_dialog.dart';
+import 'package:elyf_groupe_app/shared/presentation/widgets/refresh_button.dart';
 
 /// Professional dashboard screen for boutique module.
 class DashboardScreen extends ConsumerWidget {

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../application/providers.dart';
+import 'package:elyf_groupe_app/features/immobilier/application/providers.dart';
 import '../../domain/entities/expense.dart';
 
 /// Expenses report content for immobilier.

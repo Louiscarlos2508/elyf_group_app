@@ -3,10 +3,13 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../shared.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import '../../../../../shared/utils/notification_service.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/auth/services/auth_service.dart';
+import 'package:elyf_groupe_app/core/auth/providers.dart';
+import 'package:elyf_groupe_app/features/administration/application/providers.dart';
+import 'package:elyf_groupe_app/core/auth/providers.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -110,15 +113,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     setState(() => _isLoading = true);
 
     try {
-      final authService = ref.read(authServiceProvider);
-      
-      // Initialiser le service avant de l'utiliser
-      await authService.initialize();
+      final authController = ref.read(authControllerProvider);
       
       final email = _emailController.text.trim();
       final password = _passwordController.text.trim();
 
-      await authService.signInWithEmailAndPassword(
+      // Connexion avec Firebase Auth via le controller
+      // Le service crée automatiquement le profil dans Firestore
+      // et le premier admin si nécessaire
+      final user = await authController.signIn(
         email: email,
         password: password,
       );
@@ -128,9 +131,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       // Rafraîchir les providers
       ref.invalidate(currentUserProvider);
       ref.invalidate(currentUserIdProvider);
+      ref.invalidate(usersProvider); // Rafraîchir la liste des utilisateurs
 
-      // Naviguer vers le menu des modules
-      context.go('/modules');
+      // Rediriger selon le rôle de l'utilisateur
+      // Admin → /admin, Autre → /modules
+      if (user.isAdmin) {
+        context.go('/admin');
+      } else {
+        context.go('/modules');
+      }
     } catch (e) {
       if (!mounted) return;
       
@@ -140,7 +149,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       final errorMessage = e.toString().replaceAll('Exception: ', '');
       
       NotificationService.showError(context, 'Erreur de connexion: $errorMessage');
-      );
     }
   }
 

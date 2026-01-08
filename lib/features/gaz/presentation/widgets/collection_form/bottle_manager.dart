@@ -1,3 +1,4 @@
+import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
 import 'package:flutter/material.dart';
 
 /// Gestionnaire de bouteilles pour le formulaire de collecte.

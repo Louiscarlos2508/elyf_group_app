@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'package:elyf_groupe_app/features/immobilier/application/providers.dart';
 import '../../domain/entities/contract.dart';
 import '../../domain/entities/expense.dart';
 import '../../domain/entities/payment.dart';
@@ -8,7 +11,7 @@ import 'enhanced_kpi_card.dart';
 import 'reports_helpers.dart';
 
 /// Widget pour afficher la grille de KPIs des rapports.
-class ReportsKpiGrid extends StatelessWidget {
+class ReportsKpiGrid extends ConsumerWidget {
   const ReportsKpiGrid({
     super.key,
     required this.properties,
@@ -27,65 +30,50 @@ class ReportsKpiGrid extends StatelessWidget {
   final List<PropertyExpense> periodExpenses;
 
   @override
-  Widget build(BuildContext context) {
-    final paidPayments = periodPayments
-        .where((p) => p.status == PaymentStatus.paid)
-        .toList();
-    final totalRevenue = paidPayments.fold<int>(
-      0,
-      (sum, p) => sum + p.amount,
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Utiliser le service de calcul pour extraire la logique métier
+    final reportService = ref.read(immobilierReportCalculationServiceProvider);
+    final metrics = reportService.calculateReportMetrics(
+      properties: properties,
+      contracts: contracts,
+      periodPayments: periodPayments,
+      periodExpenses: periodExpenses,
     );
-    final totalExpenses = periodExpenses.fold<int>(
-      0,
-      (sum, e) => sum + e.amount,
-    );
-    final netRevenue = totalRevenue - totalExpenses;
-
-    final activeContracts = contracts
-        .where((c) => c.status == ContractStatus.active)
-        .length;
-    final totalProperties = properties.length;
-    final rentedProperties = properties
-        .where((p) => p.status == PropertyStatus.rented)
-        .length;
-    final occupancyRate = totalProperties > 0
-        ? (rentedProperties / totalProperties) * 100
-        : 0.0;
 
     final cards = [
       EnhancedKpiCard(
         label: 'Revenus',
-        value: ReportsHelpers.formatCurrency(totalRevenue),
+        value: ReportsHelpers.formatCurrency(metrics.totalRevenue),
         icon: Icons.trending_up,
         color: Colors.green,
       ),
       EnhancedKpiCard(
         label: 'Dépenses',
-        value: ReportsHelpers.formatCurrency(totalExpenses),
+        value: ReportsHelpers.formatCurrency(metrics.totalExpenses),
         icon: Icons.trending_down,
         color: Colors.red,
       ),
       EnhancedKpiCard(
         label: 'Résultat net',
-        value: ReportsHelpers.formatCurrency(netRevenue),
+        value: ReportsHelpers.formatCurrency(metrics.netRevenue),
         icon: Icons.account_balance_wallet,
-        color: netRevenue >= 0 ? Colors.green : Colors.red,
+        color: metrics.isProfit ? Colors.green : Colors.red,
       ),
       EnhancedKpiCard(
         label: 'Paiements',
-        value: paidPayments.length.toString(),
+        value: metrics.paidPaymentsCount.toString(),
         icon: Icons.payment,
         color: Colors.blue,
       ),
       EnhancedKpiCard(
         label: 'Taux d\'occupation',
-        value: '${occupancyRate.toStringAsFixed(0)}%',
+        value: '${metrics.occupancyRate.toStringAsFixed(0)}%',
         icon: Icons.percent,
         color: Colors.purple,
       ),
       EnhancedKpiCard(
         label: 'Contrats actifs',
-        value: activeContracts.toString(),
+        value: metrics.activeContractsCount.toString(),
         icon: Icons.description,
         color: Colors.orange,
       ),

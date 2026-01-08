@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../shared.dart';
-import '../../../application/providers.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
+import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import '../../../domain/entities/report_data.dart';
 import '../../widgets/expenses_report_content_v2.dart';
 import '../../widgets/financial_report_content_v2.dart';
@@ -11,6 +12,7 @@ import '../../widgets/report_kpi_cards_v2.dart';
 import '../../widgets/report_period_selector_v2.dart';
 import '../../widgets/report_tabs_v2.dart';
 import '../../widgets/sales_report_content_v2.dart';
+import 'package:elyf_groupe_app/shared/presentation/widgets/refresh_button.dart';
 
 /// Reports screen with professional UI - style boutique.
 class GazReportsScreen extends ConsumerStatefulWidget {

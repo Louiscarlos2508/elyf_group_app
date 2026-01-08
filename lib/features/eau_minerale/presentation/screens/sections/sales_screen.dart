@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../shared.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import '../../../../../../core/permissions/modules/eau_minerale_permissions.dart';
 import '../../../application/controllers/sales_controller.dart';
-import '../../../application/providers.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../../domain/entities/sale.dart';
-import '../../../../core.dart';
+import 'package:elyf_groupe_app/core.dart';
 import '../../widgets/centralized_permission_guard.dart';
+import 'package:elyf_groupe_app/shared/presentation/widgets/refresh_button.dart';
+import 'package:elyf_groupe_app/shared/presentation/widgets/form_dialog.dart';
 // Already imported via widgets.dart
 import '../../widgets/sale_detail_dialog.dart';
 import '../../widgets/sale_form.dart';

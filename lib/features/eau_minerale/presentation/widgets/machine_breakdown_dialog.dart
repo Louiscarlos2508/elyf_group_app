@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../application/providers.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../domain/entities/bobine_usage.dart';
 import '../../domain/entities/machine.dart';
 import '../../domain/entities/production_event.dart';
 import '../../domain/entities/production_session.dart';
-import '../../../shared.dart';
-
+import 'package:elyf_groupe_app/shared.dart';
+import '../../../../../shared/utils/notification_service.dart';
 /// Dialog pour signaler une panne de machine et retirer la bobine.
 class MachineBreakdownDialog extends ConsumerStatefulWidget {
   const MachineBreakdownDialog({

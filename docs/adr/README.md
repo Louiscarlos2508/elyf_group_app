@@ -20,7 +20,7 @@ Chaque ADR suit le format suivant :
 
 - [ADR-001](ADR-001-features-vs-modules.md) : Utilisation de `features/` au lieu de `modules/`
 - [ADR-002](ADR-002-clean-architecture.md) : Choix de Clean Architecture avec couches
-- [ADR-003](ADR-003-offline-first-isar.md) : Implémentation offline-first avec Isar
+- [ADR-003](ADR-003-offline-first-drift.md) : Implémentation offline-first avec Drift (SQLite)
 - [ADR-004](ADR-004-riverpod-state-management.md) : Utilisation de Riverpod pour le state management
 - [ADR-005](ADR-005-permissions-centralized.md) : Système de permissions centralisé
 - [ADR-006](ADR-006-barrel-files.md) : Fichiers barrel pour réduire les imports profonds

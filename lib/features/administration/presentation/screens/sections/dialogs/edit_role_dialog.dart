@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../../core.dart';
+import 'package:elyf_groupe_app/core.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
 import '../../../../application/providers.dart';
-import '../../../../../shared.dart';
+import 'package:elyf_groupe_app/shared/utils/form_helper_mixin.dart';
 
 /// Dialogue pour modifier un rôle existant.
 class EditRoleDialog extends ConsumerStatefulWidget {
@@ -18,7 +20,8 @@ class EditRoleDialog extends ConsumerStatefulWidget {
   ConsumerState<EditRoleDialog> createState() => _EditRoleDialogState();
 }
 
-class _EditRoleDialogState extends ConsumerState<EditRoleDialog> {
+class _EditRoleDialogState extends ConsumerState<EditRoleDialog>
+    with FormHelperMixin {
   late final GlobalKey<FormState> _formKey;
   late final TextEditingController _nameController;
   late final TextEditingController _descriptionController;
@@ -44,7 +47,6 @@ class _EditRoleDialogState extends ConsumerState<EditRoleDialog> {
   }
 
   Future<void> _handleSubmit() async {
-    if (!_formKey.currentState!.validate()) return;
     if (_selectedPermissions.isEmpty) {
       NotificationService.showInfo(context, 'Sélectionnez au moins une permission');
       return;
@@ -55,30 +57,26 @@ class _EditRoleDialogState extends ConsumerState<EditRoleDialog> {
       return;
     }
 
-    setState(() => _isLoading = true);
+    await handleFormSubmit(
+      context: context,
+      formKey: _formKey,
+      onLoadingChanged: (isLoading) => setState(() => _isLoading = isLoading),
+      onSubmit: () async {
+        final updatedRole = widget.role.copyWith(
+          name: _nameController.text.trim(),
+          description: _descriptionController.text.trim(),
+          permissions: _selectedPermissions,
+        );
 
-    try {
-      final updatedRole = widget.role.copyWith(
-        name: _nameController.text.trim(),
-        description: _descriptionController.text.trim(),
-        permissions: _selectedPermissions,
-      );
+        await ref.read(adminControllerProvider).updateRole(updatedRole);
 
-      await ref.read(adminRepositoryProvider).updateRole(updatedRole);
+        if (mounted) {
+          Navigator.of(context).pop(updatedRole);
+        }
 
-      if (mounted) {
-        Navigator.of(context).pop(updatedRole);
-        NotificationService.showSuccess(context, 'Rôle modifié avec succès');
-      }
-    } catch (e) {
-      if (mounted) {
-        NotificationService.showError(context, e.toString());
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
+        return 'Rôle modifié avec succès';
+      },
+    );
   }
 
   @override

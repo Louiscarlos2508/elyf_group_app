@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../shared.dart'
-    as shared;
+import 'package:elyf_groupe_app/shared.dart' as shared;
 
 /// Écran de profil du module Gaz utilisant le composant partagé.
 class GazProfileScreen extends ConsumerWidget {

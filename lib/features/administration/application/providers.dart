@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/permissions/services/permission_service.dart'
-    show PermissionService, MockPermissionService;
+import '../../../core/permissions/services/permission_service.dart' show PermissionService, MockPermissionService;
 import '../../../core/permissions/services/permission_registry.dart';
 import '../data/repositories/mock_admin_repository.dart';
 import '../data/repositories/mock_enterprise_repository.dart';
@@ -13,6 +12,9 @@ import '../domain/entities/enterprise.dart';
 import '../domain/entities/user.dart';
 import '../../../core/auth/entities/enterprise_module_user.dart';
 import '../../../core/permissions/entities/user_role.dart';
+import 'controllers/admin_controller.dart';
+import 'controllers/user_controller.dart';
+import 'controllers/enterprise_controller.dart';
 
 /// Provider for admin repository
 final adminRepositoryProvider = Provider<AdminRepository>(
@@ -37,6 +39,21 @@ final permissionRegistryProvider = Provider<PermissionRegistry>(
 /// Provider for enterprise repository
 final enterpriseRepositoryProvider = Provider<EnterpriseRepository>(
   (ref) => MockEnterpriseRepository(),
+);
+
+/// Provider for admin controller
+final adminControllerProvider = Provider<AdminController>(
+  (ref) => AdminController(ref.watch(adminRepositoryProvider)),
+);
+
+/// Provider for user controller
+final userControllerProvider = Provider<UserController>(
+  (ref) => UserController(ref.watch(userRepositoryProvider)),
+);
+
+/// Provider for enterprise controller
+final enterpriseControllerProvider = Provider<EnterpriseController>(
+  (ref) => EnterpriseController(ref.watch(enterpriseRepositoryProvider)),
 );
 
 /// Provider pour récupérer toutes les entreprises

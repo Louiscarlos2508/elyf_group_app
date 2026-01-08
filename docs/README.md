@@ -63,6 +63,6 @@ Lors de l'ajout de nouvelles fonctionnalités :
 
 - [Flutter Documentation](https://flutter.dev/docs)
 - [Riverpod Documentation](https://riverpod.dev)
-- [Isar Documentation](https://isar.dev)
+- [Drift Documentation](https://drift.simonbinder.eu/)
 - [Firebase Documentation](https://firebase.google.com/docs)
 

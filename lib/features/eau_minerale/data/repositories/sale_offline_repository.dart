@@ -4,10 +4,9 @@ import 'dart:developer' as developer;
 import '../../../../core/errors/app_exceptions.dart';
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/offline/connectivity_service.dart';
-import '../../../../core/offline/isar_service.dart';
+import '../../../../core/offline/drift_service.dart';
 import '../../../../core/offline/offline_repository.dart';
 import '../../../../core/offline/sync_manager.dart';
-import '../../../../core/offline/collections/sale_collection.dart';
 import '../../domain/entities/sale.dart';
 import '../../domain/repositories/sale_repository.dart';
 
@@ -15,7 +14,7 @@ import '../../domain/repositories/sale_repository.dart';
 class SaleOfflineRepository extends OfflineRepository<Sale>
     implements SaleRepository {
   SaleOfflineRepository({
-    required super.isarService,
+    required super.driftService,
     required super.syncManager,
     required super.connectivityService,
     required this.enterpriseId,
@@ -134,31 +133,17 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
   @override
   Future<void> saveToLocal(Sale entity) async {
     final map = toMap(entity);
-    final collection = SaleCollection.fromMap(
-      map,
+    final localId = getLocalId(entity);
+    map['localId'] = localId;
+    await driftService.records.upsert(
+      collectionName: collectionName,
+      localId: localId,
+      remoteId: getRemoteId(entity),
       enterpriseId: enterpriseId,
       moduleType: 'eau_minerale',
-      localId: getLocalId(entity),
+      dataJson: jsonEncode(map),
+      localUpdatedAt: DateTime.now(),
     );
-    collection.remoteId = getRemoteId(entity);
-    collection.localUpdatedAt = DateTime.now();
-
-    await isarService.isar.writeTxn(() async {
-      await isarService.isar.saleCollections.put(collection);
-
-      // Create a single SaleItem for the product
-      final itemCollection = SaleItemCollection.fromMap(
-        {
-          'productId': entity.productId,
-          'productName': entity.productName,
-          'quantity': entity.quantity.toDouble(),
-          'unitPrice': entity.unitPrice.toDouble(),
-          'totalPrice': entity.totalPrice.toDouble(),
-        },
-        saleLocalId: collection.localId,
-      );
-      await isarService.isar.saleItemCollections.put(itemCollection);
-    });
   }
 
   @override
@@ -166,142 +151,62 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
     final remoteId = getRemoteId(entity);
     final localId = getLocalId(entity);
 
-    await isarService.isar.writeTxn(() async {
-      // Delete sale items first
-      await isarService.isar.saleItemCollections
-          .filter()
-          .saleLocalIdEqualTo(localId)
-          .deleteAll();
-
-      // Delete sale
-      if (remoteId != null) {
-        await isarService.isar.saleCollections
-            .filter()
-            .remoteIdEqualTo(remoteId)
-            .and()
-            .enterpriseIdEqualTo(enterpriseId)
-            .and()
-            .moduleTypeEqualTo('eau_minerale')
-            .deleteAll();
-      } else {
-        await isarService.isar.saleCollections
-            .filter()
-            .localIdEqualTo(localId)
-            .and()
-            .enterpriseIdEqualTo(enterpriseId)
-            .and()
-            .moduleTypeEqualTo('eau_minerale')
-            .deleteAll();
-      }
-    });
+    if (remoteId != null) {
+      await driftService.records.deleteByRemoteId(
+        collectionName: collectionName,
+        remoteId: remoteId,
+        enterpriseId: enterpriseId,
+        moduleType: 'eau_minerale',
+      );
+      return;
+    }
+    await driftService.records.deleteByLocalId(
+      collectionName: collectionName,
+      localId: localId,
+      enterpriseId: enterpriseId,
+      moduleType: 'eau_minerale',
+    );
   }
 
   @override
   Future<Sale?> getByLocalId(String localId) async {
-    // Try to find by remoteId first
-    var saleCollection = await isarService.isar.saleCollections
-        .filter()
-        .remoteIdEqualTo(localId)
-        .and()
-        .enterpriseIdEqualTo(enterpriseId)
-        .and()
-        .moduleTypeEqualTo('eau_minerale')
-        .findFirst();
-
-    if (saleCollection == null) {
-      saleCollection = await isarService.isar.saleCollections
-          .filter()
-          .localIdEqualTo(localId)
-          .and()
-          .enterpriseIdEqualTo(enterpriseId)
-          .and()
-          .moduleTypeEqualTo('eau_minerale')
-          .findFirst();
+    final byRemote = await driftService.records.findByRemoteId(
+      collectionName: collectionName,
+      remoteId: localId,
+      enterpriseId: enterpriseId,
+      moduleType: 'eau_minerale',
+    );
+    if (byRemote != null) {
+      return fromMap(jsonDecode(byRemote.dataJson) as Map<String, dynamic>);
     }
 
-    if (saleCollection == null) return null;
-
-    // Get the sale item
-    final itemCollection = await isarService.isar.saleItemCollections
-        .filter()
-        .saleLocalIdEqualTo(saleCollection.localId)
-        .findFirst();
-
-    final map = saleCollection.toMap();
-    if (itemCollection != null) {
-      map['productId'] = itemCollection.productId;
-      map['productName'] = itemCollection.productName;
-      map['quantity'] = itemCollection.quantity.toInt();
-      map['unitPrice'] = itemCollection.unitPrice.toInt();
-      map['totalPrice'] = itemCollection.totalPrice.toInt();
-    }
-
-    return fromMap(map);
+    final byLocal = await driftService.records.findByLocalId(
+      collectionName: collectionName,
+      localId: localId,
+      enterpriseId: enterpriseId,
+      moduleType: 'eau_minerale',
+    );
+    if (byLocal == null) return null;
+    return fromMap(jsonDecode(byLocal.dataJson) as Map<String, dynamic>);
   }
 
   @override
   Future<List<Sale>> fetchRecentSales({int limit = 50}) async {
-    final saleCollections = await isarService.isar.saleCollections
-        .filter()
-        .enterpriseIdEqualTo(enterpriseId)
-        .and()
-        .moduleTypeEqualTo('eau_minerale')
-        .sortBySaleDateDesc()
-        .findAll();
-
-    final sales = <Sale>[];
-    for (final saleCollection in saleCollections.take(limit)) {
-      // Get the sale item
-      final itemCollection = await isarService.isar.saleItemCollections
-          .filter()
-          .saleLocalIdEqualTo(saleCollection.localId)
-          .findFirst();
-
-      final map = saleCollection.toMap();
-      if (itemCollection != null) {
-        map['productId'] = itemCollection.productId;
-        map['productName'] = itemCollection.productName;
-        map['quantity'] = itemCollection.quantity.toInt();
-        map['unitPrice'] = itemCollection.unitPrice.toInt();
-        map['totalPrice'] = itemCollection.totalPrice.toInt();
-      }
-
-      sales.add(fromMap(map));
-    }
-
-    return sales;
+    final all = await getAllForEnterprise(enterpriseId);
+    all.sort((a, b) => b.date.compareTo(a.date));
+    return all.take(limit).toList();
   }
 
   @override
   Future<List<Sale>> getAllForEnterprise(String enterpriseId) async {
-    final saleCollections = await isarService.isar.saleCollections
-        .filter()
-        .enterpriseIdEqualTo(enterpriseId)
-        .and()
-        .moduleTypeEqualTo('eau_minerale')
-        .findAll();
-
-    final sales = <Sale>[];
-    for (final saleCollection in saleCollections) {
-      // Get the sale item
-      final itemCollection = await isarService.isar.saleItemCollections
-          .filter()
-          .saleLocalIdEqualTo(saleCollection.localId)
-          .findFirst();
-
-      final map = saleCollection.toMap();
-      if (itemCollection != null) {
-        map['productId'] = itemCollection.productId;
-        map['productName'] = itemCollection.productName;
-        map['quantity'] = itemCollection.quantity.toInt();
-        map['unitPrice'] = itemCollection.unitPrice.toInt();
-        map['totalPrice'] = itemCollection.totalPrice.toInt();
-      }
-
-      sales.add(fromMap(map));
-    }
-
-    return sales;
+    final rows = await driftService.records.listForEnterprise(
+      collectionName: collectionName,
+      enterpriseId: enterpriseId,
+      moduleType: 'eau_minerale',
+    );
+    return rows
+        .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+        .toList();
   }
 
   // SaleRepository interface implementation

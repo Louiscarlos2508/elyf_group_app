@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../shared.dart';
-import '../../application/providers.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import '../../../../../core/permissions/modules/eau_minerale_permissions.dart';
+import '../../../../../shared/utils/notification_service.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../domain/entities/machine.dart';
-import '../../../core.dart';
+import 'package:elyf_groupe_app/core.dart';
 import 'centralized_permission_guard.dart';
 import 'machine_form_dialog.dart';
 import 'machine_list_item.dart';
 import 'machine_selector_field.dart';
-import '../../../shared.dart';
 
 /// Carte de gestion des machines.
 class MachineManagementCard extends ConsumerStatefulWidget {
@@ -153,7 +154,7 @@ class _MachineManagementCardState
               Navigator.of(context).pop();
               try {
                 await ref
-                    .read(machineRepositoryProvider)
+                    .read(machineControllerProvider)
                     .deleteMachine(machine.id);
                 ref.invalidate(allMachinesProvider);
                 ref.invalidate(machinesProvider);

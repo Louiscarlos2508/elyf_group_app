@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../application/providers.dart';
 import '../../domain/entities/cart_item.dart';
 
-class CartSummary extends StatelessWidget {
+class CartSummary extends ConsumerWidget {
   const CartSummary({
     super.key,
     required this.cartItems,
@@ -25,12 +27,11 @@ class CartSummary extends StatelessWidget {
         ) + ' FCFA';
   }
 
-  int get _total {
-    return cartItems.fold(0, (sum, item) => sum + item.totalPrice);
-  }
-
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Utiliser le service de calcul pour extraire la logique métier
+    final cartService = ref.read(cartCalculationServiceProvider);
+    final total = cartService.calculateCartTotal(cartItems);
     final theme = Theme.of(context);
 
     return Container(
@@ -138,7 +139,7 @@ class CartSummary extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        _formatCurrency(_total),
+                        _formatCurrency(total),
                         style: theme.textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: theme.colorScheme.primary,

@@ -1,7 +1,7 @@
 /// Offline-first infrastructure for the ELYF Groupe application.
 ///
 /// This library provides:
-/// - Local data persistence with Isar database
+/// - Local data persistence with Drift database
 /// - Automatic synchronization with Firebase
 /// - Conflict resolution using `updated_at` timestamps
 /// - Network connectivity monitoring
@@ -13,7 +13,7 @@
 ///
 /// 1. Initialize in bootstrap:
 /// ```dart
-/// await IsarService.instance.initialize();
+/// await DriftService.instance.initialize();
 /// ```
 ///
 /// 2. Use providers in your widgets:
@@ -41,7 +41,7 @@ library offline;
 
 // Core services
 export 'connectivity_service.dart';
-export 'isar_service.dart';
+export 'drift_service.dart';
 export 'sync_manager.dart';
 
 // Data models

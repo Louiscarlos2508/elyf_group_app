@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../application/providers.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../domain/entities/production_day.dart';
 import '../../domain/entities/production_payment_person.dart';
 import 'production_payment_person_row.dart';
 import 'production_period_formatter.dart';
-import '../../../shared.dart';
-
+import 'package:elyf_groupe_app/shared.dart';
+import '../../../../../shared/utils/notification_service.dart';
 /// Section for managing persons to pay in production payment.
 class ProductionPaymentPersonsSection extends ConsumerWidget {
   const ProductionPaymentPersonsSection({

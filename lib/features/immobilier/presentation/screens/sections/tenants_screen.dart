@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../shared.dart';
-import '../../../application/providers.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/features/immobilier/application/providers.dart';
 import '../../../domain/entities/contract.dart';
 import '../../../domain/entities/payment.dart';
 import '../../../domain/entities/tenant.dart';
@@ -12,6 +12,7 @@ import '../../widgets/property_search_bar.dart';
 import '../../widgets/tenant_card.dart';
 import '../../widgets/tenant_detail_dialog.dart';
 import '../../widgets/tenant_form_dialog.dart';
+import 'package:elyf_groupe_app/shared/presentation/widgets/refresh_button.dart';
 
 class TenantsScreen extends ConsumerStatefulWidget {
   const TenantsScreen({super.key});

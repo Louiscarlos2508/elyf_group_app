@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../shared.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import '../../../../../shared/utils/notification_service.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/cylinder.dart';
 import '../../domain/entities/cylinder_stock.dart';
@@ -64,7 +65,7 @@ class _StockAdjustmentDialogState
             siteId: _selectedPointOfSale?.id,
           ),
         ).future,
-      );
+      ) as List<CylinderStock>;
       final stock = stocks.firstWhere(
         (s) =>
             s.weight == _selectedCylinder!.weight &&

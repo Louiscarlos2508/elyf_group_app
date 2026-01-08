@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../shared.dart';
+import 'package:elyf_groupe_app/shared.dart';
 
 /// Empty state widget when no tours are in progress - matches Figma design.
 class ToursEmptyState extends StatelessWidget {

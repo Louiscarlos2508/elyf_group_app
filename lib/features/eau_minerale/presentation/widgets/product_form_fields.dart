@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart' show productValidationServiceProvider;
 import '../../domain/entities/product.dart';
 
 /// Form fields for product form dialog.
-class ProductFormFields extends StatelessWidget {
+class ProductFormFields extends ConsumerWidget {
   const ProductFormFields({
     super.key,
     required this.nameController,
@@ -20,7 +22,10 @@ class ProductFormFields extends StatelessWidget {
   final void Function(ProductType) onTypeChanged;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Utiliser le service de validation pour extraire la logique métier
+    final validationService = ref.read(productValidationServiceProvider);
+    
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -30,7 +35,7 @@ class ProductFormFields extends StatelessWidget {
             labelText: 'Nom du produit',
             prefixIcon: Icon(Icons.inventory_2),
           ),
-          validator: (v) => v?.isEmpty ?? true ? 'Requis' : null,
+          validator: validationService.validateName,
         ),
         const SizedBox(height: 16),
         DropdownButtonFormField<ProductType>(
@@ -64,14 +69,7 @@ class ProductFormFields extends StatelessWidget {
                   prefixIcon: Icon(Icons.attach_money),
                 ),
                 keyboardType: TextInputType.number,
-                validator: (v) {
-                  if (v == null || v.isEmpty) return 'Requis';
-                  final price = int.tryParse(v);
-                  if (price == null || price < 0) {
-                    return 'Prix invalide';
-                  }
-                  return null;
-                },
+                validator: validationService.validatePrice,
               ),
             ),
             const SizedBox(width: 16),
@@ -83,7 +81,7 @@ class ProductFormFields extends StatelessWidget {
                   prefixIcon: Icon(Icons.straighten),
                   hintText: 'kg, Unité, etc.',
                 ),
-                validator: (v) => v?.isEmpty ?? true ? 'Requis' : null,
+                validator: validationService.validateUnit,
               ),
             ),
           ],

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../application/providers.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../../domain/entities/activity_summary.dart';
 import '../../widgets/enhanced_kpi_card.dart';
 import '../../widgets/section_placeholder.dart';

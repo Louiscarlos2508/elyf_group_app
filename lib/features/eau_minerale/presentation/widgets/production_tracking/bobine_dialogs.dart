@@ -4,12 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../domain/entities/bobine_usage.dart';
 import '../../../domain/entities/machine.dart';
 import '../../../domain/entities/production_session.dart';
-import '../../../application/providers.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../bobine_finish_dialog.dart';
 import '../machine_breakdown_dialog.dart';
 import '../../screens/sections/production_session_detail_screen.dart' show productionSessionDetailProvider;
-import '../../../../shared.dart';
-
+import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
 /// Dialogs pour la gestion des bobines.
 class BobineDialogs {
   /// Affiche le dialog pour signaler une panne de machine.
@@ -32,7 +32,7 @@ class BobineDialogs {
         session: session,
         bobine: bobine,
         onPanneSignaled: (event) {
-          ref.invalidate(productionSessionDetailProvider(session.id));
+          ref.invalidate(productionSessionDetailProvider((session.id)));
           NotificationService.showInfo(context, 'Panne signalée avec succès');
         },
       ),
@@ -52,7 +52,7 @@ class BobineDialogs {
         session: session,
         bobine: bobine,
         onFinished: (updatedSession) {
-          ref.invalidate(productionSessionDetailProvider(session.id));
+          ref.invalidate(productionSessionDetailProvider((session.id)));
         },
       ),
     );

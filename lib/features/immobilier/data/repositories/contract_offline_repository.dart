@@ -1,12 +1,12 @@
 import 'dart:developer' as developer;
+import 'dart:convert';
 
 import '../../../../core/errors/app_exceptions.dart';
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/offline/connectivity_service.dart';
-import '../../../../core/offline/isar_service.dart';
+import '../../../../core/offline/drift_service.dart';
 import '../../../../core/offline/offline_repository.dart';
 import '../../../../core/offline/sync_manager.dart';
-import '../../../../core/offline/collections/contract_collection.dart';
 import '../../domain/entities/contract.dart';
 import '../../domain/repositories/contract_repository.dart';
 
@@ -14,7 +14,7 @@ import '../../domain/repositories/contract_repository.dart';
 class ContractOfflineRepository extends OfflineRepository<Contract>
     implements ContractRepository {
   ContractOfflineRepository({
-    required super.isarService,
+    required super.driftService,
     required super.syncManager,
     required super.connectivityService,
     required this.enterpriseId,
@@ -91,77 +91,72 @@ class ContractOfflineRepository extends OfflineRepository<Contract>
 
   @override
   Future<void> saveToLocal(Contract entity) async {
-    final collection = ContractCollection.fromMap(
-      toMap(entity),
+    final localId = getLocalId(entity);
+    final map = toMap(entity)..['localId'] = localId;
+    await driftService.records.upsert(
+      collectionName: collectionName,
+      localId: localId,
+      remoteId: getRemoteId(entity),
       enterpriseId: enterpriseId,
-      localId: getLocalId(entity),
+      moduleType: 'immobilier',
+      dataJson: jsonEncode(map),
+      localUpdatedAt: DateTime.now(),
     );
-    collection.remoteId = getRemoteId(entity);
-    collection.localUpdatedAt = DateTime.now();
-
-    await isarService.isar.writeTxn(() async {
-      await isarService.isar.contractCollections.put(collection);
-    });
   }
 
   @override
   Future<void> deleteFromLocal(Contract entity) async {
     final remoteId = getRemoteId(entity);
-    await isarService.isar.writeTxn(() async {
-      if (remoteId != null) {
-        await isarService.isar.contractCollections
-            .filter()
-            .remoteIdEqualTo(remoteId)
-            .and()
-            .enterpriseIdEqualTo(enterpriseId)
-            .deleteAll();
-      } else {
-        final localId = getLocalId(entity);
-        await isarService.isar.contractCollections
-            .filter()
-            .localIdEqualTo(localId)
-            .and()
-            .enterpriseIdEqualTo(enterpriseId)
-            .deleteAll();
-      }
-    });
+    if (remoteId != null) {
+      await driftService.records.deleteByRemoteId(
+        collectionName: collectionName,
+        remoteId: remoteId,
+        enterpriseId: enterpriseId,
+        moduleType: 'immobilier',
+      );
+      return;
+    }
+    final localId = getLocalId(entity);
+    await driftService.records.deleteByLocalId(
+      collectionName: collectionName,
+      localId: localId,
+      enterpriseId: enterpriseId,
+      moduleType: 'immobilier',
+    );
   }
 
   @override
   Future<Contract?> getByLocalId(String localId) async {
-    var collection = await isarService.isar.contractCollections
-        .filter()
-        .remoteIdEqualTo(localId)
-        .and()
-        .enterpriseIdEqualTo(enterpriseId)
-        .findFirst();
-
-    if (collection != null) {
-      return fromMap(collection.toMap());
+    final byRemote = await driftService.records.findByRemoteId(
+      collectionName: collectionName,
+      remoteId: localId,
+      enterpriseId: enterpriseId,
+      moduleType: 'immobilier',
+    );
+    if (byRemote != null) {
+      return fromMap(jsonDecode(byRemote.dataJson) as Map<String, dynamic>);
     }
 
-    collection = await isarService.isar.contractCollections
-        .filter()
-        .localIdEqualTo(localId)
-        .and()
-        .enterpriseIdEqualTo(enterpriseId)
-        .findFirst();
-
-    if (collection != null) {
-      return fromMap(collection.toMap());
-    }
-
-    return null;
+    final byLocal = await driftService.records.findByLocalId(
+      collectionName: collectionName,
+      localId: localId,
+      enterpriseId: enterpriseId,
+      moduleType: 'immobilier',
+    );
+    if (byLocal == null) return null;
+    return fromMap(jsonDecode(byLocal.dataJson) as Map<String, dynamic>);
   }
 
   @override
   Future<List<Contract>> getAllForEnterprise(String enterpriseId) async {
-    final collections = await isarService.isar.contractCollections
-        .filter()
-        .enterpriseIdEqualTo(enterpriseId)
-        .findAll();
-
-    return collections.map((c) => fromMap(c.toMap())).toList();
+    final rows = await driftService.records.listForEnterprise(
+      collectionName: collectionName,
+      enterpriseId: enterpriseId,
+      moduleType: 'immobilier',
+    );
+    return rows
+        .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+        .toList();
   }
 
   // ContractRepository interface implementation
@@ -189,17 +184,6 @@ class ContractOfflineRepository extends OfflineRepository<Contract>
   @override
   Future<Contract?> getContractById(String id) async {
     try {
-      final collection = await isarService.isar.contractCollections
-          .filter()
-          .remoteIdEqualTo(id)
-          .and()
-          .enterpriseIdEqualTo(enterpriseId)
-          .findFirst();
-
-      if (collection != null) {
-        return fromMap(collection.toMap());
-      }
-
       return await getByLocalId(id);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);

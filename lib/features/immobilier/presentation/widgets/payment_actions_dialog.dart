@@ -6,8 +6,8 @@ import '../../../../core/printing/sunmi_v3_service.dart';
 import '../../../../core/printing/templates/payment_receipt_template.dart';
 import '../../domain/entities/payment.dart';
 import 'payment_form_helpers.dart';
-import '../../../shared.dart';
-
+import 'package:elyf_groupe_app/shared.dart';
+import '../../../../../shared/utils/notification_service.dart';
 /// Dialog pour les actions sur un paiement (impression, PDF).
 class PaymentActionsDialog extends StatefulWidget {
   const PaymentActionsDialog({

@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../shared.dart';
-import '../../application/providers.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../domain/entities/machine.dart';
 import 'machine_selector_field.dart';
+import 'package:elyf_groupe_app/shared/presentation/widgets/form_dialog.dart';
+import 'package:elyf_groupe_app/shared/utils/form_helper_mixin.dart';
 
 /// Dialog pour ajouter/modifier une machine.
 class MachineFormDialog extends ConsumerStatefulWidget {
@@ -18,7 +20,8 @@ class MachineFormDialog extends ConsumerStatefulWidget {
       _MachineFormDialogState();
 }
 
-class _MachineFormDialogState extends ConsumerState<MachineFormDialog> {
+class _MachineFormDialogState extends ConsumerState<MachineFormDialog>
+    with FormHelperMixin {
   final _formKey = GlobalKey<FormState>();
   final _nomController = TextEditingController();
   final _referenceController = TextEditingController();
@@ -64,46 +67,42 @@ class _MachineFormDialogState extends ConsumerState<MachineFormDialog> {
   }
 
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
+    await handleFormSubmit(
+      context: context,
+      formKey: _formKey,
+      onLoadingChanged: (isLoading) => setState(() => _isLoading = isLoading),
+      onSubmit: () async {
+        final machine = Machine(
+          id: widget.machine?.id ?? '',
+          nom: _nomController.text.trim(),
+          reference: _referenceController.text.trim(),
+          description: _descriptionController.text.trim().isEmpty
+              ? null
+              : _descriptionController.text.trim(),
+          estActive: _estActive,
+          puissanceKw: _puissanceController.text.trim().isEmpty
+              ? null
+              : double.tryParse(_puissanceController.text.trim()),
+          dateInstallation: _dateInstallation,
+          createdAt: widget.machine?.createdAt,
+          updatedAt: DateTime.now(),
+        );
 
-    setState(() => _isLoading = true);
-    try {
-      final machine = Machine(
-        id: widget.machine?.id ?? '',
-        nom: _nomController.text.trim(),
-        reference: _referenceController.text.trim(),
-        description: _descriptionController.text.trim().isEmpty
-            ? null
-            : _descriptionController.text.trim(),
-        estActive: _estActive,
-        puissanceKw: _puissanceController.text.trim().isEmpty
-            ? null
-            : double.tryParse(_puissanceController.text.trim()),
-        dateInstallation: _dateInstallation,
-        createdAt: widget.machine?.createdAt,
-        updatedAt: DateTime.now(),
-      );
+        if (widget.machine == null) {
+          await ref.read(machineControllerProvider).createMachine(machine);
+        } else {
+          await ref.read(machineControllerProvider).updateMachine(machine);
+        }
 
-      if (widget.machine == null) {
-        await ref.read(machineRepositoryProvider).createMachine(machine);
-      } else {
-        await ref.read(machineRepositoryProvider).updateMachine(machine);
-      }
+        if (mounted) {
+          Navigator.of(context).pop();
+          ref.invalidate(allMachinesProvider);
+          ref.invalidate(machinesProvider);
+        }
 
-      if (!mounted) return;
-      Navigator.of(context).pop();
-      ref.invalidate(allMachinesProvider);
-      ref.invalidate(machinesProvider);
-      NotificationService.showSuccess(
-        context,
-        widget.machine == null ? 'Machine créée' : 'Machine modifiée',
-      );
-    } catch (e) {
-      if (!mounted) return;
-      NotificationService.showError(context, e.toString());
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
+        return widget.machine == null ? 'Machine créée' : 'Machine modifiée';
+      },
+    );
   }
 
   @override

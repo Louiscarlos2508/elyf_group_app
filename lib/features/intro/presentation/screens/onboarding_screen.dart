@@ -25,7 +25,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     OnboardingSlideData(
       title: 'Offline-first',
       description:
-          'Isar garde vos données critiques disponibles et se synchronise '
+          'Drift garde vos données critiques disponibles et se synchronise '
           'automatiquement avec Firestore.',
       animationType: OnboardingAnimationType.sync,
     ),
@@ -345,7 +345,7 @@ class _SyncAnimation extends StatelessWidget {
                   ),
                 ),
               ),
-              // Device icon (Isar/Offline)
+              // Device icon (Drift/Offline)
               Positioned(
                 bottom: 40,
                 child: Transform.scale(

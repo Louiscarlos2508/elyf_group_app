@@ -4,13 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../domain/entities/production_event.dart';
 import '../../../domain/entities/production_session.dart';
 import '../../../domain/entities/production_session_status.dart';
-import '../../../application/providers.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../production_event_dialog.dart';
 import '../production_finalization_dialog.dart';
 import '../production_resume_dialog.dart';
 import '../../screens/sections/production_session_detail_screen.dart' show productionSessionDetailProvider;
-import '../../../../shared.dart';
-
+import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
 /// Dialogs pour la gestion de la session de production.
 class SessionDialogs {
   /// Affiche le dialog de finalisation.
@@ -24,7 +24,7 @@ class SessionDialogs {
       builder: (dialogContext) => ProductionFinalizationDialog(
         session: session,
         onFinalized: (finalizedSession) {
-          ref.invalidate(productionSessionDetailProvider(session.id));
+          ref.invalidate(productionSessionDetailProvider((session.id)));
           ref.invalidate(productionSessionsStateProvider);
         },
       ),
@@ -56,7 +56,7 @@ class SessionDialogs {
 
             if (context.mounted) {
               Navigator.of(context).pop();
-              ref.invalidate(productionSessionDetailProvider(session.id));
+              ref.invalidate(productionSessionDetailProvider((session.id)));
               NotificationService.showInfo(context, 'Événement enregistré. Production suspendue.');
             }
           },
@@ -92,7 +92,7 @@ class SessionDialogs {
           await controller.updateSession(updatedSession);
 
           if (context.mounted) {
-            ref.invalidate(productionSessionDetailProvider(session.id));
+            ref.invalidate(productionSessionDetailProvider((session.id)));
             NotificationService.showInfo(context, 'Production reprise avec succès.');
           }
         },

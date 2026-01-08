@@ -4,10 +4,9 @@ import 'dart:developer' as developer;
 import '../../../../core/errors/app_exceptions.dart';
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/offline/connectivity_service.dart';
-import '../../../../core/offline/isar_service.dart';
+import '../../../../core/offline/drift_service.dart';
 import '../../../../core/offline/offline_repository.dart';
 import '../../../../core/offline/sync_manager.dart';
-import '../../../../core/offline/collections/production_session_collection.dart';
 import '../../domain/entities/bobine_usage.dart';
 import '../../domain/entities/production_day.dart';
 import '../../domain/entities/production_event.dart';
@@ -20,7 +19,7 @@ class ProductionSessionOfflineRepository
     extends OfflineRepository<ProductionSession>
     implements ProductionSessionRepository {
   ProductionSessionOfflineRepository({
-    required super.isarService,
+    required super.driftService,
     required super.syncManager,
     required super.connectivityService,
     required this.enterpriseId,
@@ -172,98 +171,74 @@ class ProductionSessionOfflineRepository
   @override
   Future<void> saveToLocal(ProductionSession entity) async {
     final map = toMap(entity);
-    final collection = ProductionSessionCollection.fromMap(
-      map,
+    final localId = getLocalId(entity);
+    map['localId'] = localId;
+    await driftService.records.upsert(
+      collectionName: collectionName,
+      localId: localId,
+      remoteId: getRemoteId(entity),
       enterpriseId: enterpriseId,
-      localId: getLocalId(entity),
+      moduleType: 'eau_minerale',
+      dataJson: jsonEncode(map),
+      localUpdatedAt: DateTime.now(),
     );
-    collection.remoteId = getRemoteId(entity) ?? getLocalId(entity);
-    collection.localUpdatedAt = DateTime.now();
-    
-    // Set JSON fields
-    collection.bobinesUtiliseesJson = map['bobinesUtiliseesJson'] as String?;
-    collection.eventsJson = map['eventsJson'] as String?;
-    collection.productionDaysJson = map['productionDaysJson'] as String?;
-
-    await isarService.isar.writeTxn(() async {
-      await isarService.isar.productionSessionCollections.put(collection);
-    });
   }
 
   @override
   Future<void> deleteFromLocal(ProductionSession entity) async {
     final remoteId = getRemoteId(entity);
-    await isarService.isar.writeTxn(() async {
-      if (remoteId != null) {
-        await isarService.isar.productionSessionCollections
-            .filter()
-            .remoteIdEqualTo(remoteId)
-            .and()
-            .enterpriseIdEqualTo(enterpriseId)
-            .deleteAll();
-      } else {
-        final localId = getLocalId(entity);
-        await isarService.isar.productionSessionCollections
-            .filter()
-            .localIdEqualTo(localId)
-            .and()
-            .enterpriseIdEqualTo(enterpriseId)
-            .deleteAll();
-      }
-    });
+    if (remoteId != null) {
+      await driftService.records.deleteByRemoteId(
+        collectionName: collectionName,
+        remoteId: remoteId,
+        enterpriseId: enterpriseId,
+        moduleType: 'eau_minerale',
+      );
+      return;
+    }
+    final localId = getLocalId(entity);
+    await driftService.records.deleteByLocalId(
+      collectionName: collectionName,
+      localId: localId,
+      enterpriseId: enterpriseId,
+      moduleType: 'eau_minerale',
+    );
   }
 
   @override
   Future<ProductionSession?> getByLocalId(String localId) async {
-    var collection = await isarService.isar.productionSessionCollections
-        .filter()
-        .remoteIdEqualTo(localId)
-        .and()
-        .enterpriseIdEqualTo(enterpriseId)
-        .findFirst();
-
-    if (collection != null) {
-      final map = collection.toMap();
-      map['bobinesUtiliseesJson'] = collection.bobinesUtiliseesJson;
-      map['eventsJson'] = collection.eventsJson;
-      map['productionDaysJson'] = collection.productionDaysJson;
-      return fromMap(map);
+    final byRemote = await driftService.records.findByRemoteId(
+      collectionName: collectionName,
+      remoteId: localId,
+      enterpriseId: enterpriseId,
+      moduleType: 'eau_minerale',
+    );
+    if (byRemote != null) {
+      return fromMap(jsonDecode(byRemote.dataJson) as Map<String, dynamic>);
     }
 
-    collection = await isarService.isar.productionSessionCollections
-        .filter()
-        .localIdEqualTo(localId)
-        .and()
-        .enterpriseIdEqualTo(enterpriseId)
-        .findFirst();
-
-    if (collection != null) {
-      final map = collection.toMap();
-      map['bobinesUtiliseesJson'] = collection.bobinesUtiliseesJson;
-      map['eventsJson'] = collection.eventsJson;
-      map['productionDaysJson'] = collection.productionDaysJson;
-      return fromMap(map);
-    }
-
-    return null;
+    final byLocal = await driftService.records.findByLocalId(
+      collectionName: collectionName,
+      localId: localId,
+      enterpriseId: enterpriseId,
+      moduleType: 'eau_minerale',
+    );
+    if (byLocal == null) return null;
+    return fromMap(jsonDecode(byLocal.dataJson) as Map<String, dynamic>);
   }
 
   @override
   Future<List<ProductionSession>> getAllForEnterprise(
     String enterpriseId,
   ) async {
-    final collections = await isarService.isar.productionSessionCollections
-        .filter()
-        .enterpriseIdEqualTo(enterpriseId)
-        .findAll();
-
-    return collections.map((c) {
-      final map = c.toMap();
-      map['bobinesUtiliseesJson'] = c.bobinesUtiliseesJson;
-      map['eventsJson'] = c.eventsJson;
-      map['productionDaysJson'] = c.productionDaysJson;
-      return fromMap(map);
-    }).toList();
+    final rows = await driftService.records.listForEnterprise(
+      collectionName: collectionName,
+      enterpriseId: enterpriseId,
+      moduleType: 'eau_minerale',
+    );
+    return rows
+        .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+        .toList();
   }
 
   // ProductionSessionRepository interface implementation
@@ -313,21 +288,6 @@ class ProductionSessionOfflineRepository
   @override
   Future<ProductionSession?> fetchSessionById(String id) async {
     try {
-      final collection = await isarService.isar.productionSessionCollections
-          .filter()
-          .remoteIdEqualTo(id)
-          .and()
-          .enterpriseIdEqualTo(enterpriseId)
-          .findFirst();
-
-      if (collection != null) {
-        final map = collection.toMap();
-        map['bobinesUtiliseesJson'] = collection.bobinesUtiliseesJson;
-        map['eventsJson'] = collection.eventsJson;
-        map['productionDaysJson'] = collection.productionDaysJson;
-        return fromMap(map);
-      }
-
       return await getByLocalId(id);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);

@@ -11,18 +11,9 @@ class MockUserRepository implements UserRepository {
 
   void _initializeMockData() {
     final now = DateTime.now();
+    // Le premier admin sera créé automatiquement via ensureDefaultAdminExists
+    // On garde les autres utilisateurs mock pour les tests
     _users.addAll([
-      User(
-        id: 'user-1',
-        firstName: 'Admin',
-        lastName: 'System',
-        username: 'admin',
-        email: 'admin@elyf.com',
-        phone: '+226 70 00 00 00',
-        isActive: true,
-        createdAt: now.subtract(const Duration(days: 365)),
-        updatedAt: now,
-      ),
       User(
         id: 'user-2',
         firstName: 'Jean',
@@ -144,6 +135,48 @@ class MockUserRepository implements UserRepository {
       throw Exception('Utilisateur non trouvé');
     }
     await updateUser(user.copyWith(isActive: isActive));
+  }
+
+  @override
+  Future<User> ensureDefaultAdminExists({
+    required String adminId,
+    required String adminEmail,
+    String? adminPasswordHash,
+  }) async {
+    // Vérifier si un utilisateur admin existe déjà
+    final existingAdmin = await getUserById(adminId);
+    if (existingAdmin != null) {
+      return existingAdmin;
+    }
+
+    // Vérifier si un utilisateur avec cet email existe déjà
+    try {
+      final existingByEmail = _users.firstWhere(
+        (u) => u.email == adminEmail,
+      );
+      // Un utilisateur avec cet email existe déjà
+      // On retourne l'existant
+      return existingByEmail;
+    } catch (e) {
+      // Aucun utilisateur avec cet email, on continue pour créer le premier admin
+    }
+
+    // Créer le premier admin par défaut
+    final now = DateTime.now();
+    final defaultAdmin = User(
+      id: adminId,
+      firstName: 'Admin',
+      lastName: 'System',
+      username: 'admin',
+      email: adminEmail,
+      phone: '+226 70 00 00 00',
+      isActive: true,
+      createdAt: now,
+      updatedAt: now,
+    );
+
+    _users.insert(0, defaultAdmin);
+    return defaultAdmin;
   }
 }
 

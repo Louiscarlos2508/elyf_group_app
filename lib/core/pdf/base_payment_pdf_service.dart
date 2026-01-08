@@ -1,6 +1,7 @@
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
+import '../../shared/domain/entities/payment_method.dart';
 import '../../features/immobilier/domain/entities/payment.dart';
 
 /// Service de base pour générer des PDF de paiement (factures et reçus).
@@ -158,16 +159,8 @@ abstract class BasePaymentPdfService {
 
   /// Retourne le label de la méthode de paiement.
   String getMethodLabel(PaymentMethod method) {
-    switch (method) {
-      case PaymentMethod.cash:
-        return 'Espèces';
-      case PaymentMethod.mobileMoney:
-        return 'Mobile Money';
-      case PaymentMethod.bankTransfer:
-        return 'Virement bancaire';
-      case PaymentMethod.check:
-        return 'Chèque';
-    }
+    // Utilise l'extension partagée
+    return method.label;
   }
 }
 

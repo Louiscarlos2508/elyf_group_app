@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 
-import '../../../../shared.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'package:elyf_groupe_app/features/gaz/application/providers.dart' show gazReportCalculationServiceProvider;
+import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import '../../../domain/entities/gas_sale.dart';
+import '../../../domain/services/gaz_report_calculation_service.dart';
 import 'sales_report_helpers.dart';
 
 /// Statistiques des ventes au détail.
-class SalesReportRetailStats extends StatelessWidget {
+class SalesReportRetailStats extends ConsumerWidget {
   const SalesReportRetailStats({
     super.key,
     required this.retailSales,
@@ -14,10 +19,12 @@ class SalesReportRetailStats extends StatelessWidget {
   final List<GasSale> retailSales;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    // Utiliser le service de calcul pour extraire la logique métier
+    final reportService = ref.read(gazReportCalculationServiceProvider);
     final salesByClient = _groupSalesByClient(retailSales);
-    final totalRetail = SalesReportHelpers.calculateTotal(retailSales);
+    final totalRetail = reportService.calculateRetailTotal(retailSales);
     final totalQuantity = SalesReportHelpers.calculateTotalQuantity(retailSales);
 
     return Column(

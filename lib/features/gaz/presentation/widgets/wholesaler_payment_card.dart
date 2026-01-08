@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../domain/entities/collection.dart';
-import '../../../../shared.dart';
+import 'package:elyf_groupe_app/shared.dart';
 
 /// Carte de paiement pour un grossiste dans la section retour.
 class WholesalerPaymentCard extends StatelessWidget {

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../application/providers.dart';
+import 'package:elyf_groupe_app/features/orange_money/application/providers.dart';
 import '../../../domain/entities/agent.dart';
 import '../../widgets/agents/agents_dialogs.dart';
 import '../../widgets/agents/agents_filters.dart';
@@ -32,8 +32,8 @@ class _AgentsScreenState extends ConsumerState<AgentsScreen> {
     final agentsKey = '${widget.enterpriseId ?? ''}|${_statusFilter?.name ?? ''}|$_searchQuery';
     final statsKey = '${widget.enterpriseId ?? ''}';
     
-    final agentsAsync = ref.watch(agentsProvider(agentsKey));
-    final statsAsync = ref.watch(agentsDailyStatisticsProvider(statsKey));
+    final agentsAsync = ref.watch(agentsProvider((agentsKey)));
+    final statsAsync = ref.watch(agentsDailyStatisticsProvider((statsKey)));
 
     return Container(
       color: const Color(0xFFF9FAFB),
@@ -203,7 +203,7 @@ class _AgentsScreenState extends ConsumerState<AgentsScreen> {
       () {
         if (mounted) {
           final agentsKey = '${widget.enterpriseId ?? ''}|${_statusFilter?.name ?? ''}|$_searchQuery';
-          ref.invalidate(agentsProvider(agentsKey));
+          ref.invalidate(agentsProvider((agentsKey)));
         }
       },
     );
@@ -219,7 +219,7 @@ class _AgentsScreenState extends ConsumerState<AgentsScreen> {
       () {
         if (mounted) {
           final agentsKey = '${widget.enterpriseId ?? ''}|${_statusFilter?.name ?? ''}|$_searchQuery';
-          ref.invalidate(agentsProvider(agentsKey));
+          ref.invalidate(agentsProvider((agentsKey)));
         }
       },
     );
@@ -233,7 +233,7 @@ class _AgentsScreenState extends ConsumerState<AgentsScreen> {
       await controller.deleteAgent(agent.id);
       if (mounted) {
         final agentsKey = '${widget.enterpriseId ?? ''}|${_statusFilter?.name ?? ''}|$_searchQuery';
-        ref.invalidate(agentsProvider(agentsKey));
+        ref.invalidate(agentsProvider((agentsKey)));
       }
     }
   }

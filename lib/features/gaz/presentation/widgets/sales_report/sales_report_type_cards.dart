@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
 
-import '../../../../shared.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'package:elyf_groupe_app/features/gaz/application/providers.dart' show gazReportCalculationServiceProvider;
+import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import '../../../domain/entities/gas_sale.dart';
+import '../../../domain/services/gaz_report_calculation_service.dart';
 import 'sales_report_helpers.dart';
 
 /// Cartes affichant les statistiques par type de vente (détail/gros).
 ///
-/// Uses [SalesReportHelpers] for calculations.
-class SalesReportTypeCards extends StatelessWidget {
+/// Uses [GazReportCalculationService] for calculations.
+class SalesReportTypeCards extends ConsumerWidget {
   const SalesReportTypeCards({
     super.key,
     required this.retailSales,
@@ -18,8 +23,10 @@ class SalesReportTypeCards extends StatelessWidget {
   final List<GasSale> wholesaleSales;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    // Utiliser le service de calcul pour extraire la logique métier
+    final reportService = ref.read(gazReportCalculationServiceProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -38,7 +45,7 @@ class SalesReportTypeCards extends StatelessWidget {
                 theme: theme,
                 type: 'Détail',
                 count: retailSales.length,
-                total: SalesReportHelpers.calculateTotal(retailSales),
+                total: reportService.calculateRetailTotal(retailSales),
                 color: Colors.orange,
               ),
             ),
@@ -48,7 +55,7 @@ class SalesReportTypeCards extends StatelessWidget {
                 theme: theme,
                 type: 'Gros',
                 count: wholesaleSales.length,
-                total: SalesReportHelpers.calculateTotal(wholesaleSales),
+                total: reportService.calculateWholesaleTotal(wholesaleSales),
                 color: Colors.purple,
               ),
             ),

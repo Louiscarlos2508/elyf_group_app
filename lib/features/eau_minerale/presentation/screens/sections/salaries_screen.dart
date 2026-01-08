@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../shared.dart';
-import '../../../application/providers.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../widgets/fixed_employee_form.dart';
 import '../../widgets/fixed_employees_content.dart';
+import 'package:elyf_groupe_app/shared/presentation/widgets/refresh_button.dart';
+import 'package:elyf_groupe_app/shared/presentation/widgets/form_dialog.dart';
 // Already imported via widgets.dart
 import '../../widgets/production_payment_form.dart';
 import '../../widgets/production_payments_content.dart';

@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../shared.dart';
-import '../../../application/providers.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import '../../../../../shared/utils/currency_formatter.dart';
+import '../../../../../shared/utils/notification_service.dart';
+import 'package:elyf_groupe_app/features/boutique/application/providers.dart';
 import '../../../domain/adapters/expense_balance_adapter.dart';
 import '../../../domain/entities/expense.dart';
 import '../../widgets/daily_expense_summary_card.dart';
-import '../../widgets/expense_form_dialog.dart';
+import '../../widgets/expense_form_dialog.dart' as boutique;
 import '../../widgets/expenses_table.dart';
 import '../../widgets/monthly_expense_summary.dart';
+import 'package:elyf_groupe_app/shared/presentation/widgets/refresh_button.dart';
 
 /// Expenses screen with professional UI - style eau_minerale.
 class ExpensesScreen extends ConsumerWidget {
@@ -98,7 +101,7 @@ class ExpensesScreen extends ConsumerWidget {
                                       showDialog(
                                         context: context,
                                         builder: (_) =>
-                                            const ExpenseFormDialog(),
+                                            const boutique.ExpenseFormDialog(),
                                       );
                                     },
                                     icon: const Icon(Icons.add),
@@ -154,7 +157,7 @@ class ExpensesScreen extends ConsumerWidget {
                       showDialog(
                         context: context,
                                         builder: (_) =>
-                                            const ExpenseFormDialog(),
+                                            const boutique.ExpenseFormDialog(),
                       );
                     },
                     icon: const Icon(Icons.add),

@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../shared.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import '../../../../shared/utils/currency_formatter.dart';
+import '../../../../shared/utils/notification_service.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/cart_item.dart';
 import '../../domain/entities/sale.dart';
+import 'package:elyf_groupe_app/shared/utils/form_helper_mixin.dart';
 
 class CheckoutDialog extends ConsumerStatefulWidget {
   const CheckoutDialog({
@@ -23,7 +26,8 @@ class CheckoutDialog extends ConsumerStatefulWidget {
   ConsumerState<CheckoutDialog> createState() => _CheckoutDialogState();
 }
 
-class _CheckoutDialogState extends ConsumerState<CheckoutDialog> {
+class _CheckoutDialogState extends ConsumerState<CheckoutDialog>
+    with FormHelperMixin {
   final _formKey = GlobalKey<FormState>();
   final _amountPaidController = TextEditingController();
   final _customerNameController = TextEditingController();
@@ -49,54 +53,57 @@ class _CheckoutDialogState extends ConsumerState<CheckoutDialog> {
   }
 
   int? get _amountPaid => int.tryParse(_amountPaidController.text);
-  int get _change => _amountPaid != null && _amountPaid! > widget.total
-      ? _amountPaid! - widget.total
-      : 0;
+  int get _change {
+    if (_amountPaid == null) return 0;
+    // Utiliser le service de calcul pour extraire la logique métier
+    final cartService = ref.read(cartCalculationServiceProvider);
+    return cartService.calculateChange(
+      amountPaid: _amountPaid!,
+      total: widget.total,
+    );
+  }
 
   Future<void> _processPayment() async {
-    if (!_formKey.currentState!.validate()) return;
+    await handleFormSubmit(
+      context: context,
+      formKey: _formKey,
+      onLoadingChanged: (isLoading) => setState(() => _isLoading = isLoading),
+      onSubmit: () async {
+        final sale = Sale(
+          id: 'sale-${DateTime.now().millisecondsSinceEpoch}',
+          date: DateTime.now(),
+          items: widget.cartItems.map((item) {
+            return SaleItem(
+              productId: item.product.id,
+              productName: item.product.name,
+              quantity: item.quantity,
+              unitPrice: item.product.price,
+              totalPrice: item.totalPrice,
+            );
+          }).toList(),
+          totalAmount: widget.total,
+          amountPaid: _amountPaid!,
+          customerName: _customerNameController.text.isEmpty
+              ? null
+              : _customerNameController.text.trim(),
+          paymentMethod: _paymentMethod,
+        );
 
-    setState(() => _isLoading = true);
-    try {
-      final sale = Sale(
-        id: 'sale-${DateTime.now().millisecondsSinceEpoch}',
-        date: DateTime.now(),
-        items: widget.cartItems.map((item) {
-          return SaleItem(
-            productId: item.product.id,
-            productName: item.product.name,
-            quantity: item.quantity,
-            unitPrice: item.product.price,
-            totalPrice: item.totalPrice,
-          );
-        }).toList(),
-        totalAmount: widget.total,
-        amountPaid: _amountPaid!,
-        customerName: _customerNameController.text.isEmpty
-            ? null
-            : _customerNameController.text.trim(),
-        paymentMethod: _paymentMethod,
-      );
+        await ref.read(storeControllerProvider).createSale(sale);
 
-      await ref.read(storeControllerProvider).createSale(sale);
+        if (mounted) {
+          // Garder la vente pour l'impression
+          setState(() => _completedSale = sale);
+          
+          ref.invalidate(recentSalesProvider);
+          ref.invalidate(productsProvider);
+          ref.invalidate(lowStockProductsProvider);
+        }
 
-      if (!mounted) return;
-      
-      // Garder la vente pour l'impression
-      setState(() => _completedSale = sale);
-      
-      ref.invalidate(recentSalesProvider);
-      ref.invalidate(productsProvider);
-      ref.invalidate(lowStockProductsProvider);
-      
-      // Ne pas fermer le dialog immédiatement pour permettre l'impression
-      NotificationService.showSuccess(context, 'Vente enregistrée avec succès');
-    } catch (e) {
-      if (!mounted) return;
-      NotificationService.showError(context, e.toString());
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
+        // Ne pas fermer le dialog immédiatement pour permettre l'impression
+        return 'Vente enregistrée avec succès';
+      },
+    );
   }
 
   @override

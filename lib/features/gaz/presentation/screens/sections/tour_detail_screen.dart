@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../shared.dart';
-import '../../../application/providers.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
+import 'package:elyf_groupe_app/shared/presentation/widgets/gaz_button_styles.dart';
+import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import '../../../domain/entities/tour.dart';
 import '../../widgets/tour_detail/closure_step_content.dart';
 import '../../widgets/tour_detail/collection_step_content.dart';

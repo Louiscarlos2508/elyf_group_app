@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/tenant/tenant_provider.dart';
-import '../../../../shared.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import '../../../../../shared/utils/notification_service.dart';
 import '../../domain/entities/agent.dart';
+import 'package:elyf_groupe_app/shared/presentation/widgets/form_dialog.dart';
+import 'package:elyf_groupe_app/shared/utils/form_helper_mixin.dart';
 
 /// Dialog for creating or editing an agent.
 class AgentFormDialog extends ConsumerStatefulWidget {
@@ -20,7 +23,8 @@ class AgentFormDialog extends ConsumerStatefulWidget {
   ConsumerState<AgentFormDialog> createState() => _AgentFormDialogState();
 }
 
-class _AgentFormDialogState extends ConsumerState<AgentFormDialog> {
+class _AgentFormDialogState extends ConsumerState<AgentFormDialog>
+    with FormHelperMixin {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
   late TextEditingController _phoneController;
@@ -56,33 +60,41 @@ class _AgentFormDialogState extends ConsumerState<AgentFormDialog> {
     super.dispose();
   }
 
-  void _handleSave(String? enterpriseId) {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-
+  Future<void> _handleSave(String? enterpriseId) async {
     if (enterpriseId == null) {
       NotificationService.showInfo(context, 'Aucune entreprise sélectionnée');
       return;
     }
 
-    final agent = Agent(
-      id: widget.agent?.id ?? IdGenerator.generate(),
-      name: _nameController.text.trim(),
-      phoneNumber: _phoneController.text.trim(),
-      simNumber: _simController.text.trim(),
-      operator: _selectedOperator,
-      liquidity: int.tryParse(_liquidityController.text.trim()) ?? 0,
-      commissionRate:
-          double.tryParse(_commissionRateController.text.trim()) ?? 2.5,
-      status: _selectedStatus,
-      enterpriseId: enterpriseId,
-      createdAt: widget.agent?.createdAt ?? DateTime.now(),
-      updatedAt: DateTime.now(),
-    );
+    await handleFormSubmit(
+      context: context,
+      formKey: _formKey,
+      onLoadingChanged: (_) {}, // Pas besoin de gestion d'état de chargement séparée
+      onSubmit: () async {
+        final agent = Agent(
+          id: widget.agent?.id ?? IdGenerator.generate(),
+          name: _nameController.text.trim(),
+          phoneNumber: _phoneController.text.trim(),
+          simNumber: _simController.text.trim(),
+          operator: _selectedOperator,
+          liquidity: int.tryParse(_liquidityController.text.trim()) ?? 0,
+          commissionRate:
+              double.tryParse(_commissionRateController.text.trim()) ?? 2.5,
+          status: _selectedStatus,
+          enterpriseId: enterpriseId,
+          createdAt: widget.agent?.createdAt ?? DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
 
-    widget.onSave(agent);
-    Navigator.of(context).pop();
+        widget.onSave(agent);
+        if (mounted) {
+          Navigator.of(context).pop();
+        }
+        return widget.agent == null
+            ? 'Agent créé avec succès'
+            : 'Agent mis à jour avec succès';
+      },
+    );
   }
 
   @override
@@ -244,7 +256,7 @@ class _AgentFormDialogState extends ConsumerState<AgentFormDialog> {
                   ),
                   const SizedBox(width: 8),
                   ElevatedButton(
-                    onPressed: () => _handleSave(enterpriseId),
+                    onPressed: () => _handleSave(enterpriseId).then((_) {}),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFF54900),
                       foregroundColor: Colors.white,

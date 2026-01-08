@@ -10,7 +10,7 @@ import '../entities/tour.dart';
 /// 
 /// Gère :
 /// - L'écoute des changements en temps réel
-/// - La synchronisation bidirectionnelle Isar ↔ Firestore
+/// - La synchronisation bidirectionnelle Drift ↔ Firestore
 /// - La résolution des conflits basée sur updated_at
 /// - Les transactions pour opérations critiques
 class RealtimeSyncService {
@@ -77,7 +77,7 @@ class RealtimeSyncService {
     // 1. Vérifier updated_at local vs Firestore
     // 2. Si Firestore est plus récent, utiliser Firestore
     // 3. Sinon, écrire dans Firestore
-    // 4. Mettre à jour Isar local
+    // 4. Mettre à jour le cache local (Drift)
   }
 
   /// Exécute une transaction atomique pour une opération critique.

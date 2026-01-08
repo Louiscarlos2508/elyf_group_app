@@ -9,8 +9,8 @@ import 'package:open_file/open_file.dart';
 
 import '../../domain/entities/employee.dart';
 import '../../domain/entities/salary_payment.dart';
-import '../../../shared.dart';
-
+import 'package:elyf_groupe_app/shared.dart';
+import '../../../../../shared/utils/notification_service.dart';
 /// Dialog pour générer et afficher un reçu de paiement de salaire.
 class SalaryReceiptDialog extends StatelessWidget {
   const SalaryReceiptDialog({

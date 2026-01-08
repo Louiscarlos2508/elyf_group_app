@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../application/providers.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../domain/entities/bobine_stock.dart';
 import '../../domain/entities/bobine_usage.dart';
 import 'bobine_usage_item_form.dart';
 import 'machine_selector_field.dart' show machinesProvider;
-import '../../../shared.dart';
-
+import 'package:elyf_groupe_app/shared.dart';
+import '../../../../../shared/utils/notification_service.dart';
 /// Champ pour gérer les bobines utilisées dans une session.
 class BobineUsageFormField extends ConsumerWidget {
   const BobineUsageFormField({
@@ -192,7 +192,7 @@ class BobineUsageFormField extends ConsumerWidget {
 /// Provider pour récupérer les stocks de bobines disponibles (nouveau système par type/quantité).
 final bobineStocksDisponiblesProvider = FutureProvider.autoDispose<List<BobineStock>>(
   (ref) async {
-    final stocks = await ref.read(bobineStockQuantityRepositoryProvider).fetchAll();
+    final stocks = await ref.read(bobineStockQuantityControllerProvider).fetchAll();
     // Filtrer seulement les stocks avec quantité > 0
     return stocks.where((stock) => stock.quantity > 0).toList();
   },

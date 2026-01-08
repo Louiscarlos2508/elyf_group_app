@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../application/providers.dart';
+import 'package:elyf_groupe_app/features/immobilier/application/providers.dart';
 import '../../domain/entities/tenant.dart';
-import '../../../../shared.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/shared/presentation/widgets/form_dialog.dart';
+import 'package:elyf_groupe_app/shared/utils/form_helper_mixin.dart';
 
 class TenantFormDialog extends ConsumerStatefulWidget {
   const TenantFormDialog({
@@ -17,7 +19,8 @@ class TenantFormDialog extends ConsumerStatefulWidget {
   ConsumerState<TenantFormDialog> createState() => _TenantFormDialogState();
 }
 
-class _TenantFormDialogState extends ConsumerState<TenantFormDialog> {
+class _TenantFormDialogState extends ConsumerState<TenantFormDialog>
+    with FormHelperMixin {
   final _formKey = GlobalKey<FormState>();
   final _fullNameController = TextEditingController();
   final _phoneController = TextEditingController();
@@ -55,52 +58,49 @@ class _TenantFormDialogState extends ConsumerState<TenantFormDialog> {
   }
 
   Future<void> _save() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    try {
-      final tenant = Tenant(
-        id: widget.tenant?.id ?? IdGenerator.generate(),
-        fullName: _fullNameController.text.trim(),
-        phone: _phoneController.text.trim(),
-        email: _emailController.text.trim(),
-        address: _addressController.text.trim().isEmpty
-            ? null
-            : _addressController.text.trim(),
-        idNumber: _idNumberController.text.trim().isEmpty
-            ? null
-            : _idNumberController.text.trim(),
-        emergencyContact: _emergencyContactController.text.trim().isEmpty
-            ? null
-            : _emergencyContactController.text.trim(),
-        notes: _notesController.text.trim().isEmpty
-            ? null
-            : _notesController.text.trim(),
-        createdAt: widget.tenant?.createdAt ?? DateTime.now(),
-        updatedAt: DateTime.now(),
-      );
-
-      final controller = ref.read(tenantControllerProvider);
-      if (widget.tenant == null) {
-        await controller.createTenant(tenant);
-      } else {
-        await controller.updateTenant(tenant);
-      }
-
-      if (mounted) {
-        ref.invalidate(tenantsProvider);
-        Navigator.of(context).pop();
-        NotificationService.showSuccess(
-          context,
-          widget.tenant == null
-              ? 'Locataire créé avec succès'
-              : 'Locataire mis à jour avec succès',
+    await handleFormSubmit(
+      context: context,
+      formKey: _formKey,
+      onLoadingChanged: (_) {}, // Pas besoin de gestion d'état de chargement séparée
+      onSubmit: () async {
+        final tenant = Tenant(
+          id: widget.tenant?.id ?? IdGenerator.generate(),
+          fullName: _fullNameController.text.trim(),
+          phone: _phoneController.text.trim(),
+          email: _emailController.text.trim(),
+          address: _addressController.text.trim().isEmpty
+              ? null
+              : _addressController.text.trim(),
+          idNumber: _idNumberController.text.trim().isEmpty
+              ? null
+              : _idNumberController.text.trim(),
+          emergencyContact: _emergencyContactController.text.trim().isEmpty
+              ? null
+              : _emergencyContactController.text.trim(),
+          notes: _notesController.text.trim().isEmpty
+              ? null
+              : _notesController.text.trim(),
+          createdAt: widget.tenant?.createdAt ?? DateTime.now(),
+          updatedAt: DateTime.now(),
         );
-      }
-    } catch (e) {
-      if (mounted) {
-        NotificationService.showError(context, e.toString());
-      }
-    }
+
+        final controller = ref.read(tenantControllerProvider);
+        if (widget.tenant == null) {
+          await controller.createTenant(tenant);
+        } else {
+          await controller.updateTenant(tenant);
+        }
+
+        if (mounted) {
+          ref.invalidate(tenantsProvider);
+          Navigator.of(context).pop();
+        }
+
+        return widget.tenant == null
+            ? 'Locataire créé avec succès'
+            : 'Locataire mis à jour avec succès';
+      },
+    );
   }
 
   @override

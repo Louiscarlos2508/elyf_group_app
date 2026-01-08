@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/offline/isar_service.dart';
+import '../../../../core/offline/drift_service.dart';
 import '../../../../core/offline/providers.dart';
 import '../../../../core/tenant/tenant_provider.dart';
 import '../data/repositories/contract_offline_repository.dart';
@@ -25,19 +25,28 @@ import 'controllers/expense_controller.dart';
 import 'controllers/payment_controller.dart';
 import 'controllers/property_controller.dart';
 import 'controllers/tenant_controller.dart';
-import '../domain/services/immobilier_validation_service.dart';
+import '../domain/services/calculation/immobilier_report_calculation_service.dart';
 import '../domain/services/dashboard_calculation_service.dart';
+import '../domain/services/filtering/expense_filter_service.dart';
+import '../domain/services/filtering/payment_filter_service.dart';
+import '../domain/services/immobilier_validation_service.dart';
+import '../domain/services/validation/contract_validation_service.dart';
+
+// Report Calculation Service
+final immobilierReportCalculationServiceProvider = Provider<ImmobilierReportCalculationService>(
+  (ref) => ImmobilierReportCalculationService(),
+);
 
 // Repositories
 final propertyRepositoryProvider = Provider<PropertyRepository>(
   (ref) {
     final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
-    final isarService = IsarService.instance;
+    final driftService = DriftService.instance;
     final syncManager = ref.watch(syncManagerProvider);
     final connectivityService = ref.watch(connectivityServiceProvider);
     
     return PropertyOfflineRepository(
-      isarService: isarService,
+      driftService: driftService,
       syncManager: syncManager,
       connectivityService: connectivityService,
       enterpriseId: enterpriseId,
@@ -48,12 +57,12 @@ final propertyRepositoryProvider = Provider<PropertyRepository>(
 final tenantRepositoryProvider = Provider<TenantRepository>(
   (ref) {
     final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
-    final isarService = IsarService.instance;
+    final driftService = DriftService.instance;
     final syncManager = ref.watch(syncManagerProvider);
     final connectivityService = ref.watch(connectivityServiceProvider);
     
     return TenantOfflineRepository(
-      isarService: isarService,
+      driftService: driftService,
       syncManager: syncManager,
       connectivityService: connectivityService,
       enterpriseId: enterpriseId,
@@ -64,12 +73,12 @@ final tenantRepositoryProvider = Provider<TenantRepository>(
 final contractRepositoryProvider = Provider<ContractRepository>(
   (ref) {
     final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
-    final isarService = IsarService.instance;
+    final driftService = DriftService.instance;
     final syncManager = ref.watch(syncManagerProvider);
     final connectivityService = ref.watch(connectivityServiceProvider);
     
     return ContractOfflineRepository(
-      isarService: isarService,
+      driftService: driftService,
       syncManager: syncManager,
       connectivityService: connectivityService,
       enterpriseId: enterpriseId,
@@ -80,12 +89,12 @@ final contractRepositoryProvider = Provider<ContractRepository>(
 final paymentRepositoryProvider = Provider<PaymentRepository>(
   (ref) {
     final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
-    final isarService = IsarService.instance;
+    final driftService = DriftService.instance;
     final syncManager = ref.watch(syncManagerProvider);
     final connectivityService = ref.watch(connectivityServiceProvider);
     
     return PaymentOfflineRepository(
-      isarService: isarService,
+      driftService: driftService,
       syncManager: syncManager,
       connectivityService: connectivityService,
       enterpriseId: enterpriseId,
@@ -96,12 +105,12 @@ final paymentRepositoryProvider = Provider<PaymentRepository>(
 final expenseRepositoryProvider = Provider<PropertyExpenseRepository>(
   (ref) {
     final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
-    final isarService = IsarService.instance;
+    final driftService = DriftService.instance;
     final syncManager = ref.watch(syncManagerProvider);
     final connectivityService = ref.watch(connectivityServiceProvider);
     
     return PropertyExpenseOfflineRepository(
-      isarService: isarService,
+      driftService: driftService,
       syncManager: syncManager,
       connectivityService: connectivityService,
       enterpriseId: enterpriseId,
@@ -116,6 +125,10 @@ final immobilierValidationServiceProvider = Provider<ImmobilierValidationService
     ref.watch(contractRepositoryProvider),
     ref.watch(paymentRepositoryProvider),
   ),
+);
+
+final contractValidationServiceProvider = Provider<ContractValidationService>(
+  (ref) => ContractValidationService(),
 );
 
 // Dashboard Calculation Service
@@ -235,7 +248,7 @@ final contractsByPropertyProvider =
 final paymentsByTenantProvider =
     FutureProvider.autoDispose.family<List<Payment>, String>(
   (ref, tenantId) async {
-    final contracts = await ref.watch(contractsByTenantProvider(tenantId).future);
+    final contracts = await ref.watch(contractsByTenantProvider((tenantId)).future);
     final paymentRepository = ref.watch(paymentRepositoryProvider);
     final allPayments = <Payment>[];
     for (final contract in contracts) {
@@ -246,5 +259,14 @@ final paymentsByTenantProvider =
     allPayments.sort((a, b) => b.paymentDate.compareTo(a.paymentDate));
     return allPayments;
   },
+);
+
+// Filter Services
+final paymentFilterServiceProvider = Provider<PaymentFilterService>(
+  (ref) => PaymentFilterService(),
+);
+
+final expenseFilterServiceProvider = Provider<ExpenseFilterService>(
+  (ref) => ExpenseFilterService(),
 );
 

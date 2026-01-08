@@ -5,7 +5,7 @@ import '../application/controllers/commissions_controller.dart';
 import '../application/controllers/liquidity_controller.dart';
 import '../application/controllers/orange_money_controller.dart';
 import '../application/controllers/settings_controller.dart';
-import '../../../../core/offline/isar_service.dart';
+import '../../../../core/offline/drift_service.dart';
 import '../../../../core/offline/providers.dart';
 import '../../../../core/tenant/tenant_provider.dart';
 import '../data/repositories/agent_offline_repository.dart';
@@ -27,12 +27,12 @@ import '../domain/repositories/transaction_repository.dart';
 final transactionRepositoryProvider = Provider<TransactionRepository>(
   (ref) {
     final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
-    final isarService = IsarService.instance;
+    final driftService = DriftService.instance;
     final syncManager = ref.watch(syncManagerProvider);
     final connectivityService = ref.watch(connectivityServiceProvider);
     
     return TransactionOfflineRepository(
-      isarService: isarService,
+      driftService: driftService,
       syncManager: syncManager,
       connectivityService: connectivityService,
       enterpriseId: enterpriseId,
@@ -107,12 +107,12 @@ final filteredTransactionsProvider = FutureProvider.autoDispose
 final agentRepositoryProvider = Provider<AgentRepository>(
   (ref) {
     final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
-    final isarService = IsarService.instance;
+    final driftService = DriftService.instance;
     final syncManager = ref.watch(syncManagerProvider);
     final connectivityService = ref.watch(connectivityServiceProvider);
     
     return AgentOfflineRepository(
-      isarService: isarService,
+      driftService: driftService,
       syncManager: syncManager,
       connectivityService: connectivityService,
       enterpriseId: enterpriseId,

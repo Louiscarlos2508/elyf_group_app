@@ -2,9 +2,9 @@
 // This file exports commonly used shared widgets to reduce import depth
 
 // Core widgets
-export 'adaptive_navigation_scaffold.dart';
+export 'adaptive_navigation_scaffold.dart' show NavigationSection, AdaptiveNavigationScaffold;
 export 'auth_guard.dart';
-export 'base_module_shell_screen.dart';
+export 'base_module_shell_screen.dart' show BaseModuleShellScreen, BaseModuleShellScreenState;
 export 'enterprise_selector_widget.dart';
 export 'form_dialog.dart';
 export 'form_dialog_actions.dart';
@@ -17,6 +17,10 @@ export 'form_fields/amount_input_field.dart';
 export 'form_fields/category_selector_field.dart';
 export 'form_fields/customer_form_fields.dart';
 export 'form_fields/date_picker_field.dart';
+
+// Payment widgets
+export 'payment_method_selector.dart';
+export 'payment_splitter.dart';
 
 // Expense widgets
 export 'expense_form_dialog.dart';

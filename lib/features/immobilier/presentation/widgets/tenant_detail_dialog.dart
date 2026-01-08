@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../application/providers.dart';
+import 'package:elyf_groupe_app/features/immobilier/application/providers.dart';
 import '../../domain/entities/contract.dart';
 import '../../domain/entities/payment.dart';
 import '../../domain/entities/tenant.dart';
@@ -249,7 +249,7 @@ class _ContractsTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final contractsAsync = ref.watch(contractsByTenantProvider(tenantId));
+    final contractsAsync = ref.watch(contractsByTenantProvider((tenantId)));
     final theme = Theme.of(context);
 
     return contractsAsync.when(
@@ -361,7 +361,7 @@ class _PaymentsTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final paymentsAsync = ref.watch(paymentsByTenantProvider(tenantId));
+    final paymentsAsync = ref.watch(paymentsByTenantProvider((tenantId)));
     final theme = Theme.of(context);
 
     return paymentsAsync.when(

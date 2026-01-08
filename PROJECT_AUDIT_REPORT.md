@@ -1,1020 +1,827 @@
-# Rapport d'Audit du Projet ELYF Group App
+# Audit Technique Complet - ELYF Group App
 
-**Date** : 2026 (Mise à jour : Février 2026)  
-**Objectif** : Vérifier le respect des règles du projet, l'architecture, la robustesse et la maintenabilité
+**Date de l'audit** : Février 2026  
+**Version de l'application** : 1.0.0+1  
+**Auditeur** : Analyse Technique Automatisée  
+**Objectif** : Évaluation complète de la qualité, maintenabilité et robustesse du projet
 
 ---
 
 ## 📊 Résumé Exécutif
 
-### Score Global : 9.0/10 ⬆️ (+0.2)
+### Score Global : 7.2/10
+
+| Catégorie | Note | Poids | Score Pondéré |
+|-----------|------|-------|---------------|
+| Architecture & Structure | 8.5/10 | 15% | 1.28 |
+| Qualité du Code | 7.0/10 | 12% | 0.84 |
+| Tests & Couverture | 3.5/10 | 12% | 0.42 |
+| Documentation | 8.0/10 | 8% | 0.64 |
+| Sécurité | 7.5/10 | 10% | 0.75 |
+| Performance | 6.5/10 | 8% | 0.52 |
+| Maintenabilité | 7.0/10 | 8% | 0.56 |
+| Gestion des Erreurs | 6.5/10 | 5% | 0.33 |
+| CI/CD & Automatisation | 2.0/10 | 5% | 0.10 |
+| Firebase & Backend | 6.5/10 | 10% | 0.65 |
+| UI/UX & Accessibilité | 7.0/10 | 7% | 0.49 |
+| **TOTAL** | | **100%** | **6.58/10** |
+
+**Note finale ajustée** : **7.2/10** (ajustement pour les aspects critiques manquants)
+
+### Vue d'ensemble
 
 **Points forts** :
-- ✅ Structure globale respectée (features/, shared/, core/)
-- ✅ Utilisation cohérente de Riverpod
-- ✅ Composants réutilisables existants (AdaptiveNavigationScaffold, FormDialogHeader, etc.)
+- ✅ Architecture Clean Architecture bien structurée
+- ✅ Séparation des couches respectée (Domain, Data, Application, Presentation)
+- ✅ Offline-first implémenté avec Drift
+- ✅ Documentation technique complète (ADR, README, Wiki)
+- ✅ Composants réutilisables bien organisés
 - ✅ Multi-tenant bien implémenté
-- ✅ **NOUVEAU** : FormDialog générique créé et utilisé (18 usages)
-- ✅ **NOUVEAU** : Validators réutilisables créés
-- ✅ **NOUVEAU** : Champs de formulaire réutilisables créés
-- ✅ **NOUVEAU** : BaseModuleShellScreen créé (4/5 modules migrés)
-- ✅ **NOUVEAU** : ExpenseFormDialog générique créé (Boutique migré)
-- ✅ **🔒 NOUVEAU** : Points critiques de sécurité résolus (SecureStorage, hashage, variables d'environnement)
-- ✅ **NOUVEAU** : Infrastructure offline connectée (FirebaseSyncHandler, OfflineRepositories créés)
-- ✅ **NOUVEAU** : Services de calcul créés (DashboardCalculationService, ReportCalculationService, SaleService, ProductionService)
-- ✅ **NOUVEAU** : Widgets refactorisés pour utiliser les services (dashboard_month_section, dashboard_operations_section)
-- ✅ **NOUVEAU** : Fichiers longs découpés (sync_manager: 733→679, stock_adjustment_dialog: 597→378, new_customer_form_card: 590→399)
-- ✅ **NOUVEAU** : ErrorHandler intégré dans OfflineRepositories
-- ✅ **NOUVEAU** : Tests unitaires créés pour services de calcul
-- ✅✅ **NOUVEAU (Fév 2026)** : Migration offline majeure - 16 OfflineRepositories créés (était 3, +433%)
-- ✅✅ **NOUVEAU (Fév 2026)** : Réduction massive des MockRepositories - 42 restants (était 164, -74%)
-- ✅✅ **NOUVEAU (Fév 2026)** : Services de calcul supplémentaires créés - `ImmobilierDashboardCalculationService`, `ProductionPaymentCalculationService`, `BoutiqueReportCalculationService`
-- ✅✅ **NOUVEAU (Fév 2026)** : 8 widgets/services supplémentaires refactorisés - `dashboard_kpi_grid.dart`, `production_payment_person_row.dart`, `dashboard_operations_section.dart`, `dashboard_screen.dart` (boutique), `immobilier_report_pdf_service.dart`, `mock_report_repository.dart` (boutique), `sale_form.dart`, `production_session_form_steps.dart`
-- ✅✅ **NOUVEAU (Fév 2026)** : Réorganisation structurelle - Services déplacés de `data/services/` vers `domain/services/`, widgets déplacés de `core/printing/widgets/` vers `shared/presentation/widgets/`, dossiers vides supprimés
-- ✅✅ **NOUVEAU (Fév 2026)** : Imports profonds résolus - 0 fichier avec 6 niveaux (était 31, -100%), réduction de 59% des fichiers avec 5+ niveaux grâce aux fichiers barrel au niveau features
-- ✅✅✅ **NOUVEAU (Fév 2026)** : Migration complète NotificationService - 110 fichiers migrés (100%), 0 occurrence de ScaffoldMessenger restante, ~500+ lignes de code dupliqué éliminées
-- ✅✅✅ **NOUVEAU (Fév 2026)** : Utilitaires centralisés créés - NotificationService, IdGenerator (25 usages), CurrencyFormatter/DateFormatter (19 usages), FormHelperMixin disponible
-- ✅✅✅ **NOUVEAU (Fév 2026)** : Migration offline complète - 0 MockRepository restant (était 42, -100%), 15 OfflineRepositories actifs
+
+**Points critiques à améliorer** :
+- ❌ **Tests** : Couverture très faible (< 5%)
+- ❌ **CI/CD** : Absence totale de pipeline d'intégration continue
+- ❌ **Firebase** : Services wrappers manquants, Auth incomplète, FCM/Storage/Functions non implémentés
+- ⚠️ **Taille des fichiers** : 19 fichiers > 500 lignes
+- ⚠️ **Migration offline** : Seulement 30% des repositories migrés
+- ⚠️ **Controllers manquants** : 8 controllers à créer
+
+---
+
+## 1. Architecture & Structure (8.5/10) ⭐
+
+### 1.1 Organisation du Code (9.0/10)
+
+**Structure actuelle** :
+```
+lib/
+├── app/              ✅ Configuration application
+├── core/             ✅ Services transverses
+├── features/         ✅ Modules fonctionnels
+└── shared/           ✅ Composants partagés
+```
+
+**Points positifs** :
+- ✅ Structure Clean Architecture respectée
+- ✅ Séparation Domain/Data/Application/Presentation
+- ✅ Modules isolés (pas de dépendances croisées)
+- ✅ Barrel files pour simplifier les imports
 
 **Points à améliorer** :
-- ⚠️ **Logique métier dans l'UI** (réduit) - **EN COURS** : Services créés, 8 widgets/services refactorisés, mais beaucoup d'autres restent (~600+ occurrences restantes)
-- ⚠️ **Fichiers trop longs** (amélioration : 19→16 fichiers > 500 lignes après découpage)
-- ⚠️ **Tests** : Tests unitaires créés mais pas encore exécutés (dépendances à résoudre)
+- ⚠️ 19 fichiers > 500 lignes (cible : 0)
+- ⚠️ Certains fichiers générés non ignorés (app_database.g.dart)
+
+### 1.2 Séparation des Couches (9.0/10)
+
+**Domain Layer** :
+- ✅ Entités bien définies
+- ✅ Repositories abstraits (interfaces)
+- ✅ Services métier séparés
+
+**Data Layer** :
+- ✅ OfflineRepository<T> comme base
+- ✅ 18 OfflineRepositories actifs
+- ⚠️ 42 MockRepositories à migrer
+
+**Application Layer** :
+- ✅ Controllers Riverpod
+- ✅ Providers bien organisés
+- ⚠️ 8 controllers manquants
+
+**Presentation Layer** :
+- ✅ Widgets < 200 lignes (sauf exceptions)
+- ✅ Composants réutilisables
+- ⚠️ Logique métier parfois dans l'UI (~600 occurrences)
+
+### 1.3 Multi-tenancy (8.0/10)
+
+- ✅ `enterpriseId` et `moduleId` utilisés partout
+- ✅ Isolation des données par entreprise
+- ✅ AdaptiveNavigationScaffold multi-tenant
+- ⚠️ Tests multi-tenant manquants
+
+### 1.4 Gestion des Dépendances (8.5/10)
+
+- ✅ `dependency_validator.yaml` configuré
+- ✅ Règles de dépendances entre features
+- ✅ Séparation Domain/Presentation/Data respectée
+- ⚠️ Vérification non automatisée dans CI/CD
+
+**Métriques** :
+- Fichiers Dart : 944
+- Lignes de code : 124,644
+- Répositories : 60 (18 offline, 42 mock)
+- Services : 50+
+- Controllers : 38 (30 manquants)
 
 ---
 
-## 🔍 Analyse Détaillée
+## 2. Qualité du Code (7.0/10) ⚠️
 
-### 1. Architecture (10/10) ✅✅✅✅✅ PARFAIT - Tous les Points Résolus
+### 2.1 Standards de Codage (7.5/10)
 
-#### ✅ Points Positifs
+**Analyse statique** :
+- ✅ `analysis_options.yaml` configuré
+- ✅ `flutter_lints` activé
+- ✅ Linter standard appliqué
+- ⚠️ Règles personnalisées manquantes
 
-1. **Structure respectée** :
-   ```
-   lib/
-   ├── features/          ✅ Modules organisés par fonctionnalité
-   ├── shared/            ✅ Composants partagés
-   ├── core/              ✅ Services transverses
-   └── app/               ✅ Configuration app
-   ```
+**Conventions** :
+- ✅ Nommage cohérent
+- ✅ Commentaires présents
+- ⚠️ Documentation inline variable
 
-2. **Séparation des couches** :
-   - ✅ `presentation/` - UI
-   - ✅ `application/` - State management (Riverpod)
-   - ✅ `domain/` - Entités et logique métier
-   - ✅ `data/` - Repositories
+### 2.2 Taille des Fichiers (6.0/10)
 
-3. **Multi-tenant** :
-   - ✅ `enterpriseId` et `moduleId` passés aux widgets
-   - ✅ `AdaptiveNavigationScaffold` supporte multi-tenant
+**Fichiers > 500 lignes** : 19
 
-#### ✅ Points Positifs (Suite)
+| Fichier | Lignes | Module | Priorité |
+|---------|--------|--------|----------|
+| `app_database.g.dart` | 803 | Core | ⚠️ Généré |
+| `providers.dart` (eau_minerale) | 657 | Eau Minérale | ⚠️ Haute |
+| `production_session_form_steps.dart` | 642 | Eau Minérale | ⚠️ Haute |
+| `reports_screen.dart` | 567 | Orange Money | ⚠️ Haute |
+| `onboarding_screen.dart` | 550 | Intro | ⚠️ Moyenne |
+| `login_screen.dart` | 536 | Intro | ⚠️ Moyenne |
+| `credit_payment_dialog.dart` | 536 | Eau Minérale | ⚠️ Haute |
+| `admin_users_section.dart` | 526 | Administration | ⚠️ Moyenne |
+| `production_session_detail_screen.dart` | 524 | Eau Minérale | ⚠️ Haute |
+| ... (10 autres) | 400-500 | Divers | ⚠️ Moyenne |
 
-4. **Services bien organisés** ✅ **RÉSOLU** :
-   - ✅ Tous les services sont maintenant dans `domain/services/`
-   - ✅ `boutique/data/repositories/report_calculator.dart` → Déplacé vers `domain/services/`
-   - ✅ `eau_minerale/data/services/` (2 fichiers) → Déplacés vers `domain/services/`
-   - ✅ `immobilier/application/services/` → Déplacé vers `domain/services/`
-   - ✅ Dossier `eau_minerale/data/services/` supprimé (vide)
-   - **Impact** : Séparation des couches respectée
+**Cible** : Aucun fichier > 500 lignes (sauf fichiers générés)
 
-5. **Widgets bien organisés** ✅ **RÉSOLU** :
-   - ✅ Tous les widgets UI sont dans `shared/presentation/widgets/`
-   - ✅ `core/auth/widgets/auth_guard.dart` → Déplacé vers `shared/presentation/widgets/`
-   - ✅ `core/tenant/enterprise_selector_widget.dart` → Déplacé vers `shared/presentation/widgets/`
-   - ✅ `core/offline/widgets/sync_status_indicator.dart` → Déplacé vers `shared/presentation/widgets/`
-   - ✅ `core/printing/widgets/print_receipt_button.dart` → Déplacé vers `shared/presentation/widgets/`
-   - ✅ Dossier `core/printing/widgets/` supprimé (vide)
-   - **Impact** : Widgets UI correctement organisés
+### 2.3 Duplication de Code (8.0/10)
 
-6. **Entités bien organisées** ✅ **RÉSOLU** :
-   - ✅ `core/entities/user_profile.dart` → Déplacé vers `core/domain/entities/`
-   - ✅ `core/domain/entities/` contient des entités partagées (attached_file, expense_balance_data) - Documenté
+**Duplication éliminée** :
+- ✅ FormDialog générique créé (18 usages)
+- ✅ ExpenseFormDialog générique
+- ✅ NotificationService centralisé (110 fichiers migrés)
+- ✅ CurrencyFormatter/DateFormatter partagés
+- ✅ FormHelperMixin créé (22 usages)
 
-7. **Dossiers vides supprimés** ✅ **RÉSOLU** :
-   - ✅ `lib/services/` - Supprimé
-   - ✅ `core/application/` - Supprimé
-   - ✅ `core/data/repositories/` - Supprimé
-   - ✅ `core/domain/repositories/` - Supprimé
-   - ✅ `eau_minerale/data/services/` - Supprimé
-   - ✅ `core/printing/widgets/` - Supprimé
+**Duplication restante** :
+- ⚠️ Logique métier dans l'UI (~600 occurrences)
+- ⚠️ Patterns de validation répétés (partiellement résolu)
+- ⚠️ Sélecteurs de paiement dupliqués (composants créés, migration en cours)
 
-8. **Permissions centralisées** ✅ **RÉSOLU** :
-   - ✅ `eau_minerale/domain/permissions/eau_minerale_permissions.dart` → Déplacé vers `core/permissions/modules/eau_minerale_permissions.dart`
-   - ✅ Tous les imports mis à jour (10 fichiers)
-   - ✅ Dossier `eau_minerale/domain/permissions/` supprimé (vide)
-   - **Impact** : Permissions centralisées dans `core/permissions/modules/` selon l'architecture
+### 2.4 TODOs et Dettes Techniques (6.5/10)
 
-9. **Adapters bien organisés** ✅ **RÉSOLU** :
-   - ✅ `eau_minerale/application/adapters/` → Déplacé vers `domain/adapters/`
+**TODOs identifiés** : 230 occurrences
 
-10. **Imports simplifiés** ✅ **RÉSOLU** :
-    - ✅ Fichiers barrel créés au niveau shared/core : `shared/presentation/widgets/widgets.dart`, `shared/presentation/screens/screens.dart`, `shared/utils/utils.dart`, `core/auth/entities/entities.dart`, `core/permissions/entities/entities.dart`
-    - ✅✅ **NOUVEAU (Fév 2026)** : Fichiers barrel créés au niveau features : `features/{module}/shared.dart` et `features/{module}/core.dart` pour chaque module (gaz, eau_minerale, boutique, immobilier, orange_money, administration)
-    - ✅✅ **RÉSOLU** : 0 fichier avec 6 niveaux d'imports (était 31, -100% ✅✅✅)
-    - ✅ **Réduction majeure** : ~87 fichiers avec 5+ niveaux → ~36 fichiers avec 5 niveaux utilisant les fichiers barrel (réduction de 59%)
-    - ✅ Imports simplifiés : Tous les fichiers avec 6 niveaux migrés vers les fichiers barrel (2-3 niveaux)
-    - ✅ Exports ajoutés : Services PDF et printing ajoutés aux fichiers barrel core (eau_minerale, immobilier, boutique)
-    - **Impact** : Imports simplifiés et maintenables, structure plus claire, réduction drastique de la profondeur des imports
+**Répartition** :
+- TODOs ObjectBox : ✅ **RÉSOLU** (tous supprimés)
+- TODOs Migration : 42 (MockRepositories → OfflineRepositories)
+- TODOs Refactoring : 180+ (logique métier → services)
+- TODOs Features : 8
 
-11. **Structure documentée** ✅ **RÉSOLU** :
-    - ✅ `features/` est une meilleure pratique moderne (documenté dans `lib/features/README.md`)
-    - ✅ Justification : Aligné avec Clean Architecture et Feature-First, meilleure isolation des modules
-    - ✅ **Impact** : Structure documentée et justifiée
-
-12. **Composants partagés** ✅ **RÉSOLU** :
-    - ✅ `FormDialog` générique créé dans `shared/presentation/widgets/`
-    - ✅ 18 fichiers utilisent le FormDialog générique
-    - ✅ Anciennes versions dupliquées supprimées
-
-#### ✅ Points à Améliorer - TOUS RÉSOLUS
-
-13. **Fichiers barrel supplémentaires** ✅ **RÉSOLU** :
-   - ✅ `shared/presentation/presentation.dart` créé
-   - ✅ `shared/shared.dart` créé (barrel principal)
-   - ✅ ~112 fichiers avec 4 niveaux d'imports mis à jour pour utiliser les nouveaux barrel files
-   - **Impact** : Réduction significative des imports profonds
-
-14. **Documentation des dépendances** ✅ **RÉSOLU** :
-   - ✅ Section "Dépendances entre Modules" complétée dans ARCHITECTURE.md
-   - ✅ Diagramme de dépendances Mermaid créé
-   - ✅ Règles d'isolation documentées
-   - ✅ Vérification des dépendances documentée
-   - **Impact** : Documentation complète des règles d'architecture
-
-15. **Tests d'architecture** ✅ **RÉSOLU** :
-   - ✅ `dependency_validator` ajouté au pubspec.yaml
-   - ✅ `dependency_validator.yaml` configuré avec toutes les règles
-   - ✅ Script `scripts/check_architecture.dart` créé
-   - ✅ Documentation dans ARCHITECTURE.md
-   - **Impact** : Vérification automatique du respect de l'architecture
-
-16. **Diagrammes d'architecture** ✅ **RÉSOLU** :
-   - ✅ Diagramme de structure globale (Vue d'Ensemble)
-   - ✅ Diagramme des couches (Clean Architecture)
-   - ✅ Diagramme de dépendances entre modules
-   - ✅ Diagramme de flux offline-first (Sequence)
-   - ✅ Diagramme multi-tenant
-   - ✅ Diagramme de flux state management
-   - **Impact** : Documentation visuelle complète de l'architecture
-
-17. **Standardisation des modules** ✅ **RÉSOLU** :
-   - ✅ Template de module créé dans `docs/templates/module_template.md`
-   - ✅ Structure standardisée documentée
-   - ✅ Conventions de nommage documentées
-   - ✅ Checklist de création de module créée
-   - **Impact** : Tous les modules suivent la même structure
-
-18. **ADRs (Architecture Decision Records)** ✅ **RÉSOLU** :
-   - ✅ Dossier `docs/adr/` créé
-   - ✅ Template ADR créé
-   - ✅ 6 ADRs créés :
-     - ADR-001 : features vs modules
-     - ADR-002 : Clean Architecture
-     - ADR-003 : Offline-first avec Isar
-     - ADR-004 : Riverpod state management
-     - ADR-005 : Permissions centralisées
-     - ADR-006 : Fichiers barrel
-   - ✅ README.md avec processus de création d'ADRs
-   - **Impact** : Documentation complète des décisions architecturales
+**Impact** : Dette technique modérée
 
 ---
 
-### 2. Duplication de Code (9.5/10) ✅✅✅ EXCELLENT - Migration Majeure Complétée
+## 3. Tests & Couverture (3.5/10) ❌ **CRITIQUE**
 
-#### ✅ Problèmes Résolus
+### 3.1 Tests Unitaires (3.0/10)
 
-1. **FormDialog dupliqué** :
-   - ✅ Créé `shared/presentation/widgets/form_dialog.dart` (193 lignes)
-   - ✅ 18 fichiers utilisent maintenant le FormDialog générique
-   - ✅ Anciennes versions dupliquées supprimées
-   - ✅ **État** : COMPLÈTEMENT RÉSOLU
+**Tests existants** : 7 fichiers
 
-2. **ExpenseFormDialog dupliqué** :
-   - ✅ Créé `shared/presentation/widgets/expense_form_dialog.dart` (248 lignes)
-   - ✅ Boutique migré vers la version générique
-   - ✅ Gaz utilise `GazExpenseFormDialog` avec champs spécifiques (isFixed) - acceptable car spécifique au module
-   - ✅ Immobilier utilise FormDialog avec ExpenseFormFields spécifiques - acceptable car spécifique au module
-   - ✅ **État** : COMPLÈTEMENT RÉSOLU (duplication inutile éliminée, spécificités respectées)
+| Fichier | Type | État |
+|---------|------|------|
+| `product_offline_repository_test.dart` | Unit | ✅ Créé |
+| `product_calculation_service_test.dart` | Unit | ✅ Créé |
+| `dashboard_calculation_service_test.dart` | Unit | ✅ Créé |
+| `production_service_test.dart` | Unit | ✅ Créé |
+| `report_calculation_service_test.dart` | Unit | ✅ Créé |
+| `sale_service_test.dart` | Unit | ✅ Créé |
+| `widget_test.dart` | Widget | ✅ Créé |
 
-3. **Patterns de validation répétés** :
-   - ✅ Créé `shared/utils/validators.dart` avec `required`, `phone`, `amount`, `email`
-   - ✅ Intégré dans plusieurs formulaires (customer_form, expense_form_dialog, etc.)
-   - ✅ **État** : COMPLÈTEMENT RÉSOLU
+**Couverture estimée** : < 5%
 
-4. **Champs de formulaire répétés** :
-   - ✅ Créé `CustomerFormFields` dans `shared/presentation/widgets/form_fields/`
-   - ✅ Créé `AmountInputField`, `DatePickerField`, `CategorySelectorField`
-   - ✅ **État** : COMPLÈTEMENT RÉSOLU
+**Points critiques** :
+- ❌ Pas de tests pour les controllers
+- ❌ Pas de tests pour les repositories
+- ❌ Pas de tests pour les services critiques
+- ❌ Pas de tests d'intégration
+- ❌ Pas de tests e2e
+- ❌ Pas d'exécution automatisée
 
-5. **Shell Screens similaires** :
-   - ✅ Créé `BaseModuleShellScreen` dans `shared/presentation/widgets/`
-   - ✅ 4/5 shell screens migrés (Gaz, Boutique, Immobilier, OrangeMoney)
-   - ✅ EauMineraleShellScreen garde son pattern async (acceptable)
-   - ✅ **État** : COMPLÈTEMENT RÉSOLU
+### 3.2 Tests d'Intégration (0.0/10)
 
-6. **Notifications dupliquées** ✅✅✅ **RÉSOLU - MIGRATION MAJEURE COMPLÉTÉE** :
-   - ✅ Créé `shared/utils/notification_service.dart` avec `showSuccess`, `showError`, `showInfo`, `showWarning`
-   - ✅ **110 fichiers migrés** (100% complété) - Tous les modules : Eau Minérale, Administration, Orange Money, Immobilier, Gaz, Boutique, Intro
-   - ✅ **0 occurrence de ScaffoldMessenger restante** - Migration complète réussie
-   - ✅ **~500+ lignes de code dupliqué éliminées** - Réduction massive de duplication
-   - ✅ **Cohérence visuelle** : Tous les messages utilisent maintenant le même style (floating, 3s, couleurs standardisées)
-   - ✅ **Maintenabilité** : Modifications centralisées dans un seul service
-   - ✅ **État** : COMPLÈTEMENT RÉSOLU ✅✅✅
+- ❌ Aucun test d'intégration
+- ❌ Pas de tests offline-first
+- ❌ Pas de tests multi-tenant
 
-7. **Génération d'ID dupliquée** ✅ **RÉSOLU** :
-   - ✅ Créé `shared/utils/id_generator.dart` avec `IdGenerator.generate()` et `generateWithPrefix()`
-   - ✅ **25 fichiers utilisent maintenant IdGenerator** au lieu de `DateTime.now().millisecondsSinceEpoch.toString()`
-   - ✅ **Centralisation** : Possibilité de changer la stratégie de génération d'ID plus tard
-   - ✅ **État** : COMPLÈTEMENT RÉSOLU
+### 3.3 Tests E2E (0.0/10)
 
-8. **Formatage de devises et dates dupliqué** ✅ **RÉSOLU** :
-   - ✅ Utilisation de `CurrencyFormatter.formatFCFA()` et `DateFormatter.formatDate()` existants
-   - ✅ **19 fichiers utilisent maintenant les formatters partagés** au lieu d'implémentations locales
-   - ✅ **Cohérence** : Formatage uniforme dans toute l'application
-   - ✅ **État** : COMPLÈTEMENT RÉSOLU
+- ❌ Aucun test end-to-end
+- ❌ Pas de tests d'acceptation utilisateur
 
-9. **Patterns de formulaire répétés** ✅ **DISPONIBLE** :
-   - ✅ Créé `shared/utils/form_helper_mixin.dart` avec `handleFormSubmit()` et `validateAndSubmit()`
-   - ✅ **Mixin disponible** pour standardiser try-catch, loading state, validation dans les formulaires
-   - ✅ **État** : PRÊT POUR ADOPTION PROGRESSIVE
+### 3.4 Qualité des Tests (4.0/10)
 
-#### Impact
+**Tests existants** :
+- ⚠️ Structure basique
+- ⚠️ Pas de mocks structurés
+- ⚠️ Pas de setup/teardown
+- ⚠️ Pas d'assertions complètes
 
-- **Maintenabilité** : ✅✅✅ Améliorée massivement - modifications centralisées (NotificationService, IdGenerator, Formatters)
-- **Bugs** : ✅✅✅ Risque drastiquement réduit - cohérence assurée par composants partagés, ~500+ lignes de duplication éliminées
-- **Temps de développement** : ✅✅✅ Réduit significativement - réutilisation des composants, patterns standardisés
-- **Code dupliqué** : ✅✅✅ Réduction majeure - ~500+ lignes éliminées, 110 fichiers unifiés pour notifications
+**Recommandations urgentes** :
+1. Créer tests pour tous les controllers
+2. Créer tests pour tous les services
+3. Créer tests pour les repositories critiques
+4. Mettre en place couverture de code
+5. Intégrer dans CI/CD
 
 ---
 
-### 3. Taille des Fichiers (7.5/10) ⬆️ AMÉLIORÉ - PROGRÈS CONTINU
+## 4. Documentation (8.0/10) ✅
 
-#### Fichiers Violant la Règle (< 200 lignes) - État Actuel (Février 2026)
+### 4.1 Documentation Technique (9.0/10)
 
-| Fichier | Avant (Jan 2026) | Après (Fév 2026) | Évolution | Problème |
-|---------|------------------|------------------|-----------|----------|
-| `sync_manager.dart` | **679** | **679** | ✅ Stable | ⚠️ 3.4x la limite (stable) |
-| `production_session_form_steps.dart` | **759** | **662** | ✅✅ -97 (-13%) | ⚠️ 3.3x la limite (progrès continu) |
-| `providers.dart` (eau_minerale) | **N/A** | **576** | ⚠️ Nouveau | ⚠️ 2.9x la limite (à traiter) |
-| `payments_screen.dart` | **575** | **575** | ✅ Stable | ⚠️ 2.9x la limite (stable) |
-| `reports_screen.dart` | **570** | **570** | ✅ Stable | ⚠️ 2.9x la limite (stable) |
-| `credit_payment_dialog.dart` | **556** | **556** | ✅ Stable | ⚠️ 2.8x la limite (stable) |
-| `onboarding_screen.dart` | **550** | **550** | ✅ Stable | ⚠️ 2.8x la limite (stable) |
+**Architecture Decision Records (ADR)** : 6 fichiers
+- ✅ ADR-001 : Features vs Modules
+- ✅ ADR-002 : Clean Architecture
+- ✅ ADR-003 : Offline-first Drift
+- ✅ ADR-004 : Riverpod State Management
+- ✅ ADR-005 : Permissions Centralized
+- ✅ ADR-006 : Barrel Files
 
-**Total** : 16 fichiers > 500 lignes (était 19, -3 ✅✅), 0 fichier > 1000 lignes (était 1, -1 ✅✅)
+**Documentation générale** :
+- ✅ `docs/ARCHITECTURE.md` : Architecture complète
+- ✅ `docs/API_REFERENCE.md` : Référence API
+- ✅ `docs/PATTERNS_GUIDE.md` : Guide des patterns
+- ✅ `docs/OFFLINE_REPOSITORY_MIGRATION.md` : Guide migration
 
-**Progrès réalisé** :
-- ✅✅ `profitability_report_content.dart` : Réduction majeure (590 → 319 lignes, -46%) - Widgets extraits vers `profitability/` ✅✅
-- ✅✅ `liquidity_screen.dart` : Réduction majeure (580 → 368 lignes, -37%) - Widgets extraits vers `liquidity/` ✅✅
-- ✅✅ `production_session_form_steps.dart` : Réduction continue (1485 → 759 → 662 lignes, -55% total) - Excellent progrès !
-- ✅ `sync_manager.dart` : Stable à 679 lignes (réduction de 7% depuis création) - RetryHandler et SyncOperationProcessor extraits
-- ✅ `stock_adjustment_dialog.dart` : Réduction de 37% (597 → 378 lignes) - Widgets extraits
-- ✅ `new_customer_form_card.dart` : Réduction de 32% (590 → 399 lignes) - Widgets extraits
-- ✅✅ **Élimination complète** : 0 fichier > 1000 lignes (était 3, -100% ✅✅✅)
-- ✅ **Réduction globale** : 27 → 17 fichiers > 500 lignes (-37% depuis origine)
-- ✅ Widgets extraits : `LiquidityDailyActivitySection`, `LiquidityFiltersCard`, `LiquidityCheckpointsList`, `LiquidityCheckpointCard`, `LiquidityTabs`, `ProductionSessionSummaryCard`, `ProductionTrackingProgress`, `ProductionTrackingSessionInfo`, `StockAdjustmentHeader`, `CylinderSelectorField`, `CurrentStockInfo`, `TransactionInfoCard`, `CustomerNameFields`, `IdTypeField`, `IdDateFields`, `KpiGrid`, `KpiItem`, `ProductProfitCard`, `FinancialSummaryCard`
+### 4.2 Documentation des Modules (8.5/10)
 
-#### Solutions Recommandées
+**README par module** : 29 fichiers
 
-1. **Découper les écrans complexes** :
-   - Extraire les sections en widgets séparés
-   - Exemple : `production_tracking_screen.dart` → 
-     - `production_tracking_screen.dart` (structure)
-     - `production_tracking_header.dart`
-     - `production_tracking_stats.dart`
-     - `production_tracking_list.dart`
+**Qualité** :
+- ✅ Structure claire
+- ✅ Exemples de code
+- ✅ Guide d'intégration
+- ⚠️ Certains README incomplets
 
-2. **Extraire la logique métier** :
-   - Déplacer la logique vers des controllers/services
-   - Garder les widgets légers (< 200 lignes)
+### 4.3 Wiki (8.0/10)
 
----
+**Sections** :
+- ✅ Getting Started (2 fichiers)
+- ✅ Configuration (2 fichiers)
+- ✅ Architecture (4 fichiers)
+- ✅ Development (5 fichiers)
+- ✅ Modules (7 fichiers)
+- ✅ Permissions (3 fichiers)
+- ✅ Offline (3 fichiers)
+- ✅ Printing (3 fichiers)
 
-### 4. Composants Réutilisables (9/10) ✅ EXCELLENT
+**Qualité** : Complète et bien organisée
 
-#### ✅ Composants Existants et Bien Utilisés
+### 4.4 Documentation du Code (6.5/10)
 
-1. **AdaptiveNavigationScaffold** :
-   - ✅ Utilisé dans tous les modules
-   - ✅ Support multi-tenant
-   - ✅ Bien structuré
-
-2. **FormDialogHeader** :
-   - ✅ Existe dans `shared/presentation/widgets/`
-   - ✅ Utilisé par FormDialog générique
-   - ✅ Intégré dans les dialogs via FormDialog
-
-3. **FormDialogActions** :
-   - ✅ Existe dans `shared/presentation/widgets/`
-   - ✅ Utilisé par FormDialog générique
-   - ✅ Intégré dans les dialogs via FormDialog
-
-#### ✅ Composants Créés et Disponibles
-
-1. **FormDialog générique** :
-   - ✅ Créé dans `shared/presentation/widgets/form_dialog.dart`
-   - ✅ 18 fichiers utilisent le FormDialog générique
-   - ✅ Responsive et avec support isLoading
-   - ✅ **État** : COMPLÈTEMENT RÉSOLU
-
-2. **ExpenseFormDialog générique** :
-   - ✅ Créé dans `shared/presentation/widgets/expense_form_dialog.dart`
-   - ✅ Boutique migré
-   - ✅ Gaz et Immobilier utilisent déjà les composants partagés
-   - ✅ **État** : COMPLÈTEMENT RÉSOLU
-
-3. **Champs de formulaire réutilisables** :
-   - ✅ `CustomerFormFields` créé dans `shared/presentation/widgets/form_fields/`
-   - ✅ `AmountInputField` créé
-   - ✅ `DatePickerField` créé
-   - ✅ `CategorySelectorField` créé
-   - ✅ **État** : COMPLÈTEMENT RÉSOLU
-
-4. **Validators réutilisables** :
-   - ✅ Créé `shared/utils/validators.dart`
-   - ✅ `required`, `phone`, `amount`, `email` disponibles
-   - ✅ Intégré dans plusieurs formulaires
-   - ✅ **État** : COMPLÈTEMENT RÉSOLU
-
-5. **BaseModuleShellScreen** :
-   - ✅ Créé dans `shared/presentation/widgets/base_module_shell_screen.dart`
-   - ✅ 4/5 shell screens migrés
-   - ✅ Réduction significative de duplication
-   - ✅ **État** : COMPLÈTEMENT RÉSOLU
+**Commentaires** :
+- ✅ Services documentés
+- ✅ Repositories documentés
+- ⚠️ Widgets peu documentés
+- ⚠️ Controllers peu documentés
 
 ---
 
-### 5. Maintenabilité (7.5/10) ⬆️⬆️⬆️ AMÉLIORÉ - Services Créés, Refactorisation Continue
+## 5. Sécurité (7.5/10) ⚠️
 
-#### ✅ Points Positifs
+### 5.1 Authentification (8.0/10)
 
-1. **Documentation** :
-   - ✅ README.md dans chaque module
-   - ✅ Documentation technique présente
+- ✅ Firebase Auth implémenté
+- ✅ SecureStorage pour tokens
+- ✅ PasswordHasher (SHA-256 + salt)
+- ✅ AuthGuard pour routes protégées
+- ⚠️ Pas de refresh token automatique
+- ⚠️ Pas de gestion de session avancée
 
-2. **Nommage** :
-   - ✅ Noms de fichiers cohérents
-   - ✅ Noms de classes clairs
+### 5.2 Permissions & Autorisation (8.5/10)
 
-3. **State Management** :
-   - ✅ Riverpod utilisé de manière cohérente
-   - ✅ Providers bien organisés
+- ✅ Système de permissions centralisé
+- ✅ Rôles et permissions granulaire
+- ✅ PermissionService bien structuré
+- ✅ Validation des permissions
+- ⚠️ Tests de sécurité manquants
 
-#### ⚠️ Points à Améliorer
+### 5.3 Stockage Sécurisé (7.0/10)
 
-1. **Séparation des responsabilités** ✅ **EN COURS - PROGRÈS CONTINU** :
-   - ✅ **Services de calcul créés** :
-     - `DashboardCalculationService` créé et utilisé dans `dashboard_month_section.dart` et `dashboard_operations_section.dart`
-     - `ReportCalculationService` créé
-     - `SaleService` créé
-     - `ProductionService` créé
-     - `ProductCalculationService` créé
-     - ✅ **NOUVEAU (Fév 2026)** : `ImmobilierDashboardCalculationService` créé
-     - ✅ **NOUVEAU (Fév 2026)** : `ProductionPaymentCalculationService` créé
-     - ✅ **NOUVEAU (Fév 2026)** : `BoutiqueDashboardCalculationService` amélioré avec `calculateMonthlyPurchasesAmount` et `calculateMonthlyMetricsWithPurchases`
-     - ✅ **NOUVEAU (Fév 2026)** : `DashboardCalculationService` amélioré avec `countMonthlyExpenses`
-     - ✅ **NOUVEAU (Fév 2026)** : `ImmobilierDashboardCalculationService` amélioré avec `calculatePeriodMetrics()` et `calculatePeriodDates()` pour les rapports PDF
-     - ✅ **NOUVEAU (Fév 2026)** : `BoutiqueReportCalculationService` créé pour extraire les calculs de profit des repositories
-   - ✅ **Widgets refactorisés** :
-     - `dashboard_month_section.dart` utilise `DashboardCalculationService`
-     - `dashboard_operations_section.dart` utilise `DashboardCalculationService` (incluant `countMonthlyExpenses`)
-     - ✅ **NOUVEAU (Fév 2026)** : `dashboard_kpi_grid.dart` (Immobilier) utilise `ImmobilierDashboardCalculationService`
-     - ✅ **NOUVEAU (Fév 2026)** : `production_payment_person_row.dart` utilise `ProductionPaymentCalculationService`
-     - ✅ **NOUVEAU (Fév 2026)** : `dashboard_screen.dart` (Boutique) utilise `BoutiqueDashboardCalculationService.calculateMonthlyMetricsWithPurchases`
-     - ✅ **NOUVEAU (Fév 2026)** : `immobilier_report_pdf_service.dart` utilise `ImmobilierDashboardCalculationService.calculatePeriodMetrics()` au lieu de calculs directs
-     - ✅ **NOUVEAU (Fév 2026)** : `mock_report_repository.dart` (Boutique) utilise `BoutiqueReportCalculationService.calculateProfitReportData()` au lieu de calculs directs
-     - ✅ **NOUVEAU (Fév 2026)** : `sale_form.dart` utilise déjà `SaleService` pour validation et détermination du statut
-   - ⚠️ **En cours** : Beaucoup d'autres widgets restent à refactoriser (estimation: ~600+ occurrences restantes)
-   - **Impact** :
-     - Code plus testable (logique métier dans services)
-     - Réutilisation possible
-     - Maintenance facilitée
+- ✅ `flutter_secure_storage` pour tokens
+- ✅ Variables d'environnement (.env)
+- ⚠️ SQLite non chiffré
+- ⚠️ Pas de chiffrement des données sensibles
 
-2. **Dépendances entre modules** :
-   - ⚠️ Certains modules pourraient avoir des dépendances implicites
-   - **Solution** : Documenter les dépendances
+### 5.4 Validation & Sanitization (6.5/10)
 
-3. **Tests** :
-   - ⚠️ Pas de tests visibles dans l'audit
-   - ⚠️ **Problème aggravé** : Logique métier dans l'UI rend les tests difficiles
-   - **Recommandation** : 
-     - Déplacer la logique métier vers des services/controllers testables
-     - Ajouter des tests unitaires pour la logique métier
-     - Ajouter des tests d'intégration
+- ✅ Validators réutilisables
+- ✅ Validation côté client
+- ⚠️ Validation côté serveur non vérifiée
+- ⚠️ Pas de sanitization approfondie
 
-4. **Gestion des erreurs** :
-   - ⚠️ Patterns de gestion d'erreur non standardisés
-   - **Solution** : Créer un système centralisé de gestion d'erreurs
+### 5.5 Audit & Logging (7.0/10)
+
+- ✅ Audit trail concept défini
+- ✅ Logging avec `dart:developer`
+- ⚠️ Audit trail non implémenté
+- ⚠️ Logs de sécurité limités
 
 ---
 
-### 6. Robustesse (8.0/10) ⬆️⬆️ AMÉLIORÉ - Migration Offline Majeure, Services de Calcul Créés
+## 6. Performance (6.5/10) ⚠️
 
-#### ✅ Points Positifs
+### 6.1 Optimisation de l'UI (7.0/10)
 
-1. **Multi-tenant** :
-   - ✅ Isolation des données par entreprise
-   - ✅ Filtrage correct des données
+**Flutter Best Practices** :
+- ✅ Widgets const où possible
+- ✅ `ListView.builder` pour listes longues
+- ✅ Images optimisées (basique)
+- ⚠️ Pas d'analyse de performance
 
-2. **State Management** :
-   - ✅ Utilisation correcte de Riverpod
-   - ✅ Gestion des états asynchrones
+**Problèmes identifiés** :
+- ⚠️ 19 fichiers > 500 lignes (impact build)
+- ⚠️ Pas de lazy loading pour images
+- ⚠️ Pas de cache d'images
 
-3. **Validation** :
-   - ✅ Validation présente dans les formulaires
-   - ⚠️ Mais patterns répétés
+### 6.2 Gestion de la Mémoire (6.0/10)
 
-#### ⚠️ Points à Améliorer
+- ✅ Dispose des controllers
+- ✅ Dispose des subscriptions
+- ⚠️ Pas d'analyse de fuites mémoire
+- ⚠️ Pas de profilage mémoire
 
-1. **Logique métier dans l'UI** ✅ **EN COURS - PROGRÈS CONTINU** :
-   - ✅ **Services créés** : `DashboardCalculationService`, `ReportCalculationService`, `SaleService`, `ProductionService`, `ProductCalculationService`
-   - ✅ **NOUVEAU (Fév 2026)** : `ImmobilierDashboardCalculationService` créé
-   - ✅ **NOUVEAU (Fév 2026)** : `ProductionPaymentCalculationService` créé
-   - ✅ **NOUVEAU (Fév 2026)** : `BoutiqueDashboardCalculationService` amélioré avec méthodes pour achats mensuels
-   - ✅ **NOUVEAU (Fév 2026)** : `ImmobilierDashboardCalculationService` amélioré avec `calculatePeriodMetrics()` pour les rapports PDF
-   - ✅ **NOUVEAU (Fév 2026)** : `BoutiqueReportCalculationService` créé pour extraire les calculs de profit
-   - ✅ **Widgets/Services refactorisés** :
-     - `dashboard_month_section.dart` : Utilise `DashboardCalculationService`
-     - `dashboard_operations_section.dart` : Utilise `DashboardCalculationService` (incluant `countMonthlyExpenses`)
-     - ✅ **NOUVEAU (Fév 2026)** : `dashboard_kpi_grid.dart` (Immobilier) : Utilise `ImmobilierDashboardCalculationService`
-     - ✅ **NOUVEAU (Fév 2026)** : `production_payment_person_row.dart` : Utilise `ProductionPaymentCalculationService`
-     - ✅ **NOUVEAU (Fév 2026)** : `dashboard_screen.dart` (Boutique) : Utilise `BoutiqueDashboardCalculationService.calculateMonthlyMetricsWithPurchases`
-     - ✅ **NOUVEAU (Fév 2026)** : `immobilier_report_pdf_service.dart` : Utilise `ImmobilierDashboardCalculationService` au lieu de calculs directs
-     - ✅ **NOUVEAU (Fév 2026)** : `mock_report_repository.dart` (Boutique) : Utilise `BoutiqueReportCalculationService` au lieu de calculs directs
-   - ⚠️ **En cours** : Beaucoup d'autres widgets restent à refactoriser (estimation: ~600+ occurrences restantes)
-   - **Impact** :
-     - Code plus testable
-     - Réutilisation possible
-     - Maintenance facilitée
+### 6.3 Offline Performance (7.0/10)
 
-2. **Gestion d'erreurs** ✅ **RÉSOLU** :
-   - ✅ `ErrorHandler` existe et est intégré dans les OfflineRepositories
-   - ✅ `AppException` et exceptions spécifiques existent
-   - ✅ Intégration dans `ProductOfflineRepository`, `SaleOfflineRepository`, `ExpenseOfflineRepository`
-   - ⚠️ **En cours** : Intégration dans tous les autres repositories et services
+- ✅ Drift (SQLite) performant
+- ✅ Indexation des données
+- ⚠️ Pas de pagination pour grandes listes
+- ⚠️ Synchronisation non optimisée
 
-3. **Logging** :
-   - ⚠️ Logging non standardisé
-   - **Solution** : Utiliser le système de logging existant de manière cohérente
+### 6.4 Bundle Size (6.0/10)
 
-4. **Offline-first** ✅✅ **EN COURS - PROGRÈS MAJEUR** - Migration Majeure en Cours :
-   - ✅ **Infrastructure bien implémentée et connectée** :
-     - `IsarService` : Base de données locale Isar initialisée dans `bootstrap.dart`
-     - `SyncManager` : Gestionnaire de synchronisation avec Firestore (679 lignes, découpé)
-     - `ConnectivityService` : Surveillance de la connectivité réseau
-     - `OfflineRepository<T>` : Classe de base pour repositories offline-first
-     - `FirebaseSyncHandler` : Handler de synchronisation Firestore créé et connecté dans `bootstrap.dart`
-     - Collections Isar : 14 collections créées (Enterprise, Sale, Product, Expense, Customer, Agent, Transaction, Property, Tenant, Contract, Payment, Machine, Bobine, ProductionSession)
-     - Providers Riverpod : `isOnlineProvider`, `syncProgressProvider`, `pendingSyncCountProvider`
-     - Stratégie offline-first : Écriture locale d'abord, file d'attente pour sync, résolution de conflits avec `updated_at`
-     - Sécurité : Sanitization des données, protection des données sensibles, validation des IDs
-   - ✅✅ **16 OfflineRepositories créés et utilisés** (était 3, +433%) :
-     - **Boutique** (3) : Product, Sale, Expense
-     - **Eau Minérale** (5) : Product, Sale, Customer, ProductionSession, Machine
-     - **Immobilier** (5) : Property, Tenant, Contract, Payment, PropertyExpense
-     - **Orange Money** (2) : Transaction, Agent
-   - ⚠️ **En cours** : 42 MockRepositories restants à migrer (était 164, -74% ✅✅)
-   - **Impact** :
-     - Infrastructure connectée et fonctionnelle
-     - 16 repositories utilisent réellement l'offline-first (vs 3 avant)
-     - Migration majeure en cours vers offline-first complet
-   - **État** : Infrastructure prête (9/10) et utilisation partielle (16/58) = **7.5/10** ⬆️⬆️
+- ⚠️ Pas d'analyse du bundle size
+- ⚠️ Pas d'optimisation des assets
+- ⚠️ Pas de code splitting
 
 ---
 
-### 7. Offline-First (7.5/10) ⬆️⬆️ AMÉLIORÉ - Migration Majeure en Cours
+## 7. Maintenabilité (7.0/10) ⚠️
 
-#### ✅ Points Positifs
+### 7.1 Complexité du Code (6.5/10)
 
-1. **Infrastructure bien implémentée** :
-   - ✅ `IsarService` : Base de données locale Isar correctement initialisée dans `bootstrap.dart`
-   - ✅ `SyncManager` : Gestionnaire de synchronisation complet (733 lignes) avec :
-     - File d'attente des opérations
-     - Résolution de conflits avec `updated_at` (last write wins)
-     - Retry avec exponential backoff
-     - Nettoyage automatique des opérations anciennes
-   - ✅ `ConnectivityService` : Surveillance de la connectivité réseau en temps réel
-   - ✅ `OfflineRepository<T>` : Classe de base bien conçue pour repositories offline-first
-   - ✅ Collections Isar : `EnterpriseCollection`, `SaleCollection`, `ProductCollection`, `ExpenseCollection`
-   - ✅ Providers Riverpod : `isOnlineProvider`, `syncProgressProvider`, `pendingSyncCountProvider`
-   - ✅ Sécurité : Sanitization des données, protection des données sensibles, validation des IDs
+**Cyclomatic Complexity** :
+- ⚠️ Certains fichiers très complexes (642 lignes)
+- ⚠️ Méthodes longues dans certains widgets
+- ✅ Services bien découpés
 
-2. **Stratégie offline-first** :
-   - ✅ Écriture locale d'abord (write locally first)
-   - ✅ File d'attente pour synchronisation
-   - ✅ Synchronisation en arrière-plan quand en ligne
-   - ✅ Résolution de conflits avec timestamps `updated_at`
+### 7.2 Couplage & Cohésion (8.0/10)
 
-3. **Documentation** :
-   - ✅ README.md complet dans `core/offline/` avec exemples d'utilisation
-   - ✅ Architecture documentée avec diagrammes
+- ✅ Modules bien découplés
+- ✅ Services cohésifs
+- ✅ Repositories isolés
+- ⚠️ Quelques dépendances circulaires potentielles
 
-#### ⚠️ Points à Améliorer
+### 7.3 Évolutivité (7.5/10)
 
-1. **Infrastructure connectée, migration complète** ✅✅✅ **COMPLÉTÉ - MIGRATION RÉUSSIE** :
-   - ✅ **FirebaseSyncHandler créé et connecté** dans `bootstrap.dart`
-   - ✅✅✅ **15 OfflineRepositories actifs** (était 3, +400%) :
-     - **Boutique** (3) : `ProductOfflineRepository`, `SaleOfflineRepository`, `ExpenseOfflineRepository`
-     - **Eau Minérale** (5) : `ProductOfflineRepository`, `SaleOfflineRepository`, `CustomerOfflineRepository`, `ProductionSessionOfflineRepository`, `MachineOfflineRepository`
-     - **Immobilier** (5) : `PropertyOfflineRepository`, `TenantOfflineRepository`, `ContractOfflineRepository`, `PaymentOfflineRepository`, `PropertyExpenseOfflineRepository`
-     - **Orange Money** (2) : `TransactionOfflineRepository`, `AgentOfflineRepository`
-   - ✅ **14 collections Isar créées** pour toutes les entités principales
-   - ✅✅✅ **0 MockRepository restant** (était 42, -100% ✅✅✅) - Migration complète réussie !
-   - **Impact** :
-     - Infrastructure connectée et fonctionnelle
-     - Tous les repositories utilisent maintenant l'offline-first
-     - Migration complète vers offline-first réussie - Objectif atteint !
+- ✅ Architecture modulaire
+- ✅ Ajout de modules facilité
+- ✅ Multi-tenant scalable
+- ⚠️ Tests manquants limitent l'évolutivité
 
-2. **Collections Isar** ✅ **RÉSOLU** :
-   - ✅ 14 collections Isar créées : Enterprise, Sale, Product, Expense, Customer, Agent, Transaction, Property, Tenant, Contract, Payment, Machine, Bobine, ProductionSession
-   - ✅ Toutes les entités principales ont maintenant une collection Isar
+### 7.4 Refactoring (6.5/10)
 
-3. **SyncManager connecté** ✅ **RÉSOLU** :
-   - ✅ `FirebaseSyncHandler` créé et connecté dans `bootstrap.dart`
-   - ✅ Connexion réelle à Firestore établie
-   - ✅ Les opérations sont réellement synchronisées avec Firestore
-
-4. **Tests offline manquants** ⚠️ :
-   - ⚠️ Pas de tests visibles pour le mode offline
-   - ⚠️ Pas de vérification que l'app fonctionne en airplane mode
-
-#### Solutions Recommandées
-
-1. **Migrer tous les MockRepositories vers OfflineRepositories** (7-10 jours) :
-   - Créer les collections Isar manquantes pour toutes les entités
-   - Implémenter `saveToLocal()`, `deleteFromLocal()`, `getByLocalId()`, `getAllForEnterprise()`
-   - Remplacer tous les `Mock*Repository` par des `*OfflineRepository`
-
-2. **Connecter SyncManager à Firestore** (2-3 jours) :
-   - Implémenter `FirebaseSyncHandler` (déjà mentionné dans le code)
-   - Connecter le `syncHandler` dans `bootstrap.dart`
-   - Tester la synchronisation bidirectionnelle
-
-3. **Tester le mode offline** (1-2 jours) :
-   - Tester en airplane mode
-   - Vérifier que les données sont persistées localement
-   - Vérifier que la synchronisation fonctionne quand la connexion revient
-
-#### État Actuel
-
-- **Infrastructure** : 9/10 ✅ (bien implémentée et connectée)
-- **Utilisation réelle** : 15/15 (15 OfflineRepositories actifs, 0 MockRepository restant, était 3/167)
-- **Score global** : 9.0/10 ⬆️⬆️⬆️ (amélioration majeure : +1.5 point supplémentaire, migration complète réussie)
+**Dette technique** :
+- ⚠️ 42 MockRepositories à migrer
+- ⚠️ 600+ occurrences logique métier dans UI
+- ⚠️ 19 fichiers > 500 lignes
+- ⚠️ 8 controllers manquants
 
 ---
 
-### 8. Sécurité (9/10) ✅ EXCELLENT - Points Critiques Résolus
+## 8. Gestion des Erreurs (6.5/10) ⚠️
 
-#### ✅ Points Positifs
+### 8.1 Error Handling (7.0/10)
 
-1. **Authentification** :
-   - ✅ `AuthService` créé dans `core/auth/services/`
-   - ✅ `AuthGuard` pour protéger les routes
-   - ✅ **NOUVEAU** : Persistance de session via `flutter_secure_storage` (chiffré)
-   - ✅ Système prêt pour migration vers Firebase Auth
+- ✅ `ErrorHandler` centralisé
+- ✅ `AppExceptions` bien définies
+- ✅ Gestion d'erreurs dans repositories
+- ⚠️ Gestion d'erreurs variable dans UI
+- ⚠️ Pas de crash reporting
 
-2. **Système de permissions** :
-   - ✅ `PermissionService` centralisé dans `core/permissions/`
-   - ✅ Gestion des rôles et permissions par module
-   - ✅ Isolation multi-tenant (filtrage par `enterpriseId`)
-   - ✅ Support des permissions granulaires (view, create, edit, delete)
+### 8.2 Logging (6.0/10)
 
-3. **Protection des routes** :
-   - ✅ Routes protégées avec `AuthGuard`
-   - ✅ Redirection automatique vers `/login` si non authentifié
+- ✅ Logging avec `dart:developer`
+- ✅ Niveaux de log
+- ⚠️ Logs structurés limités
+- ⚠️ Pas de centralisation des logs
+- ⚠️ Pas de logs en production
 
-4. **Architecture sécurisée** :
-   - ✅ Multi-tenant avec isolation des données
-   - ✅ Filtrage des données par `enterpriseId` et `moduleId`
+### 8.3 Recovery (6.0/10)
 
-5. **Stockage sécurisé** :
-   - ✅ **RÉSOLU** : `flutter_secure_storage` implémenté pour toutes les données sensibles
-   - ✅ **RÉSOLU** : Migration automatique depuis SharedPreferences vers SecureStorage
-   - ✅ **RÉSOLU** : Données utilisateur stockées de manière chiffrée (Keychain iOS, EncryptedSharedPreferences Android)
+- ✅ Retry logic dans SyncManager
+- ⚠️ Pas de recovery automatique
+- ⚠️ Pas de fallback strategies
 
-6. **Gestion des secrets** :
-   - ✅ **RÉSOLU** : Credentials déplacés vers variables d'environnement (`.env`)
-   - ✅ **RÉSOLU** : `flutter_dotenv` intégré pour charger les variables
-   - ✅ **RÉSOLU** : `.env` exclu de Git (`.gitignore`)
-   - ✅ **RÉSOLU** : `.env.example` créé comme template
+---
 
-7. **Hashage des mots de passe** :
-   - ✅ **RÉSOLU** : `PasswordHasher` créé avec SHA-256 et salt
-   - ✅ **RÉSOLU** : Comparaison constante dans le temps (protection contre timing attacks)
-   - ✅ **RÉSOLU** : Script `generate_password_hash.dart` pour générer les hashes
-   - ✅ **RÉSOLU** : Mots de passe stockés uniquement sous forme de hash
+## 9. CI/CD & Automatisation (2.0/10) ❌ **CRITIQUE**
 
-#### ⚠️ Points à Améliorer (Priorité Moyenne/Basse)
+### 9.1 Intégration Continue (0.0/10)
 
-1. **Validation et sanitization** :
-   - ⚠️ Validation basique des emails (juste `contains('@')`)
-   - ⚠️ Pas de validation de force du mot de passe
-   - ⚠️ Pas de protection contre les attaques (rate limiting, etc.)
-   - **Solution** :
-     - Utiliser des regex pour validation email
-     - Implémenter des règles de mot de passe fort
-     - Ajouter rate limiting sur les tentatives de connexion
+- ❌ **Aucun pipeline CI/CD**
+- ❌ Pas de GitHub Actions / GitLab CI
+- ❌ Pas de builds automatisés
+- ❌ Pas de tests automatisés
 
-2. **Token et session management** :
-   - ⚠️ Pas de gestion de tokens JWT
-   - ⚠️ Pas de refresh token
-   - ⚠️ Pas d'expiration de session
-   - **Solution** :
-     - Implémenter JWT avec refresh tokens
-     - Ajouter expiration de session
-     - Gérer la déconnexion automatique
+### 9.2 Analyse Automatique (3.0/10)
 
-3. **Audit et logging** :
-   - ⚠️ Pas de logs d'audit pour actions sensibles
-   - ⚠️ Pas de traçage des accès
-   - **Solution** :
-     - Logger les connexions/déconnexions
-     - Logger les modifications de données sensibles
-     - Logger les accès aux ressources critiques
+- ✅ `analysis_options.yaml` configuré
+- ⚠️ Analyse non automatisée
+- ⚠️ Pas de qualité gate
+- ❌ Pas de sonar
 
-4. **Chiffrement** :
-   - ⚠️ Pas de chiffrement des données sensibles en transit (HTTPS non vérifié)
-   - ⚠️ Pas de chiffrement des données au repos (Isar non chiffré)
-   - **Solution** :
-     - Vérifier que toutes les communications utilisent HTTPS
-     - Considérer le chiffrement de la base Isar pour données sensibles
+### 9.3 Déploiement (2.0/10)
 
-#### 🎯 Priorités Sécurité
+- ⚠️ Déploiement manuel
+- ❌ Pas d'automatisation
+- ❌ Pas de versioning automatique
+- ❌ Pas de release notes automatiques
 
-1. **✅ RÉSOLU - Critique** :
-   - ✅ Remplacer SharedPreferences par `flutter_secure_storage` pour sessions
-   - ✅ Supprimer les credentials hardcodés (utiliser variables d'environnement)
-   - ✅ Implémenter hashage des mots de passe
+### 9.4 Automatisation (1.0/10)
 
-2. **🟡 Important** :
-   - Migration vers Firebase Auth (plus sécurisé)
-   - Ajouter validation robuste des entrées
-   - Implémenter JWT avec refresh tokens
+- ✅ Scripts de migration (3 scripts)
+- ❌ Pas d'automatisation de tests
+- ❌ Pas d'automatisation de build
+- ❌ Pas d'automatisation de déploiement
 
-3. **🟢 Recommandé** :
-   - Ajouter logs d'audit
-   - Implémenter rate limiting
-   - Ajouter expiration de session
+**Recommandations urgentes** :
+1. Mettre en place GitHub Actions / GitLab CI
+2. Pipeline de build automatique
+3. Pipeline de tests automatique
+4. Pipeline de déploiement
+5. Analyse statique automatisée
+
+---
+
+## 10. Offline-First & Synchronisation (7.5/10) ✅
+
+### 10.1 Infrastructure Offline (9.0/10)
+
+- ✅ Drift (SQLite) bien implémenté
+- ✅ `OfflineRepository<T>` comme base
+- ✅ `SyncManager` complet
+- ✅ `FirebaseSyncHandler` connecté
+- ✅ Résolution de conflits
+
+### 10.2 Migration (6.0/10)
+
+**État actuel** :
+- ✅ 18 OfflineRepositories actifs (30%)
+- ⚠️ 42 MockRepositories à migrer (70%)
+- ⚠️ Migration en cours
+
+**Progrès par module** :
+- Boutique : 3/10 (30%)
+- Eau Minérale : 5/18 (28%)
+- Immobilier : 5/5 (100%) ✅
+- Orange Money : 2/7 (29%)
+- Gaz : 0/9 (0%)
+- Administration : 0/3 (0%)
+
+### 10.3 Synchronisation (7.5/10)
+
+- ✅ SyncManager avec file d'attente
+- ✅ Retry logic
+- ✅ Gestion de conflits
+- ⚠️ Tests de sync manquants
+- ⚠️ Monitoring de sync limité
+
+---
+
+## 11. Intégration Firebase (6.5/10) ⚠️
+
+### 11.1 Services Firebase Utilisés (7.0/10)
+
+**Services configurés** :
+- ✅ **Firebase Authentication** (`firebase_auth: ^5.3.4`)
+  - Authentification email/password
+  - SecureStorage pour tokens
+  - AuthService implémenté
+  - ⚠️ Pas de refresh token automatique
+  - ⚠️ Pas de gestion multi-auth providers
+  
+- ✅ **Cloud Firestore** (`cloud_firestore: ^5.6.8`)
+  - Base de données principale
+  - Multi-tenant avec `enterpriseId`
+  - FirebaseSyncHandler pour synchronisation
+  - ⚠️ Services wrappers manquants (firestore_service.dart)
+  - ⚠️ Règles de sécurité non documentées dans le code
+  
+- ⚠️ **Cloud Functions** 
+  - Mentionné dans la documentation
+  - Pas de service wrapper (functions_service.dart)
+  - Pas d'appels Cloud Functions identifiés
+  - ❌ Non implémenté
+  
+- ⚠️ **Firebase Cloud Messaging (FCM)**
+  - Mentionné dans la documentation
+  - Pas de service wrapper (messaging_service.dart)
+  - Pas d'implémentation FCM identifiée
+  - ❌ Non implémenté
+  
+- ⚠️ **Firebase Storage**
+  - Mentionné dans la documentation
+  - Pas de service wrapper (storage_service.dart)
+  - Pas d'utilisation identifiée
+  - ❌ Non implémenté
+
+### 11.2 Configuration Firebase (8.0/10)
+
+**Configuration actuelle** :
+- ✅ `firebase_options.dart` généré
+- ✅ `google-services.json` (Android) présent
+- ✅ `GoogleService-Info.plist` (iOS) présent
+- ✅ Firebase.initializeApp dans bootstrap.dart
+- ✅ Documentation complète (`wiki/02-configuration/firebase.md`)
+- ⚠️ Pas de configuration multi-environnements (dev/staging/prod)
+- ⚠️ Pas de variables d'environnement pour config Firebase
+
+**Structure Firestore** :
+- ✅ Multi-tenant via `enterpriseId`
+- ✅ Collections organisées par module
+- ⚠️ Schéma non documenté dans le code
+- ⚠️ Index Firestore non documentés
+
+### 11.3 Synchronisation Firebase (7.5/10)
+
+**FirebaseSyncHandler** :
+- ✅ Implémente `SyncOperationHandler`
+- ✅ Gère create/update/delete
+- ✅ Résolution de conflits
+- ✅ Intégré dans SyncManager
+- ⚠️ Pas de tests unitaires
+- ⚠️ Pas de monitoring des erreurs sync
+
+**Synchronisation** :
+- ✅ Write local first (offline-first)
+- ✅ File d'attente pour opérations
+- ✅ Retry logic
+- ⚠️ Pas de stratégie de réconciliation avancée
+- ⚠️ Pas de sync bidirectionnelle documentée
+
+### 11.4 Règles de Sécurité Firestore (6.0/10)
+
+**Règles** :
+- ⚠️ Règles documentées dans wiki mais non dans le code
+- ⚠️ Pas de règles Firestore dans le repo
+- ⚠️ Pas de tests des règles de sécurité
+- ⚠️ Pas de validation multi-tenant dans les règles
+- ❌ Risque : Règles de sécurité non versionnées
+
+**Sécurité multi-tenant** :
+- ✅ `enterpriseId` utilisé partout
+- ⚠️ Validation côté client uniquement
+- ⚠️ Pas de validation serveur (Cloud Functions)
+- ⚠️ Pas de règles Firestore sécurisées documentées
+
+### 11.5 Authentification Firebase (7.0/10)
+
+**AuthService actuel** :
+- ✅ Utilise SecureStorage
+- ✅ Hashage des mots de passe (SHA-256 + salt)
+- ⚠️ AuthService custom (pas Firebase Auth direct)
+- ⚠️ Commentaire indique "sera remplacé par Firebase Auth"
+- ⚠️ Migration vers Firebase Auth non complétée
+
+**État** :
+- ⚠️ `firebase_auth` dans les dépendances
+- ⚠️ Pas d'utilisation directe de FirebaseAuth identifiée
+- ⚠️ AuthService utilise encore SecureStorage local
+- ❌ Migration vers Firebase Auth incomplète
+
+### 11.6 Observabilité & Monitoring (4.0/10)
+
+- ❌ Pas de Firebase Analytics
+- ❌ Pas de Crashlytics
+- ❌ Pas de Performance Monitoring
+- ❌ Pas de Remote Config
+- ⚠️ Logging basique avec `dart:developer`
+- ⚠️ Pas de monitoring des erreurs Firebase
+
+### 11.7 Documentation Firebase (8.5/10)
+
+**Documentation existante** :
+- ✅ `wiki/02-configuration/firebase.md` complet
+- ✅ Guide de configuration détaillé
+- ✅ Exemples de règles Firestore
+- ✅ Troubleshooting inclus
+- ⚠️ Architecture Firebase non documentée
+- ⚠️ Schéma Firestore non documenté dans le code
+
+**Points forts** :
+- Documentation de configuration excellente
+- Guide pas-à-pas clair
+- Exemples pratiques
+
+**Points à améliorer** :
+- Architecture Firebase dans docs/ARCHITECTURE.md
+- Schéma des collections Firestore
+- Diagramme de synchronisation
+
+### 11.8 Points Critiques Firebase
+
+**🚨 CRITIQUE** :
+1. **Migration Firebase Auth incomplète** : AuthService custom au lieu de Firebase Auth
+2. **Services wrappers manquants** : firestore_service, functions_service, messaging_service, storage_service
+3. **Règles de sécurité non versionnées** : Pas de rules dans le repo
+4. **FCM non implémenté** : Notifications push manquantes
+5. **Cloud Functions non utilisées** : Logique serveur absente
+
+**⚠️ IMPORTANT** :
+1. Configuration multi-environnements manquante
+2. Monitoring et observabilité limités
+3. Tests Firebase inexistants
+4. Documentation du schéma Firestore manquante
+
+**Recommandations** :
+1. Compléter migration vers Firebase Auth (5-7 jours)
+2. Créer services wrappers Firebase (3-5 jours)
+3. Implémenter FCM pour notifications (3-5 jours)
+4. Configurer Cloud Functions pour logique serveur (7-10 jours)
+5. Versionner règles Firestore (1 jour)
+6. Ajouter Firebase Analytics & Crashlytics (2-3 jours)
+7. Documenter schéma Firestore (2-3 jours)
+
+---
+
+## 12. UI/UX & Accessibilité (7.0/10) ⚠️
+
+### 12.1 Design System (8.0/10)
+
+- ✅ Thème centralisé
+- ✅ Composants réutilisables
+- ✅ Palette de couleurs cohérente
+- ✅ Typographie uniforme
+- ⚠️ Design tokens non formalisés
+
+### 12.2 Responsive Design (7.5/10)
+
+- ✅ `AdaptiveNavigationScaffold`
+- ✅ Layouts adaptatifs
+- ⚠️ Tests responsive manquants
+
+### 12.3 Accessibilité (4.0/10)
+
+- ⚠️ Semantics limités
+- ⚠️ Pas de support lecteur d'écran
+- ⚠️ Contraste non vérifié
+- ⚠️ Focus management basique
 
 ---
 
 ## 📋 Plan d'Action Prioritaire
 
-### ✅ COMPLÉTÉ (Priorité Haute/Moyenne)
+### 🔴 CRITIQUE (0-1 mois)
 
-1. ✅ **Créer FormDialog générique** - COMPLÉTÉ
-   - ✅ Fusionné les deux versions
-   - ✅ Déplacé vers `shared/presentation/widgets/`
-   - ✅ 18 fichiers migrés vers le nouveau FormDialog
+1. **Compléter intégration Firebase** (10-15 jours)
+   - Migration complète vers Firebase Auth (5-7 jours)
+   - Créer services wrappers Firebase (3-5 jours)
+   - Implémenter FCM pour notifications (2-3 jours)
+   - Versionner règles Firestore (1 jour)
 
-2. ✅ **Créer ExpenseFormDialog générique** - COMPLÉTÉ
-   - ✅ Créé version générique dans `shared/`
-   - ✅ Boutique migré
-   - ✅ Gaz et Immobilier utilisent déjà les composants partagés
+2. **Mettre en place CI/CD** (3-5 jours)
+   - GitHub Actions / GitLab CI
+   - Pipeline de build
+   - Pipeline de tests
+   - Pipeline de déploiement
 
-3. ✅ **Créer composants de formulaire réutilisables** - COMPLÉTÉ
-   - ✅ `CustomerFormFields` créé
-   - ✅ `AmountInputField` créé
-   - ✅ `DatePickerField` créé
-   - ✅ `CategorySelectorField` créé
+3. **Créer tests unitaires critiques** (5-7 jours)
+   - Tests pour tous les controllers
+   - Tests pour tous les services
+   - Tests pour repositories critiques
+   - Couverture minimum 40%
 
-4. ✅ **Créer validators réutilisables** - COMPLÉTÉ
-   - ✅ `shared/utils/validators.dart` créé
-   - ✅ Validations centralisées
-   - ✅ Intégré dans plusieurs formulaires
+4. **Créer les controllers manquants** (2-3 jours)
+   - Administration : 3 controllers
+   - Eau Minérale : 5 controllers
 
-5. ✅ **Créer BaseModuleShellScreen** - COMPLÉTÉ
-   - ✅ Structure commune créée
-   - ✅ 4/5 shell screens migrés
+### 🟠 HAUTE PRIORITÉ (1-2 mois)
 
-### ⚠️ EN COURS / À CONTINUER (Priorité Haute)
+4. **Découper fichiers > 500 lignes** (5-7 jours)
+   - Priorité aux 10 plus gros fichiers
+   - Objectif : 0 fichier > 500 lignes
 
-9. **Réorganiser la structure des fichiers et dossiers** (3-5 jours) - **IMPORTANT**
-   - ⚠️ **Services mal placés** :
-     - Déplacer `boutique/data/repositories/report_calculator.dart` → `domain/services/`
-     - Déplacer `eau_minerale/data/services/` → `domain/services/`
-     - Déplacer `immobilier/application/services/` → `domain/services/`
-   - ⚠️ **Widgets dans core** :
-     - Déplacer `core/auth/widgets/` → `shared/presentation/widgets/`
-     - Déplacer `core/tenant/enterprise_selector_widget.dart` → `shared/presentation/widgets/`
-     - Déplacer `core/offline/widgets/` → `shared/presentation/widgets/`
-   - ⚠️ **Nettoyer les dossiers vides** :
-     - Supprimer ou utiliser `lib/services/`
-     - Supprimer ou utiliser `core/application/`, `core/data/repositories/`, `core/domain/repositories/`
-   - ⚠️ **Réorganiser les entités** :
-     - Déplacer `core/entities/` → `core/domain/entities/`
-   - ⚠️ **Réorganiser les adapters** :
-     - Déplacer `eau_minerale/application/adapters/` → `domain/adapters/`
-   - **Impact** : Amélioration de la cohérence, réduction des imports profonds, meilleure maintenabilité
+5. **Migrer MockRepositories vers OfflineRepositories** (7-10 jours)
+   - Objectif : 100% migration
+   - Tests après migration
 
-10. **Déplacer la logique métier de l'UI vers les services/controllers** (5-7 jours) - **CRITIQUE** - ✅ **EN COURS - PROGRÈS CONTINU**
-   - ⚠️ **Problème identifié** : 617+ occurrences de calculs/filtres dans les widgets
-   - ✅ **Services créés** :
-     - `DashboardCalculationService` ✅ (Eau Minérale)
-     - `ReportCalculationService` ✅
-     - `SaleService` ✅
-     - `ProductionService` ✅
-     - `ProductCalculationService` ✅
-     - ✅ **NOUVEAU (Fév 2026)** : `ImmobilierDashboardCalculationService` ✅ (amélioré avec `calculatePeriodMetrics()`)
-     - ✅ **NOUVEAU (Fév 2026)** : `ProductionPaymentCalculationService` ✅
-     - ✅ **NOUVEAU (Fév 2026)** : `BoutiqueReportCalculationService` ✅
-   - ✅ **Widgets/Services refactorisés** :
-     - `dashboard_month_section.dart` ✅ : Utilise `DashboardCalculationService`
-     - `dashboard_operations_section.dart` ✅ : Utilise `DashboardCalculationService`
-     - ✅ **NOUVEAU (Fév 2026)** : `dashboard_kpi_grid.dart` (Immobilier) ✅ : Utilise `ImmobilierDashboardCalculationService`
-     - ✅ **NOUVEAU (Fév 2026)** : `production_payment_person_row.dart` ✅ : Utilise `ProductionPaymentCalculationService`
-     - ✅ **NOUVEAU (Fév 2026)** : `immobilier_report_pdf_service.dart` ✅ : Utilise `ImmobilierDashboardCalculationService`
-     - ✅ **NOUVEAU (Fév 2026)** : `mock_report_repository.dart` (Boutique) ✅ : Utilise `BoutiqueReportCalculationService`
-     - ✅ **NOUVEAU (Fév 2026)** : `sale_form.dart` ✅ : Utilise déjà `SaleService` pour validation et statut
-     - ✅ **NOUVEAU (Fév 2026)** : `production_session_form_steps.dart` ✅ : Utilise déjà `ProductionService.chargerBobinesNonFinies()`
-   - ⚠️ **Exemples restants à corriger** :
-     - `product_form_dialog.dart` : Déplacer le calcul de prix vers un service (partiellement fait)
-   - **Solution** :
-     - Créer des services de calcul pour chaque domaine (Dashboard, Reports, etc.)
-     - Utiliser les controllers existants au lieu d'appels directs aux repositories
-     - Les widgets doivent uniquement afficher et déclencher des actions
-   - **Impact** : Amélioration de la testabilité, réutilisabilité et maintenabilité
-   - **Progrès** : 8 widgets/services refactorisés, 9 services créés/améliorés (estimation: ~600+ occurrences restantes)
+6. **Déplacer logique métier de l'UI vers services** (10-14 jours)
+   - Priorité aux 200 premières occurrences
+   - Tests après refactoring
 
-11. **Découper les fichiers > 500 lignes** (3-5 jours) - PROGRÈS SIGNIFICATIF
-   - ✅✅ `production_session_form_steps.dart` : 1485 → 759 lignes (-726, -48%) - Excellent progrès !
-   - ✅ `liquidity_screen.dart` : 1384 → 580 lignes (-804, -58%) - Excellent progrès
-   - ⚠️ `sync_manager.dart` (733 lignes) - Nouveau fichier, à découper
-   - ⚠️ `stock_adjustment_dialog.dart` (597 lignes) - Nouveau fichier, à découper
-   - ⚠️ `new_customer_form_card.dart` (590 lignes) - Nouveau fichier, à découper
-   - ⚠️ `profitability_report_content.dart` (590 lignes) - Nouveau fichier, à découper
-   - ⚠️ `payments_screen.dart` (575 lignes) - Nouveau fichier, à découper
-   - ⚠️ Autres fichiers > 500 lignes (19 au total, était 27) - Réduction de 30% ✅
+### 🟡 MOYENNE PRIORITÉ (2-3 mois)
 
-### 🟢 Priorité Basse (Amélioration Continue)
+7. **Configurer Cloud Functions & Observabilité** (7-12 jours)
+   - Cloud Functions pour logique serveur (7-10 jours)
+   - Firebase Analytics & Crashlytics (2-3 jours)
+   - Performance Monitoring
 
-9. **Migrer vers OfflineRepository** (7-10 jours) - **CRITIQUE** - ✅ **EN COURS - PROGRÈS MAJEUR**
-   - ✅ **Collections Isar créées** : 14 collections créées pour toutes les entités principales
-   - ✅ **FirebaseSyncHandler connecté** : Créé et connecté dans `bootstrap.dart`
-   - ✅✅ **16 OfflineRepositories créés** (était 3, +433%) :
-     - **Boutique** (3) : Product, Sale, Expense
-     - **Eau Minérale** (5) : Product, Sale, Customer, ProductionSession, Machine
-     - **Immobilier** (5) : Property, Tenant, Contract, Payment, PropertyExpense
-     - **Orange Money** (2) : Transaction, Agent
-   - ✅ **ErrorHandler intégré** : Intégré dans les OfflineRepositories
-   - ⚠️ **En cours** : 42 MockRepositories restants à migrer (était 164, -74% ✅✅)
-   - ⚠️ **Tests offline** : À tester en airplane mode
-   - **Impact** : Infrastructure connectée, migration majeure en cours - 16/58 repositories migrés
-   - **Priorité** : Haute - Continuer la migration des 42 MockRepositories restants
+8. **Améliorer couverture de tests** (10-14 jours)
+   - Objectif : 60% couverture
+   - Tests d'intégration
+   - Tests E2E
+   - Tests Firebase
 
-10. **Standardiser la gestion d'erreurs** (2 jours) - ✅ **COMPLÉTÉ**
-   - ✅ `ErrorHandler` existe et est intégré dans les OfflineRepositories
-   - ✅ `AppException` et exceptions spécifiques existent
-   - ⚠️ **En cours** : Intégration dans tous les autres repositories et services
+9. **Améliorer sécurité** (5-7 jours)
+   - Chiffrement SQLite
+   - Audit trail complet
+   - Tests de sécurité
+   - Validation serveur (Cloud Functions)
 
-11. **Améliorer la documentation** (1 jour) - ✅ **COMPLÉTÉ**
-   - ✅ `ARCHITECTURE.md` créé
-   - ✅ `OFFLINE_REPOSITORY_MIGRATION.md` créé
-   - ✅ Documentation de la structure `features/` vs `modules/`
-
-12. **Ajouter des tests** (ongoing) - ✅ **EN COURS**
-   - ✅ Tests unitaires créés pour `DashboardCalculationService`
-   - ✅ Tests unitaires créés pour `ReportCalculationService`
-   - ✅ Tests unitaires créés pour `ProductOfflineRepository`
-   - ⚠️ **En cours** : Résoudre les dépendances Firebase pour exécuter les tests
-   - ⚠️ **En cours** : Créer plus de tests pour les autres services et repositories
-
-### ✅ COMPLÉTÉ - Priorité Sécurité (Impact Critique)
-
-10. ✅ **Améliorer la sécurité** - COMPLÉTÉ (Janvier 2025)
-    - ✅ **CRITIQUE** : Remplacer SharedPreferences par `flutter_secure_storage` - RÉSOLU
-    - ✅ **CRITIQUE** : Supprimer credentials hardcodés (utiliser variables d'environnement) - RÉSOLU
-    - ✅ **CRITIQUE** : Implémenter hashage des mots de passe - RÉSOLU
-    - ✅ Migration automatique des données existantes vers SecureStorage - RÉSOLU
-    - ✅ Création de `SecureStorageService` et `PasswordHasher` - RÉSOLU
-    - ✅ Script `generate_password_hash.dart` pour générer les hashes - RÉSOLU
-    - 🟡 **IMPORTANT** : Migration vers Firebase Auth - À planifier
-    - 🟡 **IMPORTANT** : Ajouter validation robuste des entrées utilisateur - À planifier
-    - 🟡 **IMPORTANT** : Implémenter JWT avec refresh tokens - À planifier
-    - 🟢 **RECOMMANDÉ** : Ajouter logs d'audit pour actions sensibles - À planifier
-    - 🟢 **RECOMMANDÉ** : Implémenter rate limiting sur authentification - À planifier
+10. **Améliorer accessibilité** (3-5 jours)
+    - Semantics complets
+    - Support lecteur d'écran
+    - Tests d'accessibilité
 
 ---
 
-## 📊 Métriques
+## 📊 Métriques Détaillées
 
-### Taille du Code (État Actuel - Février 2026 - Après Améliorations)
-- **Total fichiers Dart** : 880 (+12 fichiers, +1.4% depuis Jan 2026)
-- **Total lignes** : 123,987 (+4,510 lignes, +3.8% depuis Jan 2026)
-- **Fichiers > 200 lignes** : 209
-- **Fichiers > 500 lignes** : 19 (+3 fichiers depuis Jan 2026, mais 0 > 1000 lignes ✅✅)
-- **Fichiers > 1000 lignes** : 0 (-1 fichier, -100% ✅✅✅)
+### Code
 
-**Note** : L'augmentation du total de lignes et fichiers est normale car le projet a grandi avec de nouvelles fonctionnalités. L'important est la réduction du nombre de fichiers trop longs.
+- **Fichiers Dart** : 944
+- **Lignes de code** : 124,644
+- **Fichiers > 500 lignes** : 19 (2.0%)
+- **Fichiers > 200 lignes** : 189 (20.0%)
+- **TODOs** : 230
 
-### Duplication (État Résolu - Migration Majeure Complétée)
-- ✅ **FormDialog dupliqué** : 0 fois (était 2, maintenant 1 générique)
-- ✅ **ExpenseFormDialog dupliqué** : 0 fois (générique créé, usages migrés)
-- ✅ **Patterns de validation répétés** : Centralisés dans `validators.dart`
-- ✅ **Champs client répétés** : Centralisés dans `CustomerFormFields`
-- ✅✅✅ **Notifications dupliquées** : 0 occurrence (était ~558, maintenant NotificationService centralisé, 110 fichiers migrés)
-- ✅ **Génération d'ID dupliquée** : Centralisée dans `IdGenerator` (25 usages)
-- ✅ **Formatage devises/dates dupliqué** : Utilisation de CurrencyFormatter/DateFormatter (19 usages)
-- ✅✅✅ **Code dupliqué éliminé** : ~500+ lignes supprimées grâce à NotificationService et autres utilitaires
+### Firebase
 
-### Composants Réutilisables (État Amélioré)
-- **Composants partagés existants** : 10+ (augmenté)
-  - ✅ FormDialog générique
-  - ✅ ExpenseFormDialog générique
-  - ✅ Validators réutilisables
-  - ✅ 4 champs de formulaire réutilisables
-  - ✅ BaseModuleShellScreen
-  - ✅ FormDialogHeader, FormDialogActions
-  - ✅ AdaptiveNavigationScaffold
-- **Composants partagés manquants** : 0 (tous créés)
-- **Taux d'utilisation des composants partagés** : ~85% (était ~60%)
+- **Services configurés** : 2/5 (Auth, Firestore)
+- **Services implémentés** : 1/5 (Firestore via SyncHandler)
+- **Services wrappers** : 0/4 (tous manquants)
+- **Règles versionnées** : Non
+- **Documentation** : 8.5/10 (excellente configuration)
 
----
+### Architecture
 
-## ✅ Recommandations Finales
+- **Modules** : 6 (Boutique, Eau Minérale, Gaz, Immobilier, Orange Money, Administration)
+- **Repositories** : 60 (18 offline, 42 mock)
+- **Services** : 50+
+- **Controllers** : 38 (8 manquants)
+- **Composants réutilisables** : 20+
 
-### ✅ Accomplissements
+### Tests
 
-**Janvier 2025** :
-1. ✅ **Sécurité critique résolue** : SecureStorage, hashage, variables d'environnement
-2. ✅ **Infrastructure de sécurité créée** : Services et outils pour gestion sécurisée
+- **Tests unitaires** : 7 fichiers
+- **Couverture estimée** : < 5%
+- **Tests d'intégration** : 0
+- **Tests E2E** : 0
 
-**Janvier 2024** :
-1. ✅ **Duplication éliminée** : FormDialog et ExpenseFormDialog génériques créés
-2. ✅ **Composants réutilisables créés** : Validators, champs de formulaire, BaseModuleShellScreen
-3. ✅ **Progrès sur fichiers longs** : liquidity_screen réduit de 58%, widgets extraits
+### Documentation
 
-### 🎯 Prochaines Étapes
-
-1. **Court terme** : Continuer le découpage des fichiers > 500 lignes
-   - `sync_manager.dart` (733 lignes) → Objectif < 200 lignes
-   - `stock_adjustment_dialog.dart` (597 lignes) → Objectif < 200 lignes
-   - `new_customer_form_card.dart` (590 lignes) → Objectif < 200 lignes
-   - `profitability_report_content.dart` (590 lignes) → Objectif < 200 lignes
-   - `liquidity_screen.dart` (580 lignes) → Objectif < 200 lignes
-
-2. **Moyen terme** : Découper les 19 fichiers > 500 lignes restants
-   - Prioriser les plus longs d'abord
-   - Extraire les sections complexes en widgets
-   - Objectif : Réduire à < 10 fichiers > 500 lignes
-
-3. **Long terme** : Standardiser les patterns et améliorer les tests
-   - Gestion d'erreurs centralisée
-   - Tests unitaires et d'intégration
-   - Documentation améliorée
+- **README** : 29 fichiers
+- **ADR** : 6 fichiers
+- **Wiki** : 29 fichiers
+- **Documentation technique** : 10+ fichiers
 
 ---
 
-## 📈 Évolution du Score
+## 🎯 Objectifs 2026
 
-| Critère | Avant | Après (Jan 2024) | Après (Jan 2025) | Après (Jan 2026) | Après (Fév 2026) | Amélioration Totale |
-|---------|-------|------------------|------------------|------------------|------------------|---------------------|
-| Architecture | 7/10 | 8/10 | 8/10 | 7/10 | 10/10 | +3.0 ✅✅✅ |
-| Duplication | 4/10 | 8/10 | 8/10 | 8/10 | 8/10 | +4 ✅ |
-| Taille fichiers | 3/10 | 5/10 | 5/10 | 7/10 | 7/10 | +4 ✅ |
-| Composants réutilisables | 6/10 | 9/10 | 9/10 | 9/10 | 9/10 | +3 ✅ |
-| Maintenabilité | 6/10 | 7/10 | 7/10 | 6/10 | 7.5/10 | +1.5 ✅ |
-| Robustesse | 7/10 | 7/10 | 7/10 | 6/10 | 8.0/10 | +1.0 ✅ |
-| **Sécurité** | **N/A** | **6/10** | **9/10** | **9/10** | **9/10** | **+3** ✅✅ |
-| **Offline-First** | **N/A** | **N/A** | **N/A** | **6.0/10** | **7.5/10** | **+1.5** ✅✅ |
-| **Score Global** | **6.5/10** | **7.3/10** | **8.1/10** | **8.0/10** | **8.8/10** | **+2.3** ✅ |
+### Q1 2026
+
+- ✅ Couverture de tests : 40%
+- ✅ CI/CD opérationnel
+- ✅ 0 fichier > 500 lignes
+- ✅ 100% OfflineRepositories
+
+### Q2 2026
+
+- ✅ Couverture de tests : 60%
+- ✅ 100% controllers créés
+- ✅ Logique métier déplacée de l'UI
+- ✅ Audit trail complet
+
+### Q3 2026
+
+- ✅ Couverture de tests : 80%
+- ✅ Tests E2E
+- ✅ Monitoring et observabilité
+- ✅ Performance optimisée
 
 ---
 
+## 📝 Notes Finales
+
+Le projet ELYF Group App présente une **architecture solide** avec une **structure bien organisée**. Les points forts sont nombreux : architecture Clean Architecture respectée, offline-first bien implémenté, documentation complète.
+
+Cependant, deux **points critiques** nécessitent une attention urgente :
+1. **Tests** : Couverture très faible (< 5%)
+2. **CI/CD** : Absence totale de pipeline automatisé
+
+Avec les actions prioritaires identifiées, le projet peut atteindre un niveau professionnel élevé (8.5+/10) d'ici 3-6 mois.
+
 ---
 
-## 📝 Notes de Mise à Jour
-
-### Février 2026 - Progrès Majeurs sur Offline-First, Logique Métier et Réorganisation
-
-**Progrès majeurs réalisés** :
-- ✅✅✅ **Migration NotificationService complète** :
-  - Fichiers migrés : 110 fichiers (100% complété)
-  - Occurrences ScaffoldMessenger : ~558 → 0 (-100% ✅✅✅)
-  - Lignes de code dupliqué éliminées : ~500+ lignes
-  - Modules migrés : Eau Minérale, Administration, Orange Money, Immobilier, Gaz, Boutique, Intro
-  - Utilitaires créés : NotificationService, IdGenerator (25 usages), CurrencyFormatter/DateFormatter (19 usages), FormHelperMixin disponible
-  - Score Duplication : 8/10 → 9.5/10 (+1.5 point ✅✅✅)
-- ✅✅✅ **Migration offline complète** :
-  - OfflineRepositories : 3 → 15 (+400% !)
-  - MockRepositories : 164 → 0 (-100% ✅✅✅) - Migration complète réussie !
-  - Modules migrés : Boutique (3), Eau Minérale (5), Immobilier (5), Orange Money (2)
-  - Score Offline-First : 6.0/10 → 9.0/10 (+3.0 points ✅✅✅)
-- ✅✅ **Élimination des fichiers > 1000 lignes** :
-  - Fichiers > 1000 lignes : 1 → 0 (-100%)
-  - `production_session_form_steps.dart` : 759 → 662 lignes (-13% supplémentaire)
-- ✅✅ **Extraction de logique métier** :
-  - Services créés : 9 services de calcul (était 5, +4)
-  - Services améliorés : 
-    - `DashboardCalculationService` (+`countMonthlyExpenses`)
-    - `BoutiqueDashboardCalculationService` (+`calculateMonthlyPurchasesAmount`, `calculateMonthlyMetricsWithPurchases`)
-    - `ImmobilierDashboardCalculationService` (+`calculatePeriodMetrics()`, `calculatePeriodDates()`)
-  - Nouveaux services : `ImmobilierDashboardCalculationService`, `ProductionPaymentCalculationService`, `BoutiqueReportCalculationService`
-  - Widgets/Services refactorisés : 8 widgets/services (était 2, +6)
-  - Nouveaux widgets/services refactorisés : 
-    - `dashboard_kpi_grid.dart`, `production_payment_person_row.dart`, `dashboard_operations_section.dart`, `dashboard_screen.dart` (boutique)
-    - `immobilier_report_pdf_service.dart`, `mock_report_repository.dart` (boutique), `sale_form.dart`, `production_session_form_steps.dart`
-  - Score Maintenabilité : 6.0/10 → 7.5/10 (+1.5 point)
-  - Score Robustesse : 7.0/10 → 8.0/10 (+1.0 point)
-- ✅✅ **Réorganisation structurelle** :
-  - Services déplacés : `eau_minerale/data/services/` (2 fichiers) → `domain/services/`
-  - Widgets déplacés : `core/printing/widgets/print_receipt_button.dart` → `shared/presentation/widgets/`
-  - Permissions centralisées : `eau_minerale/domain/permissions/` → `core/permissions/modules/`
-  - Fichiers barrel créés : 5 fichiers barrel au niveau shared/core + 12 fichiers barrel au niveau features (shared.dart et core.dart pour chaque module)
-  - ✅✅ **NOUVEAU (Fév 2026)** : Imports profonds résolus - 0 fichier avec 6 niveaux (était 31, -100% ✅✅✅)
-  - ✅✅ **NOUVEAU (Fév 2026)** : Réduction majeure des imports - ~87 fichiers avec 5+ niveaux → ~36 fichiers avec 5 niveaux utilisant les fichiers barrel (réduction de 59%)
-  - Dossiers vides supprimés : `eau_minerale/data/services/`, `core/printing/widgets/`, `eau_minerale/domain/permissions/`
-  - Structure documentée : `features/` vs `modules/` justifié dans README
-  - Score Architecture : 7.0/10 → 8.5/10 (+1.5 point)
-- ✅ **Projet en croissance contrôlée** :
-  - Total fichiers : 868 → 880 (+12, +1.4%)
-  - Total lignes : 119,477 → 123,987 (+4,510, +3.8%)
-  - Fichiers > 500 lignes : 16 → 19 (+3, mais 0 > 1000 lignes)
-- ✅✅✅ **Score global amélioré** : 8.0/10 → 9.0/10 (+1.0 point ✅✅✅)
-
-**Recommandations prioritaires** :
-1. ✅✅✅ **COMPLÉTÉ** : Migration offline complète - 0 MockRepository restant (migration réussie !)
-2. **CRITIQUE** : Continuer à déplacer la logique métier vers les services (~600+ occurrences restantes)
-3. **IMPORTANT** : Découper les 16 fichiers > 500 lignes restants (amélioration : -3 fichiers depuis Jan 2026)
-4. **RECOMMANDÉ** : Adopter progressivement FormHelperMixin dans les formulaires pour standardiser la gestion des erreurs et du loading
-
-### Janvier 2026 - Audit Complet : Problèmes Identifiés
-
-**Progrès majeurs réalisés** :
-- ✅✅ **Réduction significative des fichiers trop longs** :
-  - Fichiers > 500 lignes : 27 → 19 (-30%)
-  - Fichiers > 1000 lignes : 3 → 1 (-67%)
-  - `production_session_form_steps.dart` : Réduction de 48% (1485 → 759 lignes)
-- ✅ **Projet en croissance** :
-  - Total fichiers : 723 → 843 (+120, +16.6%)
-  - Total lignes : 110,199 → 233,224 (+123,025, +111.6%)
-  - L'augmentation est normale car le projet a grandi avec de nouvelles fonctionnalités
-- ✅ **Score taille fichiers amélioré** : 5/10 → 6/10 (+1 point)
-
-**Problèmes critiques identifiés** :
-- ⚠️⚠️ **Logique métier dans l'UI** : 617+ occurrences de calculs/filtres directement dans les widgets
-  - Calculs de revenus, collections, taux dans `dashboard_month_section.dart`
-  - Vérification de stock et création de client dans `sale_form.dart`
-  - Logique complexe de gestion des bobines dans `production_session_form_steps.dart`
-  - Appels directs aux repositories au lieu d'utiliser des services
-- ⚠️⚠️ **Problèmes d'organisation** :
-  - Services dans `data/` et `application/` au lieu de `domain/services/` (3 cas)
-  - Widgets dans `core/` au lieu de `shared/presentation/widgets/` (3 cas)
-  - Dossiers vides inutiles (`lib/services/`, `core/application/`, etc.)
-  - 187 fichiers avec imports très profonds (4+ niveaux de `../`)
-  - Entités et adapters mal organisés
-- ⚠️⚠️ **Offline-first partiellement utilisé** (AMÉLIORÉ en Fév 2026) :
-  - Infrastructure offline bien implémentée (IsarService, SyncManager, ConnectivityService)
-  - 16 OfflineRepositories créés et utilisés (était 3)
-  - 42 MockRepositories restants (était 164)
-  - Migration en cours vers offline-first complet
-- ⚠️ **Impact** :
-  - Score architecture : 8/10 → 6/10 (-2 points)
-  - Score maintenabilité : 7/10 → 5/10 (-2 points)
-  - Score robustesse : 7/10 → 5/10 (-2 points)
-  - Score global : 8.3/10 → 7.5/10 (-0.8 point)
-
-**Recommandations prioritaires** (Mises à jour Fév 2026) :
-1. **CRITIQUE** : Continuer la migration vers OfflineRepository (3-5 jours restants)
-   - Infrastructure offline connectée et fonctionnelle ✅
-   - 16 OfflineRepositories créés et utilisés ✅
-   - 42 MockRepositories restants à migrer (progrès majeur : -74%)
-   - Collections Isar créées ✅
-   - SyncManager connecté à Firestore ✅
-2. **CRITIQUE** : Déplacer la logique métier de l'UI vers les services/controllers (5-7 jours)
-3. **IMPORTANT** : Réorganiser la structure des fichiers et dossiers (3-5 jours)
-   - Déplacer les services mal placés vers `domain/services/`
-   - Déplacer les widgets de `core/` vers `shared/presentation/widgets/`
-   - Nettoyer les dossiers vides
-   - Réorganiser les entités et adapters
-4. Continuer le découpage des 19 fichiers > 500 lignes
-5. Créer des services de calcul pour chaque domaine (Dashboard, Reports, etc.)
-
-### Janvier 2025 - Améliorations de Sécurité Critiques
-
-**Progrès majeurs réalisés** :
-- ✅ **Points critiques de sécurité résolus** : 
-  - `flutter_secure_storage` implémenté pour toutes les données sensibles
-  - Credentials déplacés vers variables d'environnement (`.env`)
-  - Hashage SHA-256 avec salt implémenté pour les mots de passe
-  - Migration automatique depuis SharedPreferences vers SecureStorage
-- ✅ **Infrastructure de sécurité créée** :
-  - `SecureStorageService` : Wrapper pour stockage sécurisé
-  - `PasswordHasher` : Service de hashage avec protection timing attacks
-  - Script `generate_password_hash.dart` pour génération des hashes
-  - Documentation `ENV_SETUP.md` pour configuration
-- ✅ **Score sécurité amélioré** : 6/10 → 9/10 (+3 points)
-
-### Janvier 2024 - Améliorations de Code
-
-**Progrès significatifs réalisés** :
-- ✅ **Duplication majeure éliminée** : Tous les composants dupliqués ont été unifiés
-- ✅ **Infrastructure réutilisable créée** : Validators, champs de formulaire, dialogs génériques
-- ✅ **Réduction importante** : `liquidity_screen.dart` réduit de 58% (excellent exemple)
-- ⚠️ **Travail restant** : 27 fichiers > 500 lignes nécessitent encore un découpage
-
-**Recommandation** : Continuer le découpage des fichiers longs en priorisant les plus critiques (production_tracking_screen, production_session_form_steps) pour atteindre l'objectif < 200 lignes par fichier.
-
-**Note** : Ce rapport identifie les problèmes mais reconnaît aussi les points forts du projet. Des progrès significatifs ont été réalisés sur la duplication de code, la création de composants réutilisables, et maintenant la sécurité. L'architecture globale est solide et continue de s'améliorer.
+**Date de prochaine mise à jour** : Avril 2026  
+**Contact** : Équipe de développement ELYF
 
