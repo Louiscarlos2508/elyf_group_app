@@ -17,10 +17,7 @@ class ReportKpiCardsV2 extends ConsumerWidget {
   });
 
   final DateTime startDate;
-  final DateTime endDate;)(?=(\d{3})+(?!\d))'),
-              (Match m) => '${m[1]} ',
-            );
-  }
+  final DateTime endDate;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

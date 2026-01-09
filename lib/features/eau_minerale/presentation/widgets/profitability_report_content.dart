@@ -21,11 +21,7 @@ class ProfitabilityReportContent extends ConsumerWidget {
     required this.period,
   });
 
-  final ReportPeriod period;)(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        );
-    return '$formatted FCFA';
-  }
+  final ReportPeriod period;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

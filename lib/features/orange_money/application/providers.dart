@@ -149,6 +149,7 @@ final commissionRepositoryProvider = Provider<CommissionRepository>(
       syncManager: syncManager,
       connectivityService: connectivityService,
       enterpriseId: enterpriseId,
+      moduleType: 'orange_money',
     );
   },
 );
@@ -171,6 +172,7 @@ final settingsRepositoryProvider = Provider<SettingsRepository>(
       syncManager: syncManager,
       connectivityService: connectivityService,
       enterpriseId: enterpriseId,
+      moduleType: 'orange_money',
     );
   },
 );
@@ -193,6 +195,7 @@ final liquidityRepositoryProvider = Provider<LiquidityRepository>(
       syncManager: syncManager,
       connectivityService: connectivityService,
       enterpriseId: enterpriseId,
+      moduleType: 'orange_money',
     );
   },
 );

@@ -16,11 +16,7 @@ class ProfitReportContentV2 extends ConsumerWidget {
   });
 
   final DateTime startDate;
-  final DateTime endDate;${absAmount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        )} FCFA';
-  }
+  final DateTime endDate;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

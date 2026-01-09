@@ -134,7 +134,7 @@ class _CommissionFormDialogState extends State<CommissionFormDialog> {
         ? null 
         : _notesController.text.trim();
 
-    widget.onSave(period, amount, _selectedPhotoFile, notes);
+    widget.onSave(period, amount!, _selectedPhotoFile, notes);
     Navigator.of(context).pop();
   }
 
