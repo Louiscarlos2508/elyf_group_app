@@ -22,6 +22,7 @@ class FirestoreUserService {
   /// 
   /// Si l'utilisateur existe déjà, il sera mis à jour.
   /// Sinon, un nouveau document sera créé.
+  /// Si la base de données n'existe pas encore, l'opération est ignorée silencieusement.
   Future<void> createOrUpdateUser({
     required String userId,
     required String email,
@@ -65,13 +66,27 @@ class FirestoreUserService {
         );
       }
     } catch (e, stackTrace) {
+      // Si la base de données n'existe pas encore, on ignore l'erreur
+      // L'utilisateur pourra quand même se connecter, et les données seront créées
+      // automatiquement quand la base de données sera disponible
+      if (e.toString().contains('NOT_FOUND') || 
+          e.toString().contains('does not exist') ||
+          e.toString().contains('database')) {
+        developer.log(
+          'Firestore database not found yet - user profile will be created when database is available: $userId',
+          name: 'firestore.user',
+        );
+        return; // Ignore l'erreur - permet à l'authentification de continuer
+      }
+      
       developer.log(
         'Error creating/updating user in Firestore',
         name: 'firestore.user',
         error: e,
         stackTrace: stackTrace,
       );
-      rethrow;
+      // Ne pas rethrow pour les erreurs de base de données manquante
+      // Cela permet à l'authentification de fonctionner même si Firestore n'est pas encore configuré
     }
   }
 
@@ -116,6 +131,7 @@ class FirestoreUserService {
   /// Vérifie si un utilisateur admin existe dans Firestore.
   /// 
   /// Retourne true si au moins un utilisateur avec isAdmin=true existe.
+  /// Retourne false si la base de données n'existe pas encore ou en cas d'erreur.
   Future<bool> adminExists() async {
     try {
       final querySnapshot = await firestore
@@ -126,6 +142,18 @@ class FirestoreUserService {
 
       return querySnapshot.docs.isNotEmpty;
     } catch (e, stackTrace) {
+      // Si la base de données n'existe pas encore, on retourne false
+      // pour permettre la création du premier admin
+      if (e.toString().contains('NOT_FOUND') || 
+          e.toString().contains('does not exist') ||
+          e.toString().contains('database')) {
+        developer.log(
+          'Firestore database not found yet - assuming no admin exists',
+          name: 'firestore.user',
+        );
+        return false;
+      }
+      
       developer.log(
         'Error checking if admin exists',
         name: 'firestore.user',

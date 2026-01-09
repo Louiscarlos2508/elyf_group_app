@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/administration/application/providers.dart';
 import 'package:elyf_groupe_app/core.dart';
+import '../../../domain/services/role_statistics_service.dart';
 import 'dialogs/create_role_dialog.dart';
 import 'dialogs/edit_role_dialog.dart';
 import 'package:elyf_groupe_app/shared.dart';
@@ -99,12 +100,12 @@ class AdminRolesSection extends ConsumerWidget {
       data: (roles) {
         return enterpriseModuleUsersAsync.when(
           data: (assignments) {
-            // Compter les utilisateurs par rôle
-            final usersByRole = <String, int>{};
-            for (final assignment in assignments) {
-              usersByRole[assignment.roleId] =
-                  (usersByRole[assignment.roleId] ?? 0) + 1;
-            }
+            // Use statistics service to extract business logic from UI
+            final statsService = ref.read(roleStatisticsServiceProvider);
+            final usersByRole = statsService.countUsersByRole(
+              roles: roles,
+              assignments: assignments,
+            );
 
         return CustomScrollView(
           slivers: [

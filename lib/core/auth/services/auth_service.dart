@@ -1,3 +1,5 @@
+import 'dart:developer' as developer;
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -220,33 +222,101 @@ class AuthService {
       }
 
       // Authentifier avec Firebase Auth
-      final userCredential = await _firebaseAuth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+      UserCredential userCredential;
+      try {
+        userCredential = await _firebaseAuth.signInWithEmailAndPassword(
+          email: email,
+          password: password,
+        );
+      } on FirebaseAuthException catch (e) {
+        // Gérer les erreurs Firebase Auth avec des messages plus clairs
+        String errorMessage;
+        switch (e.code) {
+          case 'user-not-found':
+            errorMessage = 'Aucun compte trouvé avec cet email. Vérifiez que l\'utilisateur existe dans Firebase Console.';
+            break;
+          case 'wrong-password':
+            errorMessage = 'Mot de passe incorrect. Vérifiez votre mot de passe.';
+            break;
+          case 'invalid-email':
+            errorMessage = 'Format d\'email invalide.';
+            break;
+          case 'user-disabled':
+            errorMessage = 'Ce compte a été désactivé. Contactez l\'administrateur.';
+            break;
+          case 'too-many-requests':
+            errorMessage = 'Trop de tentatives. Veuillez réessayer plus tard.';
+            break;
+          case 'operation-not-allowed':
+            errorMessage = 'La connexion par email/mot de passe n\'est pas activée dans Firebase Console.';
+            break;
+          case 'network-request-failed':
+            errorMessage = 'Erreur réseau. Vérifiez votre connexion internet.';
+            break;
+          case 'invalid-credential':
+          case 'credential-already-in-use':
+            errorMessage = 'Identifiants invalides. Code d\'erreur: ${e.code}';
+            break;
+          default:
+            errorMessage = 'Erreur d\'authentification: ${e.message ?? e.code}';
+        }
+        throw Exception(errorMessage);
+      }
 
       final firebaseUser = userCredential.user;
       if (firebaseUser == null) {
-        throw Exception('Échec de l\'authentification');
+        throw Exception('Échec de l\'authentification: Aucun utilisateur retourné');
       }
 
       // Vérifier si c'est le premier admin et créer le profil dans Firestore
-      final isFirstAdmin = await _firestoreUserService.adminExists();
+      // Note: Ces opérations peuvent échouer si Firestore n'est pas encore configuré,
+      // mais cela n'empêchera pas l'authentification de fonctionner
+      bool isFirstAdmin = false;
+      try {
+        isFirstAdmin = await _firestoreUserService.adminExists();
+      } catch (e) {
+        developer.log(
+          'Error checking if admin exists (Firestore may not be configured yet): $e',
+          name: 'auth',
+        );
+        // Si la vérification échoue, on assume qu'il n'y a pas d'admin (première connexion)
+        isFirstAdmin = false;
+      }
+      
       final shouldBeAdmin = !isFirstAdmin || email == _adminEmail;
 
       // Créer ou mettre à jour le profil utilisateur dans Firestore
-      await _firestoreUserService.createOrUpdateUser(
-        userId: firebaseUser.uid,
-        email: firebaseUser.email ?? email,
-        firstName: 'Admin',
-        lastName: 'System',
-        username: email.split('@').first,
-        isActive: true,
-        isAdmin: shouldBeAdmin,
-      );
+      // Cette opération peut échouer silencieusement si Firestore n'est pas configuré
+      try {
+        await _firestoreUserService.createOrUpdateUser(
+          userId: firebaseUser.uid,
+          email: firebaseUser.email ?? email,
+          firstName: 'Admin',
+          lastName: 'System',
+          username: email.split('@').first,
+          isActive: true,
+          isAdmin: shouldBeAdmin,
+        );
+      } catch (e) {
+        developer.log(
+          'Error creating user profile in Firestore (may not be configured yet): $e',
+          name: 'auth',
+        );
+        // Continue malgré l'erreur - le profil sera créé quand Firestore sera disponible
+      }
 
       // Récupérer les données utilisateur depuis Firestore
-      final userData = await _firestoreUserService.getUserById(firebaseUser.uid);
+      // Si Firestore n'est pas disponible, on utilise les valeurs par défaut
+      Map<String, dynamic>? userData;
+      try {
+        userData = await _firestoreUserService.getUserById(firebaseUser.uid);
+      } catch (e) {
+        developer.log(
+          'Error getting user data from Firestore (may not be configured yet): $e',
+          name: 'auth',
+        );
+        userData = null; // Utilisera les valeurs par défaut
+      }
       
       final appUser = AppUser(
         id: firebaseUser.uid,
@@ -289,10 +359,59 @@ class AuthService {
     }
   }
 
+  /// Crée un compte utilisateur normal dans Firebase Auth.
+  /// 
+  /// Cette méthode crée un utilisateur standard (NON admin).
+  /// Pour créer un admin, utiliser createFirstAdmin.
+  Future<String> createUserAccount({
+    required String email,
+    required String password,
+    String? displayName,
+  }) async {
+    try {
+      // Créer le compte dans Firebase Auth
+      final userCredential = await _firebaseAuth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      final firebaseUser = userCredential.user;
+      if (firebaseUser == null) {
+        throw Exception('Échec de la création du compte');
+      }
+
+      // Note: Le profil utilisateur sera créé dans le module administration
+      // via UserController qui gère les détails (firstName, lastName, etc.)
+      // On retourne juste l'UID pour créer l'entité User dans le système
+
+      return firebaseUser.uid;
+    } on FirebaseAuthException catch (e) {
+      String errorMessage;
+      switch (e.code) {
+        case 'email-already-in-use':
+          errorMessage = 'Cet email est déjà utilisé.';
+          break;
+        case 'invalid-email':
+          errorMessage = 'Email invalide.';
+          break;
+        case 'weak-password':
+          errorMessage = 'Le mot de passe est trop faible.';
+          break;
+        default:
+          errorMessage = 'Erreur de création: ${e.message}';
+      }
+      throw Exception(errorMessage);
+    } catch (e) {
+      throw Exception('Erreur lors de la création du compte: ${e.toString()}');
+    }
+  }
+
   /// Crée le premier utilisateur admin dans Firebase Auth et Firestore.
   /// 
   /// Cette méthode est appelée lors de la première installation
-  /// pour créer le compte admin par défaut.
+  /// pour créer le compte admin par défaut uniquement.
+  /// 
+  /// ⚠️ Ne pas utiliser pour créer des utilisateurs normaux.
   Future<AppUser> createFirstAdmin({
     required String email,
     required String password,
@@ -317,17 +436,17 @@ class AuthService {
         lastName: 'System',
         username: email.split('@').first,
         isActive: true,
-        isAdmin: true,
+        isAdmin: true, // ✅ Uniquement pour le premier admin
       );
 
-      // Récupérer les données depuis Firestore
-      final userData = await _firestoreUserService.getUserById(firebaseUser.uid);
+      // Récupérer les données depuis Firestore (pour vérification)
+      await _firestoreUserService.getUserById(firebaseUser.uid);
 
       final appUser = AppUser(
         id: firebaseUser.uid,
         email: email,
         displayName: 'Administrateur',
-        isAdmin: true,
+        isAdmin: true, // ✅ Uniquement pour le premier admin
       );
 
       // Sauvegarder dans le stockage sécurisé

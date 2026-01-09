@@ -5,11 +5,13 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/auth/providers.dart' show authControllerProvider, currentUserProvider, currentUserIdProvider;
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../../../shared/utils/notification_service.dart';
+import '../widgets/lazy_section_builder.dart';
 import 'sections/admin_dashboard_section.dart';
 import 'sections/admin_enterprises_section.dart';
 import 'sections/admin_modules_section.dart';
 import 'sections/admin_users_section.dart';
 import 'sections/admin_roles_section.dart';
+import 'sections/admin_audit_trail_section.dart';
 
 /// Écran principal d'administration avec navigation adaptative
 class AdminHomeScreen extends ConsumerStatefulWidget {
@@ -86,6 +88,12 @@ class _AdminHomeScreenState extends ConsumerState<AdminHomeScreen> {
         builder: () => const AdminRolesSection(),
         isPrimary: true,
       ),
+      NavigationSection(
+        label: 'Audit Trail',
+        icon: Icons.history_outlined,
+        builder: () => const AdminAuditTrailSection(),
+        isPrimary: true,
+      ),
     ];
   }
 
@@ -120,7 +128,13 @@ class _AdminHomeScreenState extends ConsumerState<AdminHomeScreen> {
       ),
       body: IndexedStack(
         index: _selectedIndex,
-        children: _buildSections().map((s) => s.builder()).toList(),
+        children: _buildSections().asMap().entries.map((entry) {
+          return LazySectionBuilder(
+            index: entry.key,
+            currentIndex: _selectedIndex,
+            builder: (_) => entry.value.builder(),
+          );
+        }).toList(),
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,

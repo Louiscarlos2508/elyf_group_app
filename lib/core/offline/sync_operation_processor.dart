@@ -7,8 +7,7 @@ import 'sync_manager.dart';
 import 'sync_status.dart';
 import 'retry_handler.dart';
 
-/// Stub SyncOperationProcessor.
-/// TODO: Persist sync operations in Drift and process them in background.
+/// Processes sync operations with retry logic and error handling.
 class SyncOperationProcessor {
   SyncOperationProcessor({
     required this.driftService,
@@ -22,54 +21,77 @@ class SyncOperationProcessor {
   final RetryHandler retryHandler;
   final SyncOperationHandler? syncHandler;
 
+  /// Processes a sync operation with timeout and retry logic.
   Future<void> processOperation(SyncOperation operation) async {
     if (!DataSanitizer.isValidId(operation.documentId)) {
-      throw SyncException('Invalid local ID: ${operation.documentId}');
+      throw SyncException('Invalid document ID: ${operation.documentId}');
     }
 
     if (retryHandler.hasExceededMaxRetries(operation.retryCount)) {
       throw SyncException(
-        'Max retry attempts (${config.maxRetryAttempts}) exceeded',
+        'Max retry attempts (${config.maxRetryAttempts}) exceeded for '
+        '${operation.collectionName}/${operation.documentId}',
       );
     }
 
     await retryHandler.waitForRetry(operation.retryCount);
 
+    if (syncHandler == null) {
+      throw SyncException(
+        'No sync handler configured for ${operation.collectionName}',
+      );
+    }
+
     developer.log(
       'Processing ${operation.operationType} for '
-      '${operation.collectionName}/${operation.documentId} (stub)',
+      '${operation.collectionName}/${operation.documentId}',
       name: 'offline.sync.processor',
     );
 
-    if (syncHandler != null) {
-      await syncHandler!.processOperation(operation);
+    try {
+      await syncHandler!.processOperation(operation).timeout(
+        Duration(milliseconds: config.operationTimeoutMs),
+        onTimeout: () {
+          throw SyncException(
+            'Operation timeout after ${config.operationTimeoutMs}ms',
+          );
+        },
+      );
+    } catch (e) {
+      developer.log(
+        'Failed to process operation ${operation.id}: $e',
+        name: 'offline.sync.processor',
+        error: e,
+      );
+      rethrow;
     }
   }
 
+  /// Updates retry count for an operation.
   Future<void> updateRetryCount(
     SyncOperation operation,
     int newRetryCount,
   ) async {
-    developer.log(
-      'updateRetryCount called (stub): ${operation.documentId}',
-      name: 'offline.sync.processor',
+    await driftService.syncOperations.updateRetryCount(
+      operation.id,
+      newRetryCount,
     );
   }
 
+  /// Marks an operation as synced.
   Future<void> markOperationSynced(SyncOperation operation) async {
-    developer.log(
-      'markOperationSynced called (stub): ${operation.documentId}',
-      name: 'offline.sync.processor',
-    );
+    await driftService.syncOperations.markSynced(operation.id);
   }
 
+  /// Marks an operation as failed.
   Future<void> markOperationFailed(
     SyncOperation operation,
     String error,
   ) async {
-    developer.log(
-      'markOperationFailed called (stub): ${operation.documentId}, error: $error',
-      name: 'offline.sync.processor',
+    await driftService.syncOperations.markFailed(
+      operation.id,
+      error,
+      newRetryCount: operation.retryCount + 1,
     );
   }
 }

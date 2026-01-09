@@ -27,12 +27,51 @@ class OfflineRecords extends Table {
       ];
 }
 
-@DriftDatabase(tables: [OfflineRecords])
+/// Queue of sync operations to be processed.
+///
+/// Stores pending create, update, and delete operations that need to be
+/// synchronized with Firestore.
+class SyncOperations extends Table {
+  IntColumn get id => integer().autoIncrement()();
+
+  TextColumn get operationType => text()(); // 'create', 'update', 'delete'
+  TextColumn get collectionName => text()();
+  TextColumn get documentId => text()(); // localId or remoteId
+  TextColumn get enterpriseId => text()();
+  TextColumn get payload => text().nullable()(); // JSON payload for create/update
+  IntColumn get retryCount => integer().withDefault(const Constant(0))();
+  TextColumn get lastError => text().nullable()();
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get processedAt => dateTime().nullable()();
+  TextColumn get status =>
+      text()
+          .withDefault(const Constant('pending'))(); // 'pending', 'processing', 'synced', 'failed'
+  DateTimeColumn get localUpdatedAt => dateTime()();
+
+  @override
+  List<String> get customConstraints => [
+        'UNIQUE(operation_type, collection_name, document_id, enterprise_id, status)',
+      ];
+}
+
+@DriftDatabase(tables: [OfflineRecords, SyncOperations])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(openDriftConnection());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration {
+    return MigrationStrategy(
+      onUpgrade: (migrator, from, to) async {
+        if (from < 2) {
+          // Add sync_operations table
+          await migrator.createTable(syncOperations);
+        }
+      },
+    );
+  }
 }
 
 

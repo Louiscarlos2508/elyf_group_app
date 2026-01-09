@@ -4,7 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/widgets.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart' show FirebaseFirestore, Settings;
 
 import '../firebase_options.dart';
 import '../core/offline/connectivity_service.dart';
@@ -54,8 +54,19 @@ Future<void> _initializeOfflineServices() async {
 
     // Initialize sync manager with Firebase handler
     // Note: Firebase must be initialized before this point
+    // Configure Firestore settings to handle database initialization
+    final firestore = FirebaseFirestore.instance;
+    firestore.settings = const Settings(
+      persistenceEnabled: true,
+      cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+    );
+    
+    // Note: Firestore database errors (like "database does not exist") are handled
+    // gracefully by the sync manager. The app can work offline-first and will
+    // sync automatically when the database becomes available.
+    
     final firebaseHandler = FirebaseSyncHandler(
-      firestore: FirebaseFirestore.instance,
+      firestore: firestore,
       collectionPaths: {
         'sales': (enterpriseId) => 'enterprises/$enterpriseId/sales',
         'products': (enterpriseId) => 'enterprises/$enterpriseId/products',

@@ -82,6 +82,45 @@ class OfflineRecordDao {
         .get();
   }
 
+  /// List records for an enterprise with pagination support (LIMIT/OFFSET).
+  /// 
+  /// Returns a paginated list of records ordered by localUpdatedAt descending.
+  Future<List<OfflineRecord>> listForEnterprisePaginated({
+    required String collectionName,
+    required String enterpriseId,
+    required String moduleType,
+    int limit = 50,
+    int offset = 0,
+  }) {
+    return (_db.select(_db.offlineRecords)
+          ..where(
+            (t) =>
+                t.collectionName.equals(collectionName) &
+                t.enterpriseId.equals(enterpriseId) &
+                t.moduleType.equals(moduleType),
+          )
+          ..orderBy([(t) => OrderingTerm.desc(t.localUpdatedAt)])
+          ..limit(limit, offset: offset))
+        .get();
+  }
+
+  /// Count records for an enterprise.
+  /// 
+  /// Useful for pagination to know total number of records.
+  Future<int> countForEnterprise({
+    required String collectionName,
+    required String enterpriseId,
+    required String moduleType,
+  }) async {
+    // Use listForEnterprise and count in memory as a workaround for selectOnly where clause issues
+    final records = await listForEnterprise(
+      collectionName: collectionName,
+      enterpriseId: enterpriseId,
+      moduleType: moduleType,
+    );
+    return records.length;
+  }
+
   Future<void> deleteByLocalId({
     required String collectionName,
     required String localId,

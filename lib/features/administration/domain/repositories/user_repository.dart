@@ -5,6 +5,14 @@ abstract class UserRepository {
   /// Récupère tous les utilisateurs.
   Future<List<User>> getAllUsers();
 
+  /// Récupère les utilisateurs avec pagination (LIMIT/OFFSET au niveau Drift).
+  /// 
+  /// Returns a paginated list of users and the total count.
+  Future<({List<User> users, int totalCount})> getUsersPaginated({
+    int page = 0,
+    int limit = 50,
+  });
+
   /// Récupère un utilisateur par son ID.
   Future<User?> getUserById(String userId);
 

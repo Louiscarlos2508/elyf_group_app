@@ -3,44 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/administration/application/providers.dart';
 import '../../../domain/entities/enterprise.dart';
+import '../../../domain/services/enterprise_type_service.dart';
 
 /// Dashboard avec statistiques et vue d'ensemble
 class AdminDashboardSection extends ConsumerWidget {
   const AdminDashboardSection({super.key});
 
-  IconData _getTypeIcon(String type) {
-    switch (type) {
-      case 'eau_minerale':
-        return Icons.water_drop_outlined;
-      case 'gaz':
-        return Icons.local_fire_department_outlined;
-      case 'orange_money':
-        return Icons.account_balance_wallet_outlined;
-      case 'immobilier':
-        return Icons.home_work_outlined;
-      case 'boutique':
-        return Icons.storefront_outlined;
-      default:
-        return Icons.business_outlined;
-    }
-  }
-
-  String _getTypeLabel(String type) {
-    switch (type) {
-      case 'eau_minerale':
-        return 'Eau Minérale';
-      case 'gaz':
-        return 'Gaz';
-      case 'orange_money':
-        return 'Orange Money';
-      case 'immobilier':
-        return 'Immobilier';
-      case 'boutique':
-        return 'Boutique';
-      default:
-        return type;
-    }
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -169,11 +137,11 @@ class AdminDashboardSection extends ConsumerWidget {
                     child: Card(
                       child: ExpansionTile(
                         leading: Icon(
-                          _getTypeIcon(type),
+                          ref.read(enterpriseTypeServiceProvider).getTypeIcon(type),
                           color: theme.colorScheme.primary,
                         ),
                         title: Text(
-                          _getTypeLabel(type),
+                          ref.read(enterpriseTypeServiceProvider).getTypeLabel(type),
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),

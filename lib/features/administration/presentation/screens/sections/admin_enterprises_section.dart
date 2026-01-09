@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:elyf_groupe_app/features/administration/application/providers.dart';
 import '../../../domain/entities/enterprise.dart';
+import '../../../domain/services/enterprise_type_service.dart';
 import 'dialogs/create_enterprise_dialog.dart';
 import 'dialogs/edit_enterprise_dialog.dart';
 import 'package:elyf_groupe_app/shared.dart';
@@ -133,39 +134,6 @@ class AdminEnterprisesSection extends ConsumerWidget {
     }
   }
 
-  IconData _getTypeIcon(String type) {
-    switch (type) {
-      case 'eau_minerale':
-        return Icons.water_drop_outlined;
-      case 'gaz':
-        return Icons.local_fire_department_outlined;
-      case 'orange_money':
-        return Icons.account_balance_wallet_outlined;
-      case 'immobilier':
-        return Icons.home_work_outlined;
-      case 'boutique':
-        return Icons.storefront_outlined;
-      default:
-        return Icons.business_outlined;
-    }
-  }
-
-  String _getTypeLabel(String type) {
-    switch (type) {
-      case 'eau_minerale':
-        return 'Eau Minérale';
-      case 'gaz':
-        return 'Gaz';
-      case 'orange_money':
-        return 'Orange Money';
-      case 'immobilier':
-        return 'Immobilier';
-      case 'boutique':
-        return 'Boutique';
-      default:
-        return type;
-    }
-  }
 
   void _navigateToEnterprise(
     BuildContext context,
@@ -261,7 +229,7 @@ class AdminEnterprisesSection extends ConsumerWidget {
                         leading: CircleAvatar(
                           backgroundColor: theme.colorScheme.primaryContainer,
                           child: Icon(
-                            _getTypeIcon(enterprise.type),
+                            ref.read(enterpriseTypeServiceProvider).getTypeIcon(enterprise.type),
                             color: theme.colorScheme.onPrimaryContainer,
                           ),
                         ),
@@ -282,7 +250,7 @@ class AdminEnterprisesSection extends ConsumerWidget {
                               runSpacing: 4,
                               children: [
                                 Chip(
-                                  label: Text(_getTypeLabel(enterprise.type)),
+                                  label: Text(ref.read(enterpriseTypeServiceProvider).getTypeLabel(enterprise.type)),
                                   visualDensity: VisualDensity.compact,
                                 ),
                                 if (enterprise.isActive)

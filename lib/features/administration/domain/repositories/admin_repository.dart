@@ -47,6 +47,14 @@ abstract class AdminRepository {
   /// Get all roles
   Future<List<UserRole>> getAllRoles();
 
+  /// Get roles with pagination (LIMIT/OFFSET au niveau Drift).
+  /// 
+  /// Returns a paginated list of roles and the total count.
+  Future<({List<UserRole> roles, int totalCount})> getRolesPaginated({
+    int page = 0,
+    int limit = 50,
+  });
+
   /// Get roles for a module
   Future<List<UserRole>> getModuleRoles(String moduleId);
 

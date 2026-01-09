@@ -4,6 +4,7 @@ import 'package:drift/drift.dart';
 
 import 'drift/app_database.dart';
 import 'drift/offline_record_dao.dart';
+import 'drift/sync_operation_dao.dart';
 
 /// DriftService - local SQLite persistence via Drift.
 ///
@@ -16,6 +17,7 @@ class DriftService {
 
   AppDatabase? _db;
   OfflineRecordDao? _records;
+  SyncOperationDao? _syncOperations;
 
   /// Singleton instance.
   static DriftService get instance {
@@ -43,6 +45,15 @@ class DriftService {
     return dao;
   }
 
+  /// DAO used for sync operations queue.
+  SyncOperationDao get syncOperations {
+    final dao = _syncOperations;
+    if (dao == null) {
+      throw StateError('DriftService not initialized. Call initialize() first.');
+    }
+    return dao;
+  }
+
   static const int currentVersion = 1;
 
   Future<void> initialize() async {
@@ -53,6 +64,7 @@ class DriftService {
 
     _db = AppDatabase();
     _records = OfflineRecordDao(_db!);
+    _syncOperations = SyncOperationDao(_db!);
     _initialized = true;
 
     developer.log('DriftService initialized', name: 'offline.drift');
@@ -67,8 +79,7 @@ class DriftService {
   }
 
   Future<int> getPendingSyncCount() async {
-    // TODO: implement sync queue storage in Drift
-    return 0;
+    return await _syncOperations?.countPending() ?? 0;
   }
 
   Future<Map<String, int>> getStats() async {
@@ -86,6 +97,7 @@ class DriftService {
     await _db?.close();
     _db = null;
     _records = null;
+    _syncOperations = null;
     developer.log('DriftService closed', name: 'offline.drift');
   }
 

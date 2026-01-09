@@ -1,20 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
 import '../../../../domain/entities/user.dart';
+import '../../../../application/providers.dart';
+import '../../../../../../core/auth/providers.dart' show currentUserIdProvider;
 import 'package:elyf_groupe_app/shared/utils/form_helper_mixin.dart';
 
 /// Dialogue pour créer un nouvel utilisateur.
-class CreateUserDialog extends StatefulWidget {
+/// 
+/// Intègre Firebase Auth pour créer un compte utilisateur avec email/mot de passe.
+class CreateUserDialog extends ConsumerStatefulWidget {
   const CreateUserDialog({super.key});
 
   @override
-  State<CreateUserDialog> createState() => _CreateUserDialogState();
+  ConsumerState<CreateUserDialog> createState() => _CreateUserDialogState();
 }
 
-class _CreateUserDialogState extends State<CreateUserDialog>
+class _CreateUserDialogState extends ConsumerState<CreateUserDialog>
     with FormHelperMixin {
   final _formKey = GlobalKey<FormState>();
   final _firstNameController = TextEditingController();
@@ -22,9 +27,14 @@ class _CreateUserDialogState extends State<CreateUserDialog>
   final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
 
   bool _isActive = true;
   bool _isLoading = false;
+  bool _createFirebaseAccount = false;
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
 
   @override
   void dispose() {
@@ -33,17 +43,43 @@ class _CreateUserDialogState extends State<CreateUserDialog>
     _usernameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
   Future<void> _handleSubmit() async {
+    // Validate Firebase Auth fields if creating account
+    if (_createFirebaseAccount) {
+      if (_emailController.text.trim().isEmpty) {
+        NotificationService.showError(context, 'L\'email est requis pour créer un compte Firebase Auth');
+        return;
+      }
+      if (_passwordController.text.isEmpty) {
+        NotificationService.showError(context, 'Le mot de passe est requis');
+        return;
+      }
+      if (_passwordController.text != _confirmPasswordController.text) {
+        NotificationService.showError(context, 'Les mots de passe ne correspondent pas');
+        return;
+      }
+      if (_passwordController.text.length < 6) {
+        NotificationService.showError(context, 'Le mot de passe doit contenir au moins 6 caractères');
+        return;
+      }
+    }
+
     await handleFormSubmit(
       context: context,
       formKey: _formKey,
       onLoadingChanged: (isLoading) => setState(() => _isLoading = isLoading),
       onSubmit: () async {
+        final currentUserId = ref.read(currentUserIdProvider);
+        final userController = ref.read(userControllerProvider);
+
+        // Create user object
         final user = User(
-          id: 'user_${DateTime.now().millisecondsSinceEpoch}',
+          id: 'local_user_${DateTime.now().millisecondsSinceEpoch}', // Will be replaced by Firebase UID if creating account
           firstName: _firstNameController.text.trim(),
           lastName: _lastNameController.text.trim(),
           username: _usernameController.text.trim(),
@@ -58,10 +94,21 @@ class _CreateUserDialogState extends State<CreateUserDialog>
           updatedAt: DateTime.now(),
         );
 
-        if (mounted) {
-          Navigator.of(context).pop(user);
+        // Create user with Firebase Auth if requested
+        try {
+          final createdUser = await userController.createUser(
+            user,
+            password: _createFirebaseAccount ? _passwordController.text : null,
+            currentUserId: currentUserId,
+          );
+
+          if (mounted) {
+            Navigator.of(context).pop(createdUser);
+          }
+          return 'Utilisateur créé avec succès${_createFirebaseAccount ? ' (compte Firebase Auth créé)' : ''}';
+        } catch (e) {
+          throw Exception('Erreur lors de la création: ${e.toString()}');
         }
-        return 'Utilisateur créé avec succès';
       },
     );
   }
@@ -193,8 +240,90 @@ class _CreateUserDialogState extends State<CreateUserDialog>
                           hintText: 'jean.dupont@elyf.com',
                         ),
                         keyboardType: TextInputType.emailAddress,
-                        validator: _validateEmail,
+                        validator: _createFirebaseAccount
+                            ? (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return 'L\'email est requis pour créer un compte Firebase Auth';
+                                }
+                                return _validateEmail(value);
+                              }
+                            : _validateEmail,
                       ),
+                      const SizedBox(height: 16),
+                      SwitchListTile(
+                        title: const Text('Créer un compte Firebase Auth'),
+                        subtitle: const Text(
+                          'Permet à l\'utilisateur de se connecter avec email/mot de passe',
+                        ),
+                        value: _createFirebaseAccount,
+                        onChanged: (value) {
+                          setState(() {
+                            _createFirebaseAccount = value;
+                            if (!value) {
+                              _passwordController.clear();
+                              _confirmPasswordController.clear();
+                            }
+                          });
+                        },
+                      ),
+                      if (_createFirebaseAccount) ...[
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: _passwordController,
+                          decoration: InputDecoration(
+                            labelText: 'Mot de passe *',
+                            hintText: 'Minimum 6 caractères',
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscurePassword
+                                    ? Icons.visibility_outlined
+                                    : Icons.visibility_off_outlined,
+                              ),
+                              onPressed: () {
+                                setState(() => _obscurePassword = !_obscurePassword);
+                              },
+                            ),
+                          ),
+                          obscureText: _obscurePassword,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Le mot de passe est requis';
+                            }
+                            if (value.length < 6) {
+                              return 'Le mot de passe doit contenir au moins 6 caractères';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: _confirmPasswordController,
+                          decoration: InputDecoration(
+                            labelText: 'Confirmer le mot de passe *',
+                            hintText: 'Répétez le mot de passe',
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscureConfirmPassword
+                                    ? Icons.visibility_outlined
+                                    : Icons.visibility_off_outlined,
+                              ),
+                              onPressed: () {
+                                setState(() => _obscureConfirmPassword = !_obscureConfirmPassword);
+                              },
+                            ),
+                          ),
+                          obscureText: _obscureConfirmPassword,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'La confirmation est requise';
+                            }
+                            if (value != _passwordController.text) {
+                              return 'Les mots de passe ne correspondent pas';
+                            }
+                            return null;
+                          },
+                        ),
+                      ],
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _phoneController,

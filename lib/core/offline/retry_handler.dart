@@ -2,7 +2,6 @@ import 'dart:math' as math;
 import 'dart:developer' as developer;
 
 import 'sync_manager.dart';
-import 'sync_status.dart';
 
 /// Handles retry logic with exponential backoff.
 ///

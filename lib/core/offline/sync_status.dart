@@ -1,6 +1,6 @@
-/// Stub sync status classes.
-///
-/// TODO: implement Drift-backed sync queue + metadata storage.
+import 'dart:convert';
+
+/// Sync status classes for managing sync operations.
 
 /// Enum for sync status.
 enum SyncStatus {
@@ -31,7 +31,7 @@ class SyncMetadata {
   SyncMetadata();
 }
 
-/// Stub SyncOperation class.
+/// SyncOperation class representing a queued sync operation.
 class SyncOperation {
   int id = 0;
   late String operationType;
@@ -48,5 +48,15 @@ class SyncOperation {
 
   SyncOperation();
 
-  Map<String, dynamic>? get payloadMap => null;
+  /// Parses the JSON payload into a Map.
+  Map<String, dynamic>? get payloadMap {
+    if (payload == null || payload!.isEmpty) {
+      return null;
+    }
+    try {
+      return jsonDecode(payload!) as Map<String, dynamic>;
+    } catch (e) {
+      return null;
+    }
+  }
 }

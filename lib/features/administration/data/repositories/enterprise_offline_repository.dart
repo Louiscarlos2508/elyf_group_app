@@ -1,0 +1,266 @@
+import 'dart:developer' as developer;
+import 'dart:convert';
+
+import '../../../../core/offline/connectivity_service.dart';
+import '../../../../core/offline/drift_service.dart';
+import '../../../../core/offline/offline_repository.dart';
+import '../../../../core/offline/sync_manager.dart';
+import '../../domain/entities/enterprise.dart';
+import '../../domain/repositories/enterprise_repository.dart';
+import 'optimized_queries.dart';
+
+/// Offline-first repository for Enterprise entities.
+/// 
+/// Note: Enterprises are global (not enterprise-specific), so enterpriseId is not used.
+class EnterpriseOfflineRepository extends OfflineRepository<Enterprise>
+    implements EnterpriseRepository {
+  EnterpriseOfflineRepository({
+    required super.driftService,
+    required super.syncManager,
+    required super.connectivityService,
+  });
+
+  @override
+  String get collectionName => 'enterprises';
+
+  @override
+  Enterprise fromMap(Map<String, dynamic> map) {
+    return Enterprise(
+      id: map['id'] as String? ?? map['localId'] as String,
+      name: map['name'] as String,
+      type: map['type'] as String,
+      description: map['description'] as String?,
+      address: map['address'] as String?,
+      phone: map['phone'] as String?,
+      email: map['email'] as String?,
+      isActive: map['isActive'] as bool? ?? true,
+      createdAt: map['createdAt'] != null
+          ? DateTime.parse(map['createdAt'] as String)
+          : null,
+      updatedAt: map['updatedAt'] != null
+          ? DateTime.parse(map['updatedAt'] as String)
+          : null,
+    );
+  }
+
+  @override
+  Map<String, dynamic> toMap(Enterprise entity) {
+    return {
+      'id': entity.id,
+      'name': entity.name,
+      'type': entity.type,
+      'description': entity.description,
+      'address': entity.address,
+      'phone': entity.phone,
+      'email': entity.email,
+      'isActive': entity.isActive,
+      'createdAt': entity.createdAt?.toIso8601String(),
+      'updatedAt': entity.updatedAt?.toIso8601String(),
+    };
+  }
+
+  @override
+  String getLocalId(Enterprise entity) {
+    if (entity.id.startsWith('local_')) {
+      return entity.id;
+    }
+    return LocalIdGenerator.generate();
+  }
+
+  @override
+  String? getRemoteId(Enterprise entity) {
+    if (!entity.id.startsWith('local_')) {
+      return entity.id;
+    }
+    return null;
+  }
+
+  @override
+  String? getEnterpriseId(Enterprise entity) => null; // Enterprises are global
+
+  @override
+  Future<void> saveToLocal(Enterprise entity) async {
+    final localId = getLocalId(entity);
+    final remoteId = getRemoteId(entity);
+    final map = toMap(entity)..['localId'] = localId;
+    await driftService.records.upsert(
+      collectionName: collectionName,
+      localId: localId,
+      remoteId: remoteId,
+      enterpriseId: 'global', // Enterprises are global
+      moduleType: 'administration',
+      dataJson: jsonEncode(map),
+      localUpdatedAt: DateTime.now(),
+    );
+  }
+
+  @override
+  Future<void> deleteFromLocal(Enterprise entity) async {
+    final localId = getLocalId(entity);
+    await driftService.records.deleteByLocalId(
+      collectionName: collectionName,
+      localId: localId,
+      enterpriseId: 'global',
+      moduleType: 'administration',
+    );
+  }
+
+  @override
+  Future<Enterprise?> getByLocalId(String localId) async {
+    final record = await driftService.records.findByLocalId(
+      collectionName: collectionName,
+      localId: localId,
+      enterpriseId: 'global',
+      moduleType: 'administration',
+    );
+    if (record == null) return null;
+    final map = jsonDecode(record.dataJson) as Map<String, dynamic>;
+    return fromMap(map);
+  }
+
+  @override
+  Future<List<Enterprise>> getAllForEnterprise(String enterpriseId) {
+    // Enterprises are global, not enterprise-specific
+    return getAllEnterprises();
+  }
+
+  // EnterpriseRepository implementation
+  @override
+  Future<List<Enterprise>> getAllEnterprises() async {
+    try {
+      final records = await driftService.records.listForEnterprise(
+        collectionName: collectionName,
+        enterpriseId: 'global',
+        moduleType: 'administration',
+      );
+      return records.map((record) {
+        final map = jsonDecode(record.dataJson) as Map<String, dynamic>;
+        return fromMap(map);
+      }).toList();
+    } catch (e, stackTrace) {
+      developer.log(
+        'Error fetching enterprises from offline storage',
+        name: 'admin.enterprise.repository',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      return [];
+    }
+  }
+
+  @override
+  Future<({List<Enterprise> enterprises, int totalCount})> getEnterprisesPaginated({
+    int page = 0,
+    int limit = 50,
+  }) async {
+    try {
+      // Validate and clamp pagination parameters
+      final validated = OptimizedQueries.validatePagination(
+        page: page,
+        limit: limit,
+      );
+      final offset = OptimizedQueries.calculateOffset(
+        validated.page,
+        validated.limit,
+      );
+
+      // Get paginated records using LIMIT/OFFSET at Drift level
+      final records = await driftService.records.listForEnterprisePaginated(
+        collectionName: collectionName,
+        enterpriseId: 'global',
+        moduleType: 'administration',
+        limit: validated.limit,
+        offset: offset,
+      );
+
+      // Get total count for pagination info
+      final totalCount = await driftService.records.countForEnterprise(
+        collectionName: collectionName,
+        enterpriseId: 'global',
+        moduleType: 'administration',
+      );
+
+      final enterprises = records.map((record) {
+        final map = jsonDecode(record.dataJson) as Map<String, dynamic>;
+        return fromMap(map);
+      }).toList();
+
+      return (enterprises: enterprises, totalCount: totalCount);
+    } catch (e, stackTrace) {
+      developer.log(
+        'Error fetching paginated enterprises from offline storage',
+        name: 'admin.enterprise.repository',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      return (enterprises: [], totalCount: 0);
+    }
+  }
+
+  @override
+  Future<List<Enterprise>> getEnterprisesByType(String type) async {
+    final allEnterprises = await getAllEnterprises();
+    return allEnterprises.where((e) => e.type == type).toList();
+  }
+
+  @override
+  Future<Enterprise?> getEnterpriseById(String id) async {
+    try {
+      // Try to find by remote ID first
+      final record = await driftService.records.findByRemoteId(
+        collectionName: collectionName,
+        remoteId: id,
+        enterpriseId: 'global',
+        moduleType: 'administration',
+      );
+      if (record != null) {
+        final map = jsonDecode(record.dataJson) as Map<String, dynamic>;
+        return fromMap(map);
+      }
+      // Try by local ID
+      return await getByLocalId(id);
+    } catch (e) {
+      developer.log(
+        'Error fetching enterprise by ID: $id',
+        name: 'admin.enterprise.repository',
+        error: e,
+      );
+      return null;
+    }
+  }
+
+  @override
+  Future<String> createEnterprise(Enterprise enterprise) async {
+    await save(enterprise);
+    return enterprise.id;
+  }
+
+  @override
+  Future<void> updateEnterprise(Enterprise enterprise) async {
+    await save(enterprise);
+  }
+
+  @override
+  Future<void> deleteEnterprise(String id) async {
+    final enterprise = await getEnterpriseById(id);
+    if (enterprise != null) {
+      await delete(enterprise);
+    }
+  }
+
+  @override
+  Future<void> toggleEnterpriseStatus(
+    String enterpriseId,
+    bool isActive,
+  ) async {
+    final enterprise = await getEnterpriseById(enterpriseId);
+    if (enterprise != null) {
+      final updatedEnterprise = enterprise.copyWith(
+        isActive: isActive,
+        updatedAt: DateTime.now(),
+      );
+      await save(updatedEnterprise);
+    }
+  }
+}
+
