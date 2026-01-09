@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
@@ -12,13 +14,6 @@ class ProductionPaymentTotalSummary extends ConsumerWidget {
   });
 
   final List<ProductionPaymentPerson> persons;
-
-  String _formatCurrency(int amount) {
-    return amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        ) + ' FCFA';
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -63,7 +58,7 @@ class ProductionPaymentTotalSummary extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                _formatCurrency(totalAmount),
+                CurrencyFormatter.formatFCFA(totalAmount),
                 style: theme.textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: theme.colorScheme.primary,

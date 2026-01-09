@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
+
 import 'salary_history_item_data.dart';
 
 /// Item widget for displaying a payment in history.
@@ -10,13 +12,6 @@ class SalaryHistoryItem extends StatelessWidget {
   });
 
   final SalaryHistoryItemData payment;
-
-  String _formatCurrency(int amount) {
-    return amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        ) + ' FCFA';
-  }
 
   String _formatDate(DateTime date) {
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
@@ -73,7 +68,7 @@ class SalaryHistoryItem extends StatelessWidget {
           ],
         ),
         trailing: Text(
-          _formatCurrency(payment.amount),
+          CurrencyFormatter.formatFCFA(payment.amount),
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.bold,
             color: color,

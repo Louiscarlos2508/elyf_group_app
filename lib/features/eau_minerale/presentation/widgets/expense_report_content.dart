@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
@@ -14,13 +16,6 @@ class ExpenseReportContent extends ConsumerWidget {
   });
 
   final ReportPeriod period;
-
-  String _formatCurrency(int amount) {
-    return '${amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        )} FCFA';
-  }
 
   IconData _getCategoryIcon(ExpenseCategory category) {
     switch (category) {
@@ -63,7 +58,7 @@ class ExpenseReportContent extends ConsumerWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'Total: ${_formatCurrency(data.totalAmount)}',
+                'Total: ${CurrencyFormatter.formatFCFA(data.totalAmount)}',
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: Colors.red,
@@ -111,7 +106,7 @@ class ExpenseReportContent extends ConsumerWidget {
                           ),
                         ),
                         Text(
-                          _formatCurrency(entry.value),
+                          CurrencyFormatter.formatFCFA(entry.value),
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: Colors.red,
@@ -149,7 +144,7 @@ class ExpenseReportContent extends ConsumerWidget {
                         title: Text(expense.label),
                         subtitle: Text(ProductionPeriodFormatter.formatDate(expense.date)),
                         trailing: Text(
-                          _formatCurrency(expense.amountCfa),
+                          CurrencyFormatter.formatFCFA(expense.amountCfa),
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: Colors.red,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import '../../domain/entities/sale.dart';
 import '../../application/controllers/sales_controller.dart' show SalesState;
 import 'dashboard_kpi_card.dart';
@@ -13,18 +14,6 @@ class DashboardTodaySection extends StatelessWidget {
 
   final SalesState salesState;
 
-  String _formatCurrency(int amount) {
-    final amountStr = amount.toString();
-    final buffer = StringBuffer();
-    for (var i = 0; i < amountStr.length; i++) {
-      if (i > 0 && (amountStr.length - i) % 3 == 0) {
-        buffer.write(' ');
-      }
-      buffer.write(amountStr[i]);
-    }
-    return '${buffer.toString()} CFA';
-  }
-
   @override
   Widget build(BuildContext context) {
     final todayRevenue = salesState.todayRevenue;
@@ -32,6 +21,9 @@ class DashboardTodaySection extends StatelessWidget {
     final todayCollections = salesState.sales
         .where((Sale sale) => sale.isFullyPaid)
         .fold(0, (int sum, Sale sale) => sum + sale.amountPaid);
+    final collectionRate = todayRevenue > 0
+        ? ((todayCollections / todayRevenue) * 100).toStringAsFixed(0)
+        : '0';
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -39,7 +31,7 @@ class DashboardTodaySection extends StatelessWidget {
         final cards = [
           DashboardKpiCard(
             label: 'Chiffre d\'Affaires',
-            value: _formatCurrency(todayRevenue),
+            value: CurrencyFormatter.formatCFA(todayRevenue),
             subtitle: '$todaySalesCount vente(s)',
             icon: Icons.trending_up,
             iconColor: Colors.blue,
@@ -47,10 +39,8 @@ class DashboardTodaySection extends StatelessWidget {
           ),
           DashboardKpiCard(
             label: 'Encaissements',
-            value: _formatCurrency(todayCollections),
-            subtitle: todayRevenue > 0
-                ? '${((todayCollections / todayRevenue) * 100).toStringAsFixed(0)}% collecté'
-                : '0% collecté',
+            value: CurrencyFormatter.formatCFA(todayCollections),
+            subtitle: '$collectionRate% collecté',
             icon: Icons.attach_money,
             iconColor: Colors.green,
             valueColor: Colors.green.shade700,

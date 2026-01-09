@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/providers.dart';
@@ -16,13 +18,6 @@ class PurchasesReportContentV2 extends ConsumerWidget {
 
   final DateTime startDate;
   final DateTime endDate;
-
-  String _formatCurrency(int amount) {
-    return '${amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        )} FCFA';
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -61,7 +56,7 @@ class PurchasesReportContentV2 extends ConsumerWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                '${data.purchasesCount} achats • Total: ${_formatCurrency(data.totalAmount)}',
+                '${data.purchasesCount} achats • Total: ${CurrencyFormatter.formatFCFA(data.totalAmount)}',
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -130,7 +125,7 @@ class PurchasesReportContentV2 extends ConsumerWidget {
           const Divider(),
           _buildStatRow(theme, 'Nombre d\'achats', '${data.purchasesCount}'),
           const Divider(),
-          _buildStatRow(theme, 'Achat moyen', _formatCurrency(data.averagePurchaseAmount)),
+          _buildStatRow(theme, 'Achat moyen', CurrencyFormatter.formatFCFA(data.averagePurchaseAmount)),
         ],
       ),
     );
@@ -194,7 +189,7 @@ class PurchasesReportContentV2 extends ConsumerWidget {
             ),
           ),
           Text(
-            _formatCurrency(supplier.totalAmount),
+            CurrencyFormatter.formatFCFA(supplier.totalAmount),
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.bold,
               color: Colors.orange.shade700,

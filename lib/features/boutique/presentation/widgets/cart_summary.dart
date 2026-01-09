@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/providers.dart';
@@ -19,13 +21,6 @@ class CartSummary extends ConsumerWidget {
   final void Function(int, int) onUpdateQuantity;
   final VoidCallback onClear;
   final VoidCallback onCheckout;
-
-  String _formatCurrency(int amount) {
-    return amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        ) + ' FCFA';
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -89,7 +84,7 @@ class CartSummary extends ConsumerWidget {
                         margin: const EdgeInsets.only(bottom: 8),
                         child: ListTile(
                           title: Text(item.product.name),
-                          subtitle: Text(_formatCurrency(item.product.price)),
+                          subtitle: Text(CurrencyFormatter.formatFCFA(item.product.price)),
                           trailing: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -139,7 +134,7 @@ class CartSummary extends ConsumerWidget {
                         ),
                       ),
                       Text(
-                        _formatCurrency(total),
+                        CurrencyFormatter.formatFCFA(total),
                         style: theme.textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: theme.colorScheme.primary,

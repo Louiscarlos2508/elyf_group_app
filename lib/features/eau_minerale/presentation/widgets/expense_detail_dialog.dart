@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
+
 import '../../domain/entities/expense_record.dart';
 
 /// Dialog showing expense details.
@@ -10,13 +12,6 @@ class ExpenseDetailDialog extends StatelessWidget {
   });
 
   final ExpenseRecord expense;
-
-  String _formatCurrency(int amount) {
-    return amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        ) + ' CFA';
-  }
 
   String _formatDate(DateTime date) {
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
@@ -85,7 +80,7 @@ class ExpenseDetailDialog extends StatelessWidget {
                     Expanded(
                       child: _DetailRow(
                         label: 'Montant',
-                        value: _formatCurrency(expense.amountCfa),
+                        value: CurrencyFormatter.formatFCFA(expense.amountCfa),
                         icon: Icons.attach_money,
                       ),
                     ),

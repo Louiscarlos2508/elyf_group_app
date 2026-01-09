@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
@@ -341,13 +343,6 @@ class _SalaryCard extends StatelessWidget {
   final WeeklySalaryInfo info;
   final VoidCallback onPay;
 
-  String _formatCurrency(int amount) {
-    return '${amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        )} CFA';
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -392,7 +387,7 @@ class _SalaryCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '${info.daysWorked} jour${info.daysWorked > 1 ? 's' : ''} × ${_formatCurrency(info.dailySalary)}/jour',
+                        '${info.daysWorked} jour${info.daysWorked > 1 ? 's' : ''} × ${CurrencyFormatter.formatFCFA(info.dailySalary)}/jour',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
@@ -421,7 +416,7 @@ class _SalaryCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    _formatCurrency(info.totalSalary),
+                    CurrencyFormatter.formatFCFA(info.totalSalary),
                     style: theme.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: theme.colorScheme.onPrimaryContainer,

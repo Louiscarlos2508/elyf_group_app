@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/controllers/finances_controller.dart' show FinancesState;
@@ -17,14 +19,6 @@ class DashboardOperationsSection extends ConsumerWidget {
 
   final AsyncValue<dynamic> productionState; // TODO: Remplacer par productionSessionsStateProvider
   final AsyncValue<FinancesState> financesState;
-
-  String _formatCurrency(int amount) {
-    final amountStr = amount.toString();
-    final buffer = StringBuffer();
-    for (var i = 0; i < amountStr.length; i++) {
-      if (i > 0 && (amountStr.length - i) % 3 == 0) {
-        buffer.write(' ');
-      }
       buffer.write(amountStr[i]);
     }
     return '${buffer.toString()} CFA';
@@ -66,7 +60,7 @@ class DashboardOperationsSection extends ConsumerWidget {
                 ),
                 DashboardKpiCard(
                   label: 'Dépenses',
-                  value: _formatCurrency(monthExpenses),
+                  value: CurrencyFormatter.formatFCFA(monthExpenses),
                   subtitle: '$expensesCount transaction',
                   icon: Icons.receipt_long,
                   iconColor: Colors.red,
@@ -74,7 +68,7 @@ class DashboardOperationsSection extends ConsumerWidget {
                 ),
                 DashboardKpiCard(
                   label: 'Salaires',
-                  value: _formatCurrency(monthSalaries),
+                  value: CurrencyFormatter.formatFCFA(monthSalaries),
                   subtitle: '0 paiement',
                   icon: Icons.people,
                   iconColor: Colors.indigo,

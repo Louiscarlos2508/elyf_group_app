@@ -502,3 +502,72 @@ class RetailMetrics {
   final Map<int, int> salesByWeight;
 }
 
+/// Métriques du stock par point de vente.
+class PointOfSaleStockMetrics {
+  const PointOfSaleStockMetrics({
+    required this.pointOfSaleId,
+    required this.totalFull,
+    required this.totalEmpty,
+    required this.stockByCapacity,
+  });
+
+  final String pointOfSaleId;
+  final int totalFull;
+  final int totalEmpty;
+  final Map<int, ({int full, int empty})> stockByCapacity;
+}
+
+/// Extension du service pour les calculs de stock par point de vente.
+extension GazStockCalculationExtension on GazCalculationService {
+  /// Calcule les métriques de stock pour un point de vente spécifique.
+  static PointOfSaleStockMetrics calculatePosStockMetrics({
+    required String posId,
+    required List<CylinderStock> allStocks,
+  }) {
+    // Filtrer les stocks pour ce point de vente
+    final posStocks = allStocks
+        .where((s) => s.siteId == posId || s.siteId == null)
+        .toList();
+
+    // Calculer les totaux
+    final fullStocks = posStocks
+        .where((s) => s.status == CylinderStatus.full)
+        .toList();
+    final emptyStocks = posStocks
+        .where((s) =>
+            s.status == CylinderStatus.emptyAtStore ||
+            s.status == CylinderStatus.emptyInTransit)
+        .toList();
+
+    final totalFull = fullStocks.fold<int>(0, (sum, s) => sum + s.quantity);
+    final totalEmpty = emptyStocks.fold<int>(0, (sum, s) => sum + s.quantity);
+
+    // Grouper par capacité
+    final availableWeights = posStocks.map((s) => s.weight).toSet().toList()
+      ..sort();
+    final stockByCapacity = <int, ({int full, int empty})>{};
+
+    for (final weight in availableWeights) {
+      final full = posStocks
+          .where((s) => s.weight == weight && s.status == CylinderStatus.full)
+          .fold<int>(0, (sum, s) => sum + s.quantity);
+      final empty = posStocks
+          .where((s) =>
+              s.weight == weight &&
+              (s.status == CylinderStatus.emptyAtStore ||
+                  s.status == CylinderStatus.emptyInTransit))
+          .fold<int>(0, (sum, s) => sum + s.quantity);
+      if (full > 0 || empty > 0) {
+        stockByCapacity[weight] = (full: full, empty: empty);
+      }
+    }
+
+    return PointOfSaleStockMetrics(
+      pointOfSaleId: posId,
+      totalFull: totalFull,
+      totalEmpty: totalEmpty,
+      stockByCapacity: stockByCapacity,
+    );
+  }
+}
+

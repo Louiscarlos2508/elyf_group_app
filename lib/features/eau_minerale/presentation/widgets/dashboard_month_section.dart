@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import '../../application/controllers/clients_controller.dart';
 import '../../application/controllers/finances_controller.dart';
 import '../../application/controllers/sales_controller.dart';
@@ -22,21 +23,9 @@ class DashboardMonthSection extends ConsumerWidget {
   });
 
   final AsyncValue<SalesState> salesState;
-  final AsyncValue<dynamic> productionState; // TODO: Remplacer par productionSessionsStateProvider
+  final AsyncValue<dynamic> productionState;
   final AsyncValue<ClientsState> clientsState;
   final AsyncValue<FinancesState> financesState;
-
-  String _formatCurrency(int amount) {
-    final amountStr = amount.toString();
-    final buffer = StringBuffer();
-    for (var i = 0; i < amountStr.length; i++) {
-      if (i > 0 && (amountStr.length - i) % 3 == 0) {
-        buffer.write(' ');
-      }
-      buffer.write(amountStr[i]);
-    }
-    return '${buffer.toString()} CFA';
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -68,7 +57,7 @@ class DashboardMonthSection extends ConsumerWidget {
                   final cards = [
                     DashboardKpiCard(
                       label: 'Chiffre d\'Affaires',
-                      value: _formatCurrency(metrics.revenue),
+                      value: CurrencyFormatter.formatCFA(metrics.revenue),
                       subtitle: '${metrics.salesCount} ventes',
                       icon: Icons.trending_up,
                       iconColor: Colors.blue,
@@ -76,7 +65,7 @@ class DashboardMonthSection extends ConsumerWidget {
                     ),
                     DashboardKpiCard(
                       label: 'Encaissé',
-                      value: _formatCurrency(metrics.collections),
+                      value: CurrencyFormatter.formatCFA(metrics.collections),
                       subtitle: '${metrics.collectionRate.toStringAsFixed(0)}%',
                       icon: Icons.attach_money,
                       iconColor: Colors.green,
@@ -85,7 +74,7 @@ class DashboardMonthSection extends ConsumerWidget {
                     ),
                     DashboardKpiCard(
                       label: 'Crédits en Cours',
-                      value: _formatCurrency(metrics.totalCredits),
+                      value: CurrencyFormatter.formatCFA(metrics.totalCredits),
                       subtitle: '${metrics.creditCustomersCount} client',
                       icon: Icons.calendar_today,
                       iconColor: Colors.orange,
@@ -93,7 +82,7 @@ class DashboardMonthSection extends ConsumerWidget {
                     ),
                     DashboardKpiCard(
                       label: 'Résultat',
-                      value: _formatCurrency(metrics.result),
+                      value: CurrencyFormatter.formatCFA(metrics.result),
                       subtitle: metrics.isProfit ? 'Bénéfice' : 'Déficit',
                       icon: Icons.account_balance_wallet,
                       iconColor: metrics.isProfit ? Colors.green : Colors.red,

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/immobilier/application/providers.dart';
@@ -25,13 +27,6 @@ class DashboardKpiGrid extends ConsumerWidget {
   final List<Contract> contracts;
   final List<Payment> payments;
   final List<PropertyExpense> expenses;
-
-  String _formatCurrency(int amount) {
-    return amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        ) + ' F';
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -72,19 +67,19 @@ class DashboardKpiGrid extends ConsumerWidget {
       ),
       EnhancedKpiCard(
         label: 'Revenus du mois',
-        value: _formatCurrency(metrics.monthRevenue),
+        value: CurrencyFormatter.formatFCFA(metrics.monthRevenue),
         icon: Icons.trending_up,
         color: Colors.green,
       ),
       EnhancedKpiCard(
         label: 'Dépenses du mois',
-        value: _formatCurrency(metrics.monthExpensesTotal),
+        value: CurrencyFormatter.formatFCFA(metrics.monthExpensesTotal),
         icon: Icons.trending_down,
         color: Colors.red,
       ),
       EnhancedKpiCard(
         label: 'Résultat net',
-        value: _formatCurrency(metrics.netRevenue),
+        value: CurrencyFormatter.formatFCFA(metrics.netRevenue),
         icon: Icons.account_balance_wallet,
         color: metrics.netRevenue >= 0 ? Colors.green : Colors.red,
       ),
@@ -96,7 +91,7 @@ class DashboardKpiGrid extends ConsumerWidget {
       ),
       EnhancedKpiCard(
         label: 'Loyers mensuels',
-        value: _formatCurrency(metrics.totalMonthlyRent),
+        value: CurrencyFormatter.formatFCFA(metrics.totalMonthlyRent),
         icon: Icons.attach_money,
         color: Colors.teal,
       ),

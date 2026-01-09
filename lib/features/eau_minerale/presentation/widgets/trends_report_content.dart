@@ -1,5 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
@@ -15,11 +17,7 @@ class TrendsReportContent extends ConsumerWidget {
     required this.period,
   });
 
-  final ReportPeriod period;
-
-  String _formatCurrency(int amount) {
-    final formatted = amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+  final ReportPeriod period;)(?=(\d{3})+(?!\d))'),
           (Match m) => '${m[1]} ',
         );
     return '$formatted FCFA';
@@ -136,8 +134,8 @@ class TrendsReportContent extends ConsumerWidget {
             items: [
               _ComparisonItem(
                 label: 'Chiffre d\'Affaires',
-                currentValue: _formatCurrency(currentRevenue),
-                previousValue: _formatCurrency(previousRevenue),
+                currentValue: CurrencyFormatter.formatFCFA(currentRevenue),
+                previousValue: CurrencyFormatter.formatFCFA(previousRevenue),
                 changePercent: revenueChange,
                 icon: Icons.trending_up,
               ),

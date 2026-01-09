@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/immobilier/application/providers.dart';
@@ -14,13 +16,6 @@ class ExpensesReportContent extends ConsumerWidget {
 
   final DateTime startDate;
   final DateTime endDate;
-
-  String _formatCurrency(int amount) {
-    return '${amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        )} FCFA';
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -137,7 +132,7 @@ class ExpensesReportContent extends ConsumerWidget {
               DataCell(Text(expense.property ?? '-')),
               DataCell(
                 Text(
-                  _formatCurrency(expense.amount),
+                  CurrencyFormatter.formatFCFA(expense.amount),
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
                     color: Colors.red.shade700,
@@ -196,7 +191,7 @@ class ExpensesReportContent extends ConsumerWidget {
             ],
           ),
           trailing: Text(
-            _formatCurrency(expense.amount),
+            CurrencyFormatter.formatFCFA(expense.amount),
             style: theme.textTheme.titleSmall?.copyWith(
               fontWeight: FontWeight.bold,
               color: Colors.red.shade700,

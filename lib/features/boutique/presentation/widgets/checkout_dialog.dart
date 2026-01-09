@@ -48,9 +48,6 @@ class _CheckoutDialogState extends ConsumerState<CheckoutDialog>
     super.dispose();
   }
 
-  String _formatCurrency(int amount) {
-    return CurrencyFormatter.formatFCFA(amount);
-  }
 
   int? get _amountPaid => int.tryParse(_amountPaidController.text);
   int get _change {
@@ -155,7 +152,7 @@ class _CheckoutDialogState extends ConsumerState<CheckoutDialog>
                           ),
                         ),
                         Text(
-                          _formatCurrency(widget.total),
+                          CurrencyFormatter.formatFCFA(widget.total),
                           style: theme.textTheme.headlineSmall?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: theme.colorScheme.primary,
@@ -227,7 +224,7 @@ class _CheckoutDialogState extends ConsumerState<CheckoutDialog>
                             ),
                           ),
                           Text(
-                            _formatCurrency(_change),
+                            CurrencyFormatter.formatFCFA(_change),
                             style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: Colors.green.shade700,

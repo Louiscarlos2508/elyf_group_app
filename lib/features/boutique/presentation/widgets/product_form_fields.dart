@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import 'package:flutter/services.dart';
 
 class ProductFormFields extends StatefulWidget {
@@ -28,12 +30,6 @@ class ProductFormFields extends StatefulWidget {
 }
 
 class _ProductFormFieldsState extends State<ProductFormFields> {
-  String _formatCurrency(int amount) {
-    return amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        );
-  }
 
   int _calculateUnitPrice() {
     final qty = int.tryParse(widget.stockController.text) ?? 0;
@@ -152,7 +148,7 @@ class _ProductFormFieldsState extends State<ProductFormFields> {
                   style: theme.textTheme.bodyMedium,
                 ),
                 Text(
-                  '${_formatCurrency(unitPrice)} FCFA',
+                  '${CurrencyFormatter.formatFCFA(unitPrice)} FCFA',
                   style: theme.textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: theme.colorScheme.primary,

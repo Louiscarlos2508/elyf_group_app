@@ -44,11 +44,6 @@ class DateFilterService {
     return DateTime(date.year, 1, 1);
   }
 
-  /// Retourne la fin de l'année.
-  static DateTime endOfYear(DateTime date) {
-    return DateTime(date.year, 12, 31, 23, 59, 59, 999);
-  }
-
   /// Vérifie si une date est aujourd'hui.
   static bool isToday(DateTime date) {
     final now = DateTime.now();
@@ -63,23 +58,17 @@ class DateFilterService {
     return date.year == now.year && date.month == now.month;
   }
 
-  /// Vérifie si une date est dans la semaine courante.
-  static bool isThisWeek(DateTime date) {
-    final now = DateTime.now();
-    final weekStart = startOfWeek(now);
-    final weekEnd = endOfWeek(now);
-    return date.isAfter(weekStart.subtract(const Duration(seconds: 1))) &&
-        date.isBefore(weekEnd.add(const Duration(seconds: 1)));
-  }
-
-  /// Vérifie si une date est dans une période donnée.
+  /// Vérifie si une date est dans une période donnée (inclusif).
   static bool isInPeriod(DateTime date, DateTime start, DateTime end) {
-    return date.isAfter(start.subtract(const Duration(seconds: 1))) &&
-        date.isBefore(end.add(const Duration(seconds: 1)));
+    final normalizedDate = startOfDay(date);
+    final normalizedStart = startOfDay(start);
+    final normalizedEnd = endOfDay(end);
+    return !normalizedDate.isBefore(normalizedStart) &&
+        !normalizedDate.isAfter(normalizedEnd);
   }
 
-  /// Filtre une liste par date.
-  static List<T> filterByDate<T>(
+  /// Filtre une liste par plage de dates.
+  static List<T> filterByDateRange<T>(
     List<T> items,
     DateTime Function(T) dateGetter, {
     DateTime? startDate,
@@ -106,7 +95,7 @@ class DateFilterService {
     return items.where((item) => isToday(dateGetter(item))).toList();
   }
 
-  /// Filtre une liste pour ce mois.
+  /// Filtre une liste pour le mois courant.
   static List<T> filterThisMonth<T>(
     List<T> items,
     DateTime Function(T) dateGetter,
@@ -115,24 +104,8 @@ class DateFilterService {
     final monthStart = startOfMonth(now);
     return items.where((item) {
       final date = dateGetter(item);
-      return date.isAfter(monthStart.subtract(const Duration(seconds: 1)));
+      return !date.isBefore(monthStart);
     }).toList();
-  }
-
-  /// Filtre une liste pour cette semaine.
-  static List<T> filterThisWeek<T>(
-    List<T> items,
-    DateTime Function(T) dateGetter,
-  ) {
-    return items.where((item) => isThisWeek(dateGetter(item))).toList();
-  }
-
-  /// Retourne les N derniers jours.
-  static List<DateTime> getLastNDays(int n, {DateTime? referenceDate}) {
-    final now = referenceDate ?? DateTime.now();
-    return List.generate(n, (i) {
-      return startOfDay(now.subtract(Duration(days: n - 1 - i)));
-    });
   }
 
   /// Calcule le nombre de jours restants.

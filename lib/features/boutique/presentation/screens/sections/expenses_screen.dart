@@ -17,9 +17,6 @@ import 'package:elyf_groupe_app/shared/presentation/widgets/refresh_button.dart'
 class ExpensesScreen extends ConsumerWidget {
   const ExpensesScreen({super.key});
 
-  String _formatCurrency(int amount) {
-    return CurrencyFormatter.formatFCFA(amount);
-  }
 
   List<Expense> _getTodayExpenses(List<Expense> expenses) {
     final now = DateTime.now();
@@ -288,7 +285,7 @@ class ExpensesScreen extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildDetailRow(theme, 'Montant', _formatCurrency(expense.amountCfa)),
+            _buildDetailRow(theme, 'Montant', CurrencyFormatter.formatFCFA(expense.amountCfa)),
             _buildDetailRow(theme, 'Catégorie', _getCategoryLabel(expense.category)),
             _buildDetailRow(
               theme,

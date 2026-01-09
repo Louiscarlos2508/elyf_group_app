@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
+
 import 'package:elyf_groupe_app/shared.dart';
 
 /// KPI cards row for reports screen.
@@ -44,7 +46,7 @@ class ReportKpiCards extends StatelessWidget {
             fontWeight: FontWeight.normal,
             color: Color(0xFF00A63E),
           ),
-          subtitle: _formatCurrency(cashInTotal),
+          subtitle: CurrencyFormatter.formatFCFA(cashInTotal),
         ),
         const SizedBox(width: 16),
         _ReportKpiCard(
@@ -57,14 +59,14 @@ class ReportKpiCards extends StatelessWidget {
             fontWeight: FontWeight.normal,
             color: Color(0xFFE7000B),
           ),
-          subtitle: _formatCurrency(cashOutTotal),
+          subtitle: CurrencyFormatter.formatFCFA(cashOutTotal),
         ),
         const SizedBox(width: 16),
         _ReportKpiCard(
           icon: Icons.attach_money,
           iconColor: const Color(0xFFF54900),
           label: 'Commissions',
-          value: _formatCurrency(totalCommission),
+          value: CurrencyFormatter.formatFCFA(totalCommission),
           valueStyle: const TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.normal,
@@ -75,12 +77,6 @@ class ReportKpiCards extends StatelessWidget {
     );
   }
 
-  String _formatCurrency(int amount) {
-    return amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        ) + ' F';
-  }
 }
 
 /// Individual KPI card for reports.

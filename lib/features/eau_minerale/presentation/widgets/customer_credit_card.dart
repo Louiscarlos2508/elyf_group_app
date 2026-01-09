@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
@@ -23,12 +25,6 @@ class CustomerCreditCard extends ConsumerWidget {
   final List<CustomerCredit> credits;
   final VoidCallback? onHistoryTap;
   final VoidCallback? onPaymentTap;
-
-  String _formatCurrency(int amount) {
-    final amountStr = amount.toString();
-    if (amountStr.length <= 3) {
-      return amountStr;
-    }
     
     final buffer = StringBuffer();
     final reversed = amountStr.split('').reversed.join();
@@ -175,5 +171,4 @@ class CustomerCreditCard extends ConsumerWidget {
     );
   }
 }
-
 
