@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:developer' as developer;
 
-import '../../../../core/errors/app_exceptions.dart';
+import '../../../../core/domain/entities/attached_file.dart';
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/offline/connectivity_service.dart';
 import '../../../../core/offline/drift_service.dart';
@@ -10,7 +10,7 @@ import '../../../../core/offline/sync_manager.dart';
 import '../../domain/entities/purchase.dart';
 import '../../domain/repositories/purchase_repository.dart';
 
-/// Offline-first repository for Purchase entities (boutique module).
+/// Offline-first repository for Purchase entities.
 class PurchaseOfflineRepository extends OfflineRepository<Purchase>
     implements PurchaseRepository {
   PurchaseOfflineRepository({
@@ -18,34 +18,47 @@ class PurchaseOfflineRepository extends OfflineRepository<Purchase>
     required super.syncManager,
     required super.connectivityService,
     required this.enterpriseId,
+    required this.moduleType,
   });
 
   final String enterpriseId;
+  final String moduleType;
 
   @override
   String get collectionName => 'purchases';
 
   @override
   Purchase fromMap(Map<String, dynamic> map) {
+    final items = (map['items'] as List<dynamic>?)
+            ?.map((item) => PurchaseItem(
+                  productId: item['productId'] as String,
+                  productName: item['productName'] as String,
+                  quantity: (item['quantity'] as num).toInt(),
+                  purchasePrice: (item['purchasePrice'] as num).toInt(),
+                  totalPrice: (item['totalPrice'] as num).toInt(),
+                ))
+            .toList() ??
+        [];
+
+    final attachedFilesRaw = map['attachedFiles'] as List<dynamic>?;
+    final attachedFiles = attachedFilesRaw
+        ?.map((f) => AttachedFile(
+              id: f['id'] as String,
+              name: f['name'] as String,
+              url: f['url'] as String,
+              mimeType: f['mimeType'] as String?,
+              size: (f['size'] as num?)?.toInt(),
+            ))
+        .toList();
+
     return Purchase(
       id: map['id'] as String? ?? map['localId'] as String,
-      date: map['date'] != null
-          ? DateTime.parse(map['date'] as String)
-          : DateTime.now(),
-      items: (map['items'] as List<dynamic>?)
-              ?.map((item) => PurchaseItem(
-                    productId: item['productId'] as String,
-                    productName: item['productName'] as String,
-                    quantity: (item['quantity'] as num?)?.toInt() ?? 0,
-                    purchasePrice: (item['purchasePrice'] as num?)?.toInt() ?? 0,
-                    totalPrice: (item['totalPrice'] as num?)?.toInt() ?? 0,
-                  ))
-              .toList() ??
-          [],
-      totalAmount: (map['totalAmount'] as num?)?.toInt() ?? 0,
+      date: DateTime.parse(map['date'] as String),
+      items: items,
+      totalAmount: (map['totalAmount'] as num).toInt(),
       supplier: map['supplier'] as String?,
       notes: map['notes'] as String?,
-      attachedFiles: null, // TODO: Implémenter si nécessaire
+      attachedFiles: attachedFiles,
     );
   }
 
@@ -54,32 +67,39 @@ class PurchaseOfflineRepository extends OfflineRepository<Purchase>
     return {
       'id': entity.id,
       'date': entity.date.toIso8601String(),
-      'items': entity.items.map((item) => {
-            'productId': item.productId,
-            'productName': item.productName,
-            'quantity': item.quantity,
-            'purchasePrice': item.purchasePrice,
-            'totalPrice': item.totalPrice,
-          }).toList(),
+      'items': entity.items
+          .map((item) => {
+                'productId': item.productId,
+                'productName': item.productName,
+                'quantity': item.quantity,
+                'purchasePrice': item.purchasePrice,
+                'totalPrice': item.totalPrice,
+              })
+          .toList(),
       'totalAmount': entity.totalAmount,
       'supplier': entity.supplier,
       'notes': entity.notes,
+      'attachedFiles': entity.attachedFiles
+          ?.map((f) => {
+                'id': f.id,
+                'name': f.name,
+                'url': f.url,
+                'mimeType': f.mimeType,
+                'size': f.size,
+              })
+          .toList(),
     };
   }
 
   @override
   String getLocalId(Purchase entity) {
-    if (entity.id.startsWith('local_')) {
-      return entity.id;
-    }
+    if (entity.id.startsWith('local_')) return entity.id;
     return LocalIdGenerator.generate();
   }
 
   @override
   String? getRemoteId(Purchase entity) {
-    if (!entity.id.startsWith('local_')) {
-      return entity.id;
-    }
+    if (!entity.id.startsWith('local_')) return entity.id;
     return null;
   }
 
@@ -96,7 +116,7 @@ class PurchaseOfflineRepository extends OfflineRepository<Purchase>
       localId: localId,
       remoteId: remoteId,
       enterpriseId: enterpriseId,
-      moduleType: 'boutique',
+      moduleType: moduleType,
       dataJson: jsonEncode(map),
       localUpdatedAt: DateTime.now(),
     );
@@ -110,7 +130,7 @@ class PurchaseOfflineRepository extends OfflineRepository<Purchase>
         collectionName: collectionName,
         remoteId: remoteId,
         enterpriseId: enterpriseId,
-        moduleType: 'boutique',
+        moduleType: moduleType,
       );
       return;
     }
@@ -119,7 +139,7 @@ class PurchaseOfflineRepository extends OfflineRepository<Purchase>
       collectionName: collectionName,
       localId: localId,
       enterpriseId: enterpriseId,
-      moduleType: 'boutique',
+      moduleType: moduleType,
     );
   }
 
@@ -129,23 +149,19 @@ class PurchaseOfflineRepository extends OfflineRepository<Purchase>
       collectionName: collectionName,
       remoteId: localId,
       enterpriseId: enterpriseId,
-      moduleType: 'boutique',
+      moduleType: moduleType,
     );
     if (byRemote != null) {
-      final map = jsonDecode(byRemote.dataJson) as Map<String, dynamic>;
-      return fromMap(map);
+      return fromMap(jsonDecode(byRemote.dataJson) as Map<String, dynamic>);
     }
-
     final byLocal = await driftService.records.findByLocalId(
       collectionName: collectionName,
       localId: localId,
       enterpriseId: enterpriseId,
-      moduleType: 'boutique',
+      moduleType: moduleType,
     );
     if (byLocal == null) return null;
-
-    final map = jsonDecode(byLocal.dataJson) as Map<String, dynamic>;
-    return fromMap(map);
+    return fromMap(jsonDecode(byLocal.dataJson) as Map<String, dynamic>);
   }
 
   @override
@@ -153,42 +169,35 @@ class PurchaseOfflineRepository extends OfflineRepository<Purchase>
     final rows = await driftService.records.listForEnterprise(
       collectionName: collectionName,
       enterpriseId: enterpriseId,
-      moduleType: 'boutique',
+      moduleType: moduleType,
     );
-    return rows
-        .map((row) {
-          try {
-            final map = jsonDecode(row.dataJson) as Map<String, dynamic>;
-            return fromMap(map);
-          } catch (e) {
-            developer.log(
-              'Error parsing purchase: $e',
-              name: 'PurchaseOfflineRepository',
-            );
-            return null;
-          }
-        })
-        .whereType<Purchase>()
+    final purchases = rows
+        .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
         .toList();
+    purchases.sort((a, b) => b.date.compareTo(a.date));
+    return purchases;
   }
 
-  // Implémentation de PurchaseRepository
+  // PurchaseRepository implementation
 
   @override
   Future<List<Purchase>> fetchPurchases({int limit = 50}) async {
     try {
+      developer.log(
+        'Fetching purchases for enterprise: $enterpriseId',
+        name: 'PurchaseOfflineRepository',
+      );
       final purchases = await getAllForEnterprise(enterpriseId);
-      purchases.sort((a, b) => b.date.compareTo(a.date));
       return purchases.take(limit).toList();
     } catch (error, stackTrace) {
-      final appException =
-          ErrorHandler.instance.handleError(error, stackTrace);
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
         'Error fetching purchases',
         name: 'PurchaseOfflineRepository',
-        error: appException,
+        error: error,
+        stackTrace: stackTrace,
       );
-      return [];
+      throw appException;
     }
   }
 
@@ -197,43 +206,41 @@ class PurchaseOfflineRepository extends OfflineRepository<Purchase>
     try {
       return await getByLocalId(id);
     } catch (error, stackTrace) {
-      final appException =
-          ErrorHandler.instance.handleError(error, stackTrace);
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
-        'Error getting purchase',
+        'Error getting purchase: $id',
         name: 'PurchaseOfflineRepository',
-        error: appException,
+        error: error,
+        stackTrace: stackTrace,
       );
-      return null;
+      throw appException;
     }
   }
 
   @override
   Future<String> createPurchase(Purchase purchase) async {
     try {
-      final purchaseWithId = purchase.id.isEmpty
-          ? Purchase(
-              id: LocalIdGenerator.generate(),
-              date: purchase.date,
-              items: purchase.items,
-              totalAmount: purchase.totalAmount,
-              supplier: purchase.supplier,
-              notes: purchase.notes,
-              attachedFiles: purchase.attachedFiles,
-            )
-          : purchase;
-      await save(purchaseWithId);
-      return purchaseWithId.id;
+      final localId = getLocalId(purchase);
+      final purchaseWithLocalId = Purchase(
+        id: localId,
+        date: purchase.date,
+        items: purchase.items,
+        totalAmount: purchase.totalAmount,
+        supplier: purchase.supplier,
+        notes: purchase.notes,
+        attachedFiles: purchase.attachedFiles,
+      );
+      await save(purchaseWithLocalId);
+      return localId;
     } catch (error, stackTrace) {
-      final appException =
-          ErrorHandler.instance.handleError(error, stackTrace);
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
         'Error creating purchase',
         name: 'PurchaseOfflineRepository',
-        error: appException,
+        error: error,
+        stackTrace: stackTrace,
       );
-      rethrow;
+      throw appException;
     }
   }
 }
-

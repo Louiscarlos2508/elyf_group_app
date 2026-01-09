@@ -6,14 +6,14 @@ import '../../../../core/offline/connectivity_service.dart';
 import '../../../../core/offline/drift_service.dart';
 import '../../../../core/offline/offline_repository.dart';
 import '../../../../core/offline/sync_manager.dart';
-import '../../domain/entities/packaging_stock.dart';
-import '../../domain/entities/packaging_stock_movement.dart';
-import '../../domain/repositories/packaging_stock_repository.dart';
+import '../../domain/entities/bobine_stock.dart';
+import '../../domain/entities/bobine_stock_movement.dart';
+import '../../domain/repositories/bobine_stock_quantity_repository.dart';
 
-/// Offline-first repository for PackagingStock entities.
-class PackagingStockOfflineRepository extends OfflineRepository<PackagingStock>
-    implements PackagingStockRepository {
-  PackagingStockOfflineRepository({
+/// Offline-first repository for BobineStock entities.
+class BobineStockOfflineRepository extends OfflineRepository<BobineStock>
+    implements BobineStockQuantityRepository {
+  BobineStockOfflineRepository({
     required super.driftService,
     required super.syncManager,
     required super.connectivityService,
@@ -25,13 +25,13 @@ class PackagingStockOfflineRepository extends OfflineRepository<PackagingStock>
   final String moduleType;
 
   @override
-  String get collectionName => 'packaging_stocks';
+  String get collectionName => 'bobine_stocks';
 
-  String get movementsCollection => 'packaging_stock_movements';
+  String get movementsCollection => 'bobine_stock_movements';
 
   @override
-  PackagingStock fromMap(Map<String, dynamic> map) {
-    return PackagingStock(
+  BobineStock fromMap(Map<String, dynamic> map) {
+    return BobineStock(
       id: map['id'] as String? ?? map['localId'] as String,
       type: map['type'] as String,
       quantity: (map['quantity'] as num).toInt(),
@@ -49,7 +49,7 @@ class PackagingStockOfflineRepository extends OfflineRepository<PackagingStock>
   }
 
   @override
-  Map<String, dynamic> toMap(PackagingStock entity) {
+  Map<String, dynamic> toMap(BobineStock entity) {
     return {
       'id': entity.id,
       'type': entity.type,
@@ -64,22 +64,22 @@ class PackagingStockOfflineRepository extends OfflineRepository<PackagingStock>
   }
 
   @override
-  String getLocalId(PackagingStock entity) {
+  String getLocalId(BobineStock entity) {
     if (entity.id.startsWith('local_')) return entity.id;
     return LocalIdGenerator.generate();
   }
 
   @override
-  String? getRemoteId(PackagingStock entity) {
+  String? getRemoteId(BobineStock entity) {
     if (!entity.id.startsWith('local_')) return entity.id;
     return null;
   }
 
   @override
-  String? getEnterpriseId(PackagingStock entity) => enterpriseId;
+  String? getEnterpriseId(BobineStock entity) => enterpriseId;
 
   @override
-  Future<void> saveToLocal(PackagingStock entity) async {
+  Future<void> saveToLocal(BobineStock entity) async {
     final localId = getLocalId(entity);
     final remoteId = getRemoteId(entity);
     final map = toMap(entity)..['localId'] = localId;
@@ -95,7 +95,7 @@ class PackagingStockOfflineRepository extends OfflineRepository<PackagingStock>
   }
 
   @override
-  Future<void> deleteFromLocal(PackagingStock entity) async {
+  Future<void> deleteFromLocal(BobineStock entity) async {
     final remoteId = getRemoteId(entity);
     if (remoteId != null) {
       await driftService.records.deleteByRemoteId(
@@ -116,7 +116,7 @@ class PackagingStockOfflineRepository extends OfflineRepository<PackagingStock>
   }
 
   @override
-  Future<PackagingStock?> getByLocalId(String localId) async {
+  Future<BobineStock?> getByLocalId(String localId) async {
     final byRemote = await driftService.records.findByRemoteId(
       collectionName: collectionName,
       remoteId: localId,
@@ -137,7 +137,7 @@ class PackagingStockOfflineRepository extends OfflineRepository<PackagingStock>
   }
 
   @override
-  Future<List<PackagingStock>> getAllForEnterprise(String enterpriseId) async {
+  Future<List<BobineStock>> getAllForEnterprise(String enterpriseId) async {
     final rows = await driftService.records.listForEnterprise(
       collectionName: collectionName,
       enterpriseId: enterpriseId,
@@ -148,16 +148,16 @@ class PackagingStockOfflineRepository extends OfflineRepository<PackagingStock>
         .toList();
   }
 
-  // PackagingStockRepository implementation
+  // BobineStockQuantityRepository implementation
 
   @override
-  Future<List<PackagingStock>> fetchAll() async {
+  Future<List<BobineStock>> fetchAll() async {
     try {
       return await getAllForEnterprise(enterpriseId);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log('Error fetching packaging stocks',
-          name: 'PackagingStockOfflineRepository',
+      developer.log('Error fetching bobine stocks',
+          name: 'BobineStockOfflineRepository',
           error: error,
           stackTrace: stackTrace);
       throw appException;
@@ -165,13 +165,13 @@ class PackagingStockOfflineRepository extends OfflineRepository<PackagingStock>
   }
 
   @override
-  Future<PackagingStock?> fetchById(String id) async {
+  Future<BobineStock?> fetchById(String id) async {
     try {
       return await getByLocalId(id);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log('Error fetching packaging stock: $id',
-          name: 'PackagingStockOfflineRepository',
+      developer.log('Error fetching bobine stock: $id',
+          name: 'BobineStockOfflineRepository',
           error: error,
           stackTrace: stackTrace);
       throw appException;
@@ -179,7 +179,7 @@ class PackagingStockOfflineRepository extends OfflineRepository<PackagingStock>
   }
 
   @override
-  Future<PackagingStock?> fetchByType(String type) async {
+  Future<BobineStock?> fetchByType(String type) async {
     try {
       final stocks = await fetchAll();
       try {
@@ -189,8 +189,8 @@ class PackagingStockOfflineRepository extends OfflineRepository<PackagingStock>
       }
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log('Error fetching packaging stock by type: $type',
-          name: 'PackagingStockOfflineRepository',
+      developer.log('Error fetching bobine stock by type: $type',
+          name: 'BobineStockOfflineRepository',
           error: error,
           stackTrace: stackTrace);
       throw appException;
@@ -198,7 +198,7 @@ class PackagingStockOfflineRepository extends OfflineRepository<PackagingStock>
   }
 
   @override
-  Future<PackagingStock> save(PackagingStock stock) async {
+  Future<BobineStock> save(BobineStock stock) async {
     try {
       final localId = getLocalId(stock);
       final stockWithLocalId = stock.copyWith(
@@ -210,8 +210,8 @@ class PackagingStockOfflineRepository extends OfflineRepository<PackagingStock>
       return stockWithLocalId;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log('Error saving packaging stock',
-          name: 'PackagingStockOfflineRepository',
+      developer.log('Error saving bobine stock',
+          name: 'BobineStockOfflineRepository',
           error: error,
           stackTrace: stackTrace);
       throw appException;
@@ -219,7 +219,7 @@ class PackagingStockOfflineRepository extends OfflineRepository<PackagingStock>
   }
 
   @override
-  Future<void> recordMovement(PackagingStockMovement movement) async {
+  Future<void> recordMovement(BobineStockMovement movement) async {
     try {
       final localId = movement.id.startsWith('local_')
           ? movement.id
@@ -227,7 +227,7 @@ class PackagingStockOfflineRepository extends OfflineRepository<PackagingStock>
       final map = {
         'id': localId,
         'localId': localId,
-        'packagingId': movement.packagingId,
+        'bobineStockId': movement.bobineStockId,
         'type': movement.type.name,
         'quantity': movement.quantity,
         'date': movement.date.toIso8601String(),
@@ -246,8 +246,8 @@ class PackagingStockOfflineRepository extends OfflineRepository<PackagingStock>
       );
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log('Error recording packaging movement',
-          name: 'PackagingStockOfflineRepository',
+      developer.log('Error recording bobine movement',
+          name: 'BobineStockOfflineRepository',
           error: error,
           stackTrace: stackTrace);
       throw appException;
@@ -255,8 +255,8 @@ class PackagingStockOfflineRepository extends OfflineRepository<PackagingStock>
   }
 
   @override
-  Future<List<PackagingStockMovement>> fetchMovements({
-    String? packagingId,
+  Future<List<BobineStockMovement>> fetchMovements({
+    String? bobineStockId,
     DateTime? startDate,
     DateTime? endDate,
   }) async {
@@ -268,12 +268,12 @@ class PackagingStockOfflineRepository extends OfflineRepository<PackagingStock>
       );
       final movements = rows.map((r) {
         final map = jsonDecode(r.dataJson) as Map<String, dynamic>;
-        return PackagingStockMovement(
+        return BobineStockMovement(
           id: map['id'] as String,
-          packagingId: map['packagingId'] as String,
-          type: PackagingMovementType.values.firstWhere(
+          bobineStockId: map['bobineStockId'] as String,
+          type: BobineMovementType.values.firstWhere(
             (e) => e.name == map['type'],
-            orElse: () => PackagingMovementType.usage,
+            orElse: () => BobineMovementType.usage,
           ),
           quantity: (map['quantity'] as num).toInt(),
           date: DateTime.parse(map['date'] as String),
@@ -283,15 +283,16 @@ class PackagingStockOfflineRepository extends OfflineRepository<PackagingStock>
       }).toList();
 
       return movements.where((m) {
-        if (packagingId != null && m.packagingId != packagingId) return false;
+        if (bobineStockId != null && m.bobineStockId != bobineStockId)
+          return false;
         if (startDate != null && m.date.isBefore(startDate)) return false;
         if (endDate != null && m.date.isAfter(endDate)) return false;
         return true;
       }).toList();
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log('Error fetching packaging movements',
-          name: 'PackagingStockOfflineRepository',
+      developer.log('Error fetching bobine movements',
+          name: 'BobineStockOfflineRepository',
           error: error,
           stackTrace: stackTrace);
       throw appException;
@@ -299,14 +300,14 @@ class PackagingStockOfflineRepository extends OfflineRepository<PackagingStock>
   }
 
   @override
-  Future<List<PackagingStock>> fetchLowStockAlerts() async {
+  Future<List<BobineStock>> fetchLowStockAlerts() async {
     try {
       final stocks = await fetchAll();
       return stocks.where((s) => s.estStockFaible).toList();
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log('Error fetching low stock alerts',
-          name: 'PackagingStockOfflineRepository',
+          name: 'BobineStockOfflineRepository',
           error: error,
           stackTrace: stackTrace);
       throw appException;

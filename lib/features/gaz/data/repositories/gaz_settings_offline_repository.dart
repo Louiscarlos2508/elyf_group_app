@@ -1,36 +1,36 @@
 import 'dart:convert';
 import 'dart:developer' as developer;
 
-import '../../../../core/errors/app_exceptions.dart';
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/offline/connectivity_service.dart';
 import '../../../../core/offline/drift_service.dart';
+import '../../../../core/offline/offline_repository.dart';
 import '../../../../core/offline/sync_manager.dart';
 import '../../domain/entities/gaz_settings.dart';
 import '../../domain/repositories/gaz_settings_repository.dart';
 
-/// Offline-first repository for GazSettings (gaz module).
-///
-/// Les settings sont stockés avec enterpriseId et moduleId comme clé.
-class GazSettingsOfflineRepository implements GazSettingsRepository {
+/// Offline-first repository for GazSettings entities.
+class GazSettingsOfflineRepository extends OfflineRepository<GazSettings>
+    implements GazSettingsRepository {
   GazSettingsOfflineRepository({
-    required this.driftService,
-    required this.syncManager,
-    required this.connectivityService,
+    required super.driftService,
+    required super.syncManager,
+    required super.connectivityService,
     required this.enterpriseId,
+    required this.moduleType,
   });
 
-  final DriftService driftService;
-  final SyncManager syncManager;
-  final ConnectivityService connectivityService;
   final String enterpriseId;
+  final String moduleType;
 
-  static const String _collectionName = 'gaz_settings';
+  @override
+  String get collectionName => 'gaz_settings';
 
-  GazSettings _fromMap(Map<String, dynamic> map) {
-    final wholesalePricesMap = map['wholesalePrices'] as Map<String, dynamic>?;
-    final wholesalePrices = wholesalePricesMap?.map(
-          (key, value) => MapEntry(int.parse(key), (value as num).toDouble()),
+  @override
+  GazSettings fromMap(Map<String, dynamic> map) {
+    final wholesalePricesRaw = map['wholesalePrices'] as Map<String, dynamic>?;
+    final wholesalePrices = wholesalePricesRaw?.map(
+          (k, v) => MapEntry(int.parse(k), (v as num).toDouble()),
         ) ??
         {};
 
@@ -44,16 +44,86 @@ class GazSettingsOfflineRepository implements GazSettingsRepository {
     );
   }
 
-  Map<String, dynamic> _toMap(GazSettings settings) {
+  @override
+  Map<String, dynamic> toMap(GazSettings entity) {
     return {
-      'enterpriseId': settings.enterpriseId,
-      'moduleId': settings.moduleId,
-      'wholesalePrices': settings.wholesalePrices.map(
-        (key, value) => MapEntry(key.toString(), value),
+      'enterpriseId': entity.enterpriseId,
+      'moduleId': entity.moduleId,
+      'wholesalePrices': entity.wholesalePrices.map(
+        (k, v) => MapEntry(k.toString(), v),
       ),
-      'updatedAt': settings.updatedAt?.toIso8601String(),
+      'updatedAt': entity.updatedAt?.toIso8601String(),
     };
   }
+
+  String _getSettingsId(String enterpriseId, String moduleId) {
+    return 'settings_${enterpriseId}_$moduleId';
+  }
+
+  @override
+  String getLocalId(GazSettings entity) {
+    return _getSettingsId(entity.enterpriseId, entity.moduleId);
+  }
+
+  @override
+  String? getRemoteId(GazSettings entity) {
+    return _getSettingsId(entity.enterpriseId, entity.moduleId);
+  }
+
+  @override
+  String? getEnterpriseId(GazSettings entity) => entity.enterpriseId;
+
+  @override
+  Future<void> saveToLocal(GazSettings entity) async {
+    final localId = getLocalId(entity);
+    final map = toMap(entity)..['localId'] = localId;
+    await driftService.records.upsert(
+      collectionName: collectionName,
+      localId: localId,
+      remoteId: localId,
+      enterpriseId: enterpriseId,
+      moduleType: moduleType,
+      dataJson: jsonEncode(map),
+      localUpdatedAt: DateTime.now(),
+    );
+  }
+
+  @override
+  Future<void> deleteFromLocal(GazSettings entity) async {
+    final localId = getLocalId(entity);
+    await driftService.records.deleteByLocalId(
+      collectionName: collectionName,
+      localId: localId,
+      enterpriseId: enterpriseId,
+      moduleType: moduleType,
+    );
+  }
+
+  @override
+  Future<GazSettings?> getByLocalId(String localId) async {
+    final record = await driftService.records.findByLocalId(
+      collectionName: collectionName,
+      localId: localId,
+      enterpriseId: enterpriseId,
+      moduleType: moduleType,
+    );
+    if (record == null) return null;
+    return fromMap(jsonDecode(record.dataJson) as Map<String, dynamic>);
+  }
+
+  @override
+  Future<List<GazSettings>> getAllForEnterprise(String enterpriseId) async {
+    final rows = await driftService.records.listForEnterprise(
+      collectionName: collectionName,
+      enterpriseId: enterpriseId,
+      moduleType: moduleType,
+    );
+    return rows
+        .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+        .toList();
+  }
+
+  // GazSettingsRepository implementation
 
   @override
   Future<GazSettings?> getSettings({
@@ -61,73 +131,34 @@ class GazSettingsOfflineRepository implements GazSettingsRepository {
     required String moduleId,
   }) async {
     try {
-      final rows = await driftService.records.listForEnterprise(
-        collectionName: _collectionName,
-        enterpriseId: enterpriseId,
-        moduleType: 'gaz',
-      );
-
-      for (final row in rows) {
-        try {
-          final map = jsonDecode(row.dataJson) as Map<String, dynamic>;
-          final settings = _fromMap(map);
-          if (settings.moduleId == moduleId) {
-            return settings;
-          }
-        } catch (e) {
-          developer.log(
-            'Error parsing settings: $e',
-            name: 'GazSettingsOfflineRepository',
-          );
-          continue;
-        }
-      }
-      return null;
+      final settingsId = _getSettingsId(enterpriseId, moduleId);
+      return await getByLocalId(settingsId);
     } catch (error, stackTrace) {
-      final appException =
-          ErrorHandler.instance.handleError(error, stackTrace);
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
         'Error getting settings',
         name: 'GazSettingsOfflineRepository',
-        error: appException,
+        error: error,
+        stackTrace: stackTrace,
       );
-      return null;
+      throw appException;
     }
   }
 
   @override
   Future<void> saveSettings(GazSettings settings) async {
     try {
-      final localId = 'settings_${settings.enterpriseId}_${settings.moduleId}';
-      final map = _toMap(settings)..['localId'] = localId;
-
-      await driftService.records.upsert(
-        collectionName: _collectionName,
-        localId: localId,
-        remoteId: null, // Settings n'ont pas d'ID distant unique
-        enterpriseId: settings.enterpriseId,
-        moduleType: 'gaz',
-        dataJson: jsonEncode(map),
-        localUpdatedAt: DateTime.now(),
-      );
-
-      // Sync automatique
-      await syncManager.enqueueOperation(
-        collectionName: _collectionName,
-        documentId: localId,
-        operationType: 'set',
-        payload: map,
-        enterpriseId: settings.enterpriseId,
-      );
+      final updated = settings.copyWith(updatedAt: DateTime.now());
+      await save(updated);
     } catch (error, stackTrace) {
-      final appException =
-          ErrorHandler.instance.handleError(error, stackTrace);
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
         'Error saving settings',
         name: 'GazSettingsOfflineRepository',
-        error: appException,
+        error: error,
+        stackTrace: stackTrace,
       );
-      rethrow;
+      throw appException;
     }
   }
 
@@ -137,33 +168,22 @@ class GazSettingsOfflineRepository implements GazSettingsRepository {
     required String moduleId,
   }) async {
     try {
-      final localId = 'settings_${enterpriseId}_$moduleId';
-
-      await driftService.records.deleteByLocalId(
-        collectionName: _collectionName,
-        localId: localId,
+      final settings = await getSettings(
         enterpriseId: enterpriseId,
-        moduleType: 'gaz',
+        moduleId: moduleId,
       );
-
-      // Sync automatique
-      await syncManager.enqueueOperation(
-        collectionName: _collectionName,
-        documentId: localId,
-        operationType: 'delete',
-        payload: {},
-        enterpriseId: enterpriseId,
-      );
+      if (settings != null) {
+        await delete(settings);
+      }
     } catch (error, stackTrace) {
-      final appException =
-          ErrorHandler.instance.handleError(error, stackTrace);
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
         'Error deleting settings',
         name: 'GazSettingsOfflineRepository',
-        error: appException,
+        error: error,
+        stackTrace: stackTrace,
       );
-      rethrow;
+      throw appException;
     }
   }
 }
-

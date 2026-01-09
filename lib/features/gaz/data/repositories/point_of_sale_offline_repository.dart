@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:developer' as developer;
 
-import '../../../../core/errors/app_exceptions.dart';
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/offline/connectivity_service.dart';
 import '../../../../core/offline/drift_service.dart';
@@ -10,7 +9,7 @@ import '../../../../core/offline/sync_manager.dart';
 import '../../domain/entities/point_of_sale.dart';
 import '../../domain/repositories/point_of_sale_repository.dart';
 
-/// Offline-first repository for PointOfSale entities (gaz module).
+/// Offline-first repository for PointOfSale entities.
 class PointOfSaleOfflineRepository extends OfflineRepository<PointOfSale>
     implements PointOfSaleRepository {
   PointOfSaleOfflineRepository({
@@ -18,9 +17,11 @@ class PointOfSaleOfflineRepository extends OfflineRepository<PointOfSale>
     required super.syncManager,
     required super.connectivityService,
     required this.enterpriseId,
+    required this.moduleType,
   });
 
   final String enterpriseId;
+  final String moduleType;
 
   @override
   String get collectionName => 'points_of_sale';
@@ -32,8 +33,8 @@ class PointOfSaleOfflineRepository extends OfflineRepository<PointOfSale>
       name: map['name'] as String,
       address: map['address'] as String,
       contact: map['contact'] as String,
-      enterpriseId: map['enterpriseId'] as String? ?? enterpriseId,
-      moduleId: map['moduleId'] as String? ?? 'gaz',
+      enterpriseId: map['enterpriseId'] as String,
+      moduleId: map['moduleId'] as String,
       isActive: map['isActive'] as bool? ?? true,
       cylinderIds: (map['cylinderIds'] as List<dynamic>?)
               ?.map((e) => e as String)
@@ -66,17 +67,13 @@ class PointOfSaleOfflineRepository extends OfflineRepository<PointOfSale>
 
   @override
   String getLocalId(PointOfSale entity) {
-    if (entity.id.startsWith('local_')) {
-      return entity.id;
-    }
+    if (entity.id.startsWith('local_')) return entity.id;
     return LocalIdGenerator.generate();
   }
 
   @override
   String? getRemoteId(PointOfSale entity) {
-    if (!entity.id.startsWith('local_')) {
-      return entity.id;
-    }
+    if (!entity.id.startsWith('local_')) return entity.id;
     return null;
   }
 
@@ -93,7 +90,7 @@ class PointOfSaleOfflineRepository extends OfflineRepository<PointOfSale>
       localId: localId,
       remoteId: remoteId,
       enterpriseId: enterpriseId,
-      moduleType: 'gaz',
+      moduleType: moduleType,
       dataJson: jsonEncode(map),
       localUpdatedAt: DateTime.now(),
     );
@@ -107,7 +104,7 @@ class PointOfSaleOfflineRepository extends OfflineRepository<PointOfSale>
         collectionName: collectionName,
         remoteId: remoteId,
         enterpriseId: enterpriseId,
-        moduleType: 'gaz',
+        moduleType: moduleType,
       );
       return;
     }
@@ -116,7 +113,7 @@ class PointOfSaleOfflineRepository extends OfflineRepository<PointOfSale>
       collectionName: collectionName,
       localId: localId,
       enterpriseId: enterpriseId,
-      moduleType: 'gaz',
+      moduleType: moduleType,
     );
   }
 
@@ -126,23 +123,19 @@ class PointOfSaleOfflineRepository extends OfflineRepository<PointOfSale>
       collectionName: collectionName,
       remoteId: localId,
       enterpriseId: enterpriseId,
-      moduleType: 'gaz',
+      moduleType: moduleType,
     );
     if (byRemote != null) {
-      final map = jsonDecode(byRemote.dataJson) as Map<String, dynamic>;
-      return fromMap(map);
+      return fromMap(jsonDecode(byRemote.dataJson) as Map<String, dynamic>);
     }
-
     final byLocal = await driftService.records.findByLocalId(
       collectionName: collectionName,
       localId: localId,
       enterpriseId: enterpriseId,
-      moduleType: 'gaz',
+      moduleType: moduleType,
     );
     if (byLocal == null) return null;
-
-    final map = jsonDecode(byLocal.dataJson) as Map<String, dynamic>;
-    return fromMap(map);
+    return fromMap(jsonDecode(byLocal.dataJson) as Map<String, dynamic>);
   }
 
   @override
@@ -150,26 +143,14 @@ class PointOfSaleOfflineRepository extends OfflineRepository<PointOfSale>
     final rows = await driftService.records.listForEnterprise(
       collectionName: collectionName,
       enterpriseId: enterpriseId,
-      moduleType: 'gaz',
+      moduleType: moduleType,
     );
     return rows
-        .map((row) {
-          try {
-            final map = jsonDecode(row.dataJson) as Map<String, dynamic>;
-            return fromMap(map);
-          } catch (e) {
-            developer.log(
-              'Error parsing point of sale: $e',
-              name: 'PointOfSaleOfflineRepository',
-            );
-            return null;
-          }
-        })
-        .whereType<PointOfSale>()
+        .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
         .toList();
   }
 
-  // Implémentation de PointOfSaleRepository
+  // PointOfSaleRepository implementation
 
   @override
   Future<List<PointOfSale>> getPointsOfSale({
@@ -177,19 +158,17 @@ class PointOfSaleOfflineRepository extends OfflineRepository<PointOfSale>
     required String moduleId,
   }) async {
     try {
-      var points = await getAllForEnterprise(enterpriseId);
-      points = points.where((p) => p.moduleId == moduleId).toList();
-      points.sort((a, b) => a.name.compareTo(b.name));
-      return points;
+      final all = await getAllForEnterprise(enterpriseId);
+      return all.where((pos) => pos.moduleId == moduleId).toList();
     } catch (error, stackTrace) {
-      final appException =
-          ErrorHandler.instance.handleError(error, stackTrace);
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
-        'Error fetching points of sale',
+        'Error getting points of sale',
         name: 'PointOfSaleOfflineRepository',
-        error: appException,
+        error: error,
+        stackTrace: stackTrace,
       );
-      return [];
+      throw appException;
     }
   }
 
@@ -198,37 +177,36 @@ class PointOfSaleOfflineRepository extends OfflineRepository<PointOfSale>
     try {
       return await getByLocalId(id);
     } catch (error, stackTrace) {
-      final appException =
-          ErrorHandler.instance.handleError(error, stackTrace);
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
-        'Error getting point of sale',
+        'Error getting point of sale: $id',
         name: 'PointOfSaleOfflineRepository',
-        error: appException,
+        error: error,
+        stackTrace: stackTrace,
       );
-      return null;
+      throw appException;
     }
   }
 
   @override
   Future<void> addPointOfSale(PointOfSale pointOfSale) async {
     try {
-      final posWithId = pointOfSale.id.isEmpty
-          ? pointOfSale.copyWith(
-              id: LocalIdGenerator.generate(),
-              createdAt: DateTime.now(),
-              updatedAt: DateTime.now(),
-            )
-          : pointOfSale;
-      await save(posWithId);
+      final localId = getLocalId(pointOfSale);
+      final posWithLocalId = pointOfSale.copyWith(
+        id: localId,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+      await save(posWithLocalId);
     } catch (error, stackTrace) {
-      final appException =
-          ErrorHandler.instance.handleError(error, stackTrace);
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
         'Error adding point of sale',
         name: 'PointOfSaleOfflineRepository',
-        error: appException,
+        error: error,
+        stackTrace: stackTrace,
       );
-      rethrow;
+      throw appException;
     }
   }
 
@@ -238,14 +216,14 @@ class PointOfSaleOfflineRepository extends OfflineRepository<PointOfSale>
       final updated = pointOfSale.copyWith(updatedAt: DateTime.now());
       await save(updated);
     } catch (error, stackTrace) {
-      final appException =
-          ErrorHandler.instance.handleError(error, stackTrace);
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
-        'Error updating point of sale',
+        'Error updating point of sale: ${pointOfSale.id}',
         name: 'PointOfSaleOfflineRepository',
-        error: appException,
+        error: error,
+        stackTrace: stackTrace,
       );
-      rethrow;
+      throw appException;
     }
   }
 
@@ -257,15 +235,14 @@ class PointOfSaleOfflineRepository extends OfflineRepository<PointOfSale>
         await delete(pos);
       }
     } catch (error, stackTrace) {
-      final appException =
-          ErrorHandler.instance.handleError(error, stackTrace);
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
-        'Error deleting point of sale',
+        'Error deleting point of sale: $id',
         name: 'PointOfSaleOfflineRepository',
-        error: appException,
+        error: error,
+        stackTrace: stackTrace,
       );
-      rethrow;
+      throw appException;
     }
   }
 }
-

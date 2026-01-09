@@ -6,13 +6,13 @@ import '../../../../core/offline/connectivity_service.dart';
 import '../../../../core/offline/drift_service.dart';
 import '../../../../core/offline/offline_repository.dart';
 import '../../../../core/offline/sync_manager.dart';
-import '../../domain/entities/cylinder_leak.dart';
-import '../../domain/repositories/cylinder_leak_repository.dart';
+import '../../domain/entities/financial_report.dart';
+import '../../domain/repositories/financial_report_repository.dart';
 
-/// Offline-first repository for CylinderLeak entities.
-class CylinderLeakOfflineRepository extends OfflineRepository<CylinderLeak>
-    implements CylinderLeakRepository {
-  CylinderLeakOfflineRepository({
+/// Offline-first repository for FinancialReport entities.
+class FinancialReportOfflineRepository extends OfflineRepository<FinancialReport>
+    implements FinancialReportRepository {
+  FinancialReportOfflineRepository({
     required super.driftService,
     required super.syncManager,
     required super.connectivityService,
@@ -24,58 +24,67 @@ class CylinderLeakOfflineRepository extends OfflineRepository<CylinderLeak>
   final String moduleType;
 
   @override
-  String get collectionName => 'cylinder_leaks';
+  String get collectionName => 'financial_reports';
 
   @override
-  CylinderLeak fromMap(Map<String, dynamic> map) {
-    return CylinderLeak(
+  FinancialReport fromMap(Map<String, dynamic> map) {
+    return FinancialReport(
       id: map['id'] as String? ?? map['localId'] as String,
-      cylinderId: map['cylinderId'] as String,
-      weight: (map['weight'] as num).toInt(),
-      reportedDate: DateTime.parse(map['reportedDate'] as String),
-      status: LeakStatus.values.firstWhere(
-        (e) => e.name == map['status'],
-        orElse: () => LeakStatus.reported,
+      enterpriseId: map['enterpriseId'] as String,
+      reportDate: DateTime.parse(map['reportDate'] as String),
+      period: ReportPeriod.values.firstWhere(
+        (e) => e.name == map['period'],
+        orElse: () => ReportPeriod.daily,
       ),
-      tourId: map['tourId'] as String?,
-      exchangeDate: map['exchangeDate'] != null
-          ? DateTime.parse(map['exchangeDate'] as String)
-          : null,
-      notes: map['notes'] as String?,
+      totalRevenue: (map['totalRevenue'] as num).toDouble(),
+      totalExpenses: (map['totalExpenses'] as num).toDouble(),
+      loadingEventExpenses: (map['loadingEventExpenses'] as num).toDouble(),
+      fixedCharges: (map['fixedCharges'] as num).toDouble(),
+      variableCharges: (map['variableCharges'] as num).toDouble(),
+      salaries: (map['salaries'] as num).toDouble(),
+      netAmount: (map['netAmount'] as num).toDouble(),
+      status: ReportStatus.values.firstWhere(
+        (e) => e.name == map['status'],
+        orElse: () => ReportStatus.draft,
+      ),
     );
   }
 
   @override
-  Map<String, dynamic> toMap(CylinderLeak entity) {
+  Map<String, dynamic> toMap(FinancialReport entity) {
     return {
       'id': entity.id,
-      'cylinderId': entity.cylinderId,
-      'weight': entity.weight,
-      'reportedDate': entity.reportedDate.toIso8601String(),
+      'enterpriseId': entity.enterpriseId,
+      'reportDate': entity.reportDate.toIso8601String(),
+      'period': entity.period.name,
+      'totalRevenue': entity.totalRevenue,
+      'totalExpenses': entity.totalExpenses,
+      'loadingEventExpenses': entity.loadingEventExpenses,
+      'fixedCharges': entity.fixedCharges,
+      'variableCharges': entity.variableCharges,
+      'salaries': entity.salaries,
+      'netAmount': entity.netAmount,
       'status': entity.status.name,
-      'tourId': entity.tourId,
-      'exchangeDate': entity.exchangeDate?.toIso8601String(),
-      'notes': entity.notes,
     };
   }
 
   @override
-  String getLocalId(CylinderLeak entity) {
+  String getLocalId(FinancialReport entity) {
     if (entity.id.startsWith('local_')) return entity.id;
     return LocalIdGenerator.generate();
   }
 
   @override
-  String? getRemoteId(CylinderLeak entity) {
+  String? getRemoteId(FinancialReport entity) {
     if (!entity.id.startsWith('local_')) return entity.id;
     return null;
   }
 
   @override
-  String? getEnterpriseId(CylinderLeak entity) => enterpriseId;
+  String? getEnterpriseId(FinancialReport entity) => entity.enterpriseId;
 
   @override
-  Future<void> saveToLocal(CylinderLeak entity) async {
+  Future<void> saveToLocal(FinancialReport entity) async {
     final localId = getLocalId(entity);
     final remoteId = getRemoteId(entity);
     final map = toMap(entity)..['localId'] = localId;
@@ -91,7 +100,7 @@ class CylinderLeakOfflineRepository extends OfflineRepository<CylinderLeak>
   }
 
   @override
-  Future<void> deleteFromLocal(CylinderLeak entity) async {
+  Future<void> deleteFromLocal(FinancialReport entity) async {
     final remoteId = getRemoteId(entity);
     if (remoteId != null) {
       await driftService.records.deleteByRemoteId(
@@ -112,7 +121,7 @@ class CylinderLeakOfflineRepository extends OfflineRepository<CylinderLeak>
   }
 
   @override
-  Future<CylinderLeak?> getByLocalId(String localId) async {
+  Future<FinancialReport?> getByLocalId(String localId) async {
     final byRemote = await driftService.records.findByRemoteId(
       collectionName: collectionName,
       remoteId: localId,
@@ -133,7 +142,7 @@ class CylinderLeakOfflineRepository extends OfflineRepository<CylinderLeak>
   }
 
   @override
-  Future<List<CylinderLeak>> getAllForEnterprise(String enterpriseId) async {
+  Future<List<FinancialReport>> getAllForEnterprise(String enterpriseId) async {
     final rows = await driftService.records.listForEnterprise(
       collectionName: collectionName,
       enterpriseId: enterpriseId,
@@ -144,22 +153,30 @@ class CylinderLeakOfflineRepository extends OfflineRepository<CylinderLeak>
         .toList();
   }
 
-  // CylinderLeakRepository implementation
+  // FinancialReportRepository implementation
 
   @override
-  Future<List<CylinderLeak>> getLeaks(
+  Future<List<FinancialReport>> getReports(
     String enterpriseId, {
-    LeakStatus? status,
+    ReportPeriod? period,
+    DateTime? from,
+    DateTime? to,
+    ReportStatus? status,
   }) async {
     try {
-      final leaks = await getAllForEnterprise(enterpriseId);
-      if (status == null) return leaks;
-      return leaks.where((leak) => leak.status == status).toList();
+      final reports = await getAllForEnterprise(enterpriseId);
+      return reports.where((report) {
+        if (period != null && report.period != period) return false;
+        if (status != null && report.status != status) return false;
+        if (from != null && report.reportDate.isBefore(from)) return false;
+        if (to != null && report.reportDate.isAfter(to)) return false;
+        return true;
+      }).toList();
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
-        'Error getting leaks',
-        name: 'CylinderLeakOfflineRepository',
+        'Error getting reports',
+        name: 'FinancialReportOfflineRepository',
         error: error,
         stackTrace: stackTrace,
       );
@@ -168,14 +185,14 @@ class CylinderLeakOfflineRepository extends OfflineRepository<CylinderLeak>
   }
 
   @override
-  Future<CylinderLeak?> getLeakById(String id) async {
+  Future<FinancialReport?> getReportById(String id) async {
     try {
       return await getByLocalId(id);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
-        'Error getting leak: $id',
-        name: 'CylinderLeakOfflineRepository',
+        'Error getting report: $id',
+        name: 'FinancialReportOfflineRepository',
         error: error,
         stackTrace: stackTrace,
       );
@@ -184,17 +201,17 @@ class CylinderLeakOfflineRepository extends OfflineRepository<CylinderLeak>
   }
 
   @override
-  Future<String> reportLeak(CylinderLeak leak) async {
+  Future<String> generateReport(FinancialReport report) async {
     try {
-      final localId = getLocalId(leak);
-      final leakWithLocalId = leak.copyWith(id: localId);
-      await save(leakWithLocalId);
+      final localId = getLocalId(report);
+      final reportWithLocalId = report.copyWith(id: localId);
+      await save(reportWithLocalId);
       return localId;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
-        'Error reporting leak',
-        name: 'CylinderLeakOfflineRepository',
+        'Error generating report',
+        name: 'FinancialReportOfflineRepository',
         error: error,
         stackTrace: stackTrace,
       );
@@ -203,14 +220,14 @@ class CylinderLeakOfflineRepository extends OfflineRepository<CylinderLeak>
   }
 
   @override
-  Future<void> updateLeak(CylinderLeak leak) async {
+  Future<void> updateReport(FinancialReport report) async {
     try {
-      await save(leak);
+      await save(report);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
-        'Error updating leak: ${leak.id}',
-        name: 'CylinderLeakOfflineRepository',
+        'Error updating report: ${report.id}',
+        name: 'FinancialReportOfflineRepository',
         error: error,
         stackTrace: stackTrace,
       );
@@ -219,18 +236,18 @@ class CylinderLeakOfflineRepository extends OfflineRepository<CylinderLeak>
   }
 
   @override
-  Future<void> markAsSentForExchange(String leakId) async {
+  Future<void> finalizeReport(String reportId) async {
     try {
-      final leak = await getLeakById(leakId);
-      if (leak != null) {
-        final updated = leak.copyWith(status: LeakStatus.sentForExchange);
-        await save(updated);
+      final report = await getReportById(reportId);
+      if (report != null) {
+        final finalized = report.copyWith(status: ReportStatus.finalized);
+        await save(finalized);
       }
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
-        'Error marking leak as sent for exchange: $leakId',
-        name: 'CylinderLeakOfflineRepository',
+        'Error finalizing report: $reportId',
+        name: 'FinancialReportOfflineRepository',
         error: error,
         stackTrace: stackTrace,
       );
@@ -239,21 +256,24 @@ class CylinderLeakOfflineRepository extends OfflineRepository<CylinderLeak>
   }
 
   @override
-  Future<void> markAsExchanged(String leakId, DateTime exchangeDate) async {
+  Future<double> calculateNetAmount(
+    String enterpriseId,
+    DateTime startDate,
+    DateTime endDate,
+  ) async {
     try {
-      final leak = await getLeakById(leakId);
-      if (leak != null) {
-        final updated = leak.copyWith(
-          status: LeakStatus.exchanged,
-          exchangeDate: exchangeDate,
-        );
-        await save(updated);
-      }
+      final reports = await getReports(
+        enterpriseId,
+        from: startDate,
+        to: endDate,
+        status: ReportStatus.finalized,
+      );
+      return reports.fold<double>(0.0, (sum, r) => sum + r.netAmount);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
-        'Error marking leak as exchanged: $leakId',
-        name: 'CylinderLeakOfflineRepository',
+        'Error calculating net amount',
+        name: 'FinancialReportOfflineRepository',
         error: error,
         stackTrace: stackTrace,
       );
@@ -262,17 +282,17 @@ class CylinderLeakOfflineRepository extends OfflineRepository<CylinderLeak>
   }
 
   @override
-  Future<void> deleteLeak(String id) async {
+  Future<void> deleteReport(String id) async {
     try {
-      final leak = await getLeakById(id);
-      if (leak != null) {
-        await delete(leak);
+      final report = await getReportById(id);
+      if (report != null) {
+        await delete(report);
       }
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
-        'Error deleting leak: $id',
-        name: 'CylinderLeakOfflineRepository',
+        'Error deleting report: $id',
+        name: 'FinancialReportOfflineRepository',
         error: error,
         stackTrace: stackTrace,
       );

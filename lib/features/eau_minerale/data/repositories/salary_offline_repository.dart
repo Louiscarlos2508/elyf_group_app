@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:developer' as developer;
+import 'dart:typed_data';
 
-import '../../../../core/errors/app_exceptions.dart';
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/offline/connectivity_service.dart';
 import '../../../../core/offline/drift_service.dart';
@@ -13,30 +13,68 @@ import '../../domain/entities/production_payment_person.dart';
 import '../../domain/entities/salary_payment.dart';
 import '../../domain/repositories/salary_repository.dart';
 
-/// Offline-first repository for Salary entities (eau_minerale module).
-///
-/// Gère les employés fixes, les paiements de production et les paiements mensuels.
-class SalaryOfflineRepository implements SalaryRepository {
+/// Offline-first repository for Employee and Salary entities.
+class SalaryOfflineRepository extends OfflineRepository<Employee>
+    implements SalaryRepository {
   SalaryOfflineRepository({
-    required this.driftService,
-    required this.syncManager,
-    required this.connectivityService,
+    required super.driftService,
+    required super.syncManager,
+    required super.connectivityService,
     required this.enterpriseId,
+    required this.moduleType,
   });
 
-  final DriftService driftService;
-  final SyncManager syncManager;
-  final ConnectivityService connectivityService;
   final String enterpriseId;
+  final String moduleType;
 
-  // Collections séparées pour chaque type d'entité
-  static const String _employeesCollection = 'employees';
-  static const String _productionPaymentsCollection = 'production_payments';
-  static const String _salaryPaymentsCollection = 'salary_payments';
+  @override
+  String get collectionName => 'employees';
 
-  // Helpers pour Employee
+  String get salaryPaymentsCollection => 'salary_payments';
+  String get productionPaymentsCollection => 'production_payments';
 
-  Map<String, dynamic> _employeeToMap(Employee entity) {
+  @override
+  Employee fromMap(Map<String, dynamic> map) {
+    final paymentsRaw = map['paiementsMensuels'] as List<dynamic>? ?? [];
+    final payments = paymentsRaw
+        .map((p) => _salaryPaymentFromMap(p as Map<String, dynamic>))
+        .toList();
+
+    return Employee(
+      id: map['id'] as String? ?? map['localId'] as String,
+      name: map['name'] as String,
+      phone: map['phone'] as String? ?? '',
+      type: EmployeeType.values.firstWhere(
+        (e) => e.name == map['type'],
+        orElse: () => EmployeeType.fixed,
+      ),
+      monthlySalary: (map['monthlySalary'] as num).toInt(),
+      position: map['position'] as String?,
+      hireDate: map['hireDate'] != null
+          ? DateTime.parse(map['hireDate'] as String)
+          : null,
+      paiementsMensuels: payments,
+    );
+  }
+
+  SalaryPayment _salaryPaymentFromMap(Map<String, dynamic> map) {
+    return SalaryPayment(
+      id: map['id'] as String,
+      employeeId: map['employeeId'] as String,
+      employeeName: map['employeeName'] as String,
+      amount: (map['amount'] as num).toInt(),
+      date: DateTime.parse(map['date'] as String),
+      period: map['period'] as String,
+      notes: map['notes'] as String?,
+      signature: map['signature'] != null
+          ? Uint8List.fromList(
+              (map['signature'] as List<dynamic>).cast<int>())
+          : null,
+    );
+  }
+
+  @override
+  Map<String, dynamic> toMap(Employee entity) {
     return {
       'id': entity.id,
       'name': entity.name,
@@ -45,269 +83,189 @@ class SalaryOfflineRepository implements SalaryRepository {
       'monthlySalary': entity.monthlySalary,
       'position': entity.position,
       'hireDate': entity.hireDate?.toIso8601String(),
+      'paiementsMensuels': entity.paiementsMensuels
+          .map((p) => _salaryPaymentToMap(p))
+          .toList(),
     };
   }
 
-  Employee _employeeFromMap(Map<String, dynamic> map) {
-    return Employee(
-      id: map['id'] as String? ?? map['localId'] as String,
-      name: map['name'] as String,
-      phone: map['phone'] as String,
-      type: _parseEmployeeType(map['type'] as String? ?? 'fixed'),
-      monthlySalary: (map['monthlySalary'] as num?)?.toInt() ?? 0,
-      position: map['position'] as String?,
-      hireDate: map['hireDate'] != null
-          ? DateTime.parse(map['hireDate'] as String)
-          : null,
-      paiementsMensuels: [], // Chargé séparément si nécessaire
-    );
-  }
-
-  // Helpers pour ProductionPayment
-
-  Map<String, dynamic> _productionPaymentToMap(ProductionPayment entity) {
+  Map<String, dynamic> _salaryPaymentToMap(SalaryPayment payment) {
     return {
-      'id': entity.id,
-      'period': entity.period,
-      'paymentDate': entity.paymentDate.toIso8601String(),
-      'persons': entity.persons.map((p) => {
-            'name': p.name,
-            'pricePerDay': p.pricePerDay,
-            'daysWorked': p.daysWorked,
-            'bonus': p.bonus,
-            'deduction': p.deduction,
-          }).toList(),
-      'notes': entity.notes,
+      'id': payment.id,
+      'employeeId': payment.employeeId,
+      'employeeName': payment.employeeName,
+      'amount': payment.amount,
+      'date': payment.date.toIso8601String(),
+      'period': payment.period,
+      'notes': payment.notes,
+      'signature': payment.signature?.toList(),
     };
   }
 
-  ProductionPayment _productionPaymentFromMap(Map<String, dynamic> map) {
-    return ProductionPayment(
-      id: map['id'] as String? ?? map['localId'] as String,
-      period: map['period'] as String,
-      paymentDate: DateTime.parse(map['paymentDate'] as String),
-      persons: (map['persons'] as List<dynamic>?)
-              ?.map((p) {
-                final pricePerDay = (p['pricePerDay'] as num?)?.toInt() ?? 0;
-                final daysWorked = (p['daysWorked'] as num?)?.toInt() ?? 0;
-                final bonus = (p['bonus'] as num?)?.toInt() ?? 0;
-                final deduction = (p['deduction'] as num?)?.toInt() ?? 0;
-                final totalAmount = pricePerDay * daysWorked + bonus - deduction;
-                return ProductionPaymentPerson(
-                  name: p['name'] as String,
-                  pricePerDay: pricePerDay,
-                  daysWorked: daysWorked,
-                  totalAmount: totalAmount,
-                );
-              })
-              .toList() ??
-          [],
-      notes: map['notes'] as String?,
+  @override
+  String getLocalId(Employee entity) {
+    if (entity.id.startsWith('local_')) return entity.id;
+    return LocalIdGenerator.generate();
+  }
+
+  @override
+  String? getRemoteId(Employee entity) {
+    if (!entity.id.startsWith('local_')) return entity.id;
+    return null;
+  }
+
+  @override
+  String? getEnterpriseId(Employee entity) => enterpriseId;
+
+  @override
+  Future<void> saveToLocal(Employee entity) async {
+    final localId = getLocalId(entity);
+    final remoteId = getRemoteId(entity);
+    final map = toMap(entity)..['localId'] = localId;
+    await driftService.records.upsert(
+      collectionName: collectionName,
+      localId: localId,
+      remoteId: remoteId,
+      enterpriseId: enterpriseId,
+      moduleType: moduleType,
+      dataJson: jsonEncode(map),
+      localUpdatedAt: DateTime.now(),
     );
   }
 
-  // Helpers pour SalaryPayment
-
-  Map<String, dynamic> _salaryPaymentToMap(SalaryPayment entity) {
-    return {
-      'id': entity.id,
-      'employeeId': entity.employeeId,
-      'employeeName': entity.employeeName,
-      'amount': entity.amount,
-      'date': entity.date.toIso8601String(),
-      'period': entity.period,
-      'notes': entity.notes,
-      // Signature stockée en base64 si présente
-      if (entity.signature != null)
-        'signature': base64Encode(entity.signature!),
-    };
-  }
-
-  SalaryPayment _salaryPaymentFromMap(Map<String, dynamic> map) {
-    return SalaryPayment(
-      id: map['id'] as String? ?? map['localId'] as String,
-      employeeId: map['employeeId'] as String,
-      employeeName: map['employeeName'] as String,
-      amount: (map['amount'] as num?)?.toInt() ?? 0,
-      date: DateTime.parse(map['date'] as String),
-      period: map['period'] as String,
-      notes: map['notes'] as String?,
-      signature: map['signature'] != null
-          ? base64Decode(map['signature'] as String)
-          : null,
+  @override
+  Future<void> deleteFromLocal(Employee entity) async {
+    final remoteId = getRemoteId(entity);
+    if (remoteId != null) {
+      await driftService.records.deleteByRemoteId(
+        collectionName: collectionName,
+        remoteId: remoteId,
+        enterpriseId: enterpriseId,
+        moduleType: moduleType,
+      );
+      return;
+    }
+    final localId = getLocalId(entity);
+    await driftService.records.deleteByLocalId(
+      collectionName: collectionName,
+      localId: localId,
+      enterpriseId: enterpriseId,
+      moduleType: moduleType,
     );
   }
 
-  // Implémentation de SalaryRepository
+  @override
+  Future<Employee?> getByLocalId(String localId) async {
+    final byRemote = await driftService.records.findByRemoteId(
+      collectionName: collectionName,
+      remoteId: localId,
+      enterpriseId: enterpriseId,
+      moduleType: moduleType,
+    );
+    if (byRemote != null) {
+      return fromMap(jsonDecode(byRemote.dataJson) as Map<String, dynamic>);
+    }
+    final byLocal = await driftService.records.findByLocalId(
+      collectionName: collectionName,
+      localId: localId,
+      enterpriseId: enterpriseId,
+      moduleType: moduleType,
+    );
+    if (byLocal == null) return null;
+    return fromMap(jsonDecode(byLocal.dataJson) as Map<String, dynamic>);
+  }
+
+  @override
+  Future<List<Employee>> getAllForEnterprise(String enterpriseId) async {
+    final rows = await driftService.records.listForEnterprise(
+      collectionName: collectionName,
+      enterpriseId: enterpriseId,
+      moduleType: moduleType,
+    );
+    return rows
+        .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+        .toList();
+  }
+
+  // SalaryRepository implementation
 
   @override
   Future<List<Employee>> fetchFixedEmployees() async {
     try {
-      final rows = await driftService.records.listForEnterprise(
-        collectionName: _employeesCollection,
-        enterpriseId: enterpriseId,
-        moduleType: 'eau_minerale',
-      );
-
-      return rows
-          .map((row) {
-            try {
-              final map = jsonDecode(row.dataJson) as Map<String, dynamic>;
-              final employee = _employeeFromMap(map);
-              // Filtrer uniquement les employés fixes
-              if (employee.type == EmployeeType.fixed) {
-                return employee;
-              }
-              return null;
-            } catch (e) {
-              developer.log(
-                'Error parsing employee: $e',
-                name: 'SalaryOfflineRepository',
-              );
-              return null;
-            }
-          })
-          .whereType<Employee>()
-          .toList();
+      final employees = await getAllForEnterprise(enterpriseId);
+      return employees.where((e) => e.type == EmployeeType.fixed).toList();
     } catch (error, stackTrace) {
-      final appException =
-          ErrorHandler.instance.handleError(error, stackTrace);
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
         'Error fetching fixed employees',
         name: 'SalaryOfflineRepository',
-        error: appException,
+        error: error,
+        stackTrace: stackTrace,
       );
-      return [];
+      throw appException;
     }
   }
 
   @override
   Future<String> createFixedEmployee(Employee employee) async {
     try {
-      final localId = employee.id.startsWith('local_')
-          ? employee.id
-          : LocalIdGenerator.generate();
-      final remoteId = employee.id.startsWith('local_') ? null : employee.id;
-
-      final map = _employeeToMap(employee)..['localId'] = localId;
-
-      await driftService.records.upsert(
-        collectionName: _employeesCollection,
-        localId: localId,
-        remoteId: remoteId,
-        enterpriseId: enterpriseId,
-        moduleType: 'eau_minerale',
-        dataJson: jsonEncode(map),
-        localUpdatedAt: DateTime.now(),
+      final localId = getLocalId(employee);
+      final employeeWithLocalId = Employee(
+        id: localId,
+        name: employee.name,
+        phone: employee.phone,
+        type: employee.type,
+        monthlySalary: employee.monthlySalary,
+        position: employee.position,
+        hireDate: employee.hireDate ?? DateTime.now(),
+        paiementsMensuels: employee.paiementsMensuels,
       );
-
-      // Sync automatique
-      await syncManager.enqueueOperation(
-        collectionName: _employeesCollection,
-        documentId: localId,
-        operationType: 'create',
-        payload: map,
-        enterpriseId: enterpriseId,
-      );
-
+      await save(employeeWithLocalId);
       return localId;
     } catch (error, stackTrace) {
-      final appException =
-          ErrorHandler.instance.handleError(error, stackTrace);
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
         'Error creating fixed employee',
         name: 'SalaryOfflineRepository',
-        error: appException,
+        error: error,
+        stackTrace: stackTrace,
       );
-      rethrow;
+      throw appException;
     }
   }
 
   @override
   Future<void> updateEmployee(Employee employee) async {
     try {
-      final localId = employee.id.startsWith('local_')
-          ? employee.id
-          : LocalIdGenerator.generate();
-      final remoteId = employee.id.startsWith('local_') ? null : employee.id;
-
-      final map = _employeeToMap(employee)..['localId'] = localId;
-
-      await driftService.records.upsert(
-        collectionName: _employeesCollection,
-        localId: localId,
-        remoteId: remoteId,
-        enterpriseId: enterpriseId,
-        moduleType: 'eau_minerale',
-        dataJson: jsonEncode(map),
-        localUpdatedAt: DateTime.now(),
-      );
-
-      // Sync automatique
-      await syncManager.enqueueOperation(
-        collectionName: _employeesCollection,
-        documentId: remoteId ?? localId,
-        operationType: 'update',
-        payload: map,
-        enterpriseId: enterpriseId,
-      );
+      await save(employee);
     } catch (error, stackTrace) {
-      final appException =
-          ErrorHandler.instance.handleError(error, stackTrace);
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
-        'Error updating employee',
+        'Error updating employee: ${employee.id}',
         name: 'SalaryOfflineRepository',
-        error: appException,
+        error: error,
+        stackTrace: stackTrace,
       );
-      rethrow;
+      throw appException;
     }
   }
 
   @override
   Future<void> deleteEmployee(String employeeId) async {
     try {
-      // Trouver l'employé
-      final employees = await fetchFixedEmployees();
-      final employee = employees.firstWhere((e) => e.id == employeeId);
-
-      final localId = employee.id.startsWith('local_')
-          ? employee.id
-          : LocalIdGenerator.generate();
-      final remoteId = employee.id.startsWith('local_') ? null : employee.id;
-
-      if (remoteId != null) {
-        await driftService.records.deleteByRemoteId(
-          collectionName: _employeesCollection,
-          remoteId: remoteId,
-          enterpriseId: enterpriseId,
-          moduleType: 'eau_minerale',
-        );
-      } else {
-        await driftService.records.deleteByLocalId(
-          collectionName: _employeesCollection,
-          localId: localId,
-          enterpriseId: enterpriseId,
-          moduleType: 'eau_minerale',
-        );
+      final employee = await getByLocalId(employeeId);
+      if (employee != null) {
+        await delete(employee);
       }
-
-      // Sync automatique
-      await syncManager.enqueueOperation(
-        collectionName: _employeesCollection,
-        documentId: remoteId ?? localId,
-        operationType: 'delete',
-        payload: {},
-        enterpriseId: enterpriseId,
-      );
     } catch (error, stackTrace) {
-      final appException =
-          ErrorHandler.instance.handleError(error, stackTrace);
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
-        'Error deleting employee',
+        'Error deleting employee: $employeeId',
         name: 'SalaryOfflineRepository',
-        error: appException,
+        error: error,
+        stackTrace: stackTrace,
       );
-      rethrow;
+      throw appException;
     }
   }
 
@@ -315,36 +273,49 @@ class SalaryOfflineRepository implements SalaryRepository {
   Future<List<ProductionPayment>> fetchProductionPayments() async {
     try {
       final rows = await driftService.records.listForEnterprise(
-        collectionName: _productionPaymentsCollection,
+        collectionName: productionPaymentsCollection,
         enterpriseId: enterpriseId,
-        moduleType: 'eau_minerale',
+        moduleType: moduleType,
       );
-
-      return rows
-          .map((row) {
-            try {
-              final map = jsonDecode(row.dataJson) as Map<String, dynamic>;
-              return _productionPaymentFromMap(map);
-            } catch (e) {
-              developer.log(
-                'Error parsing production payment: $e',
-                name: 'SalaryOfflineRepository',
-              );
-              return null;
-            }
-          })
-          .whereType<ProductionPayment>()
-          .toList();
+      return rows.map((r) {
+        final map = jsonDecode(r.dataJson) as Map<String, dynamic>;
+        return _productionPaymentFromMap(map);
+      }).toList();
     } catch (error, stackTrace) {
-      final appException =
-          ErrorHandler.instance.handleError(error, stackTrace);
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
         'Error fetching production payments',
         name: 'SalaryOfflineRepository',
-        error: appException,
+        error: error,
+        stackTrace: stackTrace,
       );
-      return [];
+      throw appException;
     }
+  }
+
+  ProductionPayment _productionPaymentFromMap(Map<String, dynamic> map) {
+    final personsRaw = map['persons'] as List<dynamic>? ?? [];
+    final persons = personsRaw.map((p) {
+      final pm = p as Map<String, dynamic>;
+      return ProductionPaymentPerson(
+        name: pm['name'] as String,
+        daysWorked: (pm['daysWorked'] as num).toInt(),
+        dailyRate: (pm['dailyRate'] as num).toInt(),
+        totalAmount: (pm['totalAmount'] as num).toInt(),
+        advance: (pm['advance'] as num?)?.toInt() ?? 0,
+        signature: pm['signature'] != null
+            ? Uint8List.fromList((pm['signature'] as List<dynamic>).cast<int>())
+            : null,
+      );
+    }).toList();
+
+    return ProductionPayment(
+      id: map['id'] as String? ?? map['localId'] as String,
+      period: map['period'] as String,
+      paymentDate: DateTime.parse(map['paymentDate'] as String),
+      persons: persons,
+      notes: map['notes'] as String?,
+    );
   }
 
   @override
@@ -353,39 +324,43 @@ class SalaryOfflineRepository implements SalaryRepository {
       final localId = payment.id.startsWith('local_')
           ? payment.id
           : LocalIdGenerator.generate();
-      final remoteId = payment.id.startsWith('local_') ? null : payment.id;
-
-      final map = _productionPaymentToMap(payment)..['localId'] = localId;
+      final map = {
+        'id': localId,
+        'localId': localId,
+        'period': payment.period,
+        'paymentDate': payment.paymentDate.toIso8601String(),
+        'persons': payment.persons
+            .map((p) => {
+                  'name': p.name,
+                  'daysWorked': p.daysWorked,
+                  'dailyRate': p.dailyRate,
+                  'totalAmount': p.totalAmount,
+                  'advance': p.advance,
+                  'signature': p.signature?.toList(),
+                })
+            .toList(),
+        'notes': payment.notes,
+      };
 
       await driftService.records.upsert(
-        collectionName: _productionPaymentsCollection,
+        collectionName: productionPaymentsCollection,
         localId: localId,
-        remoteId: remoteId,
+        remoteId: null,
         enterpriseId: enterpriseId,
-        moduleType: 'eau_minerale',
+        moduleType: moduleType,
         dataJson: jsonEncode(map),
         localUpdatedAt: DateTime.now(),
       );
-
-      // Sync automatique
-      await syncManager.enqueueOperation(
-        collectionName: _productionPaymentsCollection,
-        documentId: localId,
-        operationType: 'create',
-        payload: map,
-        enterpriseId: enterpriseId,
-      );
-
       return localId;
     } catch (error, stackTrace) {
-      final appException =
-          ErrorHandler.instance.handleError(error, stackTrace);
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
         'Error creating production payment',
         name: 'SalaryOfflineRepository',
-        error: appException,
+        error: error,
+        stackTrace: stackTrace,
       );
-      rethrow;
+      throw appException;
     }
   }
 
@@ -393,35 +368,23 @@ class SalaryOfflineRepository implements SalaryRepository {
   Future<List<SalaryPayment>> fetchMonthlySalaryPayments() async {
     try {
       final rows = await driftService.records.listForEnterprise(
-        collectionName: _salaryPaymentsCollection,
+        collectionName: salaryPaymentsCollection,
         enterpriseId: enterpriseId,
-        moduleType: 'eau_minerale',
+        moduleType: moduleType,
       );
-
-      return rows
-          .map((row) {
-            try {
-              final map = jsonDecode(row.dataJson) as Map<String, dynamic>;
-              return _salaryPaymentFromMap(map);
-            } catch (e) {
-              developer.log(
-                'Error parsing salary payment: $e',
-                name: 'SalaryOfflineRepository',
-              );
-              return null;
-            }
-          })
-          .whereType<SalaryPayment>()
-          .toList();
+      return rows.map((r) {
+        final map = jsonDecode(r.dataJson) as Map<String, dynamic>;
+        return _salaryPaymentFromMap(map);
+      }).toList();
     } catch (error, stackTrace) {
-      final appException =
-          ErrorHandler.instance.handleError(error, stackTrace);
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
         'Error fetching monthly salary payments',
         name: 'SalaryOfflineRepository',
-        error: appException,
+        error: error,
+        stackTrace: stackTrace,
       );
-      return [];
+      throw appException;
     }
   }
 
@@ -431,52 +394,28 @@ class SalaryOfflineRepository implements SalaryRepository {
       final localId = payment.id.startsWith('local_')
           ? payment.id
           : LocalIdGenerator.generate();
-      final remoteId = payment.id.startsWith('local_') ? null : payment.id;
-
       final map = _salaryPaymentToMap(payment)..['localId'] = localId;
+      map['id'] = localId;
 
       await driftService.records.upsert(
-        collectionName: _salaryPaymentsCollection,
+        collectionName: salaryPaymentsCollection,
         localId: localId,
-        remoteId: remoteId,
+        remoteId: null,
         enterpriseId: enterpriseId,
-        moduleType: 'eau_minerale',
+        moduleType: moduleType,
         dataJson: jsonEncode(map),
         localUpdatedAt: DateTime.now(),
       );
-
-      // Sync automatique
-      await syncManager.enqueueOperation(
-        collectionName: _salaryPaymentsCollection,
-        documentId: localId,
-        operationType: 'create',
-        payload: map,
-        enterpriseId: enterpriseId,
-      );
-
       return localId;
     } catch (error, stackTrace) {
-      final appException =
-          ErrorHandler.instance.handleError(error, stackTrace);
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
         'Error creating monthly salary payment',
         name: 'SalaryOfflineRepository',
-        error: appException,
+        error: error,
+        stackTrace: stackTrace,
       );
-      rethrow;
-    }
-  }
-
-  EmployeeType _parseEmployeeType(String type) {
-    switch (type.toLowerCase()) {
-      case 'fixed':
-      case 'permanent':
-        return EmployeeType.fixed;
-      case 'production':
-        return EmployeeType.production;
-      default:
-        return EmployeeType.fixed;
+      throw appException;
     }
   }
 }
-

@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:developer' as developer;
 
-import '../../../../core/errors/app_exceptions.dart';
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/offline/connectivity_service.dart';
 import '../../../../core/offline/drift_service.dart';
@@ -11,7 +10,7 @@ import '../../domain/entities/cylinder.dart';
 import '../../domain/entities/cylinder_stock.dart';
 import '../../domain/repositories/cylinder_stock_repository.dart';
 
-/// Offline-first repository for CylinderStock entities (gaz module).
+/// Offline-first repository for CylinderStock entities.
 class CylinderStockOfflineRepository extends OfflineRepository<CylinderStock>
     implements CylinderStockRepository {
   CylinderStockOfflineRepository({
@@ -19,9 +18,11 @@ class CylinderStockOfflineRepository extends OfflineRepository<CylinderStock>
     required super.syncManager,
     required super.connectivityService,
     required this.enterpriseId,
+    required this.moduleType,
   });
 
   final String enterpriseId;
+  final String moduleType;
 
   @override
   String get collectionName => 'cylinder_stocks';
@@ -31,14 +32,15 @@ class CylinderStockOfflineRepository extends OfflineRepository<CylinderStock>
     return CylinderStock(
       id: map['id'] as String? ?? map['localId'] as String,
       cylinderId: map['cylinderId'] as String,
-      weight: (map['weight'] as num?)?.toInt() ?? 0,
-      status: _parseStatus(map['status'] as String? ?? 'full'),
-      quantity: (map['quantity'] as num?)?.toInt() ?? 0,
-      enterpriseId: map['enterpriseId'] as String? ?? enterpriseId,
+      weight: (map['weight'] as num).toInt(),
+      status: CylinderStatus.values.firstWhere(
+        (e) => e.name == map['status'],
+        orElse: () => CylinderStatus.full,
+      ),
+      quantity: (map['quantity'] as num).toInt(),
+      enterpriseId: map['enterpriseId'] as String,
       siteId: map['siteId'] as String?,
-      updatedAt: map['updatedAt'] != null
-          ? DateTime.parse(map['updatedAt'] as String)
-          : DateTime.now(),
+      updatedAt: DateTime.parse(map['updatedAt'] as String),
     );
   }
 
@@ -58,17 +60,13 @@ class CylinderStockOfflineRepository extends OfflineRepository<CylinderStock>
 
   @override
   String getLocalId(CylinderStock entity) {
-    if (entity.id.startsWith('local_')) {
-      return entity.id;
-    }
+    if (entity.id.startsWith('local_')) return entity.id;
     return LocalIdGenerator.generate();
   }
 
   @override
   String? getRemoteId(CylinderStock entity) {
-    if (!entity.id.startsWith('local_')) {
-      return entity.id;
-    }
+    if (!entity.id.startsWith('local_')) return entity.id;
     return null;
   }
 
@@ -85,7 +83,7 @@ class CylinderStockOfflineRepository extends OfflineRepository<CylinderStock>
       localId: localId,
       remoteId: remoteId,
       enterpriseId: enterpriseId,
-      moduleType: 'gaz',
+      moduleType: moduleType,
       dataJson: jsonEncode(map),
       localUpdatedAt: DateTime.now(),
     );
@@ -99,7 +97,7 @@ class CylinderStockOfflineRepository extends OfflineRepository<CylinderStock>
         collectionName: collectionName,
         remoteId: remoteId,
         enterpriseId: enterpriseId,
-        moduleType: 'gaz',
+        moduleType: moduleType,
       );
       return;
     }
@@ -108,7 +106,7 @@ class CylinderStockOfflineRepository extends OfflineRepository<CylinderStock>
       collectionName: collectionName,
       localId: localId,
       enterpriseId: enterpriseId,
-      moduleType: 'gaz',
+      moduleType: moduleType,
     );
   }
 
@@ -118,23 +116,19 @@ class CylinderStockOfflineRepository extends OfflineRepository<CylinderStock>
       collectionName: collectionName,
       remoteId: localId,
       enterpriseId: enterpriseId,
-      moduleType: 'gaz',
+      moduleType: moduleType,
     );
     if (byRemote != null) {
-      final map = jsonDecode(byRemote.dataJson) as Map<String, dynamic>;
-      return fromMap(map);
+      return fromMap(jsonDecode(byRemote.dataJson) as Map<String, dynamic>);
     }
-
     final byLocal = await driftService.records.findByLocalId(
       collectionName: collectionName,
       localId: localId,
       enterpriseId: enterpriseId,
-      moduleType: 'gaz',
+      moduleType: moduleType,
     );
     if (byLocal == null) return null;
-
-    final map = jsonDecode(byLocal.dataJson) as Map<String, dynamic>;
-    return fromMap(map);
+    return fromMap(jsonDecode(byLocal.dataJson) as Map<String, dynamic>);
   }
 
   @override
@@ -142,26 +136,14 @@ class CylinderStockOfflineRepository extends OfflineRepository<CylinderStock>
     final rows = await driftService.records.listForEnterprise(
       collectionName: collectionName,
       enterpriseId: enterpriseId,
-      moduleType: 'gaz',
+      moduleType: moduleType,
     );
     return rows
-        .map((row) {
-          try {
-            final map = jsonDecode(row.dataJson) as Map<String, dynamic>;
-            return fromMap(map);
-          } catch (e) {
-            developer.log(
-              'Error parsing cylinder stock: $e',
-              name: 'CylinderStockOfflineRepository',
-            );
-            return null;
-          }
-        })
-        .whereType<CylinderStock>()
+        .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
         .toList();
   }
 
-  // Implémentation de CylinderStockRepository
+  // CylinderStockRepository implementation
 
   @override
   Future<List<CylinderStock>> getStocksByStatus(
@@ -170,21 +152,21 @@ class CylinderStockOfflineRepository extends OfflineRepository<CylinderStock>
     String? siteId,
   }) async {
     try {
-      var stocks = await getAllForEnterprise(enterpriseId);
-      stocks = stocks.where((s) => s.status == status).toList();
-      if (siteId != null) {
-        stocks = stocks.where((s) => s.siteId == siteId).toList();
-      }
-      return stocks;
+      final stocks = await getAllForEnterprise(enterpriseId);
+      return stocks.where((stock) {
+        if (stock.status != status) return false;
+        if (siteId != null && stock.siteId != siteId) return false;
+        return true;
+      }).toList();
     } catch (error, stackTrace) {
-      final appException =
-          ErrorHandler.instance.handleError(error, stackTrace);
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
-        'Error fetching stocks by status',
+        'Error getting stocks by status',
         name: 'CylinderStockOfflineRepository',
-        error: appException,
+        error: error,
+        stackTrace: stackTrace,
       );
-      return [];
+      throw appException;
     }
   }
 
@@ -195,21 +177,21 @@ class CylinderStockOfflineRepository extends OfflineRepository<CylinderStock>
     String? siteId,
   }) async {
     try {
-      var stocks = await getAllForEnterprise(enterpriseId);
-      stocks = stocks.where((s) => s.weight == weight).toList();
-      if (siteId != null) {
-        stocks = stocks.where((s) => s.siteId == siteId).toList();
-      }
-      return stocks;
+      final stocks = await getAllForEnterprise(enterpriseId);
+      return stocks.where((stock) {
+        if (stock.weight != weight) return false;
+        if (siteId != null && stock.siteId != siteId) return false;
+        return true;
+      }).toList();
     } catch (error, stackTrace) {
-      final appException =
-          ErrorHandler.instance.handleError(error, stackTrace);
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
-        'Error fetching stocks by weight',
+        'Error getting stocks by weight',
         name: 'CylinderStockOfflineRepository',
-        error: appException,
+        error: error,
+        stackTrace: stackTrace,
       );
-      return [];
+      throw appException;
     }
   }
 
@@ -218,14 +200,14 @@ class CylinderStockOfflineRepository extends OfflineRepository<CylinderStock>
     try {
       return await getByLocalId(id);
     } catch (error, stackTrace) {
-      final appException =
-          ErrorHandler.instance.handleError(error, stackTrace);
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
-        'Error getting stock',
+        'Error getting stock: $id',
         name: 'CylinderStockOfflineRepository',
-        error: appException,
+        error: error,
+        stackTrace: stackTrace,
       );
-      return null;
+      throw appException;
     }
   }
 
@@ -241,22 +223,19 @@ class CylinderStockOfflineRepository extends OfflineRepository<CylinderStock>
         await save(updated);
       }
     } catch (error, stackTrace) {
-      final appException =
-          ErrorHandler.instance.handleError(error, stackTrace);
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
-        'Error updating stock quantity',
+        'Error updating stock quantity: $id',
         name: 'CylinderStockOfflineRepository',
-        error: appException,
+        error: error,
+        stackTrace: stackTrace,
       );
-      rethrow;
+      throw appException;
     }
   }
 
   @override
-  Future<void> changeStockStatus(
-    String id,
-    CylinderStatus newStatus,
-  ) async {
+  Future<void> changeStockStatus(String id, CylinderStatus newStatus) async {
     try {
       final stock = await getStockById(id);
       if (stock != null) {
@@ -267,14 +246,14 @@ class CylinderStockOfflineRepository extends OfflineRepository<CylinderStock>
         await save(updated);
       }
     } catch (error, stackTrace) {
-      final appException =
-          ErrorHandler.instance.handleError(error, stackTrace);
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
-        'Error changing stock status',
+        'Error changing stock status: $id',
         name: 'CylinderStockOfflineRepository',
-        error: appException,
+        error: error,
+        stackTrace: stackTrace,
       );
-      rethrow;
+      throw appException;
     }
   }
 
@@ -285,55 +264,50 @@ class CylinderStockOfflineRepository extends OfflineRepository<CylinderStock>
   ) async {
     try {
       final stocks = await getAllForEnterprise(enterpriseId);
-      return stocks.where((s) => s.siteId == siteId).toList();
+      return stocks.where((stock) => stock.siteId == siteId).toList();
     } catch (error, stackTrace) {
-      final appException =
-          ErrorHandler.instance.handleError(error, stackTrace);
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
-        'Error fetching stocks by site',
+        'Error getting stocks by site',
         name: 'CylinderStockOfflineRepository',
-        error: appException,
+        error: error,
+        stackTrace: stackTrace,
       );
-      return [];
+      throw appException;
     }
   }
 
   @override
   Future<void> addStock(CylinderStock stock) async {
     try {
-      final stockWithId = stock.id.isEmpty
-          ? stock.copyWith(
-              id: LocalIdGenerator.generate(),
-              updatedAt: DateTime.now(),
-            )
-          : stock;
-      await save(stockWithId);
+      final localId = getLocalId(stock);
+      final stockWithLocalId = stock.copyWith(id: localId);
+      await save(stockWithLocalId);
     } catch (error, stackTrace) {
-      final appException =
-          ErrorHandler.instance.handleError(error, stackTrace);
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
         'Error adding stock',
         name: 'CylinderStockOfflineRepository',
-        error: appException,
+        error: error,
+        stackTrace: stackTrace,
       );
-      rethrow;
+      throw appException;
     }
   }
 
   @override
   Future<void> updateStock(CylinderStock stock) async {
     try {
-      final updated = stock.copyWith(updatedAt: DateTime.now());
-      await save(updated);
+      await save(stock);
     } catch (error, stackTrace) {
-      final appException =
-          ErrorHandler.instance.handleError(error, stackTrace);
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
-        'Error updating stock',
+        'Error updating stock: ${stock.id}',
         name: 'CylinderStockOfflineRepository',
-        error: appException,
+        error: error,
+        stackTrace: stackTrace,
       );
-      rethrow;
+      throw appException;
     }
   }
 
@@ -345,37 +319,14 @@ class CylinderStockOfflineRepository extends OfflineRepository<CylinderStock>
         await delete(stock);
       }
     } catch (error, stackTrace) {
-      final appException =
-          ErrorHandler.instance.handleError(error, stackTrace);
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
-        'Error deleting stock',
+        'Error deleting stock: $id',
         name: 'CylinderStockOfflineRepository',
-        error: appException,
+        error: error,
+        stackTrace: stackTrace,
       );
-      rethrow;
-    }
-  }
-
-  CylinderStatus _parseStatus(String status) {
-    switch (status.toLowerCase()) {
-      case 'full':
-      case 'pleines':
-        return CylinderStatus.full;
-      case 'emptyatstore':
-      case 'empty_at_store':
-      case 'vides (magasin)':
-        return CylinderStatus.emptyAtStore;
-      case 'emptyintransit':
-      case 'empty_in_transit':
-      case 'vides (en transit)':
-        return CylinderStatus.emptyInTransit;
-      case 'emptyatwholesaler':
-      case 'empty_at_wholesaler':
-      case 'vides (grossiste)':
-        return CylinderStatus.emptyAtWholesaler;
-      default:
-        return CylinderStatus.full;
+      throw appException;
     }
   }
 }
-

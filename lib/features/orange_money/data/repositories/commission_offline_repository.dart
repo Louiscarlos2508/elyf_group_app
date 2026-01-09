@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:developer' as developer;
 
-import '../../../../core/errors/app_exceptions.dart';
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/offline/connectivity_service.dart';
 import '../../../../core/offline/drift_service.dart';
@@ -10,7 +9,7 @@ import '../../../../core/offline/sync_manager.dart';
 import '../../domain/entities/commission.dart';
 import '../../domain/repositories/commission_repository.dart';
 
-/// Offline-first repository for Commission entities (orange_money module).
+/// Offline-first repository for Commission entities.
 class CommissionOfflineRepository extends OfflineRepository<Commission>
     implements CommissionRepository {
   CommissionOfflineRepository({
@@ -18,9 +17,11 @@ class CommissionOfflineRepository extends OfflineRepository<Commission>
     required super.syncManager,
     required super.connectivityService,
     required this.enterpriseId,
+    required this.moduleType,
   });
 
   final String enterpriseId;
+  final String moduleType;
 
   @override
   String get collectionName => 'commissions';
@@ -30,14 +31,16 @@ class CommissionOfflineRepository extends OfflineRepository<Commission>
     return Commission(
       id: map['id'] as String? ?? map['localId'] as String,
       period: map['period'] as String,
-      amount: (map['amount'] as num?)?.toInt() ?? 0,
-      status: _parseStatus(map['status'] as String? ?? 'estimated'),
-      transactionsCount: (map['transactionsCount'] as num?)?.toInt() ?? 0,
-      estimatedAmount: (map['estimatedAmount'] as num?)?.toInt() ?? 0,
-      enterpriseId: map['enterpriseId'] as String? ?? enterpriseId,
-      paidAt: map['paidAt'] != null
-          ? DateTime.parse(map['paidAt'] as String)
-          : null,
+      amount: (map['amount'] as num).toInt(),
+      status: CommissionStatus.values.firstWhere(
+        (e) => e.name == map['status'],
+        orElse: () => CommissionStatus.estimated,
+      ),
+      transactionsCount: (map['transactionsCount'] as num).toInt(),
+      estimatedAmount: (map['estimatedAmount'] as num).toInt(),
+      enterpriseId: map['enterpriseId'] as String,
+      paidAt:
+          map['paidAt'] != null ? DateTime.parse(map['paidAt'] as String) : null,
       paymentDueDate: map['paymentDueDate'] != null
           ? DateTime.parse(map['paymentDueDate'] as String)
           : null,
@@ -71,17 +74,13 @@ class CommissionOfflineRepository extends OfflineRepository<Commission>
 
   @override
   String getLocalId(Commission entity) {
-    if (entity.id.startsWith('local_')) {
-      return entity.id;
-    }
+    if (entity.id.startsWith('local_')) return entity.id;
     return LocalIdGenerator.generate();
   }
 
   @override
   String? getRemoteId(Commission entity) {
-    if (!entity.id.startsWith('local_')) {
-      return entity.id;
-    }
+    if (!entity.id.startsWith('local_')) return entity.id;
     return null;
   }
 
@@ -98,7 +97,7 @@ class CommissionOfflineRepository extends OfflineRepository<Commission>
       localId: localId,
       remoteId: remoteId,
       enterpriseId: enterpriseId,
-      moduleType: 'orange_money',
+      moduleType: moduleType,
       dataJson: jsonEncode(map),
       localUpdatedAt: DateTime.now(),
     );
@@ -112,7 +111,7 @@ class CommissionOfflineRepository extends OfflineRepository<Commission>
         collectionName: collectionName,
         remoteId: remoteId,
         enterpriseId: enterpriseId,
-        moduleType: 'orange_money',
+        moduleType: moduleType,
       );
       return;
     }
@@ -121,7 +120,7 @@ class CommissionOfflineRepository extends OfflineRepository<Commission>
       collectionName: collectionName,
       localId: localId,
       enterpriseId: enterpriseId,
-      moduleType: 'orange_money',
+      moduleType: moduleType,
     );
   }
 
@@ -131,23 +130,19 @@ class CommissionOfflineRepository extends OfflineRepository<Commission>
       collectionName: collectionName,
       remoteId: localId,
       enterpriseId: enterpriseId,
-      moduleType: 'orange_money',
+      moduleType: moduleType,
     );
     if (byRemote != null) {
-      final map = jsonDecode(byRemote.dataJson) as Map<String, dynamic>;
-      return fromMap(map);
+      return fromMap(jsonDecode(byRemote.dataJson) as Map<String, dynamic>);
     }
-
     final byLocal = await driftService.records.findByLocalId(
       collectionName: collectionName,
       localId: localId,
       enterpriseId: enterpriseId,
-      moduleType: 'orange_money',
+      moduleType: moduleType,
     );
     if (byLocal == null) return null;
-
-    final map = jsonDecode(byLocal.dataJson) as Map<String, dynamic>;
-    return fromMap(map);
+    return fromMap(jsonDecode(byLocal.dataJson) as Map<String, dynamic>);
   }
 
   @override
@@ -155,26 +150,14 @@ class CommissionOfflineRepository extends OfflineRepository<Commission>
     final rows = await driftService.records.listForEnterprise(
       collectionName: collectionName,
       enterpriseId: enterpriseId,
-      moduleType: 'orange_money',
+      moduleType: moduleType,
     );
     return rows
-        .map((row) {
-          try {
-            final map = jsonDecode(row.dataJson) as Map<String, dynamic>;
-            return fromMap(map);
-          } catch (e) {
-            developer.log(
-              'Error parsing commission: $e',
-              name: 'CommissionOfflineRepository',
-            );
-            return null;
-          }
-        })
-        .whereType<Commission>()
+        .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
         .toList();
   }
 
-  // Implémentation de CommissionRepository
+  // CommissionRepository implementation
 
   @override
   Future<List<Commission>> fetchCommissions({
@@ -183,28 +166,22 @@ class CommissionOfflineRepository extends OfflineRepository<Commission>
     String? period,
   }) async {
     try {
-      final effectiveEnterpriseId = enterpriseId ?? this.enterpriseId;
-      var commissions = await getAllForEnterprise(effectiveEnterpriseId);
-
-      if (status != null) {
-        commissions = commissions.where((c) => c.status == status).toList();
-      }
-
-      if (period != null) {
-        commissions = commissions.where((c) => c.period == period).toList();
-      }
-
-      commissions.sort((a, b) => b.period.compareTo(a.period));
-      return commissions;
+      final commissions =
+          await getAllForEnterprise(enterpriseId ?? this.enterpriseId);
+      return commissions.where((c) {
+        if (status != null && c.status != status) return false;
+        if (period != null && c.period != period) return false;
+        return true;
+      }).toList();
     } catch (error, stackTrace) {
-      final appException =
-          ErrorHandler.instance.handleError(error, stackTrace);
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
         'Error fetching commissions',
         name: 'CommissionOfflineRepository',
-        error: appException,
+        error: error,
+        stackTrace: stackTrace,
       );
-      return [];
+      throw appException;
     }
   }
 
@@ -213,14 +190,14 @@ class CommissionOfflineRepository extends OfflineRepository<Commission>
     try {
       return await getByLocalId(commissionId);
     } catch (error, stackTrace) {
-      final appException =
-          ErrorHandler.instance.handleError(error, stackTrace);
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
-        'Error getting commission',
+        'Error getting commission: $commissionId',
         name: 'CommissionOfflineRepository',
-        error: appException,
+        error: error,
+        stackTrace: stackTrace,
       );
-      return null;
+      throw appException;
     }
   }
 
@@ -228,61 +205,61 @@ class CommissionOfflineRepository extends OfflineRepository<Commission>
   Future<Commission?> getCurrentMonthCommission(String enterpriseId) async {
     try {
       final now = DateTime.now();
-      final period = '${now.year}-${now.month.toString().padLeft(2, '0')}';
+      final currentPeriod =
+          '${now.year}-${now.month.toString().padLeft(2, '0')}';
       final commissions = await fetchCommissions(
         enterpriseId: enterpriseId,
-        period: period,
+        period: currentPeriod,
       );
       return commissions.isNotEmpty ? commissions.first : null;
     } catch (error, stackTrace) {
-      final appException =
-          ErrorHandler.instance.handleError(error, stackTrace);
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
         'Error getting current month commission',
         name: 'CommissionOfflineRepository',
-        error: appException,
+        error: error,
+        stackTrace: stackTrace,
       );
-      return null;
+      throw appException;
     }
   }
 
   @override
   Future<String> createCommission(Commission commission) async {
     try {
-      final commissionWithId = commission.id.isEmpty
-          ? Commission(
-              id: LocalIdGenerator.generate(),
-              period: commission.period,
-              amount: commission.amount,
-              status: commission.status,
-              transactionsCount: commission.transactionsCount,
-              estimatedAmount: commission.estimatedAmount,
-              enterpriseId: commission.enterpriseId,
-              paidAt: commission.paidAt,
-              paymentDueDate: commission.paymentDueDate,
-              notes: commission.notes,
-              createdAt: commission.createdAt ?? DateTime.now(),
-              updatedAt: DateTime.now(),
-            )
-          : commission;
-      await save(commissionWithId);
-      return commissionWithId.id;
+      final localId = getLocalId(commission);
+      final commissionWithLocalId = Commission(
+        id: localId,
+        period: commission.period,
+        amount: commission.amount,
+        status: commission.status,
+        transactionsCount: commission.transactionsCount,
+        estimatedAmount: commission.estimatedAmount,
+        enterpriseId: commission.enterpriseId,
+        paidAt: commission.paidAt,
+        paymentDueDate: commission.paymentDueDate,
+        notes: commission.notes,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+      await save(commissionWithLocalId);
+      return localId;
     } catch (error, stackTrace) {
-      final appException =
-          ErrorHandler.instance.handleError(error, stackTrace);
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
         'Error creating commission',
         name: 'CommissionOfflineRepository',
-        error: appException,
+        error: error,
+        stackTrace: stackTrace,
       );
-      rethrow;
+      throw appException;
     }
   }
 
   @override
   Future<void> updateCommission(Commission commission) async {
     try {
-      final updatedCommission = Commission(
+      final updated = Commission(
         id: commission.id,
         period: commission.period,
         amount: commission.amount,
@@ -296,73 +273,47 @@ class CommissionOfflineRepository extends OfflineRepository<Commission>
         createdAt: commission.createdAt,
         updatedAt: DateTime.now(),
       );
-      await save(updatedCommission);
+      await save(updated);
     } catch (error, stackTrace) {
-      final appException =
-          ErrorHandler.instance.handleError(error, stackTrace);
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
-        'Error updating commission',
+        'Error updating commission: ${commission.id}',
         name: 'CommissionOfflineRepository',
-        error: appException,
+        error: error,
+        stackTrace: stackTrace,
       );
-      rethrow;
+      throw appException;
     }
   }
 
   @override
-  Future<Map<String, dynamic>> getStatistics({
-    String? enterpriseId,
-  }) async {
+  Future<Map<String, dynamic>> getStatistics({String? enterpriseId}) async {
     try {
-      final effectiveEnterpriseId = enterpriseId ?? this.enterpriseId;
-      final commissions = await getAllForEnterprise(effectiveEnterpriseId);
-
-      final totalCommissions = commissions.fold<int>(
-        0,
-        (sum, c) => sum + c.amount,
-      );
+      final commissions =
+          await getAllForEnterprise(enterpriseId ?? this.enterpriseId);
+      final paidCommissions =
+          commissions.where((c) => c.status == CommissionStatus.paid).toList();
       final pendingCommissions = commissions
           .where((c) => c.status == CommissionStatus.pending)
-          .fold<int>(0, (sum, c) => sum + c.amount);
-      final paidCommissions = commissions
-          .where((c) => c.status == CommissionStatus.paid)
-          .fold<int>(0, (sum, c) => sum + c.amount);
+          .toList();
 
       return {
-        'totalCommissions': totalCommissions,
-        'pendingCommissions': pendingCommissions,
-        'paidCommissions': paidCommissions,
-        'totalCount': commissions.length,
-        'pendingCount': commissions
-            .where((c) => c.status == CommissionStatus.pending)
-            .length,
-        'paidCount': commissions
-            .where((c) => c.status == CommissionStatus.paid)
-            .length,
+        'totalCommissions': commissions.length,
+        'totalPaid': paidCommissions.fold<int>(0, (sum, c) => sum + c.amount),
+        'totalPending':
+            pendingCommissions.fold<int>(0, (sum, c) => sum + c.amount),
+        'paidCount': paidCommissions.length,
+        'pendingCount': pendingCommissions.length,
       };
     } catch (error, stackTrace) {
-      final appException =
-          ErrorHandler.instance.handleError(error, stackTrace);
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
         'Error getting commission statistics',
         name: 'CommissionOfflineRepository',
-        error: appException,
+        error: error,
+        stackTrace: stackTrace,
       );
-      return {};
-    }
-  }
-
-  CommissionStatus _parseStatus(String status) {
-    switch (status.toLowerCase()) {
-      case 'estimated':
-        return CommissionStatus.estimated;
-      case 'pending':
-        return CommissionStatus.pending;
-      case 'paid':
-        return CommissionStatus.paid;
-      default:
-        return CommissionStatus.estimated;
+      throw appException;
     }
   }
 }
-

@@ -6,74 +6,69 @@ import '../../../../core/offline/connectivity_service.dart';
 import '../../../../core/offline/drift_service.dart';
 import '../../../../core/offline/offline_repository.dart';
 import '../../../../core/offline/sync_manager.dart';
-import '../../domain/entities/expense.dart';
-import '../../domain/repositories/expense_repository.dart';
+import '../../domain/entities/credit_payment.dart';
+import '../../domain/entities/sale.dart';
+import '../../domain/repositories/credit_repository.dart';
+import '../../domain/repositories/sale_repository.dart';
 
-/// Offline-first repository for GazExpense entities.
-class GazExpenseOfflineRepository extends OfflineRepository<GazExpense>
-    implements GazExpenseRepository {
-  GazExpenseOfflineRepository({
+/// Offline-first repository for Credit and Payment entities.
+class CreditOfflineRepository extends OfflineRepository<CreditPayment>
+    implements CreditRepository {
+  CreditOfflineRepository({
     required super.driftService,
     required super.syncManager,
     required super.connectivityService,
     required this.enterpriseId,
     required this.moduleType,
+    required this.saleRepository,
   });
 
   final String enterpriseId;
   final String moduleType;
+  final SaleRepository saleRepository;
 
   @override
-  String get collectionName => 'gaz_expenses';
+  String get collectionName => 'credit_payments';
 
   @override
-  GazExpense fromMap(Map<String, dynamic> map) {
-    return GazExpense(
+  CreditPayment fromMap(Map<String, dynamic> map) {
+    return CreditPayment(
       id: map['id'] as String? ?? map['localId'] as String,
-      category: ExpenseCategory.values.firstWhere(
-        (e) => e.name == map['category'],
-        orElse: () => ExpenseCategory.other,
-      ),
-      amount: (map['amount'] as num).toDouble(),
-      description: map['description'] as String,
+      saleId: map['saleId'] as String,
+      amount: (map['amount'] as num).toInt(),
       date: DateTime.parse(map['date'] as String),
-      enterpriseId: map['enterpriseId'] as String,
-      isFixed: map['isFixed'] as bool? ?? false,
       notes: map['notes'] as String?,
     );
   }
 
   @override
-  Map<String, dynamic> toMap(GazExpense entity) {
+  Map<String, dynamic> toMap(CreditPayment entity) {
     return {
       'id': entity.id,
-      'category': entity.category.name,
+      'saleId': entity.saleId,
       'amount': entity.amount,
-      'description': entity.description,
       'date': entity.date.toIso8601String(),
-      'enterpriseId': entity.enterpriseId,
-      'isFixed': entity.isFixed,
       'notes': entity.notes,
     };
   }
 
   @override
-  String getLocalId(GazExpense entity) {
+  String getLocalId(CreditPayment entity) {
     if (entity.id.startsWith('local_')) return entity.id;
     return LocalIdGenerator.generate();
   }
 
   @override
-  String? getRemoteId(GazExpense entity) {
+  String? getRemoteId(CreditPayment entity) {
     if (!entity.id.startsWith('local_')) return entity.id;
     return null;
   }
 
   @override
-  String? getEnterpriseId(GazExpense entity) => entity.enterpriseId;
+  String? getEnterpriseId(CreditPayment entity) => enterpriseId;
 
   @override
-  Future<void> saveToLocal(GazExpense entity) async {
+  Future<void> saveToLocal(CreditPayment entity) async {
     final localId = getLocalId(entity);
     final remoteId = getRemoteId(entity);
     final map = toMap(entity)..['localId'] = localId;
@@ -89,7 +84,7 @@ class GazExpenseOfflineRepository extends OfflineRepository<GazExpense>
   }
 
   @override
-  Future<void> deleteFromLocal(GazExpense entity) async {
+  Future<void> deleteFromLocal(CreditPayment entity) async {
     final remoteId = getRemoteId(entity);
     if (remoteId != null) {
       await driftService.records.deleteByRemoteId(
@@ -110,7 +105,7 @@ class GazExpenseOfflineRepository extends OfflineRepository<GazExpense>
   }
 
   @override
-  Future<GazExpense?> getByLocalId(String localId) async {
+  Future<CreditPayment?> getByLocalId(String localId) async {
     final byRemote = await driftService.records.findByRemoteId(
       collectionName: collectionName,
       remoteId: localId,
@@ -131,7 +126,7 @@ class GazExpenseOfflineRepository extends OfflineRepository<GazExpense>
   }
 
   @override
-  Future<List<GazExpense>> getAllForEnterprise(String enterpriseId) async {
+  Future<List<CreditPayment>> getAllForEnterprise(String enterpriseId) async {
     final rows = await driftService.records.listForEnterprise(
       collectionName: collectionName,
       enterpriseId: enterpriseId,
@@ -142,22 +137,18 @@ class GazExpenseOfflineRepository extends OfflineRepository<GazExpense>
         .toList();
   }
 
-  // GazExpenseRepository implementation
+  // CreditRepository implementation
 
   @override
-  Future<List<GazExpense>> getExpenses({DateTime? from, DateTime? to}) async {
+  Future<List<Sale>> fetchCreditSales() async {
     try {
-      final expenses = await getAllForEnterprise(enterpriseId);
-      return expenses.where((expense) {
-        if (from != null && expense.date.isBefore(from)) return false;
-        if (to != null && expense.date.isAfter(to)) return false;
-        return true;
-      }).toList();
+      final allSales = await saleRepository.fetchRecentSales(limit: 1000);
+      return allSales.where((s) => !s.estPayeeIntegralement).toList();
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
-        'Error getting expenses',
-        name: 'GazExpenseOfflineRepository',
+        'Error fetching credit sales',
+        name: 'CreditOfflineRepository',
         error: error,
         stackTrace: stackTrace,
       );
@@ -166,14 +157,15 @@ class GazExpenseOfflineRepository extends OfflineRepository<GazExpense>
   }
 
   @override
-  Future<GazExpense?> getExpenseById(String id) async {
+  Future<List<Sale>> fetchCustomerCredits(String customerId) async {
     try {
-      return await getByLocalId(id);
+      final creditSales = await fetchCreditSales();
+      return creditSales.where((s) => s.customerId == customerId).toList();
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
-        'Error getting expense: $id',
-        name: 'GazExpenseOfflineRepository',
+        'Error fetching customer credits: $customerId',
+        name: 'CreditOfflineRepository',
         error: error,
         stackTrace: stackTrace,
       );
@@ -182,16 +174,15 @@ class GazExpenseOfflineRepository extends OfflineRepository<GazExpense>
   }
 
   @override
-  Future<void> addExpense(GazExpense expense) async {
+  Future<List<CreditPayment>> fetchSalePayments(String saleId) async {
     try {
-      final localId = getLocalId(expense);
-      final expenseWithLocalId = expense.copyWith(id: localId);
-      await save(expenseWithLocalId);
+      final allPayments = await getAllForEnterprise(enterpriseId);
+      return allPayments.where((p) => p.saleId == saleId).toList();
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
-        'Error adding expense',
-        name: 'GazExpenseOfflineRepository',
+        'Error fetching sale payments: $saleId',
+        name: 'CreditOfflineRepository',
         error: error,
         stackTrace: stackTrace,
       );
@@ -200,14 +191,23 @@ class GazExpenseOfflineRepository extends OfflineRepository<GazExpense>
   }
 
   @override
-  Future<void> updateExpense(GazExpense expense) async {
+  Future<String> recordPayment(CreditPayment payment) async {
     try {
-      await save(expense);
+      final localId = getLocalId(payment);
+      final paymentWithLocalId = CreditPayment(
+        id: localId,
+        saleId: payment.saleId,
+        amount: payment.amount,
+        date: payment.date,
+        notes: payment.notes,
+      );
+      await save(paymentWithLocalId);
+      return localId;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
-        'Error updating expense: ${expense.id}',
-        name: 'GazExpenseOfflineRepository',
+        'Error recording payment',
+        name: 'CreditOfflineRepository',
         error: error,
         stackTrace: stackTrace,
       );
@@ -216,17 +216,15 @@ class GazExpenseOfflineRepository extends OfflineRepository<GazExpense>
   }
 
   @override
-  Future<void> deleteExpense(String id) async {
+  Future<int> getTotalCredits() async {
     try {
-      final expense = await getExpenseById(id);
-      if (expense != null) {
-        await delete(expense);
-      }
+      final creditSales = await fetchCreditSales();
+      return creditSales.fold<int>(0, (sum, s) => sum + s.montantRestant);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
-        'Error deleting expense: $id',
-        name: 'GazExpenseOfflineRepository',
+        'Error getting total credits',
+        name: 'CreditOfflineRepository',
         error: error,
         stackTrace: stackTrace,
       );
@@ -235,15 +233,16 @@ class GazExpenseOfflineRepository extends OfflineRepository<GazExpense>
   }
 
   @override
-  Future<double> getTotalExpenses({DateTime? from, DateTime? to}) async {
+  Future<int> getCreditCustomersCount() async {
     try {
-      final expenses = await getExpenses(from: from, to: to);
-      return expenses.fold<double>(0.0, (sum, e) => sum + e.amount);
+      final creditSales = await fetchCreditSales();
+      final customerIds = creditSales.map((s) => s.customerId).toSet();
+      return customerIds.length;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
-        'Error getting total expenses',
-        name: 'GazExpenseOfflineRepository',
+        'Error getting credit customers count',
+        name: 'CreditOfflineRepository',
         error: error,
         stackTrace: stackTrace,
       );

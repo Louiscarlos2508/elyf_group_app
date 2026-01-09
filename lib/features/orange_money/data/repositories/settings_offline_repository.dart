@@ -1,43 +1,51 @@
 import 'dart:convert';
 import 'dart:developer' as developer;
 
-import '../../../../core/errors/app_exceptions.dart';
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/offline/connectivity_service.dart';
 import '../../../../core/offline/drift_service.dart';
+import '../../../../core/offline/offline_repository.dart';
 import '../../../../core/offline/sync_manager.dart';
 import '../../domain/entities/settings.dart';
 import '../../domain/repositories/settings_repository.dart';
 
-/// Offline-first repository for OrangeMoneySettings (orange_money module).
-///
-/// Les settings sont stockés avec enterpriseId comme document ID.
-class SettingsOfflineRepository implements SettingsRepository {
+/// Offline-first repository for OrangeMoneySettings entities.
+class SettingsOfflineRepository extends OfflineRepository<OrangeMoneySettings>
+    implements SettingsRepository {
   SettingsOfflineRepository({
-    required this.driftService,
-    required this.syncManager,
-    required this.connectivityService,
+    required super.driftService,
+    required super.syncManager,
+    required super.connectivityService,
     required this.enterpriseId,
+    required this.moduleType,
   });
 
-  final DriftService driftService;
-  final SyncManager syncManager;
-  final ConnectivityService connectivityService;
   final String enterpriseId;
+  final String moduleType;
 
-  static const String _collectionName = 'orange_money_settings';
+  @override
+  String get collectionName => 'orange_money_settings';
 
-  OrangeMoneySettings _fromMap(Map<String, dynamic> map) {
+  @override
+  OrangeMoneySettings fromMap(Map<String, dynamic> map) {
+    final notificationsMap =
+        map['notifications'] as Map<String, dynamic>? ?? {};
+    final thresholdsMap = map['thresholds'] as Map<String, dynamic>? ?? {};
+
     return OrangeMoneySettings(
       enterpriseId: map['enterpriseId'] as String,
       notifications: NotificationSettings(
-        lowLiquidityAlert: map['notifications']?['lowLiquidityAlert'] as bool? ?? true,
-        monthlyCommissionReminder: map['notifications']?['monthlyCommissionReminder'] as bool? ?? true,
-        paymentDueAlert: map['notifications']?['paymentDueAlert'] as bool? ?? true,
+        lowLiquidityAlert: notificationsMap['lowLiquidityAlert'] as bool? ?? true,
+        monthlyCommissionReminder:
+            notificationsMap['monthlyCommissionReminder'] as bool? ?? true,
+        paymentDueAlert: notificationsMap['paymentDueAlert'] as bool? ?? true,
       ),
       thresholds: ThresholdSettings(
-        criticalLiquidityThreshold: (map['thresholds']?['criticalLiquidityThreshold'] as num?)?.toInt() ?? 50000,
-        paymentDueDaysBefore: (map['thresholds']?['paymentDueDaysBefore'] as num?)?.toInt() ?? 3,
+        criticalLiquidityThreshold:
+            (thresholdsMap['criticalLiquidityThreshold'] as num?)?.toInt() ??
+                50000,
+        paymentDueDaysBefore:
+            (thresholdsMap['paymentDueDaysBefore'] as num?)?.toInt() ?? 3,
       ),
       simNumber: map['simNumber'] as String? ?? '',
       createdAt: map['createdAt'] != null
@@ -49,86 +57,131 @@ class SettingsOfflineRepository implements SettingsRepository {
     );
   }
 
-  Map<String, dynamic> _toMap(OrangeMoneySettings settings) {
+  @override
+  Map<String, dynamic> toMap(OrangeMoneySettings entity) {
     return {
-      'enterpriseId': settings.enterpriseId,
+      'enterpriseId': entity.enterpriseId,
       'notifications': {
-        'lowLiquidityAlert': settings.notifications.lowLiquidityAlert,
-        'monthlyCommissionReminder': settings.notifications.monthlyCommissionReminder,
-        'paymentDueAlert': settings.notifications.paymentDueAlert,
+        'lowLiquidityAlert': entity.notifications.lowLiquidityAlert,
+        'monthlyCommissionReminder':
+            entity.notifications.monthlyCommissionReminder,
+        'paymentDueAlert': entity.notifications.paymentDueAlert,
       },
       'thresholds': {
-        'criticalLiquidityThreshold': settings.thresholds.criticalLiquidityThreshold,
-        'paymentDueDaysBefore': settings.thresholds.paymentDueDaysBefore,
+        'criticalLiquidityThreshold':
+            entity.thresholds.criticalLiquidityThreshold,
+        'paymentDueDaysBefore': entity.thresholds.paymentDueDaysBefore,
       },
-      'simNumber': settings.simNumber,
-      'createdAt': settings.createdAt?.toIso8601String(),
-      'updatedAt': settings.updatedAt?.toIso8601String(),
+      'simNumber': entity.simNumber,
+      'createdAt': entity.createdAt?.toIso8601String(),
+      'updatedAt': entity.updatedAt?.toIso8601String(),
     };
   }
+
+  String _getSettingsId(String enterpriseId) => 'settings_$enterpriseId';
+
+  @override
+  String getLocalId(OrangeMoneySettings entity) =>
+      _getSettingsId(entity.enterpriseId);
+
+  @override
+  String? getRemoteId(OrangeMoneySettings entity) =>
+      _getSettingsId(entity.enterpriseId);
+
+  @override
+  String? getEnterpriseId(OrangeMoneySettings entity) => entity.enterpriseId;
+
+  @override
+  Future<void> saveToLocal(OrangeMoneySettings entity) async {
+    final localId = getLocalId(entity);
+    final map = toMap(entity)..['localId'] = localId;
+    await driftService.records.upsert(
+      collectionName: collectionName,
+      localId: localId,
+      remoteId: localId,
+      enterpriseId: enterpriseId,
+      moduleType: moduleType,
+      dataJson: jsonEncode(map),
+      localUpdatedAt: DateTime.now(),
+    );
+  }
+
+  @override
+  Future<void> deleteFromLocal(OrangeMoneySettings entity) async {
+    final localId = getLocalId(entity);
+    await driftService.records.deleteByLocalId(
+      collectionName: collectionName,
+      localId: localId,
+      enterpriseId: enterpriseId,
+      moduleType: moduleType,
+    );
+  }
+
+  @override
+  Future<OrangeMoneySettings?> getByLocalId(String localId) async {
+    final record = await driftService.records.findByLocalId(
+      collectionName: collectionName,
+      localId: localId,
+      enterpriseId: enterpriseId,
+      moduleType: moduleType,
+    );
+    if (record == null) return null;
+    return fromMap(jsonDecode(record.dataJson) as Map<String, dynamic>);
+  }
+
+  @override
+  Future<List<OrangeMoneySettings>> getAllForEnterprise(
+      String enterpriseId) async {
+    final rows = await driftService.records.listForEnterprise(
+      collectionName: collectionName,
+      enterpriseId: enterpriseId,
+      moduleType: moduleType,
+    );
+    return rows
+        .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+        .toList();
+  }
+
+  // SettingsRepository implementation
 
   @override
   Future<OrangeMoneySettings?> getSettings(String enterpriseId) async {
     try {
-      final rows = await driftService.records.listForEnterprise(
-        collectionName: _collectionName,
-        enterpriseId: enterpriseId,
-        moduleType: 'orange_money',
-      );
-
-      if (rows.isEmpty) {
-        return null;
-      }
-
-      // Prendre le premier (il ne devrait y en avoir qu'un par entreprise)
-      final row = rows.first;
-      final map = jsonDecode(row.dataJson) as Map<String, dynamic>;
-      return _fromMap(map);
+      final settingsId = _getSettingsId(enterpriseId);
+      return await getByLocalId(settingsId);
     } catch (error, stackTrace) {
-      final appException =
-          ErrorHandler.instance.handleError(error, stackTrace);
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
         'Error getting settings',
         name: 'SettingsOfflineRepository',
-        error: appException,
+        error: error,
+        stackTrace: stackTrace,
       );
-      return null;
+      throw appException;
     }
   }
 
   @override
   Future<void> saveSettings(OrangeMoneySettings settings) async {
     try {
-      final localId = 'settings_${settings.enterpriseId}';
-      final map = _toMap(settings)..['localId'] = localId;
-
-      await driftService.records.upsert(
-        collectionName: _collectionName,
-        localId: localId,
-        remoteId: null, // Settings n'ont pas d'ID distant unique
+      final updated = OrangeMoneySettings(
         enterpriseId: settings.enterpriseId,
-        moduleType: 'orange_money',
-        dataJson: jsonEncode(map),
-        localUpdatedAt: DateTime.now(),
+        notifications: settings.notifications,
+        thresholds: settings.thresholds,
+        simNumber: settings.simNumber,
+        createdAt: settings.createdAt ?? DateTime.now(),
+        updatedAt: DateTime.now(),
       );
-
-      // Sync automatique
-      await syncManager.enqueueOperation(
-        collectionName: _collectionName,
-        documentId: localId,
-        operationType: 'set',
-        payload: map,
-        enterpriseId: settings.enterpriseId,
-      );
+      await save(updated);
     } catch (error, stackTrace) {
-      final appException =
-          ErrorHandler.instance.handleError(error, stackTrace);
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
         'Error saving settings',
         name: 'SettingsOfflineRepository',
-        error: appException,
+        error: error,
+        stackTrace: stackTrace,
       );
-      rethrow;
+      throw appException;
     }
   }
 
@@ -148,28 +201,17 @@ class SettingsOfflineRepository implements SettingsRepository {
           createdAt: current.createdAt,
           updatedAt: DateTime.now(),
         );
-        await saveSettings(updated);
-      } else {
-        // Créer avec les notifications fournies et valeurs par défaut
-        final newSettings = OrangeMoneySettings(
-          enterpriseId: enterpriseId,
-          notifications: notifications,
-          thresholds: const ThresholdSettings(),
-          simNumber: '',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-        );
-        await saveSettings(newSettings);
+        await save(updated);
       }
     } catch (error, stackTrace) {
-      final appException =
-          ErrorHandler.instance.handleError(error, stackTrace);
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
         'Error updating notifications',
         name: 'SettingsOfflineRepository',
-        error: appException,
+        error: error,
+        stackTrace: stackTrace,
       );
-      rethrow;
+      throw appException;
     }
   }
 
@@ -189,28 +231,17 @@ class SettingsOfflineRepository implements SettingsRepository {
           createdAt: current.createdAt,
           updatedAt: DateTime.now(),
         );
-        await saveSettings(updated);
-      } else {
-        // Créer avec les thresholds fournis et valeurs par défaut
-        final newSettings = OrangeMoneySettings(
-          enterpriseId: enterpriseId,
-          notifications: const NotificationSettings(),
-          thresholds: thresholds,
-          simNumber: '',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-        );
-        await saveSettings(newSettings);
+        await save(updated);
       }
     } catch (error, stackTrace) {
-      final appException =
-          ErrorHandler.instance.handleError(error, stackTrace);
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
         'Error updating thresholds',
         name: 'SettingsOfflineRepository',
-        error: appException,
+        error: error,
+        stackTrace: stackTrace,
       );
-      rethrow;
+      throw appException;
     }
   }
 
@@ -227,29 +258,17 @@ class SettingsOfflineRepository implements SettingsRepository {
           createdAt: current.createdAt,
           updatedAt: DateTime.now(),
         );
-        await saveSettings(updated);
-      } else {
-        // Créer avec le simNumber fourni et valeurs par défaut
-        final newSettings = OrangeMoneySettings(
-          enterpriseId: enterpriseId,
-          notifications: const NotificationSettings(),
-          thresholds: const ThresholdSettings(),
-          simNumber: simNumber,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-        );
-        await saveSettings(newSettings);
+        await save(updated);
       }
     } catch (error, stackTrace) {
-      final appException =
-          ErrorHandler.instance.handleError(error, stackTrace);
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
-        'Error updating sim number',
+        'Error updating SIM number',
         name: 'SettingsOfflineRepository',
-        error: appException,
+        error: error,
+        stackTrace: stackTrace,
       );
-      rethrow;
+      throw appException;
     }
   }
 }
-

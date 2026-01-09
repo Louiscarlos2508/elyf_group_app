@@ -12,23 +12,44 @@ enum SyncStatus {
 
 /// Enum for entity sync state.
 enum SyncState {
+  /// Entity is pending upload/sync.
+  pending,
+  /// Alias for pending (backward compatibility).
   pendingUpload,
+  /// Entity is pending delete sync.
   pendingDelete,
+  /// Entity is synced with server.
   synced,
+  /// Sync failed for this entity.
   failed,
 }
 
-/// Stub SyncMetadata class.
+/// Metadata about sync state for an entity or collection.
 class SyncMetadata {
-  int id = 0;
-  late String collectionName;
-  late String enterpriseId;
+  SyncMetadata({
+    this.id = 0,
+    this.localId,
+    required this.collectionName,
+    this.enterpriseId = '',
+    this.operationType,
+    this.lastSyncedAt,
+    this.lastSyncError,
+    this.pendingCount = 0,
+    DateTime? createdAt,
+    DateTime? localUpdatedAt,
+  })  : createdAt = createdAt ?? DateTime.now(),
+        localUpdatedAt = localUpdatedAt ?? DateTime.now();
+
+  int id;
+  String? localId;
+  String collectionName;
+  String enterpriseId;
+  String? operationType;
   DateTime? lastSyncedAt;
   String? lastSyncError;
-  int pendingCount = 0;
-  late DateTime localUpdatedAt;
-
-  SyncMetadata();
+  int pendingCount;
+  DateTime createdAt;
+  DateTime localUpdatedAt;
 }
 
 /// SyncOperation class representing a queued sync operation.

@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:developer' as developer;
 
-import '../../../../core/errors/app_exceptions.dart';
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/offline/connectivity_service.dart';
 import '../../../../core/offline/drift_service.dart';
@@ -10,9 +9,7 @@ import '../../../../core/offline/sync_manager.dart';
 import '../../domain/entities/stock_item.dart';
 import '../../domain/repositories/inventory_repository.dart';
 
-/// Offline-first repository for StockItem entities (eau_minerale module).
-///
-/// Gère les snapshots d'inventaire (produits finis et matières premières).
+/// Offline-first repository for StockItem entities.
 class InventoryOfflineRepository extends OfflineRepository<StockItem>
     implements InventoryRepository {
   InventoryOfflineRepository({
@@ -20,9 +17,11 @@ class InventoryOfflineRepository extends OfflineRepository<StockItem>
     required super.syncManager,
     required super.connectivityService,
     required this.enterpriseId,
+    required this.moduleType,
   });
 
   final String enterpriseId;
+  final String moduleType;
 
   @override
   String get collectionName => 'stock_items';
@@ -32,12 +31,13 @@ class InventoryOfflineRepository extends OfflineRepository<StockItem>
     return StockItem(
       id: map['id'] as String? ?? map['localId'] as String,
       name: map['name'] as String,
-      quantity: (map['quantity'] as num?)?.toDouble() ?? 0.0,
-      unit: map['unit'] as String? ?? 'unité',
-      type: _parseStockType(map['type'] as String? ?? 'finishedGoods'),
-      updatedAt: map['updatedAt'] != null
-          ? DateTime.parse(map['updatedAt'] as String)
-          : DateTime.now(),
+      quantity: (map['quantity'] as num).toDouble(),
+      unit: map['unit'] as String,
+      type: StockType.values.firstWhere(
+        (e) => e.name == map['type'],
+        orElse: () => StockType.finishedGoods,
+      ),
+      updatedAt: DateTime.parse(map['updatedAt'] as String),
     );
   }
 
@@ -55,17 +55,13 @@ class InventoryOfflineRepository extends OfflineRepository<StockItem>
 
   @override
   String getLocalId(StockItem entity) {
-    if (entity.id.startsWith('local_')) {
-      return entity.id;
-    }
+    if (entity.id.startsWith('local_')) return entity.id;
     return LocalIdGenerator.generate();
   }
 
   @override
   String? getRemoteId(StockItem entity) {
-    if (!entity.id.startsWith('local_')) {
-      return entity.id;
-    }
+    if (!entity.id.startsWith('local_')) return entity.id;
     return null;
   }
 
@@ -82,112 +78,86 @@ class InventoryOfflineRepository extends OfflineRepository<StockItem>
       localId: localId,
       remoteId: remoteId,
       enterpriseId: enterpriseId,
-      moduleType: 'eau_minerale',
+      moduleType: moduleType,
       dataJson: jsonEncode(map),
-      updatedAt: entity.updatedAt,
+      localUpdatedAt: DateTime.now(),
     );
   }
 
   @override
-  Future<void> deleteFromLocal(String localId) async {
-    await driftService.records.delete(
+  Future<void> deleteFromLocal(StockItem entity) async {
+    final remoteId = getRemoteId(entity);
+    if (remoteId != null) {
+      await driftService.records.deleteByRemoteId(
+        collectionName: collectionName,
+        remoteId: remoteId,
+        enterpriseId: enterpriseId,
+        moduleType: moduleType,
+      );
+      return;
+    }
+    final localId = getLocalId(entity);
+    await driftService.records.deleteByLocalId(
       collectionName: collectionName,
       localId: localId,
       enterpriseId: enterpriseId,
-      moduleType: 'eau_minerale',
+      moduleType: moduleType,
     );
   }
 
   @override
-  Future<List<StockItem>> fetchFromLocal() async {
-    try {
-      final records = await driftService.records.query(
-        collectionName: collectionName,
-        enterpriseId: enterpriseId,
-        moduleType: 'eau_minerale',
-      );
-
-      return records.map((record) {
-        final map = jsonDecode(record.dataJson) as Map<String, dynamic>;
-        map['localId'] = record.localId;
-        if (record.remoteId != null) {
-          map['id'] = record.remoteId;
-        }
-        return fromMap(map);
-      }).toList();
-    } catch (e, stackTrace) {
-      developer.log(
-        'Error fetching stock items from local',
-        name: 'InventoryOfflineRepository',
-        error: e,
-        stackTrace: stackTrace,
-      );
-      ErrorHandler.handleError(e);
-      rethrow;
+  Future<StockItem?> getByLocalId(String localId) async {
+    final byRemote = await driftService.records.findByRemoteId(
+      collectionName: collectionName,
+      remoteId: localId,
+      enterpriseId: enterpriseId,
+      moduleType: moduleType,
+    );
+    if (byRemote != null) {
+      return fromMap(jsonDecode(byRemote.dataJson) as Map<String, dynamic>);
     }
+    final byLocal = await driftService.records.findByLocalId(
+      collectionName: collectionName,
+      localId: localId,
+      enterpriseId: enterpriseId,
+      moduleType: moduleType,
+    );
+    if (byLocal == null) return null;
+    return fromMap(jsonDecode(byLocal.dataJson) as Map<String, dynamic>);
   }
 
   @override
-  Future<StockItem?> getFromLocal(String localId) async {
-    try {
-      final record = await driftService.records.get(
-        collectionName: collectionName,
-        localId: localId,
-        enterpriseId: enterpriseId,
-        moduleType: 'eau_minerale',
-      );
-
-      if (record == null) return null;
-
-      final map = jsonDecode(record.dataJson) as Map<String, dynamic>;
-      map['localId'] = record.localId;
-      if (record.remoteId != null) {
-        map['id'] = record.remoteId;
-      }
-      return fromMap(map);
-    } catch (e, stackTrace) {
-      developer.log(
-        'Error getting stock item from local',
-        name: 'InventoryOfflineRepository',
-        error: e,
-        stackTrace: stackTrace,
-      );
-      ErrorHandler.handleError(e);
-      rethrow;
-    }
-  }
-
-  StockType _parseStockType(String type) {
-    return StockType.values.firstWhere(
-      (e) => e.name == type,
-      orElse: () => StockType.finishedGoods,
+  Future<List<StockItem>> getAllForEnterprise(String enterpriseId) async {
+    final rows = await driftService.records.listForEnterprise(
+      collectionName: collectionName,
+      enterpriseId: enterpriseId,
+      moduleType: moduleType,
     );
+    return rows
+        .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+        .toList();
   }
 
-  // Implementation of InventoryRepository interface
+  // InventoryRepository implementation
 
   @override
   Future<List<StockItem>> fetchStockItems() async {
     try {
-      final items = await fetchFromLocal();
-      return items;
-    } catch (e, stackTrace) {
-      developer.log(
-        'Error fetching stock items',
-        name: 'InventoryOfflineRepository',
-        error: e,
-        stackTrace: stackTrace,
-      );
-      ErrorHandler.handleError(e);
-      rethrow;
+      return await getAllForEnterprise(enterpriseId);
+    } catch (error, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
+      developer.log('Error fetching stock items',
+          name: 'InventoryOfflineRepository',
+          error: error,
+          stackTrace: stackTrace);
+      throw appException;
     }
   }
 
   @override
   Future<void> updateStockItem(StockItem item) async {
     try {
-      // Update updatedAt timestamp
-      final updatedItem = StockItem(
+      final updated = StockItem(
         id: item.id,
         name: item.name,
         quantity: item.quantity,
@@ -195,41 +165,28 @@ class InventoryOfflineRepository extends OfflineRepository<StockItem>
         type: item.type,
         updatedAt: DateTime.now(),
       );
-
-      await save(updatedItem);
-    } catch (e, stackTrace) {
-      developer.log(
-        'Error updating stock item',
-        name: 'InventoryOfflineRepository',
-        error: e,
-        stackTrace: stackTrace,
-      );
-      ErrorHandler.handleError(e);
-      rethrow;
+      await save(updated);
+    } catch (error, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
+      developer.log('Error updating stock item: ${item.id}',
+          name: 'InventoryOfflineRepository',
+          error: error,
+          stackTrace: stackTrace);
+      throw appException;
     }
   }
 
   @override
   Future<StockItem?> fetchStockItemById(String id) async {
     try {
-      // Try to find by remote ID first
-      final allItems = await fetchFromLocal();
-      final item = allItems.firstWhere(
-        (item) => item.id == id,
-        orElse: () => allItems.firstWhere(
-          (item) => item.id == id || getLocalId(item) == id,
-          orElse: () => throw Exception('StockItem not found'),
-        ),
-      );
-      return item;
-    } catch (e) {
-      // If not found, try by local ID
-      try {
-        return await getFromLocal(id);
-      } catch (_) {
-        return null;
-      }
+      return await getByLocalId(id);
+    } catch (error, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
+      developer.log('Error fetching stock item: $id',
+          name: 'InventoryOfflineRepository',
+          error: error,
+          stackTrace: stackTrace);
+      throw appException;
     }
   }
 }
-
