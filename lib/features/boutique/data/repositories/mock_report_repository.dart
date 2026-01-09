@@ -23,7 +23,6 @@ class MockReportRepository implements ReportRepository {
   final ProductRepository _productRepository;
   final BoutiqueReportCalculationService _reportCalculationService;
 
-
   @override
   Future<ReportData> getReportData(
     ReportPeriod period, {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../../../shared/utils/notification_service.dart';
+import '../../../../../shared/utils/date_formatter.dart';
 import '../../domain/entities/production_event.dart';
 
 /// Dialog pour enregistrer un événement (panne, coupure, arrêt forcé)
@@ -138,7 +139,7 @@ class _ProductionEventDialogState extends State<ProductionEventDialog> {
                     labelText: 'Date *',
                     prefixIcon: Icon(Icons.calendar_today),
                   ),
-                  child: Text(_formatDate(_selectedDate)),
+                  child: Text(DateFormatter.formatDate(_selectedDate)),
                 ),
               ),
               const SizedBox(height: 16),
@@ -209,11 +210,6 @@ class _ProductionEventDialogState extends State<ProductionEventDialog> {
     }
   }
 
-  String _formatDate(DateTime date) {
-    return '${date.day.toString().padLeft(2, '0')}/'
-        '${date.month.toString().padLeft(2, '0')}/'
-        '${date.year}';
-  }
 
   String _formatTime(TimeOfDay time) {
     return '${time.hour.toString().padLeft(2, '0')}:'

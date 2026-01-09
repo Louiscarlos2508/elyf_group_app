@@ -21,7 +21,6 @@ class _PrinterListenerImpl implements PrinterListener {
   }
 }
 
-
 /// Service pour l'intégration avec l'imprimante Sunmi V3 Mix.
 ///
 /// Détecte automatiquement si l'app tourne sur un appareil Sunmi

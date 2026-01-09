@@ -1,18 +1,18 @@
-import '../production_period_formatter.dart';
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
+import 'package:elyf_groupe_app/shared/utils/date_formatter.dart';
 
 /// Helpers pour le formatage des rapports de production.
+///
+/// Utilise les formatters partagés pour éviter la duplication.
 class ProductionReportHelpers {
   /// Formate un montant en devise.
   static String formatCurrency(int amount) {
-    return amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        ) + ' FCFA';
+    return CurrencyFormatter.formatFCFA(amount);
   }
 
   /// Formate une date.
   static String formatDate(DateTime date) {
-    return ProductionPeriodFormatter.formatDate(date);
+    return DateFormatter.formatDate(date);
   }
 
   /// Formate une heure.

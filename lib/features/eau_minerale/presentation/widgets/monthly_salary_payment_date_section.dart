@@ -64,7 +64,7 @@ class MonthlySalaryPaymentDateSection extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        _formatDate(paymentDate),
+                        DateFormatter.formatDate(paymentDate),
                         style: theme.textTheme.bodyLarge?.copyWith(
                           fontWeight: FontWeight.w500,
                         ),

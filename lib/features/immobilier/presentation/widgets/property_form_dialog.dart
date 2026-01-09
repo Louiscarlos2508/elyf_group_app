@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/immobilier/application/providers.dart';
 import '../../domain/entities/property.dart';
+import '../../domain/services/property_validation_service.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/shared/presentation/widgets/form_dialog.dart';
 import 'package:elyf_groupe_app/shared/utils/form_helper_mixin.dart';
@@ -121,12 +122,7 @@ class _PropertyFormDialogState extends ConsumerState<PropertyFormDialog>
                           prefixIcon: Icon(Icons.location_on),
                         ),
                         textCapitalization: TextCapitalization.words,
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'L\'adresse est requise';
-                          }
-                          return null;
-                        },
+                        validator: PropertyValidationService.validateAddress,
                       ),
                       const SizedBox(height: 16),
                       TextFormField(
@@ -137,12 +133,7 @@ class _PropertyFormDialogState extends ConsumerState<PropertyFormDialog>
                           prefixIcon: Icon(Icons.location_city),
                         ),
                         textCapitalization: TextCapitalization.words,
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'La ville est requise';
-                          }
-                          return null;
-                        },
+                        validator: PropertyValidationService.validateCity,
                       ),
                       const SizedBox(height: 16),
                       DropdownButtonFormField<PropertyType>(
@@ -178,14 +169,10 @@ class _PropertyFormDialogState extends ConsumerState<PropertyFormDialog>
                                 FilteringTextInputFormatter.digitsOnly,
                               ],
                               validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Requis';
-                                }
-                                final rooms = int.tryParse(value);
-                                if (rooms == null || rooms <= 0) {
-                                  return 'Nombre invalide';
-                                }
-                                return null;
+                                final rooms = value != null && value.isNotEmpty
+                                    ? int.tryParse(value)
+                                    : null;
+                                return PropertyValidationService.validateRooms(rooms);
                               },
                             ),
                           ),
@@ -202,14 +189,10 @@ class _PropertyFormDialogState extends ConsumerState<PropertyFormDialog>
                                 FilteringTextInputFormatter.digitsOnly,
                               ],
                               validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Requis';
-                                }
-                                final area = int.tryParse(value);
-                                if (area == null || area <= 0) {
-                                  return 'Surface invalide';
-                                }
-                                return null;
+                                final area = value != null && value.isNotEmpty
+                                    ? int.tryParse(value)
+                                    : null;
+                                return PropertyValidationService.validateArea(area);
                               },
                             ),
                           ),
@@ -227,14 +210,10 @@ class _PropertyFormDialogState extends ConsumerState<PropertyFormDialog>
                           FilteringTextInputFormatter.digitsOnly,
                         ],
                         validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Le loyer est requis';
-                          }
-                          final price = int.tryParse(value);
-                          if (price == null || price <= 0) {
-                            return 'Montant invalide';
-                          }
-                          return null;
+                          final price = value != null && value.isNotEmpty
+                              ? int.tryParse(value)
+                              : null;
+                          return PropertyValidationService.validatePrice(price);
                         },
                       ),
                       const SizedBox(height: 16),

@@ -1,5 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/offline/drift_service.dart';
+import '../../../../core/offline/providers.dart';
+import '../../../../core/tenant/tenant_provider.dart';
 import 'controllers/cylinder_controller.dart';
 import 'controllers/cylinder_leak_controller.dart';
 import 'controllers/cylinder_stock_controller.dart';
@@ -9,14 +12,14 @@ import 'controllers/gas_controller.dart';
 import 'controllers/gaz_settings_controller.dart';
 import 'controllers/point_of_sale_controller.dart';
 import 'controllers/tour_controller.dart';
-import '../data/repositories/mock_cylinder_leak_repository.dart';
-import '../data/repositories/mock_cylinder_stock_repository.dart';
-import '../data/repositories/mock_expense_repository.dart';
+import '../data/repositories/cylinder_leak_offline_repository.dart';
+import '../data/repositories/cylinder_stock_offline_repository.dart';
+import '../data/repositories/expense_offline_repository.dart';
 import '../data/repositories/mock_financial_report_repository.dart';
-import '../data/repositories/mock_gas_repository.dart';
-import '../data/repositories/mock_gaz_settings_repository.dart';
-import '../data/repositories/mock_point_of_sale_repository.dart';
-import '../data/repositories/mock_tour_repository.dart';
+import '../data/repositories/gas_offline_repository.dart';
+import '../data/repositories/gaz_settings_offline_repository.dart';
+import '../data/repositories/point_of_sale_offline_repository.dart';
+import '../data/repositories/tour_offline_repository.dart';
 import '../domain/entities/cylinder.dart';
 import '../domain/entities/cylinder_leak.dart';
 import '../domain/entities/cylinder_stock.dart';
@@ -37,6 +40,8 @@ import '../domain/repositories/point_of_sale_repository.dart';
 import '../domain/repositories/tour_repository.dart';
 import '../domain/services/data_consistency_service.dart';
 import '../domain/services/financial_calculation_service.dart';
+import '../domain/services/gas_calculation_service.dart';
+import '../domain/services/gas_validation_service.dart';
 import '../domain/services/gaz_calculation_service.dart' as gaz_calc;
 import '../domain/services/filtering/gaz_filter_service.dart';
 import '../domain/services/gaz_dashboard_calculation_service.dart';
@@ -63,40 +68,117 @@ final gazFilterServiceProvider = Provider<GazFilterService>(
   (ref) => GazFilterService(),
 );
 
+/// Provider for GasCalculationService.
+final gasCalculationServiceProvider = Provider<GasCalculationService>(
+  (ref) => GasCalculationService(),
+);
+
+/// Provider for GasValidationService.
+final gasValidationServiceProvider = Provider<GasValidationService>(
+  (ref) => GasValidationService(),
+);
+
 // Repositories
 final gasRepositoryProvider = Provider<GasRepository>((ref) {
-  return MockGasRepository();
+  final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+  final driftService = DriftService.instance;
+  final syncManager = ref.watch(syncManagerProvider);
+  final connectivityService = ref.watch(connectivityServiceProvider);
+  
+  return GasOfflineRepository(
+    driftService: driftService,
+    syncManager: syncManager,
+    connectivityService: connectivityService,
+    enterpriseId: enterpriseId,
+  );
 });
 
 final gazExpenseRepositoryProvider = Provider<GazExpenseRepository>((ref) {
-  return MockGazExpenseRepository();
+  final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+  final driftService = DriftService.instance;
+  final syncManager = ref.watch(syncManagerProvider);
+  final connectivityService = ref.watch(connectivityServiceProvider);
+  
+  return ExpenseOfflineRepository(
+    driftService: driftService,
+    syncManager: syncManager,
+    connectivityService: connectivityService,
+    enterpriseId: enterpriseId,
+  );
 });
 
 final cylinderStockRepositoryProvider =
     Provider<CylinderStockRepository>((ref) {
-  return MockCylinderStockRepository();
+  final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+  final driftService = DriftService.instance;
+  final syncManager = ref.watch(syncManagerProvider);
+  final connectivityService = ref.watch(connectivityServiceProvider);
+  
+  return CylinderStockOfflineRepository(
+    driftService: driftService,
+    syncManager: syncManager,
+    connectivityService: connectivityService,
+    enterpriseId: enterpriseId,
+  );
 });
 
 final cylinderLeakRepositoryProvider =
     Provider<CylinderLeakRepository>((ref) {
-  return MockCylinderLeakRepository();
+  final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+  final driftService = DriftService.instance;
+  final syncManager = ref.watch(syncManagerProvider);
+  final connectivityService = ref.watch(connectivityServiceProvider);
+  
+  return CylinderLeakOfflineRepository(
+    driftService: driftService,
+    syncManager: syncManager,
+    connectivityService: connectivityService,
+    enterpriseId: enterpriseId,
+  );
 });
 
 final tourRepositoryProvider = Provider<TourRepository>((ref) {
-  return MockTourRepository();
+  final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+  final driftService = DriftService.instance;
+  final syncManager = ref.watch(syncManagerProvider);
+  final connectivityService = ref.watch(connectivityServiceProvider);
+  
+  return TourOfflineRepository(
+    driftService: driftService,
+    syncManager: syncManager,
+    connectivityService: connectivityService,
+    enterpriseId: enterpriseId,
+  );
 });
 
 final gazSettingsRepositoryProvider =
     Provider<GazSettingsRepository>((ref) {
-  return MockGazSettingsRepository();
+  final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+  final driftService = DriftService.instance;
+  final syncManager = ref.watch(syncManagerProvider);
+  final connectivityService = ref.watch(connectivityServiceProvider);
+  
+  return GazSettingsOfflineRepository(
+    driftService: driftService,
+    syncManager: syncManager,
+    connectivityService: connectivityService,
+    enterpriseId: enterpriseId,
+  );
 });
-
-// Instance singleton du repository pour conserver les données
-final _mockPointOfSaleRepositoryInstance = MockPointOfSaleRepository();
 
 final pointOfSaleRepositoryProvider =
     Provider<PointOfSaleRepository>((ref) {
-  return _mockPointOfSaleRepositoryInstance;
+  final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+  final driftService = DriftService.instance;
+  final syncManager = ref.watch(syncManagerProvider);
+  final connectivityService = ref.watch(connectivityServiceProvider);
+  
+  return PointOfSaleOfflineRepository(
+    driftService: driftService,
+    syncManager: syncManager,
+    connectivityService: connectivityService,
+    enterpriseId: enterpriseId,
+  );
 });
 
 final financialReportRepositoryProvider =

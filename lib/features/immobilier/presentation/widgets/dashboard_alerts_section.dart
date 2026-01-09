@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
+
 import '../../domain/entities/contract.dart';
 import '../../domain/entities/payment.dart';
 
@@ -17,18 +19,13 @@ class DashboardAlertsSection extends StatelessWidget {
   final List<Contract> expiringContracts;
   final void Function(Payment)? onPaymentTap;
   final void Function(Contract)? onContractTap;
-
-  String _formatCurrency(int amount) {
-    final amountStr = amount.toString();
-    final buffer = StringBuffer();
-    for (var i = 0; i < amountStr.length; i++) {
-      if (i > 0 && (amountStr.length - i) % 3 == 0) {
-        buffer.write(' ');
-      }
+<<<<<<< Current (Your changes)
       buffer.write(amountStr[i]);
     }
     return '$buffer F';
   }
+=======
+>>>>>>> Incoming (Background Agent changes)
 
   @override
   Widget build(BuildContext context) {
@@ -75,7 +72,7 @@ class DashboardAlertsSection extends StatelessWidget {
             items: unpaidPayments.take(3).map((p) {
               return _AlertItem(
                 title: 'Loyer ${_formatMonthYear(p.paymentDate)}',
-                subtitle: _formatCurrency(p.amount),
+                subtitle: CurrencyFormatter.formatFCFA(p.amount),
                 onTap: () => onPaymentTap?.call(p),
               );
             }).toList(),

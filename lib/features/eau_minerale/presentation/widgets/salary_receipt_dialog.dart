@@ -2,6 +2,8 @@ import 'dart:typed_data';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:path_provider/path_provider.dart';
@@ -21,13 +23,6 @@ class SalaryReceiptDialog extends StatelessWidget {
 
   final Employee employee;
   final SalaryPayment payment;
-
-  String _formatCurrency(int amount) {
-    return amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        ) + ' FCFA';
-  }
 
   String _formatDate(DateTime date) {
     return '${date.day.toString().padLeft(2, '0')}/'
@@ -112,7 +107,7 @@ class SalaryReceiptDialog extends StatelessWidget {
                     ),
                   ),
                   pw.Text(
-                    _formatCurrency(payment.amount),
+                    CurrencyFormatter.formatFCFA(payment.amount),
                     style: pw.TextStyle(
                       fontSize: 18,
                       fontWeight: pw.FontWeight.bold,
@@ -250,7 +245,7 @@ class SalaryReceiptDialog extends StatelessWidget {
             ),
             _ReceiptRow(
               label: 'Montant',
-              value: _formatCurrency(payment.amount),
+              value: CurrencyFormatter.formatFCFA(payment.amount),
               isAmount: true,
             ),
             if (payment.notes != null && payment.notes!.isNotEmpty) ...[

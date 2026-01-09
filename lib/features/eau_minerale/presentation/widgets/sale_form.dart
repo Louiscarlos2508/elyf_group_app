@@ -206,11 +206,6 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
     );
   }
 
-  String _formatCurrency(int amount) {
-    // Utilise CurrencyFormatter partagé avec format CFA
-    return CurrencyFormatter.formatCFA(amount);
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -329,7 +324,7 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
                       ),
                     ),
                     Text(
-                      _formatCurrency(_totalPrice!),
+                      CurrencyFormatter.formatFCFA(_totalPrice!),
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: colors.primary,
@@ -382,7 +377,7 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
                 prefixIcon: const Icon(Icons.attach_money),
                 helperText: _totalPrice != null && _amountPaid != null
                     ? (_totalPrice! - _amountPaid! > 0
-                        ? 'Crédit: ${_formatCurrency(_totalPrice! - _amountPaid!)}'
+                        ? 'Crédit: ${CurrencyFormatter.formatFCFA(_totalPrice! - _amountPaid!)}'
                         : 'Paiement complet')
                     : null,
               ),

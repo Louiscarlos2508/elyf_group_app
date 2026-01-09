@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
+
 import '../../domain/entities/product.dart';
 
 class ProductTile extends StatelessWidget {
@@ -17,13 +19,6 @@ class ProductTile extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback? onRestock;
   final bool showRestockButton;
-
-  String _formatCurrency(int amount) {
-    return amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        ) + ' FCFA';
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -60,7 +55,7 @@ class ProductTile extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    _formatCurrency(product.price),
+                    CurrencyFormatter.formatFCFA(product.price),
                     style: theme.textTheme.bodyMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                       color: theme.colorScheme.primary,

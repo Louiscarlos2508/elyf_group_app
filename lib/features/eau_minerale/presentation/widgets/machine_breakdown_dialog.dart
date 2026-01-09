@@ -8,6 +8,7 @@ import '../../domain/entities/production_event.dart';
 import '../../domain/entities/production_session.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../../../shared/utils/notification_service.dart';
+import '../../../../../shared/utils/date_formatter.dart';
 /// Dialog pour signaler une panne de machine et retirer la bobine.
 class MachineBreakdownDialog extends ConsumerStatefulWidget {
   const MachineBreakdownDialog({
@@ -191,7 +192,7 @@ class _MachineBreakdownDialogState
                     labelText: 'Date *',
                     prefixIcon: Icon(Icons.calendar_today),
                   ),
-                  child: Text(_formatDate(_selectedDate)),
+                  child: Text(DateFormatter.formatDate(_selectedDate)),
                 ),
               ),
               const SizedBox(height: 16),
@@ -276,11 +277,6 @@ class _MachineBreakdownDialogState
     }
   }
 
-  String _formatDate(DateTime date) {
-    return '${date.day.toString().padLeft(2, '0')}/'
-        '${date.month.toString().padLeft(2, '0')}/'
-        '${date.year}';
-  }
 
   String _formatTime(TimeOfDay time) {
     return '${time.hour.toString().padLeft(2, '0')}:'

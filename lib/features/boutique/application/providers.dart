@@ -4,9 +4,9 @@ import '../../../core/offline/drift_service.dart';
 import '../../../core/offline/providers.dart';
 import '../../../../core/tenant/tenant_provider.dart';
 import '../data/repositories/expense_offline_repository.dart';
-import '../data/repositories/mock_purchase_repository.dart';
+import '../data/repositories/purchase_offline_repository.dart';
 import '../data/repositories/mock_report_repository.dart';
-import '../data/repositories/mock_stock_repository.dart';
+import '../data/repositories/stock_offline_repository.dart';
 import '../data/repositories/product_offline_repository.dart';
 import '../data/repositories/sale_offline_repository.dart';
 import '../domain/adapters/expense_balance_adapter.dart';
@@ -19,8 +19,10 @@ import '../domain/repositories/report_repository.dart';
 import '../domain/repositories/sale_repository.dart';
 import '../domain/repositories/stock_repository.dart';
 import '../domain/services/calculation/cart_calculation_service.dart';
+import '../domain/services/cart_service.dart';
 import '../domain/services/dashboard_calculation_service.dart';
 import '../domain/services/product_calculation_service.dart';
+import '../domain/services/product_filter_service.dart';
 import '../domain/services/report_calculation_service.dart';
 import '../domain/services/validation/product_validation_service.dart';
 import 'controllers/store_controller.dart';
@@ -50,6 +52,16 @@ final cartCalculationServiceProvider = Provider<CartCalculationService>(
 /// Provider for ProductValidationService.
 final productValidationServiceProvider = Provider<ProductValidationService>(
   (ref) => ProductValidationService(),
+);
+
+/// Provider for CartService.
+final cartServiceProvider = Provider<CartService>(
+  (ref) => CartService(),
+);
+
+/// Provider for ProductFilterService.
+final productFilterServiceProvider = Provider<ProductFilterService>(
+  (ref) => ProductFilterService(),
 );
 
 /// Provider for ProductOfflineRepository.
@@ -93,11 +105,23 @@ final saleRepositoryProvider = Provider<SaleRepository>(
 );
 
 final stockRepositoryProvider = Provider<StockRepository>(
-  (ref) => MockStockRepository(ref.watch(productRepositoryProvider)),
+  (ref) => StockOfflineRepository(ref.watch(productRepositoryProvider)),
 );
 
 final purchaseRepositoryProvider = Provider<PurchaseRepository>(
-  (ref) => MockPurchaseRepository(),
+  (ref) {
+    final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+    final driftService = DriftService.instance;
+    final syncManager = ref.watch(syncManagerProvider);
+    final connectivityService = ref.watch(connectivityServiceProvider);
+    
+    return PurchaseOfflineRepository(
+      driftService: driftService,
+      syncManager: syncManager,
+      connectivityService: connectivityService,
+      enterpriseId: enterpriseId,
+    );
+  },
 );
 
 /// Provider for ExpenseOfflineRepository.

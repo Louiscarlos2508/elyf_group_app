@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
@@ -13,13 +15,6 @@ class ReportKpiCards extends ConsumerWidget {
   });
 
   final ReportPeriod period;
-
-  String _formatCurrency(int amount) {
-    return amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        );
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -37,7 +32,7 @@ class ReportKpiCards extends ConsumerWidget {
                       Expanded(
                         child: DashboardKpiCard(
                           label: 'Chiffre d\'Affaires',
-                          value: _formatCurrency(data.revenue),
+                          value: CurrencyFormatter.formatFCFA(data.revenue),
                           subtitle: '${data.salesCount} ventes',
                           icon: Icons.trending_up,
                           iconColor: Colors.blue,
@@ -48,7 +43,7 @@ class ReportKpiCards extends ConsumerWidget {
                       Expanded(
                         child: DashboardKpiCard(
                           label: 'Encaissements',
-                          value: _formatCurrency(data.collections),
+                          value: CurrencyFormatter.formatFCFA(data.collections),
                           subtitle: '${data.collectionRate.toStringAsFixed(0)}% du CA',
                           icon: Icons.attach_money,
                           iconColor: Colors.green,
@@ -60,7 +55,7 @@ class ReportKpiCards extends ConsumerWidget {
                       Expanded(
                         child: DashboardKpiCard(
                           label: 'Charges Totales',
-                          value: _formatCurrency(data.totalExpenses),
+                          value: CurrencyFormatter.formatFCFA(data.totalExpenses),
                           subtitle: 'Dépenses + Salaires',
                           icon: Icons.receipt_long,
                           iconColor: Colors.red,
@@ -72,7 +67,7 @@ class ReportKpiCards extends ConsumerWidget {
                       Expanded(
                         child: DashboardKpiCard(
                           label: 'Trésorerie',
-                          value: _formatCurrency(data.treasury),
+                          value: CurrencyFormatter.formatFCFA(data.treasury),
                           subtitle: 'Entrées - Sorties',
                           icon: Icons.trending_up,
                           iconColor: data.treasury >= 0 ? Colors.green : Colors.red,
@@ -86,7 +81,7 @@ class ReportKpiCards extends ConsumerWidget {
                     children: [
                       DashboardKpiCard(
                         label: 'Chiffre d\'Affaires',
-                        value: _formatCurrency(data.revenue),
+                        value: CurrencyFormatter.formatFCFA(data.revenue),
                         subtitle: '${data.salesCount} ventes',
                         icon: Icons.trending_up,
                         iconColor: Colors.blue,
@@ -95,7 +90,7 @@ class ReportKpiCards extends ConsumerWidget {
                       const SizedBox(height: 16),
                       DashboardKpiCard(
                         label: 'Encaissements',
-                        value: _formatCurrency(data.collections),
+                        value: CurrencyFormatter.formatFCFA(data.collections),
                         subtitle: '${data.collectionRate.toStringAsFixed(0)}% du CA',
                         icon: Icons.attach_money,
                         iconColor: Colors.green,
@@ -105,7 +100,7 @@ class ReportKpiCards extends ConsumerWidget {
                       const SizedBox(height: 16),
                       DashboardKpiCard(
                         label: 'Charges Totales',
-                        value: _formatCurrency(data.totalExpenses),
+                        value: CurrencyFormatter.formatFCFA(data.totalExpenses),
                         subtitle: 'Dépenses + Salaires',
                         icon: Icons.receipt_long,
                         iconColor: Colors.red,
@@ -115,7 +110,7 @@ class ReportKpiCards extends ConsumerWidget {
                       const SizedBox(height: 16),
                       DashboardKpiCard(
                         label: 'Trésorerie',
-                        value: _formatCurrency(data.treasury),
+                        value: CurrencyFormatter.formatFCFA(data.treasury),
                         subtitle: 'Entrées - Sorties',
                         icon: Icons.trending_up,
                         iconColor: data.treasury >= 0 ? Colors.green : Colors.red,

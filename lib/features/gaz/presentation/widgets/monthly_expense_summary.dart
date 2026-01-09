@@ -30,7 +30,6 @@ class GazMonthlyExpenseSummary extends ConsumerWidget {
     return '${months[date.month - 1]} ${date.year}';
   }
 
-
   Color _getCategoryColor(ExpenseCategory category) {
     switch (category) {
       case ExpenseCategory.transport:

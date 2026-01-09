@@ -8,6 +8,9 @@ import '../../domain/entities/machine.dart';
 import '../../domain/entities/production_day.dart';
 import '../../domain/entities/production_session.dart';
 import '../../domain/entities/production_session_status.dart';
+import '../../domain/services/production_session_builder.dart';
+import '../../domain/services/production_session_status_calculator.dart';
+import '../../domain/services/production_session_validation_service.dart';
 import 'bobine_installation_form.dart';
 import 'bobine_usage_form_field.dart' show bobineStocksDisponiblesProvider;
 import 'daily_personnel_form.dart';
@@ -114,25 +117,24 @@ class ProductionSessionFormStepsState
   Future<void> submit() async {
     if (!_formKey.currentState!.validate()) return;
     
-    // Validation : au moins une machine
-    if (_machinesSelectionnees.isEmpty) {
-      NotificationService.showWarning(context, 'Sélectionnez au moins une machine');
-      return;
-    }
-    
-    // Validation : nombre de bobines = nombre de machines
-    if (_bobinesUtilisees.length != _machinesSelectionnees.length) {
-      NotificationService.showWarning(
-        context,
-        'Le nombre de bobines (${_bobinesUtilisees.length}) doit être égal au nombre de machines (${_machinesSelectionnees.length})',
-      );
+    // Validation : machines et bobines
+    final machinesBobinesError = ProductionSessionValidationService.validateMachinesAndBobines(
+      machines: _machinesSelectionnees,
+      bobines: _bobinesUtilisees,
+    );
+    if (machinesBobinesError != null) {
+      NotificationService.showWarning(context, machinesBobinesError);
       return;
     }
     
     // Validation : index compteur initial requis
-    if (_indexCompteurInitialController.text.isEmpty) {
-      final meterType = await ref.read(electricityMeterTypeProvider.future);
-      NotificationService.showWarning(context, 'L\'${meterType.initialLabel.toLowerCase()} est requis');
+    final meterType = await ref.read(electricityMeterTypeProvider.future);
+    final meterIndexError = ProductionSessionValidationService.validateMeterIndex(
+      indexText: _indexCompteurInitialController.text,
+      meterLabel: meterType.initialLabel,
+    );
+    if (meterIndexError != null) {
+      NotificationService.showWarning(context, meterIndexError);
       return;
     }
 
@@ -141,8 +143,7 @@ class ProductionSessionFormStepsState
       final config = await ref.read(productionPeriodConfigProvider.future);
       
       // Calculer le statut basé sur les données disponibles
-      final status = ProductionSessionFormActions.calculateStatus(
-        ref: ref,
+      final status = ProductionSessionStatusCalculator.calculateStatus(
         quantiteProduite: int.tryParse(_quantiteController.text) ?? 0,
         heureFin: null,
         heureDebut: _heureDebut,
@@ -166,7 +167,7 @@ class ProductionSessionFormStepsState
         }
       }
       
-      final session = ProductionSessionFormActions.buildSession(
+      final session = ProductionSessionBuilder.buildFromForm(
         sessionId: sessionId,
         selectedDate: _selectedDate,
         heureDebut: _heureDebut,
@@ -305,7 +306,6 @@ class ProductionSessionFormStepsState
     );
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Form(
@@ -406,10 +406,6 @@ class ProductionSessionFormStepsState
         return const SizedBox.shrink();
     }
   }
-
-
-
-
 
 }
 

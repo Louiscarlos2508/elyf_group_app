@@ -13,7 +13,6 @@ class MonthlySalaryPaymentHeader extends StatelessWidget {
 
   final Employee employee;
 
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);

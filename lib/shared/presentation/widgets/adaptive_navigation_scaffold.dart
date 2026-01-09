@@ -106,7 +106,6 @@ class _AdaptiveNavigationScaffoldState
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     if (widget.isLoading && widget.loadingWidget != null) {

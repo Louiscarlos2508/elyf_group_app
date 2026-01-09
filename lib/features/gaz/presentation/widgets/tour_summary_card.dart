@@ -14,7 +14,6 @@ class TourSummaryCard extends StatelessWidget {
 
   final Tour tour;
 
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);

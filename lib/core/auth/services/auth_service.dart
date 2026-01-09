@@ -475,7 +475,6 @@ class AuthService {
     }
   }
 
-
   /// Se déconnecter
   Future<void> signOut() async {
     // Déconnecter de Firebase Auth

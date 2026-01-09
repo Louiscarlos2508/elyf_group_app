@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
+
 import '../../domain/entities/payment.dart';
 import 'dashboard_kpi_card_v2.dart';
 
@@ -11,18 +13,13 @@ class DashboardTodaySectionV2 extends StatelessWidget {
   });
 
   final List<Payment> todayPayments;
-
-  String _formatCurrency(int amount) {
-    final amountStr = amount.toString();
-    final buffer = StringBuffer();
-    for (var i = 0; i < amountStr.length; i++) {
-      if (i > 0 && (amountStr.length - i) % 3 == 0) {
-        buffer.write(' ');
-      }
+<<<<<<< Current (Your changes)
       buffer.write(amountStr[i]);
     }
     return '$buffer FCFA';
   }
+=======
+>>>>>>> Incoming (Background Agent changes)
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +34,7 @@ class DashboardTodaySectionV2 extends StatelessWidget {
         final cards = [
           DashboardKpiCardV2(
             label: 'Paiements reçus',
-            value: _formatCurrency(todayRevenue),
+            value: CurrencyFormatter.formatFCFA(todayRevenue),
             subtitle: '$todayCount paiement(s)',
             icon: Icons.payments,
             iconColor: Colors.blue,

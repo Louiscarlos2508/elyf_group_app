@@ -13,7 +13,6 @@ class GazDashboardHeader extends StatelessWidget {
   final DateTime date;
   final String role;
 
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);

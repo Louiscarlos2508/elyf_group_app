@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
+
 import 'dashboard_kpi_card.dart';
 
 /// Section displaying monthly KPIs for boutique.
@@ -18,20 +20,13 @@ class DashboardMonthSection extends StatelessWidget {
   final int monthPurchasesAmount;
   final int monthExpensesAmount;
   final int monthProfit;
-
-  String _formatCurrency(int amount) {
-    final isNegative = amount < 0;
-    final absAmount = amount.abs();
-    final amountStr = absAmount.toString();
-    final buffer = StringBuffer();
-    for (var i = 0; i < amountStr.length; i++) {
-      if (i > 0 && (amountStr.length - i) % 3 == 0) {
-        buffer.write(' ');
-      }
+<<<<<<< Current (Your changes)
       buffer.write(amountStr[i]);
     }
     return '${isNegative ? '-' : ''}$buffer FCFA';
   }
+=======
+>>>>>>> Incoming (Background Agent changes)
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +37,7 @@ class DashboardMonthSection extends StatelessWidget {
         final cards = [
           DashboardKpiCard(
             label: "Chiffre d'Affaires",
-            value: _formatCurrency(monthRevenue),
+            value: CurrencyFormatter.formatFCFA(monthRevenue),
             subtitle: '$monthSalesCount ventes',
             icon: Icons.trending_up,
             iconColor: Colors.blue,
@@ -50,7 +45,7 @@ class DashboardMonthSection extends StatelessWidget {
           ),
           DashboardKpiCard(
             label: 'Achats',
-            value: _formatCurrency(monthPurchasesAmount),
+            value: CurrencyFormatter.formatFCFA(monthPurchasesAmount),
             subtitle: 'Approvisionnements',
             icon: Icons.shopping_bag,
             iconColor: Colors.orange,
@@ -58,7 +53,7 @@ class DashboardMonthSection extends StatelessWidget {
           ),
           DashboardKpiCard(
             label: 'Dépenses',
-            value: _formatCurrency(monthExpensesAmount),
+            value: CurrencyFormatter.formatFCFA(monthExpensesAmount),
             subtitle: 'Charges',
             icon: Icons.receipt_long,
             iconColor: Colors.red,
@@ -66,7 +61,7 @@ class DashboardMonthSection extends StatelessWidget {
           ),
           DashboardKpiCard(
             label: 'Bénéfice Net',
-            value: _formatCurrency(monthProfit),
+            value: CurrencyFormatter.formatFCFA(monthProfit),
             subtitle: monthProfit >= 0 ? 'Profit' : 'Déficit',
             icon: Icons.account_balance_wallet,
             iconColor: monthProfit >= 0 ? Colors.green : Colors.red,

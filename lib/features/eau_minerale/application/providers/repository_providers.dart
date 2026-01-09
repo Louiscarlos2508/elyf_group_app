@@ -5,15 +5,15 @@ import '../../../../core/offline/providers.dart';
 import '../../../../core/tenant/tenant_provider.dart';
 import '../../data/repositories/customer_offline_repository.dart';
 import '../../data/repositories/mock_activity_repository.dart';
-import '../../data/repositories/mock_bobine_stock_quantity_repository.dart';
+import '../../data/repositories/bobine_stock_quantity_offline_repository.dart';
 import '../../data/repositories/mock_credit_repository.dart';
-import '../../data/repositories/mock_daily_worker_repository.dart';
-import '../../data/repositories/mock_finance_repository.dart';
-import '../../data/repositories/mock_inventory_repository.dart';
-import '../../data/repositories/mock_packaging_stock_repository.dart';
+import '../../data/repositories/daily_worker_offline_repository.dart';
+import '../../data/repositories/finance_offline_repository.dart';
+import '../../data/repositories/inventory_offline_repository.dart';
+import '../../data/repositories/packaging_stock_offline_repository.dart';
 import '../../data/repositories/mock_report_repository.dart';
-import '../../data/repositories/mock_salary_repository.dart';
-import '../../data/repositories/mock_stock_repository.dart';
+import '../../data/repositories/salary_offline_repository.dart';
+import '../../data/repositories/stock_offline_repository.dart';
 import '../../data/repositories/machine_offline_repository.dart';
 import '../../data/repositories/product_offline_repository.dart';
 import '../../data/repositories/production_session_offline_repository.dart';
@@ -52,10 +52,21 @@ final saleRepositoryProvider = Provider<SaleRepository>(
 );
 
 final stockRepositoryProvider = Provider<StockRepository>(
-  (ref) => MockStockRepository(
-    ref.watch(inventoryRepositoryProvider),
-    ref.watch(productRepositoryProvider),
-  ),
+  (ref) {
+    final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+    final driftService = DriftService.instance;
+    final syncManager = ref.watch(syncManagerProvider);
+    final connectivityService = ref.watch(connectivityServiceProvider);
+    
+    return StockOfflineRepository(
+      driftService: driftService,
+      syncManager: syncManager,
+      connectivityService: connectivityService,
+      enterpriseId: enterpriseId,
+      inventoryRepository: ref.watch(inventoryRepositoryProvider),
+      productRepository: ref.watch(productRepositoryProvider),
+    );
+  },
 );
 
 final creditRepositoryProvider = Provider<CreditRepository>(
@@ -63,7 +74,19 @@ final creditRepositoryProvider = Provider<CreditRepository>(
 );
 
 final inventoryRepositoryProvider = Provider<InventoryRepository>(
-  (ref) => MockInventoryRepository(),
+  (ref) {
+    final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+    final driftService = DriftService.instance;
+    final syncManager = ref.watch(syncManagerProvider);
+    final connectivityService = ref.watch(connectivityServiceProvider);
+    
+    return InventoryOfflineRepository(
+      driftService: driftService,
+      syncManager: syncManager,
+      connectivityService: connectivityService,
+      enterpriseId: enterpriseId,
+    );
+  },
 );
 
 final customerRepositoryProvider = Provider<CustomerRepository>(
@@ -85,7 +108,19 @@ final customerRepositoryProvider = Provider<CustomerRepository>(
 );
 
 final financeRepositoryProvider = Provider<FinanceRepository>(
-  (ref) => MockFinanceRepository(),
+  (ref) {
+    final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+    final driftService = DriftService.instance;
+    final syncManager = ref.watch(syncManagerProvider);
+    final connectivityService = ref.watch(connectivityServiceProvider);
+    
+    return FinanceOfflineRepository(
+      driftService: driftService,
+      syncManager: syncManager,
+      connectivityService: connectivityService,
+      enterpriseId: enterpriseId,
+    );
+  },
 );
 
 final productRepositoryProvider = Provider<ProductRepository>(
@@ -142,19 +177,67 @@ final machineRepositoryProvider = Provider<MachineRepository>(
 );
 
 final bobineStockQuantityRepositoryProvider = Provider<BobineStockQuantityRepository>(
-  (ref) => MockBobineStockQuantityRepository(),
+  (ref) {
+    final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+    final driftService = DriftService.instance;
+    final syncManager = ref.watch(syncManagerProvider);
+    final connectivityService = ref.watch(connectivityServiceProvider);
+    
+    return BobineStockQuantityOfflineRepository(
+      driftService: driftService,
+      syncManager: syncManager,
+      connectivityService: connectivityService,
+      enterpriseId: enterpriseId,
+    );
+  },
 );
 
 final packagingStockRepositoryProvider = Provider<PackagingStockRepository>(
-  (ref) => MockPackagingStockRepository(),
+  (ref) {
+    final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+    final driftService = DriftService.instance;
+    final syncManager = ref.watch(syncManagerProvider);
+    final connectivityService = ref.watch(connectivityServiceProvider);
+    
+    return PackagingStockOfflineRepository(
+      driftService: driftService,
+      syncManager: syncManager,
+      connectivityService: connectivityService,
+      enterpriseId: enterpriseId,
+    );
+  },
 );
 
 final dailyWorkerRepositoryProvider = Provider<DailyWorkerRepository>(
-  (ref) => MockDailyWorkerRepository(),
+  (ref) {
+    final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+    final driftService = DriftService.instance;
+    final syncManager = ref.watch(syncManagerProvider);
+    final connectivityService = ref.watch(connectivityServiceProvider);
+    
+    return DailyWorkerOfflineRepository(
+      driftService: driftService,
+      syncManager: syncManager,
+      connectivityService: connectivityService,
+      enterpriseId: enterpriseId,
+    );
+  },
 );
 
 final salaryRepositoryProvider = Provider<SalaryRepository>(
-  (ref) => MockSalaryRepository(),
+  (ref) {
+    final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+    final driftService = DriftService.instance;
+    final syncManager = ref.watch(syncManagerProvider);
+    final connectivityService = ref.watch(connectivityServiceProvider);
+    
+    return SalaryOfflineRepository(
+      driftService: driftService,
+      syncManager: syncManager,
+      connectivityService: connectivityService,
+      enterpriseId: enterpriseId,
+    );
+  },
 );
 
 final reportRepositoryProvider = Provider<ReportRepository>(

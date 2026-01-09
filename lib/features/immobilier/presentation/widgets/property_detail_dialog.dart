@@ -17,7 +17,6 @@ class PropertyDetailDialog extends StatelessWidget {
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
 
-
   Color _getStatusColor(PropertyStatus status) {
     switch (status) {
       case PropertyStatus.available:

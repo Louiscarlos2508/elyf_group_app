@@ -17,10 +17,10 @@ import 'package:elyf_groupe_app/shared/presentation/widgets/refresh_button.dart'
 class ExpensesScreen extends ConsumerWidget {
   const ExpensesScreen({super.key});
 
-  String _formatCurrency(int amount) {
-    return CurrencyFormatter.formatFCFA(amount);
-  }
+<<<<<<< Current (Your changes)
 
+=======
+>>>>>>> Incoming (Background Agent changes)
   List<Expense> _getTodayExpenses(List<Expense> expenses) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -175,7 +175,7 @@ class ExpensesScreen extends ConsumerWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 24),
                       child: DailyExpenseSummaryCard(
                         total: todayTotal,
-                        formatCurrency: _formatCurrency,
+                        formatCurrency: CurrencyFormatter.formatFCFA,
                       ),
                     ),
                   ),
@@ -206,7 +206,7 @@ class ExpensesScreen extends ConsumerWidget {
                             padding: const EdgeInsets.all(20),
                             child: ExpensesTable(
                               expenses: todayExpenses,
-                              formatCurrency: _formatCurrency,
+                              formatCurrency: CurrencyFormatter.formatFCFA,
                               onActionTap: (expense, action) {
                                 if (action == 'delete') {
                                   _confirmDelete(context, ref, expense);
@@ -288,7 +288,7 @@ class ExpensesScreen extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildDetailRow(theme, 'Montant', _formatCurrency(expense.amountCfa)),
+            _buildDetailRow(theme, 'Montant', CurrencyFormatter.formatFCFA(expense.amountCfa)),
             _buildDetailRow(theme, 'Catégorie', _getCategoryLabel(expense.category)),
             _buildDetailRow(
               theme,

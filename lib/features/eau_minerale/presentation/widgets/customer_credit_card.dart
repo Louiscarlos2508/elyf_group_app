@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
@@ -23,12 +25,7 @@ class CustomerCreditCard extends ConsumerWidget {
   final List<CustomerCredit> credits;
   final VoidCallback? onHistoryTap;
   final VoidCallback? onPaymentTap;
-
-  String _formatCurrency(int amount) {
-    final amountStr = amount.toString();
-    if (amountStr.length <= 3) {
-      return amountStr;
-    }
+<<<<<<< Current (Your changes)
     
     final buffer = StringBuffer();
     final reversed = amountStr.split('').reversed.join();
@@ -42,6 +39,8 @@ class CustomerCreditCard extends ConsumerWidget {
     
     return buffer.toString().split('').reversed.join();
   }
+=======
+>>>>>>> Incoming (Background Agent changes)
 
   String _formatDate(DateTime date) {
     return '${date.day}/${date.month}/${date.year}';
@@ -100,7 +99,7 @@ class CustomerCreditCard extends ConsumerWidget {
             child: CustomerCreditHeader(
               customer: customer,
               totalCredit: totalCredit,
-              formatCurrency: _formatCurrency,
+              formatCurrency: CurrencyFormatter.formatFCFA,
             ),
           ),
           // Credits list
@@ -133,7 +132,7 @@ class CustomerCreditCard extends ConsumerWidget {
                       padding: const EdgeInsets.only(bottom: 12),
                       child: CustomerCreditItem(
                         credit: credit,
-                        formatCurrency: _formatCurrency,
+                        formatCurrency: CurrencyFormatter.formatFCFA,
                         formatDate: _formatDate,
                       ),
                     );
@@ -175,5 +174,4 @@ class CustomerCreditCard extends ConsumerWidget {
     );
   }
 }
-
 

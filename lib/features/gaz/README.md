@@ -1,61 +1,111 @@
-# Feature › Gaz
+# Module Gaz
 
-Module de gestion de vente de gaz (détail et gros).
+## 📋 Vue d'ensemble
 
-## Structure
+Ce module implémente un système complet de gestion de distribution de bouteilles de gaz avec :
+- Gestion des bouteilles (cylinders)
+- Gestion des ventes (détail et gros)
+- Gestion des stocks
+- Gestion des tours d'approvisionnement
+- Gestion des points de vente
+- Gestion des fuites de bouteilles
+- Gestion des dépenses
+- Rapports financiers
+
+## 🏗️ Architecture
+
+Le module suit une **architecture Clean Architecture** avec :
+- **Offline-first** : Toutes les données sont stockées localement (Drift/SQLite) en premier
+- **Synchronisation** : Sync automatique avec Firestore quand en ligne
+- **Multi-tenant** : Isolation des données par entreprise
+- **Controllers** : Logique métier dans les controllers, jamais dans l'UI
+
+Voir [ARCHITECTURE.md](ARCHITECTURE.md) pour plus de détails.
+
+## 📚 Documentation
+
+- [ARCHITECTURE.md](ARCHITECTURE.md) - Architecture détaillée du module
+- [IMPLEMENTATION.md](IMPLEMENTATION.md) - Guide d'implémentation et patterns
+
+## 🎮 Controllers Disponibles
+
+- `GasController` - Gestion des bouteilles et ventes
+- `CylinderController` - Gestion des bouteilles
+- `CylinderStockController` - Gestion des stocks de bouteilles
+- `CylinderLeakController` - Gestion des fuites
+- `TourController` - Gestion des tours
+- `PointOfSaleController` - Gestion des points de vente
+- `ExpenseController` - Gestion des dépenses
+- `FinancialReportController` - Rapports financiers
+- `GazSettingsController` - Paramètres du module
+
+## 🔄 Offline-First & Synchronisation
+
+### Repositories Offline ✅
+
+- `GasOfflineRepository` - Bouteilles et ventes
+- `ExpenseOfflineRepository` - Dépenses
+- `CylinderStockOfflineRepository` - Stocks de bouteilles
+- `TourOfflineRepository` - Tours d'approvisionnement
+- `CylinderLeakOfflineRepository` - Fuites de bouteilles
+- `PointOfSaleOfflineRepository` - Points de vente
+- `GazSettingsOfflineRepository` - Paramètres du module
+
+### Repositories encore Mock ⚠️
+
+- `FinancialReportRepository` → MockFinancialReportRepository (repository de calcul, pas de stockage direct)
+
+### Synchronisation
+
+Toutes les opérations CRUD sont automatiquement synchronisées avec Firestore via `SyncManager`.
+
+## 📁 Structure
 
 ```
 lib/features/gaz/
-├── application/
-│   ├── providers.dart          # Providers Riverpod
-│   └── controllers/
-│       ├── gas_controller.dart
-│       └── expense_controller.dart
-├── data/
-│   └── repositories/
-│       ├── mock_gas_repository.dart
-│       └── mock_expense_repository.dart
 ├── domain/
-│   ├── entities/
-│   │   ├── cylinder.dart       # Types de bouteilles
-│   │   ├── delivery.dart       # Livraisons/approvisionnements
-│   │   ├── gas_sale.dart       # Ventes
-│   │   └── expense.dart        # Dépenses
-│   └── repositories/
-│       ├── gas_repository.dart
-│       └── expense_repository.dart
-├── presentation/
-│   ├── screens/
-│   │   ├── gaz_shell_screen.dart
-│   │   └── sections/
-│   │       ├── dashboard_screen.dart
-│   │       ├── retail_screen.dart
-│   │       ├── wholesale_screen.dart
-│   │       ├── stock_screen.dart
-│   │       └── expenses_screen.dart
-│   └── widgets/
-│       ├── enhanced_kpi_card.dart
-│       ├── dashboard_kpi_grid.dart
-│       ├── stock_summary_card.dart
-│       ├── cylinder_card.dart
-│       ├── expense_card.dart
-│       ├── expense_form_dialog.dart
-│       └── monthly_expense_summary.dart
-└── README.md
+│   ├── entities/          # Entités métier
+│   ├── repositories/      # Interfaces de repositories
+│   └── services/          # Services métier
+├── data/
+│   └── repositories/      # OfflineRepositories (Drift) + MockRepositories
+├── application/
+│   ├── controllers/       # Contrôleurs Riverpod
+│   └── providers.dart     # Providers Riverpod
+└── presentation/
+    ├── screens/          # Écrans principaux
+    └── widgets/         # Widgets réutilisables
 ```
 
-## Fonctionnalités
+## 🎯 Fonctionnalités
 
-- **Tableau de bord** : KPIs, stock, ventes, dépenses
-- **Ventes au détail** : Vente rapide, historique
-- **Ventes en gros** : Gestion clients gros, commandes
-- **Stock** : Gestion des types de bouteilles, ajustement stock
-- **Dépenses** : Suivi des charges par catégorie
+### Bouteilles
+- Gestion des types de bouteilles (poids, prix)
+- Suivi du stock par type
+- Historique des mouvements
 
-## TODO
+### Ventes
+- Ventes au détail
+- Ventes en gros (tours)
+- Suivi des clients
+- Calcul automatique des montants
 
-- [ ] Formulaires de vente (détail & gros)
-- [ ] Ajustement de stock
-- [ ] Rapports et statistiques avancés
-- [ ] Impression de reçus
-- [ ] Gestion des clients fidèles
+### Tours d'Approvisionnement
+- Planification des tours
+- Gestion des grossistes
+- Suivi des livraisons
+
+### Points de Vente
+- Gestion des points de vente
+- Suivi des ventes par point
+- Statistiques
+
+### Fuites
+- Enregistrement des fuites
+- Suivi des bouteilles défectueuses
+- Remplacement
+
+### Dépenses
+- Enregistrement des dépenses
+- Catégorisation
+- Rapports financiers

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
@@ -14,13 +16,6 @@ class SalaryReportContent extends ConsumerWidget {
   });
 
   final ReportPeriod period;
-
-  String _formatCurrency(int amount) {
-    return amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        ) + ' FCFA';
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -50,7 +45,7 @@ class SalaryReportContent extends ConsumerWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'Total: ${_formatCurrency(data.totalAmount)}',
+                'Total: ${CurrencyFormatter.formatFCFA(data.totalAmount)}',
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: Colors.purple,
@@ -62,7 +57,7 @@ class SalaryReportContent extends ConsumerWidget {
                   Expanded(
                     child: _SummaryCard(
                       label: 'Salaires Mensuels',
-                      value: _formatCurrency(data.totalMonthlySalaries),
+                      value: CurrencyFormatter.formatFCFA(data.totalMonthlySalaries),
                       icon: Icons.calendar_month,
                       color: Colors.blue,
                     ),
@@ -71,7 +66,7 @@ class SalaryReportContent extends ConsumerWidget {
                   Expanded(
                     child: _SummaryCard(
                       label: 'Paiements Production',
-                      value: _formatCurrency(data.totalProductionPayments),
+                      value: CurrencyFormatter.formatFCFA(data.totalProductionPayments),
                       icon: Icons.factory,
                       color: Colors.purple,
                     ),
@@ -103,7 +98,7 @@ class SalaryReportContent extends ConsumerWidget {
                         title: Text(payment.employeeName),
                         subtitle: Text('${payment.period} • ${ProductionPeriodFormatter.formatDate(payment.date)}'),
                         trailing: Text(
-                          _formatCurrency(payment.amount),
+                          CurrencyFormatter.formatFCFA(payment.amount),
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: Colors.blue,
@@ -136,7 +131,7 @@ class SalaryReportContent extends ConsumerWidget {
                         title: Text('Paiement Production'),
                         subtitle: Text('${payment.period} • ${payment.persons.length} personne(s) • ${ProductionPeriodFormatter.formatDate(payment.paymentDate)}'),
                         trailing: Text(
-                          _formatCurrency(payment.totalAmount),
+                          CurrencyFormatter.formatFCFA(payment.totalAmount),
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: Colors.purple,

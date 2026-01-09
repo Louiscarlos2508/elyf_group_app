@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
+
 /// Net balance card for reports screen.
 class ReportNetBalanceCard extends StatelessWidget {
   const ReportNetBalanceCard({
@@ -38,7 +40,7 @@ class ReportNetBalanceCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              '${netBalance >= 0 ? '+' : ''}${_formatCurrency(netBalance)}',
+              '${netBalance >= 0 ? '+' : ''}${CurrencyFormatter.formatFCFA(netBalance)}',
               style: const TextStyle(
                 fontSize: 36,
                 fontWeight: FontWeight.normal,
@@ -47,7 +49,7 @@ class ReportNetBalanceCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Dépôts - Retraits = ${_formatCurrency(cashInTotal)} - ${_formatCurrency(cashOutTotal)}',
+              'Dépôts - Retraits = ${CurrencyFormatter.formatFCFA(cashInTotal)} - ${CurrencyFormatter.formatFCFA(cashOutTotal)}',
               style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.normal,
@@ -60,11 +62,5 @@ class ReportNetBalanceCard extends StatelessWidget {
     );
   }
 
-  String _formatCurrency(int amount) {
-    return amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        ) + ' F';
-  }
 }
 

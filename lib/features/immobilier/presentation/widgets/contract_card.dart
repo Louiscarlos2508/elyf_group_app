@@ -14,7 +14,6 @@ class ContractCard extends StatelessWidget {
   final Contract contract;
   final VoidCallback? onTap;
 
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);

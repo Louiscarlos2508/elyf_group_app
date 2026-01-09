@@ -18,7 +18,6 @@ class GazExpenseCard extends StatelessWidget {
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
 
-
   IconData _getCategoryIcon() {
     switch (expense.category) {
       case ExpenseCategory.transport:

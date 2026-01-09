@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
@@ -16,13 +18,6 @@ class WeeklyMonthlyReportContent extends ConsumerWidget {
   });
 
   final ReportPeriod period;
-
-  String _formatCurrency(int amount) {
-    return amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        ) + ' FCFA';
-  }
 
   bool get isWeekly {
     final days = period.endDate.difference(period.startDate).inDays;
@@ -133,19 +128,19 @@ class WeeklyMonthlyReportContent extends ConsumerWidget {
                   ),
                   _KpiItem(
                     label: 'Dépenses',
-                    value: _formatCurrency(totalExpenses),
+                    value: CurrencyFormatter.formatFCFA(totalExpenses),
                     icon: Icons.receipt_long,
                     color: Colors.red,
                   ),
                   _KpiItem(
                     label: 'Salaires',
-                    value: _formatCurrency(totalSalaries),
+                    value: CurrencyFormatter.formatFCFA(totalSalaries),
                     icon: Icons.payments,
                     color: Colors.purple,
                   ),
                   _KpiItem(
                     label: 'Coûts totaux',
-                    value: _formatCurrency(totalCosts),
+                    value: CurrencyFormatter.formatFCFA(totalCosts),
                     icon: Icons.account_balance,
                     color: Colors.red.shade700,
                   ),
@@ -176,7 +171,7 @@ class WeeklyMonthlyReportContent extends ConsumerWidget {
               else
                 ...sessions.map((session) => _ProductionSummaryCard(
                       session: session,
-                      formatCurrency: _formatCurrency,
+                      formatCurrency: CurrencyFormatter.formatFCFA,
                     )),
             ],
           ),
@@ -341,7 +336,7 @@ class _ExpenseCategoryChart extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      '${entry.value.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]} ')} FCFA',
+                      CurrencyFormatter.formatFCFA(entry.value),
                       style: theme.textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: Colors.red.shade700,

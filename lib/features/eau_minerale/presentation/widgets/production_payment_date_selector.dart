@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../shared/utils/date_formatter.dart';
+
 /// Selector for production payment date.
 class ProductionPaymentDateSelector extends StatelessWidget {
   const ProductionPaymentDateSelector({
@@ -11,9 +13,6 @@ class ProductionPaymentDateSelector extends StatelessWidget {
   final DateTime selectedDate;
   final ValueChanged<DateTime> onDateSelected;
 
-  String _formatDate(DateTime date) {
-    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
-  }
 
   Future<void> _selectDate(BuildContext context) async {
     final picked = await showDatePicker(
@@ -60,7 +59,7 @@ class ProductionPaymentDateSelector extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    _formatDate(selectedDate),
+                    DateFormatter.formatDate(selectedDate),
                     style: theme.textTheme.bodyLarge?.copyWith(
                       fontWeight: FontWeight.w500,
                     ),

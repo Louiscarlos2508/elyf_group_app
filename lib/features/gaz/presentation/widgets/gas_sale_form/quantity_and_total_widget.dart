@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import '../../../domain/entities/cylinder.dart';
+import '../../../domain/services/gas_calculation_service.dart';
 
 /// Widget pour saisir la quantité et afficher le total.
 class QuantityAndTotalWidget extends StatelessWidget {
@@ -23,9 +24,12 @@ class QuantityAndTotalWidget extends StatelessWidget {
   final VoidCallback onQuantityChanged;
 
   double get _totalAmount {
-    if (selectedCylinder == null || unitPrice == 0.0) return 0.0;
     final quantity = int.tryParse(quantityController.text) ?? 0;
-    return unitPrice * quantity;
+    return GasCalculationService.calculateTotalAmount(
+      cylinder: selectedCylinder,
+      unitPrice: unitPrice,
+      quantity: quantity,
+    );
   }
 
   @override
@@ -49,17 +53,10 @@ class QuantityAndTotalWidget extends StatelessWidget {
             FilteringTextInputFormatter.digitsOnly,
           ],
           validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'Veuillez entrer une quantité';
-            }
-            final quantity = int.tryParse(value);
-            if (quantity == null || quantity <= 0) {
-              return 'Quantité invalide';
-            }
-            if (quantity > availableStock) {
-              return 'Stock insuffisant ($availableStock disponible)';
-            }
-            return null;
+            return GasCalculationService.validateQuantityText(
+              quantityText: value,
+              availableStock: availableStock,
+            );
           },
           onChanged: (_) => onQuantityChanged(),
         ),

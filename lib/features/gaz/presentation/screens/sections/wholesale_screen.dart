@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
-import '../../../domain/entities/gas_sale.dart';
+import '../../../domain/services/gaz_calculation_service.dart';
 import '../../widgets/wholesale_date_filter_card.dart';
 import '../../widgets/wholesale_empty_state.dart';
 import '../../widgets/wholesale_kpi_card.dart';
@@ -20,26 +20,6 @@ class GazWholesaleScreen extends ConsumerStatefulWidget {
 class _GazWholesaleScreenState extends ConsumerState<GazWholesaleScreen> {
   DateTime? _startDate;
   DateTime? _endDate;
-
-
-  List<GasSale> _filterSales(List<GasSale> sales) {
-    if (_startDate == null && _endDate == null) {
-      return sales;
-    }
-
-    final start = _startDate ?? DateTime(2020);
-    final end = _endDate ?? DateTime.now();
-
-    return sales.where((s) {
-      final saleDate = DateTime(
-        s.saleDate.year,
-        s.saleDate.month,
-        s.saleDate.day,
-      );
-      return saleDate.isAfter(start.subtract(const Duration(days: 1))) &&
-          saleDate.isBefore(end.add(const Duration(days: 1)));
-    }).toList();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -104,123 +84,14 @@ class _GazWholesaleScreenState extends ConsumerState<GazWholesaleScreen> {
             padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
             child: salesAsync.when(
               data: (allSales) {
-                final wholesaleSales = allSales
-                    .where((s) => s.saleType == SaleType.wholesale)
-                    .toList();
-                final filteredSales = _filterSales(wholesaleSales);
-
-                // Calculate metrics
-                final salesCount = filteredSales.length;
-                final totalSold = filteredSales.fold<double>(
-                  0,
-                  (sum, s) => sum + s.totalAmount,
+                // Use calculation service for business logic
+                final metrics = GazCalculationService.calculateWholesaleMetrics(
+                  allSales,
+                  startDate: _startDate,
+                  endDate: _endDate,
                 );
-                // For now, assume all sales are paid (encaissé)
-                // TODO: Add payment status to GasSale entity
-                final collected = totalSold;
-                final credit = 0.0; // TODO: Calculate actual credit
 
-                return LayoutBuilder(
-                  builder: (context, constraints) {
-                    final isWide = constraints.maxWidth > 800;
-                    if (isWide) {
-                      return Row(
-                        children: [
-                          Expanded(
-                            child: WholesaleKpiCard(
-                              title: 'Nombre de ventes',
-                              value: '$salesCount',
-                              icon: Icons.shopping_cart,
-                              iconColor: const Color(0xFF3B82F6),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: WholesaleKpiCard(
-                              title: 'Total vendu',
-                              value: totalSold.toStringAsFixed(0),
-                              subtitle: 'FCFA',
-                              icon: Icons.trending_up,
-                              iconColor: const Color(0xFF10B981),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: WholesaleKpiCard(
-                              title: 'Encaissé',
-                              value: collected.toStringAsFixed(0),
-                              subtitle: 'FCFA',
-                              icon: Icons.trending_up,
-                              iconColor: const Color(0xFF3B82F6),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: WholesaleKpiCard(
-                              title: 'Crédit',
-                              value: credit.toStringAsFixed(0),
-                              subtitle: 'FCFA',
-                              icon: Icons.trending_up,
-                              iconColor: const Color(0xFFF97316),
-                            ),
-                          ),
-                        ],
-                      );
-                    }
-
-                    // Mobile: 2x2 grid
-                    return Column(
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: WholesaleKpiCard(
-                                title: 'Nombre de ventes',
-                                value: '$salesCount',
-                                icon: Icons.shopping_cart,
-                                iconColor: const Color(0xFF3B82F6),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: WholesaleKpiCard(
-                                title: 'Total vendu',
-                                value: totalSold.toStringAsFixed(0),
-                                subtitle: 'FCFA',
-                                icon: Icons.trending_up,
-                                iconColor: const Color(0xFF10B981),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: WholesaleKpiCard(
-                                title: 'Encaissé',
-                                value: collected.toStringAsFixed(0),
-                                subtitle: 'FCFA',
-                                icon: Icons.trending_up,
-                                iconColor: const Color(0xFF3B82F6),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: WholesaleKpiCard(
-                                title: 'Crédit',
-                                value: credit.toStringAsFixed(0),
-                                subtitle: 'FCFA',
-                                icon: Icons.trending_up,
-                                iconColor: const Color(0xFFF97316),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    );
-                  },
-                );
+                return _WholesaleKpiGrid(metrics: metrics);
               },
               loading: () => const SizedBox(
                 height: 115,
@@ -237,33 +108,19 @@ class _GazWholesaleScreenState extends ConsumerState<GazWholesaleScreen> {
             padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
             child: salesAsync.when(
               data: (allSales) {
-                final wholesaleSales = allSales
-                    .where((s) => s.saleType == SaleType.wholesale)
-                    .toList();
-                final filteredSales = _filterSales(wholesaleSales);
+                final metrics = GazCalculationService.calculateWholesaleMetrics(
+                  allSales,
+                  startDate: _startDate,
+                  endDate: _endDate,
+                );
 
-                if (filteredSales.isEmpty) {
+                if (metrics.sales.isEmpty) {
                   return const WholesaleEmptyState();
                 }
 
-                // Liste des ventes
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Ventes enregistrées (${filteredSales.length})',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: const Color(0xFF101828),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    ...filteredSales.map((sale) => Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: WholesaleSaleCard(sale: sale),
-                        )),
-                  ],
+                return _WholesaleSalesList(
+                  sales: metrics.sales,
+                  theme: theme,
                 );
               },
               loading: () => const SizedBox(
@@ -274,6 +131,151 @@ class _GazWholesaleScreenState extends ConsumerState<GazWholesaleScreen> {
             ),
           ),
         ),
+      ],
+    );
+  }
+}
+
+/// Widget privé pour afficher la grille de KPIs.
+class _WholesaleKpiGrid extends StatelessWidget {
+  const _WholesaleKpiGrid({required this.metrics});
+
+  final WholesaleMetrics metrics;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth > 800;
+        if (isWide) {
+          return Row(
+            children: [
+              Expanded(
+                child: WholesaleKpiCard(
+                  title: 'Nombre de ventes',
+                  value: '${metrics.salesCount}',
+                  icon: Icons.shopping_cart,
+                  iconColor: const Color(0xFF3B82F6),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: WholesaleKpiCard(
+                  title: 'Total vendu',
+                  value: metrics.totalSold.toStringAsFixed(0),
+                  subtitle: 'FCFA',
+                  icon: Icons.trending_up,
+                  iconColor: const Color(0xFF10B981),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: WholesaleKpiCard(
+                  title: 'Encaissé',
+                  value: metrics.collected.toStringAsFixed(0),
+                  subtitle: 'FCFA',
+                  icon: Icons.trending_up,
+                  iconColor: const Color(0xFF3B82F6),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: WholesaleKpiCard(
+                  title: 'Crédit',
+                  value: metrics.credit.toStringAsFixed(0),
+                  subtitle: 'FCFA',
+                  icon: Icons.trending_up,
+                  iconColor: const Color(0xFFF97316),
+                ),
+              ),
+            ],
+          );
+        }
+
+        // Mobile: 2x2 grid
+        return Column(
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: WholesaleKpiCard(
+                    title: 'Nombre de ventes',
+                    value: '${metrics.salesCount}',
+                    icon: Icons.shopping_cart,
+                    iconColor: const Color(0xFF3B82F6),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: WholesaleKpiCard(
+                    title: 'Total vendu',
+                    value: metrics.totalSold.toStringAsFixed(0),
+                    subtitle: 'FCFA',
+                    icon: Icons.trending_up,
+                    iconColor: const Color(0xFF10B981),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: WholesaleKpiCard(
+                    title: 'Encaissé',
+                    value: metrics.collected.toStringAsFixed(0),
+                    subtitle: 'FCFA',
+                    icon: Icons.trending_up,
+                    iconColor: const Color(0xFF3B82F6),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: WholesaleKpiCard(
+                    title: 'Crédit',
+                    value: metrics.credit.toStringAsFixed(0),
+                    subtitle: 'FCFA',
+                    icon: Icons.trending_up,
+                    iconColor: const Color(0xFFF97316),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// Widget privé pour afficher la liste des ventes.
+class _WholesaleSalesList extends StatelessWidget {
+  const _WholesaleSalesList({
+    required this.sales,
+    required this.theme,
+  });
+
+  final List<dynamic> sales;
+  final ThemeData theme;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Ventes enregistrées (${sales.length})',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: const Color(0xFF101828),
+          ),
+        ),
+        const SizedBox(height: 16),
+        ...sales.map((sale) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: WholesaleSaleCard(sale: sale),
+            )),
       ],
     );
   }

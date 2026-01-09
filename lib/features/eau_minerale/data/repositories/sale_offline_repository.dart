@@ -387,4 +387,3 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
   }
 }
 
-

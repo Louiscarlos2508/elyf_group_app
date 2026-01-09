@@ -18,10 +18,10 @@ class ExpenseBalanceSummary extends StatelessWidget {
   final DateTime startDate;
   final DateTime endDate;
 
-  String _formatCurrency(int amount) {
-    return CurrencyFormatter.formatFCFA(amount);
-  }
+<<<<<<< Current (Your changes)
 
+=======
+>>>>>>> Incoming (Background Agent changes)
   String _formatDateRange() {
     final dateFormat = DateFormat('dd/MM/yyyy');
     return '${dateFormat.format(startDate)} - ${dateFormat.format(endDate)}';
@@ -49,7 +49,7 @@ class ExpenseBalanceSummary extends StatelessWidget {
                   child: _buildStatCard(
                     context,
                     'Total dépenses',
-                    _formatCurrency(totalAmount),
+                    CurrencyFormatter.formatFCFA(totalAmount),
                     Icons.account_balance_wallet,
                     Colors.blue,
                   ),

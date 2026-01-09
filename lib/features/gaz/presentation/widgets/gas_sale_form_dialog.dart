@@ -8,6 +8,7 @@ import '../../application/providers.dart';
 import '../../domain/entities/cylinder.dart';
 import '../../domain/entities/gas_sale.dart';
 import '../../domain/entities/tour.dart';
+import '../../domain/services/gas_calculation_service.dart';
 import 'gas_sale_form/customer_info_widget.dart';
 import 'gas_sale_form/cylinder_selector_widget.dart';
 import 'gas_sale_form/gas_sale_submit_handler.dart';
@@ -70,9 +71,12 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
   double _unitPrice = 0.0;
 
   double get _totalAmount {
-    if (_selectedCylinder == null) return 0.0;
     final quantity = int.tryParse(_quantityController.text) ?? 0;
-    return _unitPrice * quantity;
+    return GasCalculationService.calculateTotalAmount(
+      cylinder: _selectedCylinder,
+      unitPrice: _unitPrice,
+      quantity: quantity,
+    );
   }
 
   Future<void> _updateUnitPrice(String? enterpriseId) async {

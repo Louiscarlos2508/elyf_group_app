@@ -9,9 +9,9 @@ import '../../../../core/offline/drift_service.dart';
 import '../../../../core/offline/providers.dart';
 import '../../../../core/tenant/tenant_provider.dart';
 import '../data/repositories/agent_offline_repository.dart';
-import '../data/repositories/mock_commission_repository.dart';
-import '../data/repositories/mock_liquidity_repository.dart';
-import '../data/repositories/mock_settings_repository.dart';
+import '../data/repositories/commission_offline_repository.dart';
+import '../data/repositories/liquidity_offline_repository.dart';
+import '../data/repositories/settings_offline_repository.dart';
 import '../data/repositories/transaction_offline_repository.dart';
 import '../domain/entities/agent.dart';
 import '../domain/entities/commission.dart';
@@ -22,6 +22,18 @@ import '../domain/repositories/commission_repository.dart';
 import '../domain/repositories/liquidity_repository.dart';
 import '../domain/repositories/settings_repository.dart';
 import '../domain/repositories/transaction_repository.dart';
+import '../domain/services/commission_calculation_service.dart';
+import '../domain/services/transaction_validation_service.dart';
+
+/// Provider for CommissionCalculationService.
+final commissionCalculationServiceProvider = Provider<CommissionCalculationService>(
+  (ref) => CommissionCalculationService(),
+);
+
+/// Provider for TransactionValidationService.
+final transactionValidationServiceProvider = Provider<TransactionValidationService>(
+  (ref) => TransactionValidationService(),
+);
 
 /// Provider for transaction repository.
 final transactionRepositoryProvider = Provider<TransactionRepository>(
@@ -102,7 +114,6 @@ final filteredTransactionsProvider = FutureProvider.autoDispose
   },
 );
 
-
 /// Provider for agent repository.
 final agentRepositoryProvider = Provider<AgentRepository>(
   (ref) {
@@ -127,7 +138,19 @@ final agentsControllerProvider = Provider<AgentsController>(
 
 /// Provider for commission repository.
 final commissionRepositoryProvider = Provider<CommissionRepository>(
-  (ref) => MockCommissionRepository(),
+  (ref) {
+    final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+    final driftService = DriftService.instance;
+    final syncManager = ref.watch(syncManagerProvider);
+    final connectivityService = ref.watch(connectivityServiceProvider);
+    
+    return CommissionOfflineRepository(
+      driftService: driftService,
+      syncManager: syncManager,
+      connectivityService: connectivityService,
+      enterpriseId: enterpriseId,
+    );
+  },
 );
 
 /// Provider for commissions controller.
@@ -137,7 +160,19 @@ final commissionsControllerProvider = Provider<CommissionsController>(
 
 /// Provider for settings repository.
 final settingsRepositoryProvider = Provider<SettingsRepository>(
-  (ref) => MockSettingsRepository(),
+  (ref) {
+    final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+    final driftService = DriftService.instance;
+    final syncManager = ref.watch(syncManagerProvider);
+    final connectivityService = ref.watch(connectivityServiceProvider);
+    
+    return SettingsOfflineRepository(
+      driftService: driftService,
+      syncManager: syncManager,
+      connectivityService: connectivityService,
+      enterpriseId: enterpriseId,
+    );
+  },
 );
 
 /// Provider for settings controller.
@@ -147,7 +182,19 @@ final settingsControllerProvider = Provider<SettingsController>(
 
 /// Provider for liquidity repository.
 final liquidityRepositoryProvider = Provider<LiquidityRepository>(
-  (ref) => MockLiquidityRepository(),
+  (ref) {
+    final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+    final driftService = DriftService.instance;
+    final syncManager = ref.watch(syncManagerProvider);
+    final connectivityService = ref.watch(connectivityServiceProvider);
+    
+    return LiquidityOfflineRepository(
+      driftService: driftService,
+      syncManager: syncManager,
+      connectivityService: connectivityService,
+      enterpriseId: enterpriseId,
+    );
+  },
 );
 
 /// Provider for liquidity controller.

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/domain/entities/expense_balance_data.dart';
@@ -13,13 +15,6 @@ class ExpenseBalanceTable extends StatelessWidget {
 
   final List<ExpenseBalanceData> expenses;
   final String Function(String) getCategoryLabel;
-
-  String _formatCurrency(int amount) {
-    return amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        ) + ' FCFA';
-  }
 
   String _formatDate(DateTime date) {
     return DateFormat('dd/MM/yyyy').format(date);
@@ -70,7 +65,7 @@ class ExpenseBalanceTable extends StatelessWidget {
                     DataCell(Text(expense.label)),
                     DataCell(Text(getCategoryLabel(expense.category))),
                     DataCell(Text(
-                      _formatCurrency(expense.amount),
+                      CurrencyFormatter.formatFCFA(expense.amount),
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     )),
                   ],

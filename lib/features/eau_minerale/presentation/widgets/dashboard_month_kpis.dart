@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/controllers/clients_controller.dart';
@@ -11,18 +13,13 @@ import 'dashboard_kpi_card.dart';
 /// Section displaying monthly KPIs with production sessions data.
 class DashboardMonthKpis extends ConsumerWidget {
   const DashboardMonthKpis({super.key});
-
-  String _formatCurrency(int amount) {
-    final amountStr = amount.toString();
-    final buffer = StringBuffer();
-    for (var i = 0; i < amountStr.length; i++) {
-      if (i > 0 && (amountStr.length - i) % 3 == 0) {
-        buffer.write(' ');
-      }
+<<<<<<< Current (Your changes)
       buffer.write(amountStr[i]);
     }
     return '${buffer.toString()} CFA';
   }
+=======
+>>>>>>> Incoming (Background Agent changes)
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -107,7 +104,7 @@ class DashboardMonthKpis extends ConsumerWidget {
         final cards = [
           DashboardKpiCard(
             label: 'Chiffre d\'Affaires',
-            value: _formatCurrency(monthRevenue),
+            value: CurrencyFormatter.formatFCFA(monthRevenue),
             subtitle: '${monthSales.length} ventes',
             icon: Icons.trending_up,
             iconColor: Colors.blue,
@@ -123,7 +120,7 @@ class DashboardMonthKpis extends ConsumerWidget {
           ),
           DashboardKpiCard(
             label: 'Dépenses',
-            value: _formatCurrency(monthExpenses),
+            value: CurrencyFormatter.formatFCFA(monthExpenses),
             subtitle:
                 '${finances.expenses.where((e) => e.date.isAfter(monthStart)).length} transactions',
             icon: Icons.receipt_long,
@@ -132,7 +129,7 @@ class DashboardMonthKpis extends ConsumerWidget {
           ),
           DashboardKpiCard(
             label: 'Résultat Net',
-            value: _formatCurrency(monthResult),
+            value: CurrencyFormatter.formatFCFA(monthResult),
             subtitle: monthResult >= 0 ? 'Bénéfice' : 'Déficit',
             icon: Icons.account_balance_wallet,
             iconColor: monthResult >= 0 ? Colors.green : Colors.red,

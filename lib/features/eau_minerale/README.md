@@ -9,6 +9,21 @@ Ce module implémente un système complet de gestion de production et vente d'ea
 - Production avec périodes
 - Gestion des dépenses et salaires
 
+## 🏗️ Architecture
+
+Le module suit une **architecture Clean Architecture** avec :
+- **Offline-first** : Toutes les données sont stockées localement (Drift/SQLite) en premier
+- **Synchronisation** : Sync automatique avec Firestore quand en ligne
+- **Multi-tenant** : Isolation des données par entreprise
+- **Controllers** : Logique métier dans les controllers, jamais dans l'UI
+
+Voir [ARCHITECTURE.md](ARCHITECTURE.md) pour plus de détails.
+
+## 📚 Documentation
+
+- [ARCHITECTURE.md](ARCHITECTURE.md) - Architecture détaillée du module
+- [IMPLEMENTATION.md](IMPLEMENTATION.md) - Guide d'implémentation et patterns
+
 ## 🏗️ Structure du domaine
 
 ### Entités (`domain/entities/`)
@@ -29,14 +44,18 @@ Ce module implémente un système complet de gestion de production et vente d'ea
 ### Repositories (`domain/repositories/`)
 
 Interfaces abstraites pour :
-- `ProductRepository` : Gestion des produits
-- `SaleRepository` : Gestion des ventes
-- `CreditRepository` : Gestion des crédits et paiements
-- `ProductionRepository` : Gestion de la production
-- `StockRepository` : Gestion des stocks
-- `FinanceRepository` : Gestion des dépenses
-- `SalaryRepository` : Gestion des salaires
-- `CustomerRepository` : Gestion des clients
+- `ProductRepository` : Gestion des produits ✅ Offline
+- `SaleRepository` : Gestion des ventes ✅ Offline
+- `CreditRepository` : Gestion des crédits et paiements ⚠️ Mock
+- `ProductionSessionRepository` : Gestion de la production ✅ Offline
+- `StockRepository` : Gestion des stocks ✅ Offline
+- `FinanceRepository` : Gestion des dépenses ✅ Offline
+- `SalaryRepository` : Gestion des salaires ✅ Offline
+- `CustomerRepository` : Gestion des clients ✅ Offline
+- `MachineRepository` : Gestion des machines ✅ Offline
+- `InventoryRepository` : Gestion de l'inventaire ⚠️ Mock
+- `BobineStockQuantityRepository` : Gestion des bobines ⚠️ Mock
+- `PackagingStockRepository` : Gestion des emballages ⚠️ Mock
 
 ### Services métier (`domain/services/`)
 
@@ -146,6 +165,24 @@ Les widgets `CentralizedPermissionGuard` et `EauMineralePermissionGuard` permett
    - Signature du bénéficiaire
    - Enregistrement du paiement
 
+## 🎮 Controllers Disponibles
+
+Tous les controllers utilisent les OfflineRepositories et gèrent la synchronisation automatique :
+
+- `ProductController` - Gestion des produits
+- `SalesController` - Gestion des ventes
+- `ClientsController` - Gestion des clients
+- `StockController` - Gestion des stocks
+- `ProductionSessionController` - Gestion de la production
+- `FinancesController` - Gestion des dépenses
+- `SalaryController` - Gestion des salaires
+- `MachineController` - Gestion des machines
+- `InventoryController` - Gestion de l'inventaire
+- `BobineStockQuantityController` - Gestion des bobines
+- `PackagingStockController` - Gestion des emballages
+- `ActivityController` - Gestion des activités
+- `ReportController` - Gestion des rapports
+
 ## 📁 Structure des fichiers
 
 ```
@@ -157,15 +194,36 @@ lib/features/eau_minerale/
 │   ├── permissions/       # Définition des permissions
 │   └── exceptions/       # Exceptions métier
 ├── data/
-│   └── repositories/      # Implémentations mock (à remplacer par Firestore/Drift)
+│   └── repositories/      # OfflineRepositories (Drift) + MockRepositories (en migration)
 ├── application/
 │   ├── controllers/       # Contrôleurs Riverpod
-│   ├── providers.dart    # Configuration des providers
+│   ├── providers/         # Providers organisés par catégorie
 │   └── adapters/         # Adaptateurs de permissions
 └── presentation/
     ├── screens/          # Écrans principaux
     └── widgets/         # Widgets réutilisables
 ```
+
+## 🔄 Offline-First & Synchronisation
+
+### Repositories Offline ✅
+
+- `ProductOfflineRepository` - Produits
+- `SaleOfflineRepository` - Ventes
+- `CustomerOfflineRepository` - Clients
+- `ProductionSessionOfflineRepository` - Sessions de production
+- `MachineOfflineRepository` - Machines
+- `StockOfflineRepository` - Mouvements de stock
+- `SalaryOfflineRepository` - Employés et salaires
+- `FinanceOfflineRepository` - Dépenses
+
+### Synchronisation
+
+Toutes les opérations CRUD sont automatiquement synchronisées avec Firestore via `SyncManager` :
+- Écriture locale immédiate (offline-first)
+- File d'attente pour sync
+- Retry automatique en cas d'échec
+- Résolution de conflits (last-write-wins)
 
 ## 🎯 Points clés
 

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
@@ -19,11 +21,7 @@ class ProfitabilityReportContent extends ConsumerWidget {
     required this.period,
   });
 
-  final ReportPeriod period;
-
-  String _formatCurrency(int amount) {
-    final formatted = amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+  final ReportPeriod period;)(?=(\d{3})+(?!\d))'),
           (Match m) => '${m[1]} ',
         );
     return '$formatted FCFA';
@@ -117,7 +115,7 @@ class ProfitabilityReportContent extends ConsumerWidget {
             totalProductionCost: metrics.totalProductionCost,
             totalExpenses: totalExpenses,
             grossProfit: metrics.grossProfit,
-            formatCurrency: _formatCurrency,
+            formatCurrency: CurrencyFormatter.formatFCFA,
           ),
         ],
       ),
@@ -169,7 +167,7 @@ class ProfitabilityReportContent extends ConsumerWidget {
         ),
         KpiItem(
           label: 'Marge brute globale',
-          value: _formatCurrency(metrics.grossProfit),
+          value: CurrencyFormatter.formatFCFA(metrics.grossProfit),
           icon: Icons.account_balance,
           color: metrics.grossProfit >= 0 ? Colors.green : Colors.red,
         ),
@@ -181,7 +179,7 @@ class ProfitabilityReportContent extends ConsumerWidget {
         ),
         KpiItem(
           label: 'Coûts totaux',
-          value: _formatCurrency(metrics.totalCosts),
+          value: CurrencyFormatter.formatFCFA(metrics.totalCosts),
           icon: Icons.receipt_long,
           color: Colors.red,
         ),
@@ -220,7 +218,7 @@ class ProfitabilityReportContent extends ConsumerWidget {
                 estimatedCost: product.estimatedCost,
                 margin: product.margin,
                 marginPercent: product.marginPercent,
-                formatCurrency: _formatCurrency,
+                formatCurrency: CurrencyFormatter.formatFCFA,
               )),
       ],
     );

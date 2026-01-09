@@ -1,11 +1,12 @@
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
+
 /// Helpers pour le formatage des données des agents.
+///
+/// Utilise le CurrencyFormatter partagé pour la cohérence.
 class AgentsFormatHelpers {
-  /// Formate un montant en devise avec espaces.
+  /// Formate un montant en devise avec espaces (format court "F").
   static String formatCurrency(int amount) {
-    return amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        ) + ' F';
+    return CurrencyFormatter.formatShort(amount);
   }
 
   /// Formate un montant en devise compact.

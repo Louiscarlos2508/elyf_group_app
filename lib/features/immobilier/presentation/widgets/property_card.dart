@@ -14,7 +14,6 @@ class PropertyCard extends StatelessWidget {
   final Property property;
   final VoidCallback? onTap;
 
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);

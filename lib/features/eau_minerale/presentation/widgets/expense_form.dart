@@ -92,9 +92,6 @@ class ExpenseFormState extends ConsumerState<ExpenseForm> {
     }
   }
 
-  String _formatDate(DateTime date) {
-    return DateFormatter.formatDate(date);
-  }
 
   IconData _getCategoryIcon(ExpenseCategory category) {
     switch (category) {
@@ -192,7 +189,7 @@ class ExpenseFormState extends ConsumerState<ExpenseForm> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            _formatDate(_selectedDate),
+                            DateFormatter.formatDate(_selectedDate),
                             style: theme.textTheme.bodyLarge?.copyWith(
                               fontWeight: FontWeight.w500,
                             ),

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
+
 import 'dashboard_kpi_card_v2.dart';
 
 /// Section displaying monthly KPIs for immobilier.
@@ -18,20 +20,13 @@ class DashboardMonthSectionV2 extends StatelessWidget {
   final int monthExpensesAmount;
   final int monthProfit;
   final double occupancyRate;
-
-  String _formatCurrency(int amount) {
-    final isNegative = amount < 0;
-    final absAmount = amount.abs();
-    final amountStr = absAmount.toString();
-    final buffer = StringBuffer();
-    for (var i = 0; i < amountStr.length; i++) {
-      if (i > 0 && (amountStr.length - i) % 3 == 0) {
-        buffer.write(' ');
-      }
+<<<<<<< Current (Your changes)
       buffer.write(amountStr[i]);
     }
     return '${isNegative ? '-' : ''}$buffer FCFA';
   }
+=======
+>>>>>>> Incoming (Background Agent changes)
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +37,7 @@ class DashboardMonthSectionV2 extends StatelessWidget {
         final cards = [
           DashboardKpiCardV2(
             label: 'Revenus Locatifs',
-            value: _formatCurrency(monthRevenue),
+            value: CurrencyFormatter.formatFCFA(monthRevenue),
             subtitle: '$monthPaymentsCount paiements',
             icon: Icons.trending_up,
             iconColor: Colors.blue,
@@ -50,7 +45,7 @@ class DashboardMonthSectionV2 extends StatelessWidget {
           ),
           DashboardKpiCardV2(
             label: 'Dépenses',
-            value: _formatCurrency(monthExpensesAmount),
+            value: CurrencyFormatter.formatFCFA(monthExpensesAmount),
             subtitle: 'Charges',
             icon: Icons.receipt_long,
             iconColor: Colors.red,
@@ -58,7 +53,7 @@ class DashboardMonthSectionV2 extends StatelessWidget {
           ),
           DashboardKpiCardV2(
             label: 'Bénéfice Net',
-            value: _formatCurrency(monthProfit),
+            value: CurrencyFormatter.formatFCFA(monthProfit),
             subtitle: monthProfit >= 0 ? 'Profit' : 'Déficit',
             icon: Icons.account_balance_wallet,
             iconColor: monthProfit >= 0 ? Colors.green : Colors.red,

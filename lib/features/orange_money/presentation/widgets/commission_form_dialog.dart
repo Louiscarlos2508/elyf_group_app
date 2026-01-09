@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../../../shared/utils/notification_service.dart';
 import 'package:elyf_groupe_app/shared/presentation/widgets/form_dialog.dart';
+import '../../domain/services/commission_calculation_service.dart';
 /// Dialog for recording a manual commission entry.
 class CommissionFormDialog extends StatefulWidget {
   const CommissionFormDialog({
@@ -115,18 +116,20 @@ class _CommissionFormDialogState extends State<CommissionFormDialog> {
       return;
     }
 
-    if (_selectedMonth == null) {
-      NotificationService.showWarning(context, 'Veuillez sélectionner un mois');
+    final periodError = CommissionCalculationService.validatePeriod(_selectedMonth);
+    if (periodError != null) {
+      NotificationService.showWarning(context, periodError);
       return;
     }
 
-    final amount = int.tryParse(_amountController.text.trim()) ?? 0;
-    if (amount <= 0) {
-      NotificationService.showWarning(context, 'Le montant doit être supérieur à 0');
+    final amount = int.tryParse(_amountController.text.trim());
+    final amountError = CommissionCalculationService.validateAmount(amount);
+    if (amountError != null) {
+      NotificationService.showWarning(context, amountError);
       return;
     }
 
-    final period = DateFormat('yyyy-MM').format(_selectedMonth!);
+    final period = CommissionCalculationService.formatPeriod(_selectedMonth!);
     final notes = _notesController.text.trim().isEmpty 
         ? null 
         : _notesController.text.trim();
@@ -138,7 +141,7 @@ class _CommissionFormDialogState extends State<CommissionFormDialog> {
   @override
   Widget build(BuildContext context) {
     final monthText = _selectedMonth != null
-        ? DateFormat('MMMM yyyy', 'fr_FR').format(_selectedMonth!)
+        ? CommissionCalculationService.formatPeriodForDisplay(_selectedMonth!)
         : '';
 
     return Dialog(

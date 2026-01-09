@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/entities/customer_credit.dart';
+import '../../domain/services/credit_calculation_service.dart';
 import '../../domain/repositories/customer_repository.dart' show CustomerSummary;
 import 'customer_credit_card.dart';
 
@@ -26,10 +27,7 @@ class CreditsCustomersList extends StatelessWidget {
     // Filtrer les clients qui ont réellement des crédits avec un montant restant > 0
     final customersWithRealCredits = customers.where((customer) {
       final credits = getCredits(customer);
-      final totalCreditFromCredits = credits.fold<int>(
-        0,
-        (sum, credit) => sum + credit.remainingAmount,
-      );
+      final totalCreditFromCredits = CreditCalculationService.calculateTotalCredit(credits);
       // Garder seulement ceux qui ont un crédit restant > 0
       return totalCreditFromCredits > 0;
     }).toList();

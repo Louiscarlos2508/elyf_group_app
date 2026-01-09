@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
+
 import '../../domain/entities/expense.dart';
 
 /// Widget displaying monthly expense summary for immobilier - style eau_minerale.
@@ -10,13 +12,6 @@ class MonthlyExpenseSummaryV2 extends StatelessWidget {
   });
 
   final List<PropertyExpense> expenses;
-
-  String _formatCurrency(int amount) {
-    return '${amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        )} FCFA';
-  }
 
   int _calculateMonthlyTotal() {
     final now = DateTime.now();
@@ -128,7 +123,7 @@ class MonthlyExpenseSummaryV2 extends StatelessWidget {
                   style: theme.textTheme.titleMedium,
                 ),
                 Text(
-                  _formatCurrency(monthlyTotal),
+                  CurrencyFormatter.formatFCFA(monthlyTotal),
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: Colors.red.shade700,
@@ -172,7 +167,7 @@ class MonthlyExpenseSummaryV2 extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      _formatCurrency(entry.value),
+                      CurrencyFormatter.formatFCFA(entry.value),
                       style: theme.textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),

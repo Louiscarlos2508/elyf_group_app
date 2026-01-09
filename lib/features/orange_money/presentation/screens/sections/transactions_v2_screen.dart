@@ -239,7 +239,6 @@ class _TransactionsV2ScreenState extends ConsumerState<TransactionsV2Screen>
     );
   }
 
-
   Widget _buildNewTransactionTab() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),

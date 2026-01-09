@@ -21,7 +21,6 @@ class CylinderListItem extends ConsumerWidget {
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
-
   Color _getStockColor(int stock) {
     if (stock <= 5) return Colors.red;
     if (stock <= 15) return Colors.orange;

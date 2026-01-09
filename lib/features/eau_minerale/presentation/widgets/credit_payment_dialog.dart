@@ -80,7 +80,6 @@ class _CreditPaymentDialogState extends ConsumerState<CreditPaymentDialog>
     }
   }
 
-
   Future<void> _submit() async {
     if (_selectedSale == null) {
       NotificationService.showWarning(context, 'Veuillez sélectionner une vente');

@@ -30,7 +30,6 @@ class CustomerFormState extends ConsumerState<CustomerForm>
     super.dispose();
   }
 
-
   Future<void> submit() async {
     await handleFormSubmit(
       context: context,

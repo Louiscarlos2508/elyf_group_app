@@ -30,6 +30,8 @@ import '../domain/services/dashboard_calculation_service.dart';
 import '../domain/services/filtering/expense_filter_service.dart';
 import '../domain/services/filtering/payment_filter_service.dart';
 import '../domain/services/immobilier_validation_service.dart';
+import '../domain/services/property_calculation_service.dart';
+import '../domain/services/property_validation_service.dart';
 import '../domain/services/validation/contract_validation_service.dart';
 
 // Report Calculation Service
@@ -129,6 +131,16 @@ final immobilierValidationServiceProvider = Provider<ImmobilierValidationService
 
 final contractValidationServiceProvider = Provider<ContractValidationService>(
   (ref) => ContractValidationService(),
+);
+
+/// Provider for PropertyCalculationService.
+final propertyCalculationServiceProvider = Provider<PropertyCalculationService>(
+  (ref) => PropertyCalculationService(),
+);
+
+/// Provider for PropertyValidationService.
+final propertyValidationServiceProvider = Provider<PropertyValidationService>(
+  (ref) => PropertyValidationService(),
 );
 
 // Dashboard Calculation Service

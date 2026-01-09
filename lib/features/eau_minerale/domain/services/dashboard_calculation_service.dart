@@ -15,6 +15,20 @@ class DashboardCalculationService {
     return monthSales.fold(0, (sum, s) => sum + s.totalPrice);
   }
 
+  /// Calculates today's collections (fully paid sales).
+  int calculateTodayCollections(List<Sale> sales) {
+    final today = DateTime.now();
+    final todayStart = DateTime(today.year, today.month, today.day);
+    final todayEnd = todayStart.add(const Duration(days: 1));
+    final todaySales = sales
+        .where((s) {
+          final saleDate = DateTime(s.date.year, s.date.month, s.date.day);
+          return saleDate.isAtSameMomentAs(todayStart) && s.isFullyPaid;
+        })
+        .toList();
+    return todaySales.fold(0, (sum, s) => sum + s.amountPaid);
+  }
+
   /// Calculates monthly collections (fully paid sales).
   int calculateMonthlyCollections(List<Sale> sales, DateTime monthStart) {
     final monthSales = sales

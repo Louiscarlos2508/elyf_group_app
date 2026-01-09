@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/orange_money/application/providers.dart';
@@ -42,7 +44,7 @@ class DashboardScreen extends ConsumerWidget {
                       child: _buildStatCard(
                         context,
                         'Cash-In Total',
-                        _formatCurrency(cashInTotal),
+                        CurrencyFormatter.formatFCFA(cashInTotal),
                         Icons.arrow_downward,
                         Colors.green,
                       ),
@@ -52,7 +54,7 @@ class DashboardScreen extends ConsumerWidget {
                       child: _buildStatCard(
                         context,
                         'Cash-Out Total',
-                        _formatCurrency(cashOutTotal),
+                        CurrencyFormatter.formatFCFA(cashOutTotal),
                         Icons.arrow_upward,
                         Colors.orange,
                       ),
@@ -71,7 +73,7 @@ class DashboardScreen extends ConsumerWidget {
                       child: _buildStatCard(
                         context,
                         'Commission',
-                        _formatCurrency(totalCommission),
+                        CurrencyFormatter.formatFCFA(totalCommission),
                         Icons.account_balance_wallet,
                         Colors.blue,
                       ),
@@ -166,11 +168,5 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  String _formatCurrency(int amount) {
-    return amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        ) + ' FCFA';
-  }
 }
 

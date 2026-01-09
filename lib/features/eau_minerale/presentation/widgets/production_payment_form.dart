@@ -80,21 +80,12 @@ class ProductionPaymentFormState
 
   Future<void> submit() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_persons.isEmpty) {
-      NotificationService.showWarning(context, 'Ajoutez au moins une personne à payer');
+    
+    final validationService = ref.read(productionPaymentValidationServiceProvider);
+    final validationError = validationService.getPersonsValidationError(_persons);
+    if (validationError != null) {
+      NotificationService.showWarning(context, validationError);
       return;
-    }
-
-    // Validate all persons
-    for (final person in _persons) {
-      if (person.name.isEmpty) {
-        NotificationService.showWarning(context, 'Tous les noms doivent être remplis');
-        return;
-      }
-      if (person.pricePerDay <= 0 || person.daysWorked <= 0) {
-      NotificationService.showWarning(context, 'Vérifiez les montants et jours');
-        return;
-      }
     }
 
     setState(() => _isLoading = true);
@@ -120,7 +111,6 @@ class ProductionPaymentFormState
       if (mounted) setState(() => _isLoading = false);
     }
   }
-
 
   @override
   Widget build(BuildContext context) {

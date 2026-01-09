@@ -6,6 +6,8 @@ import '../../domain/entities/bobine_usage.dart';
 import '../../domain/entities/machine.dart';
 import '../../domain/entities/production_period_config.dart';
 import '../../domain/entities/production_session.dart';
+import '../../domain/services/production_session_builder.dart';
+import '../../domain/services/production_session_validation_service.dart';
 import 'bobine_usage_form_field.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../../../shared/utils/date_formatter.dart';
@@ -71,15 +73,16 @@ class ProductionSessionFormState
     super.dispose();
   }
 
-
   Future<void> submit() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_machinesSelectionnees.isEmpty) {
-      NotificationService.showWarning(context, 'Sélectionnez au moins une machine');
-      return;
-    }
-    if (_bobinesUtilisees.isEmpty) {
-      NotificationService.showWarning(context, 'Ajoutez au moins une bobine utilisée');
+    
+    // Validation : machines et bobines
+    final machinesBobinesError = ProductionSessionValidationService.validateMachinesAndBobines(
+      machines: _machinesSelectionnees,
+      bobines: _bobinesUtilisees,
+    );
+    if (machinesBobinesError != null) {
+      NotificationService.showWarning(context, machinesBobinesError);
       return;
     }
 
@@ -87,22 +90,24 @@ class ProductionSessionFormState
     try {
       final config = await ref
           .read(productionPeriodConfigProvider.future);
-      final session = ProductionSession(
-        id: widget.session?.id ?? '',
-        date: _selectedDate,
-        period: config.getPeriodForDate(_selectedDate),
+      final session = ProductionSessionBuilder.buildFromForm(
+        sessionId: widget.session?.id,
+        selectedDate: _selectedDate,
         heureDebut: _heureDebut,
         heureFin: null, // Sera défini lors de la finalisation
+        indexCompteurInitialKwh: null,
+        indexCompteurFinalKwh: null,
         consommationCourant: double.parse(_consommationController.text),
         machinesUtilisees: _machinesSelectionnees,
         bobinesUtilisees: _bobinesUtilisees,
         quantiteProduite: int.parse(_quantiteController.text),
-        quantiteProduiteUnite: 'pack',
         emballagesUtilises: _emballagesController.text.isNotEmpty
             ? int.tryParse(_emballagesController.text)
             : null,
         notes: _notesController.text.isEmpty ? null : _notesController.text,
-        // indexCompteurInitialKwh et indexCompteurFinalKwh seront ajoutés plus tard
+        status: null, // Will be calculated
+        productionDays: null, // Will default to empty list
+        period: config.getPeriodForDate(_selectedDate),
       );
 
       final controller = ref.read(productionSessionControllerProvider);
@@ -221,7 +226,6 @@ class ProductionSessionFormState
     );
   }
 
-
   Widget _buildConsommationField() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -307,5 +311,4 @@ class ProductionSessionFormState
     return DateFormatter.formatDate(date);
   }
 }
-
 

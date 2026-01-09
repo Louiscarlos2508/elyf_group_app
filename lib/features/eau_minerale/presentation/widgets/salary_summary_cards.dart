@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
@@ -11,13 +13,6 @@ class SalarySummaryCards extends ConsumerWidget {
   });
 
   final VoidCallback? onNewPayment;
-
-  String _formatCurrency(int amount) {
-    return amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        );
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -53,7 +48,7 @@ class SalarySummaryCards extends ConsumerWidget {
                       Expanded(
                         child: _SalarySummaryCard(
                           label: 'Total Mois en Cours',
-                          value: _formatCurrency(data.currentMonthTotal),
+                          value: CurrencyFormatter.formatFCFA(data.currentMonthTotal),
                           icon: Icons.trending_up,
                           color: Colors.green,
                           subtitle: 'FCFA',
@@ -81,7 +76,7 @@ class SalarySummaryCards extends ConsumerWidget {
                       const SizedBox(height: 16),
                       _SalarySummaryCard(
                         label: 'Total Mois en Cours',
-                        value: _formatCurrency(data.currentMonthTotal),
+                        value: CurrencyFormatter.formatFCFA(data.currentMonthTotal),
                         icon: Icons.trending_up,
                         color: Colors.green,
                         subtitle: 'FCFA',

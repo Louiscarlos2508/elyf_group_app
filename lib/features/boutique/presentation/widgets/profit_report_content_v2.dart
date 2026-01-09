@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/providers.dart';
@@ -14,12 +16,7 @@ class ProfitReportContentV2 extends ConsumerWidget {
   });
 
   final DateTime startDate;
-  final DateTime endDate;
-
-  String _formatCurrency(int amount) {
-    final isNegative = amount < 0;
-    final absAmount = amount.abs();
-    return '${isNegative ? '-' : ''}${absAmount.toString().replaceAllMapped(
+  final DateTime endDate;${absAmount.toString().replaceAllMapped(
           RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
           (Match m) => '${m[1]} ',
         )} FCFA';
@@ -144,7 +141,7 @@ class ProfitReportContentV2 extends ConsumerWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            _formatCurrency(data.netProfit),
+            CurrencyFormatter.formatFCFA(data.netProfit),
             style: theme.textTheme.headlineMedium?.copyWith(
               fontWeight: FontWeight.bold,
               color: isProfitable ? Colors.green.shade700 : Colors.red.shade700,
@@ -237,7 +234,7 @@ class ProfitReportContentV2 extends ConsumerWidget {
                 : theme.textTheme.bodyMedium,
           ),
           Text(
-            '${isPositive ? '+' : '-'} ${_formatCurrency(amount.abs())}',
+            '${isPositive ? '+' : '-'} ${CurrencyFormatter.formatFCFA(amount.abs())}',
             style: (isTotal
                     ? theme.textTheme.titleMedium
                     : theme.textTheme.bodyMedium)
@@ -259,7 +256,7 @@ class ProfitReportContentV2 extends ConsumerWidget {
     final cards = [
       DashboardKpiCard(
         label: 'Marge Brute',
-        value: _formatCurrency(data.grossProfit),
+        value: CurrencyFormatter.formatFCFA(data.grossProfit),
         subtitle: '${data.grossMarginPercentage.toStringAsFixed(1)}% du CA',
         icon: Icons.show_chart,
         iconColor: Colors.purple,

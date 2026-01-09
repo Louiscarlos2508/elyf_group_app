@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../domain/entities/liquidity_checkpoint.dart';
-import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
+import '../../../domain/entities/liquidity_checkpoint.dart';
+
 /// Section affichant l'activité journalière (dépôts, retraits, transactions).
 class LiquidityDailyActivitySection extends StatelessWidget {
   const LiquidityDailyActivitySection({
@@ -14,13 +13,6 @@ class LiquidityDailyActivitySection extends StatelessWidget {
 
   final LiquidityCheckpoint? checkpoint;
   final Map<String, dynamic> stats;
-
-  String _formatWithCommas(int amount) {
-    return amount.toString().replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-      (Match m) => '${m[1]},',
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -67,7 +59,7 @@ class LiquidityDailyActivitySection extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '+${_formatWithCommas(deposits)} F',
+                          '+${CurrencyFormatter.formatShort(deposits)}',
                           style: const TextStyle(
                             fontSize: 18,
                             color: Color(0xFF00A63E),
@@ -89,7 +81,7 @@ class LiquidityDailyActivitySection extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '-${_formatWithCommas(withdrawals)} F',
+                          '-${CurrencyFormatter.formatShort(withdrawals)}',
                           style: const TextStyle(
                             fontSize: 18,
                             color: Color(0xFFE7000B),

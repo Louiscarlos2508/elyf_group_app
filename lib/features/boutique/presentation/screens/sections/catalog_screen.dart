@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/boutique/application/providers.dart';
 import '../../../domain/entities/product.dart';
+import '../../../domain/services/product_filter_service.dart';
 import '../../widgets/product_form_dialog.dart';
 import '../../widgets/product_tile.dart';
 import '../../widgets/restock_dialog.dart';
@@ -25,13 +26,10 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
   }
 
   List<Product> _filterProducts(List<Product> products, String query) {
-    if (query.isEmpty) return products;
-    final lowerQuery = query.toLowerCase();
-    return products.where((product) {
-      return product.name.toLowerCase().contains(lowerQuery) ||
-          (product.category?.toLowerCase().contains(lowerQuery) ?? false) ||
-          (product.barcode?.contains(query) ?? false);
-    }).toList();
+    return ProductFilterService.filterProducts(
+      products: products,
+      query: query,
+    );
   }
 
   @override

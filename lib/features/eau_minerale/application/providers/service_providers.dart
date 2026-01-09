@@ -1,13 +1,21 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../domain/services/credit_calculation_service.dart';
 import '../../domain/services/credit_service.dart';
 import '../../domain/services/dashboard_calculation_service.dart';
 import '../../domain/services/electricity_meter_config_service.dart';
 import '../../domain/services/production_payment_calculation_service.dart';
+import '../../domain/services/production_payment_validation_service.dart';
 import '../../domain/services/production_period_service.dart';
 import '../../domain/services/production_service.dart';
 import '../../domain/services/profitability_calculation_service.dart';
 import '../../domain/services/report_calculation_service.dart';
+import '../../domain/services/payment_splitter_service.dart';
+import '../../domain/services/production_session_builder.dart';
+import '../../domain/services/production_session_status_calculator.dart';
+import '../../domain/services/production_session_validation_service.dart';
+import '../../domain/services/salary_calculation_service.dart';
+import '../../domain/services/sale_calculation_service.dart';
 import '../../domain/services/sale_service.dart';
 import '../../domain/services/validation/production_validation_service.dart';
 import 'repository_providers.dart';
@@ -23,6 +31,11 @@ final saleServiceProvider = Provider<SaleService>(
       customerRepository: customerRepo,
     );
   },
+);
+
+/// Provider for SaleCalculationService.
+final saleCalculationServiceProvider = Provider<SaleCalculationService>(
+  (ref) => SaleCalculationService(),
 );
 
 final creditServiceProvider = Provider<CreditService>(
@@ -58,6 +71,12 @@ final productionPaymentCalculationServiceProvider =
   (ref) => ProductionPaymentCalculationService(),
 );
 
+/// Provider for ProductionPaymentValidationService.
+final productionPaymentValidationServiceProvider =
+    Provider<ProductionPaymentValidationService>(
+  (ref) => ProductionPaymentValidationService(),
+);
+
 final reportCalculationServiceProvider = Provider<ReportCalculationService>(
   (ref) => ReportCalculationService(),
 );
@@ -78,5 +97,37 @@ final productionPeriodServiceProvider = Provider<ProductionPeriodService>(
 final electricityMeterConfigServiceProvider =
     Provider<ElectricityMeterConfigService>(
   (ref) => ElectricityMeterConfigService.instance,
+);
+
+/// Provider for PaymentSplitterService.
+final paymentSplitterServiceProvider = Provider<PaymentSplitterService>(
+  (ref) => PaymentSplitterService(),
+);
+
+/// Provider for ProductionSessionValidationService.
+final productionSessionValidationServiceProvider =
+    Provider<ProductionSessionValidationService>(
+  (ref) => ProductionSessionValidationService(),
+);
+
+/// Provider for ProductionSessionBuilder.
+final productionSessionBuilderProvider = Provider<ProductionSessionBuilder>(
+  (ref) => ProductionSessionBuilder(),
+);
+
+/// Provider for ProductionSessionStatusCalculator.
+final productionSessionStatusCalculatorProvider =
+    Provider<ProductionSessionStatusCalculator>(
+  (ref) => ProductionSessionStatusCalculator(),
+);
+
+/// Provider for CreditCalculationService.
+final creditCalculationServiceProvider = Provider<CreditCalculationService>(
+  (ref) => CreditCalculationService(),
+);
+
+/// Provider for SalaryCalculationService.
+final salaryCalculationServiceProvider = Provider<SalaryCalculationService>(
+  (ref) => SalaryCalculationService(),
 );
 
