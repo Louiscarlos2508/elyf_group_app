@@ -13,13 +13,6 @@ class DashboardTodaySectionV2 extends StatelessWidget {
   });
 
   final List<Payment> todayPayments;
-<<<<<<< Current (Your changes)
-      buffer.write(amountStr[i]);
-    }
-    return '$buffer FCFA';
-  }
-=======
->>>>>>> Incoming (Background Agent changes)
 
   @override
   Widget build(BuildContext context) {

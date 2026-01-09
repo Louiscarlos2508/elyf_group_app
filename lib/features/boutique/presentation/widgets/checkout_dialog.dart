@@ -48,10 +48,6 @@ class _CheckoutDialogState extends ConsumerState<CheckoutDialog>
     super.dispose();
   }
 
-<<<<<<< Current (Your changes)
-
-=======
->>>>>>> Incoming (Background Agent changes)
   int? get _amountPaid => int.tryParse(_amountPaidController.text);
   int get _change {
     if (_amountPaid == null) return 0;

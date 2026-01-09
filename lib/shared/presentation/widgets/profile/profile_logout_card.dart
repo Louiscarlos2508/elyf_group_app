@@ -31,9 +31,17 @@ class ProfileLogoutCard extends ConsumerWidget {
     );
 
     if (confirmed == true && context.mounted) {
-      // TODO: Implement actual logout logic (clear auth state, etc.)
-      // For now, just navigate to login
-      context.go('/modules');
+      // Effectuer la déconnexion via le service d'authentification
+      final authService = ref.read(authServiceProvider);
+      await authService.signOut();
+      
+      // Invalider les providers pour forcer un rechargement
+      ref.invalidate(currentUserProvider);
+      
+      // Naviguer vers la page de connexion
+      if (context.mounted) {
+        context.go('/login');
+      }
     }
   }
 

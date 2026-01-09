@@ -39,13 +39,6 @@ class FinancesScreen extends ConsumerWidget {
       ),
     );
   }
-<<<<<<< Current (Your changes)
-      buffer.write(amountStr[i]);
-    }
-    return '${buffer.toString()} CFA';
-  }
-=======
->>>>>>> Incoming (Background Agent changes)
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

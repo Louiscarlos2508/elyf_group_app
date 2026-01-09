@@ -17,10 +17,6 @@ import 'package:elyf_groupe_app/shared/presentation/widgets/refresh_button.dart'
 class ExpensesScreen extends ConsumerWidget {
   const ExpensesScreen({super.key});
 
-<<<<<<< Current (Your changes)
-
-=======
->>>>>>> Incoming (Background Agent changes)
   List<PropertyExpense> _getTodayExpenses(List<PropertyExpense> expenses, WidgetRef ref) {
     // Utiliser le service de filtrage pour extraire la logique métier
     final filterService = ref.read(expenseFilterServiceProvider);
