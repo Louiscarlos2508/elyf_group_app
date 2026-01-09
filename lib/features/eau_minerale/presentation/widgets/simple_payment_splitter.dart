@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import 'package:flutter/scheduler.dart';
 
 /// Widget simple pour répartir le montant entre Cash et Orange Money.
@@ -75,13 +77,6 @@ class _SimplePaymentSplitterState extends State<SimplePaymentSplitter> {
         _updateSplit();
       }
     });
-  }
-
-  String _formatCurrency(int amount) {
-    return amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        ) + ' CFA';
   }
 
   @override
@@ -166,7 +161,7 @@ class _SimplePaymentSplitterState extends State<SimplePaymentSplitter> {
                       ),
                     ),
                     Text(
-                      _formatCurrency(total),
+                      CurrencyFormatter.formatFCFA(total),
                       style: theme.textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: isValid ? colors.primary : colors.error,
@@ -177,7 +172,7 @@ class _SimplePaymentSplitterState extends State<SimplePaymentSplitter> {
                 if (!isValid) ...[
                   const SizedBox(height: 8),
                   Text(
-                    'Reste à saisir: ${_formatCurrency(widget.totalAmount - total)}',
+                    'Reste à saisir: ${CurrencyFormatter.formatFCFA(widget.totalAmount - total)}',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: colors.error,
                     ),

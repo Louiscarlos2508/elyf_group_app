@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import 'package:flutter/services.dart';
 
 /// Widget pour le champ de caution avec choix entre montant fixe ou nombre de mois.
@@ -93,7 +95,7 @@ class _DepositFieldState extends State<DepositField> {
               labelText: 'Caution (nombre de mois)',
               prefixIcon: const Icon(Icons.calendar_month),
               suffixText: widget.monthlyRent != null
-                  ? '= ${_formatCurrency(_calculateDeposit())} FCFA'
+                  ? '= ${CurrencyFormatter.formatFCFA(_calculateDeposit())} FCFA'
                   : null,
               helperText: widget.monthlyRent != null
                   ? '${widget.monthlyRent} FCFA × nombre de mois'
@@ -147,11 +149,5 @@ class _DepositFieldState extends State<DepositField> {
     return widget.monthlyRent! * months;
   }
 
-  String _formatCurrency(int amount) {
-    return amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        );
-  }
 }
 

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/providers.dart';
@@ -14,14 +16,7 @@ class ReportKpiCardsV2 extends ConsumerWidget {
   });
 
   final DateTime startDate;
-  final DateTime endDate;
-
-  String _formatCurrency(int amount) {
-    final isNegative = amount < 0;
-    final absAmount = amount.abs();
-    return (isNegative ? '-' : '') +
-        absAmount.toString().replaceAllMapped(
-              RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+  final DateTime endDate;)(?=(\d{3})+(?!\d))'),
               (Match m) => '${m[1]} ',
             );
   }
@@ -48,7 +43,7 @@ class ReportKpiCardsV2 extends ConsumerWidget {
                       Expanded(
                         child: DashboardKpiCard(
                           label: "Chiffre d'Affaires",
-                          value: '${_formatCurrency(data.salesRevenue)} FCFA',
+                          value: '${CurrencyFormatter.formatFCFA(data.salesRevenue)} FCFA',
                           subtitle: '${data.salesCount} ventes',
                           icon: Icons.trending_up,
                           iconColor: Colors.blue,
@@ -59,7 +54,7 @@ class ReportKpiCardsV2 extends ConsumerWidget {
                       Expanded(
                         child: DashboardKpiCard(
                           label: 'Achats',
-                          value: '${_formatCurrency(data.purchasesAmount)} FCFA',
+                          value: '${CurrencyFormatter.formatFCFA(data.purchasesAmount)} FCFA',
                           subtitle: '${data.purchasesCount} appros',
                           icon: Icons.shopping_bag,
                           iconColor: Colors.orange,
@@ -70,7 +65,7 @@ class ReportKpiCardsV2 extends ConsumerWidget {
                       Expanded(
                         child: DashboardKpiCard(
                           label: 'Dépenses',
-                          value: '${_formatCurrency(data.expensesAmount)} FCFA',
+                          value: '${CurrencyFormatter.formatFCFA(data.expensesAmount)} FCFA',
                           subtitle: '${data.expensesCount} charges',
                           icon: Icons.receipt_long,
                           iconColor: Colors.red,
@@ -82,7 +77,7 @@ class ReportKpiCardsV2 extends ConsumerWidget {
                       Expanded(
                         child: DashboardKpiCard(
                           label: 'Bénéfice Net',
-                          value: '${_formatCurrency(data.profit)} FCFA',
+                          value: '${CurrencyFormatter.formatFCFA(data.profit)} FCFA',
                           subtitle: data.profit >= 0 ? 'Profit' : 'Déficit',
                           icon: Icons.account_balance_wallet,
                           iconColor:
@@ -103,7 +98,7 @@ class ReportKpiCardsV2 extends ConsumerWidget {
                           Expanded(
                             child: DashboardKpiCard(
                               label: "Chiffre d'Affaires",
-                              value: '${_formatCurrency(data.salesRevenue)} FCFA',
+                              value: '${CurrencyFormatter.formatFCFA(data.salesRevenue)} FCFA',
                               subtitle: '${data.salesCount} ventes',
                               icon: Icons.trending_up,
                               iconColor: Colors.blue,
@@ -115,7 +110,7 @@ class ReportKpiCardsV2 extends ConsumerWidget {
                             child: DashboardKpiCard(
                               label: 'Achats',
                               value:
-                                  '${_formatCurrency(data.purchasesAmount)} FCFA',
+                                  '${CurrencyFormatter.formatFCFA(data.purchasesAmount)} FCFA',
                               subtitle: '${data.purchasesCount} appros',
                               icon: Icons.shopping_bag,
                               iconColor: Colors.orange,
@@ -131,7 +126,7 @@ class ReportKpiCardsV2 extends ConsumerWidget {
                             child: DashboardKpiCard(
                               label: 'Dépenses',
                               value:
-                                  '${_formatCurrency(data.expensesAmount)} FCFA',
+                                  '${CurrencyFormatter.formatFCFA(data.expensesAmount)} FCFA',
                               subtitle: '${data.expensesCount} charges',
                               icon: Icons.receipt_long,
                               iconColor: Colors.red,
@@ -143,7 +138,7 @@ class ReportKpiCardsV2 extends ConsumerWidget {
                           Expanded(
                             child: DashboardKpiCard(
                               label: 'Bénéfice Net',
-                              value: '${_formatCurrency(data.profit)} FCFA',
+                              value: '${CurrencyFormatter.formatFCFA(data.profit)} FCFA',
                               subtitle: data.profit >= 0 ? 'Profit' : 'Déficit',
                               icon: Icons.account_balance_wallet,
                               iconColor:

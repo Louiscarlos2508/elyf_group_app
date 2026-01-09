@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/boutique/application/providers.dart';
@@ -135,13 +137,6 @@ class _PosScreenState extends ConsumerState<PosScreen> {
 
   int get _cartTotal {
     return ref.read(storeControllerProvider).calculateCartTotal(_cartItems);
-  }
-
-  String _formatCurrency(int amount) {
-    return amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        ) + ' FCFA';
   }
 
   @override
@@ -308,7 +303,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                     label: Text('$_cartItemCount'),
                     child: const Icon(Icons.shopping_cart),
                   ),
-                  label: Text(_formatCurrency(_cartTotal)),
+                  label: Text(CurrencyFormatter.formatFCFA(_cartTotal)),
                   backgroundColor: theme.colorScheme.primary,
                   foregroundColor: theme.colorScheme.onPrimary,
                 ),

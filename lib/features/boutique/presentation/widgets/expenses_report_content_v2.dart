@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/providers.dart';
@@ -14,14 +16,6 @@ class ExpensesReportContentV2 extends ConsumerWidget {
 
   final DateTime startDate;
   final DateTime endDate;
-
-  String _formatCurrency(int amount) {
-    return '${amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        )} FCFA';
-  }
-
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -60,7 +54,7 @@ class ExpensesReportContentV2 extends ConsumerWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                '${data.expensesCount} dépenses • Total: ${_formatCurrency(data.totalAmount)}',
+                '${data.expensesCount} dépenses • Total: ${CurrencyFormatter.formatFCFA(data.totalAmount)}',
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -127,7 +121,7 @@ class ExpensesReportContentV2 extends ConsumerWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                _formatCurrency(entry.value),
+                CurrencyFormatter.formatFCFA(entry.value),
                 style: theme.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: color,
@@ -170,9 +164,9 @@ class ExpensesReportContentV2 extends ConsumerWidget {
         children: [
           _buildStatRow(theme, 'Nombre de dépenses', '${data.expensesCount}'),
           const Divider(),
-          _buildStatRow(theme, 'Dépense moyenne', _formatCurrency(data.averageExpenseAmount)),
+          _buildStatRow(theme, 'Dépense moyenne', CurrencyFormatter.formatFCFA(data.averageExpenseAmount)),
           const Divider(),
-          _buildStatRow(theme, 'Total', _formatCurrency(data.totalAmount)),
+          _buildStatRow(theme, 'Total', CurrencyFormatter.formatFCFA(data.totalAmount)),
         ],
       ),
     );

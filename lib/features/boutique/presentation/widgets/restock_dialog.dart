@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -45,21 +47,12 @@ class _RestockDialogState extends ConsumerState<RestockDialog> {
     super.dispose();
   }
 
-  String _formatCurrency(int amount) {
-    return amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        ) +
-        ' FCFA';
-  }
-
   int _calculateUnitPrice() {
     final qty = int.tryParse(_quantityController.text) ?? 0;
     final totalPrice = int.tryParse(_priceController.text) ?? 0;
     if (qty <= 0) return 0;
     return (totalPrice / qty).round();
   }
-
 
   Future<void> _saveRestock() async {
     if (!_formKey.currentState!.validate()) return;
@@ -234,7 +227,7 @@ class _RestockDialogState extends ConsumerState<RestockDialog> {
                         style: theme.textTheme.titleMedium,
                       ),
                       Text(
-                        _formatCurrency(_calculateUnitPrice()),
+                        CurrencyFormatter.formatFCFA(_calculateUnitPrice()),
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: theme.colorScheme.onPrimaryContainer,

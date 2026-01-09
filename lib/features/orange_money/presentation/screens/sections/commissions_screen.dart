@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/orange_money/application/providers.dart';
@@ -81,7 +83,7 @@ class CommissionsScreen extends ConsumerWidget {
         Expanded(
           child: KpiCard(
             label: 'En attente',
-            value: _formatCurrency(stats['pendingAmount'] as int? ?? 0),
+            value: CurrencyFormatter.formatFCFA(stats['pendingAmount'] as int? ?? 0),
             icon: Icons.pending,
             valueColor: const Color(0xFFF54900),
             valueStyle: const TextStyle(
@@ -95,7 +97,7 @@ class CommissionsScreen extends ConsumerWidget {
         Expanded(
           child: KpiCard(
             label: 'Payées',
-            value: _formatCurrency(stats['paidAmount'] as int? ?? 0),
+            value: CurrencyFormatter.formatFCFA(stats['paidAmount'] as int? ?? 0),
             icon: Icons.check_circle,
             valueColor: const Color(0xFF00A63E),
             valueStyle: const TextStyle(
@@ -109,7 +111,7 @@ class CommissionsScreen extends ConsumerWidget {
         Expanded(
           child: KpiCard(
             label: 'Estimé mois',
-            value: _formatCurrency(stats['estimatedAmount'] as int? ?? 0),
+            value: CurrencyFormatter.formatFCFA(stats['estimatedAmount'] as int? ?? 0),
             icon: Icons.trending_up,
             valueColor: const Color(0xFF9810FA),
             valueStyle: const TextStyle(
@@ -168,7 +170,7 @@ class CommissionsScreen extends ConsumerWidget {
               Expanded(
                 child: _buildStatBox(
                   'Commissions estimées',
-                  _formatCurrency(commission?.estimatedAmount ?? 0),
+                  CurrencyFormatter.formatFCFA(commission?.estimatedAmount ?? 0),
                   subtitle: 'Basé sur les transactions validées',
                   valueColor: const Color(0xFF9810FA),
                 ),
@@ -321,7 +323,7 @@ class CommissionsScreen extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Text(
-                          _formatCurrency(commission.amount),
+                          CurrencyFormatter.formatFCFA(commission.amount),
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: commission.isPaid
@@ -395,13 +397,6 @@ class CommissionsScreen extends ConsumerWidget {
         ],
       ),
     );
-  }
-
-  String _formatCurrency(int amount) {
-    return amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        ) + ' F';
   }
 
   void _showAddCommissionDialog(

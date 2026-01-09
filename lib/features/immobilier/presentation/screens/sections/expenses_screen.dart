@@ -17,9 +17,6 @@ import 'package:elyf_groupe_app/shared/presentation/widgets/refresh_button.dart'
 class ExpensesScreen extends ConsumerWidget {
   const ExpensesScreen({super.key});
 
-  String _formatCurrency(int amount) {
-    return CurrencyFormatter.formatFCFA(amount);
-  }
 
   List<PropertyExpense> _getTodayExpenses(List<PropertyExpense> expenses, WidgetRef ref) {
     // Utiliser le service de filtrage pour extraire la logique métier
@@ -275,7 +272,7 @@ class ExpensesScreen extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildDetailRow(theme, 'Montant', _formatCurrency(expense.amount)),
+            _buildDetailRow(theme, 'Montant', CurrencyFormatter.formatFCFA(expense.amount)),
             _buildDetailRow(
                 theme, 'Catégorie', _getCategoryLabel(expense.category)),
             _buildDetailRow(

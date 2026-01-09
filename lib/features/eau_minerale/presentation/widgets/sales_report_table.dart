@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
+
 import '../../domain/entities/sale.dart';
 
 /// Sales report table widget.
@@ -13,13 +15,6 @@ class SalesReportTable extends StatelessWidget {
 
   String _formatDate(DateTime date) {
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
-  }
-
-  String _formatCurrency(int amount) {
-    return amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        );
   }
 
   @override
@@ -101,11 +96,11 @@ class SalesReportTable extends StatelessWidget {
                     _buildDataCellText(context, sale.customerName),
                     _buildDataCellText(context, sale.productName),
                     _buildDataCellText(context, sale.quantity.toString()),
-                    _buildDataCellText(context, _formatCurrency(sale.totalPrice)),
+                    _buildDataCellText(context, CurrencyFormatter.formatFCFA(sale.totalPrice)),
                     _buildDataCellWidget(
                       context,
                       Text(
-                        _formatCurrency(sale.amountPaid),
+                        CurrencyFormatter.formatFCFA(sale.amountPaid),
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: Colors.green,
                           fontWeight: FontWeight.w600,
@@ -115,7 +110,7 @@ class SalesReportTable extends StatelessWidget {
                     _buildDataCellWidget(
                       context,
                       Text(
-                        _formatCurrency(remaining),
+                        CurrencyFormatter.formatFCFA(remaining),
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: remaining > 0 ? Colors.red : Colors.green,
                           fontWeight: FontWeight.w600,
@@ -213,7 +208,7 @@ class SalesReportTable extends StatelessWidget {
                     child: _buildMobileStatCard(
                       context,
                       'Total',
-                      '${_formatCurrency(sale.totalPrice)} F',
+                      '${CurrencyFormatter.formatFCFA(sale.totalPrice)} F',
                       Icons.receipt,
                     ),
                   ),
@@ -226,7 +221,7 @@ class SalesReportTable extends StatelessWidget {
                     child: _buildMobileStatCard(
                       context,
                       'Payé',
-                      '${_formatCurrency(sale.amountPaid)} F',
+                      '${CurrencyFormatter.formatFCFA(sale.amountPaid)} F',
                       Icons.payment,
                       color: Colors.green,
                     ),
@@ -236,7 +231,7 @@ class SalesReportTable extends StatelessWidget {
                     child: _buildMobileStatCard(
                       context,
                       'Reste',
-                      '${_formatCurrency(remaining)} F',
+                      '${CurrencyFormatter.formatFCFA(remaining)} F',
                       Icons.account_balance_wallet,
                       color: remaining > 0 ? Colors.red : Colors.green,
                     ),

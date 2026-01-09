@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
@@ -15,13 +17,6 @@ class CreditHistoryDialog extends ConsumerWidget {
 
   final String customerId;
   final String customerName;
-
-  String _formatCurrency(int amount) {
-    return '${amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        )} CFA';
-  }
 
   String _formatDate(DateTime date) {
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
@@ -272,7 +267,7 @@ class CreditHistoryDialog extends ConsumerWidget {
                                       crossAxisAlignment: CrossAxisAlignment.end,
                                       children: [
                                         Text(
-                                          _formatCurrency(sale.totalPrice),
+                                          CurrencyFormatter.formatFCFA(sale.totalPrice),
                                           style: theme.textTheme.bodyLarge?.copyWith(
                                             fontWeight: FontWeight.bold,
                                           ),
@@ -298,7 +293,7 @@ class CreditHistoryDialog extends ConsumerWidget {
                                     _buildStatItem(
                                       theme,
                                       'Payé',
-                                      _formatCurrency(totalPaid),
+                                      CurrencyFormatter.formatFCFA(totalPaid),
                                       Colors.green,
                                     ),
                                     Container(
@@ -309,7 +304,7 @@ class CreditHistoryDialog extends ConsumerWidget {
                                     _buildStatItem(
                                       theme,
                                       'Restant',
-                                      _formatCurrency(sale.remainingAmount),
+                                      CurrencyFormatter.formatFCFA(sale.remainingAmount),
                                       theme.colorScheme.error,
                                     ),
                                   ],
@@ -354,7 +349,7 @@ class CreditHistoryDialog extends ConsumerWidget {
                                                   crossAxisAlignment: CrossAxisAlignment.start,
                                                   children: [
                                                     Text(
-                                                      _formatCurrency(payment.amount),
+                                                      CurrencyFormatter.formatFCFA(payment.amount),
                                                       style: theme.textTheme.bodyMedium?.copyWith(
                                                         fontWeight: FontWeight.w600,
                                                       ),

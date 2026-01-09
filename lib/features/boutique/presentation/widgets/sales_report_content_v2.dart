@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/providers.dart';
@@ -14,13 +16,6 @@ class SalesReportContentV2 extends ConsumerWidget {
 
   final DateTime startDate;
   final DateTime endDate;
-
-  String _formatCurrency(int amount) {
-    return '${amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        )} FCFA';
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -59,7 +54,7 @@ class SalesReportContentV2 extends ConsumerWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                '${data.salesCount} ventes • Total: ${_formatCurrency(data.totalRevenue)}',
+                '${data.salesCount} ventes • Total: ${CurrencyFormatter.formatFCFA(data.totalRevenue)}',
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -146,7 +141,7 @@ class SalesReportContentV2 extends ConsumerWidget {
             ),
           ),
           Text(
-            _formatCurrency(product.revenue),
+            CurrencyFormatter.formatFCFA(product.revenue),
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.bold,
               color: Colors.green.shade700,
@@ -170,7 +165,7 @@ class SalesReportContentV2 extends ConsumerWidget {
           const Divider(),
           _buildStatRow(theme, 'Nombre de ventes', '${data.salesCount}'),
           const Divider(),
-          _buildStatRow(theme, 'Panier moyen', _formatCurrency(data.averageSaleAmount)),
+          _buildStatRow(theme, 'Panier moyen', CurrencyFormatter.formatFCFA(data.averageSaleAmount)),
         ],
       ),
     );

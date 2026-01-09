@@ -56,8 +56,8 @@ class SalesReceiptTemplate {
           _formatLine(
             '',
             '${item.quantity}x',
-            _formatCurrency(item.unitPrice),
-            _formatCurrency(item.totalPrice),
+            CurrencyFormatter.formatFCFA(item.unitPrice),
+            CurrencyFormatter.formatFCFA(item.totalPrice),
           ),
         ),
       );
@@ -68,7 +68,7 @@ class SalesReceiptTemplate {
     buffer.writeln();
     
     // Totaux (centrés)
-    buffer.writeln(_centerText('Sous-total: ${_formatCurrency(sale.totalAmount)}'));
+    buffer.writeln(_centerText('Sous-total: ${CurrencyFormatter.formatFCFA(sale.totalAmount)}'));
     buffer.writeln();
     
     if (sale.paymentMethod != null) {
@@ -77,11 +77,11 @@ class SalesReceiptTemplate {
       buffer.writeln();
     }
     
-    buffer.writeln(_centerText('Montant payé: ${_formatCurrency(sale.amountPaid)}'));
+    buffer.writeln(_centerText('Montant payé: ${CurrencyFormatter.formatFCFA(sale.amountPaid)}'));
     buffer.writeln();
     
     if (sale.change > 0) {
-      buffer.writeln(_centerText('Monnaie: ${_formatCurrency(sale.change)}'));
+      buffer.writeln(_centerText('Monnaie: ${CurrencyFormatter.formatFCFA(sale.change)}'));
       buffer.writeln();
     }
     
@@ -141,11 +141,6 @@ class SalesReceiptTemplate {
   String _formatTime(DateTime date) {
     return '${date.hour.toString().padLeft(2, '0')}:'
         '${date.minute.toString().padLeft(2, '0')}';
-  }
-
-  String _formatCurrency(int amount) {
-    // Utiliser CurrencyFormatter mais avec " F" au lieu de " FCFA" pour l'impression
-    return CurrencyFormatter.formatFCFA(amount).replaceAll(' FCFA', ' F');
   }
 
   String _getPaymentMethodLabel(PaymentMethod method) {

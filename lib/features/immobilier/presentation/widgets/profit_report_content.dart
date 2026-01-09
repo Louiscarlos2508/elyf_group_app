@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/immobilier/application/providers.dart';
@@ -14,17 +16,6 @@ class ProfitReportContent extends ConsumerWidget {
 
   final DateTime startDate;
   final DateTime endDate;
-
-  String _formatCurrency(int amount) {
-    final isNegative = amount < 0;
-    final absAmount = amount.abs();
-    return (isNegative ? '-' : '') +
-        absAmount.toString().replaceAllMapped(
-              RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-              (Match m) => '${m[1]} ',
-            ) +
-        ' FCFA';
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -153,7 +144,7 @@ class ProfitReportContent extends ConsumerWidget {
                           ),
                         ),
                         Text(
-                          _formatCurrency(profit),
+                          CurrencyFormatter.formatFCFA(profit),
                           style: theme.textTheme.headlineSmall?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: profit >= 0
@@ -218,7 +209,7 @@ class ProfitReportContent extends ConsumerWidget {
           ),
         ),
         Text(
-          '${isExpense ? '-' : '+'}${_formatCurrency(value)}',
+          '${isExpense ? '-' : '+'}${CurrencyFormatter.formatFCFA(value)}',
           style: theme.textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.bold,
             color: color.shade700,

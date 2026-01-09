@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
+
 import '../../domain/entities/expense.dart';
 import '../../domain/services/dashboard_calculation_service.dart';
 
@@ -18,13 +20,6 @@ class MonthlyExpenseSummary extends StatelessWidget {
   
   /// Service for getting category labels.
   final BoutiqueDashboardCalculationService calculationService;
-
-  String _formatCurrency(int amount) {
-    return '${amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        )} FCFA';
-  }
 
   Color _getCategoryColor(ExpenseCategory category) {
     switch (category) {
@@ -91,7 +86,7 @@ class MonthlyExpenseSummary extends StatelessWidget {
                   style: theme.textTheme.titleMedium,
                 ),
                 Text(
-                  _formatCurrency(monthlyTotal),
+                  CurrencyFormatter.formatFCFA(monthlyTotal),
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: Colors.red.shade700,
@@ -135,7 +130,7 @@ class MonthlyExpenseSummary extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      _formatCurrency(entry.value),
+                      CurrencyFormatter.formatFCFA(entry.value),
                       style: theme.textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),

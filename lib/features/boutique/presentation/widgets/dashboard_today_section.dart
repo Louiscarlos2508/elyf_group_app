@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
+
 import '../../domain/services/dashboard_calculation_service.dart';
 import 'dashboard_kpi_card.dart';
 
@@ -14,14 +16,6 @@ class DashboardTodaySection extends StatelessWidget {
 
   /// Pre-calculated today metrics from [BoutiqueDashboardCalculationService].
   final DashboardTodayMetrics metrics;
-
-  String _formatCurrency(int amount) {
-    final amountStr = amount.toString();
-    final buffer = StringBuffer();
-    for (var i = 0; i < amountStr.length; i++) {
-      if (i > 0 && (amountStr.length - i) % 3 == 0) {
-        buffer.write(' ');
-      }
       buffer.write(amountStr[i]);
     }
     return '$buffer FCFA';
@@ -39,7 +33,7 @@ class DashboardTodaySection extends StatelessWidget {
         final cards = [
           DashboardKpiCard(
             label: "Chiffre d'Affaires",
-            value: _formatCurrency(todayRevenue),
+            value: CurrencyFormatter.formatFCFA(todayRevenue),
             subtitle: '$todayCount vente(s)',
             icon: Icons.trending_up,
             iconColor: Colors.blue,
@@ -47,7 +41,7 @@ class DashboardTodaySection extends StatelessWidget {
           ),
           DashboardKpiCard(
             label: 'Ticket Moyen',
-            value: _formatCurrency(avgTicket),
+            value: CurrencyFormatter.formatFCFA(avgTicket),
             subtitle: todayCount > 0 ? 'par transaction' : 'aucune vente',
             icon: Icons.receipt,
             iconColor: Colors.green,

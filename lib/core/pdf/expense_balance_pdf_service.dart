@@ -133,7 +133,7 @@ class ExpenseBalancePdfService {
               ),
               pw.SizedBox(height: 4),
               pw.Text(
-                _formatCurrency(totalAmount),
+                CurrencyFormatter.formatFCFA(totalAmount),
                 style: pw.TextStyle(
                   fontSize: 20,
                   fontWeight: pw.FontWeight.bold,
@@ -191,7 +191,7 @@ class ExpenseBalancePdfService {
             children: [
               _buildTableCell(getCategoryLabel(entry.key)),
               _buildTableCell(
-                '${_formatCurrency(entry.value)} (${percentage.toStringAsFixed(1)}%)',
+                '${CurrencyFormatter.formatFCFA(entry.value)} (${percentage.toStringAsFixed(1)}%)',
               ),
             ],
           );
@@ -232,7 +232,7 @@ class ExpenseBalancePdfService {
               _buildTableCell(dateFormat.format(expense.date)),
               _buildTableCell(expense.label),
               _buildTableCell(getCategoryLabel(expense.category)),
-              _buildTableCell(_formatCurrency(expense.amount)),
+              _buildTableCell(CurrencyFormatter.formatFCFA(expense.amount)),
             ],
           );
         }),
@@ -265,8 +265,5 @@ class ExpenseBalancePdfService {
     );
   }
 
-  String _formatCurrency(int amount) {
-    return CurrencyFormatter.formatFCFA(amount);
-  }
 }
 

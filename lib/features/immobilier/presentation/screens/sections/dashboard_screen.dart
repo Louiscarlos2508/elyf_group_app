@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/immobilier/application/providers.dart';
 import '../../../domain/entities/contract.dart';
 import '../../../domain/entities/payment.dart';
 import '../../../domain/entities/property.dart';
+import '../../../domain/services/dashboard_calculation_service.dart';
 import '../../widgets/dashboard_alerts_section.dart';
 import '../../widgets/dashboard_header_v2.dart';
 import '../../widgets/dashboard_month_section_v2.dart';
@@ -22,6 +22,9 @@ class DashboardScreen extends ConsumerWidget {
     final contractsAsync = ref.watch(contractsProvider);
     final paymentsAsync = ref.watch(paymentsProvider);
     final expensesAsync = ref.watch(expensesProvider);
+    final tenantsAsync = ref.watch(tenantsProvider);
+    final calculationService =
+        ref.watch(immobilierDashboardCalculationServiceProvider);
 
     return Scaffold(
       body: CustomScrollView(
@@ -60,23 +63,7 @@ class DashboardScreen extends ConsumerWidget {
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
             sliver: SliverToBoxAdapter(
-              child: paymentsAsync.when(
-                data: (payments) {
-                  final today = DateTime.now();
-                  final todayPayments = payments
-                      .where((p) =>
-                          p.paymentDate.year == today.year &&
-                          p.paymentDate.month == today.month &&
-                          p.paymentDate.day == today.day)
-                      .toList();
-                  return DashboardTodaySectionV2(todayPayments: todayPayments);
-                },
-                loading: () => const SizedBox(
-                  height: 120,
-                  child: Center(child: CircularProgressIndicator()),
-                ),
-                error: (_, __) => const SizedBox.shrink(),
-              ),
+              child: _DashboardTodayKpis(paymentsAsync: paymentsAsync),
             ),
           ),
 
@@ -87,11 +74,13 @@ class DashboardScreen extends ConsumerWidget {
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
             sliver: SliverToBoxAdapter(
-              child: _buildMonthKpis(
-                propertiesAsync,
-                contractsAsync,
-                paymentsAsync,
-                expensesAsync,
+              child: _DashboardMonthKpis(
+                propertiesAsync: propertiesAsync,
+                tenantsAsync: tenantsAsync,
+                contractsAsync: contractsAsync,
+                paymentsAsync: paymentsAsync,
+                expensesAsync: expensesAsync,
+                calculationService: calculationService,
               ),
             ),
           ),
@@ -103,7 +92,10 @@ class DashboardScreen extends ConsumerWidget {
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
             sliver: SliverToBoxAdapter(
-              child: _buildAlerts(paymentsAsync, contractsAsync),
+              child: _DashboardAlerts(
+                paymentsAsync: paymentsAsync,
+                contractsAsync: contractsAsync,
+              ),
             ),
           ),
         ],
@@ -126,52 +118,95 @@ class DashboardScreen extends ConsumerWidget {
       ),
     );
   }
+}
 
-  Widget _buildMonthKpis(
-    AsyncValue<List<Property>> propertiesAsync,
-    AsyncValue<List<Contract>> contractsAsync,
-    AsyncValue<List<Payment>> paymentsAsync,
-    AsyncValue expensesAsync,
-  ) {
+/// Widget privé pour les KPIs d'aujourd'hui.
+class _DashboardTodayKpis extends StatelessWidget {
+  const _DashboardTodayKpis({required this.paymentsAsync});
+
+  final AsyncValue<List<Payment>> paymentsAsync;
+
+  @override
+  Widget build(BuildContext context) {
+    return paymentsAsync.when(
+      data: (payments) {
+        final today = DateTime.now();
+        final todayPayments = payments
+            .where((p) =>
+                p.paymentDate.year == today.year &&
+                p.paymentDate.month == today.month &&
+                p.paymentDate.day == today.day)
+            .toList();
+        return DashboardTodaySectionV2(todayPayments: todayPayments);
+      },
+      loading: () => const SizedBox(
+        height: 120,
+        child: Center(child: CircularProgressIndicator()),
+      ),
+      error: (_, __) => const SizedBox.shrink(),
+    );
+  }
+}
+
+/// Widget privé pour les KPIs du mois.
+class _DashboardMonthKpis extends StatelessWidget {
+  const _DashboardMonthKpis({
+    required this.propertiesAsync,
+    required this.tenantsAsync,
+    required this.contractsAsync,
+    required this.paymentsAsync,
+    required this.expensesAsync,
+    required this.calculationService,
+  });
+
+  final AsyncValue<List<Property>> propertiesAsync;
+  final AsyncValue tenantsAsync;
+  final AsyncValue<List<Contract>> contractsAsync;
+  final AsyncValue<List<Payment>> paymentsAsync;
+  final AsyncValue expensesAsync;
+  final ImmobilierDashboardCalculationService calculationService;
+
+  @override
+  Widget build(BuildContext context) {
     return propertiesAsync.when(
       data: (properties) {
-        final now = DateTime.now();
-        final monthStart = DateTime(now.year, now.month, 1);
+        return tenantsAsync.when(
+          data: (tenants) {
+            return contractsAsync.when(
+              data: (contracts) {
+                return paymentsAsync.when(
+                  data: (payments) {
+                    return expensesAsync.when(
+                      data: (expenses) {
+                        // Use calculation service for business logic
+                        final metrics = calculationService.calculateMonthlyMetrics(
+                          properties: properties,
+                          tenants: tenants as List,
+                          contracts: contracts,
+                          payments: payments,
+                          expenses: expenses as List,
+                        );
 
-        final totalProperties = properties.length;
-        final rentedProperties =
-            properties.where((p) => p.status == PropertyStatus.rented).length;
-        final occupancyRate =
-            totalProperties > 0 ? (rentedProperties / totalProperties) * 100 : 0.0;
-
-        return paymentsAsync.when(
-          data: (payments) {
-            final monthPayments = payments
-                .where((p) =>
-                    p.paymentDate.isAfter(
-                        monthStart.subtract(const Duration(days: 1))) &&
-                    p.status == PaymentStatus.paid)
-                .toList();
-            final monthRevenue =
-                monthPayments.fold(0, (sum, p) => sum + p.amount);
-
-            return expensesAsync.when(
-              data: (expenses) {
-                final monthExpenses = (expenses as List)
-                    .where((e) => e.expenseDate
-                        .isAfter(monthStart.subtract(const Duration(days: 1))))
-                    .toList();
-                final monthExpensesAmount =
-                    monthExpenses.fold<int>(0, (sum, e) => sum + (e.amount as int));
-
-                final monthProfit = monthRevenue - monthExpensesAmount;
-
-                return DashboardMonthSectionV2(
-                  monthRevenue: monthRevenue,
-                  monthPaymentsCount: monthPayments.length,
-                  monthExpensesAmount: monthExpensesAmount,
-                  monthProfit: monthProfit,
-                  occupancyRate: occupancyRate,
+                        return DashboardMonthSectionV2(
+                          monthRevenue: metrics.monthRevenue,
+                          monthPaymentsCount: 0,
+                          monthExpensesAmount: metrics.monthExpensesTotal,
+                          monthProfit: metrics.netRevenue,
+                          occupancyRate: metrics.occupancyRate,
+                        );
+                      },
+                      loading: () => const SizedBox(
+                        height: 200,
+                        child: Center(child: CircularProgressIndicator()),
+                      ),
+                      error: (_, __) => const SizedBox.shrink(),
+                    );
+                  },
+                  loading: () => const SizedBox(
+                    height: 200,
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
+                  error: (_, __) => const SizedBox.shrink(),
                 );
               },
               loading: () => const SizedBox(
@@ -195,11 +230,20 @@ class DashboardScreen extends ConsumerWidget {
       error: (_, __) => const SizedBox.shrink(),
     );
   }
+}
 
-  Widget _buildAlerts(
-    AsyncValue<List<Payment>> paymentsAsync,
-    AsyncValue<List<Contract>> contractsAsync,
-  ) {
+/// Widget privé pour les alertes.
+class _DashboardAlerts extends StatelessWidget {
+  const _DashboardAlerts({
+    required this.paymentsAsync,
+    required this.contractsAsync,
+  });
+
+  final AsyncValue<List<Payment>> paymentsAsync;
+  final AsyncValue<List<Contract>> contractsAsync;
+
+  @override
+  Widget build(BuildContext context) {
     return paymentsAsync.when(
       data: (payments) {
         final unpaidPayments = payments

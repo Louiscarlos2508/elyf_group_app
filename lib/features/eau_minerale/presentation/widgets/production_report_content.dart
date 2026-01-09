@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
@@ -15,13 +17,6 @@ class ProductionReportContent extends ConsumerWidget {
   });
 
   final ReportPeriod period;
-
-  String _formatCurrency(int amount) {
-    return amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        );
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -62,7 +57,7 @@ class ProductionReportContent extends ConsumerWidget {
                   Expanded(
                     child: _SummaryCard(
                       label: 'Quantité Totale',
-                      value: '${_formatCurrency(data.totalQuantity)} unités',
+                      value: '${CurrencyFormatter.formatFCFA(data.totalQuantity)} unités',
                       icon: Icons.inventory_2,
                       color: Colors.blue,
                     ),
@@ -84,7 +79,7 @@ class ProductionReportContent extends ConsumerWidget {
                   Expanded(
                     child: _SummaryCard(
                       label: 'Coût Total',
-                      value: '${_formatCurrency(data.totalCost)} FCFA',
+                      value: '${CurrencyFormatter.formatFCFA(data.totalCost)} FCFA',
                       icon: Icons.attach_money,
                       color: Colors.red,
                     ),
@@ -94,7 +89,7 @@ class ProductionReportContent extends ConsumerWidget {
                     child: _SummaryCard(
                       label: 'Coût/Unité',
                       value: data.totalQuantity > 0
-                          ? '${_formatCurrency((data.totalCost / data.totalQuantity).round())} FCFA'
+                          ? '${CurrencyFormatter.formatFCFA((data.totalCost / data.totalQuantity).round())} FCFA'
                           : '0 FCFA',
                       icon: Icons.calculate,
                       color: Colors.orange,
@@ -125,17 +120,17 @@ class ProductionReportContent extends ConsumerWidget {
                     const SizedBox(height: 12),
                     _CostDetailRow(
                       label: 'Bobines',
-                      value: '${_formatCurrency(data.totalBobinesCost)} FCFA',
+                      value: '${CurrencyFormatter.formatFCFA(data.totalBobinesCost)} FCFA',
                     ),
                     const SizedBox(height: 8),
                     _CostDetailRow(
                       label: 'Électricité',
-                      value: '${_formatCurrency(data.totalElectricityCost)} FCFA',
+                      value: '${CurrencyFormatter.formatFCFA(data.totalElectricityCost)} FCFA',
                     ),
                     const SizedBox(height: 8),
                     _CostDetailRow(
                       label: 'Personnel',
-                      value: '${_formatCurrency(data.totalPersonnelCost)} FCFA',
+                      value: '${CurrencyFormatter.formatFCFA(data.totalPersonnelCost)} FCFA',
                     ),
                   ],
                 ),
@@ -232,13 +227,6 @@ class _ProductionCard extends StatelessWidget {
 
   final ProductionSession production;
 
-  String _formatCurrency(int amount) {
-    return amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        ) + ' FCFA';
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -294,27 +282,27 @@ class _ProductionCard extends StatelessWidget {
                       children: [
                         _DetailItem(
                           label: 'Coût total',
-                          value: _formatCurrency(production.coutTotal),
+                          value: CurrencyFormatter.formatFCFA(production.coutTotal),
                         ),
                         if (production.coutBobines != null && production.coutBobines! > 0) ...[
                           const SizedBox(height: 4),
                           _DetailItem(
                             label: '  • Bobines',
-                            value: _formatCurrency(production.coutBobines!),
+                            value: CurrencyFormatter.formatFCFA(production.coutBobines!),
                           ),
                         ],
                         if (production.coutElectricite != null && production.coutElectricite! > 0) ...[
                           const SizedBox(height: 4),
                           _DetailItem(
                             label: '  • Électricité',
-                            value: _formatCurrency(production.coutElectricite!),
+                            value: CurrencyFormatter.formatFCFA(production.coutElectricite!),
                           ),
                         ],
                         if (production.coutTotalPersonnel > 0) ...[
                           const SizedBox(height: 4),
                           _DetailItem(
                             label: '  • Personnel',
-                            value: _formatCurrency(production.coutTotalPersonnel),
+                            value: CurrencyFormatter.formatFCFA(production.coutTotalPersonnel),
                           ),
                         ],
                       ],

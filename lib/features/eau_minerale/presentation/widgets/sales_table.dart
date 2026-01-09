@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
+
 import '../../domain/entities/sale.dart';
 import 'sales_table_desktop.dart';
 import 'sales_table_mobile.dart';
@@ -14,13 +16,6 @@ class SalesTable extends StatelessWidget {
 
   final List<Sale> sales;
   final void Function(Sale sale, String action)? onActionTap;
-
-  String _formatCurrency(int amount) {
-    // Format with spaces for thousands separator
-    final amountStr = amount.toString();
-    if (amountStr.length <= 3) {
-      return amountStr;
-    }
     
     final buffer = StringBuffer();
     final reversed = amountStr.split('').reversed.join();

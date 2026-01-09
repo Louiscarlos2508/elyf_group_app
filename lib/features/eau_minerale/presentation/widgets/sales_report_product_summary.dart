@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
+
 import '../../domain/entities/product_sales_summary.dart';
 
 /// Product summary widget for sales report.
@@ -10,13 +12,6 @@ class SalesReportProductSummary extends StatelessWidget {
   });
 
   final ProductSalesSummary summary;
-
-  String _formatCurrency(int amount) {
-    return amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        ) + ' FCFA';
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,7 +48,7 @@ class SalesReportProductSummary extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                _formatCurrency(summary.revenue),
+                CurrencyFormatter.formatFCFA(summary.revenue),
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),

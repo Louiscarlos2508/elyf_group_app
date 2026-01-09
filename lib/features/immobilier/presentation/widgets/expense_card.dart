@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
+
 import '../../domain/entities/expense.dart';
 
 /// Carte réutilisable pour afficher une dépense.
@@ -12,13 +14,6 @@ class ExpenseCard extends StatelessWidget {
 
   final PropertyExpense expense;
   final VoidCallback? onTap;
-
-  String _formatCurrency(int amount) {
-    return amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        ) + ' F';
-  }
 
   String _formatDate(DateTime date) {
     return '${date.day.toString().padLeft(2, '0')}/'
@@ -120,7 +115,7 @@ class ExpenseCard extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    _formatCurrency(expense.amount),
+                    CurrencyFormatter.formatFCFA(expense.amount),
                     style: theme.textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: theme.colorScheme.error,
