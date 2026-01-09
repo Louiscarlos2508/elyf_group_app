@@ -16,19 +16,6 @@ class SalesTable extends StatelessWidget {
 
   final List<Sale> sales;
   final void Function(Sale sale, String action)? onActionTap;
-    
-    final buffer = StringBuffer();
-    final reversed = amountStr.split('').reversed.join();
-    
-    for (int i = 0; i < reversed.length; i++) {
-      if (i > 0 && i % 3 == 0) {
-        buffer.write(' ');
-      }
-      buffer.write(reversed[i]);
-    }
-    
-    return buffer.toString().split('').reversed.join();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -64,13 +51,13 @@ class SalesTable extends StatelessWidget {
         if (isWide) {
           return SalesTableDesktop(
             sales: todaySales,
-            formatCurrency: _formatCurrency,
+            formatCurrency: CurrencyFormatter.formatFCFA,
             onActionTap: onActionTap,
           );
         } else {
           return SalesTableMobile(
             sales: todaySales,
-            formatCurrency: _formatCurrency,
+            formatCurrency: CurrencyFormatter.formatFCFA,
             onActionTap: onActionTap,
           );
         }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import '../../../domain/entities/liquidity_checkpoint.dart';
 
 /// Widget affichant la liste des pointages de liquidité.
@@ -11,13 +12,6 @@ class LiquidityCheckpointsList extends StatelessWidget {
   });
 
   final List<LiquidityCheckpoint> checkpoints;
-
-  String _formatWithCommas(int amount) {
-    return amount.toString().replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-      (Match m) => '${m[1]},',
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -138,7 +132,6 @@ class LiquidityCheckpointsList extends StatelessWidget {
                     titleColor: const Color(0xFFCA3500),
                     cashAmount: checkpoint.morningCashAmount ?? 0,
                     simAmount: checkpoint.morningSimAmount ?? 0,
-                    formatWithCommas: _formatWithCommas,
                   ),
                 if (hasMorning && hasEvening) const SizedBox(height: 12),
                 if (hasEvening &&
@@ -150,11 +143,10 @@ class LiquidityCheckpointsList extends StatelessWidget {
                     titleColor: const Color(0xFF7C3AED),
                     cashAmount: checkpoint.eveningCashAmount ?? 0,
                     simAmount: checkpoint.eveningSimAmount ?? 0,
-                    formatWithCommas: _formatWithCommas,
                   ),
                 if (hasMorning && hasEvening) ...[
                   const SizedBox(height: 12),
-                  _buildVariancesCard(checkpoint, _formatWithCommas),
+                  _buildVariancesCard(checkpoint),
                 ],
               ],
             ],
@@ -164,10 +156,7 @@ class LiquidityCheckpointsList extends StatelessWidget {
     );
   }
 
-  Widget _buildVariancesCard(
-    LiquidityCheckpoint checkpoint,
-    String Function(int) formatWithCommas,
-  ) {
+  Widget _buildVariancesCard(LiquidityCheckpoint checkpoint) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -207,7 +196,7 @@ class LiquidityCheckpointsList extends StatelessWidget {
                   final diff = eveningCash - morningCash;
                   final isPositive = diff >= 0;
                   return Text(
-                    '${isPositive ? '+' : ''}${formatWithCommas(diff)} F',
+                    '${isPositive ? '+' : ''}${CurrencyFormatter.formatShort(diff.abs())}',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
@@ -238,7 +227,7 @@ class LiquidityCheckpointsList extends StatelessWidget {
                   final diff = eveningSim - morningSim;
                   final isPositive = diff >= 0;
                   return Text(
-                    '${isPositive ? '+' : ''}${formatWithCommas(diff)} F',
+                    '${isPositive ? '+' : ''}${CurrencyFormatter.formatShort(diff.abs())}',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
@@ -276,7 +265,7 @@ class LiquidityCheckpointsList extends StatelessWidget {
                   final diff = eveningTotal - morningTotal;
                   final isPositive = diff >= 0;
                   return Text(
-                    '${isPositive ? '+' : ''}${formatWithCommas(diff)} F',
+                    '${isPositive ? '+' : '-'}${CurrencyFormatter.formatShort(diff.abs())}',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
@@ -302,7 +291,6 @@ class _PeriodCard extends StatelessWidget {
     required this.titleColor,
     required this.cashAmount,
     required this.simAmount,
-    required this.formatWithCommas,
   });
 
   final String title;
@@ -310,7 +298,6 @@ class _PeriodCard extends StatelessWidget {
   final Color titleColor;
   final int cashAmount;
   final int simAmount;
-  final String Function(int) formatWithCommas;
 
   @override
   Widget build(BuildContext context) {
@@ -349,7 +336,7 @@ class _PeriodCard extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          '${formatWithCommas(cashAmount)} F',
+                          CurrencyFormatter.formatShort(cashAmount),
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
@@ -373,7 +360,7 @@ class _PeriodCard extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          '${formatWithCommas(simAmount)} F',
+                          CurrencyFormatter.formatShort(simAmount),
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,

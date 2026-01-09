@@ -113,7 +113,6 @@ class UnifiedPaymentPdfService extends BasePaymentPdfService {
     );
   }
 
-
   pw.Widget _buildPaymentDetails(Payment payment) {
     final itemLabel = _getPaymentItemLabel(payment);
     return PaymentPdfHelpers.buildBorderedContainer(

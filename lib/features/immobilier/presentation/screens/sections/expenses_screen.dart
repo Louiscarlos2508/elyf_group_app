@@ -17,7 +17,6 @@ import 'package:elyf_groupe_app/shared/presentation/widgets/refresh_button.dart'
 class ExpensesScreen extends ConsumerWidget {
   const ExpensesScreen({super.key});
 
-
   List<PropertyExpense> _getTodayExpenses(List<PropertyExpense> expenses, WidgetRef ref) {
     // Utiliser le service de filtrage pour extraire la logique métier
     final filterService = ref.read(expenseFilterServiceProvider);
@@ -171,7 +170,7 @@ class ExpensesScreen extends ConsumerWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 24),
                       child: DailyExpenseSummaryCardV2(
                         total: todayTotal,
-                        formatCurrency: _formatCurrency,
+                        formatCurrency: CurrencyFormatter.formatFCFA,
                       ),
                     ),
                   ),
@@ -202,7 +201,7 @@ class ExpensesScreen extends ConsumerWidget {
                             padding: const EdgeInsets.all(20),
                             child: ExpensesTableV2(
                               expenses: todayExpenses,
-                              formatCurrency: _formatCurrency,
+                              formatCurrency: CurrencyFormatter.formatFCFA,
                               onActionTap: (expense, action) {
                                 if (action == 'delete') {
                                   _confirmDelete(context, ref, expense);

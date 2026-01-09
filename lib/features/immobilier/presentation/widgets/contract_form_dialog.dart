@@ -176,7 +176,6 @@ class _ContractFormDialogState extends ConsumerState<ContractFormDialog>
     );
   }
 
-
   @override
   Widget build(BuildContext context) {
     final propertiesAsync = ref.watch(propertiesProvider);

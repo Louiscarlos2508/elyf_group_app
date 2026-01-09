@@ -15,7 +15,6 @@ class PaymentCard extends StatelessWidget {
   final Payment payment;
   final VoidCallback? onTap;
 
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);

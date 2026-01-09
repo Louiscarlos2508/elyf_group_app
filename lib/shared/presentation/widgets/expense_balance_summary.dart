@@ -18,7 +18,6 @@ class ExpenseBalanceSummary extends StatelessWidget {
   final DateTime startDate;
   final DateTime endDate;
 
-
   String _formatDateRange() {
     final dateFormat = DateFormat('dd/MM/yyyy');
     return '${dateFormat.format(startDate)} - ${dateFormat.format(endDate)}';

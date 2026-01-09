@@ -1,22 +1,21 @@
 import 'package:flutter/material.dart';
 
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
+import 'package:elyf_groupe_app/shared/utils/date_formatter.dart';
 import '../../domain/entities/contract.dart';
 
 /// Helpers pour les cartes de contrat.
+///
+/// Utilise les formatters partagés pour éviter la duplication.
 class ContractCardHelpers {
   ContractCardHelpers._();
 
   static String formatCurrency(int amount) {
-    return amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        ) + ' F';
+    return CurrencyFormatter.formatShort(amount);
   }
 
   static String formatDate(DateTime date) {
-    return '${date.day.toString().padLeft(2, '0')}/'
-        '${date.month.toString().padLeft(2, '0')}/'
-        '${date.year}';
+    return DateFormatter.formatDate(date);
   }
 
   static String getStatusLabel(ContractStatus status) {

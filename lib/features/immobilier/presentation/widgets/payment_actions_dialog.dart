@@ -39,7 +39,6 @@ class _PaymentActionsDialogState extends State<PaymentActionsDialog> {
     }
   }
 
-
   Future<void> _printReceipt() async {
     if (_isPrinting) return;
     setState(() => _isPrinting = true);

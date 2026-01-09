@@ -20,10 +20,6 @@ class DashboardMonthSectionV2 extends StatelessWidget {
   final int monthExpensesAmount;
   final int monthProfit;
   final double occupancyRate;
-      buffer.write(amountStr[i]);
-    }
-    return '${isNegative ? '-' : ''}$buffer FCFA';
-  }
 
   @override
   Widget build(BuildContext context) {

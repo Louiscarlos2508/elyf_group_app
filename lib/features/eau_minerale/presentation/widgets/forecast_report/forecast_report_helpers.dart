@@ -1,16 +1,15 @@
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import '../../../domain/entities/sale.dart';
 
 /// Helpers pour les calculs de prévisions.
+///
+/// Utilise les formatters partagés pour éviter la duplication.
 class ForecastReportHelpers {
   ForecastReportHelpers._();
 
   /// Formate un montant en FCFA avec séparateurs de milliers.
   static String formatCurrency(int amount) {
-    final formatted = amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        );
-    return '$formatted FCFA';
+    return CurrencyFormatter.formatFCFA(amount);
   }
 
   /// Groupe les ventes par semaine.

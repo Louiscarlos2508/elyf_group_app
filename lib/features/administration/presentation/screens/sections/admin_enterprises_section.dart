@@ -134,7 +134,6 @@ class AdminEnterprisesSection extends ConsumerWidget {
     }
   }
 
-
   void _navigateToEnterprise(
     BuildContext context,
     Enterprise enterprise,

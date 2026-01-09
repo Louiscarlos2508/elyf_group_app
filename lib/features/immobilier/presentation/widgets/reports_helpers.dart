@@ -1,16 +1,16 @@
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import '../../domain/entities/expense.dart';
 import '../../domain/entities/payment.dart';
 import '../../domain/entities/report_period.dart';
 
 /// Helpers pour les rapports.
+///
+/// Utilise les formatters partagés pour éviter la duplication.
 class ReportsHelpers {
   ReportsHelpers._();
 
   static String formatCurrency(int amount) {
-    return amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        ) + ' F';
+    return CurrencyFormatter.formatShort(amount);
   }
 
   static List<Payment> getPaymentsInPeriod(

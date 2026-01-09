@@ -48,7 +48,6 @@ class _CheckoutDialogState extends ConsumerState<CheckoutDialog>
     super.dispose();
   }
 
-
   int? get _amountPaid => int.tryParse(_amountPaidController.text);
   int get _change {
     if (_amountPaid == null) return 0;

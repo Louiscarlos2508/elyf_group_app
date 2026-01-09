@@ -186,7 +186,6 @@ class MonthlySalaryPaymentFormState
     await _requestSignatureAndSubmit();
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Form(

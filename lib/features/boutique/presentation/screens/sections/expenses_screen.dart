@@ -17,7 +17,6 @@ import 'package:elyf_groupe_app/shared/presentation/widgets/refresh_button.dart'
 class ExpensesScreen extends ConsumerWidget {
   const ExpensesScreen({super.key});
 
-
   List<Expense> _getTodayExpenses(List<Expense> expenses) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -172,7 +171,7 @@ class ExpensesScreen extends ConsumerWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 24),
                       child: DailyExpenseSummaryCard(
                         total: todayTotal,
-                        formatCurrency: _formatCurrency,
+                        formatCurrency: CurrencyFormatter.formatFCFA,
                       ),
                     ),
                   ),
@@ -203,7 +202,7 @@ class ExpensesScreen extends ConsumerWidget {
                             padding: const EdgeInsets.all(20),
                             child: ExpensesTable(
                               expenses: todayExpenses,
-                              formatCurrency: _formatCurrency,
+                              formatCurrency: CurrencyFormatter.formatFCFA,
                               onActionTap: (expense, action) {
                                 if (action == 'delete') {
                                   _confirmDelete(context, ref, expense);

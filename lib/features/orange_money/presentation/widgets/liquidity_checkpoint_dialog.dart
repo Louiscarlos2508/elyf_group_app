@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import '../../domain/entities/liquidity_checkpoint.dart';
 import '../../domain/services/liquidity_checkpoint_service.dart';
 import 'package:elyf_groupe_app/shared.dart';
@@ -466,13 +467,6 @@ class _LiquidityCheckpointDialogState
     final simAmount = int.tryParse(_simController.text.trim()) ?? 0;
     final total = cashAmount + simAmount;
 
-    String _formatWithCommas(int amount) {
-      return amount.toString().replaceAllMapped(
-        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-        (Match m) => '${m[1]},',
-      );
-    }
-
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFFF0FDF4),
@@ -495,7 +489,7 @@ class _LiquidityCheckpointDialogState
           ),
           const SizedBox(height: 4),
           Text(
-            '${_formatWithCommas(total)} F',
+            CurrencyFormatter.formatShort(total),
             style: const TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.normal,
@@ -504,7 +498,7 @@ class _LiquidityCheckpointDialogState
           ),
           const SizedBox(height: 4),
           Text(
-            'Cash: ${_formatWithCommas(cashAmount)} F + SIM: ${_formatWithCommas(simAmount)} F',
+            'Cash: ${CurrencyFormatter.formatShort(cashAmount)} + SIM: ${CurrencyFormatter.formatShort(simAmount)}',
             style: const TextStyle(
               fontSize: 12,
               color: Color(0xFF00A63E),

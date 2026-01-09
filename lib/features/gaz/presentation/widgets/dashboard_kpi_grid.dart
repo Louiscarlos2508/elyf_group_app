@@ -23,7 +23,6 @@ class GazDashboardKpiGrid extends ConsumerWidget {
   final List<GasSale> sales;
   final List<GazExpense> expenses;
 
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Récupérer le stock total (pleines) depuis CylinderStock

@@ -84,7 +84,6 @@ class StockController {
     await _bobineStockQuantityRepository.save(updatedStock);
   }
 
-
   /// Enregistre une sortie de bobine du stock (installation en production).
   /// Utilise le nouveau système de stock par quantité.
   /// [productionId] est optionnel car lors de l'installation, la session peut ne pas être encore créée.
@@ -131,7 +130,6 @@ class StockController {
     );
     await _bobineStockQuantityRepository.save(updatedStock);
   }
-
 
   /// Enregistre un retrait de bobine après utilisation complète.
   /// Avec le nouveau système par quantité, le stock est déjà décrémenté lors de l'installation.

@@ -1,20 +1,20 @@
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
+import 'package:elyf_groupe_app/shared/utils/date_formatter.dart';
+
 /// Helpers pour le formatage des factures eau minérale.
+///
+/// Utilise les formatters partagés pour éviter la duplication.
 class InvoicePrintHelpers {
   InvoicePrintHelpers._();
 
   /// Formate un montant en FCFA avec séparateurs de milliers.
   static String formatCurrency(int amount) {
-    return '${amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        )} FCFA';
+    return CurrencyFormatter.formatFCFA(amount);
   }
 
   /// Formate une date au format DD/MM/YYYY.
   static String formatDate(DateTime date) {
-    return '${date.day.toString().padLeft(2, '0')}/'
-        '${date.month.toString().padLeft(2, '0')}/'
-        '${date.year}';
+    return DateFormatter.formatDate(date);
   }
 
   /// Formate une heure au format HH:MM.

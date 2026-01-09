@@ -21,7 +21,6 @@ class GazDashboardMonthSection extends StatelessWidget {
   final double monthExpensesAmount;
   final double monthProfit;
 
-
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(

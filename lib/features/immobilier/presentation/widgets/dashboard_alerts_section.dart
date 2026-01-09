@@ -19,10 +19,6 @@ class DashboardAlertsSection extends StatelessWidget {
   final List<Contract> expiringContracts;
   final void Function(Payment)? onPaymentTap;
   final void Function(Contract)? onContractTap;
-      buffer.write(amountStr[i]);
-    }
-    return '$buffer F';
-  }
 
   @override
   Widget build(BuildContext context) {

@@ -71,7 +71,6 @@ class ProductionSessionFormState
     super.dispose();
   }
 
-
   Future<void> submit() async {
     if (!_formKey.currentState!.validate()) return;
     if (_machinesSelectionnees.isEmpty) {
@@ -221,7 +220,6 @@ class ProductionSessionFormState
     );
   }
 
-
   Widget _buildConsommationField() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -307,5 +305,4 @@ class ProductionSessionFormState
     return DateFormatter.formatDate(date);
   }
 }
-
 

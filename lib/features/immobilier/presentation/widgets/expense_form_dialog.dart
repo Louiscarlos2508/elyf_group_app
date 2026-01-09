@@ -111,7 +111,6 @@ class _ExpenseFormDialogState extends ConsumerState<ExpenseFormDialog>
     );
   }
 
-
   @override
   Widget build(BuildContext context) {
     final propertiesAsync = ref.watch(propertiesProvider);

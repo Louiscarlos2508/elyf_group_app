@@ -19,7 +19,6 @@ class CollectionItemWidget extends StatelessWidget {
   final Collection collection;
   final VoidCallback? onEdit;
 
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);

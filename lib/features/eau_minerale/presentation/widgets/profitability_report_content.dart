@@ -115,7 +115,7 @@ class ProfitabilityReportContent extends ConsumerWidget {
             totalProductionCost: metrics.totalProductionCost,
             totalExpenses: totalExpenses,
             grossProfit: metrics.grossProfit,
-            formatCurrency: _formatCurrency,
+            formatCurrency: CurrencyFormatter.formatFCFA,
           ),
         ],
       ),
@@ -218,7 +218,7 @@ class ProfitabilityReportContent extends ConsumerWidget {
                 estimatedCost: product.estimatedCost,
                 margin: product.margin,
                 marginPercent: product.marginPercent,
-                formatCurrency: _formatCurrency,
+                formatCurrency: CurrencyFormatter.formatFCFA,
               )),
       ],
     );

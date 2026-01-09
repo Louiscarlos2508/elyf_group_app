@@ -25,19 +25,6 @@ class CustomerCreditCard extends ConsumerWidget {
   final List<CustomerCredit> credits;
   final VoidCallback? onHistoryTap;
   final VoidCallback? onPaymentTap;
-    
-    final buffer = StringBuffer();
-    final reversed = amountStr.split('').reversed.join();
-    
-    for (int i = 0; i < reversed.length; i++) {
-      if (i > 0 && i % 3 == 0) {
-        buffer.write(' ');
-      }
-      buffer.write(reversed[i]);
-    }
-    
-    return buffer.toString().split('').reversed.join();
-  }
 
   String _formatDate(DateTime date) {
     return '${date.day}/${date.month}/${date.year}';
@@ -96,7 +83,7 @@ class CustomerCreditCard extends ConsumerWidget {
             child: CustomerCreditHeader(
               customer: customer,
               totalCredit: totalCredit,
-              formatCurrency: _formatCurrency,
+              formatCurrency: CurrencyFormatter.formatFCFA,
             ),
           ),
           // Credits list
@@ -129,7 +116,7 @@ class CustomerCreditCard extends ConsumerWidget {
                       padding: const EdgeInsets.only(bottom: 12),
                       child: CustomerCreditItem(
                         credit: credit,
-                        formatCurrency: _formatCurrency,
+                        formatCurrency: CurrencyFormatter.formatFCFA,
                         formatDate: _formatDate,
                       ),
                     );

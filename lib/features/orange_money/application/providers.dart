@@ -102,7 +102,6 @@ final filteredTransactionsProvider = FutureProvider.autoDispose
   },
 );
 
-
 /// Provider for agent repository.
 final agentRepositoryProvider = Provider<AgentRepository>(
   (ref) {

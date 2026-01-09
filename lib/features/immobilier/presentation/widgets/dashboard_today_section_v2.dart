@@ -13,10 +13,6 @@ class DashboardTodaySectionV2 extends StatelessWidget {
   });
 
   final List<Payment> todayPayments;
-      buffer.write(amountStr[i]);
-    }
-    return '$buffer FCFA';
-  }
 
   @override
   Widget build(BuildContext context) {

@@ -19,7 +19,6 @@ class DashboardPointOfSalePerformance extends StatelessWidget {
   final Map<String, int> stockByPos; // posId -> stock count
   final Map<String, int>? salesCountByPos; // posId -> sales count
 
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);

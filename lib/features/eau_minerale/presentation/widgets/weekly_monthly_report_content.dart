@@ -171,7 +171,7 @@ class WeeklyMonthlyReportContent extends ConsumerWidget {
               else
                 ...sessions.map((session) => _ProductionSummaryCard(
                       session: session,
-                      formatCurrency: _formatCurrency,
+                      formatCurrency: CurrencyFormatter.formatFCFA,
                     )),
             ],
           ),
@@ -336,7 +336,7 @@ class _ExpenseCategoryChart extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      '${entry.value.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]} ')} FCFA',
+                      CurrencyFormatter.formatFCFA(entry.value),
                       style: theme.textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: Colors.red.shade700,

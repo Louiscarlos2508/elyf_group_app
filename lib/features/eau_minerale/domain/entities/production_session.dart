@@ -51,7 +51,6 @@ class ProductionSession {
   final List<ProductionEvent> events; // Événements (pannes, coupures, arrêts)
   final List<ProductionDay> productionDays; // Jours de production avec personnel
 
-
   /// Calcule la durée de production en heures
   double get dureeHeures {
     if (heureFin == null) {
@@ -62,7 +61,6 @@ class ProductionSession {
     final difference = heureFin!.difference(heureDebut);
     return difference.inMinutes / 60.0;
   }
-
 
   /// Calcule le coût total de la session (bobines + électricité + personnel)
   int get coutTotal {

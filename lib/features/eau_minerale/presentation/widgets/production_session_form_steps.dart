@@ -305,7 +305,6 @@ class ProductionSessionFormStepsState
     );
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Form(
@@ -406,10 +405,6 @@ class ProductionSessionFormStepsState
         return const SizedBox.shrink();
     }
   }
-
-
-
-
 
 }
 

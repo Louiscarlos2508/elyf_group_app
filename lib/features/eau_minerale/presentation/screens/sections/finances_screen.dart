@@ -39,10 +39,6 @@ class FinancesScreen extends ConsumerWidget {
       ),
     );
   }
-      buffer.write(amountStr[i]);
-    }
-    return '${buffer.toString()} CFA';
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -53,7 +49,7 @@ class FinancesScreen extends ConsumerWidget {
           state: data,
           ref: ref,
           onNewExpense: () => _showForm(context),
-          formatCurrency: _formatCurrency,
+          formatCurrency: CurrencyFormatter.formatCFA,
           onActionTap: (expense, action) {
             if (action == 'view') {
               showDialog(

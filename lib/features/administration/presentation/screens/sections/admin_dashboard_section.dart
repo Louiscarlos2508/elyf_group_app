@@ -9,7 +9,6 @@ import '../../../domain/services/enterprise_type_service.dart';
 class AdminDashboardSection extends ConsumerWidget {
   const AdminDashboardSection({super.key});
 
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);

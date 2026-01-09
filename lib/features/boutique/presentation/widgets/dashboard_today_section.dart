@@ -16,10 +16,6 @@ class DashboardTodaySection extends StatelessWidget {
 
   /// Pre-calculated today metrics from [BoutiqueDashboardCalculationService].
   final DashboardTodayMetrics metrics;
-      buffer.write(amountStr[i]);
-    }
-    return '$buffer FCFA';
-  }
 
   @override
   Widget build(BuildContext context) {
