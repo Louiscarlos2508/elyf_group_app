@@ -1,10 +1,228 @@
 import '../entities/collection.dart';
+import '../entities/cylinder.dart';
+import '../entities/cylinder_stock.dart';
 import '../entities/expense.dart';
 import '../entities/gas_sale.dart';
+import '../entities/point_of_sale.dart';
 
 /// Service de calculs métier pour le module gaz.
 class GazCalculationService {
   GazCalculationService._();
+
+  // ============================================================
+  // MÉTHODES DE FILTRAGE
+  // ============================================================
+
+  /// Filtre les ventes par plage de dates.
+  static List<GasSale> filterSalesByDateRange(
+    List<GasSale> sales, {
+    DateTime? startDate,
+    DateTime? endDate,
+  }) {
+    if (startDate == null && endDate == null) {
+      return sales;
+    }
+
+    final start = startDate ?? DateTime(2020);
+    final end = endDate ?? DateTime.now();
+
+    return sales.where((s) {
+      final saleDate = DateTime(
+        s.saleDate.year,
+        s.saleDate.month,
+        s.saleDate.day,
+      );
+      return saleDate.isAfter(start.subtract(const Duration(days: 1))) &&
+          saleDate.isBefore(end.add(const Duration(days: 1)));
+    }).toList();
+  }
+
+  /// Filtre les ventes par type.
+  static List<GasSale> filterSalesByType(
+    List<GasSale> sales,
+    SaleType saleType,
+  ) {
+    return sales.where((s) => s.saleType == saleType).toList();
+  }
+
+  /// Filtre les ventes en gros.
+  static List<GasSale> filterWholesaleSales(List<GasSale> sales) {
+    return filterSalesByType(sales, SaleType.wholesale);
+  }
+
+  /// Filtre les ventes au détail.
+  static List<GasSale> filterRetailSales(List<GasSale> sales) {
+    return filterSalesByType(sales, SaleType.retail);
+  }
+
+  // ============================================================
+  // MÉTHODES DE CALCUL DES VENTES EN GROS
+  // ============================================================
+
+  /// Calcule les métriques des ventes en gros pour une période.
+  static WholesaleMetrics calculateWholesaleMetrics(
+    List<GasSale> allSales, {
+    DateTime? startDate,
+    DateTime? endDate,
+  }) {
+    final wholesaleSales = filterWholesaleSales(allSales);
+    final filteredSales = filterSalesByDateRange(
+      wholesaleSales,
+      startDate: startDate,
+      endDate: endDate,
+    );
+
+    final salesCount = filteredSales.length;
+    final totalSold = filteredSales.fold<double>(
+      0,
+      (sum, s) => sum + s.totalAmount,
+    );
+    // TODO: Ajouter le statut de paiement à GasSale
+    final collected = totalSold;
+    const credit = 0.0;
+
+    return WholesaleMetrics(
+      salesCount: salesCount,
+      totalSold: totalSold,
+      collected: collected,
+      credit: credit,
+      sales: filteredSales,
+    );
+  }
+
+  // ============================================================
+  // MÉTHODES DE CALCUL DU STOCK
+  // ============================================================
+
+  /// Filtre les stocks par statut plein.
+  static List<CylinderStock> filterFullStocks(List<CylinderStock> stocks) {
+    return stocks.where((s) => s.status == CylinderStatus.full).toList();
+  }
+
+  /// Filtre les stocks par statut vide.
+  static List<CylinderStock> filterEmptyStocks(List<CylinderStock> stocks) {
+    return stocks
+        .where((s) =>
+            s.status == CylinderStatus.emptyAtStore ||
+            s.status == CylinderStatus.emptyInTransit)
+        .toList();
+  }
+
+  /// Calcule le total des bouteilles pleines.
+  static int calculateTotalFullCylinders(List<CylinderStock> stocks) {
+    return filterFullStocks(stocks).fold<int>(
+      0,
+      (sum, s) => sum + s.quantity,
+    );
+  }
+
+  /// Calcule le total des bouteilles vides.
+  static int calculateTotalEmptyCylinders(List<CylinderStock> stocks) {
+    return filterEmptyStocks(stocks).fold<int>(
+      0,
+      (sum, s) => sum + s.quantity,
+    );
+  }
+
+  /// Groupe les stocks par poids.
+  static Map<int, int> groupStocksByWeight(List<CylinderStock> stocks) {
+    final byWeight = <int, int>{};
+    for (final stock in stocks) {
+      byWeight[stock.weight] = (byWeight[stock.weight] ?? 0) + stock.quantity;
+    }
+    return byWeight;
+  }
+
+  /// Calcule les métriques de stock complètes.
+  static StockMetrics calculateStockMetrics({
+    required List<CylinderStock> stocks,
+    required List<PointOfSale> pointsOfSale,
+    required List<Cylinder> cylinders,
+  }) {
+    final fullStocks = filterFullStocks(stocks);
+    final emptyStocks = filterEmptyStocks(stocks);
+
+    final totalFull = fullStocks.fold<int>(0, (sum, s) => sum + s.quantity);
+    final totalEmpty = emptyStocks.fold<int>(0, (sum, s) => sum + s.quantity);
+
+    final fullByWeight = groupStocksByWeight(fullStocks);
+    final emptyByWeight = groupStocksByWeight(emptyStocks);
+
+    final activePointsOfSale =
+        pointsOfSale.where((p) => p.isActive).toList();
+
+    // Extraire les poids uniques des bouteilles existantes
+    final weightsToShow = cylinders.map((c) => c.weight).toSet().toList()
+      ..sort();
+
+    return StockMetrics(
+      totalFull: totalFull,
+      totalEmpty: totalEmpty,
+      fullByWeight: fullByWeight,
+      emptyByWeight: emptyByWeight,
+      activePointsOfSaleCount: activePointsOfSale.length,
+      totalPointsOfSaleCount: pointsOfSale.length,
+      availableWeights: weightsToShow,
+    );
+  }
+
+  /// Formate le résumé des stocks par poids.
+  static String formatStockByWeightSummary(
+    Map<int, int> stockByWeight,
+    List<int> weights,
+  ) {
+    if (weights.isEmpty) {
+      return 'Aucune bouteille';
+    }
+    return weights.map((w) => '${w}kg: ${stockByWeight[w] ?? 0}').join(' • ');
+  }
+
+  // ============================================================
+  // MÉTHODES DE CALCUL DES VENTES AU DÉTAIL
+  // ============================================================
+
+  /// Calcule les métriques des ventes au détail.
+  static RetailMetrics calculateRetailMetrics(
+    List<GasSale> allSales,
+    List<Cylinder> cylinders, {
+    DateTime? referenceDate,
+  }) {
+    final now = referenceDate ?? DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    
+    final retailSales = filterRetailSales(allSales);
+    final todaySales = retailSales.where((s) {
+      final saleDate = DateTime(
+        s.saleDate.year,
+        s.saleDate.month,
+        s.saleDate.day,
+      );
+      return saleDate.isAtSameMomentAs(today);
+    }).toList();
+
+    final todayRevenue = todaySales.fold<double>(
+      0,
+      (sum, s) => sum + s.totalAmount,
+    );
+
+    // Calcul par poids de bouteille
+    final salesByWeight = <int, int>{};
+    for (final cylinder in cylinders) {
+      salesByWeight[cylinder.weight] = 0;
+    }
+    for (final sale in todaySales) {
+      for (final item in sale.items) {
+        salesByWeight[item.weight] =
+            (salesByWeight[item.weight] ?? 0) + item.quantity;
+      }
+    }
+
+    return RetailMetrics(
+      todaySalesCount: todaySales.length,
+      todayRevenue: todayRevenue,
+      salesByWeight: salesByWeight,
+    );
+  }
 
   /// Calcule les ventes du jour.
   static List<GasSale> calculateTodaySales(List<GasSale> sales) {
@@ -162,5 +380,125 @@ class GazCalculationService {
     final totalExpenses = calculateTotalExpenses(expenses);
     return totalRevenue - totalExpenses;
   }
+
+  // ============================================================
+  // MÉTHODES DE CALCUL DU MOIS
+  // ============================================================
+
+  /// Calcule les ventes du mois.
+  static List<GasSale> calculateMonthSales(
+    List<GasSale> sales, {
+    DateTime? referenceDate,
+  }) {
+    final now = referenceDate ?? DateTime.now();
+    final monthStart = DateTime(now.year, now.month, 1);
+    return sales.where((s) {
+      return s.saleDate.isAfter(monthStart.subtract(const Duration(days: 1)));
+    }).toList();
+  }
+
+  /// Calcule le revenu du mois.
+  static double calculateMonthRevenue(
+    List<GasSale> sales, {
+    DateTime? referenceDate,
+  }) {
+    final monthSales = calculateMonthSales(sales, referenceDate: referenceDate);
+    return monthSales.fold<double>(0, (sum, s) => sum + s.totalAmount);
+  }
+
+  /// Calcule les dépenses du mois.
+  static double calculateMonthExpenses(
+    List<GazExpense> expenses, {
+    DateTime? referenceDate,
+  }) {
+    final now = referenceDate ?? DateTime.now();
+    final monthStart = DateTime(now.year, now.month, 1);
+    final monthExpenses = expenses.where((e) {
+      return e.date.isAfter(monthStart.subtract(const Duration(days: 1)));
+    }).toList();
+    return monthExpenses.fold<double>(0, (sum, e) => sum + e.amount);
+  }
+
+  /// Calcule le profit du mois.
+  static double calculateMonthProfit(
+    List<GasSale> sales,
+    List<GazExpense> expenses, {
+    DateTime? referenceDate,
+  }) {
+    final monthRevenue = calculateMonthRevenue(
+      sales,
+      referenceDate: referenceDate,
+    );
+    final monthExpenses = calculateMonthExpenses(
+      expenses,
+      referenceDate: referenceDate,
+    );
+    return monthRevenue - monthExpenses;
+  }
+}
+
+// ============================================================
+// CLASSES DE MÉTRIQUES
+// ============================================================
+
+/// Métriques des ventes en gros.
+class WholesaleMetrics {
+  const WholesaleMetrics({
+    required this.salesCount,
+    required this.totalSold,
+    required this.collected,
+    required this.credit,
+    required this.sales,
+  });
+
+  final int salesCount;
+  final double totalSold;
+  final double collected;
+  final double credit;
+  final List<GasSale> sales;
+}
+
+/// Métriques du stock.
+class StockMetrics {
+  const StockMetrics({
+    required this.totalFull,
+    required this.totalEmpty,
+    required this.fullByWeight,
+    required this.emptyByWeight,
+    required this.activePointsOfSaleCount,
+    required this.totalPointsOfSaleCount,
+    required this.availableWeights,
+  });
+
+  final int totalFull;
+  final int totalEmpty;
+  final Map<int, int> fullByWeight;
+  final Map<int, int> emptyByWeight;
+  final int activePointsOfSaleCount;
+  final int totalPointsOfSaleCount;
+  final List<int> availableWeights;
+
+  String get fullSummary => GazCalculationService.formatStockByWeightSummary(
+        fullByWeight,
+        availableWeights,
+      );
+
+  String get emptySummary => GazCalculationService.formatStockByWeightSummary(
+        emptyByWeight,
+        availableWeights,
+      );
+}
+
+/// Métriques des ventes au détail.
+class RetailMetrics {
+  const RetailMetrics({
+    required this.todaySalesCount,
+    required this.todayRevenue,
+    required this.salesByWeight,
+  });
+
+  final int todaySalesCount;
+  final double todayRevenue;
+  final Map<int, int> salesByWeight;
 }
 
