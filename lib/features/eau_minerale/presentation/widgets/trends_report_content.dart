@@ -17,11 +17,7 @@ class TrendsReportContent extends ConsumerWidget {
     required this.period,
   });
 
-  final ReportPeriod period;)(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        );
-    return '$formatted FCFA';
-  }
+  final ReportPeriod period;
 
   ReportPeriod get _previousPeriod {
     final duration = period.endDate.difference(period.startDate);
