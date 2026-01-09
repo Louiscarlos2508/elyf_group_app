@@ -25,22 +25,6 @@ class CustomerCreditCard extends ConsumerWidget {
   final List<CustomerCredit> credits;
   final VoidCallback? onHistoryTap;
   final VoidCallback? onPaymentTap;
-<<<<<<< Current (Your changes)
-    
-    final buffer = StringBuffer();
-    final reversed = amountStr.split('').reversed.join();
-    
-    for (int i = 0; i < reversed.length; i++) {
-      if (i > 0 && i % 3 == 0) {
-        buffer.write(' ');
-      }
-      buffer.write(reversed[i]);
-    }
-    
-    return buffer.toString().split('').reversed.join();
-  }
-=======
->>>>>>> Incoming (Background Agent changes)
 
   String _formatDate(DateTime date) {
     return '${date.day}/${date.month}/${date.year}';

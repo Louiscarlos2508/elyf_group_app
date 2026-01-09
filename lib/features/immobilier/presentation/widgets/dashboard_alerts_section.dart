@@ -19,13 +19,6 @@ class DashboardAlertsSection extends StatelessWidget {
   final List<Contract> expiringContracts;
   final void Function(Payment)? onPaymentTap;
   final void Function(Contract)? onContractTap;
-<<<<<<< Current (Your changes)
-      buffer.write(amountStr[i]);
-    }
-    return '$buffer F';
-  }
-=======
->>>>>>> Incoming (Background Agent changes)
 
   @override
   Widget build(BuildContext context) {

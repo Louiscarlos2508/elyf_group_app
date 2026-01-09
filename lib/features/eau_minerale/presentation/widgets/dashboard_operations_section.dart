@@ -19,13 +19,6 @@ class DashboardOperationsSection extends ConsumerWidget {
 
   final AsyncValue<dynamic> productionState; // TODO: Remplacer par productionSessionsStateProvider
   final AsyncValue<FinancesState> financesState;
-<<<<<<< Current (Your changes)
-      buffer.write(amountStr[i]);
-    }
-    return '${buffer.toString()} CFA';
-  }
-=======
->>>>>>> Incoming (Background Agent changes)
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

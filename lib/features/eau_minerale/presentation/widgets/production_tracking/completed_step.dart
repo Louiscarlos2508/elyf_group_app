@@ -19,7 +19,7 @@ class CompletedStep extends StatelessWidget {
     final statusColors = Theme.of(context).extension<StatusColors>();
 
     return Card(
-      color: statusColors?.success.withOpacity(0.1),
+      color: statusColors?.success.withValues(alpha: 0.1),
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(

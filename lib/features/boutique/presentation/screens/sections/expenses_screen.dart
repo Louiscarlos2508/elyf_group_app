@@ -17,10 +17,6 @@ import 'package:elyf_groupe_app/shared/presentation/widgets/refresh_button.dart'
 class ExpensesScreen extends ConsumerWidget {
   const ExpensesScreen({super.key});
 
-<<<<<<< Current (Your changes)
-
-=======
->>>>>>> Incoming (Background Agent changes)
   List<Expense> _getTodayExpenses(List<Expense> expenses) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);

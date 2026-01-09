@@ -164,31 +164,6 @@ class OfflineRecordDao {
           ..where((t) => t.enterpriseId.equals(enterpriseId)))
         .go();
   }
-<<<<<<< Current (Your changes)
-=======
-
-  /// Updates the remote ID for a record after successful sync.
-  Future<void> updateRemoteId({
-    required String collectionName,
-    required String localId,
-    required String remoteId,
-    DateTime? serverUpdatedAt,
-  }) async {
-    await (_db.update(_db.offlineRecords)
-          ..where(
-            (t) =>
-                t.collectionName.equals(collectionName) &
-                t.localId.equals(localId),
-          ))
-        .write(
-      OfflineRecordsCompanion(
-        remoteId: Value(remoteId),
-        localUpdatedAt: Value(serverUpdatedAt ?? DateTime.now()),
-      ),
-    );
-  }
-}
->>>>>>> Incoming (Background Agent changes)
 
   /// Updates the remote ID for a record after successful sync.
   Future<void> updateRemoteId({

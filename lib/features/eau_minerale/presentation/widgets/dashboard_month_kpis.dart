@@ -13,13 +13,6 @@ import 'dashboard_kpi_card.dart';
 /// Section displaying monthly KPIs with production sessions data.
 class DashboardMonthKpis extends ConsumerWidget {
   const DashboardMonthKpis({super.key});
-<<<<<<< Current (Your changes)
-      buffer.write(amountStr[i]);
-    }
-    return '${buffer.toString()} CFA';
-  }
-=======
->>>>>>> Incoming (Background Agent changes)
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

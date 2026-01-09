@@ -16,13 +16,6 @@ class DashboardTodaySection extends StatelessWidget {
 
   /// Pre-calculated today metrics from [BoutiqueDashboardCalculationService].
   final DashboardTodayMetrics metrics;
-<<<<<<< Current (Your changes)
-      buffer.write(amountStr[i]);
-    }
-    return '$buffer FCFA';
-  }
-=======
->>>>>>> Incoming (Background Agent changes)
 
   @override
   Widget build(BuildContext context) {

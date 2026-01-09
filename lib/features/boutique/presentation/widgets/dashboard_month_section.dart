@@ -20,13 +20,6 @@ class DashboardMonthSection extends StatelessWidget {
   final int monthPurchasesAmount;
   final int monthExpensesAmount;
   final int monthProfit;
-<<<<<<< Current (Your changes)
-      buffer.write(amountStr[i]);
-    }
-    return '${isNegative ? '-' : ''}$buffer FCFA';
-  }
-=======
->>>>>>> Incoming (Background Agent changes)
 
   @override
   Widget build(BuildContext context) {
