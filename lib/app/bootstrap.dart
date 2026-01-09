@@ -68,19 +68,76 @@ Future<void> _initializeOfflineServices() async {
     final firebaseHandler = FirebaseSyncHandler(
       firestore: firestore,
       collectionPaths: {
+        // Boutique module
         'sales': (enterpriseId) => 'enterprises/$enterpriseId/sales',
         'products': (enterpriseId) => 'enterprises/$enterpriseId/products',
         'expenses': (enterpriseId) => 'enterprises/$enterpriseId/expenses',
+        'purchases': (enterpriseId) => 'enterprises/$enterpriseId/purchases',
+
+        // Eau Minérale module
         'customers': (enterpriseId) => 'enterprises/$enterpriseId/customers',
+        'machines': (enterpriseId) => 'enterprises/$enterpriseId/machines',
+        'bobines': (enterpriseId) => 'enterprises/$enterpriseId/bobines',
+        'productionSessions': (enterpriseId) =>
+            'enterprises/$enterpriseId/productionSessions',
+        'employees': (enterpriseId) => 'enterprises/$enterpriseId/employees',
+        'salary_payments': (enterpriseId) =>
+            'enterprises/$enterpriseId/salaryPayments',
+        'production_payments': (enterpriseId) =>
+            'enterprises/$enterpriseId/productionPayments',
+        'credit_payments': (enterpriseId) =>
+            'enterprises/$enterpriseId/creditPayments',
+        'daily_workers': (enterpriseId) =>
+            'enterprises/$enterpriseId/dailyWorkers',
+        'bobine_stocks': (enterpriseId) =>
+            'enterprises/$enterpriseId/bobineStocks',
+        'bobine_stock_movements': (enterpriseId) =>
+            'enterprises/$enterpriseId/bobineStockMovements',
+        'expense_records': (enterpriseId) =>
+            'enterprises/$enterpriseId/expenseRecords',
+        'stock_items': (enterpriseId) => 'enterprises/$enterpriseId/stockItems',
+        'stock_movements': (enterpriseId) =>
+            'enterprises/$enterpriseId/stockMovements',
+        'packaging_stocks': (enterpriseId) =>
+            'enterprises/$enterpriseId/packagingStocks',
+        'packaging_stock_movements': (enterpriseId) =>
+            'enterprises/$enterpriseId/packagingStockMovements',
+
+        // Orange Money module
         'agents': (enterpriseId) => 'enterprises/$enterpriseId/agents',
-        'transactions': (enterpriseId) => 'enterprises/$enterpriseId/transactions',
+        'transactions': (enterpriseId) =>
+            'enterprises/$enterpriseId/transactions',
+        'commissions': (enterpriseId) =>
+            'enterprises/$enterpriseId/commissions',
+        'liquidity_checkpoints': (enterpriseId) =>
+            'enterprises/$enterpriseId/liquidityCheckpoints',
+        'orange_money_settings': (enterpriseId) =>
+            'enterprises/$enterpriseId/orangeMoneySettings',
+
+        // Immobilier module
         'properties': (enterpriseId) => 'enterprises/$enterpriseId/properties',
         'tenants': (enterpriseId) => 'enterprises/$enterpriseId/tenants',
         'contracts': (enterpriseId) => 'enterprises/$enterpriseId/contracts',
         'payments': (enterpriseId) => 'enterprises/$enterpriseId/payments',
-        'machines': (enterpriseId) => 'enterprises/$enterpriseId/machines',
-        'bobines': (enterpriseId) => 'enterprises/$enterpriseId/bobines',
-        'productionSessions': (enterpriseId) => 'enterprises/$enterpriseId/productionSessions',
+        'property_expenses': (enterpriseId) =>
+            'enterprises/$enterpriseId/propertyExpenses',
+
+        // Gaz module
+        'gas_sales': (enterpriseId) => 'enterprises/$enterpriseId/gasSales',
+        'cylinders': (enterpriseId) => 'enterprises/$enterpriseId/cylinders',
+        'cylinder_stocks': (enterpriseId) =>
+            'enterprises/$enterpriseId/cylinderStocks',
+        'points_of_sale': (enterpriseId) =>
+            'enterprises/$enterpriseId/pointsOfSale',
+        'tours': (enterpriseId) => 'enterprises/$enterpriseId/tours',
+        'gaz_expenses': (enterpriseId) =>
+            'enterprises/$enterpriseId/gazExpenses',
+        'cylinder_leaks': (enterpriseId) =>
+            'enterprises/$enterpriseId/cylinderLeaks',
+        'gaz_settings': (enterpriseId) =>
+            'enterprises/$enterpriseId/gazSettings',
+        'financial_reports': (enterpriseId) =>
+            'enterprises/$enterpriseId/financialReports',
       },
     );
 
