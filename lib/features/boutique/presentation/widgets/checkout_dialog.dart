@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:elyf_groupe_app/core/permissions/modules/boutique_permissions.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/cart_item.dart';
@@ -29,6 +30,8 @@ class _CheckoutDialogState extends ConsumerState<CheckoutDialog>
   final _amountPaidController = TextEditingController();
   final _customerNameController = TextEditingController();
   PaymentMethod _paymentMethod = PaymentMethod.cash;
+  int _cashAmount = 0;
+  int _mobileMoneyAmount = 0;
   bool _isLoading = false;
   Sale? _completedSale;
 
@@ -36,6 +39,52 @@ class _CheckoutDialogState extends ConsumerState<CheckoutDialog>
   void initState() {
     super.initState();
     _amountPaidController.text = widget.total.toString();
+    _cashAmount = widget.total;
+    _mobileMoneyAmount = 0;
+  }
+  
+  void _onPaymentMethodChanged(PaymentMethod method) {
+    setState(() {
+      _paymentMethod = method;
+      final amountPaid = _amountPaid ?? 0;
+      if (method == PaymentMethod.cash) {
+        _cashAmount = amountPaid;
+        _mobileMoneyAmount = 0;
+      } else if (method == PaymentMethod.mobileMoney) {
+        _cashAmount = 0;
+        _mobileMoneyAmount = amountPaid;
+      } else if (method == PaymentMethod.both) {
+        // Ne pas initialiser automatiquement, laisser l'utilisateur répartir
+        _cashAmount = 0;
+        _mobileMoneyAmount = 0;
+      }
+    });
+  }
+  
+  void _onAmountPaidChanged(String value) {
+    final amount = int.tryParse(value) ?? 0;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        setState(() {
+          if (_paymentMethod == PaymentMethod.cash) {
+            _cashAmount = amount;
+            _mobileMoneyAmount = 0;
+          } else if (_paymentMethod == PaymentMethod.mobileMoney) {
+            _cashAmount = 0;
+            _mobileMoneyAmount = amount;
+          }
+          // Si "Les deux", ne pas modifier automatiquement
+          // L'utilisateur répartira manuellement dans PaymentSplitter
+        });
+      }
+    });
+  }
+  
+  void _onSplitChanged(int cashAmount, int mobileMoneyAmount) {
+    setState(() {
+      _cashAmount = cashAmount;
+      _mobileMoneyAmount = mobileMoneyAmount;
+    });
   }
 
   @override
@@ -57,11 +106,39 @@ class _CheckoutDialogState extends ConsumerState<CheckoutDialog>
   }
 
   Future<void> _processPayment() async {
+    // Vérifier les permissions avant de traiter le paiement
+    final adapter = ref.read(boutiquePermissionAdapterProvider);
+    final hasUsePos = await adapter.hasPermission(BoutiquePermissions.usePos.id);
+    final hasCreateSale = await adapter.hasPermission(BoutiquePermissions.createSale.id);
+    
+    if (!hasUsePos && !hasCreateSale) {
+      if (!mounted) return;
+      NotificationService.showError(
+        context,
+        'Vous n\'avez pas la permission d\'utiliser la caisse ou de créer une vente.',
+      );
+      return;
+    }
+    
     await handleFormSubmit(
       context: context,
       formKey: _formKey,
       onLoadingChanged: (isLoading) => setState(() => _isLoading = isLoading),
       onSubmit: () async {
+        // Calculer le montant payé selon la méthode
+        final amountPaid = _paymentMethod == PaymentMethod.both
+            ? (_cashAmount + _mobileMoneyAmount)
+            : (_amountPaid ?? 0);
+            
+        // Validation pour paiement mixte
+        if (_paymentMethod == PaymentMethod.both) {
+          if (_cashAmount + _mobileMoneyAmount != widget.total) {
+            throw Exception(
+              'La somme des montants (${CurrencyFormatter.formatFCFA(_cashAmount + _mobileMoneyAmount)}) doit être égale au total (${CurrencyFormatter.formatFCFA(widget.total)})',
+            );
+          }
+        }
+        
         final sale = Sale(
           id: 'sale-${DateTime.now().millisecondsSinceEpoch}',
           date: DateTime.now(),
@@ -75,11 +152,13 @@ class _CheckoutDialogState extends ConsumerState<CheckoutDialog>
             );
           }).toList(),
           totalAmount: widget.total,
-          amountPaid: _amountPaid!,
+          amountPaid: amountPaid,
           customerName: _customerNameController.text.isEmpty
               ? null
               : _customerNameController.text.trim(),
           paymentMethod: _paymentMethod,
+          cashAmount: _cashAmount,
+          mobileMoneyAmount: _mobileMoneyAmount,
         );
 
         await ref.read(storeControllerProvider).createSale(sale);
@@ -177,31 +256,50 @@ class _CheckoutDialogState extends ConsumerState<CheckoutDialog>
                         label: Text('Mobile Money'),
                         icon: Icon(Icons.phone_android),
                       ),
+                      ButtonSegment(
+                        value: PaymentMethod.both,
+                        label: Text('Les deux'),
+                        icon: Icon(Icons.payment),
+                      ),
                     ],
                     selected: {_paymentMethod},
                     onSelectionChanged: (Set<PaymentMethod> newSelection) {
-                      setState(() => _paymentMethod = newSelection.first);
+                      _onPaymentMethodChanged(newSelection.first);
                     },
                   ),
                   const SizedBox(height: 24),
-                  TextFormField(
-                    controller: _amountPaidController,
-                    decoration: const InputDecoration(
-                      labelText: 'Montant payé (FCFA) *',
-                      prefixIcon: Icon(Icons.attach_money),
+                  // Montant payé - seulement si pas "Les deux"
+                  if (_paymentMethod != PaymentMethod.both) ...[
+                    TextFormField(
+                      controller: _amountPaidController,
+                      decoration: const InputDecoration(
+                        labelText: 'Montant payé (FCFA) *',
+                        prefixIcon: Icon(Icons.attach_money),
+                      ),
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      onChanged: _onAmountPaidChanged,
+                      validator: (v) {
+                        if (v == null || v.isEmpty) return 'Requis';
+                        final amount = int.tryParse(v);
+                        if (amount == null || amount <= 0) return 'Montant invalide';
+                        if (amount < widget.total && _paymentMethod == PaymentMethod.cash) {
+                          return 'Montant insuffisant';
+                        }
+                        return null;
+                      },
                     ),
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    validator: (v) {
-                      if (v == null || v.isEmpty) return 'Requis';
-                      final amount = int.tryParse(v);
-                      if (amount == null || amount <= 0) return 'Montant invalide';
-                      if (amount < widget.total && _paymentMethod == PaymentMethod.cash) {
-                        return 'Montant insuffisant';
-                      }
-                      return null;
-                    },
-                  ),
+                  ],
+                  // Répartition si les deux modes sont sélectionnés
+                  if (_paymentMethod == PaymentMethod.both) ...[
+                    PaymentSplitter(
+                      totalAmount: widget.total,
+                      onSplitChanged: _onSplitChanged,
+                      initialCashAmount: _cashAmount,
+                      initialMobileMoneyAmount: _mobileMoneyAmount,
+                      mobileMoneyLabel: 'Mobile Money',
+                    ),
+                  ],
                   if (_change > 0) ...[
                     const SizedBox(height: 16),
                     Container(

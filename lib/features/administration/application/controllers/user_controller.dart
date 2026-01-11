@@ -28,23 +28,37 @@ class UserController {
 
   /// Récupère tous les utilisateurs.
   /// 
-  /// Essaie d'abord depuis la base locale (Drift), puis depuis Firestore
-  /// si la base locale est vide ou en cas d'erreur.
+  /// Lire UNIQUEMENT depuis la base locale (Drift) pour éviter la lecture simultanée.
+  /// La synchronisation avec Firestore est gérée par le sync manager.
   Future<List<User>> getAllUsers() async {
     try {
+      // Lire UNIQUEMENT depuis la base locale (Drift) pour éviter la lecture simultanée
+      // La synchronisation avec Firestore est gérée par le sync manager
       final localUsers = await _repository.getAllUsers();
-      
-      // Si la base locale contient des utilisateurs, les retourner
-      if (localUsers.isNotEmpty) {
-        return localUsers;
+
+      // Dédupliquer les utilisateurs par ID pour éviter les duplications
+      // (peut arriver si la synchronisation crée des doublons dans Drift)
+      final uniqueUsers = <String, User>{};
+      for (final user in localUsers) {
+        // Garder le premier utilisateur trouvé avec chaque ID
+        if (!uniqueUsers.containsKey(user.id)) {
+          uniqueUsers[user.id] = user;
+        }
       }
-      
+
+      final deduplicatedUsers = uniqueUsers.values.toList();
+
+      // Si la base locale contient des utilisateurs, les retourner (dédupliqués)
+      if (deduplicatedUsers.isNotEmpty) {
+        return deduplicatedUsers;
+      }
+
       // Si la base locale est vide, essayer de récupérer depuis Firestore
-      // et sauvegarder localement pour la prochaine fois
+      // UNIQUEMENT si la base locale est vraiment vide (pas de lecture simultanée)
       if (firestoreSync != null) {
         try {
           final firestoreUsers = await firestoreSync!.pullUsersFromFirestore();
-          
+
           // Sauvegarder chaque utilisateur dans la base locale SANS déclencher de sync
           // (ces utilisateurs viennent déjà de Firestore, pas besoin de les re-synchroniser)
           for (final user in firestoreUsers) {
@@ -61,14 +75,21 @@ class UserController {
               );
             }
           }
-          
-          // Retourner les utilisateurs depuis Firestore
+
+          // Retourner les utilisateurs depuis Firestore (dédupliqués aussi)
           if (firestoreUsers.isNotEmpty) {
             developer.log(
               'Loaded ${firestoreUsers.length} users from Firestore (local database was empty)',
               name: 'user.controller',
             );
-            return firestoreUsers;
+            // Dédupliquer aussi les utilisateurs de Firestore au cas où
+            final uniqueFirestoreUsers = <String, User>{};
+            for (final user in firestoreUsers) {
+              if (!uniqueFirestoreUsers.containsKey(user.id)) {
+                uniqueFirestoreUsers[user.id] = user;
+              }
+            }
+            return uniqueFirestoreUsers.values.toList();
           }
         } catch (e) {
           developer.log(
@@ -78,8 +99,8 @@ class UserController {
           // Continuer avec la liste locale (vide)
         }
       }
-      
-      return localUsers;
+
+      return deduplicatedUsers;
     } catch (e, stackTrace) {
       developer.log(
         'Error getting all users from local database, trying Firestore: $e',
@@ -96,7 +117,14 @@ class UserController {
             'Loaded ${firestoreUsers.length} users from Firestore (local database error)',
             name: 'user.controller',
           );
-          return firestoreUsers;
+          // Dédupliquer aussi les utilisateurs de Firestore
+          final uniqueFirestoreUsers = <String, User>{};
+          for (final user in firestoreUsers) {
+            if (!uniqueFirestoreUsers.containsKey(user.id)) {
+              uniqueFirestoreUsers[user.id] = user;
+            }
+          }
+          return uniqueFirestoreUsers.values.toList();
         } catch (e) {
           developer.log(
             'Error fetching users from Firestore: $e',

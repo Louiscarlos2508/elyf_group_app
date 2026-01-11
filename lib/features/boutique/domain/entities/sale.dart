@@ -9,6 +9,8 @@ class Sale {
     this.customerName,
     this.paymentMethod,
     this.notes,
+    this.cashAmount = 0,
+    this.mobileMoneyAmount = 0,
   });
 
   final String id;
@@ -19,8 +21,14 @@ class Sale {
   final String? customerName;
   final PaymentMethod? paymentMethod;
   final String? notes;
+  final int cashAmount; // Montant payé en espèces (pour paiement mixte)
+  final int mobileMoneyAmount; // Montant payé en Mobile Money (pour paiement mixte)
 
   int get change => amountPaid > totalAmount ? amountPaid - totalAmount : 0;
+  
+  /// Vérifie si la somme des paiements correspond au montant payé
+  bool get isPaymentSplitValid => 
+      (cashAmount + mobileMoneyAmount) == amountPaid;
 }
 
 /// Represents an item in a sale.
@@ -43,5 +51,6 @@ class SaleItem {
 enum PaymentMethod {
   cash,
   mobileMoney,
+  both, // Permet de payer avec les deux méthodes en même temps
 }
 

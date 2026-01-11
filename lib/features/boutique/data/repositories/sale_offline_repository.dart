@@ -36,6 +36,25 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
             .toList() ??
         [];
 
+    // Gérer l'enum PaymentMethod avec support pour "both"
+    PaymentMethod? paymentMethod;
+    if (map['paymentMethod'] != null) {
+      final methodStr = map['paymentMethod'] as String;
+      switch (methodStr) {
+        case 'cash':
+          paymentMethod = PaymentMethod.cash;
+          break;
+        case 'mobileMoney':
+          paymentMethod = PaymentMethod.mobileMoney;
+          break;
+        case 'both':
+          paymentMethod = PaymentMethod.both;
+          break;
+        default:
+          paymentMethod = PaymentMethod.cash;
+      }
+    }
+    
     return Sale(
       id: map['id'] as String? ?? map['localId'] as String,
       date: DateTime.parse(map['date'] as String? ?? map['saleDate'] as String),
@@ -43,12 +62,10 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
       totalAmount: (map['totalAmount'] as num).toInt(),
       amountPaid: (map['amountPaid'] as num?)?.toInt() ?? 0,
       customerName: map['customerName'] as String?,
-      paymentMethod: map['paymentMethod'] != null
-          ? (map['paymentMethod'] == 'cash'
-              ? PaymentMethod.cash
-              : PaymentMethod.mobileMoney)
-          : null,
+      paymentMethod: paymentMethod,
       notes: map['notes'] as String?,
+      cashAmount: (map['cashAmount'] as num?)?.toInt() ?? 0,
+      mobileMoneyAmount: (map['mobileMoneyAmount'] as num?)?.toInt() ?? 0,
     );
   }
 
@@ -71,6 +88,8 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
       'paymentMethod': entity.paymentMethod?.name ?? 'cash',
       'customerName': entity.customerName,
       'notes': entity.notes,
+      'cashAmount': entity.cashAmount.toDouble(),
+      'mobileMoneyAmount': entity.mobileMoneyAmount.toDouble(),
       'isComplete': entity.amountPaid >= entity.totalAmount,
     };
   }
@@ -203,6 +222,8 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
         customerName: sale.customerName,
         paymentMethod: sale.paymentMethod,
         notes: sale.notes,
+        cashAmount: sale.cashAmount,
+        mobileMoneyAmount: sale.mobileMoneyAmount,
       );
       await save(saleWithLocalId);
       return localId;

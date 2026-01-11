@@ -8,7 +8,6 @@ import '../../domain/entities/product.dart';
 import '../../domain/repositories/customer_repository.dart';
 import 'sale_product_selector.dart';
 import 'sale_customer_selector.dart';
-import 'simple_payment_splitter.dart';
 
 /// Form for creating/editing a sale record.
 class SaleForm extends ConsumerStatefulWidget {
@@ -27,7 +26,6 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
   
   Product? _selectedProduct;
   CustomerSummary? _selectedCustomer;
-  bool _isLoading = false;
   int _cashAmount = 0;
   int _orangeMoneyAmount = 0;
   PaymentMethod _paymentMethod = PaymentMethod.cash;
@@ -101,7 +99,7 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
             _orangeMoneyAmount = amount;
           }
           // Si "Les deux", ne pas modifier automatiquement
-          // L'utilisateur répartira manuellement dans SimplePaymentSplitter
+          // L'utilisateur répartira manuellement dans PaymentSplitter
         });
       }
     });
@@ -143,7 +141,7 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
     await handleFormSubmit(
       context: context,
       formKey: _formKey,
-      onLoadingChanged: (isLoading) => setState(() => _isLoading = isLoading),
+      onLoadingChanged: (_) {}, // État de chargement géré par handleFormSubmit
       onSubmit: () async {
         // Si pas de client sélectionné mais nom renseigné, créer un nouveau client
         String customerId = _selectedCustomer?.id ?? '';
@@ -393,11 +391,12 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
             // Répartition si les deux modes sont sélectionnés
             if (_paymentMethod == PaymentMethod.both && _amountPaid != null && _amountPaid! > 0) ...[
               const SizedBox(height: 16),
-              SimplePaymentSplitter(
+              PaymentSplitter(
                 totalAmount: _amountPaid!,
                 onSplitChanged: _onSplitChanged,
                 initialCashAmount: _cashAmount,
-                initialOrangeMoneyAmount: _orangeMoneyAmount,
+                initialMobileMoneyAmount: _orangeMoneyAmount,
+                mobileMoneyLabel: 'Orange Money',
               ),
             ],
           ],

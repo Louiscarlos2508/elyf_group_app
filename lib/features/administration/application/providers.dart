@@ -1,8 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/offline/providers.dart';
-import '../../../core/permissions/services/permission_service.dart' show PermissionService, MockPermissionService;
+import '../../../core/permissions/services/permission_service.dart' show PermissionService;
 import '../../../core/permissions/services/permission_registry.dart';
+import '../../../core/tenant/tenant_provider.dart' show activeEnterpriseIdProvider;
 import '../data/repositories/admin_offline_repository.dart';
 import '../data/repositories/enterprise_offline_repository.dart';
 import '../data/repositories/user_offline_repository.dart';
@@ -18,6 +19,7 @@ import '../domain/services/filtering/user_filter_service.dart';
 import '../domain/services/role_statistics_service.dart';
 import '../domain/services/audit/audit_service.dart';
 import '../domain/services/validation/permission_validator_service.dart';
+import '../domain/services/real_permission_service.dart';
 import '../data/services/audit/audit_offline_service.dart';
 import '../data/services/firebase_auth_integration_service.dart';
 import '../data/services/firestore_sync_service.dart';
@@ -49,8 +51,40 @@ final userRepositoryProvider = Provider<UserRepository>(
 );
 
 /// Provider for permission service
+/// 
+/// Utilise RealPermissionService qui récupère les permissions via AdminController
+/// (qui lit depuis Drift offline-first, synchronisé avec Firestore).
+/// 
+/// Prent en compte l'entreprise active pour le multi-tenant.
+/// 
+/// Respecte l'architecture Clean Architecture en utilisant le controller.
+/// 
+/// Note: Crée un AdminController sans PermissionValidatorService pour éviter
+/// une dépendance circulaire (permissionServiceProvider -> adminControllerProvider
+/// -> permissionValidatorServiceProvider -> permissionServiceProvider).
 final permissionServiceProvider = Provider<PermissionService>(
-  (ref) => MockPermissionService(),
+  (ref) {
+    // Créer un AdminController sans PermissionValidatorService pour éviter le cycle
+    // Ce controller est utilisé uniquement pour lire les données, pas pour les modifier
+    final adminRepo = ref.watch(adminRepositoryProvider);
+    final adminController = AdminController(
+      adminRepo,
+      // Pas besoin d'auditService, firestoreSync, permissionValidator pour la lecture
+      auditService: null,
+      firestoreSync: null,
+      permissionValidator: null,
+      userRepository: null,
+    );
+    
+    return RealPermissionService(
+      adminController: adminController,
+      getActiveEnterpriseId: () {
+        // Récupérer l'entreprise active de manière synchrone
+        final activeEnterpriseAsync = ref.read(activeEnterpriseIdProvider);
+        return activeEnterpriseAsync.value;
+      },
+    );
+  },
 );
 
 /// Provider for permission registry
@@ -251,7 +285,7 @@ final adminStatsProvider = FutureProvider.autoDispose<AdminStats>(
     final results = await Future.wait([
       ref.watch(enterprisesProvider.future),
       ref.watch(usersProvider.future),
-      ref.watch(adminControllerProvider).getAllRoles(),
+      ref.watch(adminControllerProvider).getAllRoles() as Future<dynamic>,
       ref.watch(enterpriseModuleUsersProvider.future),
     ]);
 

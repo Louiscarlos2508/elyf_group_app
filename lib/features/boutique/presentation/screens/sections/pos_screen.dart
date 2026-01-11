@@ -3,10 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/boutique/application/providers.dart';
+import 'package:elyf_groupe_app/core/permissions/modules/boutique_permissions.dart';
 import '../../../domain/entities/cart_item.dart';
 import '../../../domain/entities/product.dart';
 import '../../widgets/cart_summary.dart';
 import '../../widgets/checkout_dialog.dart';
+import '../../widgets/permission_guard.dart';
 import '../../widgets/product_tile.dart';
 import 'package:elyf_groupe_app/shared.dart';
 
@@ -79,11 +81,25 @@ class _PosScreenState extends ConsumerState<PosScreen> {
     });
   }
 
-  void _showCheckout(BuildContext context) {
+  void _showCheckout(BuildContext context) async {
     if (_cartItems.isEmpty) {
       NotificationService.showInfo(context, 'Le panier est vide');
       return;
     }
+    
+    // Vérifier les permissions avant d'ouvrir le checkout
+    final adapter = ref.read(boutiquePermissionAdapterProvider);
+    final hasUsePos = await adapter.hasPermission(BoutiquePermissions.usePos.id);
+    final hasCreateSale = await adapter.hasPermission(BoutiquePermissions.createSale.id);
+    
+    if (!hasUsePos && !hasCreateSale) {
+      NotificationService.showError(
+        context,
+        'Vous n\'avez pas la permission d\'utiliser la caisse ou de créer une vente.',
+      );
+      return;
+    }
+    
     final total = ref.read(storeControllerProvider).calculateCartTotal(_cartItems);
     showDialog(
       context: context,
@@ -295,15 +311,22 @@ class _PosScreenState extends ConsumerState<PosScreen> {
               Positioned(
                 bottom: 16,
                 right: 16,
-                child: FloatingActionButton.extended(
-                  onPressed: () => _showCartBottomSheet(context),
-                  icon: Badge(
-                    label: Text('$_cartItemCount'),
-                    child: const Icon(Icons.shopping_cart),
+                child: BoutiquePermissionGuardAny(
+                  permissions: [
+                    BoutiquePermissions.usePos,
+                    BoutiquePermissions.createSale,
+                  ],
+                  child: FloatingActionButton.extended(
+                    onPressed: () => _showCartBottomSheet(context),
+                    icon: Badge(
+                      label: Text('$_cartItemCount'),
+                      child: const Icon(Icons.shopping_cart),
+                    ),
+                    label: Text(CurrencyFormatter.formatFCFA(_cartTotal)),
+                    backgroundColor: theme.colorScheme.primary,
+                    foregroundColor: theme.colorScheme.onPrimary,
                   ),
-                  label: Text(CurrencyFormatter.formatFCFA(_cartTotal)),
-                  backgroundColor: theme.colorScheme.primary,
-                  foregroundColor: theme.colorScheme.onPrimary,
+                  fallback: const SizedBox.shrink(),
                 ),
               ),
           ],

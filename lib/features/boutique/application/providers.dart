@@ -1,5 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+export 'providers/permission_providers.dart';
+export 'providers/section_providers.dart';
+import 'providers/permission_providers.dart' show currentUserIdProvider;
+import '../../../../core/tenant/tenant_provider.dart' show activeEnterpriseProvider;
+
 import '../../../core/offline/drift_service.dart';
 import '../../../core/offline/providers.dart';
 import '../../../../core/tenant/tenant_provider.dart';
@@ -164,6 +169,7 @@ final storeControllerProvider = Provider<StoreController>(
     ref.watch(purchaseRepositoryProvider),
     ref.watch(expenseRepositoryProvider),
     ref.watch(reportRepositoryProvider),
+    ref.watch(currentUserIdProvider),
   ),
 );
 

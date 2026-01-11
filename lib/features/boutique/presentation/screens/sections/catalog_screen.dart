@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:elyf_groupe_app/core/permissions/modules/boutique_permissions.dart';
 import 'package:elyf_groupe_app/features/boutique/application/providers.dart';
+import 'package:elyf_groupe_app/shared.dart';
 import '../../../domain/entities/product.dart';
 import '../../../domain/services/product_filter_service.dart';
+import '../../widgets/permission_guard.dart';
 import '../../widgets/product_form_dialog.dart';
 import '../../widgets/product_tile.dart';
 import '../../widgets/restock_dialog.dart';
@@ -54,16 +57,19 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
                   ),
                 ),
                 const SizedBox(width: 16),
-                IntrinsicWidth(
-                  child: FilledButton.icon(
-                    onPressed: () {
-                      showDialog(
-                        context: context,
-                        builder: (context) => const ProductFormDialog(),
-                      );
-                    },
-                    icon: const Icon(Icons.add),
-                    label: const Text('Nouveau Produit'),
+                BoutiquePermissionGuard(
+                  permission: BoutiquePermissions.createProduct,
+                  child: IntrinsicWidth(
+                    child: FilledButton.icon(
+                      onPressed: () {
+                        showDialog(
+                          context: context,
+                          builder: (context) => const ProductFormDialog(),
+                        );
+                      },
+                      icon: const Icon(Icons.add),
+                      label: const Text('Nouveau Produit'),
+                    ),
                   ),
                 ),
               ],
@@ -155,16 +161,38 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
                       product: product,
                       showRestockButton: true,
                       onTap: () {
-                        showDialog(
-                          context: context,
-                          builder: (_) => ProductFormDialog(product: product),
-                        );
+                        // Vérifier la permission d'édition
+                        final adapter = ref.read(boutiquePermissionAdapterProvider);
+                        adapter.hasPermission(BoutiquePermissions.editProduct.id).then((hasPermission) {
+                          if (hasPermission && context.mounted) {
+                            showDialog(
+                              context: context,
+                              builder: (_) => ProductFormDialog(product: product),
+                            );
+                          } else if (context.mounted) {
+                            NotificationService.showError(
+                              context,
+                              'Vous n\'avez pas la permission de modifier les produits.',
+                            );
+                          }
+                        });
                       },
                       onRestock: () {
-                        showDialog(
-                          context: context,
-                          builder: (_) => RestockDialog(product: product),
-                        );
+                        // Vérifier la permission d'édition du stock
+                        final adapter = ref.read(boutiquePermissionAdapterProvider);
+                        adapter.hasPermission(BoutiquePermissions.editStock.id).then((hasPermission) {
+                          if (hasPermission && context.mounted) {
+                            showDialog(
+                              context: context,
+                              builder: (_) => RestockDialog(product: product),
+                            );
+                          } else if (context.mounted) {
+                            NotificationService.showError(
+                              context,
+                              'Vous n\'avez pas la permission de modifier le stock.',
+                            );
+                          }
+                        });
                       },
                     );
                   },

@@ -46,6 +46,12 @@ abstract class BaseModuleShellScreenState<T extends BaseModuleShellScreen>
   /// Construit la liste des sections de navigation.
   List<NavigationSection> buildSections();
 
+  /// Retourne le provider async des sections si disponible, null sinon.
+  /// Permet aux classes enfants de retourner un provider async pour les sections.
+  AsyncValue<List<NavigationSection>>? getSectionsAsync() {
+    return null; // Par défaut, pas de provider async
+  }
+
   /// Widget affiché pendant le chargement.
   Widget buildLoading() {
     return ModuleLoadingAnimation(
@@ -126,6 +132,24 @@ abstract class BaseModuleShellScreenState<T extends BaseModuleShellScreen>
   Widget build(BuildContext context) {
     final sections = buildSections();
 
+    // Si les sections sont asynchrones, utiliser getSectionsAsync()
+    final sectionsAsync = getSectionsAsync();
+    if (sectionsAsync != null) {
+      return sectionsAsync.when(
+        data: (loadedSections) {
+          // Utiliser les sections chargées
+          return _buildWithSections(loadedSections);
+        },
+        loading: () => buildLoading(),
+        error: (error, stackTrace) => buildError(error, stackTrace),
+      );
+    }
+
+    // Utiliser les sections synchrones
+    return _buildWithSections(sections);
+  }
+
+  Widget _buildWithSections(List<NavigationSection> sections) {
     // Ajuster l'index si nécessaire
     if (_selectedIndex >= sections.length) {
       WidgetsBinding.instance.addPostFrameCallback((_) {

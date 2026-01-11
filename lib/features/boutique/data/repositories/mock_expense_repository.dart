@@ -69,9 +69,49 @@ class MockExpenseRepository implements ExpenseRepository {
   }
 
   @override
-  Future<void> deleteExpense(String id) async {
+  Future<void> deleteExpense(String id, {String? deletedBy}) async {
     await Future<void>.delayed(const Duration(milliseconds: 300));
-    _expenses.remove(id);
+    final expense = _expenses[id];
+    if (expense != null && !expense.isDeleted) {
+      _expenses[id] = Expense(
+        id: expense.id,
+        label: expense.label,
+        amountCfa: expense.amountCfa,
+        category: expense.category,
+        date: expense.date,
+        notes: expense.notes,
+        deletedAt: DateTime.now(),
+        deletedBy: deletedBy,
+      );
+    }
+  }
+
+  @override
+  Future<void> restoreExpense(String id) async {
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    final expense = _expenses[id];
+    if (expense != null && expense.isDeleted) {
+      _expenses[id] = Expense(
+        id: expense.id,
+        label: expense.label,
+        amountCfa: expense.amountCfa,
+        category: expense.category,
+        date: expense.date,
+        notes: expense.notes,
+        deletedAt: null,
+        deletedBy: null,
+      );
+    }
+  }
+
+  @override
+  Future<List<Expense>> getDeletedExpenses() async {
+    await Future<void>.delayed(const Duration(milliseconds: 200));
+    return _expenses.values
+        .where((e) => e.isDeleted)
+        .toList()
+      ..sort((a, b) => (b.deletedAt ?? DateTime(1970))
+          .compareTo(a.deletedAt ?? DateTime(1970)));
   }
 }
 

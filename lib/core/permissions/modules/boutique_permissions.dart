@@ -179,6 +179,28 @@ class BoutiquePermissions {
     description: 'Permet de changer son mot de passe',
   );
 
+  // Trash/Corbeille
+  static const viewTrash = ActionPermission(
+    id: 'view_trash',
+    name: 'Voir la corbeille',
+    module: 'boutique',
+    description: 'Permet de voir les éléments supprimés',
+  );
+
+  static const restoreProduct = ActionPermission(
+    id: 'restore_product',
+    name: 'Restaurer un produit',
+    module: 'boutique',
+    description: 'Permet de restaurer un produit supprimé',
+  );
+
+  static const restoreExpense = ActionPermission(
+    id: 'restore_expense',
+    name: 'Restaurer une dépense',
+    module: 'boutique',
+    description: 'Permet de restaurer une dépense supprimée',
+  );
+
   /// All permissions for the module
   static const all = [
     viewDashboard,
@@ -205,6 +227,9 @@ class BoutiquePermissions {
     viewProfile,
     editProfile,
     changePassword,
+    viewTrash,
+    restoreProduct,
+    restoreExpense,
   ];
 }
 

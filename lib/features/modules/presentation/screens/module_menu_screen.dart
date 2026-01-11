@@ -29,9 +29,7 @@ class ModuleMenuScreen extends ConsumerWidget {
     // Vérifier l'entreprise active
     final activeEnterpriseAsync = ref.watch(activeEnterpriseProvider);
     final accessibleEnterprisesAsync = ref.watch(userAccessibleEnterprisesProvider);
-    
-    // Récupérer tous les modules depuis AdminModules
-    final modules = AdminModules.all;
+    final accessibleModulesAsync = ref.watch(userAccessibleModulesForActiveEnterpriseProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -40,12 +38,6 @@ class ModuleMenuScreen extends ConsumerWidget {
         actions: [
           // Sélecteur d'entreprise
           const EnterpriseSelectorWidget(compact: true),
-          const SizedBox(width: 8),
-          IconButton(
-            icon: const Icon(Icons.admin_panel_settings_outlined),
-            tooltip: 'Administration',
-            onPressed: () => context.go('/admin'),
-          ),
         ],
       ),
       body: activeEnterpriseAsync.when(
@@ -125,36 +117,97 @@ class ModuleMenuScreen extends ConsumerWidget {
             );
           }
           
-          // Entreprise sélectionnée, afficher les modules
-          return ListView.separated(
-            padding: const EdgeInsets.all(24),
-            itemBuilder: (context, index) {
-              final module = modules[index];
-              final route = _moduleRoutes[module.id];
-              
-              // Si pas de route, on ne montre pas le module
-              if (route == null) return const SizedBox.shrink();
-              
-              return Card(
-                child: ListTile(
-                  leading: Icon(
-                    _getIcon(module.icon),
-                    size: 32,
-                  ),
-                  title: Text(
-                    module.name,
-                    style: textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
+          // Entreprise sélectionnée, afficher les modules accessibles
+          return accessibleModulesAsync.when(
+            data: (accessibleModuleIds) {
+              // Filtrer les modules selon les accès utilisateur
+              final accessibleModules = AdminModules.all
+                  .where((module) => accessibleModuleIds.contains(module.id))
+                  .toList();
+
+              if (accessibleModules.isEmpty) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.lock_outline,
+                          size: 64,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(height: 24),
+                        Text(
+                          'Aucun module accessible',
+                          style: textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Vous n\'avez pas accès à des modules pour cette entreprise.\n'
+                          'Contactez un administrateur pour obtenir les accès nécessaires.',
+                          style: textTheme.bodyLarge,
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
                     ),
                   ),
-                  subtitle: Text(module.description),
-                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                  onTap: () => context.go(route),
-                ),
+                );
+              }
+
+              return ListView.separated(
+                padding: const EdgeInsets.all(24),
+                itemBuilder: (context, index) {
+                  final module = accessibleModules[index];
+                  final route = _moduleRoutes[module.id];
+                  
+                  // Si pas de route, on ne montre pas le module
+                  if (route == null) return const SizedBox.shrink();
+                  
+                  return Card(
+                    child: ListTile(
+                      leading: Icon(
+                        _getIcon(module.icon),
+                        size: 32,
+                      ),
+                      title: Text(
+                        module.name,
+                        style: textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      subtitle: Text(module.description),
+                      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                      onTap: () => context.go(route),
+                    ),
+                  );
+                },
+                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                itemCount: accessibleModules.length,
               );
             },
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
-            itemCount: modules.length,
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (error, stack) => Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    size: 64,
+                    color: theme.colorScheme.error,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Erreur lors du chargement des modules',
+                    style: textTheme.titleMedium,
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),

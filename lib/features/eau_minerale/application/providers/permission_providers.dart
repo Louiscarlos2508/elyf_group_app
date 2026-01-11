@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/administration/application/providers.dart' show permissionServiceProvider;
 import '../../../../core/permissions/services/permission_service.dart';
+import '../../../../core/auth/providers.dart' as auth;
 import '../../domain/adapters/eau_minerale_permission_adapter.dart';
 import '../../domain/entities/eau_minerale_section.dart';
 import '../../presentation/screens/sections/clients_screen.dart';
@@ -32,10 +33,15 @@ final centralizedPermissionServiceProvider = Provider<PermissionService>(
 );
 
 /// Provider for current user ID.
-/// In development, uses default user with full access for the module.
-/// TODO: Replace with actual auth system when available
+/// Uses the authenticated user ID from auth service, or falls back to default user for development.
 final currentUserIdProvider = Provider<String>(
-  (ref) => 'default_user_eau_minerale', // Default user with full access
+  (ref) {
+    final authUserId = ref.watch(auth.currentUserIdProvider);
+    if (authUserId != null && authUserId.isNotEmpty) {
+      return authUserId;
+    }
+    return 'default_user_eau_minerale';
+  },
 );
 
 /// Provider for eau_minerale permission adapter.

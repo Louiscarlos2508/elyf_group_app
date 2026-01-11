@@ -50,6 +50,7 @@ class ExpenseOfflineRepository extends OfflineRepository<Expense>
       'category': entity.category.name,
       'date': entity.date.toIso8601String(),
       'expenseDate': entity.date.toIso8601String(),
+      'deletedAt': entity.deletedAt?.toIso8601String(),
     };
   }
 
@@ -159,8 +160,10 @@ class ExpenseOfflineRepository extends OfflineRepository<Expense>
       enterpriseId: enterpriseId,
       moduleType: moduleType,
     );
+    // Filtrer les dépenses supprimées (soft delete)
     final expenses = rows
         .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+        .where((expense) => !expense.isDeleted)
         .toList();
     expenses.sort((a, b) => b.date.compareTo(a.date));
     return expenses;
@@ -199,11 +202,58 @@ class ExpenseOfflineRepository extends OfflineRepository<Expense>
   }
 
   @override
-  Future<void> deleteExpense(String id) async {
+  Future<void> deleteExpense(String id, {String? deletedBy}) async {
     final expense = await getExpense(id);
-    if (expense != null) {
-      await delete(expense);
+    if (expense != null && !expense.isDeleted) {
+      // Soft delete: marquer comme supprimé au lieu de supprimer physiquement
+      final deletedExpense = Expense(
+        id: expense.id,
+        label: expense.label,
+        amountCfa: expense.amountCfa,
+        category: expense.category,
+        date: expense.date,
+        notes: expense.notes,
+        deletedAt: DateTime.now(),
+        deletedBy: deletedBy,
+      );
+      await save(deletedExpense);
     }
+  }
+
+  @override
+  Future<void> restoreExpense(String id) async {
+    final expense = await getExpense(id);
+    if (expense != null && expense.isDeleted) {
+      // Restaurer: enlever deletedAt et deletedBy
+      final restoredExpense = Expense(
+        id: expense.id,
+        label: expense.label,
+        amountCfa: expense.amountCfa,
+        category: expense.category,
+        date: expense.date,
+        notes: expense.notes,
+        deletedAt: null,
+        deletedBy: null,
+      );
+      await save(restoredExpense);
+    }
+  }
+
+  @override
+  Future<List<Expense>> getDeletedExpenses() async {
+    final rows = await driftService.records.listForEnterprise(
+      collectionName: collectionName,
+      enterpriseId: enterpriseId,
+      moduleType: moduleType,
+    );
+    // Récupérer uniquement les dépenses supprimées
+    final expenses = rows
+        .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+        .where((expense) => expense.isDeleted)
+        .toList();
+    expenses.sort((a, b) => (b.deletedAt ?? DateTime(1970))
+        .compareTo(a.deletedAt ?? DateTime(1970)));
+    return expenses;
   }
 }
 

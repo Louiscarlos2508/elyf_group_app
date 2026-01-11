@@ -1,5 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+export 'providers/permission_providers.dart';
+export 'providers/section_providers.dart';
+
 import '../application/controllers/agents_controller.dart';
 import '../application/controllers/commissions_controller.dart';
 import '../application/controllers/liquidity_controller.dart';

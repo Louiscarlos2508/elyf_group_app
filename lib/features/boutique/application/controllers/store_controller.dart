@@ -19,6 +19,7 @@ class StoreController {
     this._purchaseRepository,
     this._expenseRepository,
     this._reportRepository,
+    this._currentUserId,
   );
 
   final ProductRepository _productRepository;
@@ -27,6 +28,7 @@ class StoreController {
   final PurchaseRepository _purchaseRepository;
   final ExpenseRepository _expenseRepository;
   final ReportRepository _reportRepository;
+  final String _currentUserId;
 
   Future<List<Product>> fetchProducts() async {
     return await _productRepository.fetchProducts();
@@ -53,7 +55,15 @@ class StoreController {
   }
 
   Future<void> deleteProduct(String id) async {
-    return await _productRepository.deleteProduct(id);
+    return await _productRepository.deleteProduct(id, deletedBy: _currentUserId);
+  }
+
+  Future<void> restoreProduct(String id) async {
+    return await _productRepository.restoreProduct(id);
+  }
+
+  Future<List<Product>> getDeletedProducts() async {
+    return await _productRepository.getDeletedProducts();
   }
 
   Future<List<Sale>> fetchRecentSales({int limit = 50}) async {
@@ -112,7 +122,15 @@ class StoreController {
   }
 
   Future<void> deleteExpense(String id) async {
-    return await _expenseRepository.deleteExpense(id);
+    return await _expenseRepository.deleteExpense(id, deletedBy: _currentUserId);
+  }
+
+  Future<void> restoreExpense(String id) async {
+    return await _expenseRepository.restoreExpense(id);
+  }
+
+  Future<List<Expense>> getDeletedExpenses() async {
+    return await _expenseRepository.getDeletedExpenses();
   }
 
   // Report methods

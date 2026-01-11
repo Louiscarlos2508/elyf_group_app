@@ -25,6 +25,12 @@ class ProductOfflineRepository extends OfflineRepository<Product>
 
   @override
   Product fromMap(Map<String, dynamic> map) {
+    DateTime? deletedAt;
+    if (map['deletedAt'] != null) {
+      deletedAt = map['deletedAt'] is DateTime
+          ? map['deletedAt'] as DateTime
+          : DateTime.parse(map['deletedAt'] as String);
+    }
     return Product(
       id: map['id'] as String? ?? map['localId'] as String,
       name: map['name'] as String,
@@ -35,6 +41,8 @@ class ProductOfflineRepository extends OfflineRepository<Product>
       imageUrl: map['imageUrl'] as String?,
       barcode: map['barcode'] as String?,
       purchasePrice: (map['purchasePrice'] as num?)?.toInt(),
+      deletedAt: deletedAt,
+      deletedBy: map['deletedBy'] as String?,
     );
   }
 
@@ -52,6 +60,8 @@ class ProductOfflineRepository extends OfflineRepository<Product>
       'barcode': entity.barcode,
       'purchasePrice': entity.purchasePrice?.toDouble(),
       'isActive': true,
+      'deletedAt': entity.deletedAt?.toIso8601String(),
+      'deletedBy': entity.deletedBy,
     };
   }
 
@@ -143,8 +153,10 @@ class ProductOfflineRepository extends OfflineRepository<Product>
       enterpriseId: enterpriseId,
       moduleType: moduleType,
     );
+    // Filtrer les produits supprimés (soft delete)
     return rows
         .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+        .where((product) => !product.isDeleted)
         .toList();
   }
 
@@ -244,16 +256,73 @@ class ProductOfflineRepository extends OfflineRepository<Product>
   }
 
   @override
-  Future<void> deleteProduct(String id) async {
+  Future<void> deleteProduct(String id, {String? deletedBy}) async {
     try {
       final product = await getProduct(id);
-      if (product != null) {
-        await delete(product);
+      if (product != null && !product.isDeleted) {
+        // Soft delete: marquer comme supprimé au lieu de supprimer physiquement
+        final deletedProduct = product.copyWith(
+          deletedAt: DateTime.now(),
+          deletedBy: deletedBy,
+        );
+        await save(deletedProduct);
       }
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
         'Error deleting product: $id',
+        name: 'ProductOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      throw appException;
+    }
+  }
+
+  @override
+  Future<void> restoreProduct(String id) async {
+    try {
+      final product = await getProduct(id);
+      if (product != null && product.isDeleted) {
+        // Restaurer: enlever deletedAt et deletedBy
+        final restoredProduct = product.copyWith(
+          deletedAt: null,
+          deletedBy: null,
+        );
+        await save(restoredProduct);
+      }
+    } catch (error, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
+      developer.log(
+        'Error restoring product: $id',
+        name: 'ProductOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      throw appException;
+    }
+  }
+
+  @override
+  Future<List<Product>> getDeletedProducts() async {
+    try {
+      final rows = await driftService.records.listForEnterprise(
+        collectionName: collectionName,
+        enterpriseId: enterpriseId,
+        moduleType: moduleType,
+      );
+      // Récupérer uniquement les produits supprimés
+      final products = rows
+          .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+          .where((product) => product.isDeleted)
+          .toList();
+      products.sort((a, b) => (b.deletedAt ?? DateTime(1970))
+          .compareTo(a.deletedAt ?? DateTime(1970)));
+      return products;
+    } catch (error, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
+      developer.log(
+        'Error fetching deleted products',
         name: 'ProductOfflineRepository',
         error: error,
         stackTrace: stackTrace,

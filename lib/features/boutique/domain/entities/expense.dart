@@ -7,6 +7,8 @@ class Expense {
     required this.category,
     required this.date,
     this.notes,
+    this.deletedAt, // Date de suppression (soft delete)
+    this.deletedBy, // ID de l'utilisateur qui a supprimé
   });
 
   final String id;
@@ -15,6 +17,11 @@ class Expense {
   final ExpenseCategory category;
   final DateTime date;
   final String? notes;
+  final DateTime? deletedAt; // Date de suppression (soft delete)
+  final String? deletedBy; // ID de l'utilisateur qui a supprimé
+
+  /// Indique si la dépense est supprimée (soft delete)
+  bool get isDeleted => deletedAt != null;
 }
 
 /// Categories of expenses for the boutique.

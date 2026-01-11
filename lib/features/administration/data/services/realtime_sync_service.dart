@@ -43,8 +43,8 @@ class RealtimeSyncService {
 
   /// Démarre l'écoute en temps réel de toutes les collections.
   ///
-  /// Met à jour automatiquement la base locale quand des changements
-  /// sont détectés dans Firestore.
+  /// Fait d'abord un pull initial depuis Firestore vers Drift (offline-first),
+  /// puis démarre l'écoute en temps réel pour les changements futurs.
   Future<void> startRealtimeSync() async {
     if (_isListening) {
       developer.log(
@@ -55,6 +55,14 @@ class RealtimeSyncService {
     }
 
     try {
+      // 1. Pull initial : charger toutes les données depuis Firestore vers Drift
+      developer.log(
+        'Starting initial pull from Firestore to Drift...',
+        name: 'admin.realtime.sync',
+      );
+      await _pullInitialDataFromFirestore();
+
+      // 2. Démarrer l'écoute en temps réel pour les changements futurs
       await _listenToUsers();
       await _listenToEnterprises();
       await _listenToRoles();
@@ -62,7 +70,7 @@ class RealtimeSyncService {
 
       _isListening = true;
       developer.log(
-        'RealtimeSyncService started - listening to all collections',
+        'RealtimeSyncService started - initial pull completed, listening to all collections',
         name: 'admin.realtime.sync',
       );
     } catch (e, stackTrace) {
@@ -73,6 +81,90 @@ class RealtimeSyncService {
         stackTrace: stackTrace,
       );
       rethrow;
+    }
+  }
+
+  /// Fait un pull initial de toutes les données depuis Firestore vers Drift.
+  /// 
+  /// Cette méthode garantit que Drift contient toutes les données avant
+  /// de démarrer l'écoute en temps réel (offline-first).
+  Future<void> _pullInitialDataFromFirestore() async {
+    try {
+      // Pull des rôles
+      final rolesSnapshot = await firestore.collection(_rolesCollection).get();
+      for (final doc in rolesSnapshot.docs) {
+        final data = doc.data();
+        final role = UserRole(
+          id: data['id'] as String,
+          name: data['name'] as String,
+          description: data['description'] as String,
+          permissions: (data['permissions'] as List<dynamic>?)
+                  ?.map((e) => e as String)
+                  .toSet() ??
+              {},
+          isSystemRole: data['isSystemRole'] as bool? ?? false,
+        );
+        await _saveRoleToLocal(role);
+      }
+      developer.log(
+        'Pulled ${rolesSnapshot.docs.length} roles from Firestore',
+        name: 'admin.realtime.sync',
+      );
+
+      // Pull des EnterpriseModuleUsers
+      final assignmentsSnapshot = await firestore
+          .collection(_enterpriseModuleUsersCollection)
+          .get();
+      for (final doc in assignmentsSnapshot.docs) {
+        final data = doc.data();
+        final assignment = EnterpriseModuleUser.fromMap(
+          Map<String, dynamic>.from(data),
+        );
+        await _saveEnterpriseModuleUserToLocal(assignment);
+      }
+      developer.log(
+        'Pulled ${assignmentsSnapshot.docs.length} EnterpriseModuleUsers from Firestore',
+        name: 'admin.realtime.sync',
+      );
+
+      // Pull des utilisateurs
+      final usersSnapshot = await firestore.collection(_usersCollection).get();
+      for (final doc in usersSnapshot.docs) {
+        final data = doc.data();
+        final user = User.fromMap(Map<String, dynamic>.from(data));
+        await _saveUserToLocal(user);
+      }
+      developer.log(
+        'Pulled ${usersSnapshot.docs.length} users from Firestore',
+        name: 'admin.realtime.sync',
+      );
+
+      // Pull des entreprises
+      final enterprisesSnapshot =
+          await firestore.collection(_enterprisesCollection).get();
+      for (final doc in enterprisesSnapshot.docs) {
+        final data = doc.data();
+        final enterprise = Enterprise.fromMap(Map<String, dynamic>.from(data));
+        await _saveEnterpriseToLocal(enterprise);
+      }
+      developer.log(
+        'Pulled ${enterprisesSnapshot.docs.length} enterprises from Firestore',
+        name: 'admin.realtime.sync',
+      );
+
+      developer.log(
+        'Initial pull from Firestore to Drift completed successfully',
+        name: 'admin.realtime.sync',
+      );
+    } catch (e, stackTrace) {
+      developer.log(
+        'Error during initial pull from Firestore',
+        name: 'admin.realtime.sync',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      // Ne pas rethrow - on continue même si le pull initial échoue
+      // L'écoute en temps réel chargera les données progressivement
     }
   }
 

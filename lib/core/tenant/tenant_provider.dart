@@ -115,6 +115,54 @@ final userAccessibleEnterprisesProvider = FutureProvider<List<Enterprise>>((ref)
       .toList();
 });
 
+/// Provider pour récupérer les modules accessibles à l'utilisateur pour l'entreprise active
+/// 
+/// Filtre les modules selon les accès EnterpriseModuleUser ET vérifie que l'utilisateur
+/// a au moins la permission viewDashboard pour chaque module.
+final userAccessibleModulesForActiveEnterpriseProvider = FutureProvider<List<String>>((ref) async {
+  // Récupérer l'ID de l'utilisateur connecté
+  final currentUserId = ref.watch(currentUserIdProvider);
+  if (currentUserId == null) return [];
+
+  // Récupérer l'entreprise active
+  final activeEnterpriseIdAsync = ref.watch(activeEnterpriseIdProvider);
+  final activeEnterpriseId = activeEnterpriseIdAsync.when(
+    data: (id) => id,
+    loading: () => null,
+    error: (_, __) => null,
+  );
+  
+  if (activeEnterpriseId == null) return [];
+
+  // Récupérer les accès utilisateur pour l'entreprise active
+  final adminRepo = ref.watch(adminRepositoryProvider);
+  final userAccesses = await adminRepo.getUserEnterpriseModuleUsers(currentUserId);
+  
+  // Filtrer les accès actifs pour l'entreprise active
+  final activeAccesses = userAccesses
+      .where((access) => access.enterpriseId == activeEnterpriseId && access.isActive)
+      .toList();
+
+  // Vérifier les permissions pour chaque module
+  final permissionService = ref.watch(permissionServiceProvider);
+  final accessibleModuleIds = <String>[];
+
+  for (final access in activeAccesses) {
+    // Vérifier que l'utilisateur a au moins la permission viewDashboard pour ce module
+    final hasViewDashboard = await permissionService.hasPermission(
+      currentUserId,
+      access.moduleId,
+      'view_dashboard',
+    );
+    
+    if (hasViewDashboard) {
+      accessibleModuleIds.add(access.moduleId);
+    }
+  }
+
+  return accessibleModuleIds;
+});
+
 /// Provider qui gère la sélection automatique de l'entreprise
 /// 
 /// Si l'utilisateur n'a qu'une seule entreprise accessible et qu'aucune

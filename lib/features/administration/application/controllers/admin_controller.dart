@@ -374,15 +374,29 @@ class AdminController {
   /// et sauvegarde localement pour la prochaine fois.
   Future<List<UserRole>> getAllRoles() async {
     try {
+      // Lire UNIQUEMENT depuis la base locale (Drift) pour éviter la lecture simultanée
+      // La synchronisation avec Firestore est gérée par le sync manager
       final localRoles = await _repository.getAllRoles();
 
-      // Si la base locale contient des rôles, les retourner
-      if (localRoles.isNotEmpty) {
-        return localRoles;
+      // Dédupliquer les rôles par ID pour éviter les duplications
+      // (peut arriver si la synchronisation crée des doublons dans Drift)
+      final uniqueRoles = <String, UserRole>{};
+      for (final role in localRoles) {
+        // Garder le premier rôle trouvé avec chaque ID
+        if (!uniqueRoles.containsKey(role.id)) {
+          uniqueRoles[role.id] = role;
+        }
+      }
+
+      final deduplicatedRoles = uniqueRoles.values.toList();
+
+      // Si la base locale contient des rôles, les retourner (dédupliqués)
+      if (deduplicatedRoles.isNotEmpty) {
+        return deduplicatedRoles;
       }
 
       // Si la base locale est vide, essayer de récupérer depuis Firestore
-      // et sauvegarder localement pour la prochaine fois
+      // UNIQUEMENT si la base locale est vraiment vide (pas de lecture simultanée)
       if (firestoreSync != null) {
         try {
           final firestoreRoles = await firestoreSync!.pullRolesFromFirestore();
@@ -404,13 +418,20 @@ class AdminController {
             }
           }
 
-          // Retourner les rôles depuis Firestore
+          // Retourner les rôles depuis Firestore (dédupliqués aussi)
           if (firestoreRoles.isNotEmpty) {
             developer.log(
               'Loaded ${firestoreRoles.length} roles from Firestore (local database was empty)',
               name: 'admin.controller',
             );
-            return firestoreRoles;
+            // Dédupliquer aussi les rôles de Firestore au cas où
+            final uniqueFirestoreRoles = <String, UserRole>{};
+            for (final role in firestoreRoles) {
+              if (!uniqueFirestoreRoles.containsKey(role.id)) {
+                uniqueFirestoreRoles[role.id] = role;
+              }
+            }
+            return uniqueFirestoreRoles.values.toList();
           }
         } catch (e) {
           developer.log(
@@ -421,7 +442,7 @@ class AdminController {
         }
       }
 
-      return localRoles;
+      return deduplicatedRoles;
     } catch (e, stackTrace) {
       developer.log(
         'Error getting all roles from local database, trying Firestore: $e',

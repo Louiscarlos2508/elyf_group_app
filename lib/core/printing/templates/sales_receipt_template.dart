@@ -143,6 +143,8 @@ class SalesReceiptTemplate {
         return 'Espèces';
       case PaymentMethod.mobileMoney:
         return 'Mobile Money';
+      case PaymentMethod.both:
+        return 'Mixte (Espèces + Mobile Money)';
     }
   }
 }

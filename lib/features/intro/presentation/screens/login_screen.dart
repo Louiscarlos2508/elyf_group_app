@@ -9,10 +9,6 @@ import '../../../../../shared/utils/notification_service.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:elyf_groupe_app/core/auth/providers.dart';
-<<<<<<< Current (Your changes)
-=======
-import 'package:elyf_groupe_app/features/administration/application/providers.dart';
->>>>>>> Incoming (Background Agent changes)
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});

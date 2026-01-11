@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:elyf_groupe_app/core/permissions/modules/boutique_permissions.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/boutique/application/providers.dart';
 import '../../../domain/adapters/expense_balance_adapter.dart';
@@ -9,6 +10,7 @@ import '../../widgets/daily_expense_summary_card.dart';
 import '../../widgets/expense_form_dialog.dart' as boutique;
 import '../../widgets/expenses_table.dart';
 import '../../widgets/monthly_expense_summary.dart';
+import '../../widgets/permission_guard.dart';
 
 /// Expenses screen with professional UI - style eau_minerale.
 class ExpensesScreen extends ConsumerWidget {
@@ -89,16 +91,19 @@ class ExpensesScreen extends ConsumerWidget {
                 ),
                 const SizedBox(width: 8),
                                 Flexible(
-                                  child: FilledButton.icon(
-                                    onPressed: () {
-                                      showDialog(
-                                        context: context,
-                                        builder: (_) =>
-                                            const boutique.ExpenseFormDialog(),
-                                      );
-                                    },
-                                    icon: const Icon(Icons.add),
-                                    label: const Text('Nouvelle Dépense'),
+                                  child: BoutiquePermissionGuard(
+                                    permission: BoutiquePermissions.createExpense,
+                                    child: FilledButton.icon(
+                                      onPressed: () {
+                                        showDialog(
+                                          context: context,
+                                          builder: (_) =>
+                                              const boutique.ExpenseFormDialog(),
+                                        );
+                                      },
+                                      icon: const Icon(Icons.add),
+                                      label: const Text('Nouvelle Dépense'),
+                                    ),
                                   ),
                                 ),
                               ],
@@ -145,16 +150,19 @@ class ExpensesScreen extends ConsumerWidget {
                                 const SizedBox(height: 12),
                                 SizedBox(
                                   width: double.infinity,
-                  child: FilledButton.icon(
-                    onPressed: () {
-                      showDialog(
-                        context: context,
+                  child: BoutiquePermissionGuard(
+                    permission: BoutiquePermissions.createExpense,
+                    child: FilledButton.icon(
+                      onPressed: () {
+                        showDialog(
+                          context: context,
                                         builder: (_) =>
                                             const boutique.ExpenseFormDialog(),
-                      );
-                    },
-                    icon: const Icon(Icons.add),
-                    label: const Text('Nouvelle Dépense'),
+                        );
+                      },
+                      icon: const Icon(Icons.add),
+                      label: const Text('Nouvelle Dépense'),
+                    ),
                   ),
                 ),
               ],
@@ -347,7 +355,19 @@ class ExpensesScreen extends ConsumerWidget {
     }
   }
 
-  void _confirmDelete(BuildContext context, WidgetRef ref, Expense expense) {
+  void _confirmDelete(BuildContext context, WidgetRef ref, Expense expense) async {
+    // Vérifier la permission avant d'afficher le dialogue
+    final adapter = ref.read(boutiquePermissionAdapterProvider);
+    final hasPermission = await adapter.hasPermission(BoutiquePermissions.deleteExpense.id);
+    
+    if (!hasPermission) {
+      NotificationService.showError(
+        context,
+        'Vous n\'avez pas la permission de supprimer des dépenses.',
+      );
+      return;
+    }
+    
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -365,7 +385,7 @@ class ExpensesScreen extends ConsumerWidget {
               if (context.mounted) {
                 Navigator.of(context).pop();
                 NotificationService.showSuccess(context, 'Dépense supprimée');
-  }
+              }
             },
             style: FilledButton.styleFrom(
               backgroundColor: Colors.red,

@@ -172,31 +172,29 @@ class _AssignEnterpriseDialogState
                     if (_selectedModuleId != null)
                       rolesAsync.when(
                         data: (roles) {
-                          if (roles.isEmpty) {
+                          // Dédupliquer les rôles par ID pour éviter les duplications
+                          // (peut arriver si la synchronisation crée des doublons dans Drift)
+                          final uniqueRoles = <String, UserRole>{};
+                          for (final role in roles) {
+                            if (!uniqueRoles.containsKey(role.id)) {
+                              uniqueRoles[role.id] = role;
+                            }
+                          }
+                          final deduplicatedRoles = uniqueRoles.values.toList();
+
+                          if (deduplicatedRoles.isEmpty) {
                             return const Text('Aucun rôle disponible');
                           }
 
                           return DropdownButtonFormField<String>(
-                            initialValue: _selectedRoleId,
+                            value: _selectedRoleId,
                             decoration: const InputDecoration(
                               labelText: 'Rôle *',
                             ),
-                            items: roles.map((role) {
+                            items: deduplicatedRoles.map((role) {
                               return DropdownMenuItem(
                                 value: role.id,
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(role.name),
-                                    Text(
-                                      role.description,
-                                      style: theme.textTheme.bodySmall?.copyWith(
-                                        color: theme.colorScheme.onSurfaceVariant,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                                child: Text(role.name),
                               );
                             }).toList(),
                             onChanged: (value) {

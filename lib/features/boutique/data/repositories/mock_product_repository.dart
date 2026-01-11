@@ -119,9 +119,37 @@ class MockProductRepository implements ProductRepository {
   }
 
   @override
-  Future<void> deleteProduct(String id) async {
+  Future<void> deleteProduct(String id, {String? deletedBy}) async {
     await Future<void>.delayed(const Duration(milliseconds: 300));
-    _products.remove(id);
+    final product = _products[id];
+    if (product != null && !product.isDeleted) {
+      _products[id] = product.copyWith(
+        deletedAt: DateTime.now(),
+        deletedBy: deletedBy,
+      );
+    }
+  }
+
+  @override
+  Future<void> restoreProduct(String id) async {
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    final product = _products[id];
+    if (product != null && product.isDeleted) {
+      _products[id] = product.copyWith(
+        deletedAt: null,
+        deletedBy: null,
+      );
+    }
+  }
+
+  @override
+  Future<List<Product>> getDeletedProducts() async {
+    await Future<void>.delayed(const Duration(milliseconds: 200));
+    return _products.values
+        .where((p) => p.isDeleted)
+        .toList()
+      ..sort((a, b) => (b.deletedAt ?? DateTime(1970))
+          .compareTo(a.deletedAt ?? DateTime(1970)));
   }
 }
 

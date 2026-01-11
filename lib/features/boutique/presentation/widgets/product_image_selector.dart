@@ -53,15 +53,27 @@ class _ProductImageSelectorState extends State<ProductImageSelector> {
       if (!mounted) return;
       String errorMessage = 'Erreur lors de la sélection d\'image';
       
-      if (e.code == 'photo_access_denied' || e.code == 'camera_access_denied') {
+      final errorCode = e.code.toLowerCase();
+      final errorMessageLower = e.message?.toLowerCase() ?? '';
+      
+      if (errorCode == 'photo_access_denied' || errorCode == 'camera_access_denied') {
         errorMessage = 'Permission refusée. Veuillez autoriser l\'accès à la caméra/galerie dans les paramètres.';
-      } else if (e.code == 'photo_access_denied_permanently') {
+      } else if (errorCode == 'photo_access_denied_permanently') {
         errorMessage = 'Permission refusée définitivement. Veuillez l\'activer dans les paramètres de l\'application.';
-      } else if (e.code == 'camera_unavailable') {
-        errorMessage = 'Caméra non disponible sur cet appareil.';
-      } else if (e.message?.contains('channel') == true || 
-                 e.message?.contains('connection') == true ||
-                 e.code.contains('channel')) {
+      } else if (errorCode == 'camera_unavailable' || 
+                 errorMessageLower.contains('camera id = 0') ||
+                 errorMessageLower.contains('camera id=0') ||
+                 errorMessageLower.contains('cameraid=0') ||
+                 errorMessageLower.contains('open camera error id = 0') ||
+                 errorMessageLower.contains('open camera error id=0') ||
+                 errorMessageLower.contains('open camera error') ||
+                 errorMessageLower.contains('no camera') ||
+                 errorMessageLower.contains('camera not available') ||
+                 errorMessageLower.contains('failed to open camera')) {
+        errorMessage = 'Erreur d\'ouverture de la caméra. Sur cet appareil, veuillez utiliser la galerie photo à la place.';
+      } else if (errorMessageLower.contains('channel') || 
+                 errorMessageLower.contains('connection') ||
+                 errorCode.contains('channel')) {
         errorMessage = 'Erreur de connexion avec le plugin. Veuillez redémarrer complètement l\'application (Hot Restart ou rebuild).';
       } else {
         errorMessage = 'Erreur: ${e.message ?? e.code}';
@@ -71,7 +83,16 @@ class _ProductImageSelectorState extends State<ProductImageSelector> {
     } catch (e) {
       if (!mounted) return;
       String errorMessage = 'Erreur inattendue: ${e.toString()}';
-      if (e.toString().contains('channel') || e.toString().contains('connection')) {
+      final errorString = e.toString().toLowerCase();
+      
+      if (errorString.contains('camera id = 0') ||
+          errorString.contains('camera id=0') ||
+          errorString.contains('open camera error id = 0') ||
+          errorString.contains('open camera error id=0') ||
+          errorString.contains('open camera error') ||
+          errorString.contains('failed to open camera')) {
+        errorMessage = 'Erreur d\'ouverture de la caméra. Sur cet appareil, veuillez utiliser la galerie photo à la place.';
+      } else if (errorString.contains('channel') || errorString.contains('connection')) {
         errorMessage = 'Erreur de connexion avec le plugin. Veuillez redémarrer complètement l\'application (Hot Restart ou rebuild).';
       }
       NotificationService.showError(context, errorMessage);
