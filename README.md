@@ -132,6 +132,10 @@ Chaque module suit la même architecture :
 
 ## 📚 Documentation
 
+### Structure de la Documentation
+
+Consultez [docs/DOCUMENTATION_STRUCTURE.md](./docs/DOCUMENTATION_STRUCTURE.md) pour une vue d'ensemble complète de l'organisation de la documentation.
+
 ### Wiki
 
 Consultez le [Wiki](./wiki/) pour une documentation détaillée :
@@ -144,6 +148,13 @@ Consultez le [Wiki](./wiki/) pour une documentation détaillée :
 - [Gestion des permissions](./wiki/06-permissions/overview.md)
 - [Mode offline](./wiki/07-offline/synchronization.md)
 - [Impression thermique](./wiki/08-printing/sunmi-integration.md)
+
+### Documentation Technique
+
+- [Architecture détaillée](./docs/ARCHITECTURE.md) - Architecture avec diagrammes
+- [Guide des patterns](./docs/PATTERNS_GUIDE.md) - Patterns et conventions
+- [Référence API](./docs/API_REFERENCE.md) - Documentation complète des APIs
+- [Audit technique](./PROJECT_AUDIT_REPORT.md) - Audit complet du projet
 
 ### README par module
 
@@ -238,5 +249,5 @@ Pour toute question ou problème, consultez le [Wiki](./wiki/) ou créez une iss
 
 ---
 
-**Version:** 1.0.0  
-**Dernière mise à jour:** 2024
+**Version:** 1.0.0+1  
+**Dernière mise à jour:** Janvier 2026

@@ -66,4 +66,4 @@ Ce wiki est maintenu par l'équipe de développement. Pour proposer des amélior
 
 ---
 
-**Dernière mise à jour:** 2024
+**Dernière mise à jour:** Janvier 2026

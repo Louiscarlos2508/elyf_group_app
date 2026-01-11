@@ -2,6 +2,12 @@
 
 Ce dossier contient toute la documentation du projet.
 
+**Dernière mise à jour** : Janvier 2026
+
+## Structure de la Documentation
+
+Consultez [DOCUMENTATION_STRUCTURE.md](./DOCUMENTATION_STRUCTURE.md) pour une vue d'ensemble complète de l'organisation de la documentation.
+
 ## Guides Disponibles
 
 ### [Guide des Patterns](./PATTERNS_GUIDE.md)

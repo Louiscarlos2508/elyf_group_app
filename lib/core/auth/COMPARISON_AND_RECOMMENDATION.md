@@ -1,5 +1,9 @@
 # Comparaison: Architecture Actuelle vs Recommandée
 
+> **⚠️ FICHIER HISTORIQUE**  
+> Ce document décrit une architecture qui a été implémentée. Conservé pour référence historique.  
+> **Dernière mise à jour** : Janvier 2026 (marqué comme historique)
+
 ## Architecture Actuelle ❌
 
 ### Structure

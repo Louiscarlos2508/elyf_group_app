@@ -80,8 +80,13 @@ final permissionServiceProvider = Provider<PermissionService>(
       adminController: adminController,
       getActiveEnterpriseId: () {
         // Récupérer l'entreprise active de manière synchrone
+        // Utiliser pattern matching pour gérer les états async correctement
         final activeEnterpriseAsync = ref.read(activeEnterpriseIdProvider);
-        return activeEnterpriseAsync.value;
+        return activeEnterpriseAsync.when(
+          data: (id) => id,
+          loading: () => null,
+          error: (_, __) => null,
+        );
       },
     );
   },
@@ -282,10 +287,10 @@ final rolesProvider = FutureProvider.autoDispose<List<UserRole>>(
 final adminStatsProvider = FutureProvider.autoDispose<AdminStats>(
   (ref) async {
     // Load in parallel for better performance
-    final results = await Future.wait([
+    final results = await Future.wait<List<dynamic>>([
       ref.watch(enterprisesProvider.future),
       ref.watch(usersProvider.future),
-      ref.watch(adminControllerProvider).getAllRoles() as Future<dynamic>,
+      ref.watch(adminControllerProvider).getAllRoles(),
       ref.watch(enterpriseModuleUsersProvider.future),
     ]);
 

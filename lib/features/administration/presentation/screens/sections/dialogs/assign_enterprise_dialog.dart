@@ -187,7 +187,7 @@ class _AssignEnterpriseDialogState
                           }
 
                           return DropdownButtonFormField<String>(
-                            value: _selectedRoleId,
+                            initialValue: _selectedRoleId,
                             decoration: const InputDecoration(
                               labelText: 'Rôle *',
                             ),

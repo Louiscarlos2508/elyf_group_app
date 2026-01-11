@@ -1,5 +1,9 @@
 # Architecture Multi-Tenant Améliorée
 
+> **⚠️ FICHIER HISTORIQUE**  
+> Ce document décrit une architecture qui a été implémentée. Conservé pour référence historique.  
+> **Dernière mise à jour** : Janvier 2026 (marqué comme historique)
+
 ## Problème Actuel
 
 L'architecture actuelle gère les permissions par `userId + moduleId` mais **PAS par entreprise**.

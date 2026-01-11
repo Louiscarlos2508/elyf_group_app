@@ -4,7 +4,7 @@
 
 Ce document détaille l'état d'implémentation de toutes les fonctionnalités du module Administration.
 
-**Dernière mise à jour** : 2024
+**Dernière mise à jour** : Janvier 2026
 
 ## ✅ Fonctionnalités Complétées
 
