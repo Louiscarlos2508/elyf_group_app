@@ -322,7 +322,7 @@ class _StockMovementFiltersState
               borderRadius: BorderRadius.circular(12),
             ),
           ),
-          value: _selectedType,
+          initialValue: _selectedType,
           items: [
             const DropdownMenuItem<StockMovementType?>(
               value: null,

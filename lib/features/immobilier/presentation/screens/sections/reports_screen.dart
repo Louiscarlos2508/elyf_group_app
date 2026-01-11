@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:open_file/open_file.dart';
 
-import 'package:elyf_groupe_app/core.dart';
 import 'package:elyf_groupe_app/core/pdf/immobilier_report_pdf_service.dart';
 import 'package:elyf_groupe_app/shared.dart';
-import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
 import 'package:elyf_groupe_app/features/immobilier/application/providers.dart';
 import '../../../domain/entities/report_period.dart';
 import '../../widgets/expenses_report_content.dart';
@@ -14,7 +12,6 @@ import '../../widgets/profit_report_content.dart';
 import '../../widgets/report_kpi_cards_v2.dart';
 import '../../widgets/report_period_selector_v2.dart';
 import '../../widgets/report_tabs_v2.dart';
-import 'package:elyf_groupe_app/shared/presentation/widgets/refresh_button.dart';
 
 /// Reports screen with professional UI - style Boutique/Eau Minérale.
 class ReportsScreen extends ConsumerStatefulWidget {

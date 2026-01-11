@@ -6,6 +6,8 @@ import '../../../domain/entities/enterprise.dart';
 import '../../../../../shared/utils/notification_service.dart';
 import '../../screens/sections/dialogs/create_enterprise_dialog.dart';
 import '../../screens/sections/dialogs/edit_enterprise_dialog.dart';
+import '../../../../../../core/auth/providers.dart' show currentUserIdProvider;
+import '../../screens/sections/admin_audit_trail_section.dart' show recentAuditLogsProvider;
 
 /// Utility class for enterprise-related actions.
 class EnterpriseActions {
@@ -20,8 +22,14 @@ class EnterpriseActions {
 
     if (result != null) {
       try {
-        await ref.read(enterpriseControllerProvider).createEnterprise(result);
+        final currentUserId = ref.read(currentUserIdProvider);
+        await ref.read(enterpriseControllerProvider).createEnterprise(
+          result,
+          currentUserId: currentUserId,
+        );
         ref.invalidate(enterprisesProvider);
+        // Invalider aussi l'audit trail pour afficher le nouveau log
+        ref.invalidate(recentAuditLogsProvider);
         if (context.mounted) {
           NotificationService.showSuccess(context, 'Entreprise créée');
         }
@@ -46,8 +54,13 @@ class EnterpriseActions {
 
     if (result != null) {
       try {
-        await ref.read(enterpriseControllerProvider).updateEnterprise(result);
+        final currentUserId = ref.read(currentUserIdProvider);
+        await ref.read(enterpriseControllerProvider).updateEnterprise(
+          result,
+          currentUserId: currentUserId,
+        );
         ref.invalidate(enterprisesProvider);
+        ref.invalidate(recentAuditLogsProvider);
         if (context.mounted) {
           NotificationService.showSuccess(context, 'Entreprise modifiée');
         }
@@ -66,10 +79,16 @@ class EnterpriseActions {
     Enterprise enterprise,
   ) async {
     try {
+      final currentUserId = ref.read(currentUserIdProvider);
       await ref
           .read(enterpriseControllerProvider)
-          .toggleEnterpriseStatus(enterprise.id, !enterprise.isActive);
+          .toggleEnterpriseStatus(
+            enterprise.id,
+            !enterprise.isActive,
+            currentUserId: currentUserId,
+          );
       ref.invalidate(enterprisesProvider);
+      ref.invalidate(recentAuditLogsProvider);
       if (context.mounted) {
         NotificationService.showInfo(
           context,
@@ -112,10 +131,16 @@ class EnterpriseActions {
 
     if (confirmed == true) {
       try {
+        final currentUserId = ref.read(currentUserIdProvider);
         await ref
             .read(enterpriseControllerProvider)
-            .deleteEnterprise(enterprise.id);
+            .deleteEnterprise(
+              enterprise.id,
+              currentUserId: currentUserId,
+              enterpriseData: enterprise,
+            );
         ref.invalidate(enterprisesProvider);
+        ref.invalidate(recentAuditLogsProvider);
         if (context.mounted) {
           NotificationService.showSuccess(context, 'Entreprise supprimée');
         }

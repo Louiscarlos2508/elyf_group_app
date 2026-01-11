@@ -3,11 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/administration/application/providers.dart';
 import 'package:elyf_groupe_app/core.dart';
-import '../../../domain/services/role_statistics_service.dart';
 import 'dialogs/create_role_dialog.dart';
 import 'dialogs/edit_role_dialog.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../../../shared/utils/notification_service.dart';
+import 'package:elyf_groupe_app/core/auth/providers.dart' show currentUserIdProvider;
 
 /// Section pour gérer les rôles.
 class AdminRolesSection extends ConsumerWidget {
@@ -76,7 +76,14 @@ class AdminRolesSection extends ConsumerWidget {
 
     if (confirmed == true) {
       try {
-        await ref.read(adminControllerProvider).deleteRole(role.id);
+        // Récupérer l'ID de l'utilisateur actuel pour l'audit trail
+        final currentUserId = ref.read(currentUserIdProvider);
+
+        await ref.read(adminControllerProvider).deleteRole(
+          role.id,
+          currentUserId: currentUserId,
+          roleData: role,
+        );
         ref.invalidate(rolesProvider);
         if (context.mounted) {
           NotificationService.showSuccess(context, 'Rôle supprimé');

@@ -90,7 +90,8 @@ class _ReportPeriodSelectorState extends State<ReportPeriodSelector> {
                       firstDate: DateTime(2000),
                       lastDate: now,
                     );
-                    if (start != null && mounted) {
+                    if (start != null) {
+                      if (!mounted || !context.mounted) return;
                       final end = await showDatePicker(
                         context: context,
                         initialDate: widget.endDate ?? now,

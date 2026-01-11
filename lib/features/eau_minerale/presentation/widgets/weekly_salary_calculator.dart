@@ -1,14 +1,10 @@
 import 'package:flutter/material.dart';
 
-import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
-import '../../../../../shared/utils/notification_service.dart';
-import '../../application/controllers/production_session_controller.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../domain/entities/daily_worker.dart';
-import '../../domain/entities/production_day.dart';
 import '../../domain/entities/production_session.dart';
 import 'payment_signature_dialog.dart';
 

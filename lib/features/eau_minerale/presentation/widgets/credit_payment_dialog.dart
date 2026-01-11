@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
-import '../../../../../shared/utils/currency_formatter.dart';
-import '../../../../../shared/utils/notification_service.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../domain/entities/credit_payment.dart';
 import '../../domain/entities/sale.dart';
@@ -13,7 +11,6 @@ import 'credit_payment/credit_payment_header.dart';
 import 'credit_payment/credit_payment_info_card.dart';
 import 'credit_payment/credit_payment_print_helper.dart';
 import 'credit_payment/credit_sales_list.dart';
-import 'package:elyf_groupe_app/shared/utils/form_helper_mixin.dart';
 
 /// Dialog for recording a credit payment.
 class CreditPaymentDialog extends ConsumerStatefulWidget {
@@ -141,7 +138,6 @@ class _CreditPaymentDialogState extends ConsumerState<CreditPaymentDialog>
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       child: ConstrainedBox(

@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../application/providers.dart';
 import '../../../domain/entities/enterprise.dart';
-import '../../../domain/services/enterprise_type_service.dart';
 
 /// Widget for displaying a single enterprise in the list.
 class EnterpriseListItem extends ConsumerWidget {

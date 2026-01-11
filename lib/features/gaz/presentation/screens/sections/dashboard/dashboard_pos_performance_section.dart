@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../application/providers.dart';
 import '../../../../domain/entities/gas_sale.dart';
-import '../../../../domain/entities/point_of_sale.dart';
 import '../../../../domain/services/gaz_calculation_service.dart';
 import '../../../widgets/dashboard_point_of_sale_performance.dart';
 

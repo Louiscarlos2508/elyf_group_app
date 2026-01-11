@@ -30,7 +30,7 @@ class _AgentsScreenState extends ConsumerState<AgentsScreen> {
   @override
   Widget build(BuildContext context) {
     final agentsKey = '${widget.enterpriseId ?? ''}|${_statusFilter?.name ?? ''}|$_searchQuery';
-    final statsKey = '${widget.enterpriseId ?? ''}';
+    final statsKey = widget.enterpriseId ?? '';
     
     final agentsAsync = ref.watch(agentsProvider((agentsKey)));
     final statsAsync = ref.watch(agentsDailyStatisticsProvider((statsKey)));

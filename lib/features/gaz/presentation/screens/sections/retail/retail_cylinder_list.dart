@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../application/providers.dart';
 import '../../../../domain/entities/cylinder.dart';
-import '../../../../domain/entities/cylinder_stock.dart';
 import '../../../widgets/cylinder_sale_card.dart';
 
 /// Liste des bouteilles disponibles pour la vente.

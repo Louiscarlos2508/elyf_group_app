@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import '../../../../application/providers.dart' show enterprisesProvider;
 
 /// Filters bar widget for user section.
@@ -51,7 +50,7 @@ class UserFiltersBar extends ConsumerWidget {
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(minWidth: 180, maxWidth: 250),
                   child: DropdownButtonFormField<String?>(
-                    value: selectedEnterpriseId,
+                    initialValue: selectedEnterpriseId,
                     decoration: const InputDecoration(
                       labelText: 'Entreprise',
                       isDense: true,

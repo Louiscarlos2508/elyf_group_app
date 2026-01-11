@@ -207,14 +207,19 @@ class GazCalculationService {
 
     // Calcul par poids de bouteille
     final salesByWeight = <int, int>{};
+    // Initialize map with all cylinder weights
     for (final cylinder in cylinders) {
       salesByWeight[cylinder.weight] = 0;
     }
+    // Calculate sales by weight
     for (final sale in todaySales) {
-      for (final item in sale.items) {
-        salesByWeight[item.weight] =
-            (salesByWeight[item.weight] ?? 0) + item.quantity;
-      }
+      // Find the cylinder for this sale
+      final cylinder = cylinders.firstWhere(
+        (c) => c.id == sale.cylinderId,
+        orElse: () => cylinders.first, // Fallback, shouldn't happen
+      );
+      final weight = cylinder.weight;
+      salesByWeight[weight] = (salesByWeight[weight] ?? 0) + sale.quantity;
     }
 
     return RetailMetrics(

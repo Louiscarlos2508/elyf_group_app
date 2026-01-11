@@ -3,12 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
-import '../../../../shared/utils/currency_formatter.dart';
-import '../../../../shared/utils/notification_service.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/cart_item.dart';
 import '../../domain/entities/sale.dart';
-import 'package:elyf_groupe_app/shared/utils/form_helper_mixin.dart';
 
 class CheckoutDialog extends ConsumerStatefulWidget {
   const CheckoutDialog({

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
-import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
 import '../../../../domain/entities/enterprise.dart';
 import 'package:elyf_groupe_app/shared/utils/form_helper_mixin.dart';
 

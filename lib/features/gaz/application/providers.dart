@@ -42,7 +42,6 @@ import '../domain/services/data_consistency_service.dart';
 import '../domain/services/financial_calculation_service.dart';
 import '../domain/services/gas_calculation_service.dart';
 import '../domain/services/gas_validation_service.dart';
-import '../domain/services/gaz_calculation_service.dart' as gaz_calc;
 import '../domain/services/filtering/gaz_filter_service.dart';
 import '../domain/services/gaz_dashboard_calculation_service.dart';
 import '../domain/services/gaz_report_calculation_service.dart';
@@ -99,11 +98,12 @@ final gazExpenseRepositoryProvider = Provider<GazExpenseRepository>((ref) {
   final syncManager = ref.watch(syncManagerProvider);
   final connectivityService = ref.watch(connectivityServiceProvider);
   
-  return ExpenseOfflineRepository(
+  return GazExpenseOfflineRepository(
     driftService: driftService,
     syncManager: syncManager,
     connectivityService: connectivityService,
     enterpriseId: enterpriseId,
+    moduleType: 'gaz',
   );
 });
 
@@ -119,6 +119,7 @@ final cylinderStockRepositoryProvider =
     syncManager: syncManager,
     connectivityService: connectivityService,
     enterpriseId: enterpriseId,
+    moduleType: 'gaz',
   );
 });
 
@@ -134,6 +135,7 @@ final cylinderLeakRepositoryProvider =
     syncManager: syncManager,
     connectivityService: connectivityService,
     enterpriseId: enterpriseId,
+    moduleType: 'gaz',
   );
 });
 
@@ -148,6 +150,7 @@ final tourRepositoryProvider = Provider<TourRepository>((ref) {
     syncManager: syncManager,
     connectivityService: connectivityService,
     enterpriseId: enterpriseId,
+    moduleType: 'gaz',
   );
 });
 
@@ -163,6 +166,7 @@ final gazSettingsRepositoryProvider =
     syncManager: syncManager,
     connectivityService: connectivityService,
     enterpriseId: enterpriseId,
+    moduleType: 'gaz',
   );
 });
 
@@ -178,6 +182,7 @@ final pointOfSaleRepositoryProvider =
     syncManager: syncManager,
     connectivityService: connectivityService,
     enterpriseId: enterpriseId,
+    moduleType: 'gaz',
   );
 });
 
@@ -318,7 +323,7 @@ final pointOfSaleCylindersProvider = FutureProvider.family<List<Cylinder>, ({
     ),
   );
   
-  final pointOfSale = await pointsOfSaleAsync.when(
+  final pointOfSale = pointsOfSaleAsync.when(
     data: (pointsOfSale) => pointsOfSale.firstWhere(
       (pos) => pos.id == params.pointOfSaleId,
       orElse: () => throw Exception('Point de vente non trouvé'),

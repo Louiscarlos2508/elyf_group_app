@@ -1,15 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../application/controllers/financial_report_controller.dart';
 import '../../application/providers.dart';
-import '../../domain/entities/gas_sale.dart';
-import '../../domain/services/financial_calculation_service.dart';
 import '../../domain/services/gaz_report_calculation_service.dart';
 import 'financial_summary_card.dart';
 import 'package:elyf_groupe_app/shared.dart';
-import '../../../../../shared/utils/currency_formatter.dart';
-import '../../../../../shared/utils/notification_service.dart';
 /// Contenu de rapport financier avec charges fixes/variables et reliquat siège.
 class GazFinancialReportContentV2 extends ConsumerWidget {
   const GazFinancialReportContentV2({

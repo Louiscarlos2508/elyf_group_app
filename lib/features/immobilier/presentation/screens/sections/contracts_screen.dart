@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
-import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
 import 'package:elyf_groupe_app/features/immobilier/application/providers.dart';
 import '../../../domain/entities/contract.dart';
 import '../../../domain/entities/payment.dart';
@@ -17,7 +16,6 @@ import '../../widgets/payment_detail_dialog.dart';
 import '../../widgets/property_detail_dialog.dart';
 import '../../widgets/property_search_bar.dart';
 import '../../widgets/tenant_detail_dialog.dart';
-import 'package:elyf_groupe_app/shared/presentation/widgets/refresh_button.dart';
 
 class ContractsScreen extends ConsumerStatefulWidget {
   const ContractsScreen({super.key});

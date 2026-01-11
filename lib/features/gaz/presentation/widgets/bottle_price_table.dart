@@ -4,7 +4,6 @@ import 'package:intl/intl.dart';
 
 import '../../application/providers.dart';
 import '../../domain/entities/cylinder.dart';
-import '../../domain/entities/gaz_settings.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../../../shared/utils/notification_service.dart';
 import 'cylinder_form_dialog.dart';
@@ -287,8 +286,8 @@ class BottlePriceTable extends ConsumerWidget {
                                 ),
                                 Expanded(
                                   child: Text(
-                                    wholesalePrice != null && wholesalePrice! > 0
-                                        ? '${numberFormat.format(wholesalePrice!.toInt())} FCFA'
+                                    wholesalePrice != null && wholesalePrice > 0
+                                        ? '${numberFormat.format(wholesalePrice.toInt())} FCFA'
                                         : '-',
                                     textAlign: TextAlign.right,
                                     style: theme.textTheme.bodyMedium?.copyWith(
@@ -396,7 +395,7 @@ class BottlePriceTable extends ConsumerWidget {
                               child: Text('Erreur: $e'),
                             ),
                           );
-                        }).toList(),
+                        }),
                       ],
                     ),
                   ),

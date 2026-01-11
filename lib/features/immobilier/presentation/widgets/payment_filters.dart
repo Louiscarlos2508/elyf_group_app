@@ -68,6 +68,19 @@ class PaymentFilters extends StatelessWidget {
                 children: [
                   PopupMenuButton<PaymentStatus?>(
                     initialValue: selectedStatus,
+                    onSelected: onStatusChanged,
+                    itemBuilder: (context) => [
+                      const PopupMenuItem<PaymentStatus?>(
+                        value: null,
+                        child: Text('Tous les statuts'),
+                      ),
+                      ...PaymentStatus.values.map(
+                        (status) => PopupMenuItem<PaymentStatus?>(
+                          value: status,
+                          child: Text(_getStatusLabel(status)),
+                        ),
+                      ),
+                    ],
                     child: Chip(
                       label: Text(
                         selectedStatus != null
@@ -94,23 +107,23 @@ class PaymentFilters extends StatelessWidget {
                           ? theme.colorScheme.primaryContainer
                           : theme.colorScheme.surfaceContainerHighest,
                     ),
-                    onSelected: onStatusChanged,
-                    itemBuilder: (context) => [
-                      const PopupMenuItem<PaymentStatus?>(
-                        value: null,
-                        child: Text('Tous les statuts'),
-                      ),
-                      ...PaymentStatus.values.map(
-                        (status) => PopupMenuItem<PaymentStatus?>(
-                          value: status,
-                          child: Text(_getStatusLabel(status)),
-                        ),
-                      ),
-                    ],
                   ),
                   const SizedBox(width: 8),
                   PopupMenuButton<PaymentMethod?>(
                     initialValue: selectedMethod,
+                    onSelected: onMethodChanged,
+                    itemBuilder: (context) => [
+                      const PopupMenuItem<PaymentMethod?>(
+                        value: null,
+                        child: Text('Toutes les méthodes'),
+                      ),
+                      ...PaymentMethod.values.map(
+                        (method) => PopupMenuItem<PaymentMethod?>(
+                          value: method,
+                          child: Text(_getMethodLabel(method)),
+                        ),
+                      ),
+                    ],
                     child: Chip(
                       label: Text(
                         selectedMethod != null
@@ -137,19 +150,6 @@ class PaymentFilters extends StatelessWidget {
                           ? theme.colorScheme.primaryContainer
                           : theme.colorScheme.surfaceContainerHighest,
                     ),
-                    onSelected: onMethodChanged,
-                    itemBuilder: (context) => [
-                      const PopupMenuItem<PaymentMethod?>(
-                        value: null,
-                        child: Text('Toutes les méthodes'),
-                      ),
-                      ...PaymentMethod.values.map(
-                        (method) => PopupMenuItem<PaymentMethod?>(
-                          value: method,
-                          child: Text(_getMethodLabel(method)),
-                        ),
-                      ),
-                    ],
                   ),
                 ],
               ),

@@ -32,13 +32,13 @@ mixin FormHelperMixin<T extends StatefulWidget> on State<T> {
       final message = await onSubmit();
       final finalMessage = message ?? successMessage;
       
-      if (mounted && finalMessage != null) {
+      if (mounted && context.mounted && finalMessage != null) {
         NotificationService.showSuccess(context, finalMessage);
       }
       
       return true;
     } catch (e) {
-      if (mounted) {
+      if (mounted && context.mounted) {
         NotificationService.showError(context, e.toString());
       }
       return false;

@@ -6,8 +6,6 @@ import 'package:elyf_groupe_app/features/immobilier/application/providers.dart';
 import '../../domain/entities/property.dart';
 import '../../domain/services/property_validation_service.dart';
 import 'package:elyf_groupe_app/shared.dart';
-import 'package:elyf_groupe_app/shared/presentation/widgets/form_dialog.dart';
-import 'package:elyf_groupe_app/shared/utils/form_helper_mixin.dart';
 
 class PropertyFormDialog extends ConsumerStatefulWidget {
   const PropertyFormDialog({
@@ -137,7 +135,7 @@ class _PropertyFormDialogState extends ConsumerState<PropertyFormDialog>
                       ),
                       const SizedBox(height: 16),
                       DropdownButtonFormField<PropertyType>(
-                        value: _selectedType,
+                        initialValue: _selectedType,
                         decoration: const InputDecoration(
                           labelText: 'Type de propriété *',
                           prefixIcon: Icon(Icons.category),
@@ -218,7 +216,7 @@ class _PropertyFormDialogState extends ConsumerState<PropertyFormDialog>
                       ),
                       const SizedBox(height: 16),
                       DropdownButtonFormField<PropertyStatus>(
-                        value: _selectedStatus,
+                        initialValue: _selectedStatus,
                         decoration: const InputDecoration(
                           labelText: 'Statut *',
                           prefixIcon: Icon(Icons.info_outline),

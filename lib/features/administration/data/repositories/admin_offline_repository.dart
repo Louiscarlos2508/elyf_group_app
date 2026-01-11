@@ -281,7 +281,7 @@ class AdminOfflineRepository implements AdminRepository {
         moduleType: 'administration',
       );
 
-      final roles = records.map((record) {
+      final roles = records.map<UserRole>((record) {
         final map = jsonDecode(record.dataJson) as Map<String, dynamic>;
         return _userRoleFromMap(map);
       }).toList();
@@ -294,7 +294,7 @@ class AdminOfflineRepository implements AdminRepository {
         error: e,
         stackTrace: stackTrace,
       );
-      return (roles: [], totalCount: 0);
+      return (roles: <UserRole>[], totalCount: 0);
     }
   }
 

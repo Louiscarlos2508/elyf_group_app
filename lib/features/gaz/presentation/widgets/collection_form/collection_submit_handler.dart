@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import '../../../domain/entities/collection.dart';
-import '../../../domain/entities/cylinder.dart';
 import '../../../domain/entities/tour.dart';
 import 'client_selector.dart';
 import 'package:elyf_groupe_app/shared.dart';
@@ -29,7 +28,7 @@ class CollectionSubmitHandler {
 
     try {
       final controller = ref.read(tourControllerProvider);
-      final cylinders = await ref.read(cylindersProvider.future) as List<Cylinder>;
+      final cylinders = await ref.read(cylindersProvider.future);
 
       double unitPrice = 0.0;
       final Map<int, double> unitPricesByWeight = {};

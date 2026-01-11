@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
-import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
-import 'package:elyf_groupe_app/shared/presentation/widgets/gaz_button_styles.dart';
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import '../../../domain/entities/tour.dart';
 import '../../widgets/tour_detail/closure_step_content.dart';
@@ -140,9 +138,8 @@ class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
                                     await _loadTour();
                                   }
                                 } catch (e) {
-                                  if (mounted) {
-                                    NotificationService.showError(context, 'Erreur: $e');
-                                  }
+                                  if (!mounted || !context.mounted) return;
+                                  NotificationService.showError(context, 'Erreur: $e');
                                 }
                               },
                               child: Text(
@@ -189,15 +186,14 @@ class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
                                       await _loadTour();
                                     }
                                   } catch (e) {
-                                    if (mounted) {
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        SnackBar(
-                                          content: Text('Erreur: $e'),
-                                          backgroundColor: Colors.red,
-                                        ),
-                                      );
-                                    }
+                                    if (!mounted || !context.mounted) return;
+                                    ScaffoldMessenger.of(context)
+                                        .showSnackBar(
+                                      SnackBar(
+                                        content: Text('Erreur: $e'),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
                                   }
                                 },
                                 child: Text(

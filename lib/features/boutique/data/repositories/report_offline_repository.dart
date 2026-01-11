@@ -1,10 +1,7 @@
 import 'dart:developer' as developer;
 
 import '../../../../core/errors/error_handler.dart';
-import '../../domain/entities/expense.dart';
-import '../../domain/entities/purchase.dart';
 import '../../domain/entities/report_data.dart';
-import '../../domain/entities/sale.dart';
 import '../../domain/repositories/expense_repository.dart';
 import '../../domain/repositories/purchase_repository.dart';
 import '../../domain/repositories/report_repository.dart';
@@ -79,7 +76,7 @@ class ReportOfflineRepository implements ReportRepository {
       final purchasesAmount =
           periodPurchases.fold<int>(0, (sum, p) => sum + p.totalAmount);
       final expensesAmount =
-          periodExpenses.fold<int>(0, (sum, e) => sum + e.amount);
+          periodExpenses.fold<int>(0, (sum, e) => sum + e.amountCfa);
 
       return ReportData(
         period: period,
@@ -246,12 +243,12 @@ class ReportOfflineRepository implements ReportRepository {
           expenses.where((e) => _isInPeriod(e.date, start, end)).toList();
 
       final totalAmount =
-          periodExpenses.fold<int>(0, (sum, e) => sum + e.amount);
+          periodExpenses.fold<int>(0, (sum, e) => sum + e.amountCfa);
 
       final byCategory = <String, int>{};
       for (final expense in periodExpenses) {
-        final category = expense.category;
-        byCategory[category] = (byCategory[category] ?? 0) + expense.amount;
+        final categoryLabel = expense.category.name; // Convert enum to string
+        byCategory[categoryLabel] = (byCategory[categoryLabel] ?? 0) + expense.amountCfa;
       }
 
       return ExpensesReportData(
@@ -299,7 +296,7 @@ class ReportOfflineRepository implements ReportRepository {
       final totalCostOfGoodsSold =
           periodPurchases.fold<int>(0, (sum, p) => sum + p.totalAmount);
       final totalExpenses =
-          periodExpenses.fold<int>(0, (sum, e) => sum + e.amount);
+          periodExpenses.fold<int>(0, (sum, e) => sum + e.amountCfa);
 
       final grossProfit = totalRevenue - totalCostOfGoodsSold;
       final netProfit = grossProfit - totalExpenses;

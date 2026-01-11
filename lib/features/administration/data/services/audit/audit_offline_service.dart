@@ -4,14 +4,19 @@ import 'dart:convert';
 import '../../../../../core/offline/drift_service.dart';
 import '../../../domain/entities/audit_log.dart';
 import '../../../domain/services/audit/audit_service.dart';
+import '../firestore_sync_service.dart';
 
 /// Offline-first implementation of AuditService using Drift.
+/// 
+/// Enregistre les logs localement et synchronise avec Firestore.
 class AuditOfflineService implements AuditService {
   AuditOfflineService({
     required this.driftService,
+    this.firestoreSync,
   });
 
   final DriftService driftService;
+  final FirestoreSyncService? firestoreSync;
 
   static const String _collectionName = 'audit_logs';
 
@@ -32,6 +37,7 @@ class AuditOfflineService implements AuditService {
     Map<String, dynamic>? newValue,
     String? moduleId,
     String? enterpriseId,
+    String? userDisplayName,
   }) async {
     try {
       final log = AuditLog(
@@ -46,13 +52,16 @@ class AuditOfflineService implements AuditService {
         newValue: newValue,
         moduleId: moduleId,
         enterpriseId: enterpriseId,
+        userDisplayName: userDisplayName,
       );
 
       final map = log.toMap()..['localId'] = log.id;
+      
+      // Sauvegarder localement dans Drift (SQLite)
       await driftService.records.upsert(
         collectionName: _collectionName,
         localId: log.id,
-        remoteId: null, // Will be set after sync
+        remoteId: log.id, // Utiliser l'ID local comme remoteId pour les audit logs
         enterpriseId: enterpriseId ?? 'global',
         moduleType: moduleId ?? 'administration',
         dataJson: jsonEncode(map),
@@ -60,9 +69,21 @@ class AuditOfflineService implements AuditService {
       );
 
       developer.log(
-        'Audit log created: ${action.name} on $entityType/$entityId by $userId',
+        'Audit log created locally: ${action.name} on $entityType/$entityId by $userId',
         name: 'admin.audit',
       );
+
+      // Synchroniser avec Firestore (en arrière-plan, sans bloquer)
+      if (firestoreSync != null) {
+        // Ne pas attendre - la synchronisation se fait en arrière-plan
+        firestoreSync!.syncAuditLogToFirestore(log).catchError((e) {
+          developer.log(
+            'Error syncing audit log to Firestore (log saved locally): $e',
+            name: 'admin.audit',
+            error: e,
+          );
+        });
+      }
     } catch (e, stackTrace) {
       developer.log(
         'Error creating audit log',
@@ -188,4 +209,5 @@ class AuditOfflineService implements AuditService {
     }
   }
 }
+
 

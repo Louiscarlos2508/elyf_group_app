@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/providers.dart';
-import '../../domain/entities/cylinder.dart';
-import '../../domain/entities/gaz_settings.dart';
 import 'wholesale_price/wholesale_price_header.dart';
 import 'wholesale_price/wholesale_price_row.dart';
 
@@ -106,7 +104,7 @@ class WholesalePriceConfigCard extends ConsumerWidget {
                         // Le provider sera invalidé dans le widget
                       },
                     );
-                  }).toList(),
+                  }),
               ],
             ),
           ),

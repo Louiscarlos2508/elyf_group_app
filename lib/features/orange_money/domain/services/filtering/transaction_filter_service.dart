@@ -12,12 +12,12 @@ class TransactionFilterService {
     required String searchQuery,
     required List<String> Function(T) getSearchableFields,
   }) {
-    final _genericFilter = GenericListFilterService<T>();
-    return _genericFilter.filterBySearch(
+    final genericFilter = GenericListFilterService<T>();
+    return genericFilter.filterBySearch(
       items: transactions,
       searchQuery: searchQuery,
       getSearchableFields: getSearchableFields as List<String> Function(dynamic),
-    ) as List<T>;
+    );
   }
 
   /// Filters transactions by date range.

@@ -22,6 +22,19 @@ class ModuleStats {
   final List<dynamic> enterprises; // Enterprise list
 }
 
+/// Mapping entre les modules et les types d'entreprises
+String? _getEnterpriseTypeForModule(String moduleId) {
+  // Les modules correspondent généralement aux types d'entreprises
+  final moduleToTypeMap = {
+    'eau_minerale': 'eau_minerale',
+    'gaz': 'gaz',
+    'orange_money': 'orange_money',
+    'immobilier': 'immobilier',
+    'boutique': 'boutique',
+  };
+  return moduleToTypeMap[moduleId];
+}
+
 /// Provider pour récupérer les statistiques par module
 final moduleStatsProvider = FutureProvider.family<ModuleStats, String>(
   (ref, moduleId) async {
@@ -33,19 +46,21 @@ final moduleStatsProvider = FutureProvider.family<ModuleStats, String>(
         enterpriseModuleUsers.where((u) => u.moduleId == moduleId).toList();
 
     final uniqueUsers = moduleAssignments.map((a) => a.userId).toSet();
-    final uniqueEnterprises =
+    final uniqueEnterprisesWithUsers =
         moduleAssignments.map((a) => a.enterpriseId).toSet();
     final activeAssignments =
         moduleAssignments.where((a) => a.isActive).length;
 
-    final moduleEnterprises = enterprises
-        .where((e) => uniqueEnterprises.contains(e.id))
-        .toList();
+    // Récupérer toutes les entreprises qui correspondent au type du module
+    final enterpriseType = _getEnterpriseTypeForModule(moduleId);
+    final moduleEnterprises = enterpriseType != null
+        ? enterprises.where((e) => e.type == enterpriseType).toList()
+        : enterprises.where((e) => uniqueEnterprisesWithUsers.contains(e.id)).toList();
 
     return ModuleStats(
       moduleId: moduleId,
       totalUsers: uniqueUsers.length,
-      totalEnterprises: uniqueEnterprises.length,
+      totalEnterprises: moduleEnterprises.length,
       activeAssignments: activeAssignments,
       enterprises: moduleEnterprises,
     );

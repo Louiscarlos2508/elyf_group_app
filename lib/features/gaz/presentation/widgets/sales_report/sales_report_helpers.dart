@@ -1,6 +1,4 @@
 import '../../../domain/entities/gas_sale.dart';
-import '../../../domain/entities/cylinder.dart';
-import 'package:elyf_groupe_app/shared.dart';
 
 /// Helpers pour le formatage des rapports de vente.
 ///

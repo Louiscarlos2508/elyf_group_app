@@ -3,88 +3,109 @@ import 'package:elyf_groupe_app/features/eau_minerale/domain/services/payment_sp
 
 void main() {
   group('PaymentSplitterService', () {
-    late PaymentSplitterService service;
-
-    setUp(() {
-      service = PaymentSplitterService();
-    });
-
     group('splitPayment', () {
-      test('should split payment correctly between cash and orange money', () {
-        final result = service.splitPayment(
+      test('should split payment correctly for cash method', () {
+        final result = PaymentSplitterService.splitPayment(
+          method: PaymentMethod.cash,
           totalAmount: 10000,
-          cashAmount: 6000,
-        );
-
-        expect(result.cashAmount, 6000);
-        expect(result.orangeMoneyAmount, 4000);
-        expect(result.isValid, true);
-      });
-
-      test('should return all cash when orange money is 0', () {
-        final result = service.splitPayment(
-          totalAmount: 10000,
-          cashAmount: 10000,
         );
 
         expect(result.cashAmount, 10000);
         expect(result.orangeMoneyAmount, 0);
-        expect(result.isValid, true);
+        expect(result.total, 10000);
       });
 
-      test('should return all orange money when cash is 0', () {
-        final result = service.splitPayment(
+      test('should split payment correctly for orangeMoney method', () {
+        final result = PaymentSplitterService.splitPayment(
+          method: PaymentMethod.orangeMoney,
           totalAmount: 10000,
-          cashAmount: 0,
         );
 
         expect(result.cashAmount, 0);
         expect(result.orangeMoneyAmount, 10000);
-        expect(result.isValid, true);
+        expect(result.total, 10000);
       });
 
-      test('should return invalid when cash exceeds total', () {
-        final result = service.splitPayment(
+      test('should split payment correctly for both method', () {
+        final result = PaymentSplitterService.splitPayment(
+          method: PaymentMethod.both,
           totalAmount: 10000,
-          cashAmount: 15000,
-        );
-
-        expect(result.isValid, false);
-      });
-
-      test('should return invalid when cash is negative', () {
-        final result = service.splitPayment(
-          totalAmount: 10000,
-          cashAmount: -1000,
-        );
-
-        expect(result.isValid, false);
-      });
-    });
-
-    group('getPaymentMethod', () {
-      test('should return cash when only cash', () {
-        final method = service.getPaymentMethod(
-          cashAmount: 10000,
-          orangeMoneyAmount: 0,
-        );
-        expect(method, PaymentMethod.cash);
-      });
-
-      test('should return orangeMoney when only orange money', () {
-        final method = service.getPaymentMethod(
-          cashAmount: 0,
-          orangeMoneyAmount: 10000,
-        );
-        expect(method, PaymentMethod.orangeMoney);
-      });
-
-      test('should return mixed when both present', () {
-        final method = service.getPaymentMethod(
           cashAmount: 6000,
           orangeMoneyAmount: 4000,
         );
-        expect(method, PaymentMethod.mixed);
+
+        expect(result.cashAmount, 6000);
+        expect(result.orangeMoneyAmount, 4000);
+        expect(result.total, 10000);
+      });
+
+      test('should default to 0 for both when amounts not provided', () {
+        final result = PaymentSplitterService.splitPayment(
+          method: PaymentMethod.both,
+          totalAmount: 10000,
+        );
+
+        expect(result.cashAmount, 0);
+        expect(result.orangeMoneyAmount, 0);
+        expect(result.total, 0);
+      });
+    });
+
+    group('validateSplit', () {
+      test('should return null for valid split', () {
+        final error = PaymentSplitterService.validateSplit(
+          cashAmount: 6000,
+          orangeMoneyAmount: 4000,
+          totalAmount: 10000,
+        );
+        expect(error, isNull);
+      });
+
+      test('should return error when cash is negative', () {
+        final error = PaymentSplitterService.validateSplit(
+          cashAmount: -1000,
+          orangeMoneyAmount: 4000,
+          totalAmount: 10000,
+        );
+        expect(error, isNotNull);
+      });
+
+      test('should return error when orangeMoney is negative', () {
+        final error = PaymentSplitterService.validateSplit(
+          cashAmount: 6000,
+          orangeMoneyAmount: -1000,
+          totalAmount: 10000,
+        );
+        expect(error, isNotNull);
+      });
+
+      test('should return error when total exceeds amount', () {
+        final error = PaymentSplitterService.validateSplit(
+          cashAmount: 7000,
+          orangeMoneyAmount: 5000,
+          totalAmount: 10000,
+        );
+        expect(error, isNotNull);
+      });
+    });
+
+    group('isSplitComplete', () {
+      test('should return true when split is complete', () {
+        final isComplete = PaymentSplitterService.isSplitComplete(
+          cashAmount: 6000,
+          orangeMoneyAmount: 4000,
+          totalAmount: 10000,
+        );
+        expect(isComplete, isTrue);
+      });
+
+      test('should return false when split is incomplete', () {
+        final isComplete = PaymentSplitterService.isSplitComplete(
+          cashAmount: 6000,
+          orangeMoneyAmount: 3000,
+          totalAmount: 10000,
+        );
+        expect(isComplete, isFalse);
       });
     });
   });

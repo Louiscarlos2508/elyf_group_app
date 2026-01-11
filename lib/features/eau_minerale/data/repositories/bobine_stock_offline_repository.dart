@@ -2,10 +2,7 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import '../../../../core/errors/error_handler.dart';
-import '../../../../core/offline/connectivity_service.dart';
-import '../../../../core/offline/drift_service.dart';
 import '../../../../core/offline/offline_repository.dart';
-import '../../../../core/offline/sync_manager.dart';
 import '../../domain/entities/bobine_stock.dart';
 import '../../domain/entities/bobine_stock_movement.dart';
 import '../../domain/repositories/bobine_stock_quantity_repository.dart';
@@ -198,13 +195,13 @@ class BobineStockOfflineRepository extends OfflineRepository<BobineStock>
   }
 
   @override
-  Future<BobineStock> save(BobineStock stock) async {
+  Future<BobineStock> save(BobineStock entity) async {
     try {
-      final localId = getLocalId(stock);
-      final stockWithLocalId = stock.copyWith(
+      final localId = getLocalId(entity);
+      final stockWithLocalId = entity.copyWith(
         id: localId,
         updatedAt: DateTime.now(),
-        createdAt: stock.createdAt ?? DateTime.now(),
+        createdAt: entity.createdAt ?? DateTime.now(),
       );
       await super.save(stockWithLocalId);
       return stockWithLocalId;
@@ -227,12 +224,16 @@ class BobineStockOfflineRepository extends OfflineRepository<BobineStock>
       final map = {
         'id': localId,
         'localId': localId,
-        'bobineStockId': movement.bobineStockId,
+        'bobineId': movement.bobineId,
+        'bobineReference': movement.bobineReference,
         'type': movement.type.name,
-        'quantity': movement.quantity,
+        'quantite': movement.quantite,
         'date': movement.date.toIso8601String(),
-        'reason': movement.reason,
+        'raison': movement.raison,
         'productionId': movement.productionId,
+        'machineId': movement.machineId,
+        'notes': movement.notes,
+        'createdAt': movement.createdAt?.toIso8601String(),
       };
 
       await driftService.records.upsert(
@@ -270,21 +271,26 @@ class BobineStockOfflineRepository extends OfflineRepository<BobineStock>
         final map = jsonDecode(r.dataJson) as Map<String, dynamic>;
         return BobineStockMovement(
           id: map['id'] as String,
-          bobineStockId: map['bobineStockId'] as String,
+          bobineId: map['bobineId'] as String? ?? map['bobineStockId'] as String? ?? '',
+          bobineReference: map['bobineReference'] as String? ?? '',
           type: BobineMovementType.values.firstWhere(
             (e) => e.name == map['type'],
-            orElse: () => BobineMovementType.usage,
+            orElse: () => BobineMovementType.entree,
           ),
-          quantity: (map['quantity'] as num).toInt(),
+          quantite: (map['quantite'] as num?)?.toDouble() ?? (map['quantity'] as num?)?.toDouble() ?? 0.0,
           date: DateTime.parse(map['date'] as String),
-          reason: map['reason'] as String?,
+          raison: map['raison'] as String? ?? map['reason'] as String? ?? '',
           productionId: map['productionId'] as String?,
+          machineId: map['machineId'] as String?,
+          notes: map['notes'] as String?,
+          createdAt: map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : null,
         );
       }).toList();
 
       return movements.where((m) {
-        if (bobineStockId != null && m.bobineStockId != bobineStockId)
+        if (bobineStockId != null && m.bobineId != bobineStockId) {
           return false;
+        }
         if (startDate != null && m.date.isBefore(startDate)) return false;
         if (endDate != null && m.date.isAfter(endDate)) return false;
         return true;

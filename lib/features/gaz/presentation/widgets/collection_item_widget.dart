@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../../../shared/utils/currency_formatter.dart';
@@ -21,7 +20,6 @@ class CollectionItemWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final totalBottles = collection.totalBottles;
 
     return Container(

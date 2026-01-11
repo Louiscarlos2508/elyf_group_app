@@ -6,7 +6,6 @@ import '../../domain/services/customer_service.dart';
 import 'new_customer_form/transaction_info_card.dart';
 import 'new_customer_form/customer_name_fields.dart';
 import 'new_customer_form/id_type_field.dart';
-import 'new_customer_form/id_date_fields.dart';
 
 /// Widget pour afficher le formulaire d'enregistrement d'une nouvelle personne.
 /// Affiche une carte avec les informations de transaction et un formulaire d'enregistrement.
@@ -45,7 +44,7 @@ class _NewCustomerFormCardState extends State<NewCustomerFormCard> {
   final _lastNameController = TextEditingController();
   final _idNumberController = TextEditingController();
   
-  String _idType = "Carte Nationale d'Identité";
+  final String _idType = "Carte Nationale d'Identité";
   DateTime? _idIssueDate;
   DateTime? _idExpiryDate;
   bool _isSaving = false;

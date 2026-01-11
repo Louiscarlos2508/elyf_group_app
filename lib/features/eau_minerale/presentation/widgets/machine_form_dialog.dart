@@ -6,7 +6,6 @@ import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../domain/entities/machine.dart';
 import 'machine_selector_field.dart';
-import 'package:elyf_groupe_app/shared/presentation/widgets/form_dialog.dart';
 import 'package:elyf_groupe_app/shared/utils/form_helper_mixin.dart';
 
 /// Dialog pour ajouter/modifier une machine.

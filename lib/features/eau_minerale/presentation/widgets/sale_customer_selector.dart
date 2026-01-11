@@ -50,7 +50,7 @@ class SaleCustomerSelector extends ConsumerWidget {
                   : null,
               onTap: () => Navigator.of(context).pop(customer),
             );
-          }).toList(),
+          }),
         ],
       ),
     );

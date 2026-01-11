@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 import '../../../domain/entities/agent.dart';
-import 'agents_format_helpers.dart';
 import 'agents_table_cell.dart';
 import 'agents_table_row.dart';
 
@@ -82,7 +80,7 @@ class AgentsTable extends StatelessWidget {
                 onEdit: () => onEdit(agent),
                 onDelete: () => onDelete(agent),
               );
-            }).toList(),
+            }),
         ],
       ),
     );

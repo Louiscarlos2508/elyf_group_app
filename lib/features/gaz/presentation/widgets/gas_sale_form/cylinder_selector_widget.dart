@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
-import '../../../application/controllers/cylinder_stock_controller.dart';
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import '../../../domain/entities/cylinder.dart';
 
@@ -45,7 +44,7 @@ class CylinderSelectorWidget extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             DropdownButtonFormField<Cylinder>(
-              value: selectedCylinder,
+              initialValue: selectedCylinder,
               decoration: InputDecoration(
                 labelText: 'Type de bouteille *',
                 border: OutlineInputBorder(

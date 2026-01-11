@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../../domain/entities/module_sections_info.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/module_sections_info.dart';
 
 /// Tab widget displaying module sections
 class ModuleSectionsTab extends StatelessWidget {

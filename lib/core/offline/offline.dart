@@ -37,7 +37,7 @@
 /// - Sensitive fields are automatically removed from sync data
 /// - Data size limits prevent DoS attacks
 /// - ID validation ensures data integrity
-library offline;
+library;
 
 // Core services
 export 'connectivity_service.dart';

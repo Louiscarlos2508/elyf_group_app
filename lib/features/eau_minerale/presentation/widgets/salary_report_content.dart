@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../domain/entities/report_period.dart';
-import '../../domain/entities/salary_report_data.dart';
 import 'production_period_formatter.dart';
 
 /// Content widget for salary report tab.

@@ -7,7 +7,6 @@ import '../../../domain/entities/production_session.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../bobine_finish_dialog.dart';
 import '../machine_breakdown_dialog.dart';
-import '../../screens/sections/production_session_detail_screen.dart' show productionSessionDetailProvider;
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
 /// Dialogs pour la gestion des bobines.

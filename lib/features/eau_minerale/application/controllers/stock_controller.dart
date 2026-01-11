@@ -34,8 +34,8 @@ class StockController {
       items: items,
       availableBobines: totalBobines,
       bobineStocks: bobineStocks,
-      packagingStocks: packagingStocks ?? const [],
-      lowStockPackaging: lowStockPackaging ?? const [],
+      packagingStocks: packagingStocks,
+      lowStockPackaging: lowStockPackaging,
     );
   }
 
@@ -49,8 +49,7 @@ class StockController {
   }) async {
     // Récupérer ou créer le stock
     var stock = await _bobineStockQuantityRepository.fetchByType(bobineType);
-    if (stock == null) {
-      stock = BobineStock(
+    stock ??= BobineStock(
         id: 'bobine-stock-${DateTime.now().millisecondsSinceEpoch}',
         type: bobineType,
         quantity: 0,
@@ -59,7 +58,6 @@ class StockController {
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
-    }
 
     // Enregistrer le mouvement
     final movement = BobineStockMovement(
@@ -229,8 +227,7 @@ class StockController {
   }) async {
     // Récupérer ou créer le stock
     var stock = await _packagingStockRepository.fetchById(packagingId);
-    if (stock == null) {
-      stock = PackagingStock(
+    stock ??= PackagingStock(
         id: packagingId,
         type: packagingType,
         quantity: 0,
@@ -238,7 +235,6 @@ class StockController {
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
-    }
 
     // Enregistrer le mouvement
     final movement = PackagingStockMovement(

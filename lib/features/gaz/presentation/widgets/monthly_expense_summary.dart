@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/providers.dart' show gazReportCalculationServiceProvider;
 import '../../domain/entities/expense.dart';
-import '../../domain/services/gaz_report_calculation_service.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../../../shared/utils/currency_formatter.dart';
 /// Résumé mensuel des dépenses avec graphique par catégorie.

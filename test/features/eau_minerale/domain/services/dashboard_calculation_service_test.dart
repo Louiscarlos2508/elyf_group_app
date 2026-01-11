@@ -21,12 +21,15 @@ void main() {
             productName: 'Product 1',
             customerId: 'c1',
             customerName: 'Customer 1',
+            customerPhone: '123456789',
             quantity: 10,
+            unitPrice: 500,
             totalPrice: 5000,
             amountPaid: 5000,
             date: today,
-            paymentMethod: 'cash',
-            isFullyPaid: true,
+            status: SaleStatus.fullyPaid,
+            createdBy: 'user1',
+            cashAmount: 5000,
           ),
           Sale(
             id: '2',
@@ -34,12 +37,15 @@ void main() {
             productName: 'Product 2',
             customerId: 'c2',
             customerName: 'Customer 2',
+            customerPhone: '987654321',
             quantity: 5,
+            unitPrice: 600,
             totalPrice: 3000,
             amountPaid: 1500,
             date: today,
-            paymentMethod: 'cash',
-            isFullyPaid: false,
+            status: SaleStatus.validated,
+            createdBy: 'user1',
+            cashAmount: 1500,
           ),
         ];
 
@@ -56,12 +62,15 @@ void main() {
             productName: 'Product 1',
             customerId: 'c1',
             customerName: 'Customer 1',
+            customerPhone: '123456789',
             quantity: 10,
+            unitPrice: 500,
             totalPrice: 5000,
             amountPaid: 2000,
             date: today,
-            paymentMethod: 'cash',
-            isFullyPaid: false,
+            status: SaleStatus.validated,
+            createdBy: 'user1',
+            cashAmount: 2000,
           ),
         ];
 
@@ -72,18 +81,12 @@ void main() {
 
     group('calculateCollectionRate', () {
       test('should calculate collection rate correctly', () {
-        final rate = service.calculateCollectionRate(
-          revenue: 10000,
-          collections: 7500,
-        );
+        final rate = service.calculateCollectionRate(10000, 7500);
         expect(rate, 75.0);
       });
 
       test('should return 0 when revenue is 0', () {
-        final rate = service.calculateCollectionRate(
-          revenue: 0,
-          collections: 0,
-        );
+        final rate = service.calculateCollectionRate(0, 0);
         expect(rate, 0.0);
       });
     });

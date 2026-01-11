@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:open_file/open_file.dart';
 
-import 'package:elyf_groupe_app/core.dart';
 import 'package:elyf_groupe_app/core/pdf/immobilier_stock_report_pdf_service.dart';
 import 'package:elyf_groupe_app/shared.dart';
-import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
 import 'package:elyf_groupe_app/features/immobilier/application/providers.dart';
 import '../../../domain/entities/property.dart';
 import '../../widgets/property_detail_dialog.dart';
@@ -16,7 +14,6 @@ import '../../widgets/property_list_helpers.dart';
 import '../../widgets/property_list_sliver.dart';
 import '../../widgets/property_search_bar.dart';
 import '../../widgets/property_sort_menu.dart';
-import 'package:elyf_groupe_app/shared/presentation/widgets/refresh_button.dart';
 
 class PropertiesScreen extends ConsumerStatefulWidget {
   const PropertiesScreen({super.key});

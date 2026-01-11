@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import '../../../domain/entities/collection.dart';
-import '../../../domain/entities/cylinder.dart';
 import '../../../domain/entities/tour.dart';
 import '../../../domain/services/collection_calculation_service.dart';
 import 'package:elyf_groupe_app/shared.dart';
@@ -64,7 +63,7 @@ class PaymentSubmitHandler {
       if (leaks.isNotEmpty) {
         try {
           // Récupérer tous les cylindres pour trouver les IDs par poids
-          final cylinders = await ref.read(cylindersProvider.future) as List<Cylinder>;
+          final cylinders = await ref.read(cylindersProvider.future);
           
           // Filtrer par entreprise
           final enterpriseCylinders = cylinders

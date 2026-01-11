@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
-import '../../domain/entities/eau_minerale_section.dart';
 
 class EauMineraleShellScreen extends ConsumerStatefulWidget {
   const EauMineraleShellScreen({

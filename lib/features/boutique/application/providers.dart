@@ -105,7 +105,9 @@ final saleRepositoryProvider = Provider<SaleRepository>(
 );
 
 final stockRepositoryProvider = Provider<StockRepository>(
-  (ref) => StockOfflineRepository(ref.watch(productRepositoryProvider)),
+  (ref) => StockOfflineRepository(
+    productRepository: ref.watch(productRepositoryProvider),
+  ),
 );
 
 final purchaseRepositoryProvider = Provider<PurchaseRepository>(
@@ -120,6 +122,7 @@ final purchaseRepositoryProvider = Provider<PurchaseRepository>(
       syncManager: syncManager,
       connectivityService: connectivityService,
       enterpriseId: enterpriseId,
+      moduleType: 'boutique',
     );
   },
 );

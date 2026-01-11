@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
-import '../../../../../shared/utils/notification_service.dart';
-import '../../../../../shared/utils/date_formatter.dart';
 import '../../domain/entities/production_event.dart';
 
 /// Dialog pour enregistrer un événement (panne, coupure, arrêt forcé)

@@ -3,11 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../domain/entities/production_session.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
-import '../../../domain/entities/electricity_meter_type.dart';
 import 'bobines_status_list.dart';
 import 'info_row.dart';
 import 'personnel_section.dart';
-import 'tracking_actions.dart';
 import 'tracking_dialogs.dart';
 
 /// Widget pour l'étape "InProgress" (en cours) de la session de production.
@@ -151,12 +149,12 @@ class InProgressStep extends ConsumerWidget {
       loading: () => InfoRow(
         icon: Icons.flash_on,
         label: 'Consommation électrique',
-        value: '${session.consommationCourant.toStringAsFixed(2)}',
+        value: session.consommationCourant.toStringAsFixed(2),
       ),
       error: (_, __) => InfoRow(
         icon: Icons.flash_on,
         label: 'Consommation électrique',
-        value: '${session.consommationCourant.toStringAsFixed(2)}',
+        value: session.consommationCourant.toStringAsFixed(2),
       ),
     );
   }

@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/immobilier/application/providers.dart';
 import '../../../domain/entities/contract.dart';
+import '../../../domain/entities/expense.dart' show PropertyExpense;
 import '../../../domain/entities/payment.dart';
 import '../../../domain/entities/property.dart';
+import '../../../domain/entities/tenant.dart';
 import '../../../domain/services/dashboard_calculation_service.dart';
 import '../../widgets/dashboard_alerts_section.dart';
 import '../../widgets/dashboard_header_v2.dart';
@@ -181,10 +183,10 @@ class _DashboardMonthKpis extends StatelessWidget {
                         // Use calculation service for business logic
                         final metrics = calculationService.calculateMonthlyMetrics(
                           properties: properties,
-                          tenants: tenants as List,
+                          tenants: (tenants as List).cast<Tenant>(),
                           contracts: contracts,
                           payments: payments,
-                          expenses: expenses as List,
+                          expenses: (expenses as List).cast<PropertyExpense>(),
                         );
 
                         return DashboardMonthSectionV2(

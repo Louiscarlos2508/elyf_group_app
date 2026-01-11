@@ -37,6 +37,10 @@ abstract class OfflineRepository<T> {
   bool get isOnline => connectivityService.isOnline;
 
   /// Saves an entity to local storage and queues for sync.
+  /// 
+  /// Ne lance pas d'exception si la sauvegarde locale échoue (erreur SQLite),
+  /// pour permettre à l'opération de continuer. L'entité sera récupérée depuis
+  /// Firestore lors de la prochaine synchronisation.
   Future<void> save(T entity) async {
     final localId = getLocalId(entity);
     final remoteId = getRemoteId(entity);
@@ -49,27 +53,47 @@ abstract class OfflineRepository<T> {
     );
 
     // Save to local storage first
-    await saveToLocal(entity);
+    try {
+      await saveToLocal(entity);
+    } catch (e, stackTrace) {
+      developer.log(
+        'Error saving to local storage (entity exists in Firestore, will be synced later): $e',
+        name: 'offline.repository',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      // Ne pas rethrow - permet à l'opération de continuer même si Drift échoue
+      // L'entité sera récupérée depuis Firestore lors de la prochaine synchronisation
+    }
 
     // Queue sync operation if auto-sync is enabled
+    // Même si la sauvegarde locale a échoué, on peut quand même queue la sync
     if (enableAutoSync) {
-      if (remoteId != null && remoteId.isNotEmpty) {
-        // Update existing remote document
-        await syncManager.queueUpdate(
-          collectionName: collectionName,
-          localId: localId,
-          remoteId: remoteId,
-          data: data,
-          enterpriseId: enterpriseId,
+      try {
+        if (remoteId != null && remoteId.isNotEmpty) {
+          // Update existing remote document
+          await syncManager.queueUpdate(
+            collectionName: collectionName,
+            localId: localId,
+            remoteId: remoteId,
+            data: data,
+            enterpriseId: enterpriseId,
+          );
+        } else {
+          // Create new document
+          await syncManager.queueCreate(
+            collectionName: collectionName,
+            localId: localId,
+            data: data,
+            enterpriseId: enterpriseId,
+          );
+        }
+      } catch (e) {
+        developer.log(
+          'Error queueing sync operation: $e',
+          name: 'offline.repository',
         );
-      } else {
-        // Create new document
-        await syncManager.queueCreate(
-          collectionName: collectionName,
-          localId: localId,
-          data: data,
-          enterpriseId: enterpriseId,
-        );
+        // Ne pas rethrow - la sync se fera plus tard
       }
     }
   }

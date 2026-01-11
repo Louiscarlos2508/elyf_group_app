@@ -2,11 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
-import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
-import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import '../../../domain/entities/cylinder.dart';
-import '../../../domain/entities/cylinder_stock.dart';
 import '../../../domain/entities/gas_sale.dart';
 
 /// Handler pour la soumission du formulaire de vente de gaz.

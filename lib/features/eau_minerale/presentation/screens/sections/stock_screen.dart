@@ -11,8 +11,6 @@ import '../../widgets/stock_alerts_widget.dart';
 import '../../widgets/stock_movement_table.dart';
 import '../../widgets/stock_movement_filters.dart';
 import '../../widgets/stock_entry_form.dart';
-import '../../../domain/entities/stock_movement.dart';
-import 'package:elyf_groupe_app/shared/presentation/widgets/form_dialog.dart';
 
 class StockScreen extends ConsumerWidget {
   const StockScreen({super.key});

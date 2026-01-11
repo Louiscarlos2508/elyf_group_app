@@ -19,7 +19,7 @@ class RetailNewSaleTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final cylindersAsync = ref.watch(cylindersProvider);
-    String? enterpriseId = 'default_enterprise'; // TODO: depuis contexte
+    const enterpriseId = 'default_enterprise'; // TODO: depuis contexte
 
     return CustomScrollView(
       slivers: [
@@ -59,7 +59,7 @@ class RetailNewSaleTab extends ConsumerWidget {
           sliver: cylindersAsync.when(
             data: (cylinders) => RetailCylinderList(
               cylinders: cylinders,
-              enterpriseId: enterpriseId ?? 'default_enterprise',
+              enterpriseId: enterpriseId,
               onCylinderTap: onCylinderTap,
             ),
             loading: () => const SliverFillRemaining(

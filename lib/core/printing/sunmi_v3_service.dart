@@ -128,9 +128,9 @@ class SunmiV3Service {
         }
         
         try {
-          final queryApi = _printer!.queryApi;
           // Note: La méthode exacte peut varier selon la version du SDK
           // Pour l'instant, on retourne true si le printer existe
+          // _printer!.queryApi; // Réservé pour usage futur
           return true;
         } catch (e) {
           debugPrint('SunmiV3Service: Erreur QueryApi: $e');
@@ -270,9 +270,9 @@ class SunmiV3Service {
       
         try {
           // Utiliser CashDrawerApi pour ouvrir le tiroir-caisse
-          final cashDrawerApi = _printer!.cashDrawerApi;
           // Note: La méthode exacte peut varier selon la version du SDK
           // Pour l'instant, on simule l'ouverture
+          // _printer!.cashDrawerApi; // Réservé pour usage futur
           debugPrint('SunmiV3Service: Ouverture tiroir-caisse');
           return true;
       } catch (e) {

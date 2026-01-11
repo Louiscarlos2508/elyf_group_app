@@ -4,9 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../../../shared/utils/notification_service.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
-import '../../domain/entities/electricity_meter_type.dart';
-import '../../domain/services/electricity_meter_config_service.dart';
-import '../screens/sections/settings_screen.dart';
 
 /// Carte pour configurer le type de compteur électrique.
 class ElectricityMeterConfigCard extends ConsumerWidget {

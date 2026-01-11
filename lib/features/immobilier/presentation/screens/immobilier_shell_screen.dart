@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart' as shared;
 import 'package:elyf_groupe_app/shared/presentation/widgets/base_module_shell_screen.dart';

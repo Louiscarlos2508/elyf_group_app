@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/tenant/tenant_provider.dart';
 import 'package:elyf_groupe_app/shared.dart';
-import '../../../../../shared/utils/notification_service.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/expense.dart';
 import 'expense_form/expense_amount_input.dart';
@@ -13,8 +12,6 @@ import 'expense_form/expense_description_input.dart';
 import 'expense_form/expense_fixed_checkbox.dart';
 import 'expense_form/expense_form_header.dart';
 import 'expense_form/expense_notes_input.dart';
-import 'package:elyf_groupe_app/shared/presentation/widgets/form_dialog.dart';
-import 'package:elyf_groupe_app/shared/utils/form_helper_mixin.dart';
 
 /// Dialog de formulaire pour créer/modifier une dépense.
 class GazExpenseFormDialog extends ConsumerStatefulWidget {
@@ -149,10 +146,8 @@ class _GazExpenseFormDialogState
                   ExpenseCategoryInput(
                     selectedCategory: _selectedCategory,
                     onCategoryChanged: (category) {
-                      if (category != null) {
-                        setState(() => _selectedCategory = category);
-                      }
-                    },
+                      setState(() => _selectedCategory = category);
+                                        },
                   ),
                   const SizedBox(height: 16),
                   ExpenseDescriptionInput(controller: _descriptionController),

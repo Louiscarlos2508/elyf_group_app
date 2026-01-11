@@ -2,17 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
-import '../../../../../shared/utils/currency_formatter.dart';
-import '../../../../../shared/utils/notification_service.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../domain/entities/sale.dart';
 import '../../domain/entities/product.dart';
 import '../../domain/repositories/customer_repository.dart';
-import '../../domain/services/sale_service.dart';
 import 'sale_product_selector.dart';
 import 'sale_customer_selector.dart';
 import 'simple_payment_splitter.dart';
-import 'package:elyf_groupe_app/shared/utils/form_helper_mixin.dart';
 
 /// Form for creating/editing a sale record.
 class SaleForm extends ConsumerStatefulWidget {
@@ -138,6 +134,7 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
       amountPaid: _amountPaid,
     );
     
+    if (!mounted) return;
     if (validationError != null) {
       NotificationService.showError(context, validationError);
       return;

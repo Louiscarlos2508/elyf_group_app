@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../../app/theme/app_theme.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
-import '../../../domain/entities/electricity_meter_type.dart';
 import '../../../domain/entities/production_session.dart';
 import '../../../domain/entities/sale.dart';
 import '../../../domain/services/production_margin_calculator.dart';
@@ -210,7 +209,6 @@ class _ProductionSessionDetailContent extends ConsumerWidget {
     BuildContext context,
     ProductionSession session,
   ) {
-    final theme = Theme.of(context);
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -481,12 +479,12 @@ class _ProductionSessionDetailContent extends ConsumerWidget {
           loading: () => _buildInfoRow(
             context,
             'Consommation courant',
-            '${session.consommationCourant.toStringAsFixed(2)}',
+            session.consommationCourant.toStringAsFixed(2),
           ),
           error: (_, __) => _buildInfoRow(
             context,
             'Consommation courant',
-            '${session.consommationCourant.toStringAsFixed(2)}',
+            session.consommationCourant.toStringAsFixed(2),
           ),
         );
       },

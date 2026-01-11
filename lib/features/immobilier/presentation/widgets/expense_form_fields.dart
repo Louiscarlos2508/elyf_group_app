@@ -15,7 +15,7 @@ class ExpenseFormFields {
     required String? Function(Property?) validator,
   }) {
     return DropdownButtonFormField<Property>(
-      value: selectedProperty,
+      initialValue: selectedProperty,
       decoration: const InputDecoration(
         labelText: 'Propriété *',
         prefixIcon: Icon(Icons.home),
@@ -72,7 +72,7 @@ class ExpenseFormFields {
     required ValueChanged<ExpenseCategory?> onChanged,
   }) {
     return DropdownButtonFormField<ExpenseCategory>(
-      value: value,
+      initialValue: value,
       decoration: const InputDecoration(
         labelText: 'Catégorie *',
         prefixIcon: Icon(Icons.category),

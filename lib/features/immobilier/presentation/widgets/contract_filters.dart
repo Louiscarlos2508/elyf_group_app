@@ -58,6 +58,19 @@ class ContractFilters extends StatelessWidget {
                 children: [
                   PopupMenuButton<ContractStatus?>(
                     initialValue: selectedStatus,
+                    onSelected: onStatusChanged,
+                    itemBuilder: (context) => [
+                      const PopupMenuItem<ContractStatus?>(
+                        value: null,
+                        child: Text('Tous les statuts'),
+                      ),
+                      ...ContractStatus.values.map(
+                        (status) => PopupMenuItem<ContractStatus?>(
+                          value: status,
+                          child: Text(_getStatusLabel(status)),
+                        ),
+                      ),
+                    ],
                     child: Chip(
                       label: Text(
                         selectedStatus != null
@@ -84,19 +97,6 @@ class ContractFilters extends StatelessWidget {
                           ? theme.colorScheme.primaryContainer
                           : theme.colorScheme.surfaceContainerHighest,
                     ),
-                    onSelected: onStatusChanged,
-                    itemBuilder: (context) => [
-                      const PopupMenuItem<ContractStatus?>(
-                        value: null,
-                        child: Text('Tous les statuts'),
-                      ),
-                      ...ContractStatus.values.map(
-                        (status) => PopupMenuItem<ContractStatus?>(
-                          value: status,
-                          child: Text(_getStatusLabel(status)),
-                        ),
-                      ),
-                    ],
                   ),
                 ],
               ),

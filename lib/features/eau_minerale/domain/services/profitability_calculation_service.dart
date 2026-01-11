@@ -130,8 +130,3 @@ class ProductProfitAnalysis {
   final int margin;
   final double marginPercent;
 }
-
-<<<<<<< Current (Your changes)
-
-=======
->>>>>>> Incoming (Background Agent changes)

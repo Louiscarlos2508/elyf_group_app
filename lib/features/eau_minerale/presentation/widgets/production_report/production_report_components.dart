@@ -148,7 +148,7 @@ class ProductionReportComponents {
               if (percentage != null) ...[
                 const SizedBox(width: 8),
                 Text(
-                  '(${percentage!.toStringAsFixed(1)}%)',
+                  '(${percentage.toStringAsFixed(1)}%)',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: color,
                   ),

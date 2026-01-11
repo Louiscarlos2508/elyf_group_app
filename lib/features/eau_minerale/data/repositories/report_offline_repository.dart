@@ -2,6 +2,7 @@ import 'dart:developer' as developer;
 
 import '../../../../core/errors/error_handler.dart';
 import '../../domain/entities/expense_report_data.dart';
+import '../../domain/entities/expense_record.dart' show ExpenseCategory;
 import '../../domain/entities/product_sales_summary.dart';
 import '../../domain/entities/production_report_data.dart';
 import '../../domain/entities/report_data.dart';
@@ -30,37 +31,12 @@ class ReportOfflineRepository implements ReportRepository {
   final FinanceRepository financeRepository;
   final SalaryRepository salaryRepository;
 
-  DateTime _getStartDate(ReportPeriod period) {
-    final now = DateTime.now();
-    switch (period) {
-      case ReportPeriod.today:
-        return DateTime(now.year, now.month, now.day);
-      case ReportPeriod.yesterday:
-        final yesterday = now.subtract(const Duration(days: 1));
-        return DateTime(yesterday.year, yesterday.month, yesterday.day);
-      case ReportPeriod.week:
-        return now.subtract(Duration(days: now.weekday - 1));
-      case ReportPeriod.month:
-        return DateTime(now.year, now.month, 1);
-      case ReportPeriod.year:
-        return DateTime(now.year, 1, 1);
-    }
+  DateTime _getStartDate(ReportPeriod period, {DateTime? startDate}) {
+    return startDate ?? period.startDate;
   }
 
-  DateTime _getEndDate(ReportPeriod period) {
-    final now = DateTime.now();
-    switch (period) {
-      case ReportPeriod.today:
-        return DateTime(now.year, now.month, now.day, 23, 59, 59);
-      case ReportPeriod.yesterday:
-        final yesterday = now.subtract(const Duration(days: 1));
-        return DateTime(
-            yesterday.year, yesterday.month, yesterday.day, 23, 59, 59);
-      case ReportPeriod.week:
-      case ReportPeriod.month:
-      case ReportPeriod.year:
-        return DateTime(now.year, now.month, now.day, 23, 59, 59);
-    }
+  DateTime _getEndDate(ReportPeriod period, {DateTime? endDate}) {
+    return endDate ?? period.endDate;
   }
 
   bool _isInPeriod(DateTime date, DateTime start, DateTime end) {
@@ -78,30 +54,49 @@ class ReportOfflineRepository implements ReportRepository {
       final periodSales =
           sales.where((s) => _isInPeriod(s.date, start, end)).toList();
 
-      final sessions = await productionSessionRepository.fetchSessions();
-      final periodSessions = sessions
-          .where((s) => _isInPeriod(s.startDate, start, end))
-          .toList();
+      // Les sessions de production ne sont pas utilisées dans cette méthode
+      // final sessions = await productionSessionRepository.fetchSessions(
+      //   startDate: start,
+      //   endDate: end,
+      // );
 
       final expenses =
           await financeRepository.fetchRecentExpenses(limit: 1000);
       final periodExpenses =
           expenses.where((e) => _isInPeriod(e.date, start, end)).toList();
 
-      final totalSales =
-          periodSales.fold<int>(0, (sum, s) => sum + s.totalAmount);
-      final totalProduction = periodSessions.fold<int>(
-          0, (sum, s) => sum + (s.totalProduced ?? 0));
+      final revenue =
+          periodSales.fold<int>(0, (sum, s) => sum + s.totalPrice);
+      final collections =
+          periodSales.fold<int>(0, (sum, s) => sum + s.amountPaid);
       final totalExpenses =
           periodExpenses.fold<int>(0, (sum, e) => sum + e.amountCfa);
 
+      // Calculate treasury (revenue - totalExpenses - salaries)
+      final salaryPayments = await salaryRepository.fetchMonthlySalaryPayments();
+      final productionPayments = await salaryRepository.fetchProductionPayments();
+      final periodSalaryPayments = salaryPayments
+          .where((p) => _isInPeriod(p.date, start, end))
+          .toList();
+      final periodProductionPayments = productionPayments
+          .where((p) => _isInPeriod(p.paymentDate, start, end))
+          .toList();
+      final totalSalaries = periodSalaryPayments.fold<int>(
+          0, (sum, p) => sum + p.amount) +
+          periodProductionPayments.fold<int>(
+              0, (sum, p) => sum + p.totalAmount);
+
+      final treasury = revenue - totalExpenses - totalSalaries;
+      final collectionRate =
+          revenue > 0 ? (collections / revenue) * 100.0 : 0.0;
+
       return ReportData(
-        period: period,
-        totalSales: totalSales,
-        totalProduction: totalProduction,
-        totalExpenses: totalExpenses,
+        revenue: revenue,
+        collections: collections,
+        totalExpenses: totalExpenses + totalSalaries,
+        treasury: treasury,
         salesCount: periodSales.length,
-        productionCount: periodSessions.length,
+        collectionRate: collectionRate,
       );
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
@@ -139,28 +134,24 @@ class ReportOfflineRepository implements ReportRepository {
 
       final productSales = <String, ProductSalesSummary>{};
       for (final sale in sales) {
-        for (final item in sale.items) {
-          final existing = productSales[item.productId];
-          if (existing != null) {
-            productSales[item.productId] = ProductSalesSummary(
-              productId: item.productId,
-              productName: item.productName,
-              quantitySold: existing.quantitySold + item.quantity,
-              totalAmount: existing.totalAmount + item.totalPrice,
-            );
-          } else {
-            productSales[item.productId] = ProductSalesSummary(
-              productId: item.productId,
-              productName: item.productName,
-              quantitySold: item.quantity,
-              totalAmount: item.totalPrice,
-            );
-          }
+        final existing = productSales[sale.productId];
+        if (existing != null) {
+          productSales[sale.productId] = ProductSalesSummary(
+            productName: sale.productName,
+            quantity: existing.quantity + sale.quantity,
+            revenue: existing.revenue + sale.totalPrice,
+          );
+        } else {
+          productSales[sale.productId] = ProductSalesSummary(
+            productName: sale.productName,
+            quantity: sale.quantity,
+            revenue: sale.totalPrice,
+          );
         }
       }
 
       final summaries = productSales.values.toList();
-      summaries.sort((a, b) => b.totalAmount.compareTo(a.totalAmount));
+      summaries.sort((a, b) => b.revenue.compareTo(a.revenue));
       return summaries;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
@@ -179,24 +170,39 @@ class ReportOfflineRepository implements ReportRepository {
       final start = _getStartDate(period);
       final end = _getEndDate(period);
 
-      final sessions = await productionSessionRepository.fetchSessions();
+      final sessions = await productionSessionRepository.fetchSessions(
+        startDate: start,
+        endDate: end,
+      );
       final periodSessions = sessions
-          .where((s) => _isInPeriod(s.startDate, start, end))
+          .where((s) => _isInPeriod(s.date, start, end))
           .toList();
 
-      final totalProduction = periodSessions.fold<int>(
-          0, (sum, s) => sum + (s.totalProduced ?? 0));
-      final completedSessions =
-          periodSessions.where((s) => s.status.name == 'completed').length;
+      final totalQuantity = periodSessions.fold<int>(
+          0, (sum, s) => sum + s.quantiteProduite);
+      final totalBatches = periodSessions.length;
+      final averageQuantityPerBatch = totalBatches > 0
+          ? totalQuantity / totalBatches
+          : 0.0;
+
+      // Calculate costs
+      final totalBobinesCost = periodSessions.fold<int>(
+          0, (sum, s) => sum + (s.coutBobines ?? 0));
+      final totalElectricityCost = periodSessions.fold<int>(
+          0, (sum, s) => sum + (s.coutElectricite ?? 0));
+      final totalPersonnelCost = periodSessions.fold<int>(
+          0, (sum, s) => sum + s.coutTotalPersonnel);
+      final totalCost = totalBobinesCost + totalElectricityCost + totalPersonnelCost;
 
       return ProductionReportData(
-        period: period,
-        totalProduction: totalProduction,
-        sessionsCount: periodSessions.length,
-        completedSessions: completedSessions,
-        averageProduction: periodSessions.isEmpty
-            ? 0
-            : totalProduction ~/ periodSessions.length,
+        totalQuantity: totalQuantity,
+        totalBatches: totalBatches,
+        averageQuantityPerBatch: averageQuantityPerBatch,
+        productions: periodSessions,
+        totalCost: totalCost,
+        totalBobinesCost: totalBobinesCost,
+        totalElectricityCost: totalElectricityCost,
+        totalPersonnelCost: totalPersonnelCost,
       );
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
@@ -222,17 +228,17 @@ class ReportOfflineRepository implements ReportRepository {
       final totalAmount =
           periodExpenses.fold<int>(0, (sum, e) => sum + e.amountCfa);
 
-      final byCategory = <String, int>{};
+      final expensesByCategory = <ExpenseCategory, int>{};
       for (final expense in periodExpenses) {
-        final category = expense.category.name;
-        byCategory[category] = (byCategory[category] ?? 0) + expense.amountCfa;
+        final category = expense.category;
+        expensesByCategory[category] =
+            (expensesByCategory[category] ?? 0) + expense.amountCfa;
       }
 
       return ExpenseReportData(
-        period: period,
         totalAmount: totalAmount,
-        expensesCount: periodExpenses.length,
-        byCategory: byCategory,
+        expensesByCategory: expensesByCategory,
+        expenses: periodExpenses,
       );
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
@@ -247,23 +253,22 @@ class ReportOfflineRepository implements ReportRepository {
   @override
   Future<SalaryReportData> fetchSalaryReport(ReportPeriod period) async {
     try {
-      final employees = await salaryRepository.fetchFixedEmployees();
       final salaryPayments = await salaryRepository.fetchMonthlySalaryPayments();
       final productionPayments =
           await salaryRepository.fetchProductionPayments();
 
-      final totalFixedSalaries =
+      final totalMonthlySalaries =
           salaryPayments.fold<int>(0, (sum, s) => sum + s.amount);
       final totalProductionPayments = productionPayments.fold<int>(
           0, (sum, p) => sum + p.totalAmount);
+      final totalAmount = totalMonthlySalaries + totalProductionPayments;
 
       return SalaryReportData(
-        period: period,
-        totalFixedSalaries: totalFixedSalaries,
+        totalMonthlySalaries: totalMonthlySalaries,
         totalProductionPayments: totalProductionPayments,
-        totalSalaries: totalFixedSalaries + totalProductionPayments,
-        employeesCount: employees.length,
-        paymentsCount: salaryPayments.length + productionPayments.length,
+        totalAmount: totalAmount,
+        monthlyPayments: salaryPayments,
+        productionPayments: productionPayments,
       );
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);

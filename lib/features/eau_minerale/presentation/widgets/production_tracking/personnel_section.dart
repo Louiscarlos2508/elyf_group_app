@@ -5,7 +5,6 @@ import '../../../domain/entities/production_day.dart';
 import '../../../domain/entities/production_session.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../daily_personnel_form.dart';
-import '../../screens/sections/production_session_detail_screen.dart' show productionSessionDetailProvider;
 import 'personnel_day_card.dart';
 import 'personnel_delete_dialog.dart';
 import 'personnel_empty_state.dart';

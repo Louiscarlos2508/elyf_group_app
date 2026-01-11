@@ -145,7 +145,7 @@ class TransactionsHistoryFilters extends StatelessWidget {
             ),
           ),
           child: DropdownButtonFormField<TransactionType?>(
-            value: selectedTypeFilter,
+            initialValue: selectedTypeFilter,
             decoration: const InputDecoration(
               border: InputBorder.none,
               contentPadding: EdgeInsets.symmetric(

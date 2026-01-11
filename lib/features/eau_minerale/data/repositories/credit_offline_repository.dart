@@ -2,10 +2,7 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import '../../../../core/errors/error_handler.dart';
-import '../../../../core/offline/connectivity_service.dart';
-import '../../../../core/offline/drift_service.dart';
 import '../../../../core/offline/offline_repository.dart';
-import '../../../../core/offline/sync_manager.dart';
 import '../../domain/entities/credit_payment.dart';
 import '../../domain/entities/sale.dart';
 import '../../domain/repositories/credit_repository.dart';
@@ -143,7 +140,7 @@ class CreditOfflineRepository extends OfflineRepository<CreditPayment>
   Future<List<Sale>> fetchCreditSales() async {
     try {
       final allSales = await saleRepository.fetchRecentSales(limit: 1000);
-      return allSales.where((s) => !s.estPayeeIntegralement).toList();
+      return allSales.where((s) => !s.isFullyPaid).toList();
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
@@ -219,7 +216,7 @@ class CreditOfflineRepository extends OfflineRepository<CreditPayment>
   Future<int> getTotalCredits() async {
     try {
       final creditSales = await fetchCreditSales();
-      return creditSales.fold<int>(0, (sum, s) => sum + s.montantRestant);
+      return creditSales.fold<int>(0, (sum, s) => sum + s.remainingAmount);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(

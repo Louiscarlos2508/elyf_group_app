@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
-import '../../../domain/entities/electricity_meter_type.dart';
 
 /// Widget affichant le résumé de la session de production.
 class ProductionSessionSummaryCard extends ConsumerWidget {

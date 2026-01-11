@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../application/controllers/cylinder_controller.dart';
-import '../../../application/controllers/gaz_settings_controller.dart';
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import '../../../domain/entities/cylinder.dart';
 import 'package:elyf_groupe_app/shared.dart';
@@ -56,8 +54,8 @@ class CylinderSubmitHandler {
         final wholesalePrice = double.tryParse(wholesalePriceText);
         if (wholesalePrice != null && wholesalePrice > 0) {
           await settingsController.setWholesalePrice(
-            enterpriseId: enterpriseId!,
-            moduleId: moduleId!,
+            enterpriseId: enterpriseId,
+            moduleId: moduleId,
             weight: weight,
             price: wholesalePrice,
           );
@@ -65,8 +63,8 @@ class CylinderSubmitHandler {
       } else {
         // Supprimer le prix en gros si le champ est vide
         await settingsController.removeWholesalePrice(
-          enterpriseId: enterpriseId!,
-          moduleId: moduleId!,
+          enterpriseId: enterpriseId,
+          moduleId: moduleId,
           weight: weight,
         );
       }
@@ -76,15 +74,13 @@ class CylinderSubmitHandler {
       // Invalider les providers pour forcer le rafraîchissement
       ref.invalidate(cylindersProvider);
       
-      if (enterpriseId != null && moduleId != null) {
-        // Invalider le provider spécifique avec les bons paramètres
-        ref.invalidate(
-          gazSettingsProvider(
-            (enterpriseId: enterpriseId, moduleId: moduleId),
-          ),
-        );
-      }
-      Navigator.of(context).pop();
+      // Invalider le provider spécifique avec les bons paramètres
+      ref.invalidate(
+        gazSettingsProvider(
+          (enterpriseId: enterpriseId, moduleId: moduleId),
+        ),
+      );
+          Navigator.of(context).pop();
 
       if (context.mounted) {
         NotificationService.showSuccess(context, 

@@ -124,8 +124,8 @@ class EauMineralePermissionGuard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return CentralizedPermissionGuard(
       permissionId: permission.id,
-      child: child,
       fallback: fallback,
+      child: child,
     );
   }
 }

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
@@ -9,7 +8,6 @@ import '../../../application/controllers/finances_controller.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../../domain/adapters/expense_balance_adapter.dart';
 import '../../../domain/entities/expense_record.dart';
-import 'package:elyf_groupe_app/core.dart';
 import '../../widgets/centralized_permission_guard.dart';
 import '../../widgets/daily_expense_summary_card.dart';
 import '../../widgets/expense_detail_dialog.dart';
@@ -17,8 +15,6 @@ import '../../widgets/expense_form.dart';
 import '../../widgets/expenses_table.dart';
 import '../../widgets/monthly_expense_summary.dart';
 import '../../widgets/section_placeholder.dart';
-import 'package:elyf_groupe_app/shared/presentation/widgets/refresh_button.dart';
-import 'package:elyf_groupe_app/shared/presentation/widgets/form_dialog.dart';
 
 class FinancesScreen extends ConsumerWidget {
   const FinancesScreen({super.key});

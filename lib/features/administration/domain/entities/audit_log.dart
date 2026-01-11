@@ -14,6 +14,7 @@ class AuditLog {
     this.newValue,
     this.moduleId,
     this.enterpriseId,
+    this.userDisplayName,
   });
 
   /// Unique identifier for the audit log entry
@@ -28,8 +29,11 @@ class AuditLog {
   /// ID of the affected entity
   final String entityId;
 
-  /// ID of the user who performed the action
+  /// ID of the user who performed the action (Firebase UID)
   final String userId;
+
+  /// Display name of the user who performed the action (nom complet)
+  final String? userDisplayName;
 
   /// When the action was performed
   final DateTime timestamp;
@@ -63,6 +67,7 @@ class AuditLog {
       if (newValue != null) 'newValue': newValue,
       if (moduleId != null) 'moduleId': moduleId,
       if (enterpriseId != null) 'enterpriseId': enterpriseId,
+      if (userDisplayName != null) 'userDisplayName': userDisplayName,
     };
   }
 
@@ -83,6 +88,7 @@ class AuditLog {
       newValue: map['newValue'] as Map<String, dynamic>?,
       moduleId: map['moduleId'] as String?,
       enterpriseId: map['enterpriseId'] as String?,
+      userDisplayName: map['userDisplayName'] as String?,
     );
   }
 }

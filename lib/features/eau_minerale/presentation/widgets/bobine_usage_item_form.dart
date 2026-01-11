@@ -125,7 +125,7 @@ class _BobineUsageItemFormState
             ),
           const SizedBox(height: 16),
           DropdownButtonFormField<Machine>(
-            value: _machineSelectionnee,
+            initialValue: _machineSelectionnee,
             decoration: const InputDecoration(
               labelText: 'Machine',
               prefixIcon: Icon(Icons.precision_manufacturing),

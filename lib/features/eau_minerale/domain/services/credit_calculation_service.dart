@@ -38,7 +38,7 @@ class CreditCalculationService {
       return 'Le montant doit être supérieur à 0';
     }
     if (paymentAmount > remainingCredit) {
-      return 'Le montant ne peut pas dépasser le crédit restant (${remainingCredit} FCFA)';
+      return 'Le montant ne peut pas dépasser le crédit restant ($remainingCredit FCFA)';
     }
     return null;
   }

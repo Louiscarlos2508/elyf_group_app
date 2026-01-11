@@ -21,6 +21,7 @@ import '../domain/services/validation/permission_validator_service.dart';
 import '../data/services/audit/audit_offline_service.dart';
 import '../data/services/firebase_auth_integration_service.dart';
 import '../data/services/firestore_sync_service.dart';
+import '../data/services/realtime_sync_service.dart';
 import 'controllers/admin_controller.dart';
 import 'controllers/user_controller.dart';
 import 'controllers/enterprise_controller.dart';
@@ -85,6 +86,7 @@ final roleStatisticsServiceProvider = Provider<RoleStatisticsService>(
 final auditServiceProvider = Provider<AuditService>(
   (ref) => AuditOfflineService(
     driftService: ref.watch(driftServiceProvider),
+    firestoreSync: ref.watch(firestoreSyncServiceProvider),
   ),
 );
 
@@ -92,6 +94,7 @@ final auditServiceProvider = Provider<AuditService>(
 final permissionValidatorServiceProvider = Provider<PermissionValidatorService>(
   (ref) => PermissionValidatorService(
     permissionService: ref.watch(permissionServiceProvider),
+    ref: ref,
   ),
 );
 
@@ -110,6 +113,15 @@ final firestoreSyncServiceProvider = Provider<FirestoreSyncService>(
   ),
 );
 
+/// Provider for realtime sync service
+final realtimeSyncServiceProvider = Provider<RealtimeSyncService>(
+  (ref) => RealtimeSyncService(
+    driftService: ref.watch(driftServiceProvider),
+    firestore: FirebaseFirestore.instance,
+    firestoreSync: ref.watch(firestoreSyncServiceProvider),
+  ),
+);
+
 /// Provider for admin controller
 /// 
 /// Includes audit trail, Firestore sync and permission validation for roles and assignments.
@@ -119,6 +131,7 @@ final adminControllerProvider = Provider<AdminController>(
     auditService: ref.watch(auditServiceProvider),
     firestoreSync: ref.watch(firestoreSyncServiceProvider),
     permissionValidator: ref.watch(permissionValidatorServiceProvider),
+    userRepository: ref.watch(userRepositoryProvider),
   ),
 );
 
@@ -144,6 +157,7 @@ final enterpriseControllerProvider = Provider<EnterpriseController>(
     auditService: ref.watch(auditServiceProvider),
     firestoreSync: ref.watch(firestoreSyncServiceProvider),
     permissionValidator: ref.watch(permissionValidatorServiceProvider),
+    userRepository: ref.watch(userRepositoryProvider),
   ),
 );
 

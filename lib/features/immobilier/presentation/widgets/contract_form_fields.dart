@@ -17,7 +17,7 @@ class ContractFormFields {
     required String? Function(Property?) validator,
   }) {
     return DropdownButtonFormField<Property>(
-      value: selectedProperty,
+      initialValue: selectedProperty,
       decoration: const InputDecoration(
         labelText: 'Propriété *',
         prefixIcon: Icon(Icons.home),
@@ -40,7 +40,7 @@ class ContractFormFields {
     required String? Function(Tenant?) validator,
   }) {
     return DropdownButtonFormField<Tenant>(
-      value: selectedTenant,
+      initialValue: selectedTenant,
       decoration: const InputDecoration(
         labelText: 'Locataire *',
         prefixIcon: Icon(Icons.person),
@@ -114,7 +114,7 @@ class ContractFormFields {
     required ValueChanged<int?> onChanged,
   }) {
     return DropdownButtonFormField<int?>(
-      value: value,
+      initialValue: value,
       decoration: const InputDecoration(
         labelText: 'Jour de paiement',
         prefixIcon: Icon(Icons.calendar_today),
@@ -134,7 +134,7 @@ class ContractFormFields {
     required ValueChanged<ContractStatus?> onChanged,
   }) {
     return DropdownButtonFormField<ContractStatus>(
-      value: value,
+      initialValue: value,
       decoration: const InputDecoration(
         labelText: 'Statut *',
         prefixIcon: Icon(Icons.info_outline),

@@ -1,4 +1,3 @@
-import '../../domain/entities/report_data.dart';
 import '../../domain/entities/sale.dart';
 import '../../domain/entities/expense.dart';
 

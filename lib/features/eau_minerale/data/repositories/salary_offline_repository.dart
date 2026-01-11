@@ -3,10 +3,7 @@ import 'dart:developer' as developer;
 import 'dart:typed_data';
 
 import '../../../../core/errors/error_handler.dart';
-import '../../../../core/offline/connectivity_service.dart';
-import '../../../../core/offline/drift_service.dart';
 import '../../../../core/offline/offline_repository.dart';
-import '../../../../core/offline/sync_manager.dart';
 import '../../domain/entities/employee.dart';
 import '../../domain/entities/production_payment.dart';
 import '../../domain/entities/production_payment_person.dart';
@@ -299,13 +296,9 @@ class SalaryOfflineRepository extends OfflineRepository<Employee>
       final pm = p as Map<String, dynamic>;
       return ProductionPaymentPerson(
         name: pm['name'] as String,
+        pricePerDay: (pm['pricePerDay'] as num?)?.toInt() ?? (pm['dailyRate'] as num?)?.toInt() ?? 0,
         daysWorked: (pm['daysWorked'] as num).toInt(),
-        dailyRate: (pm['dailyRate'] as num).toInt(),
-        totalAmount: (pm['totalAmount'] as num).toInt(),
-        advance: (pm['advance'] as num?)?.toInt() ?? 0,
-        signature: pm['signature'] != null
-            ? Uint8List.fromList((pm['signature'] as List<dynamic>).cast<int>())
-            : null,
+        totalAmount: (pm['totalAmount'] as num?)?.toInt(),
       );
     }).toList();
 
@@ -332,11 +325,9 @@ class SalaryOfflineRepository extends OfflineRepository<Employee>
         'persons': payment.persons
             .map((p) => {
                   'name': p.name,
+                  'pricePerDay': p.pricePerDay,
                   'daysWorked': p.daysWorked,
-                  'dailyRate': p.dailyRate,
                   'totalAmount': p.totalAmount,
-                  'advance': p.advance,
-                  'signature': p.signature?.toList(),
                 })
             .toList(),
         'notes': payment.notes,

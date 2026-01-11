@@ -1,16 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../../domain/entities/bobine_usage.dart';
-import '../../../domain/entities/machine.dart';
 import '../../../domain/entities/production_day.dart';
 import '../../../domain/entities/production_session.dart';
 import '../../../domain/entities/production_session_status.dart';
 import '../../widgets/machine_selector_field.dart';
 import '../../widgets/bobine_usage_form_field.dart' show bobineStocksDisponiblesProvider;
-import 'package:elyf_groupe_app/shared.dart';
 
 /// Helper class for production session form actions.
 /// Extracted from ProductionSessionFormSteps to reduce file size.

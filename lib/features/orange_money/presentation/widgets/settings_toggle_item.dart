@@ -17,8 +17,6 @@ class SettingsToggleItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Container(
       height: 72,
       padding: const EdgeInsets.symmetric(horizontal: 17, vertical: 1),
@@ -62,7 +60,7 @@ class SettingsToggleItem extends StatelessWidget {
             child: Switch(
               value: value,
               onChanged: onChanged,
-              activeColor: Colors.white,
+              activeThumbColor: Colors.white,
               activeTrackColor: const Color(0xFF030213),
               inactiveThumbColor: Colors.white,
               inactiveTrackColor: const Color(0xFF030213),

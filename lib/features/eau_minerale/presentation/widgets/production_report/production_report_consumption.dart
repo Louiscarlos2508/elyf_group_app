@@ -37,13 +37,13 @@ class ProductionReportConsumption extends ConsumerWidget {
           ),
           loading: () => ProductionReportComponents.buildInfoItem(
             label: 'Consommation électrique',
-            value: '${session.consommationCourant.toStringAsFixed(2)}',
+            value: session.consommationCourant.toStringAsFixed(2),
             icon: Icons.bolt,
             theme: theme,
           ),
           error: (_, __) => ProductionReportComponents.buildInfoItem(
             label: 'Consommation électrique',
-            value: '${session.consommationCourant.toStringAsFixed(2)}',
+            value: session.consommationCourant.toStringAsFixed(2),
             icon: Icons.bolt,
             theme: theme,
           ),

@@ -5,7 +5,6 @@ import 'package:elyf_groupe_app/shared.dart';
 import '../../../../../../../shared/utils/currency_formatter.dart';
 import '../../../../application/providers.dart';
 import '../../../../domain/entities/cylinder.dart';
-import '../../../../domain/entities/cylinder_stock.dart';
 import '../../../../domain/entities/expense.dart';
 import '../../../../domain/entities/gas_sale.dart';
 import '../../../../domain/services/gaz_calculation_service.dart';
@@ -36,14 +35,14 @@ class DashboardKpiSection extends ConsumerWidget {
         GazCalculationService.calculateTodayProfit(sales, expenses);
 
     // Full bottles count
-    String? enterpriseId = cylinders.isNotEmpty
+    final enterpriseId = cylinders.isNotEmpty
         ? cylinders.first.enterpriseId
         : 'default_enterprise';
 
     final stocksAsync = ref.watch(
       cylinderStocksProvider(
         (
-          enterpriseId: enterpriseId ?? 'default_enterprise',
+          enterpriseId: enterpriseId,
           status: CylinderStatus.full,
           siteId: null,
         ),

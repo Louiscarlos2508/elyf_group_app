@@ -3,10 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/tenant/tenant_provider.dart';
 import 'package:elyf_groupe_app/shared.dart';
-import '../../../../../shared/utils/notification_service.dart';
 import '../../domain/entities/agent.dart';
-import 'package:elyf_groupe_app/shared/presentation/widgets/form_dialog.dart';
-import 'package:elyf_groupe_app/shared/utils/form_helper_mixin.dart';
 
 /// Dialog for creating or editing an agent.
 class AgentFormDialog extends ConsumerStatefulWidget {
@@ -170,7 +167,7 @@ class _AgentFormDialogState extends ConsumerState<AgentFormDialog>
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<MobileOperator>(
-      value: _selectedOperator,
+      initialValue: _selectedOperator,
       decoration: const InputDecoration(
         labelText: 'Opérateur',
         border: OutlineInputBorder(),
@@ -227,7 +224,7 @@ class _AgentFormDialogState extends ConsumerState<AgentFormDialog>
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<AgentStatus>(
-      value: _selectedStatus,
+      initialValue: _selectedStatus,
       decoration: const InputDecoration(
         labelText: 'Statut',
         border: OutlineInputBorder(),

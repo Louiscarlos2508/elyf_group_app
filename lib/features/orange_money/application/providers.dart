@@ -89,7 +89,6 @@ final filteredTransactionsProvider = FutureProvider.autoDispose
         ? DateTime.fromMillisecondsSinceEpoch(int.parse(parts[3]))
         : null;
 
-    final controller = ref.watch(orangeMoneyControllerProvider);
     final repository = ref.watch(transactionRepositoryProvider);
 
     // Récupérer les transactions avec filtres de base

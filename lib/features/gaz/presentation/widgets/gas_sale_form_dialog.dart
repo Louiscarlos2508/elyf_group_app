@@ -3,8 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/tenant/tenant_provider.dart';
 import 'package:elyf_groupe_app/shared.dart';
-import '../../../../../shared/utils/notification_service.dart';
-import '../../application/providers.dart';
 import '../../domain/entities/cylinder.dart';
 import '../../domain/entities/gas_sale.dart';
 import '../../domain/entities/tour.dart';
@@ -15,7 +13,6 @@ import 'gas_sale_form/gas_sale_submit_handler.dart';
 import 'gas_sale_form/price_stock_manager.dart';
 import 'gas_sale_form/quantity_and_total_widget.dart';
 import 'gas_sale_form/tour_wholesaler_selector_widget.dart';
-import 'package:elyf_groupe_app/shared/presentation/widgets/form_dialog.dart';
 
 /// Dialog de formulaire pour créer une vente de gaz.
 class GasSaleFormDialog extends ConsumerStatefulWidget {

@@ -39,7 +39,7 @@ class GazReportKpiCardsV2 extends ConsumerWidget {
                       Expanded(
                         child: GazDashboardKpiCard(
                           label: "Chiffre d'Affaires",
-                          value: '${CurrencyFormatter.formatDouble(data.salesRevenue)}',
+                          value: CurrencyFormatter.formatDouble(data.salesRevenue),
                           subtitle: '${data.salesCount} ventes',
                           icon: Icons.trending_up,
                           iconColor: Colors.blue,
@@ -50,7 +50,7 @@ class GazReportKpiCardsV2 extends ConsumerWidget {
                       Expanded(
                         child: GazDashboardKpiCard(
                           label: 'Dépenses',
-                          value: '${CurrencyFormatter.formatDouble(data.expensesAmount)}',
+                          value: CurrencyFormatter.formatDouble(data.expensesAmount),
                           subtitle: '${data.expensesCount} charges',
                           icon: Icons.receipt_long,
                           iconColor: Colors.red,
@@ -62,7 +62,7 @@ class GazReportKpiCardsV2 extends ConsumerWidget {
                       Expanded(
                         child: GazDashboardKpiCard(
                           label: 'Bénéfice Net',
-                          value: '${CurrencyFormatter.formatDouble(data.profit)}',
+                          value: CurrencyFormatter.formatDouble(data.profit),
                           subtitle: data.profit >= 0 ? 'Profit' : 'Déficit',
                           icon: Icons.account_balance_wallet,
                           iconColor: data.profit >= 0 ? Colors.green : Colors.red,
@@ -78,7 +78,7 @@ class GazReportKpiCardsV2 extends ConsumerWidget {
                     children: [
                       GazDashboardKpiCard(
                         label: "Chiffre d'Affaires",
-                        value: '${CurrencyFormatter.formatDouble(data.salesRevenue)}',
+                        value: CurrencyFormatter.formatDouble(data.salesRevenue),
                         subtitle: '${data.salesCount} ventes',
                         icon: Icons.trending_up,
                         iconColor: Colors.blue,
@@ -87,7 +87,7 @@ class GazReportKpiCardsV2 extends ConsumerWidget {
                       const SizedBox(height: 16),
                       GazDashboardKpiCard(
                         label: 'Dépenses',
-                        value: '${CurrencyFormatter.formatDouble(data.expensesAmount)}',
+                        value: CurrencyFormatter.formatDouble(data.expensesAmount),
                         subtitle: '${data.expensesCount} charges',
                         icon: Icons.receipt_long,
                         iconColor: Colors.red,
@@ -97,7 +97,7 @@ class GazReportKpiCardsV2 extends ConsumerWidget {
                       const SizedBox(height: 16),
                       GazDashboardKpiCard(
                         label: 'Bénéfice Net',
-                        value: '${CurrencyFormatter.formatDouble(data.profit)}',
+                        value: CurrencyFormatter.formatDouble(data.profit),
                         subtitle: data.profit >= 0 ? 'Profit' : 'Déficit',
                         icon: Icons.account_balance_wallet,
                         iconColor: data.profit >= 0 ? Colors.green : Colors.red,

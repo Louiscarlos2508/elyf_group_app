@@ -3,10 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../domain/entities/customer_credit.dart';
 import '../../domain/repositories/customer_repository.dart' show CustomerSummary;
-import '../../domain/services/credit_service.dart';
 import 'credit_action_buttons.dart';
 import 'customer_credit_header.dart';
 import 'customer_credit_item.dart';

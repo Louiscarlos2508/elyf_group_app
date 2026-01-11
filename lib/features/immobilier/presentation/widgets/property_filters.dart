@@ -127,6 +127,19 @@ class _FilterChip<T> extends StatelessWidget {
 
     return PopupMenuButton<T?>(
       initialValue: value,
+      onSelected: onChanged,
+      itemBuilder: (context) => [
+        PopupMenuItem<T?>(
+          value: null,
+          child: Text('Tous les $label'),
+        ),
+        ...options.map(
+          (option) => PopupMenuItem<T?>(
+            value: option,
+            child: Text(getLabel(option)),
+          ),
+        ),
+      ],
       child: Chip(
         label: Text(
           value != null ? getLabel(value as T) : label,
@@ -155,19 +168,6 @@ class _FilterChip<T> extends StatelessWidget {
         ),
         padding: const EdgeInsets.symmetric(horizontal: 8),
       ),
-      onSelected: onChanged,
-      itemBuilder: (context) => [
-        PopupMenuItem<T?>(
-          value: null,
-          child: Text('Tous les $label'),
-        ),
-        ...options.map(
-          (option) => PopupMenuItem<T?>(
-            value: option,
-            child: Text(getLabel(option)),
-          ),
-        ),
-      ],
     );
   }
 }

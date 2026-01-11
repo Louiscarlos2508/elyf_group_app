@@ -63,7 +63,7 @@ final stockRepositoryProvider = Provider<StockRepository>(
       syncManager: syncManager,
       connectivityService: connectivityService,
       enterpriseId: enterpriseId,
-      inventoryRepository: ref.watch(inventoryRepositoryProvider),
+      moduleType: 'eau_minerale',
       productRepository: ref.watch(productRepositoryProvider),
     );
   },
@@ -85,6 +85,7 @@ final inventoryRepositoryProvider = Provider<InventoryRepository>(
       syncManager: syncManager,
       connectivityService: connectivityService,
       enterpriseId: enterpriseId,
+      moduleType: 'eau_minerale',
     );
   },
 );
@@ -119,6 +120,7 @@ final financeRepositoryProvider = Provider<FinanceRepository>(
       syncManager: syncManager,
       connectivityService: connectivityService,
       enterpriseId: enterpriseId,
+      moduleType: 'eau_minerale',
     );
   },
 );
@@ -204,6 +206,7 @@ final packagingStockRepositoryProvider = Provider<PackagingStockRepository>(
       syncManager: syncManager,
       connectivityService: connectivityService,
       enterpriseId: enterpriseId,
+      moduleType: 'eau_minerale',
     );
   },
 );
@@ -220,6 +223,7 @@ final dailyWorkerRepositoryProvider = Provider<DailyWorkerRepository>(
       syncManager: syncManager,
       connectivityService: connectivityService,
       enterpriseId: enterpriseId,
+      moduleType: 'eau_minerale',
     );
   },
 );
@@ -236,6 +240,7 @@ final salaryRepositoryProvider = Provider<SalaryRepository>(
       syncManager: syncManager,
       connectivityService: connectivityService,
       enterpriseId: enterpriseId,
+      moduleType: 'eau_minerale',
     );
   },
 );

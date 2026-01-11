@@ -1,10 +1,7 @@
 import 'dart:developer' as developer;
 import 'dart:convert';
 
-import '../../../../core/offline/connectivity_service.dart';
-import '../../../../core/offline/drift_service.dart';
 import '../../../../core/offline/offline_repository.dart';
-import '../../../../core/offline/sync_manager.dart';
 import '../../domain/entities/enterprise.dart';
 import '../../domain/repositories/enterprise_repository.dart';
 import 'optimized_queries.dart';
@@ -180,7 +177,7 @@ class EnterpriseOfflineRepository extends OfflineRepository<Enterprise>
         moduleType: 'administration',
       );
 
-      final enterprises = records.map((record) {
+      final enterprises = records.map<Enterprise>((record) {
         final map = jsonDecode(record.dataJson) as Map<String, dynamic>;
         return fromMap(map);
       }).toList();
@@ -193,7 +190,7 @@ class EnterpriseOfflineRepository extends OfflineRepository<Enterprise>
         error: e,
         stackTrace: stackTrace,
       );
-      return (enterprises: [], totalCount: 0);
+      return (enterprises: <Enterprise>[], totalCount: 0);
     }
   }
 

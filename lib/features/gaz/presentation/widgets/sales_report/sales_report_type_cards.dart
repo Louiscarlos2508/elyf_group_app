@@ -7,7 +7,6 @@ import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import '../../../domain/entities/gas_sale.dart';
 import '../../../domain/services/gaz_report_calculation_service.dart';
-import 'sales_report_helpers.dart';
 
 /// Cartes affichant les statistiques par type de vente (détail/gros).
 ///

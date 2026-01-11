@@ -3,10 +3,7 @@ import 'dart:developer' as developer;
 
 import '../../../../core/domain/entities/attached_file.dart';
 import '../../../../core/errors/error_handler.dart';
-import '../../../../core/offline/connectivity_service.dart';
-import '../../../../core/offline/drift_service.dart';
 import '../../../../core/offline/offline_repository.dart';
-import '../../../../core/offline/sync_manager.dart';
 import '../../domain/entities/purchase.dart';
 import '../../domain/repositories/purchase_repository.dart';
 
@@ -42,13 +39,30 @@ class PurchaseOfflineRepository extends OfflineRepository<Purchase>
 
     final attachedFilesRaw = map['attachedFiles'] as List<dynamic>?;
     final attachedFiles = attachedFilesRaw
-        ?.map((f) => AttachedFile(
-              id: f['id'] as String,
-              name: f['name'] as String,
-              url: f['url'] as String,
-              mimeType: f['mimeType'] as String?,
-              size: (f['size'] as num?)?.toInt(),
-            ))
+        ?.map((f) {
+          final typeString = f['type'] as String? ?? 'document';
+          AttachedFileType fileType;
+          switch (typeString) {
+            case 'image':
+              fileType = AttachedFileType.image;
+              break;
+            case 'pdf':
+              fileType = AttachedFileType.pdf;
+              break;
+            default:
+              fileType = AttachedFileType.document;
+          }
+          return AttachedFile(
+            id: f['id'] as String,
+            name: f['name'] as String,
+            path: f['path'] as String? ?? f['url'] as String? ?? '', // Support both path and url for backward compatibility
+            type: fileType,
+            size: (f['size'] as num?)?.toInt(),
+            uploadedAt: f['uploadedAt'] != null
+                ? DateTime.parse(f['uploadedAt'] as String)
+                : null,
+          );
+        })
         .toList();
 
     return Purchase(
@@ -83,9 +97,10 @@ class PurchaseOfflineRepository extends OfflineRepository<Purchase>
           ?.map((f) => {
                 'id': f.id,
                 'name': f.name,
-                'url': f.url,
-                'mimeType': f.mimeType,
+                'path': f.path,
+                'type': f.type.name, // image, pdf, document
                 'size': f.size,
+                'uploadedAt': f.uploadedAt?.toIso8601String(),
               })
           .toList(),
     };

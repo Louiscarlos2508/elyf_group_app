@@ -2,7 +2,6 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 import '../../shared/domain/entities/payment_method.dart';
-import '../../features/immobilier/domain/entities/payment.dart';
 
 /// Service de base pour générer des PDF de paiement (factures et reçus).
 abstract class BasePaymentPdfService {

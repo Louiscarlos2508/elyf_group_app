@@ -8,7 +8,6 @@ import '../../domain/services/collection_calculation_service.dart';
 import 'payment_form/leak_report_section.dart';
 import 'payment_form/payment_amount_input.dart';
 import 'payment_form/payment_submit_handler.dart';
-import 'package:elyf_groupe_app/shared/presentation/widgets/form_dialog.dart';
 
 /// Dialog pour enregistrer un paiement pour une collecte.
 class PaymentFormDialog extends ConsumerStatefulWidget {
@@ -31,7 +30,7 @@ class _PaymentFormDialogState extends ConsumerState<PaymentFormDialog> {
   final _amountController = TextEditingController();
   final Map<int, TextEditingController> _leakControllers = {};
   double _amount = 0.0;
-  Map<int, int> _leaks = {};
+  final Map<int, int> _leaks = {};
 
   @override
   void initState() {

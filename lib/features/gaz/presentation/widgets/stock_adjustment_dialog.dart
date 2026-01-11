@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
-import '../../../../../shared/utils/notification_service.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/cylinder.dart';
 import '../../domain/entities/cylinder_stock.dart';
@@ -65,7 +64,7 @@ class _StockAdjustmentDialogState
             siteId: _selectedPointOfSale?.id,
           ),
         ).future,
-      ) as List<CylinderStock>;
+      );
       final stock = stocks.firstWhere(
         (s) =>
             s.weight == _selectedCylinder!.weight &&
@@ -157,7 +156,6 @@ class _StockAdjustmentDialogState
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final pointsOfSaleAsync = ref.watch(
       pointsOfSaleProvider(
         (
@@ -190,7 +188,7 @@ class _StockAdjustmentDialogState
                       final activePointsOfSale =
                           pointsOfSale.where((pos) => pos.isActive).toList();
                       return DropdownButtonFormField<PointOfSale?>(
-                        value: _selectedPointOfSale,
+                        initialValue: _selectedPointOfSale,
                         decoration: const InputDecoration(
                           labelText: 'Point de vente (optionnel)',
                           prefixIcon: Icon(Icons.store),
@@ -254,7 +252,7 @@ class _StockAdjustmentDialogState
 
                   // Statut
                   DropdownButtonFormField<CylinderStatus>(
-                    value: _selectedStatus,
+                    initialValue: _selectedStatus,
                     decoration: const InputDecoration(
                       labelText: 'Statut *',
                       prefixIcon: Icon(Icons.info_outline),

@@ -2,10 +2,7 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import '../../../../core/errors/error_handler.dart';
-import '../../../../core/offline/connectivity_service.dart';
-import '../../../../core/offline/drift_service.dart';
 import '../../../../core/offline/offline_repository.dart';
-import '../../../../core/offline/sync_manager.dart';
 import '../../domain/entities/collection.dart';
 import '../../domain/entities/tour.dart';
 import '../../domain/entities/transport_expense.dart';
@@ -68,14 +65,26 @@ class TourOfflineRepository extends OfflineRepository<Tour>
   }
 
   Collection _collectionFromMap(Map<String, dynamic> map) {
+    // Convert cylinderQuantities/pointOfSaleId to new structure
+    final cylinderQuantities = (map['cylinderQuantities'] as Map<String, dynamic>?)
+            ?.map((k, v) => MapEntry(int.parse(k), (v as num).toInt())) ??
+        (map['emptyBottles'] as Map<String, dynamic>?)
+            ?.map((k, v) => MapEntry(int.parse(k), (v as num).toInt())) ??
+        {};
+    
     return Collection(
-      pointOfSaleId: map['pointOfSaleId'] as String,
-      pointOfSaleName: map['pointOfSaleName'] as String,
-      cylinderQuantities: (map['cylinderQuantities'] as Map<String, dynamic>?)
-              ?.map((k, v) => MapEntry(k, (v as num).toInt())) ??
-          {},
-      amountDue: (map['amountDue'] as num).toDouble(),
-      amountPaid: (map['amountPaid'] as num).toDouble(),
+      id: map['id'] as String? ?? map['pointOfSaleId'] as String? ?? '',
+      type: CollectionType.values.firstWhere(
+        (e) => e.name == (map['type'] as String?),
+        orElse: () => CollectionType.pointOfSale,
+      ),
+      clientId: map['clientId'] as String? ?? map['pointOfSaleId'] as String? ?? '',
+      clientName: map['clientName'] as String? ?? map['pointOfSaleName'] as String? ?? '',
+      clientPhone: map['clientPhone'] as String? ?? '',
+      emptyBottles: cylinderQuantities,
+      unitPrice: (map['unitPrice'] as num?)?.toDouble() ?? (map['amountDue'] as num?)?.toDouble() ?? 0.0,
+      amountPaid: (map['amountPaid'] as num?)?.toDouble() ?? 0.0,
+      paymentDate: map['paymentDate'] != null ? DateTime.parse(map['paymentDate'] as String) : null,
     );
   }
 
@@ -84,6 +93,9 @@ class TourOfflineRepository extends OfflineRepository<Tour>
       id: map['id'] as String,
       description: map['description'] as String,
       amount: (map['amount'] as num).toDouble(),
+      expenseDate: map['expenseDate'] != null 
+          ? DateTime.parse(map['expenseDate'] as String)
+          : DateTime.now(),
     );
   }
 
@@ -112,11 +124,17 @@ class TourOfflineRepository extends OfflineRepository<Tour>
 
   Map<String, dynamic> _collectionToMap(Collection collection) {
     return {
-      'pointOfSaleId': collection.pointOfSaleId,
-      'pointOfSaleName': collection.pointOfSaleName,
-      'cylinderQuantities': collection.cylinderQuantities,
-      'amountDue': collection.amountDue,
+      'id': collection.id,
+      'type': collection.type.name,
+      'clientId': collection.clientId,
+      'clientName': collection.clientName,
+      'clientPhone': collection.clientPhone,
+      'emptyBottles': collection.emptyBottles.map((k, v) => MapEntry(k.toString(), v)),
+      'unitPrice': collection.unitPrice,
+      'unitPricesByWeight': collection.unitPricesByWeight?.map((k, v) => MapEntry(k.toString(), v)),
+      'leaks': collection.leaks.map((k, v) => MapEntry(k.toString(), v)),
       'amountPaid': collection.amountPaid,
+      'paymentDate': collection.paymentDate?.toIso8601String(),
     };
   }
 
@@ -125,6 +143,7 @@ class TourOfflineRepository extends OfflineRepository<Tour>
       'id': expense.id,
       'description': expense.description,
       'amount': expense.amount,
+      'expenseDate': expense.expenseDate.toIso8601String(),
     };
   }
 

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../../domain/entities/admin_module.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/admin_module.dart';
 
 /// Header widget for module details dialog
 class ModuleDetailsHeader extends StatelessWidget {

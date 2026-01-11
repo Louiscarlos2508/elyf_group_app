@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 
 /// Helpers pour le formulaire de session de production.
 class ProductionSessionFormHelpers {

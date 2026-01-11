@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../application/controllers/production_session_controller.dart';
-import '../../application/controllers/stock_controller.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
-import '../../domain/entities/electricity_meter_type.dart';
 import '../../domain/entities/packaging_stock.dart';
 import '../../domain/entities/production_session.dart';
 import '../../domain/entities/production_session_status.dart';
@@ -104,9 +101,9 @@ class _ProductionFinalizationDialogState
 
       // Calculer la consommation électrique si les index sont disponibles
       double consommationElectrique = widget.session.consommationCourant;
-      if (widget.session.indexCompteurInitialKwh != null &&
-          indexCompteurFinalKwh != null) {
+      if (widget.session.indexCompteurInitialKwh != null) {
         final meterType = await ref.read(electricityMeterTypeProvider.future);
+        if (!mounted) return;
         consommationElectrique = meterType.calculateConsumption(
           widget.session.indexCompteurInitialKwh!.toDouble(),
           indexCompteurFinalKwh.toDouble(),
@@ -114,6 +111,7 @@ class _ProductionFinalizationDialogState
       }
 
       if (totalEmb <= 0) {
+        if (!mounted) return;
         NotificationService.showError(context, 
               'Veuillez renseigner le nombre d\'emballages utilisés pour au moins un jour de production.',
             );
@@ -124,7 +122,7 @@ class _ProductionFinalizationDialogState
       // Mettre à jour la session avec les totaux journaliers
       final updatedSession = widget.session.copyWith(
         heureFin: _heureFin,
-        indexCompteurFinalKwh: indexCompteurFinalKwh?.toInt(),
+        indexCompteurFinalKwh: indexCompteurFinalKwh.toInt(),
         consommationCourant: consommationElectrique,
         quantiteProduite: totalPacks,
         emballagesUtilises: totalEmb,

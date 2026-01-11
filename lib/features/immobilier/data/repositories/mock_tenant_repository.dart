@@ -61,7 +61,7 @@ class MockTenantRepository implements TenantRepository {
     return _tenants.values.where((tenant) {
       return tenant.fullName.toLowerCase().contains(lowerQuery) ||
           tenant.phone.contains(query) ||
-          (tenant.email?.toLowerCase().contains(lowerQuery) ?? false);
+          tenant.email.toLowerCase().contains(lowerQuery);
     }).toList();
   }
 

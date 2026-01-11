@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
-import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/services/gaz_dashboard_calculation_service.dart';
 import 'dashboard_kpi_card.dart';
 

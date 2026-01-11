@@ -4,8 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/features/immobilier/application/providers.dart';
 import '../../domain/entities/tenant.dart';
 import 'package:elyf_groupe_app/shared.dart';
-import 'package:elyf_groupe_app/shared/presentation/widgets/form_dialog.dart';
-import 'package:elyf_groupe_app/shared/utils/form_helper_mixin.dart';
 
 class TenantFormDialog extends ConsumerStatefulWidget {
   const TenantFormDialog({

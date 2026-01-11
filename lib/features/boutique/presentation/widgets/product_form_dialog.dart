@@ -1,17 +1,14 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/providers.dart';
 import '../../domain/entities/expense.dart';
 import '../../domain/entities/product.dart';
-import '../../domain/services/product_calculation_service.dart';
 import 'product_form_fields.dart';
 import 'product_form_footer.dart';
 import 'product_image_selector.dart';
-import 'package:elyf_groupe_app/shared/presentation/widgets/form_dialog.dart';
 import 'package:elyf_groupe_app/shared/utils/form_helper_mixin.dart';
 
 class ProductFormDialog extends ConsumerStatefulWidget {

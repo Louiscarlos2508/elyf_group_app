@@ -1,7 +1,5 @@
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../../../shared/domain/entities/payment_method.dart';
-import '../../../../../shared/utils/date_formatter.dart';
-import '../../../../../shared/utils/currency_formatter.dart';
 import '../../domain/entities/payment.dart';
 
 /// Helpers pour le formulaire de paiement.

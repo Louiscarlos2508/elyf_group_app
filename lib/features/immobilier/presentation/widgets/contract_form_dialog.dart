@@ -3,15 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/domain/entities/attached_file.dart';
 import 'package:elyf_groupe_app/shared.dart';
-import '../../../../../shared/utils/notification_service.dart';
 import 'package:elyf_groupe_app/features/immobilier/application/providers.dart';
 import '../../domain/entities/contract.dart';
 import '../../domain/entities/property.dart';
 import '../../domain/entities/tenant.dart';
 import 'contract_form_fields.dart';
-import 'package:elyf_groupe_app/shared/presentation/widgets/form_dialog.dart';
-import 'package:elyf_groupe_app/shared/utils/validators.dart';
-import 'package:elyf_groupe_app/shared/utils/form_helper_mixin.dart';
 
 class ContractFormDialog extends ConsumerStatefulWidget {
   const ContractFormDialog({

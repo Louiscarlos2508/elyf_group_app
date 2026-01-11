@@ -33,6 +33,7 @@ class _ElyfAppState extends ConsumerState<ElyfApp> {
       theme: AppTheme.light(bootStatus),
       darkTheme: AppTheme.dark(bootStatus),
       themeMode: ThemeMode.system,
+      debugShowCheckedModeBanner: false,
     );
   }
 }

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../domain/entities/bobine_usage.dart';
 import '../../../domain/entities/production_session.dart';
 import 'tracking_dialogs.dart';
 

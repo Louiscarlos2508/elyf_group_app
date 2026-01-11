@@ -7,8 +7,6 @@ import '../../application/controllers/finances_controller.dart';
 import '../../application/controllers/sales_controller.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../domain/entities/customer_account.dart';
-import '../../domain/repositories/customer_repository.dart';
-import '../../domain/services/dashboard_calculation_service.dart';
 import 'dashboard_kpi_card.dart';
 
 /// Section displaying monthly KPIs.

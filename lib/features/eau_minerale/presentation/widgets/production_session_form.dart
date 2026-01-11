@@ -3,15 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../domain/entities/bobine_usage.dart';
-import '../../domain/entities/machine.dart';
-import '../../domain/entities/production_period_config.dart';
 import '../../domain/entities/production_session.dart';
 import '../../domain/services/production_session_builder.dart';
 import '../../domain/services/production_session_validation_service.dart';
 import 'bobine_usage_form_field.dart';
 import 'package:elyf_groupe_app/shared.dart';
-import '../../../../../shared/utils/date_formatter.dart';
-import '../../../../../shared/utils/notification_service.dart';
 import 'machine_selector_field.dart';
 import 'time_picker_field.dart';
 
@@ -221,31 +217,6 @@ class ProductionSessionFormState
               });
             },
           ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildConsommationField() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        TextFormField(
-          controller: _consommationController,
-          decoration: const InputDecoration(
-            labelText: 'Consommation courant (kWh)',
-            prefixIcon: Icon(Icons.bolt),
-          ),
-          keyboardType: TextInputType.numberWithOptions(decimal: true),
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'Requis';
-            }
-            if (double.tryParse(value) == null) {
-              return 'Nombre invalide';
-            }
-            return null;
-          },
         ),
       ],
     );

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
-import '../../../../../shared/utils/notification_service.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/collection.dart';
 import '../../domain/entities/tour.dart';
@@ -13,7 +12,6 @@ import 'collection_form/client_selector.dart';
 import 'collection_form/collection_form_header.dart';
 import 'collection_form/collection_submit_handler.dart';
 import 'collection_form/collection_type_selector.dart';
-import 'package:elyf_groupe_app/shared/presentation/widgets/form_dialog.dart';
 
 /// Formulaire d'ajout d'une collecte.
 class CollectionFormDialog extends ConsumerStatefulWidget {

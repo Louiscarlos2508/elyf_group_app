@@ -17,7 +17,7 @@ class PaymentFormFields {
     required String? Function(Contract?) validator,
   }) {
     return DropdownButtonFormField<Contract>(
-      value: selectedContract,
+      initialValue: selectedContract,
       decoration: const InputDecoration(
         labelText: 'Contrat *',
         prefixIcon: Icon(Icons.description),
@@ -80,7 +80,7 @@ class PaymentFormFields {
       children: [
         Expanded(
           child: DropdownButtonFormField<int?>(
-            value: month,
+            initialValue: month,
             decoration: const InputDecoration(
               labelText: 'Mois',
               prefixIcon: Icon(Icons.calendar_month),
@@ -111,7 +111,7 @@ class PaymentFormFields {
         const SizedBox(width: 16),
         Expanded(
           child: DropdownButtonFormField<int?>(
-            value: year,
+            initialValue: year,
             decoration: const InputDecoration(
               labelText: 'Année',
               prefixIcon: Icon(Icons.calendar_today),
@@ -135,7 +135,7 @@ class PaymentFormFields {
     required ValueChanged<PaymentMethod?> onChanged,
   }) {
     return DropdownButtonFormField<PaymentMethod>(
-      value: value,
+      initialValue: value,
       decoration: const InputDecoration(
         labelText: 'Méthode de paiement *',
         prefixIcon: Icon(Icons.payment),
@@ -155,7 +155,7 @@ class PaymentFormFields {
     required ValueChanged<PaymentType?> onChanged,
   }) {
     return DropdownButtonFormField<PaymentType>(
-      value: value,
+      initialValue: value,
       decoration: const InputDecoration(
         labelText: 'Type de paiement *',
         prefixIcon: Icon(Icons.category),
@@ -175,7 +175,7 @@ class PaymentFormFields {
     required ValueChanged<PaymentStatus?> onChanged,
   }) {
     return DropdownButtonFormField<PaymentStatus>(
-      value: value,
+      initialValue: value,
       decoration: const InputDecoration(
         labelText: 'Statut *',
         prefixIcon: Icon(Icons.info_outline),

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
-import 'package:flutter/scheduler.dart';
 
 /// Widget simple pour répartir le montant entre Cash et Orange Money.
 class SimplePaymentSplitter extends StatefulWidget {

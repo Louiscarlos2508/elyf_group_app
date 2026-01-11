@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
-import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
-import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
 import 'package:elyf_groupe_app/features/orange_money/application/providers.dart';
 import '../../../domain/entities/transaction.dart';
 import '../../../domain/services/transaction_service.dart';
@@ -78,7 +76,7 @@ class _TransactionsV2ScreenState extends ConsumerState<TransactionsV2Screen>
 
     try {
       final controller = ref.read(orangeMoneyControllerProvider);
-      final transactionId = await controller.createTransactionFromInput(
+      await controller.createTransactionFromInput(
         type: _selectedType,
         phoneNumber: phoneNumber,
         amountStr: amountStr,

@@ -46,7 +46,7 @@ class TourWholesalerSelectorWidget extends ConsumerWidget {
                 .toList();
 
             return DropdownButtonFormField<Tour?>(
-              value: selectedTour,
+              initialValue: selectedTour,
               decoration: const InputDecoration(
                 labelText: 'Tour d\'approvisionnement *',
                 prefixIcon: Icon(Icons.local_shipping),
@@ -159,7 +159,7 @@ class TourWholesalerSelectorWidget extends ConsumerWidget {
     }
 
     return DropdownButtonFormField<String>(
-      value: selectedWholesalerId,
+      initialValue: selectedWholesalerId,
       decoration: const InputDecoration(
         labelText: 'Grossiste *',
         prefixIcon: Icon(Icons.business),

@@ -4,8 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import '../../../domain/entities/point_of_sale.dart';
 import 'package:elyf_groupe_app/shared.dart';
-import '../../../../../shared/presentation/widgets/gaz_button_styles.dart';
-import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
 import '../point_of_sale_form_dialog.dart';
 import 'pos_stock_dialog.dart';
 import 'pos_types_dialog.dart';
@@ -220,10 +218,10 @@ class PosTableRow extends ConsumerWidget {
                 children: [
                   OutlinedButton.icon(
                     style: GazButtonStyles.outlined.copyWith(
-                      padding: const MaterialStatePropertyAll(
+                      padding: const WidgetStatePropertyAll(
                         EdgeInsets.symmetric(horizontal: 6, vertical: 6),
                       ),
-                      minimumSize: const MaterialStatePropertyAll(Size(60, 28)),
+                      minimumSize: const WidgetStatePropertyAll(Size(60, 28)),
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
                     onPressed: () => _showStockDialog(context, ref),
@@ -239,10 +237,10 @@ class PosTableRow extends ConsumerWidget {
                   const SizedBox(width: 3),
                   OutlinedButton.icon(
                     style: GazButtonStyles.outlined.copyWith(
-                      padding: const MaterialStatePropertyAll(
+                      padding: const WidgetStatePropertyAll(
                         EdgeInsets.symmetric(horizontal: 6, vertical: 6),
                       ),
-                      minimumSize: const MaterialStatePropertyAll(Size(60, 28)),
+                      minimumSize: const WidgetStatePropertyAll(Size(60, 28)),
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
                     onPressed: () => _showTypesDialog(context, ref),

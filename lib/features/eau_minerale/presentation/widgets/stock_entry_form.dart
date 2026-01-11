@@ -5,10 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../../../shared/utils/notification_service.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
-import '../../domain/entities/bobine_stock.dart';
 import '../../domain/entities/packaging_stock.dart';
 import '../../domain/entities/stock_item.dart';
-import '../../domain/entities/stock_movement.dart';
 
 /// Formulaire pour ajouter des matières premières en stock (bobines, emballages, autres).
 class StockEntryForm extends ConsumerStatefulWidget {
@@ -67,10 +65,6 @@ class _StockEntryFormState extends ConsumerState<StockEntryForm> {
 
       switch (_selectedType) {
         case _StockEntryType.bobine:
-          final prixUnitaire = _priceController.text.isEmpty
-              ? null
-              : int.tryParse(_priceController.text);
-          
           // Utiliser le nouveau système de stock par type/quantité
           final bobineType = _typeController.text.isEmpty 
               ? 'Bobine standard' 

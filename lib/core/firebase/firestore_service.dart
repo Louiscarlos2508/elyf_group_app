@@ -252,7 +252,13 @@ class FirestoreService {
       final querySnapshot = await query.get();
 
       return querySnapshot.docs
-          .map((doc) => doc.data()..['id'] = doc.id)
+          .map((doc) {
+            final data = doc.data() as Map<String, dynamic>?;
+            if (data == null) return <String, dynamic>{'id': doc.id};
+            final result = Map<String, dynamic>.from(data);
+            result['id'] = doc.id;
+            return result;
+          })
           .toList();
     } catch (e, stackTrace) {
       developer.log(
@@ -305,7 +311,13 @@ class FirestoreService {
 
       return query.snapshots().map((snapshot) {
         return snapshot.docs
-            .map((doc) => doc.data()..['id'] = doc.id)
+            .map((doc) {
+              final data = doc.data() as Map<String, dynamic>?;
+              if (data == null) return <String, dynamic>{'id': doc.id};
+              final result = Map<String, dynamic>.from(data);
+              result['id'] = doc.id;
+              return result;
+            })
             .toList();
       });
     } catch (e, stackTrace) {
@@ -338,7 +350,11 @@ class FirestoreService {
         if (!snapshot.exists) {
           return null;
         }
-        return snapshot.data()..['id'] = snapshot.id;
+        final data = snapshot.data();
+        if (data == null) return {'id': snapshot.id} as Map<String, dynamic>?;
+        final result = Map<String, dynamic>.from(data);
+        result['id'] = snapshot.id;
+        return result;
       });
     } catch (e, stackTrace) {
       developer.log(
@@ -433,7 +449,13 @@ class FirestoreService {
       final querySnapshot = await query.get();
 
       return querySnapshot.docs
-          .map((doc) => doc.data()..['id'] = doc.id)
+          .map((doc) {
+            final data = doc.data() as Map<String, dynamic>?;
+            if (data == null) return <String, dynamic>{'id': doc.id};
+            final result = Map<String, dynamic>.from(data);
+            result['id'] = doc.id;
+            return result;
+          })
           .toList();
     } catch (e, stackTrace) {
       developer.log(

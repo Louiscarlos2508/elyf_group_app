@@ -1,9 +1,7 @@
-import 'dart:typed_data';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 
-import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:path_provider/path_provider.dart';
@@ -12,7 +10,6 @@ import 'package:open_file/open_file.dart';
 import '../../domain/entities/employee.dart';
 import '../../domain/entities/salary_payment.dart';
 import 'package:elyf_groupe_app/shared.dart';
-import '../../../../../shared/utils/notification_service.dart';
 /// Dialog pour générer et afficher un reçu de paiement de salaire.
 class SalaryReceiptDialog extends StatelessWidget {
   const SalaryReceiptDialog({

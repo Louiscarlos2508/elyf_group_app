@@ -2,19 +2,66 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:elyf_groupe_app/core/offline/drift_service.dart';
 import 'package:elyf_groupe_app/core/offline/sync_manager.dart';
 import 'package:elyf_groupe_app/core/offline/connectivity_service.dart';
+import 'package:elyf_groupe_app/core/offline/handlers/firebase_sync_handler.dart';
 import 'package:elyf_groupe_app/features/orange_money/data/repositories/commission_offline_repository.dart';
 import 'package:elyf_groupe_app/features/orange_money/domain/entities/commission.dart';
+
+/// Mock connectivity service for testing.
+class MockConnectivityService implements ConnectivityService {
+  MockConnectivityService({required this.isOnline});
+
+  @override
+  final bool isOnline;
+
+  @override
+  ConnectivityStatus get currentStatus =>
+      isOnline ? ConnectivityStatus.wifi : ConnectivityStatus.offline;
+
+  @override
+  Stream<ConnectivityStatus> get statusStream =>
+      Stream.value(currentStatus);
+
+  @override
+  Future<void> initialize() async {
+    // No-op for testing
+  }
+
+  @override
+  Future<ConnectivityStatus> checkConnectivity() async => currentStatus;
+
+  @override
+  Future<void> dispose() async {
+    // No-op for testing
+  }
+}
 
 void main() {
   group('CommissionOfflineRepository', () {
     late CommissionOfflineRepository repository;
 
-    setUp(() {
+    setUp(() async {
+      final driftService = DriftService.instance;
+      await driftService.initialize();
+      final connectivityService = MockConnectivityService(isOnline: true);
+      await connectivityService.initialize();
+      final syncManager = SyncManager(
+        driftService: driftService,
+        connectivityService: connectivityService,
+        config: const SyncConfig(
+          maxRetryAttempts: 3,
+          syncIntervalMinutes: 5,
+          maxOperationAgeHours: 72,
+        ),
+        syncHandler: MockSyncHandler(),
+      );
+      await syncManager.initialize();
+      
       repository = CommissionOfflineRepository(
-        driftService: DriftService.instance,
-        syncManager: SyncManager(driftService: DriftService.instance),
-        connectivityService: ConnectivityService(),
+        driftService: driftService,
+        syncManager: syncManager,
+        connectivityService: connectivityService,
         enterpriseId: 'test_enterprise',
+        moduleType: 'orange_money',
       );
     });
 

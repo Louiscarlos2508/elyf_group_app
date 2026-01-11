@@ -50,4 +50,6 @@ export 'profile/profile_personal_info_card.dart';
 export 'profile/profile_screen.dart';
 export 'profile/profile_security_card.dart';
 export 'profile/profile_security_note_card.dart';
+export 'profile/edit_profile_dialog.dart' show EditProfileDialog, OnProfileUpdateCallback;
+export 'profile/change_password_dialog.dart';
 

@@ -35,5 +35,27 @@ class PermissionRegistry {
   bool hasPermission(String moduleId, String permissionId) {
     return _permissions[moduleId]?.containsKey(permissionId) ?? false;
   }
+
+  /// Get all permissions from all modules
+  /// Returns a map of moduleId -> list of permission IDs
+  Map<String, List<String>> getAllPermissions() {
+    final result = <String, List<String>>{};
+    for (final moduleId in _permissions.keys) {
+      final modulePerms = _permissions[moduleId];
+      if (modulePerms != null) {
+        result[moduleId] = modulePerms.keys.toList()..sort();
+      }
+    }
+    return result;
+  }
+
+  /// Get total count of registered permissions
+  int get totalPermissionsCount {
+    var count = 0;
+    for (final modulePerms in _permissions.values) {
+      count += modulePerms.length;
+    }
+    return count;
+  }
 }
 

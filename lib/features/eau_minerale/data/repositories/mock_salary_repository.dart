@@ -47,7 +47,7 @@ class MockSalaryRepository implements SalaryRepository {
         employeeName: 'Jean Dupont',
         amount: 150000,
         date: DateTime(now.year, now.month, 5),
-        period: _getMonthName(now.month) + ' ${now.year}',
+        period: '${_getMonthName(now.month)} ${now.year}',
         notes: 'Paiement complet',
       ),
       SalaryPayment(
@@ -56,7 +56,7 @@ class MockSalaryRepository implements SalaryRepository {
         employeeName: 'Marie Traoré',
         amount: 120000,
         date: DateTime(now.year, now.month, 5),
-        period: _getMonthName(now.month) + ' ${now.year}',
+        period: '${_getMonthName(now.month)} ${now.year}',
       ),
       SalaryPayment(
         id: 'salary-3',
@@ -64,7 +64,7 @@ class MockSalaryRepository implements SalaryRepository {
         employeeName: 'Jean Dupont',
         amount: 150000,
         date: DateTime(now.year, now.month - 1, 5),
-        period: _getMonthName(now.month - 1) + ' ${now.year}',
+        period: '${_getMonthName(now.month - 1)} ${now.year}',
       ),
     ]);
 

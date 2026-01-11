@@ -1,7 +1,5 @@
 import 'dart:io';
 
-import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
 
 import '../../features/eau_minerale/domain/entities/report_data.dart';
 import '../../features/eau_minerale/domain/entities/report_period.dart';

@@ -1,6 +1,5 @@
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'invoice_print_helpers.dart';
 
 /// Header commun pour les PDFs de factures.
 pw.Widget buildPdfHeader(String title) {

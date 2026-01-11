@@ -6,7 +6,6 @@ import '../../domain/entities/tour.dart';
 import '../../domain/entities/transport_expense.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../../../shared/utils/notification_service.dart';
-import 'package:elyf_groupe_app/shared/presentation/widgets/form_dialog.dart';
 /// Formulaire d'ajout d'une dépense de transport selon le design Figma.
 class TransportExpenseFormDialog extends ConsumerStatefulWidget {
   const TransportExpenseFormDialog({

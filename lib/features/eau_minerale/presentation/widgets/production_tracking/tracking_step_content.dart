@@ -22,8 +22,6 @@ class TrackingStepContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-
     switch (status) {
       case ProductionSessionStatus.draft:
         return DraftStep(session: session);

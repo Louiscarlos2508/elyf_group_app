@@ -1,4 +1,3 @@
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:open_file/open_file.dart';
@@ -74,15 +73,14 @@ class _EauMineralePrintButtonState extends State<EauMineralePrintButton> {
       if (result == 'pdf') {
         final file = await EauMineraleInvoiceService.instance
             .generateSalePdf(widget.sale);
-        if (!mounted) return;
+        if (!mounted || !context.mounted) return;
         await OpenFile.open(file.path);
-        if (!context.mounted) return;
+        if (!mounted || !context.mounted) return;
         NotificationService.showSuccess(context, 'PDF généré avec succès');
       } else if (result == 'sunmi') {
         final success = await EauMineraleInvoiceService.instance
             .printSaleInvoice(widget.sale);
-        if (!mounted) return;
-        if (!context.mounted) return;
+        if (!mounted || !context.mounted) return;
         if (success) {
           NotificationService.showSuccess(context, 'Facture imprimée');
         } else {
@@ -90,7 +88,7 @@ class _EauMineralePrintButtonState extends State<EauMineralePrintButton> {
         }
       }
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted || !context.mounted) return;
       NotificationService.showError(context, 'Erreur: $e');
     } finally {
       if (mounted) setState(() => _isPrinting = false);

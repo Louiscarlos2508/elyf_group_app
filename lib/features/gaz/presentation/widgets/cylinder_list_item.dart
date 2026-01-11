@@ -5,8 +5,6 @@ import 'package:elyf_groupe_app/shared.dart';
 import '../../../../../shared/utils/currency_formatter.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/cylinder.dart';
-import '../../domain/entities/cylinder_stock.dart';
-import '../../domain/entities/gaz_settings.dart';
 
 /// Widget pour afficher une bouteille dans la liste des paramètres.
 class CylinderListItem extends ConsumerWidget {
@@ -122,7 +120,7 @@ class CylinderListItem extends ConsumerWidget {
                       const SizedBox(height: 4),
                       Text(
                         'Détail: ${CurrencyFormatter.formatDouble(cylinder.sellPrice)} FCFA | '
-                            'Gros: ${wholesalePrice != null && wholesalePrice! > 0 ? CurrencyFormatter.formatDouble(wholesalePrice!) : "-"} FCFA',
+                            'Gros: ${wholesalePrice != null && wholesalePrice > 0 ? CurrencyFormatter.formatDouble(wholesalePrice) : "-"} FCFA',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),

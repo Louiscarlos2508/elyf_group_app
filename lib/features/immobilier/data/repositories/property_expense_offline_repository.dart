@@ -3,7 +3,6 @@ import 'dart:convert';
 
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/offline/offline_repository.dart';
-import '../../../../core/offline/drift_service.dart';
 import '../../domain/entities/expense.dart';
 import '../../domain/repositories/expense_repository.dart';
 

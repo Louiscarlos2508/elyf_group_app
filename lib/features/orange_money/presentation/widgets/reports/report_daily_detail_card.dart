@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'package:elyf_groupe_app/shared.dart';
 
 /// Daily detail card for reports screen.
 class ReportDailyDetailCard extends StatelessWidget {

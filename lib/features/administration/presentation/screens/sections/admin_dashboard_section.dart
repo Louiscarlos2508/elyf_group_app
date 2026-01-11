@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/administration/application/providers.dart';
 import '../../../domain/entities/enterprise.dart';
-import '../../../domain/services/enterprise_type_service.dart';
 
 /// Dashboard avec statistiques et vue d'ensemble
 class AdminDashboardSection extends ConsumerWidget {

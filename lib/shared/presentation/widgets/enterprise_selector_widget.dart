@@ -31,7 +31,7 @@ class EnterpriseSelectorWidget extends ConsumerWidget {
       userAccessibleEnterprisesProvider,
     );
     
-    final accessibleEnterprises = await accessibleEnterprisesAsync.when(
+    final accessibleEnterprises = accessibleEnterprisesAsync.when(
       data: (enterprises) => enterprises,
       loading: () => <Enterprise>[],
       error: (_, __) => <Enterprise>[],

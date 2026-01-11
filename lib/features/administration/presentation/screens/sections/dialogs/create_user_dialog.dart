@@ -3,11 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
-import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
 import '../../../../domain/entities/user.dart';
 import '../../../../application/providers.dart';
 import '../../../../../../core/auth/providers.dart' show currentUserIdProvider;
-import 'package:elyf_groupe_app/shared/utils/form_helper_mixin.dart';
 
 /// Dialogue pour créer un nouvel utilisateur.
 /// 

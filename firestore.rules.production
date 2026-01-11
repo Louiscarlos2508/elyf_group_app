@@ -1,0 +1,310 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions pour vérifier l'authentification et les permissions
+    
+    // Vérifie si l'utilisateur est authentifié
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Vérifie si l'utilisateur existe dans Firestore
+    function userExists(userId) {
+      return exists(/databases/$(database)/documents/users/$(userId));
+    }
+    
+    // Vérifie si l'utilisateur est administrateur système (isAdmin == true)
+    // Retourne false si l'utilisateur n'existe pas encore dans Firestore
+    function isSystemAdmin() {
+      return isAuthenticated() && 
+             userExists(request.auth.uid) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+    
+    // Vérifie si l'utilisateur existe et a le champ isAdmin défini (même si false)
+    // Utile pour éviter les erreurs lors de la vérification
+    function hasAdminField(userId) {
+      return userExists(userId) && 
+             get(/databases/$(database)/documents/users/$(userId)).data.isAdmin != null;
+    }
+    
+    // Vérifie si l'utilisateur appartient à une entreprise
+    function hasEnterprise(enterpriseId) {
+      return isAuthenticated() && 
+             userExists(request.auth.uid) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.enterpriseIds != null &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.enterpriseIds is list &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.enterpriseIds
+                 .hasAny([enterpriseId]);
+    }
+    
+    // Vérifie si l'utilisateur est admin de l'entreprise
+    function isEnterpriseAdmin(enterpriseId) {
+      return isSystemAdmin() || 
+             (hasEnterprise(enterpriseId) &&
+              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.enterprises != null &&
+              get(/databases/$(database)/documents/users/$(request.auth.uid)).data
+                  .enterprises[enterpriseId].role == 'admin');
+    }
+    
+    // Vérifie si l'utilisateur a une permission spécifique dans une entreprise
+    function hasPermission(enterpriseId, permission) {
+      return isSystemAdmin() ||
+             (hasEnterprise(enterpriseId) &&
+              (isEnterpriseAdmin(enterpriseId) ||
+               (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.enterprises != null &&
+                get(/databases/$(database)/documents/users/$(request.auth.uid)).data
+                    .enterprises[enterpriseId].permissions != null &&
+                get(/databases/$(database)/documents/users/$(request.auth.uid)).data
+                    .enterprises[enterpriseId].permissions.hasAny([permission]))));
+    }
+    
+    // Collection des utilisateurs
+    match /users/{userId} {
+      // Un utilisateur peut lire son propre document
+      // Les admins peuvent lire tous les utilisateurs
+      allow read: if isAuthenticated() && (
+        request.auth.uid == userId || 
+        isSystemAdmin()
+      );
+      
+      // Seul un admin peut créer/modifier un utilisateur
+      allow write: if isAuthenticated() && (
+        // L'utilisateur peut mettre à jour son propre profil (sauf isAdmin, enterpriseIds et enterprises)
+        (request.auth.uid == userId && 
+         !request.resource.data.diff(resource.data).affectedKeys().hasAny(['isAdmin', 'enterpriseIds', 'enterprises'])) ||
+        // Un admin système peut créer/modifier n'importe quel utilisateur
+        isSystemAdmin()
+      );
+    }
+    
+    // Collection des entreprises
+    match /enterprises/{enterpriseId} {
+      // Les utilisateurs appartenant à l'entreprise peuvent lire
+      allow read: if hasEnterprise(enterpriseId);
+      
+      // Seuls les admins système peuvent créer/modifier une entreprise
+      // Les admins d'entreprise peuvent modifier leur entreprise
+      allow write: if isSystemAdmin() || isEnterpriseAdmin(enterpriseId);
+      
+      // Sous-collections spécifiques à chaque module
+      // Pattern: /enterprises/{enterpriseId}/{collection}/{documentId}
+      
+      // Module Boutique
+      match /sales/{saleId} {
+        allow read, write: if hasEnterprise(enterpriseId);
+      }
+      
+      match /products/{productId} {
+        allow read: if hasEnterprise(enterpriseId);
+        allow write: if hasPermission(enterpriseId, 'boutique:manage_products');
+      }
+      
+      match /expenses/{expenseId} {
+        allow read, write: if hasEnterprise(enterpriseId);
+      }
+      
+      match /purchases/{purchaseId} {
+        allow read, write: if hasEnterprise(enterpriseId);
+      }
+      
+      // Module Eau Minérale
+      match /customers/{customerId} {
+        allow read, write: if hasEnterprise(enterpriseId);
+      }
+      
+      match /machines/{machineId} {
+        allow read: if hasEnterprise(enterpriseId);
+        allow write: if hasPermission(enterpriseId, 'eau_minerale:manage_machines');
+      }
+      
+      match /bobines/{bobineId} {
+        allow read: if hasEnterprise(enterpriseId);
+        allow write: if hasPermission(enterpriseId, 'eau_minerale:manage_bobines');
+      }
+      
+      match /productionSessions/{sessionId} {
+        allow read, write: if hasEnterprise(enterpriseId);
+      }
+      
+      match /employees/{employeeId} {
+        allow read: if hasEnterprise(enterpriseId);
+        allow write: if hasPermission(enterpriseId, 'eau_minerale:manage_employees');
+      }
+      
+      match /salaryPayments/{paymentId} {
+        allow read: if hasEnterprise(enterpriseId);
+        allow write: if hasPermission(enterpriseId, 'eau_minerale:manage_payments');
+      }
+      
+      match /productionPayments/{paymentId} {
+        allow read, write: if hasEnterprise(enterpriseId);
+      }
+      
+      match /creditPayments/{paymentId} {
+        allow read, write: if hasEnterprise(enterpriseId);
+      }
+      
+      match /dailyWorkers/{workerId} {
+        allow read, write: if hasEnterprise(enterpriseId);
+      }
+      
+      match /bobineStocks/{stockId} {
+        allow read, write: if hasEnterprise(enterpriseId);
+      }
+      
+      match /bobineStockMovements/{movementId} {
+        allow read, write: if hasEnterprise(enterpriseId);
+      }
+      
+      match /expenseRecords/{expenseId} {
+        allow read, write: if hasEnterprise(enterpriseId);
+      }
+      
+      match /stockItems/{itemId} {
+        allow read, write: if hasEnterprise(enterpriseId);
+      }
+      
+      match /stockMovements/{movementId} {
+        allow read, write: if hasEnterprise(enterpriseId);
+      }
+      
+      match /packagingStocks/{stockId} {
+        allow read, write: if hasEnterprise(enterpriseId);
+      }
+      
+      match /packagingStockMovements/{movementId} {
+        allow read, write: if hasEnterprise(enterpriseId);
+      }
+      
+      // Module Orange Money
+      match /agents/{agentId} {
+        allow read: if hasEnterprise(enterpriseId);
+        allow write: if hasPermission(enterpriseId, 'orange_money:manage_agents');
+      }
+      
+      match /transactions/{transactionId} {
+        allow read, write: if hasEnterprise(enterpriseId);
+      }
+      
+      match /commissions/{commissionId} {
+        allow read: if hasEnterprise(enterpriseId);
+        allow write: if hasPermission(enterpriseId, 'orange_money:manage_commissions');
+      }
+      
+      match /liquidityCheckpoints/{checkpointId} {
+        allow read, write: if hasEnterprise(enterpriseId);
+      }
+      
+      match /orangeMoneySettings/{settingsId} {
+        allow read: if hasEnterprise(enterpriseId);
+        allow write: if hasPermission(enterpriseId, 'orange_money:manage_settings');
+      }
+      
+      // Module Immobilier
+      match /properties/{propertyId} {
+        allow read: if hasEnterprise(enterpriseId);
+        allow write: if hasPermission(enterpriseId, 'immobilier:manage_properties');
+      }
+      
+      match /tenants/{tenantId} {
+        allow read, write: if hasEnterprise(enterpriseId);
+      }
+      
+      match /contracts/{contractId} {
+        allow read, write: if hasEnterprise(enterpriseId);
+      }
+      
+      match /payments/{paymentId} {
+        allow read, write: if hasEnterprise(enterpriseId);
+      }
+      
+      match /propertyExpenses/{expenseId} {
+        allow read, write: if hasEnterprise(enterpriseId);
+      }
+      
+      // Module Gaz
+      match /gasSales/{saleId} {
+        allow read, write: if hasEnterprise(enterpriseId);
+      }
+      
+      match /cylinders/{cylinderId} {
+        allow read: if hasEnterprise(enterpriseId);
+        allow write: if hasPermission(enterpriseId, 'gaz:manage_cylinders');
+      }
+      
+      match /cylinderStocks/{stockId} {
+        allow read, write: if hasEnterprise(enterpriseId);
+      }
+      
+      match /pointsOfSale/{posId} {
+        allow read: if hasEnterprise(enterpriseId);
+        allow write: if hasPermission(enterpriseId, 'gaz:manage_pos');
+      }
+      
+      match /tours/{tourId} {
+        allow read, write: if hasEnterprise(enterpriseId);
+      }
+      
+      match /gazExpenses/{expenseId} {
+        allow read, write: if hasEnterprise(enterpriseId);
+      }
+      
+      match /cylinderLeaks/{leakId} {
+        allow read, write: if hasEnterprise(enterpriseId);
+      }
+      
+      match /gazSettings/{settingsId} {
+        allow read: if hasEnterprise(enterpriseId);
+        allow write: if hasPermission(enterpriseId, 'gaz:manage_settings');
+      }
+      
+      match /financialReports/{reportId} {
+        allow read: if hasEnterprise(enterpriseId);
+        allow write: if hasPermission(enterpriseId, 'gaz:view_reports') || 
+                         isEnterpriseAdmin(enterpriseId);
+      }
+      
+      // Pattern générique pour les autres collections
+      // Permet d'ajouter de nouvelles collections sans modifier les règles
+      match /{collection}/{document=**} {
+        // Par défaut, permettre la lecture/écriture si l'utilisateur appartient à l'entreprise
+        // Les règles spécifiques ci-dessus prennent le dessus
+        allow read, write: if hasEnterprise(enterpriseId);
+      }
+    }
+    
+    // Collection globale des rôles (administration)
+    match /roles/{roleId} {
+      // Tous les utilisateurs authentifiés peuvent lire les rôles
+      allow read: if isAuthenticated();
+      
+      // Seuls les admins système peuvent créer/modifier/supprimer des rôles
+      allow write: if isSystemAdmin();
+    }
+    
+    // Collection globale des assignations utilisateurs-entreprises-modules
+    match /enterprise_module_users/{documentId} {
+      // Les utilisateurs authentifiés peuvent lire leurs propres assignations
+      // Les admins système peuvent tout lire
+      allow read: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        isSystemAdmin()
+      );
+      
+      // Seuls les admins système peuvent créer/modifier/supprimer des assignations
+      allow write: if isSystemAdmin();
+    }
+    
+    // Autres collections globales (si nécessaire)
+    // Exemple : notifications globales, configurations système, etc.
+    
+    // Collection audit_logs (si utilisée)
+    match /audit_logs/{logId} {
+      // Seuls les admins système peuvent lire et écrire les logs d'audit
+      allow read, write: if isSystemAdmin();
+    }
+  }
+}
+

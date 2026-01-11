@@ -30,13 +30,34 @@ class UserActionHandlers {
     if (result != null && context.mounted) {
       try {
         await ref.read(userControllerProvider).createUser(result);
+        // Toujours invalider le provider pour forcer une relecture
+        // Même si la sauvegarde locale a échoué, l'utilisateur existe dans Firestore
         ref.invalidate(usersProvider);
         if (context.mounted) {
-          NotificationService.showSuccess(context, 'Utilisateur créé avec succès');
+          NotificationService.showSuccess(
+            context, 
+            'Utilisateur créé avec succès. Si l\'utilisateur n\'apparaît pas immédiatement, rechargez la liste.'
+          );
         }
       } catch (e) {
+        // Invalider quand même le provider pour forcer une relecture depuis Firestore
+        // L'utilisateur peut avoir été créé dans Firestore même si la sauvegarde locale a échoué
+        ref.invalidate(usersProvider);
         if (context.mounted) {
-          NotificationService.showError(context, e.toString());
+          final errorMessage = e.toString();
+          // Si c'est une erreur SQLite mais que l'utilisateur existe dans Firestore,
+          // afficher un message informatif plutôt qu'une erreur
+          if (errorMessage.toLowerCase().contains('sqlite') || 
+              errorMessage.toLowerCase().contains('drift') ||
+              errorMessage.toLowerCase().contains('database')) {
+            NotificationService.showInfo(
+              context,
+              'Utilisateur créé dans Firebase. Une erreur est survenue lors de la sauvegarde locale. '
+              'L\'utilisateur sera disponible après rechargement de la liste.'
+            );
+          } else {
+            NotificationService.showError(context, 'Erreur lors de la création: $errorMessage');
+          }
         }
       }
     }

@@ -5,8 +5,6 @@ import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../widgets/fixed_employee_form.dart';
 import '../../widgets/fixed_employees_content.dart';
-import 'package:elyf_groupe_app/shared/presentation/widgets/refresh_button.dart';
-import 'package:elyf_groupe_app/shared/presentation/widgets/form_dialog.dart';
 // Already imported via widgets.dart
 import '../../widgets/production_payment_form.dart';
 import '../../widgets/production_payments_content.dart';
@@ -47,7 +45,6 @@ class _SalariesScreenState extends ConsumerState<SalariesScreen> {
       context: context,
       builder: (context) => FormDialog(
         title: 'Nouveau Paiement Production',
-        child: ProductionPaymentForm(key: formKey),
         onSave: () async {
           final state = formKey.currentState;
           if (state != null) {
@@ -55,6 +52,7 @@ class _SalariesScreenState extends ConsumerState<SalariesScreen> {
           }
         },
         saveLabel: 'Enregistrer les Paiements',
+        child: ProductionPaymentForm(key: formKey),
       ),
     );
   }

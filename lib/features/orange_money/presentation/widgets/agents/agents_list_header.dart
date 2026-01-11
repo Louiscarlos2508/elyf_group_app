@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../../domain/entities/agent.dart';
-import '../agent_form_dialog.dart';
-import '../agent_recharge_dialog.dart' show AgentRechargeDialog;
 
 /// En-tête de la liste des agents avec boutons d'action.
 class AgentsListHeader extends StatelessWidget {

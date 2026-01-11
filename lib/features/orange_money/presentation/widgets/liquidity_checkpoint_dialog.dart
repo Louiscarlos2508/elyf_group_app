@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import '../../domain/entities/liquidity_checkpoint.dart';
 import '../../domain/services/liquidity_checkpoint_service.dart';
 import 'package:elyf_groupe_app/shared.dart';
-import '../../../../../shared/utils/notification_service.dart';
 import 'form_field_with_label.dart';
 
 /// Dialog pour créer ou modifier un pointage de liquidité.

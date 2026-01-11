@@ -139,7 +139,7 @@ class DashboardStockList extends StatelessWidget {
                 ),
               ),
             );
-          }).toList(),
+          }),
         ],
       ),
     );

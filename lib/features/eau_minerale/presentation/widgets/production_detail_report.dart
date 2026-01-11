@@ -10,7 +10,6 @@ import 'production_report/production_report_general_info.dart';
 import 'production_report/production_report_header.dart';
 import 'production_report/production_report_machines_bobines.dart';
 import 'production_report/production_report_personnel.dart';
-import 'production_report/production_report_components.dart';
 
 /// Widget pour afficher un rapport détaillé d'une production spécifique.
 class ProductionDetailReport extends ConsumerWidget {

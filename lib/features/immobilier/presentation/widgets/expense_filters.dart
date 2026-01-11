@@ -64,6 +64,19 @@ class ExpenseFilters extends StatelessWidget {
                 children: [
                   PopupMenuButton<ExpenseCategory?>(
                     initialValue: selectedCategory,
+                    onSelected: onCategoryChanged,
+                    itemBuilder: (context) => [
+                      const PopupMenuItem<ExpenseCategory?>(
+                        value: null,
+                        child: Text('Toutes les catégories'),
+                      ),
+                      ...ExpenseCategory.values.map(
+                        (category) => PopupMenuItem<ExpenseCategory?>(
+                          value: category,
+                          child: Text(_getCategoryLabel(category)),
+                        ),
+                      ),
+                    ],
                     child: Chip(
                       label: Text(
                         selectedCategory != null
@@ -90,19 +103,6 @@ class ExpenseFilters extends StatelessWidget {
                           ? theme.colorScheme.primaryContainer
                           : theme.colorScheme.surfaceContainerHighest,
                     ),
-                    onSelected: onCategoryChanged,
-                    itemBuilder: (context) => [
-                      const PopupMenuItem<ExpenseCategory?>(
-                        value: null,
-                        child: Text('Toutes les catégories'),
-                      ),
-                      ...ExpenseCategory.values.map(
-                        (category) => PopupMenuItem<ExpenseCategory?>(
-                          value: category,
-                          child: Text(_getCategoryLabel(category)),
-                        ),
-                      ),
-                    ],
                   ),
                 ],
               ),

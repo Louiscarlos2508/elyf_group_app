@@ -1,4 +1,5 @@
 import '../entities/cylinder.dart';
+import 'gas_calculation_service.dart';
 
 /// Service for gas sale validation logic.
 ///

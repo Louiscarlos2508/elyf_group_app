@@ -1,7 +1,5 @@
 import 'dart:io';
 
-import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
 
 import '../../features/boutique/domain/entities/report_data.dart';
 import 'base_report_pdf_service.dart';

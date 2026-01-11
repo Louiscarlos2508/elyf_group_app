@@ -1,5 +1,4 @@
 import '../entities/bobine_usage.dart';
-import '../entities/machine.dart';
 
 /// Service for validating production session data.
 ///

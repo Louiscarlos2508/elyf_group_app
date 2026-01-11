@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:elyf_group_app/features/eau_minerale/domain/services/sale_service.dart';
-import 'package:elyf_group_app/features/eau_minerale/domain/repositories/stock_repository.dart';
-import 'package:elyf_group_app/features/eau_minerale/domain/repositories/customer_repository.dart';
-import 'package:elyf_group_app/features/eau_minerale/domain/entities/sale.dart';
-import 'package:elyf_group_app/features/eau_minerale/domain/entities/customer_account.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/services/sale_service.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/repositories/stock_repository.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/repositories/customer_repository.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/sale.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/stock_movement.dart';
 
 // Mock implementations
 class MockStockRepository implements StockRepository {
@@ -22,17 +22,46 @@ class MockStockRepository implements StockRepository {
   Future<void> updateStock(String productId, int quantity) async {
     _stock[productId] = quantity;
   }
-}
 
-class MockCustomerRepository implements CustomerRepository {
   @override
-  Future<List<CustomerAccount>> fetchCustomerAccounts() async {
+  Future<void> recordMovement(StockMovement movement) async {
+    // Mock implementation
+  }
+
+  @override
+  Future<List<StockMovement>> fetchMovements({
+    String? productId,
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
     return [];
   }
 
   @override
-  Future<CustomerAccount?> getCustomer(String id) async {
+  Future<List<String>> getLowStockAlerts(int thresholdPercent) async {
+    return [];
+  }
+}
+
+class MockCustomerRepository implements CustomerRepository {
+  @override
+  Future<List<CustomerSummary>> fetchCustomers() async {
+    return [];
+  }
+
+  @override
+  Future<CustomerSummary?> getCustomer(String id) async {
     return null;
+  }
+
+  @override
+  Future<String> createCustomer(String name, String phone, {String? cnib}) async {
+    return 'customer-${DateTime.now().millisecondsSinceEpoch}';
+  }
+
+  @override
+  Future<List<Sale>> fetchCustomerHistory(String customerId) async {
+    return [];
   }
 }
 

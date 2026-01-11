@@ -39,7 +39,7 @@ class ProductFormFields extends ConsumerWidget {
         ),
         const SizedBox(height: 16),
         DropdownButtonFormField<ProductType>(
-          value: type,
+          initialValue: type,
           decoration: const InputDecoration(
             labelText: 'Type',
             prefixIcon: Icon(Icons.category),

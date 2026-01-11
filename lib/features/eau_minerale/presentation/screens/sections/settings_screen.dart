@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:elyf_groupe_app/core.dart';
 import '../../../../../../core/permissions/modules/eau_minerale_permissions.dart';
 import '../../widgets/centralized_permission_guard.dart';
 import '../../widgets/electricity_meter_config_card.dart';

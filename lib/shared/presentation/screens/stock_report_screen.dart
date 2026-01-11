@@ -92,13 +92,13 @@ class _StockReportScreenState extends ConsumerState<StockReportScreen> {
         reportDate: _reportDate,
       );
 
-      if (!mounted) return;
+      if (!mounted || !context.mounted) return;
       final navigator = Navigator.of(context);
       final messenger = ScaffoldMessenger.of(context);
       final filePath = file.path;
       navigator.pop();
       final result = await OpenFile.open(filePath);
-      if (!mounted) return;
+      if (!mounted || !context.mounted) return;
       if (result.type != ResultType.done) {
         messenger.showSnackBar(
           SnackBar(
@@ -107,7 +107,7 @@ class _StockReportScreenState extends ConsumerState<StockReportScreen> {
         );
       }
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted || !context.mounted) return;
       final navigator = Navigator.of(context);
       final messenger = ScaffoldMessenger.of(context);
       navigator.pop();

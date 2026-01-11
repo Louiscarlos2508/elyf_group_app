@@ -86,7 +86,7 @@ class PaymentMethodSelector extends StatelessWidget {
 
   Widget _buildDropdown(BuildContext context) {
     return DropdownButtonFormField<PaymentMethod>(
-      value: value,
+      initialValue: value,
       decoration: const InputDecoration(
         labelText: 'Méthode de paiement *',
         prefixIcon: Icon(Icons.payment),

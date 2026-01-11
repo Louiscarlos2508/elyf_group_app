@@ -21,8 +21,6 @@ class ExpenseBalancePdfService {
   }) async {
     final pdf = pw.Document();
     final dateFormat = DateFormat('dd/MM/yyyy');
-    final timeFormat = DateFormat('HH:mm');
-
     // Calculer les totaux par catégorie
     final categoryTotals = <String, int>{};
     for (final expense in expenses) {

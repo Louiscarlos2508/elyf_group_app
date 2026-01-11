@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/boutique/application/providers.dart';
@@ -10,7 +9,6 @@ import '../../widgets/cart_summary.dart';
 import '../../widgets/checkout_dialog.dart';
 import '../../widgets/product_tile.dart';
 import 'package:elyf_groupe_app/shared.dart';
-import '../../../../../shared/utils/notification_service.dart';
 
 class PosScreen extends ConsumerStatefulWidget {
   const PosScreen({super.key});

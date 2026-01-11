@@ -74,9 +74,9 @@ class PurchasesReportData {
     required this.totalAmount,
     required this.totalItemsPurchased,
     required this.averagePurchaseAmount,
-    final int purchasesCount = 0,
+    this.purchasesCount = 0,
     required this.topSuppliers,
-  }) : purchasesCount = purchasesCount;
+  });
 
   final int totalAmount;
   final int totalItemsPurchased;

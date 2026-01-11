@@ -5,7 +5,6 @@ import 'package:elyf_groupe_app/shared.dart';
 import '../../../../../shared/utils/currency_formatter.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/cylinder.dart';
-import '../../domain/entities/cylinder_stock.dart';
 import '../../domain/entities/expense.dart';
 import '../../domain/entities/gas_sale.dart';
 import 'enhanced_kpi_card.dart';

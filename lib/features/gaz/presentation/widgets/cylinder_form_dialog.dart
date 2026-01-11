@@ -7,7 +7,6 @@ import '../../application/providers.dart';
 import '../../domain/entities/cylinder.dart';
 import 'cylinder_form/cylinder_form_header.dart';
 import 'cylinder_form/cylinder_submit_handler.dart';
-import 'package:elyf_groupe_app/shared/presentation/widgets/form_dialog.dart';
 
 /// Dialogue pour créer ou modifier une bouteille de gaz.
 class CylinderFormDialog extends ConsumerStatefulWidget {
@@ -88,7 +87,7 @@ class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
 
     setState(() => _isLoading = true);
 
-    final success = await CylinderSubmitHandler.submit(
+    await CylinderSubmitHandler.submit(
       context: context,
       ref: ref,
       selectedWeight: _selectedWeight,
@@ -107,8 +106,6 @@ class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Dialog(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(24),

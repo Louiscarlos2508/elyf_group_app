@@ -2,10 +2,7 @@ import '../../../../../shared/utils/notification_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../application/controllers/cylinder_leak_controller.dart';
 import '../../application/providers.dart';
-import '../../domain/entities/cylinder.dart';
-import 'package:elyf_groupe_app/shared/presentation/widgets/form_dialog.dart';
 
 /// Formulaire de déclaration d'une bouteille avec fuite.
 class CylinderLeakFormDialog extends ConsumerStatefulWidget {
@@ -165,7 +162,7 @@ class _CylinderLeakFormDialogState
                         },
                       )
                     : DropdownButtonFormField<int>(
-                        value: _selectedWeight,
+                        initialValue: _selectedWeight,
                         decoration: const InputDecoration(
                           labelText: 'Poids (kg) *',
                           border: OutlineInputBorder(),

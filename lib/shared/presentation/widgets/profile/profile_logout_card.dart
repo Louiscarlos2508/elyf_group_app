@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/auth/services/auth_service.dart';
+import '../../../../core/auth/providers.dart'
+    show authControllerProvider, currentUserProvider;
 
 /// Logout card for profile screen.
 class ProfileLogoutCard extends ConsumerWidget {
@@ -21,9 +22,7 @@ class ProfileLogoutCard extends ConsumerWidget {
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            style: FilledButton.styleFrom(
-              backgroundColor: Colors.red,
-            ),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
             child: const Text('Déconnexion'),
           ),
         ],
@@ -31,13 +30,14 @@ class ProfileLogoutCard extends ConsumerWidget {
     );
 
     if (confirmed == true && context.mounted) {
-      // Effectuer la déconnexion via le service d'authentification
-      final authService = ref.read(authServiceProvider);
-      await authService.signOut();
-      
+      // Effectuer la déconnexion via le controller d'authentification
+      final authController = ref.read(authControllerProvider);
+      await authController.signOut();
+
       // Invalider les providers pour forcer un rechargement
       ref.invalidate(currentUserProvider);
-      
+      ref.invalidate(authControllerProvider);
+
       // Naviguer vers la page de connexion
       if (context.mounted) {
         context.go('/login');
@@ -62,11 +62,7 @@ class ProfileLogoutCard extends ConsumerWidget {
         children: [
           Row(
             children: [
-              Icon(
-                Icons.logout,
-                color: Colors.red.shade300,
-                size: 24,
-              ),
+              Icon(Icons.logout, color: Colors.red.shade300, size: 24),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -109,4 +105,3 @@ class ProfileLogoutCard extends ConsumerWidget {
     );
   }
 }
-

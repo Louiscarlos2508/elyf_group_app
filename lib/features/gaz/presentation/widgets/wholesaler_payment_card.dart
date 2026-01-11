@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../domain/entities/collection.dart';
-import 'package:elyf_groupe_app/shared.dart';
 
 /// Carte de paiement pour un grossiste dans la section retour.
 class WholesalerPaymentCard extends StatelessWidget {
@@ -104,7 +103,7 @@ class WholesalerPaymentCard extends StatelessWidget {
             final weight = entry.key;
             final qty = entry.value;
             final pricePerBottle = collection.getUnitPriceForWeight(weight);
-            final totalPrice = qty * pricePerBottle;
+            // totalPrice calculé pour usage futur si nécessaire
 
             return Container(
               margin: const EdgeInsets.only(bottom: 7.993),

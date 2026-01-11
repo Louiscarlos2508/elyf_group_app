@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
-import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
-import '../../../../../shared/presentation/widgets/gaz_button_styles.dart';
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import '../../../domain/entities/tour.dart';
 import 'closure_expense_item.dart';
@@ -240,7 +238,7 @@ class _ClosureActionButtons extends ConsumerWidget {
           const SizedBox(width: 8),
           FilledButton.icon(
             style: GazButtonStyles.filledPrimaryIcon.copyWith(
-              minimumSize: const MaterialStatePropertyAll(Size(147.286, 36)),
+              minimumSize: const WidgetStatePropertyAll(Size(147.286, 36)),
             ),
             onPressed: () async {
               try {

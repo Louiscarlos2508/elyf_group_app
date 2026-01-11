@@ -1,6 +1,5 @@
 import '../entities/module_user.dart';
 import '../entities/user_role.dart';
-import 'permission_registry.dart';
 
 /// Service for checking user permissions across all modules.
 abstract class PermissionService {

@@ -6,7 +6,6 @@ import 'package:elyf_groupe_app/features/gaz/application/providers.dart' show ga
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import '../../../domain/entities/gas_sale.dart';
-import '../../../domain/services/gaz_report_calculation_service.dart';
 import 'sales_report_helpers.dart';
 
 /// Statistiques des ventes au détail.

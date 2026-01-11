@@ -1,3 +1,4 @@
+import 'dart:developer' as developer;
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -8,8 +9,10 @@ import '../../../../../shared/utils/notification_service.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:elyf_groupe_app/core/auth/providers.dart';
+<<<<<<< Current (Your changes)
+=======
 import 'package:elyf_groupe_app/features/administration/application/providers.dart';
-import 'package:elyf_groupe_app/core/auth/providers.dart';
+>>>>>>> Incoming (Background Agent changes)
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -128,10 +131,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
       if (!mounted) return;
 
-      // Rafraîchir les providers
-      ref.invalidate(currentUserProvider);
-      ref.invalidate(currentUserIdProvider);
-      ref.invalidate(usersProvider); // Rafraîchir la liste des utilisateurs
+      // Rafraîchir les providers de manière sécurisée
+      // Note: On invalide seulement les providers essentiels pour éviter les erreurs
+      // avec les providers qui dépendent de services non encore initialisés
+      try {
+        ref.invalidate(currentUserProvider);
+        ref.invalidate(currentUserIdProvider);
+        // Ne pas invalider usersProvider ici pour éviter les erreurs d'initialisation
+        // Il sera rafraîchi automatiquement quand l'utilisateur accède à la page admin
+      } catch (e) {
+        developer.log('Error invalidating providers: $e', name: 'login');
+        // Ne pas bloquer la redirection même en cas d'erreur d'invalidation
+      }
 
       // Rediriger selon le rôle de l'utilisateur
       // Admin → /admin, Autre → /modules
@@ -140,13 +151,52 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       } else {
         context.go('/modules');
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       if (!mounted) return;
       
       setState(() => _isLoading = false);
       
+      // Logger l'erreur complète pour le debugging
+      developer.log(
+        'Login error',
+        name: 'login',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      
       // Afficher un message d'erreur plus clair
-      final errorMessage = e.toString().replaceAll('Exception: ', '');
+      String errorMessage = e.toString().replaceAll('Exception: ', '');
+      
+      // Améliorer les messages d'erreur spécifiques
+      if (errorMessage.contains('Problème de connexion réseau') ||
+          errorMessage.contains('mode hors ligne') ||
+          errorMessage.contains('mode offline')) {
+        // Message déjà amélioré par le contrôleur
+        // Ne rien changer
+      } else if (errorMessage.contains('unavailable') ||
+                 errorMessage.contains('unable to resolve') ||
+                 errorMessage.contains('no address associated')) {
+        errorMessage = 'Problème de connexion réseau. L\'application fonctionnera en mode hors ligne. '
+                       'Assurez-vous que votre appareil a accès à Internet pour synchroniser les données.';
+      } else if ((errorMessage.contains('not initialized') || 
+                  errorMessage.contains('notinitialized')) &&
+                 (errorMessage.contains('FirebaseApp') ||
+                  errorMessage.contains('Firebase') ||
+                  errorMessage.contains('firebase core'))) {
+        errorMessage = 'Firebase n\'est pas initialisé. Veuillez redémarrer l\'application complètement (pas juste hot reload).';
+      } else if (errorMessage.contains('network') || 
+                 errorMessage.contains('internet') ||
+                 errorMessage.contains('connection')) {
+        errorMessage = 'Problème de connexion réseau. L\'application fonctionnera en mode hors ligne. '
+                       'Vérifiez votre connexion internet pour la synchronisation.';
+      } else if (errorMessage.contains('user-not-found')) {
+        errorMessage = 'Aucun compte trouvé avec cet email. Vérifiez que l\'utilisateur existe dans Firebase Console.';
+      } else if (errorMessage.contains('wrong-password') ||
+                 errorMessage.contains('invalid-credential')) {
+        errorMessage = 'Mot de passe incorrect.';
+      } else if (errorMessage.contains('invalid-email')) {
+        errorMessage = 'Format d\'email invalide.';
+      }
       
       NotificationService.showError(context, 'Erreur de connexion: $errorMessage');
     }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../domain/entities/contract.dart';
 import '../contract_form_dialog.dart';
 
 /// Actions du dialog de détails de contrat.
@@ -10,7 +11,7 @@ class ContractDetailActions extends ConsumerWidget {
     this.onDelete,
   });
 
-  final contract;
+  final Contract contract;
   final VoidCallback? onDelete;
 
   @override

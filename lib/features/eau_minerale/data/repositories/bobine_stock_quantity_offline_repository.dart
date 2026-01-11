@@ -1,12 +1,8 @@
 import 'dart:convert';
 import 'dart:developer' as developer;
 
-import '../../../../core/errors/app_exceptions.dart';
 import '../../../../core/errors/error_handler.dart';
-import '../../../../core/offline/connectivity_service.dart';
-import '../../../../core/offline/drift_service.dart';
 import '../../../../core/offline/offline_repository.dart';
-import '../../../../core/offline/sync_manager.dart';
 import '../../domain/entities/bobine_stock.dart';
 import '../../domain/entities/bobine_stock_movement.dart';
 import '../../domain/repositories/bobine_stock_quantity_repository.dart';
@@ -146,13 +142,14 @@ class BobineStockQuantityOfflineRepository extends OfflineRepository<BobineStock
       enterpriseId: enterpriseId,
       moduleType: 'eau_minerale',
       dataJson: jsonEncode(map),
-      updatedAt: entity.updatedAt ?? now,
+      localUpdatedAt: entity.updatedAt ?? now,
     );
   }
 
   @override
-  Future<void> deleteFromLocal(String localId) async {
-    await driftService.records.delete(
+  Future<void> deleteFromLocal(BobineStock entity) async {
+    final localId = getLocalId(entity);
+    await driftService.records.deleteByLocalId(
       collectionName: collectionName,
       localId: localId,
       enterpriseId: enterpriseId,
@@ -161,9 +158,39 @@ class BobineStockQuantityOfflineRepository extends OfflineRepository<BobineStock
   }
 
   @override
-  Future<List<BobineStock>> fetchFromLocal() async {
+  Future<BobineStock?> getByLocalId(String localId) async {
     try {
-      final records = await driftService.records.query(
+      final record = await driftService.records.findByLocalId(
+        collectionName: collectionName,
+        localId: localId,
+        enterpriseId: enterpriseId,
+        moduleType: 'eau_minerale',
+      );
+
+      if (record == null) return null;
+
+      final map = jsonDecode(record.dataJson) as Map<String, dynamic>;
+      map['localId'] = record.localId;
+      if (record.remoteId != null) {
+        map['id'] = record.remoteId;
+      }
+      return fromMap(map);
+    } catch (e, stackTrace) {
+      developer.log(
+        'Error getting bobine stock by local ID',
+        name: 'BobineStockQuantityOfflineRepository',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      throw appException;
+    }
+  }
+
+  @override
+  Future<List<BobineStock>> getAllForEnterprise(String enterpriseId) async {
+    try {
+      final records = await driftService.records.listForEnterprise(
         collectionName: collectionName,
         enterpriseId: enterpriseId,
         moduleType: 'eau_minerale',
@@ -184,39 +211,13 @@ class BobineStockQuantityOfflineRepository extends OfflineRepository<BobineStock
         error: e,
         stackTrace: stackTrace,
       );
-      ErrorHandler.handleError(e);
-      rethrow;
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      throw appException;
     }
   }
 
-  @override
   Future<BobineStock?> getFromLocal(String localId) async {
-    try {
-      final record = await driftService.records.get(
-        collectionName: collectionName,
-        localId: localId,
-        enterpriseId: enterpriseId,
-        moduleType: 'eau_minerale',
-      );
-
-      if (record == null) return null;
-
-      final map = jsonDecode(record.dataJson) as Map<String, dynamic>;
-      map['localId'] = record.localId;
-      if (record.remoteId != null) {
-        map['id'] = record.remoteId;
-      }
-      return fromMap(map);
-    } catch (e, stackTrace) {
-      developer.log(
-        'Error getting bobine stock from local',
-        name: 'BobineStockQuantityOfflineRepository',
-        error: e,
-        stackTrace: stackTrace,
-      );
-      ErrorHandler.handleError(e);
-      rethrow;
-    }
+    return await getByLocalId(localId);
   }
 
   // Implementation of BobineStockQuantityRepository interface
@@ -224,7 +225,7 @@ class BobineStockQuantityOfflineRepository extends OfflineRepository<BobineStock
   @override
   Future<List<BobineStock>> fetchAll() async {
     try {
-      return await fetchFromLocal();
+      return await getAllForEnterprise(enterpriseId);
     } catch (e, stackTrace) {
       developer.log(
         'Error fetching all bobine stocks',
@@ -232,19 +233,19 @@ class BobineStockQuantityOfflineRepository extends OfflineRepository<BobineStock
         error: e,
         stackTrace: stackTrace,
       );
-      ErrorHandler.handleError(e);
-      rethrow;
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      throw appException;
     }
   }
 
   @override
   Future<BobineStock?> fetchById(String id) async {
     try {
-      final allStocks = await fetchFromLocal();
+      final allStocks = await getAllForEnterprise(enterpriseId);
       try {
         return allStocks.firstWhere((stock) => stock.id == id);
       } catch (_) {
-        return await getFromLocal(id);
+        return await getByLocalId(id);
       }
     } catch (e) {
       return null;
@@ -254,7 +255,7 @@ class BobineStockQuantityOfflineRepository extends OfflineRepository<BobineStock
   @override
   Future<BobineStock?> fetchByType(String type) async {
     try {
-      final allStocks = await fetchFromLocal();
+      final allStocks = await getAllForEnterprise(enterpriseId);
       try {
         return allStocks.firstWhere((stock) => stock.type == type);
       } catch (_) {
@@ -267,18 +268,18 @@ class BobineStockQuantityOfflineRepository extends OfflineRepository<BobineStock
         error: e,
         stackTrace: stackTrace,
       );
-      ErrorHandler.handleError(e);
-      rethrow;
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      throw appException;
     }
   }
 
   @override
-  Future<BobineStock> save(BobineStock stock) async {
+  Future<BobineStock> save(BobineStock entity) async {
     try {
       final now = DateTime.now();
-      final updatedStock = stock.copyWith(
+      final updatedStock = entity.copyWith(
         updatedAt: now,
-        createdAt: stock.createdAt ?? now,
+        createdAt: entity.createdAt ?? now,
       );
       await saveToLocal(updatedStock);
       
@@ -311,8 +312,8 @@ class BobineStockQuantityOfflineRepository extends OfflineRepository<BobineStock
         error: e,
         stackTrace: stackTrace,
       );
-      ErrorHandler.handleError(e);
-      rethrow;
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      throw appException;
     }
   }
 
@@ -334,7 +335,7 @@ class BobineStockQuantityOfflineRepository extends OfflineRepository<BobineStock
         enterpriseId: enterpriseId,
         moduleType: 'eau_minerale',
         dataJson: jsonEncode(map),
-        updatedAt: movement.createdAt ?? now,
+        localUpdatedAt: movement.createdAt ?? now,
       );
 
       // Queue sync operation
@@ -404,8 +405,8 @@ class BobineStockQuantityOfflineRepository extends OfflineRepository<BobineStock
         error: e,
         stackTrace: stackTrace,
       );
-      ErrorHandler.handleError(e);
-      rethrow;
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      throw appException;
     }
   }
 
@@ -416,7 +417,7 @@ class BobineStockQuantityOfflineRepository extends OfflineRepository<BobineStock
     DateTime? endDate,
   }) async {
     try {
-      final records = await driftService.records.query(
+      final records = await driftService.records.listForEnterprise(
         collectionName: movementsCollectionName,
         enterpriseId: enterpriseId,
         moduleType: 'eau_minerale',
@@ -459,15 +460,15 @@ class BobineStockQuantityOfflineRepository extends OfflineRepository<BobineStock
         error: e,
         stackTrace: stackTrace,
       );
-      ErrorHandler.handleError(e);
-      rethrow;
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      throw appException;
     }
   }
 
   @override
   Future<List<BobineStock>> fetchLowStockAlerts() async {
     try {
-      final allStocks = await fetchFromLocal();
+      final allStocks = await getAllForEnterprise(enterpriseId);
       return allStocks.where((stock) => stock.estStockFaible).toList();
     } catch (e, stackTrace) {
       developer.log(
@@ -476,8 +477,8 @@ class BobineStockQuantityOfflineRepository extends OfflineRepository<BobineStock
         error: e,
         stackTrace: stackTrace,
       );
-      ErrorHandler.handleError(e);
-      rethrow;
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      throw appException;
     }
   }
 }

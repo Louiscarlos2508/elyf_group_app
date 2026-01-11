@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../../domain/entities/production_session.dart';
 import '../../../domain/entities/production_session_status.dart';
-import '../../../domain/entities/sale.dart';
 import '../../widgets/production_sessions/production_sessions_card.dart';
 import '../../widgets/production_sessions/production_sessions_header.dart';
 import '../../widgets/production_sessions/production_sessions_statistics.dart';
@@ -26,7 +25,6 @@ class ProductionSessionsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final sessionsAsync = ref.watch(productionSessionsStateProvider);
-    final theme = Theme.of(context);
 
     return sessionsAsync.when(
         data: (sessions) {

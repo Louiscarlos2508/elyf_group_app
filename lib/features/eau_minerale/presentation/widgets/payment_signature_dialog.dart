@@ -30,7 +30,7 @@ class PaymentSignatureDialog extends StatefulWidget {
 
 class _PaymentSignatureDialogState extends State<PaymentSignatureDialog> {
   final GlobalKey _signatureKey = GlobalKey();
-  List<Offset> _points = [];
+  final List<Offset> _points = [];
   bool _hasSignature = false;
 
   void _addPoint(Offset point) {
@@ -67,6 +67,7 @@ class _PaymentSignatureDialogState extends State<PaymentSignatureDialog> {
     }
 
     final signature = await _captureSignature();
+    if (!mounted) return;
     if (signature != null) {
       widget.onPaid(signature);
     } else {

@@ -1,10 +1,10 @@
 import 'dart:convert';
 import 'dart:developer' as developer;
 
-import '../../../../core/errors/app_exceptions.dart';
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/offline/connectivity_service.dart';
 import '../../../../core/offline/drift_service.dart';
+import '../../../../core/offline/offline_repository.dart';
 import '../../../../core/offline/sync_manager.dart';
 import '../../domain/entities/cylinder.dart';
 import '../../domain/entities/gas_sale.dart';
@@ -186,11 +186,10 @@ class GasOfflineRepository implements GasRepository {
       );
 
       // Sync automatique
-      await syncManager.enqueueOperation(
+      await syncManager.queueCreate(
         collectionName: _cylindersCollection,
-        documentId: localId,
-        operationType: 'create',
-        payload: map,
+        localId: localId,
+        data: map,
         enterpriseId: enterpriseId,
       );
     } catch (error, stackTrace) {
@@ -226,11 +225,11 @@ class GasOfflineRepository implements GasRepository {
       );
 
       // Sync automatique
-      await syncManager.enqueueOperation(
+      await syncManager.queueUpdate(
         collectionName: _cylindersCollection,
-        documentId: remoteId ?? localId,
-        operationType: 'update',
-        payload: map,
+        localId: localId,
+        remoteId: remoteId ?? localId,
+        data: map,
         enterpriseId: enterpriseId,
       );
     } catch (error, stackTrace) {
@@ -273,11 +272,10 @@ class GasOfflineRepository implements GasRepository {
       }
 
       // Sync automatique
-      await syncManager.enqueueOperation(
+      await syncManager.queueDelete(
         collectionName: _cylindersCollection,
-        documentId: remoteId ?? localId,
-        operationType: 'delete',
-        payload: {},
+        localId: localId,
+        remoteId: remoteId ?? localId,
         enterpriseId: enterpriseId,
       );
     } catch (error, stackTrace) {
@@ -400,11 +398,10 @@ class GasOfflineRepository implements GasRepository {
       );
 
       // Sync automatique
-      await syncManager.enqueueOperation(
+      await syncManager.queueCreate(
         collectionName: _salesCollection,
-        documentId: localId,
-        operationType: 'create',
-        payload: map,
+        localId: localId,
+        data: map,
         enterpriseId: enterpriseId,
       );
     } catch (error, stackTrace) {
@@ -440,11 +437,11 @@ class GasOfflineRepository implements GasRepository {
       );
 
       // Sync automatique
-      await syncManager.enqueueOperation(
+      await syncManager.queueUpdate(
         collectionName: _salesCollection,
-        documentId: remoteId ?? localId,
-        operationType: 'update',
-        payload: map,
+        localId: localId,
+        remoteId: remoteId ?? localId,
+        data: map,
         enterpriseId: enterpriseId,
       );
     } catch (error, stackTrace) {
@@ -487,11 +484,10 @@ class GasOfflineRepository implements GasRepository {
       }
 
       // Sync automatique
-      await syncManager.enqueueOperation(
+      await syncManager.queueDelete(
         collectionName: _salesCollection,
-        documentId: remoteId ?? localId,
-        operationType: 'delete',
-        payload: {},
+        localId: localId,
+        remoteId: remoteId ?? localId,
         enterpriseId: enterpriseId,
       );
     } catch (error, stackTrace) {

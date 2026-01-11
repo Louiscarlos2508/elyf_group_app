@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:elyf_groupe_app/shared/utils/date_formatter.dart';
 
 /// Section for selecting payment date and displaying period.
 class MonthlySalaryPaymentDateSection extends StatelessWidget {
@@ -12,10 +13,6 @@ class MonthlySalaryPaymentDateSection extends StatelessWidget {
   final DateTime paymentDate;
   final String period;
   final ValueChanged<DateTime> onDateSelected;
-
-  String _formatDate(DateTime date) {
-    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
-  }
 
   Future<void> _selectDate(BuildContext context) async {
     final picked = await showDatePicker(

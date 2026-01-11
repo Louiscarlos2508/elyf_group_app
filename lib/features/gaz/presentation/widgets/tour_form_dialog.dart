@@ -2,14 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
-import '../../../../../shared/utils/notification_service.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/tour.dart';
 import 'tour_form/tour_date_picker.dart';
 import 'tour_form/tour_fee_input.dart';
 import 'tour_form/tour_form_header.dart';
-import 'package:elyf_groupe_app/shared/presentation/widgets/form_dialog.dart';
-import 'package:elyf_groupe_app/shared/utils/form_helper_mixin.dart';
 
 /// Formulaire de création d'un nouveau tour.
 class TourFormDialog extends ConsumerStatefulWidget {
@@ -71,8 +68,6 @@ class _TourFormDialogState extends ConsumerState<TourFormDialog>
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     // TODO: Récupérer enterpriseId depuis le contexte/tenant
     _enterpriseId ??= 'default_enterprise';
 

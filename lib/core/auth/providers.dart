@@ -1,4 +1,5 @@
 /// Barrel file pour exporter tous les providers et controllers d'authentification.
+library;
 
 // Providers du service d'authentification
 export 'services/auth_service.dart' show
@@ -8,6 +9,9 @@ export 'services/auth_service.dart' show
     isAuthenticatedProvider,
     currentUserProvider,
     isAdminProvider;
+
+// Providers pour le profil utilisateur
+export 'providers/user_profile_provider.dart' show currentUserProfileProvider;
 
 // Controller d'authentification
 export 'controllers/auth_controller.dart' show

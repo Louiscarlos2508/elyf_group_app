@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:elyf_group_app/features/eau_minerale/domain/services/report_calculation_service.dart';
-import 'package:elyf_group_app/features/eau_minerale/domain/entities/sale.dart';
-import 'package:elyf_group_app/features/eau_minerale/domain/entities/expense.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/services/report_calculation_service.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/sale.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/expense.dart';
 
 void main() {
   group('ReportCalculationService', () {
@@ -35,6 +35,9 @@ void main() {
             amountPaid: 2000,
             customerId: 'c1',
             customerName: 'Customer 1',
+            customerPhone: '123456789',
+            status: SaleStatus.fullyPaid,
+            createdBy: 'user1',
           ),
           Sale(
             id: '2',
@@ -47,6 +50,9 @@ void main() {
             amountPaid: 1500,
             customerId: 'c2',
             customerName: 'Customer 2',
+            customerPhone: '987654321',
+            status: SaleStatus.fullyPaid,
+            createdBy: 'user1',
           ),
         ];
 
@@ -76,16 +82,16 @@ void main() {
         final expenses = [
           Expense(
             id: 'e1',
-            label: 'Expense 1',
-            amountCfa: 5000,
-            category: ExpenseCategory.other,
+            type: 'other',
+            amount: 5000,
+            description: 'Expense 1',
             date: DateTime(2024, 1, 15),
           ),
           Expense(
             id: 'e2',
-            label: 'Expense 2',
-            amountCfa: 3000,
-            category: ExpenseCategory.other,
+            type: 'other',
+            amount: 3000,
+            description: 'Expense 2',
             date: DateTime(2024, 2, 15),
           ),
         ];
@@ -120,6 +126,9 @@ void main() {
             amountPaid: 2000,
             customerId: 'c1',
             customerName: 'Customer 1',
+            customerPhone: '123456789',
+            status: SaleStatus.fullyPaid,
+            createdBy: 'user1',
           ),
           Sale(
             id: '2',
@@ -132,6 +141,9 @@ void main() {
             amountPaid: 1500,
             customerId: 'c2',
             customerName: 'Customer 2',
+            customerPhone: '987654321',
+            status: SaleStatus.fullyPaid,
+            createdBy: 'user1',
           ),
         ];
 
@@ -159,6 +171,9 @@ void main() {
             amountPaid: 2000,
             customerId: 'c1',
             customerName: 'Customer 1',
+            customerPhone: '123456789',
+            status: SaleStatus.fullyPaid,
+            createdBy: 'user1',
           ),
           Sale(
             id: '2',
@@ -171,6 +186,9 @@ void main() {
             amountPaid: 1000,
             customerId: 'c2',
             customerName: 'Customer 2',
+            customerPhone: '987654321',
+            status: SaleStatus.validated,
+            createdBy: 'user1',
           ),
         ];
 
@@ -189,16 +207,16 @@ void main() {
         final expenses = [
           Expense(
             id: 'e1',
-            label: 'Expense 1',
-            amountCfa: 5000,
-            category: ExpenseCategory.other,
+            type: 'other',
+            amount: 5000,
+            description: 'Expense 1',
             date: DateTime.now(),
           ),
           Expense(
             id: 'e2',
-            label: 'Expense 2',
-            amountCfa: 3000,
-            category: ExpenseCategory.other,
+            type: 'other',
+            amount: 3000,
+            description: 'Expense 2',
             date: DateTime.now(),
           ),
         ];
@@ -210,29 +228,17 @@ void main() {
 
     group('calculateProfit', () {
       test('should calculate profit correctly', () {
-        final result = service.calculateProfit(
-          totalRevenue: 10000,
-          totalExpenses: 5000,
-        );
-
+        final result = service.calculateProfit(10000, 5000);
         expect(result, equals(5000));
       });
 
       test('should handle negative profit', () {
-        final result = service.calculateProfit(
-          totalRevenue: 5000,
-          totalExpenses: 10000,
-        );
-
+        final result = service.calculateProfit(5000, 10000);
         expect(result, equals(-5000));
       });
 
       test('should handle zero profit', () {
-        final result = service.calculateProfit(
-          totalRevenue: 10000,
-          totalExpenses: 10000,
-        );
-
+        final result = service.calculateProfit(10000, 10000);
         expect(result, equals(0));
       });
     });

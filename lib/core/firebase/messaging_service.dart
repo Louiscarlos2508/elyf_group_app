@@ -18,11 +18,12 @@ class MessagingService {
 
   /// Initialise le service de messaging.
   ///
-  /// Configure les handlers pour les notifications en foreground et background.
+  /// Configure les handlers pour les notifications en foreground.
+  /// Note: Le handler background doit être enregistré dans main.dart avant runApp.
   Future<void> initialize({
     required void Function(RemoteMessage) onMessage,
     required void Function(RemoteMessage) onMessageOpenedApp,
-    required void Function(RemoteMessage?) onBackgroundMessage,
+    required void Function(RemoteMessage) onBackgroundMessage,
   }) async {
     // Demander la permission pour les notifications
     final settings = await messaging.requestPermission(
@@ -41,12 +42,9 @@ class MessagingService {
     );
 
     // Configurer les handlers
+    // Note: onBackgroundMessage doit être enregistré dans main.dart AVANT runApp
     FirebaseMessaging.onMessage.listen(onMessage);
     FirebaseMessaging.onMessageOpenedApp.listen(onMessageOpenedApp);
-
-    // Handler pour les notifications reçues quand l'app est en background
-    // Note: Cette fonction doit être top-level ou static
-    FirebaseMessaging.onBackgroundMessage(onBackgroundMessage);
 
     // Récupérer le token initial
     final token = await getToken();
@@ -188,12 +186,12 @@ class MessagingService {
     required String channelDescription,
     String? sound,
     bool enableVibration = true,
-    AndroidNotificationImportance importance =
-        AndroidNotificationImportance.defaultImportance,
   }) {
     // Note: La configuration du canal Android se fait généralement dans
-    // le code natif Android. Cette méthode peut être utilisée pour
-    // documenter ou préparer la configuration.
+    // le code natif Android (MainActivity.kt) ou via flutter_local_notifications.
+    // Cette méthode peut être utilisée pour documenter ou préparer la configuration.
+    // Pour configurer l'importance des notifications, utilisez flutter_local_notifications
+    // avec Importance enum, ou configurez directement dans AndroidManifest.xml.
     developer.log(
       'Android notification channel configured: $channelId',
       name: 'messaging.service',

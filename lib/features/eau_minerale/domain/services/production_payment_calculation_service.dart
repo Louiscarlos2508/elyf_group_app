@@ -68,10 +68,7 @@ class ProductionPaymentCalculationService {
 
     // Sinon, calculer le total à partir du prix par jour et des jours
     if (pricePerDay > 0 && daysWorked > 0) {
-      final calculatedTotal = calculateTotalAmount(
-        pricePerDay: pricePerDay,
-        daysWorked: daysWorked,
-      );
+      // Le total sera calculé automatiquement via calculateTotalAmount
       return person.copyWith(
         pricePerDay: pricePerDay,
         daysWorked: daysWorked,

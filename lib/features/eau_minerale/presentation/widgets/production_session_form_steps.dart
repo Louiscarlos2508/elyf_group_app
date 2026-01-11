@@ -1,21 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../domain/entities/bobine_usage.dart';
-import '../../domain/entities/machine.dart';
 import '../../domain/entities/production_day.dart';
 import '../../domain/entities/production_session.dart';
-import '../../domain/entities/production_session_status.dart';
 import '../../domain/services/production_session_builder.dart';
 import '../../domain/services/production_session_status_calculator.dart';
 import '../../domain/services/production_session_validation_service.dart';
-import 'bobine_installation_form.dart';
-import 'bobine_usage_form_field.dart' show bobineStocksDisponiblesProvider;
-import 'daily_personnel_form.dart';
-import 'machine_breakdown_dialog.dart';
-import 'machine_selector_field.dart';
 import 'production_session_form_steps/production_session_form_actions.dart';
 import 'production_session_form_steps/production_session_form_dialogs.dart';
 import 'production_session_form_steps/production_session_form_helpers.dart';
@@ -129,6 +121,7 @@ class ProductionSessionFormStepsState
     
     // Validation : index compteur initial requis
     final meterType = await ref.read(electricityMeterTypeProvider.future);
+    if (!mounted) return;
     final meterIndexError = ProductionSessionValidationService.validateMeterIndex(
       indexText: _indexCompteurInitialController.text,
       meterLabel: meterType.initialLabel,

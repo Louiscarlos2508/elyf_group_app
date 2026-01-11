@@ -27,7 +27,6 @@ class SalaryHistoryItem extends StatelessWidget {
   }
 
   Color _getColor(BuildContext context) {
-    final theme = Theme.of(context);
     switch (payment.type) {
       case SalaryPaymentType.monthly:
         return Colors.blue;

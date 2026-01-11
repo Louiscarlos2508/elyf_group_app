@@ -6,7 +6,6 @@ import '../../../domain/entities/production_session.dart';
 import '../../widgets/production_tracking/production_tracking_progress.dart';
 import '../../widgets/production_tracking/production_tracking_session_info.dart';
 import '../../widgets/production_tracking/tracking_step_content.dart';
-import 'production_session_detail_screen.dart' show productionSessionDetailProvider;
 import 'production_session_form_screen.dart';
 
 /// Écran de suivi de production en temps réel avec progression dynamique.
@@ -76,7 +75,6 @@ class _ProductionTrackingContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final status = session.effectiveStatus;
 
     return CustomScrollView(

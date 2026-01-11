@@ -15,6 +15,7 @@ abstract class AuditService {
     Map<String, dynamic>? newValue,
     String? moduleId,
     String? enterpriseId,
+    String? userDisplayName,
   });
 
   /// Get audit logs for an entity

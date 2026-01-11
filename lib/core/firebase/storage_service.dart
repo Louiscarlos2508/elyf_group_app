@@ -145,11 +145,18 @@ class StorageService {
 
       final ref = storage.ref(storagePath);
 
+      Uint8List? data;
       if (maxSizeBytes != null) {
-        return await ref.getData(maxSizeBytes);
+        data = await ref.getData(maxSizeBytes);
       } else {
-        return await ref.getData();
+        data = await ref.getData();
       }
+      
+      if (data == null) {
+        throw Exception('Failed to download file: data is null');
+      }
+      
+      return data;
     } catch (e, stackTrace) {
       developer.log(
         'Error downloading file from Storage',
@@ -281,9 +288,11 @@ class StorageService {
       final path = pathParts.join('/');
       final ref = storage.ref(path);
 
-      final listResult = await ref.list(
-        maxResults: maxResults,
-      );
+      final listOptions = maxResults != null
+          ? ListOptions(maxResults: maxResults)
+          : null;
+
+      final listResult = await ref.list(listOptions);
 
       return listResult.items;
     } catch (e, stackTrace) {

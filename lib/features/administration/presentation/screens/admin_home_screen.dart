@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
-import '../../../../core/auth/providers.dart' show authControllerProvider, currentUserProvider, currentUserIdProvider;
-import 'package:elyf_groupe_app/shared.dart';
-import '../../../../../shared/utils/notification_service.dart';
+import '../../../../core/auth/providers.dart' show currentUserIdProvider;
+import 'package:elyf_groupe_app/shared.dart' show NavigationSection, ProfileScreen;
+import '../../application/providers.dart' show userControllerProvider, usersProvider;
+import '../../domain/entities/user.dart' show User;
 import '../widgets/lazy_section_builder.dart';
 import 'sections/admin_dashboard_section.dart';
 import 'sections/admin_enterprises_section.dart';
@@ -24,36 +24,57 @@ class AdminHomeScreen extends ConsumerStatefulWidget {
 class _AdminHomeScreenState extends ConsumerState<AdminHomeScreen> {
   int _selectedIndex = 0;
 
-  Future<void> _handleLogout(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Déconnexion'),
-        content: const Text('Êtes-vous sûr de vouloir vous déconnecter ?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Annuler'),
+  void _navigateToProfile(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => Scaffold(
+          appBar: AppBar(
+            title: const Text('Mon Profil'),
           ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: FilledButton.styleFrom(
-              backgroundColor: Colors.red,
-            ),
-            child: const Text('Déconnexion'),
+          body: ProfileScreen(
+            // Utiliser le callback du module administration pour la mise à jour
+            // Cela permet d'utiliser UserController et d'avoir l'audit trail
+            onProfileUpdate: ({
+              required userId,
+              required firstName,
+              required lastName,
+              required username,
+              email,
+              phone,
+            }) async {
+              final currentUserId = ref.read(currentUserIdProvider);
+              if (currentUserId == null || currentUserId != userId) {
+                throw Exception('Utilisateur non connecté ou ID invalide');
+              }
+
+              // Récupérer l'utilisateur actuel
+              final List<User> users = await ref.read(usersProvider.future);
+              final currentUser = users.firstWhere(
+                (u) => u.id == currentUserId,
+                orElse: () => throw Exception('Utilisateur non trouvé'),
+              );
+
+              // Créer l'utilisateur mis à jour
+              final updatedUser = currentUser.copyWith(
+                firstName: firstName,
+                lastName: lastName,
+                username: username,
+                email: email,
+                phone: phone,
+                updatedAt: DateTime.now(),
+              );
+
+              // Utiliser UserController pour la mise à jour (inclut audit trail)
+              await ref.read(userControllerProvider).updateUser(
+                updatedUser,
+                currentUserId: currentUserId,
+                oldUser: currentUser,
+              );
+            },
           ),
-        ],
+        ),
       ),
     );
-
-    if (confirmed == true && context.mounted) {
-      final authController = ref.read(authControllerProvider);
-      await authController.signOut();
-      // Rafraîchir les providers
-      ref.invalidate(currentUserProvider);
-      ref.invalidate(currentUserIdProvider);
-      context.go('/login');
-    }
   }
 
   List<NavigationSection> _buildSections() {
@@ -104,25 +125,10 @@ class _AdminHomeScreenState extends ConsumerState<AdminHomeScreen> {
         title: const Text('Administration • ELYF Groupe'),
         centerTitle: true,
         actions: [
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert),
-            onSelected: (value) {
-              if (value == 'logout') {
-                _handleLogout(context);
-              }
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'logout',
-                child: Row(
-                  children: [
-                    Icon(Icons.logout, color: Colors.red),
-                    SizedBox(width: 8),
-                    Text('Se déconnecter'),
-                  ],
-                ),
-              ),
-            ],
+          IconButton(
+            icon: const Icon(Icons.person_outline),
+            onPressed: () => _navigateToProfile(context),
+            tooltip: 'Mon Profil',
           ),
         ],
       ),

@@ -254,7 +254,7 @@ class ProductionSessionController {
       // Récupérer le stock pour obtenir l'ID
       final stock = await _bobineStockQuantityRepository.fetchByType(bobineType);
       if (stock == null) {
-        debugPrint('Stock non trouvé pour ${bobineType} - on considère qu\'il n\'y a pas de mouvement');
+        debugPrint('Stock non trouvé pour $bobineType - on considère qu\'il n\'y a pas de mouvement');
         return false;
       }
       
@@ -276,7 +276,7 @@ class ProductionSessionController {
       );
       
       if (mouvementExistant) {
-        debugPrint('Mouvement récent trouvé pour ${bobineType} sur machine ${machineId} (${timeWindowMinutes} min)');
+        debugPrint('Mouvement récent trouvé pour $bobineType sur machine $machineId ($timeWindowMinutes min)');
       }
       
       return mouvementExistant;

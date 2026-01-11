@@ -2,18 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:open_file/open_file.dart';
 
-import 'package:elyf_groupe_app/core.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../../../shared/domain/entities/payment_method.dart';
-import '../../../../../shared/utils/notification_service.dart';
 import '../../../../core/pdf/unified_payment_pdf_service.dart';
 import 'package:elyf_groupe_app/features/immobilier/application/providers.dart';
 import '../../domain/entities/contract.dart';
 import '../../domain/entities/payment.dart';
 import 'payment_form_fields.dart';
-import 'package:elyf_groupe_app/shared/presentation/widgets/form_dialog.dart';
-import 'package:elyf_groupe_app/shared/utils/validators.dart';
-import 'package:elyf_groupe_app/shared/utils/form_helper_mixin.dart';
 
 class PaymentFormDialog extends ConsumerStatefulWidget {
   const PaymentFormDialog({
@@ -95,7 +90,7 @@ class _PaymentFormDialogState extends ConsumerState<PaymentFormDialog>
       return;
     }
 
-    final success = await handleFormSubmit(
+    await handleFormSubmit(
       context: context,
       formKey: _formKey,
       onLoadingChanged: (isLoading) => setState(() => _isSaving = isLoading),

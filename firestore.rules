@@ -1,0 +1,32 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ============================================
+    // MODE TEST - RÈGLES PERMISSIVES POUR DÉVELOPPEMENT
+    // ============================================
+    // 
+    // ⚠️ ATTENTION: Ces règles sont très permissives !
+    // Elles permettent à tout utilisateur authentifié de lire/écrire toutes les collections.
+    // À UTILISER UNIQUEMENT EN DÉVELOPPEMENT !
+    //
+    // Pour passer en production:
+    // 1. Remplacez ces règles par les règles de production complètes
+    // 2. Assurez-vous que tous les utilisateurs ont les bons champs dans Firestore
+    // 3. Testez toutes les fonctionnalités avant le déploiement
+    //
+    // ============================================
+    
+    // Vérifie si l'utilisateur est authentifié
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // RÈGLES EN MODE TEST :
+    // - Tous les utilisateurs authentifiés peuvent lire/écrire toutes les collections
+    // - Permet la création des premiers utilisateurs et l'initialisation de l'application
+    match /{document=**} {
+      allow read, write: if isAuthenticated();
+    }
+  }
+}

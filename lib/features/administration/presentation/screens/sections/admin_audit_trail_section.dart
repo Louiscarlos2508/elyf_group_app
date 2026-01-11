@@ -45,44 +45,47 @@ class AdminAuditTrailSection extends ConsumerWidget {
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.all(24),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Journal d\'Audit',
-                        style: theme.textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Historique de toutes les actions administratives',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
+                Text(
+                  'Journal d\'Audit',
+                  style: theme.textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-                // Export button
-                logsAsync.when(
-                  data: (logs) => logs.isNotEmpty
-                      ? OutlinedButton.icon(
-                          onPressed: () => _showExportDialog(context, logs),
-                          icon: const Icon(Icons.download),
-                          label: const Text('Exporter'),
-                        )
-                      : const SizedBox.shrink(),
-                  loading: () => const SizedBox.shrink(),
-                  error: (_, __) => const SizedBox.shrink(),
+                const SizedBox(height: 8),
+                Text(
+                  'Historique de toutes les actions administratives',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ],
             ),
           ),
         ),
+        // Export button in separate Sliver to avoid Row constraint issues
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: logsAsync.when(
+                data: (logs) => logs.isNotEmpty
+                    ? OutlinedButton.icon(
+                        onPressed: () => _showExportDialog(context, logs),
+                        icon: const Icon(Icons.download),
+                        label: const Text('Exporter'),
+                      )
+                    : const SizedBox.shrink(),
+                loading: () => const SizedBox.shrink(),
+                error: (_, __) => const SizedBox.shrink(),
+              ),
+            ),
+          ),
+        ),
+        const SliverToBoxAdapter(child: SizedBox(height: 16)),
         logsAsync.when(
           data: (logs) => _buildLogsList(context, logs),
           loading: () => const SliverToBoxAdapter(

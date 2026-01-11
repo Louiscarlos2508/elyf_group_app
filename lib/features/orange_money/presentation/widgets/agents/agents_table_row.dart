@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 import '../../../domain/entities/agent.dart';
 import 'agents_format_helpers.dart';

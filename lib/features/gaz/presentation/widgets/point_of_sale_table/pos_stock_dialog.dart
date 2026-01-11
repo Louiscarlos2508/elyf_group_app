@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import '../../../domain/entities/cylinder.dart';
-import '../../../domain/entities/cylinder_stock.dart';
 import '../../../domain/entities/point_of_sale.dart';
 import '../point_of_sale_stock_card.dart';
 

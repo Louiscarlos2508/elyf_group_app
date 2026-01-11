@@ -3,7 +3,6 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 import '../../features/immobilier/domain/entities/contract.dart';
-import '../../features/immobilier/domain/entities/payment.dart';
 import '../../features/immobilier/domain/entities/property.dart';
 import '../../features/immobilier/domain/entities/tenant.dart';
 import 'base_payment_pdf_service.dart';

@@ -54,7 +54,10 @@ class AuditLogItem extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _AuditInfoRow(label: 'Utilisateur', value: log.userId),
+                  _AuditInfoRow(
+                    label: 'Utilisateur',
+                    value: log.userDisplayName ?? log.userId,
+                  ),
                   if (log.description != null)
                     _AuditInfoRow(label: 'Description', value: log.description!),
                   if (log.moduleId != null)

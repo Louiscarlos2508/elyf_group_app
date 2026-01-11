@@ -2,10 +2,8 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:intl/intl.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../../../shared/utils/notification_service.dart';
-import 'package:elyf_groupe_app/shared/presentation/widgets/form_dialog.dart';
 import '../../domain/services/commission_calculation_service.dart';
 /// Dialog for recording a manual commission entry.
 class CommissionFormDialog extends StatefulWidget {

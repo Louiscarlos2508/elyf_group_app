@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../../../../domain/entities/admin_module.dart';
-import '../../../../domain/entities/module_sections_info.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/admin_module.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/module_sections_info.dart';
 import 'package:elyf_groupe_app/core/auth/entities/enterprise_module_user.dart';
+import '../../admin_modules_section.dart' show ModuleStats;
 import 'module_sections_tab.dart';
 import 'module_users_tab.dart';
 import 'module_enterprises_tab.dart';

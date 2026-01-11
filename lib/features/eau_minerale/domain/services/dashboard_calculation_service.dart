@@ -19,7 +19,6 @@ class DashboardCalculationService {
   int calculateTodayCollections(List<Sale> sales) {
     final today = DateTime.now();
     final todayStart = DateTime(today.year, today.month, today.day);
-    final todayEnd = todayStart.add(const Duration(days: 1));
     final todaySales = sales
         .where((s) {
           final saleDate = DateTime(s.date.year, s.date.month, s.date.day);

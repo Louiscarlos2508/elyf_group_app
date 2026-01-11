@@ -50,7 +50,7 @@ class ProductionValidationService {
     if (value == null || value.trim().isEmpty) {
       return 'L\'unité est requise';
     }
-    if (value.trim().length < 1) {
+    if (value.trim().isEmpty) {
       return 'L\'unité doit contenir au moins 1 caractère';
     }
     return null;

@@ -1,9 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:elyf_group_app/features/eau_minerale/domain/services/production_service.dart';
-import 'package:elyf_group_app/features/eau_minerale/domain/entities/production_session.dart';
-import 'package:elyf_group_app/features/eau_minerale/domain/entities/machine.dart';
-import 'package:elyf_group_app/features/eau_minerale/domain/entities/bobine_stock.dart';
-import 'package:elyf_group_app/features/eau_minerale/domain/entities/bobine_usage.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/services/production_service.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/production_session_status.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/bobine_usage.dart';
 
 void main() {
   group('ProductionService', () {

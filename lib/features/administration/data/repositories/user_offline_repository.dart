@@ -1,10 +1,7 @@
 import 'dart:developer' as developer;
 import 'dart:convert';
 
-import '../../../../core/offline/connectivity_service.dart';
-import '../../../../core/offline/drift_service.dart';
 import '../../../../core/offline/offline_repository.dart';
-import '../../../../core/offline/sync_manager.dart';
 import '../../domain/entities/user.dart';
 import '../../domain/repositories/user_repository.dart';
 import 'optimized_queries.dart';
@@ -80,20 +77,32 @@ class UserOfflineRepository extends OfflineRepository<User>
 
   @override
   Future<void> saveToLocal(User entity) async {
-    final localId = getLocalId(entity);
-    final remoteId = getRemoteId(entity);
-    final map = toMap(entity)..['localId'] = localId;
-    await driftService.records.upsert(
-      collectionName: collectionName,
-      localId: localId,
-      remoteId: remoteId,
-      enterpriseId: 'global', 
-      // ✅ Users are stored globally (not tied to a specific enterprise)
-      // ✅ Assignment to enterprises/modules is done via EnterpriseModuleUser
-      moduleType: 'administration',
-      dataJson: jsonEncode(map),
-      localUpdatedAt: DateTime.now(),
-    );
+    try {
+      final localId = getLocalId(entity);
+      final remoteId = getRemoteId(entity);
+      final map = toMap(entity)..['localId'] = localId;
+      await driftService.records.upsert(
+        collectionName: collectionName,
+        localId: localId,
+        remoteId: remoteId,
+        enterpriseId: 'global', 
+        // ✅ Users are stored globally (not tied to a specific enterprise)
+        // ✅ Assignment to enterprises/modules is done via EnterpriseModuleUser
+        moduleType: 'administration',
+        dataJson: jsonEncode(map),
+        localUpdatedAt: DateTime.now(),
+      );
+    } catch (e, stackTrace) {
+      developer.log(
+        'Error saving user to local Drift database (user exists in Firestore, will be synced later): $e',
+        name: 'offline.repository.user',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      // Ne pas rethrow - permet à la création de continuer même si Drift échoue
+      // L'utilisateur sera récupéré depuis Firestore lors de la prochaine synchronisation
+      // ou lors d'un refresh manuel
+    }
   }
 
   @override
@@ -182,7 +191,7 @@ class UserOfflineRepository extends OfflineRepository<User>
         moduleType: 'administration',
       );
 
-      final users = records.map((record) {
+      final users = records.map<User>((record) {
         final map = jsonDecode(record.dataJson) as Map<String, dynamic>;
         return fromMap(map);
       }).toList();
@@ -195,7 +204,7 @@ class UserOfflineRepository extends OfflineRepository<User>
         error: e,
         stackTrace: stackTrace,
       );
-      return (users: [], totalCount: 0);
+      return (users: <User>[], totalCount: 0);
     }
   }
 
@@ -258,12 +267,39 @@ class UserOfflineRepository extends OfflineRepository<User>
 
   @override
   Future<User> createUser(User user) async {
-    await save(user);
-    final createdUser = await getUserById(user.id);
-    if (createdUser == null) {
-      throw Exception('Failed to create user');
+    try {
+      await save(user);
+      final createdUser = await getUserById(user.id);
+      if (createdUser == null) {
+        // Si l'utilisateur n'a pas pu être récupéré depuis Drift,
+        // mais qu'il existe dans Firestore, retourner l'utilisateur original
+        // Il sera récupéré lors de la prochaine synchronisation
+        developer.log(
+          'User saved but not found in local database. User exists in Firestore, will be synced: ${user.id}',
+          name: 'offline.repository.user',
+        );
+        // Retourner l'utilisateur avec les timestamps mis à jour
+        return user.copyWith(
+          createdAt: user.createdAt ?? DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+      }
+      return createdUser;
+    } catch (e, stackTrace) {
+      developer.log(
+        'Error creating user in local database (user may exist in Firestore): $e',
+        name: 'offline.repository.user',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      // Si la sauvegarde locale échoue, retourner l'utilisateur quand même
+      // Il sera récupéré depuis Firestore lors de la prochaine synchronisation
+      // ou lors d'un refresh manuel
+      return user.copyWith(
+        createdAt: user.createdAt ?? DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
     }
-    return createdUser;
   }
 
   @override

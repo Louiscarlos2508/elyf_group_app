@@ -1,4 +1,3 @@
-import '../../entities/contract.dart';
 import '../../entities/property.dart';
 import '../../entities/tenant.dart';
 

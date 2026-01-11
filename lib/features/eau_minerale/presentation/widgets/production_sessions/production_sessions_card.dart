@@ -1,14 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../../app/theme/app_theme.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../../domain/entities/production_session.dart';
-import '../../../domain/entities/production_session_status.dart';
-import '../../../domain/services/production_margin_calculator.dart';
 import '../../screens/sections/production_session_detail_screen.dart';
-import '../../screens/sections/production_session_form_screen.dart';
-import '../../screens/sections/production_tracking_screen.dart';
 import 'production_sessions_card_components.dart';
 import 'production_sessions_helpers.dart';
 

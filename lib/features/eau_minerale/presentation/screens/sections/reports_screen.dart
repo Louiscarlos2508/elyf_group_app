@@ -3,8 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:open_file/open_file.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
-import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
-import 'package:elyf_groupe_app/core.dart';
 import 'package:elyf_groupe_app/core/pdf/eau_minerale_report_pdf_service.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../../domain/entities/report_period.dart';
@@ -19,7 +17,6 @@ import '../../widgets/salary_report_content.dart';
 import '../../widgets/sales_report_content.dart';
 import '../../widgets/trends_report_content.dart';
 import '../../widgets/weekly_monthly_report_content.dart';
-import 'package:elyf_groupe_app/shared/presentation/widgets/refresh_button.dart';
 
 class ReportsScreen extends ConsumerStatefulWidget {
   const ReportsScreen({super.key});

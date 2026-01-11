@@ -1,5 +1,4 @@
 import '../entities/cylinder.dart';
-import '../entities/cylinder_stock.dart';
 import '../repositories/cylinder_stock_repository.dart';
 
 /// Service de gestion des stocks avec logique métier.

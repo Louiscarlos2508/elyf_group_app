@@ -16,7 +16,7 @@ class ExpenseCategoryInput extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DropdownButtonFormField<ExpenseCategory>(
-      value: selectedCategory,
+      initialValue: selectedCategory,
       decoration: const InputDecoration(
         labelText: 'Catégorie',
         prefixIcon: Icon(Icons.category),

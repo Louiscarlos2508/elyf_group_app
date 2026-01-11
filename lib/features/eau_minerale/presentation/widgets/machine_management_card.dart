@@ -6,7 +6,6 @@ import '../../../../../core/permissions/modules/eau_minerale_permissions.dart';
 import '../../../../../shared/utils/notification_service.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../domain/entities/machine.dart';
-import 'package:elyf_groupe_app/core.dart';
 import 'centralized_permission_guard.dart';
 import 'machine_form_dialog.dart';
 import 'machine_list_item.dart';

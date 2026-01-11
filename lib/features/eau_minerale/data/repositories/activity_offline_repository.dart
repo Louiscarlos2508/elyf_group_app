@@ -33,13 +33,15 @@ class ActivityOfflineRepository implements ActivityRepository {
           s.date.isAfter(startOfDay.subtract(const Duration(seconds: 1))) &&
           s.date.isBefore(endOfDay.add(const Duration(seconds: 1)))).toList();
 
-      final sessions =
-          await productionSessionRepository.getSessionsByDate(today);
+      final sessions = await productionSessionRepository.fetchSessions(
+        startDate: startOfDay,
+        endDate: endOfDay,
+      );
 
       final totalSales =
-          todaySales.fold<int>(0, (sum, s) => sum + s.totalAmount);
+          todaySales.fold<int>(0, (sum, s) => sum + s.totalPrice);
       final totalProduction = sessions.fold<int>(
-          0, (sum, s) => sum + (s.totalProduced ?? 0));
+          0, (sum, s) => sum + s.quantiteProduite);
       final pendingCredits = await creditRepository.getTotalCredits();
 
       return ActivitySummary(
@@ -70,15 +72,15 @@ class ActivityOfflineRepository implements ActivityRepository {
           s.date.isAfter(startOfMonth.subtract(const Duration(seconds: 1))) &&
           s.date.isBefore(endOfMonth.add(const Duration(seconds: 1)))).toList();
 
-      final sessions = await productionSessionRepository.fetchSessions();
-      final monthlySessions = sessions.where((s) =>
-          s.startDate.isAfter(startOfMonth.subtract(const Duration(seconds: 1))) &&
-          s.startDate.isBefore(endOfMonth.add(const Duration(seconds: 1)))).toList();
+      final sessions = await productionSessionRepository.fetchSessions(
+        startDate: startOfMonth,
+        endDate: endOfMonth,
+      );
 
       final totalSales =
-          monthlySales.fold<int>(0, (sum, s) => sum + s.totalAmount);
+          monthlySales.fold<int>(0, (sum, s) => sum + s.totalPrice);
       final totalProduction =
-          monthlySessions.fold<int>(0, (sum, s) => sum + (s.totalProduced ?? 0));
+          sessions.fold<int>(0, (sum, s) => sum + s.quantiteProduite);
       final pendingCredits = await creditRepository.getTotalCredits();
 
       return ActivitySummary(

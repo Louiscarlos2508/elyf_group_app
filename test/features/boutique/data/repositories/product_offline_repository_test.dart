@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:elyf_group_app/core/offline/connectivity_service.dart';
-import 'package:elyf_group_app/core/offline/drift_service.dart';
-import 'package:elyf_group_app/core/offline/sync_manager.dart';
-import 'package:elyf_group_app/features/boutique/data/repositories/product_offline_repository.dart';
-import 'package:elyf_group_app/features/boutique/domain/entities/product.dart';
+import 'package:elyf_groupe_app/core/offline/connectivity_service.dart';
+import 'package:elyf_groupe_app/core/offline/drift_service.dart';
+import 'package:elyf_groupe_app/core/offline/sync_manager.dart';
+import 'package:elyf_groupe_app/features/boutique/data/repositories/product_offline_repository.dart';
+import 'package:elyf_groupe_app/features/boutique/domain/entities/product.dart';
 
 void main() {
   group('ProductOfflineRepository', () {

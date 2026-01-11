@@ -7,8 +7,6 @@ import '../../domain/entities/machine.dart';
 import '../../domain/entities/production_event.dart';
 import '../../domain/entities/production_session.dart';
 import 'package:elyf_groupe_app/shared.dart';
-import '../../../../../shared/utils/notification_service.dart';
-import '../../../../../shared/utils/date_formatter.dart';
 /// Dialog pour signaler une panne de machine et retirer la bobine.
 class MachineBreakdownDialog extends ConsumerStatefulWidget {
   const MachineBreakdownDialog({

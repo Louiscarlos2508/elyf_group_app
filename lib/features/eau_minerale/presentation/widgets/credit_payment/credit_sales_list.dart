@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
-import 'package:elyf_groupe_app/shared/utils/date_formatter.dart';
-import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import '../../../domain/entities/sale.dart';
 
 /// Sales list widget for credit payment dialog.

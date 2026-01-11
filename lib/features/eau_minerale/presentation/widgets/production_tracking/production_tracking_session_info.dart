@@ -84,13 +84,12 @@ class ProductionTrackingSessionInfo extends StatelessWidget {
               'Date',
               _formatDate(session.date),
             ),
-            if (session.heureDebut != null)
-              _buildInfoRow(
-                context,
-                Icons.access_time,
-                'Heure de début',
-                _formatDateTime(session.heureDebut!),
-              ),
+            _buildInfoRow(
+              context,
+              Icons.access_time,
+              'Heure de début',
+              _formatDateTime(session.heureDebut),
+            ),
             if (session.heureFin != null)
               _buildInfoRow(
                 context,

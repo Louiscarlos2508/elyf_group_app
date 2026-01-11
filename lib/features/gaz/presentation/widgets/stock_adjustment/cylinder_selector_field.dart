@@ -76,7 +76,7 @@ class CylinderSelectorField extends ConsumerWidget {
 
   Widget _buildDropdown(List<Cylinder> cylinders) {
     return DropdownButtonFormField<Cylinder>(
-      value: selectedCylinder,
+      initialValue: selectedCylinder,
       decoration: const InputDecoration(
         labelText: 'Type de bouteille *',
         prefixIcon: Icon(Icons.scale),

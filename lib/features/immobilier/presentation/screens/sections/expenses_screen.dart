@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
-import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
-import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
 import 'package:elyf_groupe_app/features/immobilier/application/providers.dart';
 import '../../../domain/adapters/expense_balance_adapter.dart';
 import '../../../domain/entities/expense.dart';
@@ -11,7 +9,6 @@ import '../../widgets/daily_expense_summary_card_v2.dart';
 import '../../widgets/expense_form_dialog.dart' as immobilier_widgets;
 import '../../widgets/expenses_table_v2.dart';
 import '../../widgets/monthly_expense_summary_v2.dart';
-import 'package:elyf_groupe_app/shared/presentation/widgets/refresh_button.dart';
 
 /// Expenses screen with professional UI - style Boutique/Eau Minérale.
 class ExpensesScreen extends ConsumerWidget {

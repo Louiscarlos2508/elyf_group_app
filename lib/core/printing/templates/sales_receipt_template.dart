@@ -111,12 +111,6 @@ class SalesReceiptTemplate {
     return ' ' * padding + truncatedText;
   }
 
-  String _alignRight(String text) {
-    const width = 32;
-    if (text.length >= width) return text.substring(0, width);
-    return ' ' * (width - text.length) + text;
-  }
-
   String _formatLine(String col1, String col2, String col3, String col4) {
     // Ajuster les largeurs pour tenir dans 30 caractères max
     const col1Width = 12;

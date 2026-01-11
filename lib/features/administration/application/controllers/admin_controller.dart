@@ -1,13 +1,18 @@
+import 'dart:developer' as developer;
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../../../../core/permissions/entities/user_role.dart';
 import '../../../../core/auth/entities/enterprise_module_user.dart';
 import '../../domain/repositories/admin_repository.dart';
+import '../../domain/repositories/user_repository.dart';
 import '../../domain/services/audit/audit_service.dart';
 import '../../domain/entities/audit_log.dart';
 import '../../data/services/firestore_sync_service.dart';
 import '../../domain/services/validation/permission_validator_service.dart';
 
 /// Controller pour gérer les opérations d'administration.
-/// 
+///
 /// Intègre audit trail, Firestore sync et validation des permissions pour les rôles et assignations.
 class AdminController {
   AdminController(
@@ -15,16 +20,114 @@ class AdminController {
     this.auditService,
     this.firestoreSync,
     this.permissionValidator,
+    this.userRepository,
   });
 
   final AdminRepository _repository;
   final AuditService? auditService;
   final FirestoreSyncService? firestoreSync;
   final PermissionValidatorService? permissionValidator;
+  final UserRepository? userRepository;
+
+  /// Helper method to get user display name for audit logs
+  Future<String?> _getUserDisplayName(String? userId) async {
+    if (userId == null || userId == 'system' || userRepository == null) {
+      return null;
+    }
+    try {
+      final user = await userRepository!.getUserById(userId);
+      return user?.fullName;
+    } catch (e) {
+      developer.log(
+        'Error fetching user display name for audit log: $e',
+        name: 'admin.controller',
+      );
+      return null;
+    }
+  }
 
   /// Récupère tous les accès EnterpriseModuleUser.
+  /// 
+  /// Si la base locale est vide, récupère automatiquement depuis Firestore
+  /// et sauvegarde localement pour la prochaine fois.
   Future<List<EnterpriseModuleUser>> getEnterpriseModuleUsers() async {
-    return await _repository.getEnterpriseModuleUsers();
+    try {
+      final localAssignments = await _repository.getEnterpriseModuleUsers();
+      
+      // Si la base locale contient des assignations, les retourner
+      if (localAssignments.isNotEmpty) {
+        return localAssignments;
+      }
+      
+      // Si la base locale est vide, essayer de récupérer depuis Firestore
+      // et sauvegarder localement pour la prochaine fois
+      if (firestoreSync != null) {
+        try {
+          final firestoreAssignments = await firestoreSync!.pullEnterpriseModuleUsersFromFirestore();
+          
+          // Sauvegarder chaque assignation dans la base locale SANS déclencher de sync
+          // (ces assignations viennent déjà de Firestore, pas besoin de les re-synchroniser)
+          for (final assignment in firestoreAssignments) {
+            try {
+              // Utiliser directement saveToLocal pour éviter de mettre dans la queue de sync
+              // Les assignations viennent déjà de Firestore, donc pas besoin de les re-sync
+              await (_repository as dynamic).saveToLocal(assignment);
+            } catch (e) {
+              // Ignorer les erreurs de sauvegarde locale individuelle
+              // (peut-être que l'assignation existe déjà)
+              developer.log(
+                'Error saving EnterpriseModuleUser from Firestore to local database: ${assignment.documentId}',
+                name: 'admin.controller',
+              );
+            }
+          }
+          
+          // Retourner les assignations depuis Firestore
+          if (firestoreAssignments.isNotEmpty) {
+            developer.log(
+              'Loaded ${firestoreAssignments.length} EnterpriseModuleUsers from Firestore (local database was empty)',
+              name: 'admin.controller',
+            );
+            return firestoreAssignments;
+          }
+        } catch (e) {
+          developer.log(
+            'Error fetching EnterpriseModuleUsers from Firestore (will use empty local list): $e',
+            name: 'admin.controller',
+          );
+          // Continuer avec la liste locale (vide)
+        }
+      }
+      
+      return localAssignments;
+    } catch (e, stackTrace) {
+      developer.log(
+        'Error getting EnterpriseModuleUsers from local database, trying Firestore: $e',
+        name: 'admin.controller',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      
+      // En cas d'erreur locale, essayer Firestore
+      if (firestoreSync != null) {
+        try {
+          final firestoreAssignments = await firestoreSync!.pullEnterpriseModuleUsersFromFirestore();
+          developer.log(
+            'Loaded ${firestoreAssignments.length} EnterpriseModuleUsers from Firestore (local database error)',
+            name: 'admin.controller',
+          );
+          return firestoreAssignments;
+        } catch (e) {
+          developer.log(
+            'Error fetching EnterpriseModuleUsers from Firestore: $e',
+            name: 'admin.controller',
+          );
+          return [];
+        }
+      }
+      
+      return [];
+    }
   }
 
   /// Récupère les accès d'un utilisateur spécifique.
@@ -43,7 +146,7 @@ class AdminController {
 
   /// Récupère les accès pour une entreprise et un module spécifiques.
   Future<List<EnterpriseModuleUser>>
-      getEnterpriseModuleUsersByEnterpriseAndModule(
+  getEnterpriseModuleUsersByEnterpriseAndModule(
     String enterpriseId,
     String moduleId,
   ) async {
@@ -54,7 +157,7 @@ class AdminController {
   }
 
   /// Assigne un utilisateur à une entreprise et un module avec un rôle.
-  /// 
+  ///
   /// Logs audit trail and syncs to Firestore.
   /// Validates permissions before assigning.
   Future<void> assignUserToEnterprise(
@@ -75,6 +178,9 @@ class AdminController {
     // Sync to Firestore
     firestoreSync?.syncEnterpriseModuleUserToFirestore(enterpriseModuleUser);
 
+    // Récupérer le nom de l'utilisateur pour l'audit trail
+    final userDisplayName = await _getUserDisplayName(currentUserId);
+
     // Log audit trail
     auditService?.logAction(
       action: AuditAction.assign,
@@ -85,11 +191,12 @@ class AdminController {
       newValue: enterpriseModuleUser.toMap(),
       moduleId: enterpriseModuleUser.moduleId,
       enterpriseId: enterpriseModuleUser.enterpriseId,
+      userDisplayName: userDisplayName,
     );
   }
 
   /// Met à jour le rôle d'un utilisateur dans une entreprise et un module.
-  /// 
+  ///
   /// Logs audit trail and syncs to Firestore.
   /// Validates permissions before updating.
   Future<void> updateUserRole(
@@ -109,19 +216,11 @@ class AdminController {
         throw Exception('Permission denied: Cannot update roles');
       }
     }
-    await _repository.updateUserRole(
-      userId,
-      enterpriseId,
-      moduleId,
-      roleId,
-    );
+    await _repository.updateUserRole(userId, enterpriseId, moduleId, roleId);
 
     // Get updated assignment for sync
     final assignments = await _repository
-        .getEnterpriseModuleUsersByEnterpriseAndModule(
-      enterpriseId,
-      moduleId,
-    );
+        .getEnterpriseModuleUsersByEnterpriseAndModule(enterpriseId, moduleId);
     final assignment = assignments.firstWhere(
       (a) => a.userId == userId,
       orElse: () => throw Exception('Assignment not found'),
@@ -132,6 +231,9 @@ class AdminController {
       assignment,
       isUpdate: true,
     );
+
+    // Récupérer le nom de l'utilisateur pour l'audit trail
+    final userDisplayName = await _getUserDisplayName(currentUserId);
 
     // Log audit trail
     auditService?.logAction(
@@ -144,11 +246,12 @@ class AdminController {
       newValue: {'roleId': roleId},
       moduleId: moduleId,
       enterpriseId: enterpriseId,
+      userDisplayName: userDisplayName,
     );
   }
 
   /// Met à jour les permissions personnalisées d'un utilisateur.
-  /// 
+  ///
   /// Logs audit trail and syncs to Firestore.
   /// Validates permissions before updating.
   Future<void> updateUserPermissions(
@@ -177,10 +280,7 @@ class AdminController {
 
     // Get updated assignment for sync
     final assignments = await _repository
-        .getEnterpriseModuleUsersByEnterpriseAndModule(
-      enterpriseId,
-      moduleId,
-    );
+        .getEnterpriseModuleUsersByEnterpriseAndModule(enterpriseId, moduleId);
     final assignment = assignments.firstWhere(
       (a) => a.userId == userId,
       orElse: () => throw Exception('Assignment not found'),
@@ -191,6 +291,9 @@ class AdminController {
       assignment,
       isUpdate: true,
     );
+
+    // Récupérer le nom de l'utilisateur pour l'audit trail
+    final userDisplayName = await _getUserDisplayName(currentUserId);
 
     // Log audit trail
     auditService?.logAction(
@@ -205,11 +308,12 @@ class AdminController {
       newValue: {'permissions': permissions.toList()},
       moduleId: moduleId,
       enterpriseId: enterpriseId,
+      userDisplayName: userDisplayName,
     );
   }
 
   /// Retire un utilisateur d'une entreprise et d'un module.
-  /// 
+  ///
   /// Logs audit trail and syncs to Firestore.
   /// Validates permissions before removing.
   Future<void> removeUserFromEnterprise(
@@ -229,28 +333,26 @@ class AdminController {
       }
     }
     // Get assignment before deletion if not provided
-    final assignment = oldAssignment ??
-        (await _repository
-                .getEnterpriseModuleUsersByEnterpriseAndModule(
-              enterpriseId,
-              moduleId,
-            ))
-            .firstWhere(
+    final assignment =
+        oldAssignment ??
+        (await _repository.getEnterpriseModuleUsersByEnterpriseAndModule(
+          enterpriseId,
+          moduleId,
+        )).firstWhere(
           (a) => a.userId == userId,
           orElse: () => throw Exception('Assignment not found'),
         );
 
-    await _repository.removeUserFromEnterprise(
-      userId,
-      enterpriseId,
-      moduleId,
-    );
+    await _repository.removeUserFromEnterprise(userId, enterpriseId, moduleId);
 
     // Delete from Firestore
     firestoreSync?.deleteFromFirestore(
       collection: 'enterprise_module_users',
       documentId: assignment.documentId,
     );
+
+    // Récupérer le nom de l'utilisateur pour l'audit trail
+    final userDisplayName = await _getUserDisplayName(currentUserId);
 
     // Log audit trail
     auditService?.logAction(
@@ -262,12 +364,92 @@ class AdminController {
       oldValue: assignment.toMap(),
       moduleId: moduleId,
       enterpriseId: enterpriseId,
+      userDisplayName: userDisplayName,
     );
   }
 
   /// Récupère tous les rôles.
+  ///
+  /// Si la base locale est vide, récupère automatiquement depuis Firestore
+  /// et sauvegarde localement pour la prochaine fois.
   Future<List<UserRole>> getAllRoles() async {
-    return await _repository.getAllRoles();
+    try {
+      final localRoles = await _repository.getAllRoles();
+
+      // Si la base locale contient des rôles, les retourner
+      if (localRoles.isNotEmpty) {
+        return localRoles;
+      }
+
+      // Si la base locale est vide, essayer de récupérer depuis Firestore
+      // et sauvegarder localement pour la prochaine fois
+      if (firestoreSync != null) {
+        try {
+          final firestoreRoles = await firestoreSync!.pullRolesFromFirestore();
+
+          // Sauvegarder chaque rôle dans la base locale SANS déclencher de sync
+          // (ces rôles viennent déjà de Firestore, pas besoin de les re-synchroniser)
+          for (final role in firestoreRoles) {
+            try {
+              // Utiliser directement saveToLocal pour éviter de mettre dans la queue de sync
+              // Les rôles viennent déjà de Firestore, donc pas besoin de les re-sync
+              await (_repository as dynamic).saveToLocal(role);
+            } catch (e) {
+              // Ignorer les erreurs de sauvegarde locale individuelle
+              // (peut-être que le rôle existe déjà)
+              developer.log(
+                'Error saving role from Firestore to local database: ${role.id}',
+                name: 'admin.controller',
+              );
+            }
+          }
+
+          // Retourner les rôles depuis Firestore
+          if (firestoreRoles.isNotEmpty) {
+            developer.log(
+              'Loaded ${firestoreRoles.length} roles from Firestore (local database was empty)',
+              name: 'admin.controller',
+            );
+            return firestoreRoles;
+          }
+        } catch (e) {
+          developer.log(
+            'Error fetching roles from Firestore (will use empty local list): $e',
+            name: 'admin.controller',
+          );
+          // Continuer avec la liste locale (vide)
+        }
+      }
+
+      return localRoles;
+    } catch (e, stackTrace) {
+      developer.log(
+        'Error getting all roles from local database, trying Firestore: $e',
+        name: 'admin.controller',
+        error: e,
+        stackTrace: stackTrace,
+      );
+
+      // En cas d'erreur locale, essayer Firestore
+      if (firestoreSync != null) {
+        try {
+          final firestoreRoles = await firestoreSync!.pullRolesFromFirestore();
+          developer.log(
+            'Loaded ${firestoreRoles.length} roles from Firestore (local database error)',
+            name: 'admin.controller',
+          );
+          return firestoreRoles;
+        } catch (e) {
+          developer.log(
+            'Error fetching roles from Firestore: $e',
+            name: 'admin.controller',
+          );
+          return [];
+        }
+      }
+
+      return [];
+    }
   }
 
   /// Récupère les rôles pour un module spécifique.
@@ -276,48 +458,73 @@ class AdminController {
   }
 
   /// Crée un nouveau rôle.
-  /// 
+  ///
   /// Logs audit trail and syncs to Firestore.
   /// Validates permissions before creating.
-  Future<void> createRole(
-    UserRole role, {
-    String? currentUserId,
-  }) async {
+  ///
+  /// Throws an exception with a user-friendly message if:
+  /// - User doesn't have permission to create roles
+  /// - Firestore sync fails (e.g., permission denied)
+  Future<void> createRole(UserRole role, {String? currentUserId}) async {
     // Validate permissions
     if (currentUserId != null && permissionValidator != null) {
       final hasPermission = await permissionValidator!.canManageRoles(
         userId: currentUserId,
       );
       if (!hasPermission) {
-        throw Exception('Permission denied: Cannot create roles');
+        throw Exception(
+          'Permission refusée : Vous n\'avez pas les droits pour créer des rôles. '
+          'Contactez un administrateur pour obtenir les permissions nécessaires.',
+        );
       }
     }
-    await _repository.createRole(role);
 
-    // Sync to Firestore
-    firestoreSync?.syncRoleToFirestore(role);
+    try {
+      await _repository.createRole(role);
 
-    // Log audit trail
-    auditService?.logAction(
-      action: AuditAction.create,
-      entityType: 'role',
-      entityId: role.id,
-      userId: currentUserId ?? 'system',
-      description: 'Role created: ${role.name}',
-      newValue: {
-        'id': role.id,
-        'name': role.name,
-        'description': role.description,
-        'permissions': role.permissions.toList(),
-        'isSystemRole': role.isSystemRole,
-      },
-    );
+      // Sync to Firestore - cette opération peut échouer avec une exception
+      if (firestoreSync != null) {
+        await firestoreSync!.syncRoleToFirestore(role);
+      }
+
+      // Récupérer le nom de l'utilisateur pour l'audit trail
+      final userDisplayName = await _getUserDisplayName(currentUserId);
+
+      // Log audit trail
+      auditService?.logAction(
+        action: AuditAction.create,
+        entityType: 'role',
+        entityId: role.id,
+        userId: currentUserId ?? 'system',
+        description: 'Role created: ${role.name}',
+        newValue: {
+          'id': role.id,
+          'name': role.name,
+          'description': role.description,
+          'permissions': role.permissions.toList(),
+          'isSystemRole': role.isSystemRole,
+        },
+        userDisplayName: userDisplayName,
+      );
+    } catch (e) {
+      // Si c'est déjà une exception avec un message clair, la propager
+      if (e is Exception) {
+        rethrow;
+      }
+      // Sinon, envelopper dans une exception avec message clair
+      throw Exception('Erreur lors de la création du rôle: ${e.toString()}');
+    }
   }
 
   /// Met à jour un rôle existant.
-  /// 
+  ///
   /// Logs audit trail and syncs to Firestore.
   /// Validates permissions before updating.
+  ///
+  /// Throws an exception with a user-friendly message if:
+  /// - User doesn't have permission to update roles
+  /// - Role not found
+  /// - Firestore sync fails (e.g., permission denied)
   Future<void> updateRole(
     UserRole role, {
     String? currentUserId,
@@ -329,48 +536,76 @@ class AdminController {
         userId: currentUserId,
       );
       if (!hasPermission) {
-        throw Exception('Permission denied: Cannot update roles');
+        throw Exception(
+          'Permission refusée : Vous n\'avez pas les droits pour modifier des rôles. '
+          'Contactez un administrateur pour obtenir les permissions nécessaires.',
+        );
       }
     }
-    // Get old role if not provided
-    final oldRoleData = oldRole ?? (await _repository.getModuleRoles(role.id)).firstWhere(
-          (r) => r.id == role.id,
-          orElse: () => throw Exception('Role not found'),
-        );
 
-    await _repository.updateRole(role);
+    try {
+      // Get old role if not provided
+      final oldRoleData =
+          oldRole ??
+          (await _repository.getModuleRoles(role.id)).firstWhere(
+            (r) => r.id == role.id,
+            orElse: () => throw Exception('Rôle non trouvé: ${role.id}'),
+          );
 
-    // Sync to Firestore
-    firestoreSync?.syncRoleToFirestore(role, isUpdate: true);
+      await _repository.updateRole(role);
 
-    // Log audit trail
-    auditService?.logAction(
-      action: AuditAction.update,
-      entityType: 'role',
-      entityId: role.id,
-      userId: currentUserId ?? 'system',
-      description: 'Role updated: ${role.name}',
-      oldValue: {
-        'id': oldRoleData.id,
-        'name': oldRoleData.name,
-        'description': oldRoleData.description,
-        'permissions': oldRoleData.permissions.toList(),
-        'isSystemRole': oldRoleData.isSystemRole,
-      },
-      newValue: {
-        'id': role.id,
-        'name': role.name,
-        'description': role.description,
-        'permissions': role.permissions.toList(),
-        'isSystemRole': role.isSystemRole,
-      },
-    );
+      // Sync to Firestore - cette opération peut échouer avec une exception
+      if (firestoreSync != null) {
+        await firestoreSync!.syncRoleToFirestore(role, isUpdate: true);
+      }
+
+      // Récupérer le nom de l'utilisateur pour l'audit trail
+      final userDisplayName = await _getUserDisplayName(currentUserId);
+
+      // Log audit trail
+      auditService?.logAction(
+        action: AuditAction.update,
+        entityType: 'role',
+        entityId: role.id,
+        userId: currentUserId ?? 'system',
+        description: 'Role updated: ${role.name}',
+        oldValue: {
+          'id': oldRoleData.id,
+          'name': oldRoleData.name,
+          'description': oldRoleData.description,
+          'permissions': oldRoleData.permissions.toList(),
+          'isSystemRole': oldRoleData.isSystemRole,
+        },
+        newValue: {
+          'id': role.id,
+          'name': role.name,
+          'description': role.description,
+          'permissions': role.permissions.toList(),
+          'isSystemRole': role.isSystemRole,
+        },
+        userDisplayName: userDisplayName,
+      );
+    } catch (e) {
+      // Si c'est déjà une exception avec un message clair, la propager
+      if (e is Exception) {
+        rethrow;
+      }
+      // Sinon, envelopper dans une exception avec message clair
+      throw Exception(
+        'Erreur lors de la modification du rôle: ${e.toString()}',
+      );
+    }
   }
 
   /// Supprime un rôle (si ce n'est pas un rôle système).
-  /// 
+  ///
   /// Logs audit trail and syncs to Firestore.
   /// Validates permissions before deleting.
+  ///
+  /// Throws an exception with a user-friendly message if:
+  /// - User doesn't have permission to delete roles
+  /// - Role not found
+  /// - Firestore deletion fails
   Future<void> deleteRole(
     String roleId, {
     String? currentUserId,
@@ -382,39 +617,76 @@ class AdminController {
         userId: currentUserId,
       );
       if (!hasPermission) {
-        throw Exception('Permission denied: Cannot delete roles');
+        throw Exception(
+          'Permission refusée : Vous n\'avez pas les droits pour supprimer des rôles. '
+          'Contactez un administrateur pour obtenir les permissions nécessaires.',
+        );
       }
     }
-    // Get role data if not provided
-    final role = roleData ??
-        (await _repository.getAllRoles()).firstWhere(
-          (r) => r.id == roleId,
-          orElse: () => throw Exception('Role not found'),
-        );
 
-    await _repository.deleteRole(roleId);
+    try {
+      // Get role data if not provided
+      final role =
+          roleData ??
+          (await _repository.getAllRoles()).firstWhere(
+            (r) => r.id == roleId,
+            orElse: () => throw Exception('Rôle non trouvé: $roleId'),
+          );
 
-    // Delete from Firestore
-    firestoreSync?.deleteFromFirestore(
-      collection: 'roles',
-      documentId: roleId,
-    );
+      await _repository.deleteRole(roleId);
 
-    // Log audit trail
-    auditService?.logAction(
-      action: AuditAction.delete,
-      entityType: 'role',
-      entityId: roleId,
-      userId: currentUserId ?? 'system',
-      description: 'Role deleted: ${role.name}',
-      oldValue: {
-        'id': role.id,
-        'name': role.name,
-        'description': role.description,
-        'permissions': role.permissions.toList(),
-        'isSystemRole': role.isSystemRole,
-      },
-    );
+      // Delete from Firestore
+      if (firestoreSync != null) {
+        try {
+          await firestoreSync!.deleteFromFirestore(
+            collection: 'roles',
+            documentId: roleId,
+          );
+        } catch (e) {
+          // Logger l'erreur mais ne pas bloquer la suppression locale
+          developer.log(
+            'Error deleting role from Firestore (local deletion succeeded)',
+            name: 'admin.controller',
+            error: e,
+          );
+          // Propager l'erreur pour informer l'utilisateur
+          if (e is FirebaseException && e.code == 'permission-denied') {
+            throw Exception(
+              'Permission refusée : Impossible de supprimer le rôle dans Firestore. '
+              'Le rôle a été supprimé localement mais la synchronisation a échoué. '
+              'Vérifiez les règles de sécurité Firestore.',
+            );
+          }
+          rethrow;
+        }
+      }
+
+      // Récupérer le nom de l'utilisateur pour l'audit trail
+      final userDisplayName = await _getUserDisplayName(currentUserId);
+
+      // Log audit trail
+      auditService?.logAction(
+        action: AuditAction.delete,
+        entityType: 'role',
+        entityId: roleId,
+        userId: currentUserId ?? 'system',
+        description: 'Role deleted: ${role.name}',
+        oldValue: {
+          'id': role.id,
+          'name': role.name,
+          'description': role.description,
+          'permissions': role.permissions.toList(),
+          'isSystemRole': role.isSystemRole,
+        },
+        userDisplayName: userDisplayName,
+      );
+    } catch (e) {
+      // Si c'est déjà une exception avec un message clair, la propager
+      if (e is Exception) {
+        rethrow;
+      }
+      // Sinon, envelopper dans une exception avec message clair
+      throw Exception('Erreur lors de la suppression du rôle: ${e.toString()}');
+    }
   }
 }
-

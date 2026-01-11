@@ -8,7 +8,6 @@ import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart
 import '../production_event_dialog.dart';
 import '../production_finalization_dialog.dart';
 import '../production_resume_dialog.dart';
-import '../../screens/sections/production_session_detail_screen.dart' show productionSessionDetailProvider;
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
 /// Dialogs pour la gestion de la session de production.

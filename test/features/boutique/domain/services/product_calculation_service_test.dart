@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:elyf_group_app/features/boutique/domain/services/product_calculation_service.dart';
+import 'package:elyf_groupe_app/features/boutique/domain/services/product_calculation_service.dart';
 
 void main() {
   group('ProductCalculationService', () {

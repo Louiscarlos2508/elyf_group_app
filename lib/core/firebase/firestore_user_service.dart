@@ -65,49 +65,137 @@ class FirestoreUserService {
           name: 'firestore.user',
         );
       }
+    } on FirebaseException catch (e, stackTrace) {
+      // Gérer les erreurs Firebase (permissions, règles, réseau, etc.)
+      final errorCode = e.code.toLowerCase();
+      final isNetworkError = errorCode == 'unavailable' ||
+                             errorCode.contains('network') ||
+                             e.message?.toLowerCase().contains('unable to resolve') == true ||
+                             e.message?.toLowerCase().contains('no address') == true;
+      
+      if (isNetworkError) {
+        developer.log(
+          'Network error creating/updating user in Firestore (code: ${e.code}). User profile will be created when network is available: $userId',
+          name: 'firestore.user',
+          error: e,
+          stackTrace: stackTrace,
+        );
+      } else {
+        developer.log(
+          'Firebase error creating/updating user in Firestore (code: ${e.code}): ${e.message}. User profile will be created when Firestore is available: $userId',
+          name: 'firestore.user',
+          error: e,
+          stackTrace: stackTrace,
+        );
+      }
+      // Ne pas rethrow - permet à l'authentification de continuer
+      return;
     } catch (e, stackTrace) {
-      // Si la base de données n'existe pas encore, on ignore l'erreur
-      // L'utilisateur pourra quand même se connecter, et les données seront créées
-      // automatiquement quand la base de données sera disponible
-      if (e.toString().contains('NOT_FOUND') || 
-          e.toString().contains('does not exist') ||
-          e.toString().contains('database')) {
+      // Détecter les erreurs réseau dans les exceptions génériques
+      final errorString = e.toString().toLowerCase();
+      final isNetworkError = errorString.contains('unavailable') ||
+                             errorString.contains('unable to resolve') ||
+                             errorString.contains('network') ||
+                             errorString.contains('timeout') ||
+                             errorString.contains('connection') ||
+                             errorString.contains('no address associated');
+      
+      if (isNetworkError) {
+        developer.log(
+          'Network error creating/updating user in Firestore. User profile will be created when network is available: $userId',
+          name: 'firestore.user',
+          error: e,
+          stackTrace: stackTrace,
+        );
+      } else if (errorString.contains('not_found') || 
+                 errorString.contains('does not exist') ||
+                 errorString.contains('database')) {
         developer.log(
           'Firestore database not found yet - user profile will be created when database is available: $userId',
           name: 'firestore.user',
         );
-        return; // Ignore l'erreur - permet à l'authentification de continuer
+      } else {
+        developer.log(
+          'Error creating/updating user in Firestore. User profile will be created when Firestore is available: $userId',
+          name: 'firestore.user',
+          error: e,
+          stackTrace: stackTrace,
+        );
       }
-      
-      developer.log(
-        'Error creating/updating user in Firestore',
-        name: 'firestore.user',
-        error: e,
-        stackTrace: stackTrace,
-      );
-      // Ne pas rethrow pour les erreurs de base de données manquante
-      // Cela permet à l'authentification de fonctionner même si Firestore n'est pas encore configuré
+      // Ne pas rethrow - permet à l'authentification de continuer
+      // L'utilisateur pourra se connecter et le profil sera créé quand Firestore sera disponible
     }
   }
 
   /// Récupère un utilisateur par son ID.
+  /// 
+  /// Retourne null si l'utilisateur n'existe pas ou en cas d'erreur.
+  /// Ne lance pas d'exception pour permettre à l'authentification de continuer
+  /// même si Firestore a des problèmes (permissions, règles, réseau).
   Future<Map<String, dynamic>?> getUserById(String userId) async {
     try {
       final userDoc = firestore.collection(_usersCollection).doc(userId);
       final userSnapshot = await userDoc.get();
 
       if (!userSnapshot.exists) {
+        developer.log(
+          'User not found in Firestore: $userId',
+          name: 'firestore.user',
+        );
         return null;
       }
 
       return userSnapshot.data();
+    } on FirebaseException catch (e, stackTrace) {
+      // Gérer spécifiquement les erreurs Firebase (permissions, règles, réseau, etc.)
+      final errorCode = e.code.toLowerCase();
+      final isNetworkError = errorCode == 'unavailable' ||
+                             errorCode.contains('network') ||
+                             e.message?.toLowerCase().contains('unable to resolve') == true ||
+                             e.message?.toLowerCase().contains('no address') == true;
+      
+      if (isNetworkError) {
+        developer.log(
+          'Network error getting user from Firestore (code: ${e.code}). App will work in offline mode.',
+          name: 'firestore.user',
+          error: e,
+          stackTrace: stackTrace,
+        );
+      } else {
+        developer.log(
+          'Firebase error getting user from Firestore (code: ${e.code}): ${e.message}',
+          name: 'firestore.user',
+          error: e,
+          stackTrace: stackTrace,
+        );
+      }
+      // Ne pas rethrow - retourner null pour permettre à l'app de continuer en mode offline
+      return null;
     } catch (e, stackTrace) {
-      developer.log(
-        'Error getting user from Firestore',
-        name: 'firestore.user',
-        error: e,
-        stackTrace: stackTrace,
-      );
+      // Détecter les erreurs réseau dans les exceptions génériques
+      final errorString = e.toString().toLowerCase();
+      final isNetworkError = errorString.contains('unavailable') ||
+                             errorString.contains('unable to resolve') ||
+                             errorString.contains('network') ||
+                             errorString.contains('timeout') ||
+                             errorString.contains('connection') ||
+                             errorString.contains('no address associated');
+      
+      if (isNetworkError) {
+        developer.log(
+          'Network error getting user from Firestore. App will work in offline mode: $e',
+          name: 'firestore.user',
+          error: e,
+          stackTrace: stackTrace,
+        );
+      } else {
+        developer.log(
+          'Unexpected error getting user from Firestore: $e',
+          name: 'firestore.user',
+          error: e,
+          stackTrace: stackTrace,
+        );
+      }
       return null;
     }
   }
@@ -132,34 +220,76 @@ class FirestoreUserService {
   /// 
   /// Retourne true si au moins un utilisateur avec isAdmin=true existe.
   /// Retourne false si la base de données n'existe pas encore ou en cas d'erreur.
+  /// Ne lance jamais d'exception pour permettre à l'authentification de continuer.
   Future<bool> adminExists() async {
     try {
       final querySnapshot = await firestore
           .collection(_usersCollection)
           .where('isAdmin', isEqualTo: true)
           .limit(1)
-          .get();
+          .get()
+          .timeout(const Duration(seconds: 5));
 
       return querySnapshot.docs.isNotEmpty;
+    } on FirebaseException catch (e, stackTrace) {
+      // Gérer les erreurs Firebase (permissions, règles, réseau, etc.)
+      final errorCode = e.code.toLowerCase();
+      final isNetworkError = errorCode == 'unavailable' ||
+                             errorCode.contains('network') ||
+                             e.message?.toLowerCase().contains('unable to resolve') == true ||
+                             e.message?.toLowerCase().contains('no address') == true;
+      
+      if (isNetworkError) {
+        developer.log(
+          'Network error checking if admin exists (code: ${e.code}). Assuming no admin exists for first-time setup.',
+          name: 'firestore.user',
+          error: e,
+          stackTrace: stackTrace,
+        );
+      } else {
+        developer.log(
+          'Firebase error checking if admin exists (code: ${e.code}). Assuming no admin exists: ${e.message}',
+          name: 'firestore.user',
+          error: e,
+          stackTrace: stackTrace,
+        );
+      }
+      // Retourner false pour permettre la création du premier admin
+      return false;
     } catch (e, stackTrace) {
-      // Si la base de données n'existe pas encore, on retourne false
-      // pour permettre la création du premier admin
-      if (e.toString().contains('NOT_FOUND') || 
-          e.toString().contains('does not exist') ||
-          e.toString().contains('database')) {
+      // Détecter les erreurs réseau dans les exceptions génériques
+      final errorString = e.toString().toLowerCase();
+      final isNetworkError = errorString.contains('unavailable') ||
+                             errorString.contains('unable to resolve') ||
+                             errorString.contains('network') ||
+                             errorString.contains('timeout') ||
+                             errorString.contains('connection') ||
+                             errorString.contains('no address associated');
+      
+      if (isNetworkError) {
+        developer.log(
+          'Network error checking if admin exists. Assuming no admin exists for first-time setup: $e',
+          name: 'firestore.user',
+          error: e,
+          stackTrace: stackTrace,
+        );
+      } else if (errorString.contains('not_found') || 
+                 errorString.contains('does not exist') ||
+                 errorString.contains('database')) {
         developer.log(
           'Firestore database not found yet - assuming no admin exists',
           name: 'firestore.user',
         );
-        return false;
+      } else {
+        developer.log(
+          'Error checking if admin exists. Assuming no admin exists: $e',
+          name: 'firestore.user',
+          error: e,
+          stackTrace: stackTrace,
+        );
       }
-      
-      developer.log(
-        'Error checking if admin exists',
-        name: 'firestore.user',
-        error: e,
-        stackTrace: stackTrace,
-      );
+      // Toujours retourner false pour permettre la création du premier admin
+      // Même en cas d'erreur, on assume qu'il n'y a pas d'admin
       return false;
     }
   }

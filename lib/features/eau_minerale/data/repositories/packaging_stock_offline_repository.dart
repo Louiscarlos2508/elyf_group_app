@@ -2,10 +2,7 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import '../../../../core/errors/error_handler.dart';
-import '../../../../core/offline/connectivity_service.dart';
-import '../../../../core/offline/drift_service.dart';
 import '../../../../core/offline/offline_repository.dart';
-import '../../../../core/offline/sync_manager.dart';
 import '../../domain/entities/packaging_stock.dart';
 import '../../domain/entities/packaging_stock_movement.dart';
 import '../../domain/repositories/packaging_stock_repository.dart';
@@ -198,13 +195,13 @@ class PackagingStockOfflineRepository extends OfflineRepository<PackagingStock>
   }
 
   @override
-  Future<PackagingStock> save(PackagingStock stock) async {
+  Future<PackagingStock> save(PackagingStock entity) async {
     try {
-      final localId = getLocalId(stock);
-      final stockWithLocalId = stock.copyWith(
+      final localId = getLocalId(entity);
+      final stockWithLocalId = entity.copyWith(
         id: localId,
         updatedAt: DateTime.now(),
-        createdAt: stock.createdAt ?? DateTime.now(),
+        createdAt: entity.createdAt ?? DateTime.now(),
       );
       await super.save(stockWithLocalId);
       return stockWithLocalId;
@@ -228,11 +225,15 @@ class PackagingStockOfflineRepository extends OfflineRepository<PackagingStock>
         'id': localId,
         'localId': localId,
         'packagingId': movement.packagingId,
+        'packagingType': movement.packagingType,
         'type': movement.type.name,
-        'quantity': movement.quantity,
+        'quantite': movement.quantite,
         'date': movement.date.toIso8601String(),
-        'reason': movement.reason,
+        'raison': movement.raison,
         'productionId': movement.productionId,
+        'fournisseur': movement.fournisseur,
+        'notes': movement.notes,
+        'createdAt': movement.createdAt?.toIso8601String(),
       };
 
       await driftService.records.upsert(
@@ -271,14 +272,18 @@ class PackagingStockOfflineRepository extends OfflineRepository<PackagingStock>
         return PackagingStockMovement(
           id: map['id'] as String,
           packagingId: map['packagingId'] as String,
+          packagingType: map['packagingType'] as String? ?? '',
           type: PackagingMovementType.values.firstWhere(
             (e) => e.name == map['type'],
-            orElse: () => PackagingMovementType.usage,
+            orElse: () => PackagingMovementType.ajustement,
           ),
-          quantity: (map['quantity'] as num).toInt(),
+          quantite: (map['quantite'] as num?)?.toInt() ?? (map['quantity'] as num?)?.toInt() ?? 0,
           date: DateTime.parse(map['date'] as String),
-          reason: map['reason'] as String?,
+          raison: map['raison'] as String? ?? map['reason'] as String? ?? '',
           productionId: map['productionId'] as String?,
+          fournisseur: map['fournisseur'] as String?,
+          notes: map['notes'] as String?,
+          createdAt: map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : null,
         );
       }).toList();
 

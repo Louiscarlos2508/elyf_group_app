@@ -3,8 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/providers.dart';
 import '../../domain/entities/cylinder.dart';
-import '../../domain/entities/cylinder_stock.dart';
-import '../../domain/services/gaz_dashboard_calculation_service.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../../../shared/utils/currency_formatter.dart';
 /// Carte récapitulative du stock de bouteilles.

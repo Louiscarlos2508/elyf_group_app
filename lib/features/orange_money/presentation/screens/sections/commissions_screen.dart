@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/orange_money/application/providers.dart';
@@ -8,7 +7,6 @@ import '../../../domain/entities/commission.dart';
 import '../../widgets/commission_form_dialog.dart';
 import '../../widgets/kpi_card.dart';
 import 'package:elyf_groupe_app/shared.dart';
-import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
 /// Screen for managing commissions.
 class CommissionsScreen extends ConsumerWidget {
   const CommissionsScreen({super.key, this.enterpriseId});
@@ -126,7 +124,6 @@ class CommissionsScreen extends ConsumerWidget {
   }
 
   Widget _buildCurrentMonthCard(BuildContext context, Commission? commission) {
-    final theme = Theme.of(context);
     final now = DateTime.now();
     final periodLabel = '${now.year}-${now.month.toString().padLeft(2, '0')}';
 

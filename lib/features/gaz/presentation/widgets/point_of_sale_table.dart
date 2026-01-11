@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/providers.dart';
-import '../../domain/entities/point_of_sale.dart';
 import 'point_of_sale_table/pos_table_header.dart';
 import 'point_of_sale_table/pos_table_row.dart';
 

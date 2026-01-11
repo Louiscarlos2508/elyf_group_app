@@ -20,8 +20,6 @@ class DashboardOverviewKpiCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isMobile = MediaQuery.of(context).size.width < 600;
-
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
