@@ -9,6 +9,7 @@ import 'approvisionnement/approvisionnement_tab_bar.dart';
 import 'approvisionnement/tours_list_tab.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
+import '../../../../../core/tenant/tenant_provider.dart';
 
 /// Écran de gestion des tours d'approvisionnement.
 class ApprovisionnementScreen extends ConsumerStatefulWidget {
@@ -68,11 +69,25 @@ class _ApprovisionnementScreenState
   @override
   Widget build(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 600;
+    final activeEnterpriseAsync = ref.watch(activeEnterpriseProvider);
 
-    // TODO: Récupérer enterpriseId depuis le contexte/tenant
-    _enterpriseId ??= 'default_enterprise';
+    return activeEnterpriseAsync.when(
+      data: (activeEnterprise) {
+        if (activeEnterprise == null) {
+          return Container(
+            color: const Color(0xFFF9FAFB),
+            child: const Center(
+              child: Padding(
+                padding: EdgeInsets.all(24),
+                child: Text('Aucune entreprise sélectionnée'),
+              ),
+            ),
+          );
+        }
 
-    return Container(
+        _enterpriseId = activeEnterprise.id;
+
+        return Container(
       color: const Color(0xFFF9FAFB),
       child: Column(
         children: [
@@ -112,6 +127,34 @@ class _ApprovisionnementScreenState
             ),
           ),
         ],
+      ),
+    );
+      },
+      loading: () => Container(
+        color: const Color(0xFFF9FAFB),
+        child: const Center(
+          child: CircularProgressIndicator(),
+        ),
+      ),
+      error: (error, stack) => Container(
+        color: const Color(0xFFF9FAFB),
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                const SizedBox(height: 16),
+                Text(
+                  'Erreur lors du chargement de l\'entreprise',
+                  style: Theme.of(context).textTheme.titleMedium,
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

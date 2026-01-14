@@ -76,27 +76,23 @@ class EnterpriseSelectorWidget extends ConsumerWidget {
         // Ignorer les erreurs, on naviguera quand même
       }
 
-      // Afficher un message de confirmation
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Entreprise sélectionnée : ${selected.name}'),
-            backgroundColor: Theme.of(context).colorScheme.primary,
-            duration: const Duration(seconds: 2),
-            action: SnackBarAction(
-              label: 'OK',
-              textColor: Colors.white,
-              onPressed: () {
-                ScaffoldMessenger.of(context).hideCurrentSnackBar();
-              },
-            ),
-          ),
-        );
-      }
-
       // Rediriger vers le menu des modules pour recharger avec la nouvelle entreprise
       if (context.mounted) {
         context.go('/modules');
+        
+        // Afficher le message de confirmation après la navigation
+        // Utiliser un délai pour s'assurer que le nouvel écran est monté
+        await Future.delayed(const Duration(milliseconds: 100));
+        
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Entreprise sélectionnée : ${selected.name}'),
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
       }
     }
   }
@@ -158,27 +154,23 @@ class EnterpriseSelectorWidget extends ConsumerWidget {
         // Ignorer les erreurs, on naviguera quand même
       }
 
-      // Afficher un message de confirmation
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Entreprise sélectionnée : ${selected.name}'),
-            backgroundColor: Theme.of(context).colorScheme.primary,
-            duration: const Duration(seconds: 2),
-            action: SnackBarAction(
-              label: 'OK',
-              textColor: Colors.white,
-              onPressed: () {
-                ScaffoldMessenger.of(context).hideCurrentSnackBar();
-              },
-            ),
-          ),
-        );
-      }
-
       // Rediriger vers le menu des modules pour recharger avec la nouvelle entreprise
       if (context.mounted) {
         context.go('/modules');
+        
+        // Afficher le message de confirmation après la navigation
+        // Utiliser un délai pour s'assurer que le nouvel écran est monté
+        await Future.delayed(const Duration(milliseconds: 100));
+        
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Entreprise sélectionnée : ${selected.name}'),
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
       }
     }
   }
