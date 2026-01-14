@@ -4,10 +4,7 @@ import '../../../domain/entities/report_data.dart';
 
 /// Indicateurs de performance du rapport de profit.
 class ProfitPerformanceIndicators extends StatelessWidget {
-  const ProfitPerformanceIndicators({
-    super.key,
-    required this.data,
-  });
+  const ProfitPerformanceIndicators({super.key, required this.data});
 
   final GazReportData data;
 
@@ -58,10 +55,7 @@ class ProfitPerformanceIndicators extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          label,
-          style: theme.textTheme.bodyMedium,
-        ),
+        Text(label, style: theme.textTheme.bodyMedium),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
@@ -80,4 +74,3 @@ class ProfitPerformanceIndicators extends StatelessWidget {
     );
   }
 }
-

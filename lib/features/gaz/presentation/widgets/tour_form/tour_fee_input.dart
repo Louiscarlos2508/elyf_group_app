@@ -31,10 +31,7 @@ class TourFeeInput extends StatelessWidget {
           decoration: BoxDecoration(
             color: const Color(0xFFF3F3F5),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: Colors.transparent,
-              width: 1.305,
-            ),
+            border: Border.all(color: Colors.transparent, width: 1.305),
           ),
           child: Row(
             children: [
@@ -69,10 +66,7 @@ class TourFeeInput extends StatelessWidget {
                 padding: EdgeInsets.only(right: 12),
                 child: Text(
                   'FCFA',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF6A7282),
-                  ),
+                  style: TextStyle(fontSize: 14, color: Color(0xFF6A7282)),
                 ),
               ),
             ],
@@ -82,4 +76,3 @@ class TourFeeInput extends StatelessWidget {
     );
   }
 }
-

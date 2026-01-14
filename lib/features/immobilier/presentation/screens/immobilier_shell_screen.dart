@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:elyf_groupe_app/shared.dart' show BaseModuleShellScreen, BaseModuleShellScreenState, NavigationSection, ModuleLoadingAnimation;
+import 'package:elyf_groupe_app/shared.dart'
+    show
+        BaseModuleShellScreen,
+        BaseModuleShellScreenState,
+        NavigationSection,
+        ModuleLoadingAnimation;
 import 'package:elyf_groupe_app/features/immobilier/application/providers.dart';
 
 class ImmobilierShellScreen extends BaseModuleShellScreen {
@@ -48,4 +53,3 @@ class _ImmobilierShellScreenState
     return [];
   }
 }
-

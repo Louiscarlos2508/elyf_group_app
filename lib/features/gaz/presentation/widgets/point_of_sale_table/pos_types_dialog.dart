@@ -29,9 +29,7 @@ class PosTypesDialog extends ConsumerWidget {
       )),
     );
     final settingsAsync = ref.watch(
-      gazSettingsProvider(
-        (enterpriseId: enterpriseId, moduleId: moduleId),
-      ),
+      gazSettingsProvider((enterpriseId: enterpriseId, moduleId: moduleId)),
     );
 
     return Dialog(
@@ -50,8 +48,8 @@ class PosTypesDialog extends ConsumerWidget {
                       child: Text(
                         'Types - ${pointOfSale.name}',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                     IconButton(
@@ -79,15 +77,21 @@ class PosTypesDialog extends ConsumerWidget {
                         const SizedBox(height: 16),
                         Text(
                           'Aucun type de bouteille',
-                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          style: Theme.of(context).textTheme.bodyLarge
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
                               ),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           'Associez des types de bouteilles à ce point de vente',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
                               ),
                           textAlign: TextAlign.center,
                         ),
@@ -101,15 +105,16 @@ class PosTypesDialog extends ConsumerWidget {
                       separatorBuilder: (_, __) => const Divider(),
                       itemBuilder: (context, index) {
                         final cylinder = cylinders[index];
-                        final wholesalePrice =
-                            settings?.getWholesalePrice(cylinder.weight);
+                        final wholesalePrice = settings?.getWholesalePrice(
+                          cylinder.weight,
+                        );
                         return ListTile(
                           leading: const Icon(Icons.inventory_2),
                           title: Text('${cylinder.weight}kg'),
                           subtitle: Text(
                             wholesalePrice != null && wholesalePrice > 0
                                 ? 'Détail: ${cylinder.sellPrice.toStringAsFixed(0)} FCFA | '
-                                    'Gros: ${wholesalePrice.toStringAsFixed(0)} FCFA'
+                                      'Gros: ${wholesalePrice.toStringAsFixed(0)} FCFA'
                                 : 'Prix détail: ${cylinder.sellPrice.toStringAsFixed(0)} FCFA',
                           ),
                         );
@@ -161,19 +166,16 @@ class PosTypesDialog extends ConsumerWidget {
             Expanded(
               child: Text(
                 'Types - ${pointOfSale.name}',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
             ),
             IconButton(
               icon: const Icon(Icons.close),
               onPressed: () => Navigator.of(context).pop(),
               padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(
-                minWidth: 32,
-                minHeight: 32,
-              ),
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
             ),
           ],
         ),
@@ -193,19 +195,16 @@ class PosTypesDialog extends ConsumerWidget {
             Expanded(
               child: Text(
                 'Types - ${pointOfSale.name}',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
             ),
             IconButton(
               icon: const Icon(Icons.close),
               onPressed: () => Navigator.of(context).pop(),
               padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(
-                minWidth: 32,
-                minHeight: 32,
-              ),
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
             ),
           ],
         ),
@@ -219,11 +218,10 @@ class PosTypesDialog extends ConsumerWidget {
         Text(
           'Erreur lors du chargement',
           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: Theme.of(context).colorScheme.error,
-              ),
+            color: Theme.of(context).colorScheme.error,
+          ),
         ),
       ],
     );
   }
 }
-

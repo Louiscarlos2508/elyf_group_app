@@ -2,10 +2,7 @@ import 'package:flutter/material.dart';
 
 /// Widget pour afficher le coût total du personnel.
 class PersonnelTotalCost extends StatelessWidget {
-  const PersonnelTotalCost({
-    super.key,
-    required this.totalCost,
-  });
+  const PersonnelTotalCost({super.key, required this.totalCost});
 
   final int totalCost;
 
@@ -40,4 +37,3 @@ class PersonnelTotalCost extends StatelessWidget {
     );
   }
 }
-

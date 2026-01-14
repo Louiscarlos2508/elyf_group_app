@@ -10,10 +10,7 @@ import '../../domain/entities/tenant.dart';
 import 'contract_form_fields.dart';
 
 class ContractFormDialog extends ConsumerStatefulWidget {
-  const ContractFormDialog({
-    super.key,
-    this.contract,
-  });
+  const ContractFormDialog({super.key, this.contract});
 
   final Contract? contract;
 
@@ -68,10 +65,7 @@ class _ContractFormDialogState extends ConsumerState<ContractFormDialog>
     super.dispose();
   }
 
-  Future<void> _selectDate(
-    BuildContext context,
-    bool isStartDate,
-  ) async {
+  Future<void> _selectDate(BuildContext context, bool isStartDate) async {
     final picked = await showDatePicker(
       context: context,
       initialDate: isStartDate ? _startDate : _endDate,
@@ -95,13 +89,19 @@ class _ContractFormDialogState extends ConsumerState<ContractFormDialog>
   Future<void> _save() async {
     // Utiliser le service de validation pour extraire la logique métier
     final validationService = ref.read(contractValidationServiceProvider);
-    
+
     if (!validationService.isPropertySelected(_selectedProperty)) {
-      NotificationService.showWarning(context, 'Veuillez sélectionner une propriété');
+      NotificationService.showWarning(
+        context,
+        'Veuillez sélectionner une propriété',
+      );
       return;
     }
     if (!validationService.isTenantSelected(_selectedTenant)) {
-      NotificationService.showWarning(context, 'Veuillez sélectionner un locataire');
+      NotificationService.showWarning(
+        context,
+        'Veuillez sélectionner un locataire',
+      );
       return;
     }
 
@@ -118,10 +118,12 @@ class _ContractFormDialogState extends ConsumerState<ContractFormDialog>
     await handleFormSubmit(
       context: context,
       formKey: _formKey,
-      onLoadingChanged: (_) {}, // Pas besoin de gestion d'état de chargement séparée
+      onLoadingChanged:
+          (_) {}, // Pas besoin de gestion d'état de chargement séparée
       onSubmit: () async {
         // Déterminer si la caution est en mois ou montant fixe
-        final depositInMonths = _depositInMonthsController.text.trim().isNotEmpty
+        final depositInMonths =
+            _depositInMonthsController.text.trim().isNotEmpty
             ? int.tryParse(_depositInMonthsController.text.trim())
             : null;
         final deposit = validationService.calculateDeposit(
@@ -142,7 +144,9 @@ class _ContractFormDialogState extends ConsumerState<ContractFormDialog>
           property: _selectedProperty,
           tenant: _selectedTenant,
           paymentDay: _paymentDay,
-          notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+          notes: _notesController.text.trim().isEmpty
+              ? null
+              : _notesController.text.trim(),
           depositInMonths: depositInMonths,
           createdAt: widget.contract?.createdAt ?? DateTime.now(),
           updatedAt: DateTime.now(),
@@ -178,7 +182,9 @@ class _ContractFormDialogState extends ConsumerState<ContractFormDialog>
     final tenantsAsync = ref.watch(tenantsProvider);
 
     return FormDialog(
-      title: widget.contract == null ? 'Nouveau contrat' : 'Modifier le contrat',
+      title: widget.contract == null
+          ? 'Nouveau contrat'
+          : 'Modifier le contrat',
       saveLabel: widget.contract == null ? 'Créer' : 'Enregistrer',
       onSave: _save,
       child: Form(
@@ -191,9 +197,11 @@ class _ContractFormDialogState extends ConsumerState<ContractFormDialog>
               data: (properties) {
                 // Filtrer les propriétés : exclure celles déjà louées sauf si on modifie un contrat existant
                 final availableProperties = widget.contract == null
-                    ? properties.where((p) => p.status != PropertyStatus.rented).toList()
+                    ? properties
+                          .where((p) => p.status != PropertyStatus.rented)
+                          .toList()
                     : properties;
-                
+
                 // Si aucune propriété disponible et qu'on crée un nouveau contrat
                 if (availableProperties.isEmpty && widget.contract == null) {
                   return const Text(
@@ -201,11 +209,12 @@ class _ContractFormDialogState extends ConsumerState<ContractFormDialog>
                     style: TextStyle(color: Colors.orange),
                   );
                 }
-                
+
                 return ContractFormFields.propertyField(
                   selectedProperty: _selectedProperty,
                   properties: availableProperties,
-                  onChanged: (value) => setState(() => _selectedProperty = value),
+                  onChanged: (value) =>
+                      setState(() => _selectedProperty = value),
                   validator: (value) {
                     if (value == null) return 'La propriété est requise';
                     return null;
@@ -252,7 +261,10 @@ class _ContractFormDialogState extends ConsumerState<ContractFormDialog>
             const SizedBox(height: 16),
             ContractFormFields.monthlyRentField(
               controller: _monthlyRentController,
-              validator: (value) => Validators.amount(value, customMessage: 'Le loyer est requis'),
+              validator: (value) => Validators.amount(
+                value,
+                customMessage: 'Le loyer est requis',
+              ),
             ),
             const SizedBox(height: 16),
             ContractFormFields.depositField(
@@ -279,9 +291,7 @@ class _ContractFormDialogState extends ConsumerState<ContractFormDialog>
               },
             ),
             const SizedBox(height: 16),
-            ContractFormFields.notesField(
-              controller: _notesController,
-            ),
+            ContractFormFields.notesField(controller: _notesController),
             const SizedBox(height: 16),
             FileAttachmentField(
               attachedFiles: _attachedFiles,
@@ -296,4 +306,3 @@ class _ContractFormDialogState extends ConsumerState<ContractFormDialog>
     );
   }
 }
-

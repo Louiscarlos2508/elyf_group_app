@@ -89,8 +89,8 @@ class ReportTabs extends StatelessWidget {
           decoration: BoxDecoration(
             color: isSelected
                 ? (isAdvanced
-                    ? theme.colorScheme.primaryContainer
-                    : theme.colorScheme.surface)
+                      ? theme.colorScheme.primaryContainer
+                      : theme.colorScheme.surface)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(10),
             border: isSelected && isAdvanced
@@ -107,8 +107,8 @@ class ReportTabs extends StatelessWidget {
                 size: 18,
                 color: isSelected
                     ? (isAdvanced
-                        ? theme.colorScheme.primary
-                        : theme.colorScheme.onSurface)
+                          ? theme.colorScheme.primary
+                          : theme.colorScheme.onSurface)
                     : theme.colorScheme.onSurfaceVariant,
               ),
               const SizedBox(width: 6),
@@ -118,8 +118,8 @@ class ReportTabs extends StatelessWidget {
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                   color: isSelected
                       ? (isAdvanced
-                          ? theme.colorScheme.primary
-                          : theme.colorScheme.onSurface)
+                            ? theme.colorScheme.primary
+                            : theme.colorScheme.onSurface)
                       : theme.colorScheme.onSurfaceVariant,
                 ),
               ),

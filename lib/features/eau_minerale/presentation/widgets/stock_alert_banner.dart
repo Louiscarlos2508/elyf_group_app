@@ -2,11 +2,7 @@ import 'package:flutter/material.dart';
 
 /// Alert banner for low stock warnings.
 class StockAlertBanner extends StatelessWidget {
-  const StockAlertBanner({
-    super.key,
-    required this.productName,
-    this.onTap,
-  });
+  const StockAlertBanner({super.key, required this.productName, this.onTap});
 
   final String productName;
   final VoidCallback? onTap;
@@ -64,14 +60,10 @@ class StockAlertBanner extends StatelessWidget {
                 ],
               ),
             ),
-            Icon(
-              Icons.chevron_right,
-              color: Colors.orange.shade700,
-            ),
+            Icon(Icons.chevron_right, color: Colors.orange.shade700),
           ],
         ),
       ),
     );
   }
 }
-

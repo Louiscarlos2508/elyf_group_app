@@ -14,7 +14,10 @@ import '../../widgets/monthly_expense_summary_v2.dart';
 class ExpensesScreen extends ConsumerWidget {
   const ExpensesScreen({super.key});
 
-  List<PropertyExpense> _getTodayExpenses(List<PropertyExpense> expenses, WidgetRef ref) {
+  List<PropertyExpense> _getTodayExpenses(
+    List<PropertyExpense> expenses,
+    WidgetRef ref,
+  ) {
     // Utiliser le service de filtrage pour extraire la logique métier
     final filterService = ref.read(expenseFilterServiceProvider);
     return filterService.filterTodayExpenses(expenses);
@@ -57,10 +60,8 @@ class ExpensesScreen extends ConsumerWidget {
                               children: [
                                 Text(
                                   'Dépenses',
-                                  style:
-                                      theme.textTheme.headlineMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                  style: theme.textTheme.headlineMedium
+                                      ?.copyWith(fontWeight: FontWeight.bold),
                                 ),
                                 const Spacer(),
                                 RefreshButton(
@@ -73,8 +74,7 @@ class ExpensesScreen extends ConsumerWidget {
                                   onPressed: () {
                                     Navigator.of(context).push(
                                       MaterialPageRoute(
-                                        builder: (context) =>
-                                            ExpenseBalanceScreen(
+                                        builder: (context) => ExpenseBalanceScreen(
                                           moduleName: 'Immobilier',
                                           expensesProvider:
                                               immobilierExpenseBalanceProvider,
@@ -112,8 +112,8 @@ class ExpensesScreen extends ConsumerWidget {
                                         'Dépenses',
                                         style: theme.textTheme.titleLarge
                                             ?.copyWith(
-                                          fontWeight: FontWeight.bold,
-                                        ),
+                                              fontWeight: FontWeight.bold,
+                                            ),
                                       ),
                                     ),
                                     RefreshButton(
@@ -126,8 +126,7 @@ class ExpensesScreen extends ConsumerWidget {
                                       onPressed: () {
                                         Navigator.of(context).push(
                                           MaterialPageRoute(
-                                            builder: (context) =>
-                                                ExpenseBalanceScreen(
+                                            builder: (context) => ExpenseBalanceScreen(
                                               moduleName: 'Immobilier',
                                               expensesProvider:
                                                   immobilierExpenseBalanceProvider,
@@ -191,8 +190,9 @@ class ExpensesScreen extends ConsumerWidget {
                               color: theme.colorScheme.surface,
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                color: theme.colorScheme.outline
-                                    .withValues(alpha: 0.2),
+                                color: theme.colorScheme.outline.withValues(
+                                  alpha: 0.2,
+                                ),
                               ),
                             ),
                             padding: const EdgeInsets.all(20),
@@ -221,9 +221,7 @@ class ExpensesScreen extends ConsumerWidget {
                     ),
                   ),
 
-                  const SliverToBoxAdapter(
-                    child: SizedBox(height: 24),
-                  ),
+                  const SliverToBoxAdapter(child: SizedBox(height: 24)),
                 ],
               );
             },
@@ -268,9 +266,16 @@ class ExpensesScreen extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildDetailRow(theme, 'Montant', CurrencyFormatter.formatFCFA(expense.amount)),
             _buildDetailRow(
-                theme, 'Catégorie', _getCategoryLabel(expense.category)),
+              theme,
+              'Montant',
+              CurrencyFormatter.formatFCFA(expense.amount),
+            ),
+            _buildDetailRow(
+              theme,
+              'Catégorie',
+              _getCategoryLabel(expense.category),
+            ),
             _buildDetailRow(
               theme,
               'Date',
@@ -338,13 +343,17 @@ class ExpensesScreen extends ConsumerWidget {
   }
 
   void _confirmDelete(
-      BuildContext context, WidgetRef ref, PropertyExpense expense) {
+    BuildContext context,
+    WidgetRef ref,
+    PropertyExpense expense,
+  ) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Supprimer la dépense ?'),
-        content:
-            Text('Voulez-vous vraiment supprimer "${expense.description}" ?'),
+        content: Text(
+          'Voulez-vous vraiment supprimer "${expense.description}" ?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -361,9 +370,7 @@ class ExpensesScreen extends ConsumerWidget {
                 NotificationService.showSuccess(context, 'Dépense supprimée');
               }
             },
-            style: FilledButton.styleFrom(
-              backgroundColor: Colors.red,
-            ),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
             child: const Text('Supprimer'),
           ),
         ],

@@ -73,7 +73,8 @@ class CollectionItemWidget extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   InkWell(
-                    onTap: onEdit ??
+                    onTap:
+                        onEdit ??
                         () async {
                           // TODO: Implémenter l'édition
                         },

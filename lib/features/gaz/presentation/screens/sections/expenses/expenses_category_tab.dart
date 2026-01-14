@@ -7,10 +7,7 @@ import '../../../widgets/expenses_empty_state.dart';
 
 /// Onglet dépenses par catégorie.
 class ExpensesCategoryTab extends StatelessWidget {
-  const ExpensesCategoryTab({
-    super.key,
-    required this.expenses,
-  });
+  const ExpensesCategoryTab({super.key, required this.expenses});
 
   final List<GazExpense> expenses;
 
@@ -64,7 +61,9 @@ class ExpensesCategoryTab extends StatelessWidget {
                         margin: const EdgeInsets.only(bottom: 12),
                         child: ListTile(
                           title: Text(category.label),
-                          subtitle: Text('${categoryExpenses.length} dépense(s)'),
+                          subtitle: Text(
+                            '${categoryExpenses.length} dépense(s)',
+                          ),
                           trailing: Text(
                             CurrencyFormatter.formatDouble(categoryTotal),
                             style: theme.textTheme.titleMedium?.copyWith(
@@ -82,4 +81,3 @@ class ExpensesCategoryTab extends StatelessWidget {
     );
   }
 }
-

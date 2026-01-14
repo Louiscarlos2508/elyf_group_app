@@ -35,13 +35,15 @@ class TourOfflineRepository extends OfflineRepository<Tour>
         (e) => e.name == map['status'],
         orElse: () => TourStatus.collection,
       ),
-      collections: (map['collections'] as List<dynamic>?)
+      collections:
+          (map['collections'] as List<dynamic>?)
               ?.map((c) => _collectionFromMap(c as Map<String, dynamic>))
               .toList() ??
           [],
       loadingFeePerBottle: (map['loadingFeePerBottle'] as num).toDouble(),
       unloadingFeePerBottle: (map['unloadingFeePerBottle'] as num).toDouble(),
-      transportExpenses: (map['transportExpenses'] as List<dynamic>?)
+      transportExpenses:
+          (map['transportExpenses'] as List<dynamic>?)
               ?.map((e) => _transportExpenseFromMap(e as Map<String, dynamic>))
               .toList() ??
           [],
@@ -66,25 +68,37 @@ class TourOfflineRepository extends OfflineRepository<Tour>
 
   Collection _collectionFromMap(Map<String, dynamic> map) {
     // Convert cylinderQuantities/pointOfSaleId to new structure
-    final cylinderQuantities = (map['cylinderQuantities'] as Map<String, dynamic>?)
-            ?.map((k, v) => MapEntry(int.parse(k), (v as num).toInt())) ??
-        (map['emptyBottles'] as Map<String, dynamic>?)
-            ?.map((k, v) => MapEntry(int.parse(k), (v as num).toInt())) ??
+    final cylinderQuantities =
+        (map['cylinderQuantities'] as Map<String, dynamic>?)?.map(
+          (k, v) => MapEntry(int.parse(k), (v as num).toInt()),
+        ) ??
+        (map['emptyBottles'] as Map<String, dynamic>?)?.map(
+          (k, v) => MapEntry(int.parse(k), (v as num).toInt()),
+        ) ??
         {};
-    
+
     return Collection(
       id: map['id'] as String? ?? map['pointOfSaleId'] as String? ?? '',
       type: CollectionType.values.firstWhere(
         (e) => e.name == (map['type'] as String?),
         orElse: () => CollectionType.pointOfSale,
       ),
-      clientId: map['clientId'] as String? ?? map['pointOfSaleId'] as String? ?? '',
-      clientName: map['clientName'] as String? ?? map['pointOfSaleName'] as String? ?? '',
+      clientId:
+          map['clientId'] as String? ?? map['pointOfSaleId'] as String? ?? '',
+      clientName:
+          map['clientName'] as String? ??
+          map['pointOfSaleName'] as String? ??
+          '',
       clientPhone: map['clientPhone'] as String? ?? '',
       emptyBottles: cylinderQuantities,
-      unitPrice: (map['unitPrice'] as num?)?.toDouble() ?? (map['amountDue'] as num?)?.toDouble() ?? 0.0,
+      unitPrice:
+          (map['unitPrice'] as num?)?.toDouble() ??
+          (map['amountDue'] as num?)?.toDouble() ??
+          0.0,
       amountPaid: (map['amountPaid'] as num?)?.toDouble() ?? 0.0,
-      paymentDate: map['paymentDate'] != null ? DateTime.parse(map['paymentDate'] as String) : null,
+      paymentDate: map['paymentDate'] != null
+          ? DateTime.parse(map['paymentDate'] as String)
+          : null,
     );
   }
 
@@ -93,7 +107,7 @@ class TourOfflineRepository extends OfflineRepository<Tour>
       id: map['id'] as String,
       description: map['description'] as String,
       amount: (map['amount'] as num).toDouble(),
-      expenseDate: map['expenseDate'] != null 
+      expenseDate: map['expenseDate'] != null
           ? DateTime.parse(map['expenseDate'] as String)
           : DateTime.now(),
     );
@@ -109,12 +123,13 @@ class TourOfflineRepository extends OfflineRepository<Tour>
       'collections': entity.collections.map(_collectionToMap).toList(),
       'loadingFeePerBottle': entity.loadingFeePerBottle,
       'unloadingFeePerBottle': entity.unloadingFeePerBottle,
-      'transportExpenses':
-          entity.transportExpenses.map(_transportExpenseToMap).toList(),
-      'collectionCompletedDate':
-          entity.collectionCompletedDate?.toIso8601String(),
-      'transportCompletedDate':
-          entity.transportCompletedDate?.toIso8601String(),
+      'transportExpenses': entity.transportExpenses
+          .map(_transportExpenseToMap)
+          .toList(),
+      'collectionCompletedDate': entity.collectionCompletedDate
+          ?.toIso8601String(),
+      'transportCompletedDate': entity.transportCompletedDate
+          ?.toIso8601String(),
       'returnCompletedDate': entity.returnCompletedDate?.toIso8601String(),
       'closureDate': entity.closureDate?.toIso8601String(),
       'cancelledDate': entity.cancelledDate?.toIso8601String(),
@@ -129,9 +144,13 @@ class TourOfflineRepository extends OfflineRepository<Tour>
       'clientId': collection.clientId,
       'clientName': collection.clientName,
       'clientPhone': collection.clientPhone,
-      'emptyBottles': collection.emptyBottles.map((k, v) => MapEntry(k.toString(), v)),
+      'emptyBottles': collection.emptyBottles.map(
+        (k, v) => MapEntry(k.toString(), v),
+      ),
       'unitPrice': collection.unitPrice,
-      'unitPricesByWeight': collection.unitPricesByWeight?.map((k, v) => MapEntry(k.toString(), v)),
+      'unitPricesByWeight': collection.unitPricesByWeight?.map(
+        (k, v) => MapEntry(k.toString(), v),
+      ),
       'leaks': collection.leaks.map((k, v) => MapEntry(k.toString(), v)),
       'amountPaid': collection.amountPaid,
       'paymentDate': collection.paymentDate?.toIso8601String(),

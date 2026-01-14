@@ -19,7 +19,8 @@ class CylinderLeakFormDialog extends ConsumerStatefulWidget {
   final String moduleId;
   final String? cylinderId;
   final int? weight;
-  final String? tourId; // ID du tour d'approvisionnement (si signalé depuis un tour)
+  final String?
+  tourId; // ID du tour d'approvisionnement (si signalé depuis un tour)
 
   @override
   ConsumerState<CylinderLeakFormDialog> createState() =>
@@ -83,9 +84,11 @@ class _CylinderLeakFormDialogState
       data: (cylinders) {
         // Filtrer par entreprise et module, puis extraire les poids uniques
         final filteredCylinders = cylinders
-            .where((c) =>
-                c.enterpriseId == widget.enterpriseId &&
-                c.moduleId == widget.moduleId)
+            .where(
+              (c) =>
+                  c.enterpriseId == widget.enterpriseId &&
+                  c.moduleId == widget.moduleId,
+            )
             .toList();
         final weights = filteredCylinders.map((c) => c.weight).toSet().toList();
         weights.sort();
@@ -144,7 +147,8 @@ class _CylinderLeakFormDialogState
                         decoration: const InputDecoration(
                           labelText: 'Poids (kg) *',
                           border: OutlineInputBorder(),
-                          helperText: 'Aucune bouteille créée. Entrez le poids manuellement.',
+                          helperText:
+                              'Aucune bouteille créée. Entrez le poids manuellement.',
                         ),
                         keyboardType: TextInputType.number,
                         onChanged: (value) {

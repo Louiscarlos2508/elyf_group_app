@@ -161,11 +161,19 @@ class SalesReportContentV2 extends ConsumerWidget {
       ),
       child: Column(
         children: [
-          _buildStatRow(theme, 'Total articles vendus', '${data.totalItemsSold}'),
+          _buildStatRow(
+            theme,
+            'Total articles vendus',
+            '${data.totalItemsSold}',
+          ),
           const Divider(),
           _buildStatRow(theme, 'Nombre de ventes', '${data.salesCount}'),
           const Divider(),
-          _buildStatRow(theme, 'Panier moyen', CurrencyFormatter.formatFCFA(data.averageSaleAmount)),
+          _buildStatRow(
+            theme,
+            'Panier moyen',
+            CurrencyFormatter.formatFCFA(data.averageSaleAmount),
+          ),
         ],
       ),
     );

@@ -2,10 +2,7 @@ import 'package:flutter/material.dart';
 
 /// Widget affichant un état vide pour la liste des pointages.
 class LiquidityEmptyState extends StatelessWidget {
-  const LiquidityEmptyState({
-    super.key,
-    this.isRecent = false,
-  });
+  const LiquidityEmptyState({super.key, this.isRecent = false});
 
   final bool isRecent;
 
@@ -23,23 +20,15 @@ class LiquidityEmptyState extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              isRecent
-                  ? 'Aucun pointage enregistré'
-                  : 'Aucun pointage trouvé',
-              style: const TextStyle(
-                fontSize: 16,
-                color: Color(0xFF6A7282),
-              ),
+              isRecent ? 'Aucun pointage enregistré' : 'Aucun pointage trouvé',
+              style: const TextStyle(fontSize: 16, color: Color(0xFF6A7282)),
             ),
             const SizedBox(height: 8),
             Text(
               isRecent
                   ? 'Commencez par faire votre pointage du matin'
                   : 'Essayez de modifier vos critères de recherche',
-              style: const TextStyle(
-                fontSize: 14,
-                color: Color(0xFF6A7282),
-              ),
+              style: const TextStyle(fontSize: 14, color: Color(0xFF6A7282)),
             ),
           ],
         ),
@@ -47,4 +36,3 @@ class LiquidityEmptyState extends StatelessWidget {
     );
   }
 }
-

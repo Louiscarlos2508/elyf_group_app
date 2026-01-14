@@ -56,9 +56,7 @@ class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
 
     if (_tour == null) {
       return Scaffold(
-        appBar: AppBar(
-          title: const Text('Détails du tour'),
-        ),
+        appBar: AppBar(title: const Text('Détails du tour')),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
@@ -87,9 +85,7 @@ class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
                   onPressed: () => Navigator.of(context).pop(),
                 ),
                 const SizedBox(width: 8),
-                Expanded(
-                  child: TourDetailHeader(tour: tour),
-                ),
+                Expanded(child: TourDetailHeader(tour: tour)),
               ],
             ),
           ),
@@ -117,93 +113,97 @@ class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
               ),
               child: tour.status == TourStatus.collection
                   ? // Pour l'étape collecte, seulement le bouton "Passer au transport"
-                      Align(
-                          alignment: Alignment.centerRight,
-                          child: IntrinsicWidth(
-                            child: FilledButton(
-                              style: GazButtonStyles.filledPrimary,
-                              onPressed: () async {
-                                try {
-                                  final controller =
-                                      ref.read(tourControllerProvider);
-                                  await controller.moveToNextStep(tour.id);
-                                  if (mounted) {
-                                    ref.invalidate(
-                                      toursProvider(
-                                        (enterpriseId: widget.enterpriseId,
-                                            status: null),
-                                      ),
-                                    );
-                                    // Recharger le tour
-                                    await _loadTour();
-                                  }
-                                } catch (e) {
-                                  if (!mounted || !context.mounted) return;
-                                  NotificationService.showError(context, 'Erreur: $e');
-                                }
-                              },
-                              child: Text(
-                                _getNextStepButtonLabel(tour.status),
-                                style: const TextStyle(fontSize: 14),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: IntrinsicWidth(
+                        child: FilledButton(
+                          style: GazButtonStyles.filledPrimary,
+                          onPressed: () async {
+                            try {
+                              final controller = ref.read(
+                                tourControllerProvider,
+                              );
+                              await controller.moveToNextStep(tour.id);
+                              if (mounted) {
+                                ref.invalidate(
+                                  toursProvider((
+                                    enterpriseId: widget.enterpriseId,
+                                    status: null,
+                                  )),
+                                );
+                                // Recharger le tour
+                                await _loadTour();
+                              }
+                            } catch (e) {
+                              if (!mounted || !context.mounted) return;
+                              NotificationService.showError(
+                                context,
+                                'Erreur: $e',
+                              );
+                            }
+                          },
+                          child: Text(
+                            _getNextStepButtonLabel(tour.status),
+                            style: const TextStyle(fontSize: 14),
+                          ),
+                        ),
+                      ),
+                    )
+                  : // Pour les autres étapes, deux boutons
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Flexible(
+                          child: OutlinedButton(
+                            style: GazButtonStyles.outlined,
+                            onPressed: () => Navigator.of(context).pop(),
+                            child: const Text(
+                              'Retour',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Color(0xFF0A0A0A),
                               ),
                             ),
                           ),
-                        )
-                  : // Pour les autres étapes, deux boutons
-                      Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Flexible(
-                              child: OutlinedButton(
-                                style: GazButtonStyles.outlined,
-                                onPressed: () => Navigator.of(context).pop(),
-                                child: const Text(
-                                  'Retour',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Color(0xFF0A0A0A),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Flexible(
-                              child: FilledButton(
-                                style: GazButtonStyles.filledPrimary,
-                                onPressed: () async {
-                                  try {
-                                    final controller =
-                                        ref.read(tourControllerProvider);
-                                    await controller.moveToNextStep(tour.id);
-                                    if (mounted) {
-                                      ref.invalidate(
-                                        toursProvider(
-                                          (enterpriseId: widget.enterpriseId,
-                                              status: null),
-                                        ),
-                                      );
-                                      // Recharger le tour
-                                      await _loadTour();
-                                    }
-                                  } catch (e) {
-                                    if (!mounted || !context.mounted) return;
-                                    ScaffoldMessenger.of(context)
-                                        .showSnackBar(
-                                      SnackBar(
-                                        content: Text('Erreur: $e'),
-                                        backgroundColor: Colors.red,
-                                      ),
-                                    );
-                                  }
-                                },
-                                child: Text(
-                                  _getNextStepButtonLabel(tour.status),
-                                  style: const TextStyle(fontSize: 14),
-                                ),
-                              ),
-                            ),
-                          ],
                         ),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: FilledButton(
+                            style: GazButtonStyles.filledPrimary,
+                            onPressed: () async {
+                              try {
+                                final controller = ref.read(
+                                  tourControllerProvider,
+                                );
+                                await controller.moveToNextStep(tour.id);
+                                if (mounted) {
+                                  ref.invalidate(
+                                    toursProvider((
+                                      enterpriseId: widget.enterpriseId,
+                                      status: null,
+                                    )),
+                                  );
+                                  // Recharger le tour
+                                  await _loadTour();
+                                }
+                              } catch (e) {
+                                if (!mounted || !context.mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Erreur: $e'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
+                            },
+                            child: Text(
+                              _getNextStepButtonLabel(tour.status),
+                              style: const TextStyle(fontSize: 14),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
             ),
         ],
       ),
@@ -245,10 +245,7 @@ class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
         );
       case TourStatus.cancelled:
         return Center(
-          child: Text(
-            'Tour annulé',
-            style: theme.textTheme.titleLarge,
-          ),
+          child: Text('Tour annulé', style: theme.textTheme.titleLarge),
         );
     }
   }

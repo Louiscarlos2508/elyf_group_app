@@ -26,44 +26,48 @@ class PurchaseOfflineRepository extends OfflineRepository<Purchase>
 
   @override
   Purchase fromMap(Map<String, dynamic> map) {
-    final items = (map['items'] as List<dynamic>?)
-            ?.map((item) => PurchaseItem(
-                  productId: item['productId'] as String,
-                  productName: item['productName'] as String,
-                  quantity: (item['quantity'] as num).toInt(),
-                  purchasePrice: (item['purchasePrice'] as num).toInt(),
-                  totalPrice: (item['totalPrice'] as num).toInt(),
-                ))
+    final items =
+        (map['items'] as List<dynamic>?)
+            ?.map(
+              (item) => PurchaseItem(
+                productId: item['productId'] as String,
+                productName: item['productName'] as String,
+                quantity: (item['quantity'] as num).toInt(),
+                purchasePrice: (item['purchasePrice'] as num).toInt(),
+                totalPrice: (item['totalPrice'] as num).toInt(),
+              ),
+            )
             .toList() ??
         [];
 
     final attachedFilesRaw = map['attachedFiles'] as List<dynamic>?;
-    final attachedFiles = attachedFilesRaw
-        ?.map((f) {
-          final typeString = f['type'] as String? ?? 'document';
-          AttachedFileType fileType;
-          switch (typeString) {
-            case 'image':
-              fileType = AttachedFileType.image;
-              break;
-            case 'pdf':
-              fileType = AttachedFileType.pdf;
-              break;
-            default:
-              fileType = AttachedFileType.document;
-          }
-          return AttachedFile(
-            id: f['id'] as String,
-            name: f['name'] as String,
-            path: f['path'] as String? ?? f['url'] as String? ?? '', // Support both path and url for backward compatibility
-            type: fileType,
-            size: (f['size'] as num?)?.toInt(),
-            uploadedAt: f['uploadedAt'] != null
-                ? DateTime.parse(f['uploadedAt'] as String)
-                : null,
-          );
-        })
-        .toList();
+    final attachedFiles = attachedFilesRaw?.map((f) {
+      final typeString = f['type'] as String? ?? 'document';
+      AttachedFileType fileType;
+      switch (typeString) {
+        case 'image':
+          fileType = AttachedFileType.image;
+          break;
+        case 'pdf':
+          fileType = AttachedFileType.pdf;
+          break;
+        default:
+          fileType = AttachedFileType.document;
+      }
+      return AttachedFile(
+        id: f['id'] as String,
+        name: f['name'] as String,
+        path:
+            f['path'] as String? ??
+            f['url'] as String? ??
+            '', // Support both path and url for backward compatibility
+        type: fileType,
+        size: (f['size'] as num?)?.toInt(),
+        uploadedAt: f['uploadedAt'] != null
+            ? DateTime.parse(f['uploadedAt'] as String)
+            : null,
+      );
+    }).toList();
 
     return Purchase(
       id: map['id'] as String? ?? map['localId'] as String,
@@ -82,26 +86,30 @@ class PurchaseOfflineRepository extends OfflineRepository<Purchase>
       'id': entity.id,
       'date': entity.date.toIso8601String(),
       'items': entity.items
-          .map((item) => {
-                'productId': item.productId,
-                'productName': item.productName,
-                'quantity': item.quantity,
-                'purchasePrice': item.purchasePrice,
-                'totalPrice': item.totalPrice,
-              })
+          .map(
+            (item) => {
+              'productId': item.productId,
+              'productName': item.productName,
+              'quantity': item.quantity,
+              'purchasePrice': item.purchasePrice,
+              'totalPrice': item.totalPrice,
+            },
+          )
           .toList(),
       'totalAmount': entity.totalAmount,
       'supplier': entity.supplier,
       'notes': entity.notes,
       'attachedFiles': entity.attachedFiles
-          ?.map((f) => {
-                'id': f.id,
-                'name': f.name,
-                'path': f.path,
-                'type': f.type.name, // image, pdf, document
-                'size': f.size,
-                'uploadedAt': f.uploadedAt?.toIso8601String(),
-              })
+          ?.map(
+            (f) => {
+              'id': f.id,
+              'name': f.name,
+              'path': f.path,
+              'type': f.type.name, // image, pdf, document
+              'size': f.size,
+              'uploadedAt': f.uploadedAt?.toIso8601String(),
+            },
+          )
           .toList(),
     };
   }

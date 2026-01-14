@@ -13,8 +13,7 @@ class BottleListDisplay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final totalBottles =
-        bottles.values.fold<int>(0, (sum, qty) => sum + qty);
+    final totalBottles = bottles.values.fold<int>(0, (sum, qty) => sum + qty);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -29,9 +28,7 @@ class BottleListDisplay extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           // Résumé
-          _SummaryBox(
-            totalBottles: totalBottles,
-          ),
+          _SummaryBox(totalBottles: totalBottles),
         ],
       ],
     );
@@ -63,19 +60,13 @@ class _BottleItem extends StatelessWidget {
         children: [
           Text(
             '$quantity × ${weight}kg',
-            style: const TextStyle(
-              fontSize: 14,
-              color: Color(0xFF0A0A0A),
-            ),
+            style: const TextStyle(fontSize: 14, color: Color(0xFF0A0A0A)),
           ),
           IconButton(
             icon: const Icon(Icons.close, size: 16),
             onPressed: onRemove,
             padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(
-              minWidth: 28,
-              minHeight: 28,
-            ),
+            constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
             color: const Color(0xFF0A0A0A),
           ),
         ],
@@ -107,10 +98,7 @@ class _SummaryBox extends StatelessWidget {
         children: [
           Text(
             '📦 Chargement total',
-            style: TextStyle(
-              fontSize: 14,
-              color: blueText,
-            ),
+            style: TextStyle(fontSize: 14, color: blueText),
           ),
           const SizedBox(height: 8),
           Row(
@@ -118,17 +106,11 @@ class _SummaryBox extends StatelessWidget {
             children: [
               const Text(
                 'Vides collectées :',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFF364153),
-                ),
+                style: TextStyle(fontSize: 14, color: Color(0xFF364153)),
               ),
               Text(
                 '$totalBottles',
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFF0A0A0A),
-                ),
+                style: const TextStyle(fontSize: 14, color: Color(0xFF0A0A0A)),
               ),
             ],
           ),
@@ -136,12 +118,7 @@ class _SummaryBox extends StatelessWidget {
           Container(
             padding: const EdgeInsets.only(top: 9),
             decoration: BoxDecoration(
-              border: Border(
-                top: BorderSide(
-                  color: blueBorder,
-                  width: 1.3,
-                ),
-              ),
+              border: Border(top: BorderSide(color: blueBorder, width: 1.3)),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -170,4 +147,3 @@ class _SummaryBox extends StatelessWidget {
     );
   }
 }
-

@@ -7,11 +7,7 @@ import '../../domain/entities/agent.dart';
 
 /// Dialog for creating or editing an agent.
 class AgentFormDialog extends ConsumerStatefulWidget {
-  const AgentFormDialog({
-    super.key,
-    this.agent,
-    required this.onSave,
-  });
+  const AgentFormDialog({super.key, this.agent, required this.onSave});
 
   final Agent? agent;
   final Function(Agent) onSave;
@@ -36,13 +32,16 @@ class _AgentFormDialogState extends ConsumerState<AgentFormDialog>
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.agent?.name ?? '');
-    _phoneController =
-        TextEditingController(text: widget.agent?.phoneNumber ?? '');
+    _phoneController = TextEditingController(
+      text: widget.agent?.phoneNumber ?? '',
+    );
     _simController = TextEditingController(text: widget.agent?.simNumber ?? '');
-    _liquidityController =
-        TextEditingController(text: widget.agent?.liquidity.toString() ?? '0');
+    _liquidityController = TextEditingController(
+      text: widget.agent?.liquidity.toString() ?? '0',
+    );
     _commissionRateController = TextEditingController(
-        text: widget.agent?.commissionRate.toString() ?? '2.5');
+      text: widget.agent?.commissionRate.toString() ?? '2.5',
+    );
     _selectedOperator = widget.agent?.operator ?? MobileOperator.orange;
     _selectedStatus = widget.agent?.status ?? AgentStatus.active;
   }
@@ -66,7 +65,8 @@ class _AgentFormDialogState extends ConsumerState<AgentFormDialog>
     await handleFormSubmit(
       context: context,
       formKey: _formKey,
-      onLoadingChanged: (_) {}, // Pas besoin de gestion d'état de chargement séparée
+      onLoadingChanged:
+          (_) {}, // Pas besoin de gestion d'état de chargement séparée
       onSubmit: () async {
         final agent = Agent(
           id: widget.agent?.id ?? IdGenerator.generate(),
@@ -98,7 +98,7 @@ class _AgentFormDialogState extends ConsumerState<AgentFormDialog>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final activeEnterpriseAsync = ref.watch(activeEnterpriseProvider);
-    
+
     // Récupérer l'ID de l'entreprise active
     final enterpriseId = activeEnterpriseAsync.when(
       data: (enterprise) => enterprise?.id,
@@ -167,16 +167,13 @@ class _AgentFormDialogState extends ConsumerState<AgentFormDialog>
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<MobileOperator>(
-      initialValue: _selectedOperator,
-      decoration: const InputDecoration(
-        labelText: 'Opérateur',
-        border: OutlineInputBorder(),
-      ),
-      items: MobileOperator.values.map((MobileOperator op) {
-                  return DropdownMenuItem(
-                    value: op,
-                    child: Text(op.label),
-                  );
+                initialValue: _selectedOperator,
+                decoration: const InputDecoration(
+                  labelText: 'Opérateur',
+                  border: OutlineInputBorder(),
+                ),
+                items: MobileOperator.values.map((MobileOperator op) {
+                  return DropdownMenuItem(value: op, child: Text(op.label));
                 }).toList(),
                 onChanged: (value) {
                   if (value != null) {
@@ -224,12 +221,12 @@ class _AgentFormDialogState extends ConsumerState<AgentFormDialog>
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<AgentStatus>(
-      initialValue: _selectedStatus,
-      decoration: const InputDecoration(
-        labelText: 'Statut',
-        border: OutlineInputBorder(),
-      ),
-      items: AgentStatus.values.map((AgentStatus status) {
+                initialValue: _selectedStatus,
+                decoration: const InputDecoration(
+                  labelText: 'Statut',
+                  border: OutlineInputBorder(),
+                ),
+                items: AgentStatus.values.map((AgentStatus status) {
                   return DropdownMenuItem(
                     value: status,
                     child: Text(status.label),
@@ -269,4 +266,3 @@ class _AgentFormDialogState extends ConsumerState<AgentFormDialog>
     );
   }
 }
-

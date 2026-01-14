@@ -26,9 +26,7 @@ class ExpenseBalanceTable extends StatelessWidget {
       return const Card(
         child: Padding(
           padding: EdgeInsets.all(24),
-          child: Center(
-            child: Text('Aucune dépense trouvée'),
-          ),
+          child: Center(child: Text('Aucune dépense trouvée')),
         ),
       );
     }
@@ -44,9 +42,9 @@ class ExpenseBalanceTable extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             child: Text(
               'Détail des dépenses',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
           ),
           SingleChildScrollView(
@@ -64,10 +62,12 @@ class ExpenseBalanceTable extends StatelessWidget {
                     DataCell(Text(_formatDate(expense.date))),
                     DataCell(Text(expense.label)),
                     DataCell(Text(getCategoryLabel(expense.category))),
-                    DataCell(Text(
-                      CurrencyFormatter.formatFCFA(expense.amount),
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    )),
+                    DataCell(
+                      Text(
+                        CurrencyFormatter.formatFCFA(expense.amount),
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
                   ],
                 );
               }).toList(),
@@ -78,4 +78,3 @@ class ExpenseBalanceTable extends StatelessWidget {
     );
   }
 }
-

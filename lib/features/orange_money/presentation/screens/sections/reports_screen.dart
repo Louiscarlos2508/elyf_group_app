@@ -8,6 +8,7 @@ import '../../widgets/reports/report_net_balance_card.dart';
 import '../../widgets/reports/report_period_selector.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
+
 /// Enhanced reports screen with period selector and detailed statistics.
 class ReportsScreen extends ConsumerStatefulWidget {
   const ReportsScreen({super.key, this.enterpriseId});
@@ -74,7 +75,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final statsKey = '${_startDate?.millisecondsSinceEpoch ?? ''}|${_endDate?.millisecondsSinceEpoch ?? ''}';
+    final statsKey =
+        '${_startDate?.millisecondsSinceEpoch ?? ''}|${_endDate?.millisecondsSinceEpoch ?? ''}';
     final statsAsync = ref.watch(reportsStatisticsProvider(statsKey));
 
     return Container(
@@ -105,7 +107,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                         const SizedBox(height: 16),
                         ReportDailyDetailCard(
                           onExportPdf: () {
-                            NotificationService.showInfo(context, 'Export PDF - À implémenter');
+                            NotificationService.showInfo(
+                              context,
+                              'Export PDF - À implémenter',
+                            );
                           },
                         ),
                       ],
@@ -116,9 +121,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                         child: CircularProgressIndicator(),
                       ),
                     ),
-                    error: (error, stack) => Center(
-                      child: Text('Erreur: $error'),
-                    ),
+                    error: (error, stack) =>
+                        Center(child: Text('Erreur: $error')),
                   ),
                 ],
               ),
@@ -128,5 +132,4 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       ),
     );
   }
-
 }

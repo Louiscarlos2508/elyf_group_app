@@ -43,4 +43,3 @@ class ContractValidationService {
     return depositAmount ?? 0;
   }
 }
-

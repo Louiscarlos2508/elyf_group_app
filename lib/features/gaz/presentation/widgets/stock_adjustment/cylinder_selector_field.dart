@@ -29,13 +29,11 @@ class CylinderSelectorField extends ConsumerWidget {
     // If a point of sale is selected, use its cylinders
     if (selectedPointOfSale != null) {
       final cylindersAsync = ref.watch(
-        pointOfSaleCylindersProvider(
-          (
-            pointOfSaleId: selectedPointOfSale!.id,
-            enterpriseId: enterpriseId,
-            moduleId: moduleId,
-          ),
-        ),
+        pointOfSaleCylindersProvider((
+          pointOfSaleId: selectedPointOfSale!.id,
+          enterpriseId: enterpriseId,
+          moduleId: moduleId,
+        )),
       );
 
       return cylindersAsync.when(
@@ -104,7 +102,11 @@ class CylinderSelectorField extends ConsumerWidget {
       ),
       child: Row(
         children: [
-          Icon(Icons.warning_amber_rounded, color: Colors.orange[700], size: 20),
+          Icon(
+            Icons.warning_amber_rounded,
+            color: Colors.orange[700],
+            size: 20,
+          ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -140,4 +142,3 @@ class CylinderSelectorField extends ConsumerWidget {
     );
   }
 }
-

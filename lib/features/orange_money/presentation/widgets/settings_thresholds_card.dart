@@ -37,7 +37,8 @@ class _SettingsThresholdsCardState extends State<SettingsThresholdsCard> {
   void didUpdateWidget(SettingsThresholdsCard oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.thresholds != widget.thresholds) {
-      _liquidityController.text = widget.thresholds.criticalLiquidityThreshold.toString();
+      _liquidityController.text = widget.thresholds.criticalLiquidityThreshold
+          .toString();
       _daysController.text = widget.thresholds.paymentDueDaysBefore.toString();
     }
   }
@@ -67,11 +68,7 @@ class _SettingsThresholdsCardState extends State<SettingsThresholdsCard> {
           children: [
             Row(
               children: [
-                const Icon(
-                  Icons.tune,
-                  size: 20,
-                  color: Color(0xFF0A0A0A),
-                ),
+                const Icon(Icons.tune, size: 20, color: Color(0xFF0A0A0A)),
                 const SizedBox(width: 8),
                 const Text(
                   'Seuils et limites',
@@ -94,9 +91,13 @@ class _SettingsThresholdsCardState extends State<SettingsThresholdsCard> {
                     description:
                         'Vous serez alerté si la liquidité descend en dessous de ce montant',
                     onChanged: (value) {
-                      final intValue = int.tryParse(value) ?? widget.thresholds.criticalLiquidityThreshold;
+                      final intValue =
+                          int.tryParse(value) ??
+                          widget.thresholds.criticalLiquidityThreshold;
                       widget.onThresholdsChanged(
-                        widget.thresholds.copyWith(criticalLiquidityThreshold: intValue),
+                        widget.thresholds.copyWith(
+                          criticalLiquidityThreshold: intValue,
+                        ),
                       );
                     },
                   ),
@@ -110,9 +111,13 @@ class _SettingsThresholdsCardState extends State<SettingsThresholdsCard> {
                     description:
                         'Nombre de jours avant l\'échéance pour recevoir une alerte',
                     onChanged: (value) {
-                      final intValue = int.tryParse(value) ?? widget.thresholds.paymentDueDaysBefore;
+                      final intValue =
+                          int.tryParse(value) ??
+                          widget.thresholds.paymentDueDaysBefore;
                       widget.onThresholdsChanged(
-                        widget.thresholds.copyWith(paymentDueDaysBefore: intValue),
+                        widget.thresholds.copyWith(
+                          paymentDueDaysBefore: intValue,
+                        ),
                       );
                     },
                   ),
@@ -157,10 +162,7 @@ class _SettingsThresholdsCardState extends State<SettingsThresholdsCard> {
             controller: controller,
             keyboardType: TextInputType.number,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            style: const TextStyle(
-              fontSize: 14,
-              color: Color(0xFF0A0A0A),
-            ),
+            style: const TextStyle(fontSize: 14, color: Color(0xFF0A0A0A)),
             decoration: InputDecoration(
               hintText: hint,
               hintStyle: const TextStyle(
@@ -168,7 +170,10 @@ class _SettingsThresholdsCardState extends State<SettingsThresholdsCard> {
                 color: Color(0xFF717182),
               ),
               border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 4,
+              ),
             ),
             onChanged: onChanged,
           ),
@@ -191,10 +196,7 @@ class _SettingsThresholdsCardState extends State<SettingsThresholdsCard> {
       padding: const EdgeInsets.all(17),
       decoration: BoxDecoration(
         color: const Color(0xFFFFFBEB),
-        border: Border.all(
-          color: const Color(0xFFFEE685),
-          width: 1.219,
-        ),
+        border: Border.all(color: const Color(0xFFFEE685), width: 1.219),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
@@ -250,4 +252,3 @@ class _SettingsThresholdsCardState extends State<SettingsThresholdsCard> {
     );
   }
 }
-

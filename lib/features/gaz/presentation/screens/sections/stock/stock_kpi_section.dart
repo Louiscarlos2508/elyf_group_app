@@ -156,4 +156,3 @@ class _StockKpiCards extends StatelessWidget {
     );
   }
 }
-

@@ -10,10 +10,7 @@ import 'production_period_formatter.dart';
 
 /// Content widget for production report tab.
 class ProductionReportContent extends ConsumerWidget {
-  const ProductionReportContent({
-    super.key,
-    required this.period,
-  });
+  const ProductionReportContent({super.key, required this.period});
 
   final ReportPeriod period;
 
@@ -56,7 +53,8 @@ class ProductionReportContent extends ConsumerWidget {
                   Expanded(
                     child: _SummaryCard(
                       label: 'Quantité Totale',
-                      value: '${CurrencyFormatter.formatFCFA(data.totalQuantity)} unités',
+                      value:
+                          '${CurrencyFormatter.formatFCFA(data.totalQuantity)} unités',
                       icon: Icons.inventory_2,
                       color: Colors.blue,
                     ),
@@ -65,7 +63,8 @@ class ProductionReportContent extends ConsumerWidget {
                   Expanded(
                     child: _SummaryCard(
                       label: 'Moyenne par Lot',
-                      value: '${data.averageQuantityPerBatch.toStringAsFixed(0)} unités',
+                      value:
+                          '${data.averageQuantityPerBatch.toStringAsFixed(0)} unités',
                       icon: Icons.trending_up,
                       color: Colors.green,
                     ),
@@ -78,7 +77,8 @@ class ProductionReportContent extends ConsumerWidget {
                   Expanded(
                     child: _SummaryCard(
                       label: 'Coût Total',
-                      value: '${CurrencyFormatter.formatFCFA(data.totalCost)} FCFA',
+                      value:
+                          '${CurrencyFormatter.formatFCFA(data.totalCost)} FCFA',
                       icon: Icons.attach_money,
                       color: Colors.red,
                     ),
@@ -101,7 +101,9 @@ class ProductionReportContent extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                  color: theme.colorScheme.surfaceContainerHighest.withValues(
+                    alpha: 0.3,
+                  ),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: theme.colorScheme.outline.withValues(alpha: 0.2),
@@ -119,17 +121,20 @@ class ProductionReportContent extends ConsumerWidget {
                     const SizedBox(height: 12),
                     _CostDetailRow(
                       label: 'Bobines',
-                      value: '${CurrencyFormatter.formatFCFA(data.totalBobinesCost)} FCFA',
+                      value:
+                          '${CurrencyFormatter.formatFCFA(data.totalBobinesCost)} FCFA',
                     ),
                     const SizedBox(height: 8),
                     _CostDetailRow(
                       label: 'Électricité',
-                      value: '${CurrencyFormatter.formatFCFA(data.totalElectricityCost)} FCFA',
+                      value:
+                          '${CurrencyFormatter.formatFCFA(data.totalElectricityCost)} FCFA',
                     ),
                     const SizedBox(height: 8),
                     _CostDetailRow(
                       label: 'Personnel',
-                      value: '${CurrencyFormatter.formatFCFA(data.totalPersonnelCost)} FCFA',
+                      value:
+                          '${CurrencyFormatter.formatFCFA(data.totalPersonnelCost)} FCFA',
                     ),
                   ],
                 ),
@@ -152,9 +157,9 @@ class ProductionReportContent extends ConsumerWidget {
                   ),
                 )
               else
-                ...data.productions.map<Widget>((production) => _ProductionCard(
-                      production: production,
-                    )),
+                ...data.productions.map<Widget>(
+                  (production) => _ProductionCard(production: production),
+                ),
             ],
           ),
         );
@@ -186,9 +191,7 @@ class _SummaryCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: color.withValues(alpha: 0.2),
-        ),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Row(
         children: [
@@ -233,7 +236,9 @@ class _ProductionCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       child: ExpansionTile(
         leading: const Icon(Icons.factory, color: Colors.blue),
-        title: Text('${production.quantiteProduite} ${production.quantiteProduiteUnite}'),
+        title: Text(
+          '${production.quantiteProduite} ${production.quantiteProduiteUnite}',
+        ),
         subtitle: Text(ProductionPeriodFormatter.formatDate(production.date)),
         trailing: Text(
           'Période ${production.period}',
@@ -267,41 +272,54 @@ class _ProductionCard extends StatelessWidget {
                 if (production.consommationCourant > 0)
                   _DetailItem(
                     label: 'Consommation électrique',
-                    value: '${production.consommationCourant.toStringAsFixed(2)} kWh',
+                    value:
+                        '${production.consommationCourant.toStringAsFixed(2)} kWh',
                   ),
                 if (production.coutTotal > 0) ...[
                   const SizedBox(height: 12),
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+                      color: theme.colorScheme.primaryContainer.withValues(
+                        alpha: 0.3,
+                      ),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Column(
                       children: [
                         _DetailItem(
                           label: 'Coût total',
-                          value: CurrencyFormatter.formatFCFA(production.coutTotal),
+                          value: CurrencyFormatter.formatFCFA(
+                            production.coutTotal,
+                          ),
                         ),
-                        if (production.coutBobines != null && production.coutBobines! > 0) ...[
+                        if (production.coutBobines != null &&
+                            production.coutBobines! > 0) ...[
                           const SizedBox(height: 4),
                           _DetailItem(
                             label: '  • Bobines',
-                            value: CurrencyFormatter.formatFCFA(production.coutBobines!),
+                            value: CurrencyFormatter.formatFCFA(
+                              production.coutBobines!,
+                            ),
                           ),
                         ],
-                        if (production.coutElectricite != null && production.coutElectricite! > 0) ...[
+                        if (production.coutElectricite != null &&
+                            production.coutElectricite! > 0) ...[
                           const SizedBox(height: 4),
                           _DetailItem(
                             label: '  • Électricité',
-                            value: CurrencyFormatter.formatFCFA(production.coutElectricite!),
+                            value: CurrencyFormatter.formatFCFA(
+                              production.coutElectricite!,
+                            ),
                           ),
                         ],
                         if (production.coutTotalPersonnel > 0) ...[
                           const SizedBox(height: 4),
                           _DetailItem(
                             label: '  • Personnel',
-                            value: CurrencyFormatter.formatFCFA(production.coutTotalPersonnel),
+                            value: CurrencyFormatter.formatFCFA(
+                              production.coutTotalPersonnel,
+                            ),
                           ),
                         ],
                       ],
@@ -318,10 +336,7 @@ class _ProductionCard extends StatelessWidget {
 }
 
 class _DetailItem extends StatelessWidget {
-  const _DetailItem({
-    required this.label,
-    required this.value,
-  });
+  const _DetailItem({required this.label, required this.value});
 
   final String label;
   final String value;
@@ -350,10 +365,7 @@ class _DetailItem extends StatelessWidget {
 }
 
 class _CostDetailRow extends StatelessWidget {
-  const _CostDetailRow({
-    required this.label,
-    required this.value,
-  });
+  const _CostDetailRow({required this.label, required this.value});
 
   final String label;
   final String value;
@@ -381,4 +393,3 @@ class _CostDetailRow extends StatelessWidget {
     );
   }
 }
-

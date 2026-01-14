@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:elyf_groupe_app/features/administration/application/providers.dart' show permissionServiceProvider;
+import 'package:elyf_groupe_app/features/administration/application/providers.dart'
+    show permissionServiceProvider;
 import '../../../../core/permissions/services/permission_service.dart';
 import '../../../../core/auth/providers.dart' as auth;
 import '../../domain/adapters/orange_money_permission_adapter.dart';
@@ -13,21 +14,19 @@ final centralizedPermissionServiceProvider = Provider<PermissionService>(
 
 /// Provider for current user ID.
 /// Uses the authenticated user ID from auth service, or falls back to default user for development.
-final currentUserIdProvider = Provider<String>(
-  (ref) {
-    final authUserId = ref.watch(auth.currentUserIdProvider);
-    if (authUserId != null && authUserId.isNotEmpty) {
-      return authUserId;
-    }
-    return 'default_user_orange_money';
-  },
-);
+final currentUserIdProvider = Provider<String>((ref) {
+  final authUserId = ref.watch(auth.currentUserIdProvider);
+  if (authUserId != null && authUserId.isNotEmpty) {
+    return authUserId;
+  }
+  return 'default_user_orange_money';
+});
 
 /// Provider for orange_money permission adapter.
-final orangeMoneyPermissionAdapterProvider = Provider<OrangeMoneyPermissionAdapter>(
-  (ref) => OrangeMoneyPermissionAdapter(
-    permissionService: ref.watch(centralizedPermissionServiceProvider),
-    userId: ref.watch(currentUserIdProvider),
-  ),
-);
-
+final orangeMoneyPermissionAdapterProvider =
+    Provider<OrangeMoneyPermissionAdapter>(
+      (ref) => OrangeMoneyPermissionAdapter(
+        permissionService: ref.watch(centralizedPermissionServiceProvider),
+        userId: ref.watch(currentUserIdProvider),
+      ),
+    );

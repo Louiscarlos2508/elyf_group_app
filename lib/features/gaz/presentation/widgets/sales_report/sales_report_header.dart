@@ -6,10 +6,7 @@ import '../../../domain/entities/report_data.dart';
 
 /// En-tête du rapport de vente avec titre et résumé.
 class SalesReportHeader extends StatelessWidget {
-  const SalesReportHeader({
-    super.key,
-    required this.reportData,
-  });
+  const SalesReportHeader({super.key, required this.reportData});
 
   final GazReportData reportData;
 
@@ -38,4 +35,3 @@ class SalesReportHeader extends StatelessWidget {
     );
   }
 }
-

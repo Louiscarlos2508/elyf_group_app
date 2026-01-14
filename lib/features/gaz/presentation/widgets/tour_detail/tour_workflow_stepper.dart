@@ -4,10 +4,7 @@ import '../../../domain/entities/tour.dart';
 
 /// Stepper du workflow du tour.
 class TourWorkflowStepper extends StatelessWidget {
-  const TourWorkflowStepper({
-    super.key,
-    required this.tour,
-  });
+  const TourWorkflowStepper({super.key, required this.tour});
 
   final Tour tour;
 
@@ -44,8 +41,8 @@ class TourWorkflowStepper extends StatelessWidget {
           final circleColor = isPast
               ? const Color(0xFF00A63E) // Vert pour complété
               : isActive
-                  ? const Color(0xFF155DFC) // Bleu pour actif
-                  : const Color(0xFFE5E7EB); // Gris pour inactif
+              ? const Color(0xFF155DFC) // Bleu pour actif
+              : const Color(0xFFE5E7EB); // Gris pour inactif
           final textColor = isPast || isActive
               ? Colors.white
               : const Color(0xFF6A7282);
@@ -92,12 +89,7 @@ class TourWorkflowStepper extends StatelessWidget {
                   ),
                 ),
                 if (index < steps.length - 1)
-                  Expanded(
-                    child: Container(
-                      height: 4,
-                      color: lineColor,
-                    ),
-                  ),
+                  Expanded(child: Container(height: 4, color: lineColor)),
               ],
             ),
           );
@@ -106,4 +98,3 @@ class TourWorkflowStepper extends StatelessWidget {
     );
   }
 }
-

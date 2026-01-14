@@ -10,10 +10,7 @@ class TransactionsHistoryEmptyState extends StatelessWidget {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(14),
-        side: const BorderSide(
-          color: Color(0xFFE5E5E5),
-          width: 1.219,
-        ),
+        side: const BorderSide(color: Color(0xFFE5E5E5), width: 1.219),
       ),
       child: Container(
         height: 234,
@@ -52,4 +49,3 @@ class TransactionsHistoryEmptyState extends StatelessWidget {
     );
   }
 }
-

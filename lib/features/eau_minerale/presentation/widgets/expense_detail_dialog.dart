@@ -6,10 +6,7 @@ import '../../domain/entities/expense_record.dart';
 
 /// Dialog showing expense details.
 class ExpenseDetailDialog extends StatelessWidget {
-  const ExpenseDetailDialog({
-    super.key,
-    required this.expense,
-  });
+  const ExpenseDetailDialog({super.key, required this.expense});
 
   final ExpenseRecord expense;
 
@@ -149,4 +146,3 @@ class _DetailRow extends StatelessWidget {
     );
   }
 }
-

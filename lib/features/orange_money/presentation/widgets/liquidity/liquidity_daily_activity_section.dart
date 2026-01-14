@@ -152,7 +152,9 @@ class LiquidityDailyActivitySection extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        CurrencyFormatter.formatFCFA(checkpoint!.morningCashAmount!),
+                        CurrencyFormatter.formatFCFA(
+                          checkpoint!.morningCashAmount!,
+                        ),
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
@@ -175,7 +177,9 @@ class LiquidityDailyActivitySection extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        CurrencyFormatter.formatFCFA(checkpoint!.morningSimAmount!),
+                        CurrencyFormatter.formatFCFA(
+                          checkpoint!.morningSimAmount!,
+                        ),
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
@@ -216,4 +220,3 @@ class LiquidityDailyActivitySection extends StatelessWidget {
     );
   }
 }
-

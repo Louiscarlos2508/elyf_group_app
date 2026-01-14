@@ -51,8 +51,9 @@ class ReportOfflineRepository implements ReportRepository {
       final end = _getEndDate(period);
 
       final sales = await saleRepository.fetchRecentSales(limit: 5000);
-      final periodSales =
-          sales.where((s) => _isInPeriod(s.date, start, end)).toList();
+      final periodSales = sales
+          .where((s) => _isInPeriod(s.date, start, end))
+          .toList();
 
       // Les sessions de production ne sont pas utilisées dans cette méthode
       // final sessions = await productionSessionRepository.fetchSessions(
@@ -60,35 +61,43 @@ class ReportOfflineRepository implements ReportRepository {
       //   endDate: end,
       // );
 
-      final expenses =
-          await financeRepository.fetchRecentExpenses(limit: 1000);
-      final periodExpenses =
-          expenses.where((e) => _isInPeriod(e.date, start, end)).toList();
+      final expenses = await financeRepository.fetchRecentExpenses(limit: 1000);
+      final periodExpenses = expenses
+          .where((e) => _isInPeriod(e.date, start, end))
+          .toList();
 
-      final revenue =
-          periodSales.fold<int>(0, (sum, s) => sum + s.totalPrice);
-      final collections =
-          periodSales.fold<int>(0, (sum, s) => sum + s.amountPaid);
-      final totalExpenses =
-          periodExpenses.fold<int>(0, (sum, e) => sum + e.amountCfa);
+      final revenue = periodSales.fold<int>(0, (sum, s) => sum + s.totalPrice);
+      final collections = periodSales.fold<int>(
+        0,
+        (sum, s) => sum + s.amountPaid,
+      );
+      final totalExpenses = periodExpenses.fold<int>(
+        0,
+        (sum, e) => sum + e.amountCfa,
+      );
 
       // Calculate treasury (revenue - totalExpenses - salaries)
-      final salaryPayments = await salaryRepository.fetchMonthlySalaryPayments();
-      final productionPayments = await salaryRepository.fetchProductionPayments();
+      final salaryPayments = await salaryRepository
+          .fetchMonthlySalaryPayments();
+      final productionPayments = await salaryRepository
+          .fetchProductionPayments();
       final periodSalaryPayments = salaryPayments
           .where((p) => _isInPeriod(p.date, start, end))
           .toList();
       final periodProductionPayments = productionPayments
           .where((p) => _isInPeriod(p.paymentDate, start, end))
           .toList();
-      final totalSalaries = periodSalaryPayments.fold<int>(
-          0, (sum, p) => sum + p.amount) +
+      final totalSalaries =
+          periodSalaryPayments.fold<int>(0, (sum, p) => sum + p.amount) +
           periodProductionPayments.fold<int>(
-              0, (sum, p) => sum + p.totalAmount);
+            0,
+            (sum, p) => sum + p.totalAmount,
+          );
 
       final treasury = revenue - totalExpenses - totalSalaries;
-      final collectionRate =
-          revenue > 0 ? (collections / revenue) * 100.0 : 0.0;
+      final collectionRate = revenue > 0
+          ? (collections / revenue) * 100.0
+          : 0.0;
 
       return ReportData(
         revenue: revenue,
@@ -100,10 +109,12 @@ class ReportOfflineRepository implements ReportRepository {
       );
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log('Error fetching report data',
-          name: 'ReportOfflineRepository',
-          error: error,
-          stackTrace: stackTrace);
+      developer.log(
+        'Error fetching report data',
+        name: 'ReportOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
       throw appException;
     }
   }
@@ -118,17 +129,20 @@ class ReportOfflineRepository implements ReportRepository {
       return sales.where((s) => _isInPeriod(s.date, start, end)).toList();
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log('Error fetching sales for period',
-          name: 'ReportOfflineRepository',
-          error: error,
-          stackTrace: stackTrace);
+      developer.log(
+        'Error fetching sales for period',
+        name: 'ReportOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
       throw appException;
     }
   }
 
   @override
   Future<List<ProductSalesSummary>> fetchProductSalesSummary(
-      ReportPeriod period) async {
+    ReportPeriod period,
+  ) async {
     try {
       final sales = await fetchSalesForPeriod(period);
 
@@ -155,17 +169,20 @@ class ReportOfflineRepository implements ReportRepository {
       return summaries;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log('Error fetching product sales summary',
-          name: 'ReportOfflineRepository',
-          error: error,
-          stackTrace: stackTrace);
+      developer.log(
+        'Error fetching product sales summary',
+        name: 'ReportOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
       throw appException;
     }
   }
 
   @override
   Future<ProductionReportData> fetchProductionReport(
-      ReportPeriod period) async {
+    ReportPeriod period,
+  ) async {
     try {
       final start = _getStartDate(period);
       final end = _getEndDate(period);
@@ -179,7 +196,9 @@ class ReportOfflineRepository implements ReportRepository {
           .toList();
 
       final totalQuantity = periodSessions.fold<int>(
-          0, (sum, s) => sum + s.quantiteProduite);
+        0,
+        (sum, s) => sum + s.quantiteProduite,
+      );
       final totalBatches = periodSessions.length;
       final averageQuantityPerBatch = totalBatches > 0
           ? totalQuantity / totalBatches
@@ -187,12 +206,19 @@ class ReportOfflineRepository implements ReportRepository {
 
       // Calculate costs
       final totalBobinesCost = periodSessions.fold<int>(
-          0, (sum, s) => sum + (s.coutBobines ?? 0));
+        0,
+        (sum, s) => sum + (s.coutBobines ?? 0),
+      );
       final totalElectricityCost = periodSessions.fold<int>(
-          0, (sum, s) => sum + (s.coutElectricite ?? 0));
+        0,
+        (sum, s) => sum + (s.coutElectricite ?? 0),
+      );
       final totalPersonnelCost = periodSessions.fold<int>(
-          0, (sum, s) => sum + s.coutTotalPersonnel);
-      final totalCost = totalBobinesCost + totalElectricityCost + totalPersonnelCost;
+        0,
+        (sum, s) => sum + s.coutTotalPersonnel,
+      );
+      final totalCost =
+          totalBobinesCost + totalElectricityCost + totalPersonnelCost;
 
       return ProductionReportData(
         totalQuantity: totalQuantity,
@@ -206,10 +232,12 @@ class ReportOfflineRepository implements ReportRepository {
       );
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log('Error fetching production report',
-          name: 'ReportOfflineRepository',
-          error: error,
-          stackTrace: stackTrace);
+      developer.log(
+        'Error fetching production report',
+        name: 'ReportOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
       throw appException;
     }
   }
@@ -220,13 +248,15 @@ class ReportOfflineRepository implements ReportRepository {
       final start = _getStartDate(period);
       final end = _getEndDate(period);
 
-      final expenses =
-          await financeRepository.fetchRecentExpenses(limit: 5000);
-      final periodExpenses =
-          expenses.where((e) => _isInPeriod(e.date, start, end)).toList();
+      final expenses = await financeRepository.fetchRecentExpenses(limit: 5000);
+      final periodExpenses = expenses
+          .where((e) => _isInPeriod(e.date, start, end))
+          .toList();
 
-      final totalAmount =
-          periodExpenses.fold<int>(0, (sum, e) => sum + e.amountCfa);
+      final totalAmount = periodExpenses.fold<int>(
+        0,
+        (sum, e) => sum + e.amountCfa,
+      );
 
       final expensesByCategory = <ExpenseCategory, int>{};
       for (final expense in periodExpenses) {
@@ -242,10 +272,12 @@ class ReportOfflineRepository implements ReportRepository {
       );
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log('Error fetching expense report',
-          name: 'ReportOfflineRepository',
-          error: error,
-          stackTrace: stackTrace);
+      developer.log(
+        'Error fetching expense report',
+        name: 'ReportOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
       throw appException;
     }
   }
@@ -253,14 +285,19 @@ class ReportOfflineRepository implements ReportRepository {
   @override
   Future<SalaryReportData> fetchSalaryReport(ReportPeriod period) async {
     try {
-      final salaryPayments = await salaryRepository.fetchMonthlySalaryPayments();
-      final productionPayments =
-          await salaryRepository.fetchProductionPayments();
+      final salaryPayments = await salaryRepository
+          .fetchMonthlySalaryPayments();
+      final productionPayments = await salaryRepository
+          .fetchProductionPayments();
 
-      final totalMonthlySalaries =
-          salaryPayments.fold<int>(0, (sum, s) => sum + s.amount);
+      final totalMonthlySalaries = salaryPayments.fold<int>(
+        0,
+        (sum, s) => sum + s.amount,
+      );
       final totalProductionPayments = productionPayments.fold<int>(
-          0, (sum, p) => sum + p.totalAmount);
+        0,
+        (sum, p) => sum + p.totalAmount,
+      );
       final totalAmount = totalMonthlySalaries + totalProductionPayments;
 
       return SalaryReportData(
@@ -272,10 +309,12 @@ class ReportOfflineRepository implements ReportRepository {
       );
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log('Error fetching salary report',
-          name: 'ReportOfflineRepository',
-          error: error,
-          stackTrace: stackTrace);
+      developer.log(
+        'Error fetching salary report',
+        name: 'ReportOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
       throw appException;
     }
   }

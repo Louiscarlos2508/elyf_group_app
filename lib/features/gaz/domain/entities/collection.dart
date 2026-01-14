@@ -33,7 +33,8 @@ class Collection {
   final Map<int, int> emptyBottles; // poids -> quantité
   final Map<int, int> leaks; // poids -> quantité de fuites
   final double unitPrice; // Prix unitaire par défaut (pour compatibilité)
-  final Map<int, double>? unitPricesByWeight; // poids -> prix unitaire (prioritaire si défini)
+  final Map<int, double>?
+  unitPricesByWeight; // poids -> prix unitaire (prioritaire si défini)
   final double amountPaid;
   final DateTime? paymentDate;
 
@@ -116,4 +117,3 @@ class Collection {
     return amountPaid >= amountDue;
   }
 }
-

@@ -42,10 +42,12 @@ class ContractPaymentsSection extends ConsumerWidget {
           final recentPayments = payments.take(5).toList();
           return Column(
             children: [
-              ...recentPayments.map((p) => ContractPaymentListTile(
-                payment: p,
-                onTap: onPaymentTap != null ? () => onPaymentTap!(p) : null,
-              )),
+              ...recentPayments.map(
+                (p) => ContractPaymentListTile(
+                  payment: p,
+                  onTap: onPaymentTap != null ? () => onPaymentTap!(p) : null,
+                ),
+              ),
               if (payments.length > 5)
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
@@ -73,11 +75,7 @@ class ContractPaymentsSection extends ConsumerWidget {
 
 /// Widget pour un paiement dans la liste.
 class ContractPaymentListTile extends StatelessWidget {
-  const ContractPaymentListTile({
-    super.key,
-    required this.payment,
-    this.onTap,
-  });
+  const ContractPaymentListTile({super.key, required this.payment, this.onTap});
 
   final Payment payment;
   final VoidCallback? onTap;
@@ -141,4 +139,3 @@ class ContractPaymentListTile extends StatelessWidget {
     );
   }
 }
-

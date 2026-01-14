@@ -7,7 +7,7 @@ import 'personnel_section.dart';
 import 'production_form_fields.dart';
 
 /// Étape 2 : Production.
-/// 
+///
 /// Permet d'enregistrer :
 /// - Quantité produite
 /// - Emballages utilisés
@@ -46,16 +46,16 @@ class StepProduction extends StatelessWidget {
       children: [
         Text(
           'Production',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         Text(
           'Enregistrez les quantités produites et les emballages utilisés.',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
         const SizedBox(height: 24),
         ProductionFormFields(
@@ -77,4 +77,3 @@ class StepProduction extends StatelessWidget {
     );
   }
 }
-

@@ -1,5 +1,5 @@
 /// Optimized query helpers for Drift repositories.
-/// 
+///
 /// Contains optimized query patterns for common operations.
 class OptimizedQueries {
   OptimizedQueries._();
@@ -28,4 +28,3 @@ class OptimizedQueries {
     return (page: validPage, limit: validLimit);
   }
 }
-

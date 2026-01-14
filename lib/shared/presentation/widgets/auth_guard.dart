@@ -5,13 +5,10 @@ import 'package:go_router/go_router.dart';
 import '../../../core/auth/services/auth_service.dart';
 
 /// Widget guard qui protège les routes nécessitant une authentification
-/// 
+///
 /// Redirige vers /login si l'utilisateur n'est pas connecté.
 class AuthGuard extends ConsumerWidget {
-  const AuthGuard({
-    super.key,
-    required this.child,
-  });
+  const AuthGuard({super.key, required this.child});
 
   final Widget child;
 
@@ -29,18 +26,13 @@ class AuthGuard extends ConsumerWidget {
             }
           });
           return const Scaffold(
-            body: Center(
-              child: CircularProgressIndicator(),
-            ),
+            body: Center(child: CircularProgressIndicator()),
           );
         }
         return child;
       },
-      loading: () => const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      ),
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (error, stack) => Scaffold(
         body: Center(
           child: Column(
@@ -61,4 +53,3 @@ class AuthGuard extends ConsumerWidget {
     );
   }
 }
-

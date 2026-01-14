@@ -20,9 +20,13 @@ class ImmobilierValidationService {
   /// Valide qu'une propriété peut être supprimée.
   /// Retourne une erreur si la propriété a des contrats actifs.
   Future<String?> validatePropertyDeletion(String propertyId) async {
-    final contracts = await _contractRepository.getContractsByProperty(propertyId);
-    final activeContracts = contracts.where((c) => c.status == ContractStatus.active);
-    
+    final contracts = await _contractRepository.getContractsByProperty(
+      propertyId,
+    );
+    final activeContracts = contracts.where(
+      (c) => c.status == ContractStatus.active,
+    );
+
     if (activeContracts.isNotEmpty) {
       return 'Impossible de supprimer cette propriété car elle a ${activeContracts.length} contrat(s) actif(s)';
     }
@@ -33,8 +37,10 @@ class ImmobilierValidationService {
   /// Retourne une erreur si le locataire a des contrats actifs.
   Future<String?> validateTenantDeletion(String tenantId) async {
     final contracts = await _contractRepository.getContractsByTenant(tenantId);
-    final activeContracts = contracts.where((c) => c.status == ContractStatus.active);
-    
+    final activeContracts = contracts.where(
+      (c) => c.status == ContractStatus.active,
+    );
+
     if (activeContracts.isNotEmpty) {
       return 'Impossible de supprimer ce locataire car il a ${activeContracts.length} contrat(s) actif(s)';
     }
@@ -45,13 +51,15 @@ class ImmobilierValidationService {
   /// Vérifie que la propriété existe et n'est pas déjà louée.
   Future<String?> validateContractCreation(Contract contract) async {
     // Vérifier que la propriété existe
-    final property = await _propertyRepository.getPropertyById(contract.propertyId);
+    final property = await _propertyRepository.getPropertyById(
+      contract.propertyId,
+    );
     if (property == null) {
       return 'La propriété sélectionnée n\'existe pas';
     }
 
     // Vérifier que la date de fin est après la date de début
-    if (contract.endDate.isBefore(contract.startDate) || 
+    if (contract.endDate.isBefore(contract.startDate) ||
         contract.endDate.isAtSameMomentAs(contract.startDate)) {
       return 'La date de fin doit être après la date de début';
     }
@@ -60,7 +68,8 @@ class ImmobilierValidationService {
     if (contract.status == ContractStatus.active) {
       if (property.status == PropertyStatus.rented) {
         // Vérifier s'il y a déjà un contrat actif pour cette propriété
-        final existingContracts = await _contractRepository.getContractsByProperty(property.id);
+        final existingContracts = await _contractRepository
+            .getContractsByProperty(property.id);
         final activeContracts = existingContracts.where(
           (c) => c.status == ContractStatus.active && c.id != contract.id,
         );
@@ -77,7 +86,9 @@ class ImmobilierValidationService {
   /// Vérifie que le contrat existe et est actif.
   Future<String?> validatePaymentCreation(Payment payment) async {
     // Vérifier que le contrat existe
-    final contract = await _contractRepository.getContractById(payment.contractId);
+    final contract = await _contractRepository.getContractById(
+      payment.contractId,
+    );
     if (contract == null) {
       return 'Le contrat sélectionné n\'existe pas';
     }
@@ -126,8 +137,12 @@ class ImmobilierValidationService {
   ) async {
     // Si on essaie de mettre une propriété en "available" alors qu'elle a des contrats actifs
     if (newStatus == PropertyStatus.available) {
-      final contracts = await _contractRepository.getContractsByProperty(propertyId);
-      final activeContracts = contracts.where((c) => c.status == ContractStatus.active);
+      final contracts = await _contractRepository.getContractsByProperty(
+        propertyId,
+      );
+      final activeContracts = contracts.where(
+        (c) => c.status == ContractStatus.active,
+      );
       if (activeContracts.isNotEmpty) {
         return 'Impossible de mettre cette propriété en "Disponible" car elle a ${activeContracts.length} contrat(s) actif(s)';
       }
@@ -148,9 +163,10 @@ class ImmobilierValidationService {
 
     // Si on passe d'actif à non-actif, on peut le faire
     // Si on passe de non-actif à actif, vérifier qu'il n'y a pas d'autre contrat actif pour la même propriété
-    if (contract.status != ContractStatus.active && 
+    if (contract.status != ContractStatus.active &&
         newStatus == ContractStatus.active) {
-      final existingContracts = await _contractRepository.getContractsByProperty(contract.propertyId);
+      final existingContracts = await _contractRepository
+          .getContractsByProperty(contract.propertyId);
       final activeContracts = existingContracts.where(
         (c) => c.status == ContractStatus.active && c.id != contractId,
       );
@@ -171,7 +187,7 @@ class ImmobilierValidationService {
     // Mise à jour des contrats expirés
     final contracts = await _contractRepository.getAllContracts();
     for (final contract in contracts) {
-      if (contract.status == ContractStatus.active && 
+      if (contract.status == ContractStatus.active &&
           contract.endDate.isBefore(now)) {
         final updated = Contract(
           id: contract.id,
@@ -198,7 +214,7 @@ class ImmobilierValidationService {
     // Mise à jour des paiements en retard
     final payments = await _paymentRepository.getAllPayments();
     for (final payment in payments) {
-      if (payment.status == PaymentStatus.pending && 
+      if (payment.status == PaymentStatus.pending &&
           payment.paymentDate.isBefore(now)) {
         final updated = Payment(
           id: payment.id,
@@ -240,7 +256,7 @@ class ImmobilierValidationService {
 
   /// Calcule le statut actuel d'un paiement.
   PaymentStatus computePaymentStatus(Payment payment) {
-    if (payment.status == PaymentStatus.paid || 
+    if (payment.status == PaymentStatus.paid ||
         payment.status == PaymentStatus.cancelled) {
       return payment.status;
     }
@@ -251,4 +267,3 @@ class ImmobilierValidationService {
     return PaymentStatus.pending;
   }
 }
-

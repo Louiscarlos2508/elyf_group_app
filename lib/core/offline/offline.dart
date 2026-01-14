@@ -60,6 +60,10 @@ export 'security/secure_storage.dart';
 // Sync handlers
 export 'handlers/firebase_sync_handler.dart';
 
+// Module sync services
+export 'module_data_sync_service.dart';
+export 'module_realtime_sync_service.dart';
+
 // Collections
 export 'collections/enterprise_collection.dart';
 export 'collections/expense_collection.dart';

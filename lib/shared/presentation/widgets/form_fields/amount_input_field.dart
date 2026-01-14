@@ -34,14 +34,12 @@ class AmountInputField extends StatelessWidget {
         prefixIcon: const Icon(Icons.attach_money),
       ),
       keyboardType: const TextInputType.numberWithOptions(decimal: false),
-      inputFormatters: [
-        FilteringTextInputFormatter.digitsOnly,
-      ],
+      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
       enabled: enabled,
-      validator: validator ?? 
+      validator:
+          validator ??
           ((value) => Validators.amount(value, allowZero: allowZero)),
       onChanged: onChanged,
     );
   }
 }
-

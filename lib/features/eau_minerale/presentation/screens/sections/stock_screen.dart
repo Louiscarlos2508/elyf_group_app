@@ -114,9 +114,11 @@ class _StockContentWithFiltersState
     // Filtrer par nom de produit
     if (_selectedProduct != null && _selectedProduct!.isNotEmpty) {
       filtered = filtered
-          .where((m) => m.productName
-              .toLowerCase()
-              .contains(_selectedProduct!.toLowerCase()))
+          .where(
+            (m) => m.productName.toLowerCase().contains(
+              _selectedProduct!.toLowerCase(),
+            ),
+          )
           .toList();
     }
 
@@ -126,7 +128,7 @@ class _StockContentWithFiltersState
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final isWide = constraints.maxWidth > 600;
@@ -136,18 +138,15 @@ class _StockContentWithFiltersState
           type: _selectedType,
           productName: _selectedProduct,
         );
-        final movementsAsync = ref.watch(stockMovementsProvider((filterParams)));
-        
+        final movementsAsync = ref.watch(
+          stockMovementsProvider((filterParams)),
+        );
+
         return CustomScrollView(
           slivers: [
             SliverToBoxAdapter(
               child: Padding(
-                padding: EdgeInsets.fromLTRB(
-                  24,
-                  24,
-                  24,
-                  isWide ? 24 : 16,
-                ),
+                padding: EdgeInsets.fromLTRB(24, 24, 24, isWide ? 24 : 16),
                 child: isWide
                     ? Row(
                         children: [
@@ -168,7 +167,9 @@ class _StockContentWithFiltersState
                                 type: _selectedType,
                                 productName: _selectedProduct,
                               );
-                              ref.invalidate(stockMovementsProvider((filterParams)));
+                              ref.invalidate(
+                                stockMovementsProvider((filterParams)),
+                              );
                             },
                             tooltip: 'Actualiser les stocks',
                           ),
@@ -204,13 +205,16 @@ class _StockContentWithFiltersState
                                 icon: const Icon(Icons.refresh),
                                 onPressed: () {
                                   ref.invalidate(stockStateProvider);
-                                  final filterParams = StockMovementFiltersParams(
-                                    startDate: _startDate,
-                                    endDate: _endDate,
-                                    type: _selectedType,
-                                    productName: _selectedProduct,
+                                  final filterParams =
+                                      StockMovementFiltersParams(
+                                        startDate: _startDate,
+                                        endDate: _endDate,
+                                        type: _selectedType,
+                                        productName: _selectedProduct,
+                                      );
+                                  ref.invalidate(
+                                    stockMovementsProvider((filterParams)),
                                   );
-                                  ref.invalidate(stockMovementsProvider((filterParams)));
                                 },
                                 tooltip: 'Actualiser les stocks',
                               ),
@@ -252,14 +256,17 @@ class _StockContentWithFiltersState
                               Expanded(
                                 child: RawMaterialsCard(
                                   items: widget.state.items,
-                                  availableBobines: widget.state.availableBobines,
+                                  availableBobines:
+                                      widget.state.availableBobines,
                                   bobineStocks: widget.state.bobineStocks,
                                   packagingStocks: widget.state.packagingStocks,
                                 ),
                               ),
                               const SizedBox(width: 16),
                               Expanded(
-                                child: FinishedProductsCard(items: widget.state.items),
+                                child: FinishedProductsCard(
+                                  items: widget.state.items,
+                                ),
                               ),
                             ],
                           ),
@@ -299,9 +306,7 @@ class _StockContentWithFiltersState
                       ),
                     ),
                     const SizedBox(height: 16),
-                    StockMovementFilters(
-                      onFiltersChanged: _onFiltersChanged,
-                    ),
+                    StockMovementFilters(onFiltersChanged: _onFiltersChanged),
                     const SizedBox(height: 16),
                     movementsAsync.when(
                       data: (movements) {
@@ -317,7 +322,9 @@ class _StockContentWithFiltersState
                       error: (error, stack) => Container(
                         padding: const EdgeInsets.all(24),
                         decoration: BoxDecoration(
-                          color: theme.colorScheme.errorContainer.withValues(alpha: 0.2),
+                          color: theme.colorScheme.errorContainer.withValues(
+                            alpha: 0.2,
+                          ),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Column(
@@ -352,7 +359,9 @@ class _StockContentWithFiltersState
                                   type: _selectedType,
                                   productName: _selectedProduct,
                                 );
-                                ref.invalidate(stockMovementsProvider((filterParams)));
+                                ref.invalidate(
+                                  stockMovementsProvider((filterParams)),
+                                );
                               },
                               icon: const Icon(Icons.refresh),
                               label: const Text('Réessayer'),
@@ -365,9 +374,7 @@ class _StockContentWithFiltersState
                 ),
               ),
             ),
-            const SliverToBoxAdapter(
-              child: SizedBox(height: 24),
-            ),
+            const SliverToBoxAdapter(child: SizedBox(height: 24)),
           ],
         );
       },

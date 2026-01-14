@@ -24,10 +24,7 @@ class PosBottlesSummary extends StatelessWidget {
             decoration: BoxDecoration(
               color: const Color(0xFFF0FDF4),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: const Color(0xFFB9F8CF),
-                width: 1.3,
-              ),
+              border: Border.all(color: const Color(0xFFB9F8CF), width: 1.3),
             ),
             child: Row(
               children: [
@@ -78,10 +75,7 @@ class PosBottlesSummary extends StatelessWidget {
             decoration: BoxDecoration(
               color: const Color(0xFFFFF7ED),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: const Color(0xFFFFD6A7),
-                width: 1.3,
-              ),
+              border: Border.all(color: const Color(0xFFFFD6A7), width: 1.3),
             ),
             child: Row(
               children: [
@@ -128,4 +122,3 @@ class PosBottlesSummary extends StatelessWidget {
     );
   }
 }
-

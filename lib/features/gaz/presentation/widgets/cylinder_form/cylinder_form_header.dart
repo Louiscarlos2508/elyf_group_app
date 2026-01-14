@@ -2,10 +2,7 @@ import 'package:flutter/material.dart';
 
 /// En-tête du formulaire de bouteille.
 class CylinderFormHeader extends StatelessWidget {
-  const CylinderFormHeader({
-    super.key,
-    required this.isEditing,
-  });
+  const CylinderFormHeader({super.key, required this.isEditing});
 
   final bool isEditing;
 
@@ -31,4 +28,3 @@ class CylinderFormHeader extends StatelessWidget {
     );
   }
 }
-

@@ -35,10 +35,7 @@ class CommissionsController {
     return await _repository.updateCommission(commission);
   }
 
-  Future<Map<String, dynamic>> getStatistics({
-    String? enterpriseId,
-  }) async {
+  Future<Map<String, dynamic>> getStatistics({String? enterpriseId}) async {
     return await _repository.getStatistics(enterpriseId: enterpriseId);
   }
 }
-

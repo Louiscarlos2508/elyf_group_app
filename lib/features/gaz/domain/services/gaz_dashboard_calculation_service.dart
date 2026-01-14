@@ -32,7 +32,10 @@ class GazDashboardCalculationService {
   }
 
   /// Filters sales for today.
-  List<GasSale> filterTodaySales(List<GasSale> sales, [DateTime? referenceDate]) {
+  List<GasSale> filterTodaySales(
+    List<GasSale> sales, [
+    DateTime? referenceDate,
+  ]) {
     final today = getToday(referenceDate);
     return sales.where((s) {
       final saleDate = DateTime(
@@ -51,7 +54,10 @@ class GazDashboardCalculationService {
   }
 
   /// Filters sales for current week.
-  List<GasSale> filterWeekSales(List<GasSale> sales, [DateTime? referenceDate]) {
+  List<GasSale> filterWeekSales(
+    List<GasSale> sales, [
+    DateTime? referenceDate,
+  ]) {
     final weekStart = getWeekStart(referenceDate);
     return sales.where((s) {
       return s.saleDate.isAfter(weekStart.subtract(const Duration(days: 1)));
@@ -65,7 +71,10 @@ class GazDashboardCalculationService {
   }
 
   /// Filters sales for current month.
-  List<GasSale> filterMonthSales(List<GasSale> sales, [DateTime? referenceDate]) {
+  List<GasSale> filterMonthSales(
+    List<GasSale> sales, [
+    DateTime? referenceDate,
+  ]) {
     final monthStart = getMonthStart(referenceDate);
     return sales.where((s) {
       return s.saleDate.isAfter(monthStart.subtract(const Duration(days: 1)));
@@ -122,7 +131,10 @@ class GazDashboardCalculationService {
   }
 
   /// Calculates today's metrics for dashboard.
-  GazDashboardTodayMetrics calculateTodayMetrics(List<GasSale> sales, [DateTime? referenceDate]) {
+  GazDashboardTodayMetrics calculateTodayMetrics(
+    List<GasSale> sales, [
+    DateTime? referenceDate,
+  ]) {
     final todaySales = filterTodaySales(sales, referenceDate);
     final revenue = calculateTodayRevenue(sales, referenceDate);
     final count = todaySales.length;
@@ -151,7 +163,10 @@ class GazDashboardCalculationService {
     final monthSales = filterMonthSales(sales, referenceDate);
     final monthRevenue = calculateMonthRevenue(sales, referenceDate);
     final monthExpenses = filterMonthExpenses(expenses, referenceDate);
-    final monthExpensesTotal = calculateMonthExpensesTotal(expenses, referenceDate);
+    final monthExpensesTotal = calculateMonthExpensesTotal(
+      expenses,
+      referenceDate,
+    );
     final monthProfit = calculateMonthProfit(
       sales: sales,
       expenses: expenses,
@@ -225,4 +240,3 @@ class GazDashboardTodayMetrics {
   final int salesCount;
   final double averageTicket;
 }
-

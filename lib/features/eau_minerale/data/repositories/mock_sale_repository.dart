@@ -19,13 +19,18 @@ class MockSaleRepository implements SaleRepository {
 
     if (startDate != null) {
       sales = sales
-          .where((s) => s.date.isAfter(startDate) || s.date.isAtSameMomentAs(startDate))
+          .where(
+            (s) =>
+                s.date.isAfter(startDate) || s.date.isAtSameMomentAs(startDate),
+          )
           .toList();
     }
 
     if (endDate != null) {
       sales = sales
-          .where((s) => s.date.isBefore(endDate) || s.date.isAtSameMomentAs(endDate))
+          .where(
+            (s) => s.date.isBefore(endDate) || s.date.isAtSameMomentAs(endDate),
+          )
           .toList();
     }
 
@@ -107,7 +112,9 @@ class MockSaleRepository implements SaleRepository {
       customerPhone: sale.customerPhone,
       customerId: sale.customerId,
       date: sale.date,
-      status: newAmountPaid >= sale.totalPrice ? SaleStatus.fullyPaid : sale.status,
+      status: newAmountPaid >= sale.totalPrice
+          ? SaleStatus.fullyPaid
+          : sale.status,
       createdBy: sale.createdBy,
       customerCnib: sale.customerCnib,
       notes: sale.notes,
@@ -117,4 +124,3 @@ class MockSaleRepository implements SaleRepository {
     );
   }
 }
-

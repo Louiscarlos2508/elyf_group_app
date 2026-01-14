@@ -24,15 +24,13 @@ class DashboardKpiCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isMobile = MediaQuery.of(context).size.width < 600;
-    
+
     return Container(
       padding: EdgeInsets.all(isMobile ? 12 : 20),
       decoration: BoxDecoration(
         color: backgroundColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: backgroundColor.withValues(alpha: 0.2),
-        ),
+        border: Border.all(color: backgroundColor.withValues(alpha: 0.2)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -78,14 +76,9 @@ class DashboardKpiCard extends StatelessWidget {
             ),
           ),
           SizedBox(width: isMobile ? 8 : 12),
-          Icon(
-            icon,
-            color: iconColor,
-            size: isMobile ? 24 : 32,
-          ),
+          Icon(icon, color: iconColor, size: isMobile ? 24 : 32),
         ],
       ),
     );
   }
 }
-

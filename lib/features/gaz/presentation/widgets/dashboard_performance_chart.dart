@@ -212,23 +212,14 @@ class DashboardPerformanceChart extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           // Legend
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 16,
+            runSpacing: 8,
             children: [
-              _LegendItem(
-                color: const Color(0xFF3B82F6),
-                label: 'Bénéfice',
-              ),
-              const SizedBox(width: 24),
-              _LegendItem(
-                color: const Color(0xFFEF4444),
-                label: 'Dépenses',
-              ),
-              const SizedBox(width: 24),
-              _LegendItem(
-                color: const Color(0xFF10B981),
-                label: 'Ventes',
-              ),
+              _LegendItem(color: const Color(0xFF3B82F6), label: 'Bénéfice'),
+              _LegendItem(color: const Color(0xFFEF4444), label: 'Dépenses'),
+              _LegendItem(color: const Color(0xFF10B981), label: 'Ventes'),
             ],
           ),
         ],
@@ -238,10 +229,7 @@ class DashboardPerformanceChart extends StatelessWidget {
 }
 
 class _LegendItem extends StatelessWidget {
-  const _LegendItem({
-    required this.color,
-    required this.label,
-  });
+  const _LegendItem({required this.color, required this.label});
 
   final Color color;
   final String label;
@@ -255,10 +243,7 @@ class _LegendItem extends StatelessWidget {
         Container(
           width: 14,
           height: 14,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-          ),
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 8),
         Text(
@@ -272,4 +257,3 @@ class _LegendItem extends StatelessWidget {
     );
   }
 }
-

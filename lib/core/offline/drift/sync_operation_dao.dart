@@ -16,9 +16,9 @@ class SyncOperationDao {
 
   /// Gets a pending operation by ID.
   Future<SyncOperation?> getById(int id) async {
-    return await (_db.select(_db.syncOperations)
-          ..where((t) => t.id.equals(id)))
-        .getSingleOrNull();
+    return await (_db.select(
+      _db.syncOperations,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
   }
 
   /// Gets all pending operations, ordered by creation time (oldest first).
@@ -75,9 +75,7 @@ class SyncOperationDao {
 
   /// Marks an operation as processing.
   Future<void> markProcessing(int id) async {
-    await (_db.update(_db.syncOperations)
-          ..where((t) => t.id.equals(id)))
-        .write(
+    await (_db.update(_db.syncOperations)..where((t) => t.id.equals(id))).write(
       SyncOperationsCompanion(
         status: const Value('processing'),
         localUpdatedAt: Value(DateTime.now()),
@@ -87,9 +85,7 @@ class SyncOperationDao {
 
   /// Marks an operation as synced.
   Future<void> markSynced(int id) async {
-    await (_db.update(_db.syncOperations)
-          ..where((t) => t.id.equals(id)))
-        .write(
+    await (_db.update(_db.syncOperations)..where((t) => t.id.equals(id))).write(
       SyncOperationsCompanion(
         status: const Value('synced'),
         processedAt: Value(DateTime.now()),
@@ -103,9 +99,7 @@ class SyncOperationDao {
     final current = await getById(id);
     if (current == null) return;
 
-    await (_db.update(_db.syncOperations)
-          ..where((t) => t.id.equals(id)))
-        .write(
+    await (_db.update(_db.syncOperations)..where((t) => t.id.equals(id))).write(
       SyncOperationsCompanion(
         status: const Value('failed'),
         lastError: Value(error),
@@ -117,9 +111,7 @@ class SyncOperationDao {
 
   /// Resets a failed operation back to pending for retry.
   Future<void> resetToPending(int id) async {
-    await (_db.update(_db.syncOperations)
-          ..where((t) => t.id.equals(id)))
-        .write(
+    await (_db.update(_db.syncOperations)..where((t) => t.id.equals(id))).write(
       SyncOperationsCompanion(
         status: const Value('pending'),
         localUpdatedAt: Value(DateTime.now()),
@@ -129,9 +121,7 @@ class SyncOperationDao {
 
   /// Updates retry count for an operation.
   Future<void> updateRetryCount(int id, int retryCount) async {
-    await (_db.update(_db.syncOperations)
-          ..where((t) => t.id.equals(id)))
-        .write(
+    await (_db.update(_db.syncOperations)..where((t) => t.id.equals(id))).write(
       SyncOperationsCompanion(
         retryCount: Value(retryCount),
         localUpdatedAt: Value(DateTime.now()),
@@ -140,24 +130,21 @@ class SyncOperationDao {
   }
 
   /// Deletes old synced operations (cleanup).
-  Future<void> deleteOldSynced({
-    required Duration maxAge,
-  }) async {
+  Future<void> deleteOldSynced({required Duration maxAge}) async {
     final cutoff = DateTime.now().subtract(maxAge);
-    await (_db.delete(_db.syncOperations)
-          ..where(
-            (t) =>
-                t.status.equals('synced') &
-                t.processedAt.isSmallerThanValue(cutoff),
-          ))
+    await (_db.delete(_db.syncOperations)..where(
+          (t) =>
+              t.status.equals('synced') &
+              t.processedAt.isSmallerThanValue(cutoff),
+        ))
         .go();
   }
 
   /// Deletes operations that have exceeded max retry attempts.
   Future<void> deleteExceededRetries(int maxRetries) async {
-    await (_db.delete(_db.syncOperations)
-          ..where((t) => t.retryCount.isBiggerOrEqualValue(maxRetries)))
-        .go();
+    await (_db.delete(
+      _db.syncOperations,
+    )..where((t) => t.retryCount.isBiggerOrEqualValue(maxRetries))).go();
   }
 
   /// Clears all sync operations (for testing/cleanup).
@@ -200,4 +187,3 @@ class SyncOperationDao {
     );
   }
 }
-

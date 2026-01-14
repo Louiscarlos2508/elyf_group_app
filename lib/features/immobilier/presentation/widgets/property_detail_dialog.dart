@@ -117,12 +117,16 @@ class PropertyDetailDialog extends StatelessWidget {
                         ),
                         PropertyDetailRow(
                           label: 'Type',
-                          value: PropertyDetailHelpers.getTypeLabel(property.propertyType),
+                          value: PropertyDetailHelpers.getTypeLabel(
+                            property.propertyType,
+                          ),
                           icon: Icons.category,
                         ),
                         PropertyDetailRow(
                           label: 'Statut',
-                          value: PropertyDetailHelpers.getStatusLabel(property.status),
+                          value: PropertyDetailHelpers.getStatusLabel(
+                            property.status,
+                          ),
                           icon: Icons.info_outline,
                           valueColor: _getStatusColor(property.status),
                         ),
@@ -144,13 +148,16 @@ class PropertyDetailDialog extends StatelessWidget {
                         ),
                         PropertyDetailRow(
                           label: 'Loyer mensuel',
-                          value: PropertyDetailHelpers.formatCurrency(property.price),
+                          value: PropertyDetailHelpers.formatCurrency(
+                            property.price,
+                          ),
                           icon: Icons.attach_money,
                           valueColor: theme.colorScheme.primary,
                         ),
                       ],
                     ),
-                    if (property.description != null && property.description!.isNotEmpty) ...[
+                    if (property.description != null &&
+                        property.description!.isNotEmpty) ...[
                       const SizedBox(height: 24),
                       PropertyDetailSection(
                         title: 'Description',
@@ -162,7 +169,8 @@ class PropertyDetailDialog extends StatelessWidget {
                         ],
                       ),
                     ],
-                    if (property.amenities != null && property.amenities!.isNotEmpty) ...[
+                    if (property.amenities != null &&
+                        property.amenities!.isNotEmpty) ...[
                       const SizedBox(height: 24),
                       PropertyDetailSection(
                         title: 'Équipements',
@@ -173,7 +181,10 @@ class PropertyDetailDialog extends StatelessWidget {
                             children: property.amenities!.map((amenity) {
                               return Chip(
                                 label: Text(amenity),
-                                avatar: const Icon(Icons.check_circle, size: 18),
+                                avatar: const Icon(
+                                  Icons.check_circle,
+                                  size: 18,
+                                ),
                               );
                             }).toList(),
                           ),
@@ -207,4 +218,3 @@ class PropertyDetailDialog extends StatelessWidget {
     );
   }
 }
-

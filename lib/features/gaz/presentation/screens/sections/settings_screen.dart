@@ -8,11 +8,7 @@ import '../../widgets/point_of_sale_table.dart';
 
 /// Écran de paramètres pour le module Gaz selon le design Figma.
 class GazSettingsScreen extends ConsumerWidget {
-  const GazSettingsScreen({
-    super.key,
-    this.enterpriseId,
-    this.moduleId,
-  });
+  const GazSettingsScreen({super.key, this.enterpriseId, this.moduleId});
 
   final String? enterpriseId;
   final String? moduleId;
@@ -22,7 +18,7 @@ class GazSettingsScreen extends ConsumerWidget {
     final effectiveEnterpriseId = enterpriseId ?? 'gaz_1';
     final effectiveModuleId = moduleId ?? 'gaz';
     final theme = Theme.of(context);
-    final isMobile = MediaQuery.of(context).size.width < 600;
+    final isMobile = MediaQuery.of(context).size.width < 800;
 
     return Container(
       color: const Color(0xFFF9FAFB),
@@ -69,63 +65,118 @@ class GazSettingsScreen extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // En-tête avec titre et bouton
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Configuration des prix',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontSize: 16,
-                    fontWeight: FontWeight.normal,
-                    color: const Color(0xFF101828),
+        isMobile
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Configuration des prix',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontSize: 16,
+                          fontWeight: FontWeight.normal,
+                          color: const Color(0xFF101828),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Gérez les types de bouteilles et leurs tarifs',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontSize: 14,
+                          color: const Color(0xFF6A7282),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Gérez les types de bouteilles et leurs tarifs',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontSize: 14,
-                    color: const Color(0xFF6A7282),
+                  const SizedBox(height: 16),
+                  FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFF030213),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 11.99,
+                        vertical: 9.99,
+                      ),
+                      minimumSize: const Size(136.947, 36),
+                    ),
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) => const CylinderFormDialog(),
+                      );
+                    },
+                    icon: const Icon(Icons.add, size: 16),
+                    label: const Text(
+                      'Nouveau type',
+                      style: TextStyle(fontSize: 14),
+                    ),
                   ),
-                ),
-              ],
-            ),
-            FilledButton.icon(
-              style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFF030213),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 11.99,
-                  vertical: 9.99,
-                ),
-                minimumSize: const Size(136.947, 36),
+                ],
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Configuration des prix',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontSize: 16,
+                            fontWeight: FontWeight.normal,
+                            color: const Color(0xFF101828),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Gérez les types de bouteilles et leurs tarifs',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontSize: 14,
+                            color: const Color(0xFF6A7282),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Flexible(
+                    child: FilledButton.icon(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFF030213),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 11.99,
+                          vertical: 9.99,
+                        ),
+                      ),
+                      onPressed: () {
+                        showDialog(
+                          context: context,
+                          builder: (context) => const CylinderFormDialog(),
+                        );
+                      },
+                      icon: const Icon(Icons.add, size: 16),
+                      label: const Text(
+                        'Nouveau type',
+                        style: TextStyle(fontSize: 14),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              onPressed: () {
-                showDialog(
-                  context: context,
-                  builder: (context) => const CylinderFormDialog(),
-                );
-              },
-              icon: const Icon(Icons.add, size: 16),
-              label: const Text(
-                'Nouveau type',
-                style: TextStyle(fontSize: 14),
-              ),
-            ),
-          ],
-        ),
         const SizedBox(height: 23.98),
         // Carte avec tableau des tarifs
-        BottlePriceTable(
-          enterpriseId: enterpriseId,
-          moduleId: moduleId,
-        ),
+        BottlePriceTable(enterpriseId: enterpriseId, moduleId: moduleId),
       ],
     );
   }
@@ -142,66 +193,124 @@ class GazSettingsScreen extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // En-tête avec titre et bouton
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Gestion des points de vente',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontSize: 16,
-                    fontWeight: FontWeight.normal,
-                    color: const Color(0xFF101828),
+        isMobile
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Gestion des points de vente',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontSize: 16,
+                          fontWeight: FontWeight.normal,
+                          color: const Color(0xFF101828),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Créez et gérez les différents points de vente',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontSize: 14,
+                          color: const Color(0xFF6A7282),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Créez et gérez les différents points de vente',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontSize: 14,
-                    color: const Color(0xFF6A7282),
+                  const SizedBox(height: 16),
+                  FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFF030213),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 11.99,
+                        vertical: 9.99,
+                      ),
+                      minimumSize: const Size(201.057, 36),
+                    ),
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) => PointOfSaleFormDialog(
+                          enterpriseId: enterpriseId,
+                          moduleId: moduleId,
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.add, size: 16),
+                    label: const Text(
+                      'Nouveau point de vente',
+                      style: TextStyle(fontSize: 14),
+                    ),
                   ),
-                ),
-              ],
-            ),
-            FilledButton.icon(
-              style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFF030213),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 11.99,
-                  vertical: 9.99,
-                ),
-                minimumSize: const Size(201.057, 36),
+                ],
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Gestion des points de vente',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontSize: 16,
+                            fontWeight: FontWeight.normal,
+                            color: const Color(0xFF101828),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Créez et gérez les différents points de vente',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontSize: 14,
+                            color: const Color(0xFF6A7282),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Flexible(
+                    child: FilledButton.icon(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFF030213),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 11.99,
+                          vertical: 9.99,
+                        ),
+                      ),
+                      onPressed: () {
+                        showDialog(
+                          context: context,
+                          builder: (context) => PointOfSaleFormDialog(
+                            enterpriseId: enterpriseId,
+                            moduleId: moduleId,
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.add, size: 16),
+                      label: const Text(
+                        'Nouveau point de vente',
+                        style: TextStyle(fontSize: 14),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              onPressed: () {
-                showDialog(
-                  context: context,
-                  builder: (context) => PointOfSaleFormDialog(
-                    enterpriseId: enterpriseId,
-                    moduleId: moduleId,
-                  ),
-                );
-              },
-              icon: const Icon(Icons.add, size: 16),
-              label: const Text(
-                'Nouveau point de vente',
-                style: TextStyle(fontSize: 14),
-              ),
-            ),
-          ],
-        ),
         const SizedBox(height: 23.98),
         // Carte avec tableau des points de vente
-        PointOfSaleTable(
-          enterpriseId: enterpriseId,
-          moduleId: moduleId,
-        ),
+        PointOfSaleTable(enterpriseId: enterpriseId, moduleId: moduleId),
       ],
     );
   }

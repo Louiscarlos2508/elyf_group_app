@@ -37,9 +37,7 @@ class WholesalePriceConfigCard extends ConsumerWidget {
     final colors = theme.colorScheme;
     final availableWeights = _getAvailableWeights(ref);
     final settingsAsync = ref.watch(
-      gazSettingsProvider(
-        (enterpriseId: enterpriseId, moduleId: moduleId),
-      ),
+      gazSettingsProvider((enterpriseId: enterpriseId, moduleId: moduleId)),
     );
 
     return settingsAsync.when(
@@ -48,9 +46,7 @@ class WholesalePriceConfigCard extends ConsumerWidget {
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
-            side: BorderSide(
-              color: colors.outline.withValues(alpha: 0.2),
-            ),
+            side: BorderSide(color: colors.outline.withValues(alpha: 0.2)),
           ),
           child: Padding(
             padding: const EdgeInsets.all(20),
@@ -125,15 +121,10 @@ class WholesalePriceConfigCard extends ConsumerWidget {
               const SizedBox(height: 16),
               Text(
                 'Erreur lors du chargement des paramètres',
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: colors.error,
-                ),
+                style: theme.textTheme.bodyLarge?.copyWith(color: colors.error),
               ),
               const SizedBox(height: 8),
-              Text(
-                error.toString(),
-                style: theme.textTheme.bodySmall,
-              ),
+              Text(error.toString(), style: theme.textTheme.bodySmall),
             ],
           ),
         ),

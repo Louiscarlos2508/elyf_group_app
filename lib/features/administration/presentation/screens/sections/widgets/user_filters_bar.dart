@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../application/providers.dart' show enterprisesProvider;
 
 /// Filters bar widget for user section.
-/// 
+///
 /// Handles search and enterprise/module filtering.
 class UserFiltersBar extends ConsumerWidget {
   const UserFiltersBar({
@@ -25,7 +25,7 @@ class UserFiltersBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final enterprisesAsync = ref.watch(enterprisesProvider);
-    
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Row(
@@ -48,26 +48,31 @@ class UserFiltersBar extends ConsumerWidget {
               }
               return Flexible(
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(minWidth: 180, maxWidth: 250),
+                  constraints: const BoxConstraints(
+                    minWidth: 180,
+                    maxWidth: 250,
+                  ),
                   child: DropdownButtonFormField<String?>(
                     initialValue: selectedEnterpriseId,
                     decoration: const InputDecoration(
                       labelText: 'Entreprise',
                       isDense: true,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
                     ),
                     items: [
                       const DropdownMenuItem<String?>(
                         value: null,
                         child: Text('Toutes'),
                       ),
-                      ...enterprises.map((e) => DropdownMenuItem<String?>(
-                            value: e.id,
-                            child: Text(
-                              e.name,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          )),
+                      ...enterprises.map(
+                        (e) => DropdownMenuItem<String?>(
+                          value: e.id,
+                          child: Text(e.name, overflow: TextOverflow.ellipsis),
+                        ),
+                      ),
                     ],
                     onChanged: (value) {
                       onEnterpriseChanged?.call(value);
@@ -86,4 +91,3 @@ class UserFiltersBar extends ConsumerWidget {
     );
   }
 }
-

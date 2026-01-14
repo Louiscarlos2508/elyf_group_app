@@ -26,10 +26,14 @@ class StockController {
     final items = await _inventoryRepository.fetchStockItems();
     // Utiliser le nouveau système de stock par quantité
     final bobineStocks = await _bobineStockQuantityRepository.fetchAll();
-    final totalBobines = bobineStocks.fold<int>(0, (sum, stock) => sum + stock.quantity);
+    final totalBobines = bobineStocks.fold<int>(
+      0,
+      (sum, stock) => sum + stock.quantity,
+    );
     final packagingStocks = await _packagingStockRepository.fetchAll();
-    final lowStockPackaging = await _packagingStockRepository.fetchLowStockAlerts();
-    
+    final lowStockPackaging = await _packagingStockRepository
+        .fetchLowStockAlerts();
+
     return StockState(
       items: items,
       availableBobines: totalBobines,
@@ -50,14 +54,14 @@ class StockController {
     // Récupérer ou créer le stock
     var stock = await _bobineStockQuantityRepository.fetchByType(bobineType);
     stock ??= BobineStock(
-        id: 'bobine-stock-${DateTime.now().millisecondsSinceEpoch}',
-        type: bobineType,
-        quantity: 0,
-        unit: 'unité',
-        fournisseur: fournisseur,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      );
+      id: 'bobine-stock-${DateTime.now().millisecondsSinceEpoch}',
+      type: bobineType,
+      quantity: 0,
+      unit: 'unité',
+      fournisseur: fournisseur,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
 
     // Enregistrer le mouvement
     final movement = BobineStockMovement(
@@ -88,7 +92,8 @@ class StockController {
   Future<void> recordBobineExit({
     required String bobineType, // Type de bobine (ex: "Bobine standard")
     required int quantite, // Quantité en unités (généralement 1)
-    String? productionId, // Optionnel car peut être null lors de l'installation immédiate
+    String?
+    productionId, // Optionnel car peut être null lors de l'installation immédiate
     required String machineId,
     String? notes,
   }) async {
@@ -108,7 +113,8 @@ class StockController {
     // Enregistrer le mouvement
     final movement = BobineStockMovement(
       id: 'movement-${DateTime.now().millisecondsSinceEpoch}',
-      bobineId: stock.id, // Utiliser l'ID du stock au lieu d'une bobine individuelle
+      bobineId:
+          stock.id, // Utiliser l'ID du stock au lieu d'une bobine individuelle
       bobineReference: bobineType,
       type: BobineMovementType.sortie,
       date: DateTime.now(),
@@ -157,7 +163,7 @@ class StockController {
       await _bobineStockQuantityRepository.recordMovement(movement);
       return;
     }
-    
+
     final movement = BobineStockMovement(
       id: 'movement-${DateTime.now().millisecondsSinceEpoch}',
       bobineId: stock.id,
@@ -228,13 +234,13 @@ class StockController {
     // Récupérer ou créer le stock
     var stock = await _packagingStockRepository.fetchById(packagingId);
     stock ??= PackagingStock(
-        id: packagingId,
-        type: packagingType,
-        quantity: 0,
-        unit: 'packs',
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      );
+      id: packagingId,
+      type: packagingType,
+      quantity: 0,
+      unit: 'packs',
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
 
     // Enregistrer le mouvement
     final movement = PackagingStockMovement(
@@ -282,12 +288,12 @@ class StockController {
       );
       bobineMovements.addAll(movements);
     }
-    
+
     final packagingMovements = await _packagingStockRepository.fetchMovements(
       startDate: startDate,
       endDate: endDate,
     );
-    
+
     // Convertir les mouvements de bobines
     final unifiedBobineMovements = bobineMovements.map((m) {
       return StockMovement(
@@ -302,7 +308,7 @@ class StockController {
         notes: m.notes,
       );
     }).toList();
-    
+
     // Convertir les mouvements d'emballages
     final unifiedPackagingMovements = packagingMovements.map((m) {
       return StockMovement(
@@ -317,14 +323,14 @@ class StockController {
         notes: m.notes,
       );
     }).toList();
-    
+
     // Récupérer les mouvements de ventes depuis StockRepository
     final saleMovements = await _stockRepository.fetchMovements(
       productId: null, // Récupérer tous les produits
       startDate: startDate,
       endDate: endDate,
     );
-    
+
     // Combiner tous les mouvements et trier par date (plus récent en premier)
     final allMovements = [
       ...unifiedBobineMovements,
@@ -332,7 +338,7 @@ class StockController {
       ...saleMovements,
     ];
     allMovements.sort((a, b) => b.date.compareTo(a.date));
-    
+
     return allMovements;
   }
 
@@ -404,14 +410,15 @@ class StockController {
   }) async {
     // Récupérer tous les stocks pour trouver le stock de produits finis
     final stockItems = await _inventoryRepository.fetchStockItems();
-    
+
     // Chercher le stock de produits finis (packs)
     StockItem? finishedGoodsStock;
     try {
       finishedGoodsStock = stockItems.firstWhere(
-        (item) => item.type == StockType.finishedGoods &&
+        (item) =>
+            item.type == StockType.finishedGoods &&
             (item.name.toLowerCase().contains('pack') ||
-             item.name.toLowerCase().contains('sachet')),
+                item.name.toLowerCase().contains('sachet')),
       );
     } catch (_) {
       // Si pas trouvé avec "pack" ou "sachet", chercher n'importe quel produit fini
@@ -423,7 +430,7 @@ class StockController {
         // Aucun stock de produits finis trouvé, on en créera un nouveau
       }
     }
-    
+
     if (finishedGoodsStock == null) {
       // Créer un nouveau stock de produits finis si aucun n'existe
       finishedGoodsStock = StockItem(
@@ -445,7 +452,7 @@ class StockController {
         updatedAt: DateTime.now(),
       );
     }
-    
+
     // Sauvegarder la mise à jour
     await _inventoryRepository.updateStockItem(finishedGoodsStock);
   }
@@ -461,13 +468,17 @@ class StockState {
   });
 
   final List<StockItem> items;
-  final int availableBobines; // Nombre total de bobines disponibles (somme des quantités)
+  final int
+  availableBobines; // Nombre total de bobines disponibles (somme des quantités)
   final List<BobineStock> bobineStocks; // Stocks de bobines par type
   final List<PackagingStock> packagingStocks; // Stocks d'emballages
-  final List<PackagingStock> lowStockPackaging; // Stocks d'emballages avec alerte
+  final List<PackagingStock>
+  lowStockPackaging; // Stocks d'emballages avec alerte
 
   StockItem? get finishedGoods {
-    final finishedGoodsItems = items.where((i) => i.type == StockType.finishedGoods);
+    final finishedGoodsItems = items.where(
+      (i) => i.type == StockType.finishedGoods,
+    );
     return finishedGoodsItems.isNotEmpty ? finishedGoodsItems.first : null;
   }
 }

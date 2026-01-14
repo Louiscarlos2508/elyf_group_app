@@ -49,17 +49,18 @@ class ImmobilierDashboardCalculationService {
 
     // Paiements du mois
     final monthPayments = payments.where((p) {
-      return p.paymentDate.isAfter(monthStart.subtract(const Duration(days: 1))) &&
+      return p.paymentDate.isAfter(
+            monthStart.subtract(const Duration(days: 1)),
+          ) &&
           p.status == PaymentStatus.paid;
     }).toList();
-    final monthRevenue = monthPayments.fold<int>(
-      0,
-      (sum, p) => sum + p.amount,
-    );
+    final monthRevenue = monthPayments.fold<int>(0, (sum, p) => sum + p.amount);
 
     // Dépenses du mois
     final monthExpenses = expenses.where((e) {
-      return e.expenseDate.isAfter(monthStart.subtract(const Duration(days: 1)));
+      return e.expenseDate.isAfter(
+        monthStart.subtract(const Duration(days: 1)),
+      );
     }).toList();
     final monthExpensesTotal = monthExpenses.fold<int>(
       0,
@@ -162,10 +163,7 @@ class ImmobilierDashboardCalculationService {
     // Revenus de la période
     final periodRevenue = periodPayments
         .where((p) => p.status == PaymentStatus.paid)
-        .fold<int>(
-          0,
-          (sum, p) => sum + p.amount,
-        );
+        .fold<int>(0, (sum, p) => sum + p.amount);
 
     // Dépenses de la période
     final periodExpensesTotal = periodExpenses.fold<int>(
@@ -246,4 +244,3 @@ class ImmobilierPeriodMetrics {
   final int netRevenue;
   final double occupancyRate;
 }
-

@@ -20,7 +20,8 @@ class Agent {
   final String simNumber;
   final MobileOperator operator;
   final int liquidity; // Liquidité disponible en FCFA
-  final double commissionRate; // Taux de commission en pourcentage (ex: 2.5 pour 2.5%)
+  final double
+  commissionRate; // Taux de commission en pourcentage (ex: 2.5 pour 2.5%)
   final AgentStatus status;
   final String enterpriseId;
   final DateTime? createdAt;
@@ -33,18 +34,9 @@ class Agent {
   bool isLowLiquidity(int threshold) => liquidity < threshold;
 }
 
-enum AgentStatus {
-  active,
-  inactive,
-  suspended,
-}
+enum AgentStatus { active, inactive, suspended }
 
-enum MobileOperator {
-  orange,
-  mtn,
-  moov,
-  other,
-}
+enum MobileOperator { orange, mtn, moov, other }
 
 extension AgentStatusExtension on AgentStatus {
   String get label {
@@ -73,4 +65,3 @@ extension MobileOperatorExtension on MobileOperator {
     }
   }
 }
-

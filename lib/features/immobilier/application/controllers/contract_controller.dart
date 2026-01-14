@@ -38,7 +38,9 @@ class ContractController {
   /// Crée un contrat et met à jour le statut de la propriété si nécessaire.
   Future<Contract> createContract(Contract contract) async {
     // Valider le contrat
-    final validationError = await _validationService.validateContractCreation(contract);
+    final validationError = await _validationService.validateContractCreation(
+      contract,
+    );
     if (validationError != null) {
       throw Exception(validationError);
     }
@@ -48,7 +50,9 @@ class ContractController {
 
     // Si le contrat est actif, mettre la propriété en "rented"
     if (contract.status == ContractStatus.active) {
-      final property = await _propertyRepository.getPropertyById(contract.propertyId);
+      final property = await _propertyRepository.getPropertyById(
+        contract.propertyId,
+      );
       if (property != null && property.status != PropertyStatus.rented) {
         final updatedProperty = Property(
           id: property.id,
@@ -82,10 +86,8 @@ class ContractController {
 
     // Valider la mise à jour
     if (oldContract.status != contract.status) {
-      final validationError = await _validationService.validateContractStatusUpdate(
-        contract.id,
-        contract.status,
-      );
+      final validationError = await _validationService
+          .validateContractStatusUpdate(contract.id, contract.status);
       if (validationError != null) {
         throw Exception(validationError);
       }
@@ -95,24 +97,29 @@ class ContractController {
     final updatedContract = await _contractRepository.updateContract(contract);
 
     // Gérer le statut de la propriété
-    final property = await _propertyRepository.getPropertyById(contract.propertyId);
+    final property = await _propertyRepository.getPropertyById(
+      contract.propertyId,
+    );
     if (property != null) {
       PropertyStatus? newStatus;
 
       // Si le contrat devient actif, mettre la propriété en "rented"
-      if (oldContract.status != ContractStatus.active && 
+      if (oldContract.status != ContractStatus.active &&
           contract.status == ContractStatus.active) {
         newStatus = PropertyStatus.rented;
       }
       // Si le contrat n'est plus actif, vérifier s'il y a d'autres contrats actifs
-      else if (oldContract.status == ContractStatus.active && 
-               contract.status != ContractStatus.active) {
-        final contracts = await _contractRepository.getContractsByProperty(property.id);
+      else if (oldContract.status == ContractStatus.active &&
+          contract.status != ContractStatus.active) {
+        final contracts = await _contractRepository.getContractsByProperty(
+          property.id,
+        );
         final activeContracts = contracts.where(
           (c) => c.status == ContractStatus.active && c.id != contract.id,
         );
         // Si plus de contrats actifs, remettre la propriété en "available"
-        if (activeContracts.isEmpty && property.status == PropertyStatus.rented) {
+        if (activeContracts.isEmpty &&
+            property.status == PropertyStatus.rented) {
           newStatus = PropertyStatus.available;
         }
       }
@@ -155,9 +162,13 @@ class ContractController {
 
     // Si le contrat était actif, vérifier s'il reste des contrats actifs pour la propriété
     if (wasActive) {
-      final contracts = await _contractRepository.getContractsByProperty(propertyId);
-      final activeContracts = contracts.where((c) => c.status == ContractStatus.active);
-      
+      final contracts = await _contractRepository.getContractsByProperty(
+        propertyId,
+      );
+      final activeContracts = contracts.where(
+        (c) => c.status == ContractStatus.active,
+      );
+
       // Si plus de contrats actifs, remettre la propriété en "available"
       if (activeContracts.isEmpty) {
         final property = await _propertyRepository.getPropertyById(propertyId);
@@ -183,4 +194,3 @@ class ContractController {
     }
   }
 }
-

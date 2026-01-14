@@ -35,16 +35,9 @@ class Transaction {
   bool get isFailed => status == TransactionStatus.failed;
 }
 
-enum TransactionType {
-  cashIn,
-  cashOut,
-}
+enum TransactionType { cashIn, cashOut }
 
-enum TransactionStatus {
-  pending,
-  completed,
-  failed,
-}
+enum TransactionStatus { pending, completed, failed }
 
 extension TransactionTypeExtension on TransactionType {
   String get label {
@@ -69,4 +62,3 @@ extension TransactionStatusExtension on TransactionStatus {
     }
   }
 }
-

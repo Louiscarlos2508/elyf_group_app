@@ -38,11 +38,7 @@ class StockKpiCard extends StatelessWidget {
           // Title with icon
           Row(
             children: [
-              Icon(
-                icon,
-                size: 16,
-                color: const Color(0xFF4A5565),
-              ),
+              Icon(icon, size: 16, color: const Color(0xFF4A5565)),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -80,4 +76,3 @@ class StockKpiCard extends StatelessWidget {
     );
   }
 }
-

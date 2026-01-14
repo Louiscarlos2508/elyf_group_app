@@ -41,8 +41,10 @@ class _ContractsScreenState extends ConsumerState<ContractsScreen> {
       final query = _searchController.text.toLowerCase();
       filtered = filtered.where((c) {
         return c.id.toLowerCase().contains(query) ||
-            (c.property != null && c.property!.address.toLowerCase().contains(query)) ||
-            (c.tenant != null && c.tenant!.fullName.toLowerCase().contains(query));
+            (c.property != null &&
+                c.property!.address.toLowerCase().contains(query)) ||
+            (c.tenant != null &&
+                c.tenant!.fullName.toLowerCase().contains(query));
       }).toList();
     }
 
@@ -133,7 +135,10 @@ class _ContractsScreenState extends ConsumerState<ContractsScreen> {
         await controller.deleteContract(contract.id);
         ref.invalidate(contractsProvider);
         if (mounted) {
-          NotificationService.showSuccess(context, 'Contrat supprimé avec succès');
+          NotificationService.showSuccess(
+            context,
+            'Contrat supprimé avec succès',
+          );
         }
       } catch (e) {
         if (mounted) {
@@ -152,8 +157,12 @@ class _ContractsScreenState extends ConsumerState<ContractsScreen> {
       body: contractsAsync.when(
         data: (contracts) {
           final filtered = _filterAndSort(contracts);
-          final activeCount = contracts.where((c) => c.status == ContractStatus.active).length;
-          final pendingCount = contracts.where((c) => c.status == ContractStatus.pending).length;
+          final activeCount = contracts
+              .where((c) => c.status == ContractStatus.active)
+              .length;
+          final pendingCount = contracts
+              .where((c) => c.status == ContractStatus.pending)
+              .length;
           final monthlyRevenue = contracts
               .where((c) => c.status == ContractStatus.active)
               .fold(0, (sum, c) => sum + c.monthlyRent);
@@ -167,19 +176,24 @@ class _ContractsScreenState extends ConsumerState<ContractsScreen> {
                   // Header
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: EdgeInsets.fromLTRB(24, 24, 24, isWide ? 24 : 16),
+                      padding: EdgeInsets.fromLTRB(
+                        24,
+                        24,
+                        24,
+                        isWide ? 24 : 16,
+                      ),
                       child: isWide
                           ? Row(
                               children: [
                                 Text(
                                   'Contrats',
-                                  style: theme.textTheme.headlineMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                  style: theme.textTheme.headlineMedium
+                                      ?.copyWith(fontWeight: FontWeight.bold),
                                 ),
                                 const Spacer(),
                                 RefreshButton(
-                                  onRefresh: () => ref.invalidate(contractsProvider),
+                                  onRefresh: () =>
+                                      ref.invalidate(contractsProvider),
                                   tooltip: 'Actualiser',
                                 ),
                                 const SizedBox(width: 8),
@@ -200,13 +214,15 @@ class _ContractsScreenState extends ConsumerState<ContractsScreen> {
                                     Expanded(
                                       child: Text(
                                         'Contrats',
-                                        style: theme.textTheme.titleLarge?.copyWith(
-                                          fontWeight: FontWeight.bold,
-                                        ),
+                                        style: theme.textTheme.titleLarge
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.bold,
+                                            ),
                                       ),
                                     ),
                                     RefreshButton(
-                                      onRefresh: () => ref.invalidate(contractsProvider),
+                                      onRefresh: () =>
+                                          ref.invalidate(contractsProvider),
                                       tooltip: 'Actualiser',
                                     ),
                                   ],
@@ -229,7 +245,13 @@ class _ContractsScreenState extends ConsumerState<ContractsScreen> {
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: _buildKpiCards(theme, contracts.length, activeCount, pendingCount, monthlyRevenue),
+                      child: _buildKpiCards(
+                        theme,
+                        contracts.length,
+                        activeCount,
+                        pendingCount,
+                        monthlyRevenue,
+                      ),
                     ),
                   ),
 
@@ -262,7 +284,8 @@ class _ContractsScreenState extends ConsumerState<ContractsScreen> {
                   SliverToBoxAdapter(
                     child: ContractFilters(
                       selectedStatus: _selectedStatus,
-                      onStatusChanged: (status) => setState(() => _selectedStatus = status),
+                      onStatusChanged: (status) =>
+                          setState(() => _selectedStatus = status),
                       onClear: () => setState(() => _selectedStatus = null),
                     ),
                   ),
@@ -275,18 +298,18 @@ class _ContractsScreenState extends ConsumerState<ContractsScreen> {
                     )
                   else
                     SliverPadding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 8,
+                      ),
                       sliver: SliverList(
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) {
-                            final contract = filtered[index];
-                            return ContractCard(
-                              contract: contract,
-                              onTap: () => _showContractDetails(contract),
-                            );
-                          },
-                          childCount: filtered.length,
-                        ),
+                        delegate: SliverChildBuilderDelegate((context, index) {
+                          final contract = filtered[index];
+                          return ContractCard(
+                            contract: contract,
+                            onTap: () => _showContractDetails(contract),
+                          );
+                        }, childCount: filtered.length),
                       ),
                     ),
 
@@ -302,7 +325,13 @@ class _ContractsScreenState extends ConsumerState<ContractsScreen> {
     );
   }
 
-  Widget _buildKpiCards(ThemeData theme, int total, int active, int pending, int monthlyRevenue) {
+  Widget _buildKpiCards(
+    ThemeData theme,
+    int total,
+    int active,
+    int pending,
+    int monthlyRevenue,
+  ) {
     return Column(
       children: [
         Row(
@@ -383,7 +412,9 @@ class _ContractsScreenState extends ConsumerState<ContractsScreen> {
           const SizedBox(height: 16),
           Text(
             'Erreur de chargement',
-            style: theme.textTheme.bodyLarge?.copyWith(color: theme.colorScheme.error),
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color: theme.colorScheme.error,
+            ),
           ),
           const SizedBox(height: 16),
           FilledButton(

@@ -55,8 +55,9 @@ class SecureDataHandler {
       }
 
       if (entry.value is Map<String, dynamic>) {
-        result[entry.key] =
-            removeSensitiveData(entry.value as Map<String, dynamic>);
+        result[entry.key] = removeSensitiveData(
+          entry.value as Map<String, dynamic>,
+        );
       } else if (entry.value is List) {
         result[entry.key] = _processList(entry.value as List);
       } else {

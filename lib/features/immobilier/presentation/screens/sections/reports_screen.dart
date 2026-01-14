@@ -58,9 +58,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (context) => const Center(
-          child: CircularProgressIndicator(),
-        ),
+        builder: (context) => const Center(child: CircularProgressIndicator()),
       );
 
       final properties = await ref.read(propertiesProvider.future);
@@ -69,14 +67,16 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       final expenses = await ref.read(expensesProvider.future);
 
       final periodPayments = payments.where((p) {
-        return p.paymentDate
-                .isAfter(_startDate.subtract(const Duration(days: 1))) &&
+        return p.paymentDate.isAfter(
+              _startDate.subtract(const Duration(days: 1)),
+            ) &&
             p.paymentDate.isBefore(_endDate.add(const Duration(days: 1)));
       }).toList();
 
       final periodExpenses = expenses.where((e) {
-        return e.expenseDate
-                .isAfter(_startDate.subtract(const Duration(days: 1))) &&
+        return e.expenseDate.isAfter(
+              _startDate.subtract(const Duration(days: 1)),
+            ) &&
             e.expenseDate.isBefore(_endDate.add(const Duration(days: 1)));
       }).toList();
 
@@ -106,7 +106,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     } catch (e) {
       if (mounted) {
         Navigator.of(context).pop();
-        NotificationService.showError(context, 'Erreur lors de la génération PDF: $e');
+        NotificationService.showError(
+          context,
+          'Erreur lors de la génération PDF: $e',
+        );
       }
     }
   }
@@ -195,9 +198,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               ),
             ),
 
-            const SliverToBoxAdapter(
-              child: SizedBox(height: 24),
-            ),
+            const SliverToBoxAdapter(child: SizedBox(height: 24)),
           ],
         );
       },
@@ -207,20 +208,11 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   Widget _buildTabContent() {
     switch (_selectedTab) {
       case 0:
-        return PaymentsReportContent(
-          startDate: _startDate,
-          endDate: _endDate,
-        );
+        return PaymentsReportContent(startDate: _startDate, endDate: _endDate);
       case 1:
-        return ExpensesReportContent(
-          startDate: _startDate,
-          endDate: _endDate,
-        );
+        return ExpensesReportContent(startDate: _startDate, endDate: _endDate);
       case 2:
-        return ProfitReportContent(
-          startDate: _startDate,
-          endDate: _endDate,
-        );
+        return ProfitReportContent(startDate: _startDate, endDate: _endDate);
       default:
         return const SizedBox.shrink();
     }

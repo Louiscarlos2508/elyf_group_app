@@ -8,7 +8,7 @@ import '../../domain/repositories/production_session_repository.dart';
 import '../../domain/repositories/sale_repository.dart';
 
 /// Offline-first repository for ActivitySummary.
-/// 
+///
 /// This repository aggregates data from other repositories to compute KPIs.
 class ActivityOfflineRepository implements ActivityRepository {
   ActivityOfflineRepository({
@@ -29,19 +29,29 @@ class ActivityOfflineRepository implements ActivityRepository {
       final endOfDay = DateTime(today.year, today.month, today.day, 23, 59, 59);
 
       final sales = await saleRepository.fetchRecentSales(limit: 1000);
-      final todaySales = sales.where((s) =>
-          s.date.isAfter(startOfDay.subtract(const Duration(seconds: 1))) &&
-          s.date.isBefore(endOfDay.add(const Duration(seconds: 1)))).toList();
+      final todaySales = sales
+          .where(
+            (s) =>
+                s.date.isAfter(
+                  startOfDay.subtract(const Duration(seconds: 1)),
+                ) &&
+                s.date.isBefore(endOfDay.add(const Duration(seconds: 1))),
+          )
+          .toList();
 
       final sessions = await productionSessionRepository.fetchSessions(
         startDate: startOfDay,
         endDate: endOfDay,
       );
 
-      final totalSales =
-          todaySales.fold<int>(0, (sum, s) => sum + s.totalPrice);
+      final totalSales = todaySales.fold<int>(
+        0,
+        (sum, s) => sum + s.totalPrice,
+      );
       final totalProduction = sessions.fold<int>(
-          0, (sum, s) => sum + s.quantiteProduite);
+        0,
+        (sum, s) => sum + s.quantiteProduite,
+      );
       final pendingCredits = await creditRepository.getTotalCredits();
 
       return ActivitySummary(
@@ -53,10 +63,12 @@ class ActivityOfflineRepository implements ActivityRepository {
       );
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log('Error fetching today summary',
-          name: 'ActivityOfflineRepository',
-          error: error,
-          stackTrace: stackTrace);
+      developer.log(
+        'Error fetching today summary',
+        name: 'ActivityOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
       throw appException;
     }
   }
@@ -68,19 +80,29 @@ class ActivityOfflineRepository implements ActivityRepository {
       final endOfMonth = DateTime(month.year, month.month + 1, 0, 23, 59, 59);
 
       final sales = await saleRepository.fetchRecentSales(limit: 5000);
-      final monthlySales = sales.where((s) =>
-          s.date.isAfter(startOfMonth.subtract(const Duration(seconds: 1))) &&
-          s.date.isBefore(endOfMonth.add(const Duration(seconds: 1)))).toList();
+      final monthlySales = sales
+          .where(
+            (s) =>
+                s.date.isAfter(
+                  startOfMonth.subtract(const Duration(seconds: 1)),
+                ) &&
+                s.date.isBefore(endOfMonth.add(const Duration(seconds: 1))),
+          )
+          .toList();
 
       final sessions = await productionSessionRepository.fetchSessions(
         startDate: startOfMonth,
         endDate: endOfMonth,
       );
 
-      final totalSales =
-          monthlySales.fold<int>(0, (sum, s) => sum + s.totalPrice);
-      final totalProduction =
-          sessions.fold<int>(0, (sum, s) => sum + s.quantiteProduite);
+      final totalSales = monthlySales.fold<int>(
+        0,
+        (sum, s) => sum + s.totalPrice,
+      );
+      final totalProduction = sessions.fold<int>(
+        0,
+        (sum, s) => sum + s.quantiteProduite,
+      );
       final pendingCredits = await creditRepository.getTotalCredits();
 
       return ActivitySummary(
@@ -92,10 +114,12 @@ class ActivityOfflineRepository implements ActivityRepository {
       );
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log('Error fetching monthly summary',
-          name: 'ActivityOfflineRepository',
-          error: error,
-          stackTrace: stackTrace);
+      developer.log(
+        'Error fetching monthly summary',
+        name: 'ActivityOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
       throw appException;
     }
   }

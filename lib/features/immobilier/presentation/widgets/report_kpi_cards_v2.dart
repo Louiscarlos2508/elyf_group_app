@@ -28,24 +28,31 @@ class ReportKpiCardsV2 extends ConsumerWidget {
     return paymentsAsync.when(
       data: (payments) {
         final periodPayments = payments.where((p) {
-          return p.paymentDate.isAfter(startDate.subtract(const Duration(days: 1))) &&
+          return p.paymentDate.isAfter(
+                startDate.subtract(const Duration(days: 1)),
+              ) &&
               p.paymentDate.isBefore(endDate.add(const Duration(days: 1))) &&
               p.status == PaymentStatus.paid;
         }).toList();
 
-        final paymentsRevenue =
-            periodPayments.fold(0, (sum, p) => sum + p.amount);
+        final paymentsRevenue = periodPayments.fold(
+          0,
+          (sum, p) => sum + p.amount,
+        );
 
         return expensesAsync.when(
           data: (expenses) {
             final periodExpenses = expenses.where((e) {
-              return e.expenseDate
-                      .isAfter(startDate.subtract(const Duration(days: 1))) &&
+              return e.expenseDate.isAfter(
+                    startDate.subtract(const Duration(days: 1)),
+                  ) &&
                   e.expenseDate.isBefore(endDate.add(const Duration(days: 1)));
             }).toList();
 
-            final expensesAmount =
-                periodExpenses.fold(0, (sum, e) => sum + e.amount);
+            final expensesAmount = periodExpenses.fold(
+              0,
+              (sum, e) => sum + e.amount,
+            );
             final profit = paymentsRevenue - expensesAmount;
 
             return propertiesAsync.when(
@@ -98,7 +105,8 @@ class ReportKpiCardsV2 extends ConsumerWidget {
                   Expanded(
                     child: DashboardKpiCardV2(
                       label: 'Revenus Locatifs',
-                      value: '${CurrencyFormatter.formatFCFA(paymentsRevenue)} FCFA',
+                      value:
+                          '${CurrencyFormatter.formatFCFA(paymentsRevenue)} FCFA',
                       subtitle: '$paymentsCount paiements',
                       icon: Icons.trending_up,
                       iconColor: Colors.blue,
@@ -109,7 +117,8 @@ class ReportKpiCardsV2 extends ConsumerWidget {
                   Expanded(
                     child: DashboardKpiCardV2(
                       label: 'Dépenses',
-                      value: '${CurrencyFormatter.formatFCFA(expensesAmount)} FCFA',
+                      value:
+                          '${CurrencyFormatter.formatFCFA(expensesAmount)} FCFA',
                       subtitle: '$expensesCount charges',
                       icon: Icons.receipt_long,
                       iconColor: Colors.red,
@@ -151,7 +160,8 @@ class ReportKpiCardsV2 extends ConsumerWidget {
                       Expanded(
                         child: DashboardKpiCardV2(
                           label: 'Revenus Locatifs',
-                          value: '${CurrencyFormatter.formatFCFA(paymentsRevenue)} FCFA',
+                          value:
+                              '${CurrencyFormatter.formatFCFA(paymentsRevenue)} FCFA',
                           subtitle: '$paymentsCount paiements',
                           icon: Icons.trending_up,
                           iconColor: Colors.blue,
@@ -162,7 +172,8 @@ class ReportKpiCardsV2 extends ConsumerWidget {
                       Expanded(
                         child: DashboardKpiCardV2(
                           label: 'Dépenses',
-                          value: '${CurrencyFormatter.formatFCFA(expensesAmount)} FCFA',
+                          value:
+                              '${CurrencyFormatter.formatFCFA(expensesAmount)} FCFA',
                           subtitle: '$expensesCount charges',
                           icon: Icons.receipt_long,
                           iconColor: Colors.red,
@@ -185,8 +196,9 @@ class ReportKpiCardsV2 extends ConsumerWidget {
                           valueColor: profit >= 0
                               ? Colors.green.shade700
                               : Colors.red.shade700,
-                          backgroundColor:
-                              profit >= 0 ? Colors.green : Colors.red,
+                          backgroundColor: profit >= 0
+                              ? Colors.green
+                              : Colors.red,
                         ),
                       ),
                       const SizedBox(width: 16),

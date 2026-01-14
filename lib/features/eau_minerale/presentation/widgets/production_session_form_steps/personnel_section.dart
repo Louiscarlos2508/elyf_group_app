@@ -34,9 +34,9 @@ class PersonnelSection extends ConsumerWidget {
         Expanded(
           child: Text(
             'Personnel journalier',
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
           ),
         ),
         IntrinsicWidth(
@@ -92,9 +92,9 @@ class PersonnelSection extends ConsumerWidget {
         ),
         title: Text(
           ProductionSessionFormHelpers.formatDate(day.date),
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
         ),
         subtitle: Text(
           '${day.nombrePersonnes} personne${day.nombrePersonnes > 1 ? 's' : ''} • ${day.coutTotalPersonnel} CFA',
@@ -108,7 +108,8 @@ class PersonnelSection extends ConsumerWidget {
   }
 
   Future<void> _showPersonnelForm(BuildContext context, DateTime date) async {
-    final tempSession = session ??
+    final tempSession =
+        session ??
         ProductionSession(
           id: 'temp',
           date: selectedDate,
@@ -169,4 +170,3 @@ class PersonnelSection extends ConsumerWidget {
     );
   }
 }
-

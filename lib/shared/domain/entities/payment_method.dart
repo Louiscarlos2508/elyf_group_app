@@ -78,10 +78,7 @@ class PaymentMethodConfig {
   /// Configuration pour Boutique (cash, mobile money)
   factory PaymentMethodConfig.boutique() {
     return const PaymentMethodConfig(
-      availableMethods: [
-        PaymentMethod.cash,
-        PaymentMethod.mobileMoney,
-      ],
+      availableMethods: [PaymentMethod.cash, PaymentMethod.mobileMoney],
       allowBoth: false,
     );
   }
@@ -111,4 +108,3 @@ class PaymentMethodConfig {
     );
   }
 }
-

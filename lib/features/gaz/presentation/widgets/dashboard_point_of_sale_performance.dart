@@ -39,11 +39,7 @@ class DashboardPointOfSalePerformance extends StatelessWidget {
           // Title with icon
           Row(
             children: [
-              Icon(
-                Icons.store,
-                size: 20,
-                color: const Color(0xFF0A0A0A),
-              ),
+              Icon(Icons.store, size: 20, color: const Color(0xFF0A0A0A)),
               const SizedBox(width: 8),
               Text(
                 "Performance par point de vente (aujourd'hui)",
@@ -145,4 +141,3 @@ class DashboardPointOfSalePerformance extends StatelessWidget {
     );
   }
 }
-

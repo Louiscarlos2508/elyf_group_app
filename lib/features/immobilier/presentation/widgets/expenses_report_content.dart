@@ -25,11 +25,11 @@ class ExpensesReportContent extends ConsumerWidget {
     return expensesAsync.when(
       data: (expenses) {
         final periodExpenses = expenses.where((e) {
-          return e.expenseDate
-                  .isAfter(startDate.subtract(const Duration(days: 1))) &&
+          return e.expenseDate.isAfter(
+                startDate.subtract(const Duration(days: 1)),
+              ) &&
               e.expenseDate.isBefore(endDate.add(const Duration(days: 1)));
-        }).toList()
-          ..sort((a, b) => b.expenseDate.compareTo(a.expenseDate));
+        }).toList()..sort((a, b) => b.expenseDate.compareTo(a.expenseDate));
 
         if (periodExpenses.isEmpty) {
           return _buildEmptyState(theme, 'Aucune dépense sur cette période');

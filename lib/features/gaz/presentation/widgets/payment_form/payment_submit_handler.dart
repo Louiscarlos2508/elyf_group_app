@@ -7,6 +7,7 @@ import '../../../domain/entities/tour.dart';
 import '../../../domain/services/collection_calculation_service.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
+
 /// Handler pour la soumission du formulaire de paiement.
 class PaymentSubmitHandler {
   PaymentSubmitHandler._();
@@ -21,7 +22,10 @@ class PaymentSubmitHandler {
   }) async {
     if (amount <= 0) {
       if (!context.mounted) return false;
-      NotificationService.showError(context, 'Le montant doit être supérieur à 0');
+      NotificationService.showError(
+        context,
+        'Le montant doit être supérieur à 0',
+      );
       return false;
     }
 
@@ -64,7 +68,7 @@ class PaymentSubmitHandler {
         try {
           // Récupérer tous les cylindres pour trouver les IDs par poids
           final cylinders = await ref.read(cylindersProvider.future);
-          
+
           // Filtrer par entreprise
           final enterpriseCylinders = cylinders
               .where((c) => c.enterpriseId == tour.enterpriseId)
@@ -94,20 +98,26 @@ class PaymentSubmitHandler {
                 weight,
                 tour.enterpriseId,
                 tourId: tour.id,
-                notes: 'Fuite signalée lors du paiement de la collecte ${collection.clientName}',
+                notes:
+                    'Fuite signalée lors du paiement de la collecte ${collection.clientName}',
               );
             }
           }
         } catch (e) {
           // Logger l'erreur mais ne pas bloquer l'enregistrement du paiement
-          debugPrint('Erreur lors de la création des enregistrements de fuite: $e');
+          debugPrint(
+            'Erreur lors de la création des enregistrements de fuite: $e',
+          );
         }
       }
 
       if (!context.mounted) return false;
 
       Navigator.of(context).pop(true);
-      NotificationService.showSuccess(context, 'Paiement enregistré avec succès');
+      NotificationService.showSuccess(
+        context,
+        'Paiement enregistré avec succès',
+      );
 
       return true;
     } catch (e) {
@@ -117,4 +127,3 @@ class PaymentSubmitHandler {
     }
   }
 }
-

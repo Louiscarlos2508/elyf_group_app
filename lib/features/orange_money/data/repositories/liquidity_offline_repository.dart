@@ -149,7 +149,8 @@ class LiquidityOfflineRepository extends OfflineRepository<LiquidityCheckpoint>
 
   @override
   Future<List<LiquidityCheckpoint>> getAllForEnterprise(
-      String enterpriseId) async {
+    String enterpriseId,
+  ) async {
     final rows = await driftService.records.listForEnterprise(
       collectionName: collectionName,
       enterpriseId: enterpriseId,
@@ -171,8 +172,9 @@ class LiquidityOfflineRepository extends OfflineRepository<LiquidityCheckpoint>
     DateTime? endDate,
   }) async {
     try {
-      final checkpoints =
-          await getAllForEnterprise(enterpriseId ?? this.enterpriseId);
+      final checkpoints = await getAllForEnterprise(
+        enterpriseId ?? this.enterpriseId,
+      );
       return checkpoints.where((c) {
         if (startDate != null && c.date.isBefore(startDate)) return false;
         if (endDate != null && c.date.isAfter(endDate)) return false;
@@ -332,17 +334,18 @@ class LiquidityOfflineRepository extends OfflineRepository<LiquidityCheckpoint>
         endDate: endDate,
       );
 
-      final totalAmount =
-          checkpoints.fold<int>(0, (sum, c) => sum + c.amount);
-      final completedCheckpoints =
-          checkpoints.where((c) => c.isComplete).toList();
+      final totalAmount = checkpoints.fold<int>(0, (sum, c) => sum + c.amount);
+      final completedCheckpoints = checkpoints
+          .where((c) => c.isComplete)
+          .toList();
 
       return {
         'totalCheckpoints': checkpoints.length,
         'completedCheckpoints': completedCheckpoints.length,
         'totalLiquidity': totalAmount,
-        'averageLiquidity':
-            checkpoints.isEmpty ? 0 : totalAmount ~/ checkpoints.length,
+        'averageLiquidity': checkpoints.isEmpty
+            ? 0
+            : totalAmount ~/ checkpoints.length,
       };
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);

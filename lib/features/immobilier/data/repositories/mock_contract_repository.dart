@@ -49,16 +49,12 @@ class MockContractRepository implements ContractRepository {
 
   @override
   Future<List<Contract>> getContractsByProperty(String propertyId) async {
-    return _contracts.values
-        .where((c) => c.propertyId == propertyId)
-        .toList();
+    return _contracts.values.where((c) => c.propertyId == propertyId).toList();
   }
 
   @override
   Future<List<Contract>> getContractsByTenant(String tenantId) async {
-    return _contracts.values
-        .where((c) => c.tenantId == tenantId)
-        .toList();
+    return _contracts.values.where((c) => c.tenantId == tenantId).toList();
   }
 
   @override
@@ -115,4 +111,3 @@ class MockContractRepository implements ContractRepository {
     _contracts.remove(id);
   }
 }
-

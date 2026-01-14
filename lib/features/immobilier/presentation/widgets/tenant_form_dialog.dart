@@ -6,10 +6,7 @@ import '../../domain/entities/tenant.dart';
 import 'package:elyf_groupe_app/shared.dart';
 
 class TenantFormDialog extends ConsumerStatefulWidget {
-  const TenantFormDialog({
-    super.key,
-    this.tenant,
-  });
+  const TenantFormDialog({super.key, this.tenant});
 
   final Tenant? tenant;
 
@@ -59,7 +56,8 @@ class _TenantFormDialogState extends ConsumerState<TenantFormDialog>
     await handleFormSubmit(
       context: context,
       formKey: _formKey,
-      onLoadingChanged: (_) {}, // Pas besoin de gestion d'état de chargement séparée
+      onLoadingChanged:
+          (_) {}, // Pas besoin de gestion d'état de chargement séparée
       onSubmit: () async {
         final tenant = Tenant(
           id: widget.tenant?.id ?? IdGenerator.generate(),
@@ -104,7 +102,9 @@ class _TenantFormDialogState extends ConsumerState<TenantFormDialog>
   @override
   Widget build(BuildContext context) {
     return FormDialog(
-      title: widget.tenant == null ? 'Nouveau locataire' : 'Modifier le locataire',
+      title: widget.tenant == null
+          ? 'Nouveau locataire'
+          : 'Modifier le locataire',
       saveLabel: widget.tenant == null ? 'Créer' : 'Enregistrer',
       onSave: _save,
       child: Form(

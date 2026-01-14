@@ -18,8 +18,9 @@ class ProductionPaymentValidationService {
 
   /// Validates that all persons have valid amounts and days.
   bool validateAllPersonAmountsAndDays(List<ProductionPaymentPerson> persons) {
-    return persons.every((person) =>
-        person.pricePerDay > 0 && person.daysWorked > 0);
+    return persons.every(
+      (person) => person.pricePerDay > 0 && person.daysWorked > 0,
+    );
   }
 
   /// Validates a single person's data.
@@ -43,4 +44,3 @@ class ProductionPaymentValidationService {
     return null;
   }
 }
-

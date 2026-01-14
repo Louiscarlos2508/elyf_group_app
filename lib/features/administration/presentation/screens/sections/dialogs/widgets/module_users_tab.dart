@@ -31,8 +31,8 @@ class ModuleUsersTab extends StatelessWidget {
             Text(
               'Aucun utilisateur assigné',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),
@@ -40,11 +40,9 @@ class ModuleUsersTab extends StatelessWidget {
     }
 
     // Créer un map pour accéder rapidement aux utilisateurs et entreprises
-    final usersMap = {
-      for (var user in users) user.id: user
-    };
+    final usersMap = {for (var user in users) user.id: user};
     final enterprisesMap = {
-      for (var enterprise in enterprises) enterprise.id: enterprise
+      for (var enterprise in enterprises) enterprise.id: enterprise,
     };
 
     return ListView.builder(
@@ -69,8 +67,7 @@ class ModuleUsersTab extends StatelessWidget {
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (enterprise != null)
-                  Text('Entreprise: ${enterprise.name}'),
+                if (enterprise != null) Text('Entreprise: ${enterprise.name}'),
                 Text('Rôle: ${assignment.roleId}'),
                 if (!assignment.isActive)
                   Chip(
@@ -95,4 +92,3 @@ class ModuleUsersTab extends StatelessWidget {
     );
   }
 }
-

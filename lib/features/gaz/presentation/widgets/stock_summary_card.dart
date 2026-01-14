@@ -5,6 +5,7 @@ import '../../application/providers.dart';
 import '../../domain/entities/cylinder.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../../../shared/utils/currency_formatter.dart';
+
 /// Carte récapitulative du stock de bouteilles.
 class StockSummaryCard extends ConsumerWidget {
   const StockSummaryCard({super.key, required this.cylinders});
@@ -29,19 +30,19 @@ class StockSummaryCard extends ConsumerWidget {
     // Récupérer le stock pour tous les cylinders
     final enterpriseId = cylinders.first.enterpriseId;
     final stocksAsync = ref.watch(
-      cylinderStocksProvider(
-        (
-          enterpriseId: enterpriseId,
-          status: CylinderStatus.full,
-          siteId: null,
-        ),
-      ),
+      cylinderStocksProvider((
+        enterpriseId: enterpriseId,
+        status: CylinderStatus.full,
+        siteId: null,
+      )),
     );
 
     return stocksAsync.when(
       data: (allStocks) {
         // Utiliser le service de calcul pour extraire la logique métier
-        final calculationService = ref.read(gazDashboardCalculationServiceProvider);
+        final calculationService = ref.read(
+          gazDashboardCalculationServiceProvider,
+        );
         return Container(
           decoration: BoxDecoration(
             color: theme.colorScheme.surface,
@@ -66,7 +67,9 @@ class StockSummaryCard extends ConsumerWidget {
                     final stocksForWeight = allStocks
                         .where((s) => s.weight == cylinders[i].weight)
                         .toList();
-                    final fullStock = calculationService.calculateTotalStock(stocksForWeight);
+                    final fullStock = calculationService.calculateTotalStock(
+                      stocksForWeight,
+                    );
                     return _CylinderStockRow(
                       cylinder: cylinders[i],
                       fullStock: fullStock,
@@ -162,9 +165,7 @@ class _CylinderStockRow extends StatelessWidget {
             decoration: BoxDecoration(
               color: stockColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: stockColor.withValues(alpha: 0.3),
-              ),
+              border: Border.all(color: stockColor.withValues(alpha: 0.3)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,

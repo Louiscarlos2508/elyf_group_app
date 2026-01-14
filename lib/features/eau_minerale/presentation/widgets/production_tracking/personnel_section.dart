@@ -12,12 +12,10 @@ import 'personnel_header.dart';
 import 'personnel_total_cost.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
+
 /// Widget pour la section personnel et production journalière.
 class PersonnelSection extends ConsumerWidget {
-  const PersonnelSection({
-    super.key,
-    required this.session,
-  });
+  const PersonnelSection({super.key, required this.session});
 
   final ProductionSession session;
 
@@ -32,7 +30,9 @@ class PersonnelSection extends ConsumerWidget {
             PersonnelHeader(
               onAddDay: () {
                 final today = DateTime.now();
-                final existingForToday = session.productionDays.cast<ProductionDay?>().firstWhere(
+                final existingForToday = session.productionDays
+                    .cast<ProductionDay?>()
+                    .firstWhere(
                       (day) =>
                           day != null &&
                           day.date.year == today.year &&
@@ -64,7 +64,11 @@ class PersonnelSection extends ConsumerWidget {
     );
   }
 
-  Future<void> _deleteDay(BuildContext context, WidgetRef ref, ProductionDay day) async {
+  Future<void> _deleteDay(
+    BuildContext context,
+    WidgetRef ref,
+    ProductionDay day,
+  ) async {
     final confirm = await PersonnelDeleteDialog.show(context, day);
 
     if (confirm != true || !context.mounted) return;
@@ -79,7 +83,10 @@ class PersonnelSection extends ConsumerWidget {
 
     if (context.mounted) {
       ref.invalidate(productionSessionDetailProvider((session.id)));
-      NotificationService.showInfo(context, 'Jour de production supprimé avec succès');
+      NotificationService.showInfo(
+        context,
+        'Jour de production supprimé avec succès',
+      );
     }
   }
 
@@ -100,10 +107,14 @@ class PersonnelSection extends ConsumerWidget {
             date: date,
             existingDay: existingDay,
             onSaved: (productionDay) async {
-              final updatedDays = List<ProductionDay>.from(session.productionDays);
+              final updatedDays = List<ProductionDay>.from(
+                session.productionDays,
+              );
 
               if (existingDay != null) {
-                final index = updatedDays.indexWhere((d) => d.id == existingDay.id);
+                final index = updatedDays.indexWhere(
+                  (d) => d.id == existingDay.id,
+                );
                 if (index >= 0) {
                   updatedDays[index] = productionDay;
                 }
@@ -111,7 +122,9 @@ class PersonnelSection extends ConsumerWidget {
                 updatedDays.add(productionDay);
               }
 
-              final updatedSession = session.copyWith(productionDays: updatedDays);
+              final updatedSession = session.copyWith(
+                productionDays: updatedDays,
+              );
 
               final controller = ref.read(productionSessionControllerProvider);
               await controller.updateSession(updatedSession);
@@ -120,7 +133,10 @@ class PersonnelSection extends ConsumerWidget {
                 Navigator.of(context).pop();
                 ref.invalidate(productionSessionDetailProvider((session.id)));
                 ref.invalidate(stockStateProvider);
-                NotificationService.showInfo(context, 'Personnel enregistré avec succès');
+                NotificationService.showInfo(
+                  context,
+                  'Personnel enregistré avec succès',
+                );
               }
             },
           ),
@@ -129,4 +145,3 @@ class PersonnelSection extends ConsumerWidget {
     );
   }
 }
-

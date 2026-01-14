@@ -4,10 +4,7 @@ import '../../domain/services/financial_calculation_service.dart';
 
 /// Contrôleur pour la gestion des rapports financiers.
 class FinancialReportController {
-  FinancialReportController(
-    this._repository,
-    this._calculationService,
-  );
+  FinancialReportController(this._repository, this._calculationService);
 
   final FinancialReportRepository _repository;
   final FinancialCalculationService _calculationService;

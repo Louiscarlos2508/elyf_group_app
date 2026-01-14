@@ -17,4 +17,3 @@ class SalaryReportData {
   final List<SalaryPayment> monthlyPayments; // Monthly salary payments
   final List<ProductionPayment> productionPayments; // Production payments
 }
-

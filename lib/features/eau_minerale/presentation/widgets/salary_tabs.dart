@@ -91,4 +91,3 @@ class _SalaryTab extends StatelessWidget {
     );
   }
 }
-

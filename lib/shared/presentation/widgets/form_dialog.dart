@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 /// Dialog générique pour les formulaires avec styling cohérent.
-/// 
+///
 /// Ce widget fournit une structure standardisée pour tous les dialogs
 /// de formulaire dans l'application, avec gestion responsive et du clavier.
 class FormDialog extends StatefulWidget {
@@ -19,26 +19,26 @@ class FormDialog extends StatefulWidget {
 
   /// Titre du dialog.
   final String title;
-  
+
   /// Sous-titre optionnel (affiché sous le titre).
   final String? subtitle;
-  
+
   /// Icône optionnelle (affichée à gauche du titre).
   final IconData? icon;
-  
+
   /// Contenu du formulaire.
   final Widget child;
-  
+
   /// Callback appelé lors de l'enregistrement.
   /// Si null, le bouton Enregistrer ne fait rien.
   final Future<void> Function()? onSave;
-  
+
   /// Libellé du bouton d'enregistrement.
   final String saveLabel;
-  
+
   /// Libellé du bouton d'annulation.
   final String cancelLabel;
-  
+
   /// Indique si une opération est en cours.
   /// Si true, désactive les boutons et affiche un indicateur de chargement.
   final bool isLoading;
@@ -52,7 +52,7 @@ class _FormDialogState extends State<FormDialog> {
 
   Future<void> _handleSave() async {
     if (widget.onSave == null) return;
-    
+
     setState(() => _isLoading = true);
     try {
       await widget.onSave!();
@@ -71,10 +71,10 @@ class _FormDialogState extends State<FormDialog> {
     final keyboardHeight = mediaQuery.viewInsets.bottom;
     final screenHeight = mediaQuery.size.height;
     final screenWidth = mediaQuery.size.width;
-    
+
     // Hauteur disponible en tenant compte du clavier
     final availableHeight = screenHeight - keyboardHeight - 100;
-    
+
     // Largeur responsive : 90% de l'écran, min 320px, max 600px
     final maxWidth = (screenWidth * 0.9).clamp(320.0, 600.0);
 
@@ -83,9 +83,7 @@ class _FormDialogState extends State<FormDialog> {
         horizontal: screenWidth < 600 ? 16 : 24,
         vertical: keyboardHeight > 0 ? 16 : 24,
       ),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(24),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       child: ConstrainedBox(
         constraints: BoxConstraints(
           maxWidth: maxWidth,
@@ -114,24 +112,18 @@ class _FormDialogState extends State<FormDialog> {
                       children: [
                         Text(
                           widget.title,
-                          style: Theme.of(context)
-                              .textTheme
-                              .headlineSmall
-                              ?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
+                          style: Theme.of(context).textTheme.headlineSmall
+                              ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                         if (widget.subtitle != null) ...[
                           const SizedBox(height: 4),
                           Text(
                             widget.subtitle!,
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium
+                            style: Theme.of(context).textTheme.bodyMedium
                                 ?.copyWith(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurfaceVariant,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
                                 ),
                           ),
                         ],
@@ -183,9 +175,7 @@ class _FormDialogState extends State<FormDialog> {
                           ? const SizedBox(
                               width: 20,
                               height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                              ),
+                              child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : Text(widget.saveLabel),
                     ),
@@ -199,4 +189,3 @@ class _FormDialogState extends State<FormDialog> {
     );
   }
 }
-

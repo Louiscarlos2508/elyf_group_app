@@ -9,10 +9,7 @@ import 'production_sessions_helpers.dart';
 
 /// Carte affichant les informations d'une session de production.
 class ProductionSessionsCard extends ConsumerWidget {
-  const ProductionSessionsCard({
-    super.key,
-    required this.session,
-  });
+  const ProductionSessionsCard({super.key, required this.session});
 
   final ProductionSession session;
 
@@ -23,17 +20,14 @@ class ProductionSessionsCard extends ConsumerWidget {
 
     return Card(
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
         onTap: () {
           Navigator.of(context).push(
             MaterialPageRoute(
-              builder: (context) => ProductionSessionDetailScreen(
-                sessionId: session.id,
-              ),
+              builder: (context) =>
+                  ProductionSessionDetailScreen(sessionId: session.id),
             ),
           );
         },
@@ -78,17 +72,25 @@ class ProductionSessionsCard extends ConsumerWidget {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      ProductionSessionsHelpers.formatDate(session.date),
-                                      style: theme.textTheme.titleLarge?.copyWith(
-                                        fontWeight: FontWeight.bold,
+                                      ProductionSessionsHelpers.formatDate(
+                                        session.date,
                                       ),
+                                      style: theme.textTheme.titleLarge
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
-                                      ProductionSessionsHelpers.formatTime(session.date),
-                                      style: theme.textTheme.bodySmall?.copyWith(
-                                        color: theme.colorScheme.onSurfaceVariant,
+                                      ProductionSessionsHelpers.formatTime(
+                                        session.date,
                                       ),
+                                      style: theme.textTheme.bodySmall
+                                          ?.copyWith(
+                                            color: theme
+                                                .colorScheme
+                                                .onSurfaceVariant,
+                                          ),
                                     ),
                                   ],
                                 ),
@@ -139,10 +141,7 @@ class ProductionSessionsCard extends ConsumerWidget {
                   ],
                 ),
                 const SizedBox(height: 20),
-                ProductionSessionsCardComponents.buildInfoRow(
-                  context,
-                  session,
-                ),
+                ProductionSessionsCardComponents.buildInfoRow(context, session),
                 const SizedBox(height: 16),
                 ProductionSessionsCardComponents.buildActionButtons(
                   context,
@@ -171,4 +170,3 @@ class ProductionSessionsCard extends ConsumerWidget {
     );
   }
 }
-

@@ -2,10 +2,7 @@ import 'package:flutter/material.dart';
 
 /// Table de stock par capacité.
 class PosStockTable extends StatelessWidget {
-  const PosStockTable({
-    super.key,
-    required this.stockByCapacity,
-  });
+  const PosStockTable({super.key, required this.stockByCapacity});
 
   final Map<int, ({int full, int empty})> stockByCapacity;
 
@@ -33,10 +30,7 @@ class PosStockTable extends StatelessWidget {
                 topRight: Radius.circular(10),
               ),
               border: Border(
-                bottom: BorderSide(
-                  color: Color(0xFFE5E7EB),
-                  width: 1.3,
-                ),
+                bottom: BorderSide(color: Color(0xFFE5E7EB), width: 1.3),
               ),
             ),
             child: Row(
@@ -119,10 +113,7 @@ class PosStockTable extends StatelessWidget {
                 ),
                 decoration: const BoxDecoration(
                   border: Border(
-                    bottom: BorderSide(
-                      color: Color(0xFFE5E7EB),
-                      width: 1,
-                    ),
+                    bottom: BorderSide(color: Color(0xFFE5E7EB), width: 1),
                   ),
                 ),
                 child: Row(
@@ -183,4 +174,3 @@ class PosStockTable extends StatelessWidget {
     );
   }
 }
-

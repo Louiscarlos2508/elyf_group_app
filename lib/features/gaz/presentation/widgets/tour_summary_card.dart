@@ -6,10 +6,7 @@ import '../../domain/entities/tour.dart';
 
 /// Carte de récapitulatif final d'un tour.
 class TourSummaryCard extends StatelessWidget {
-  const TourSummaryCard({
-    super.key,
-    required this.tour,
-  });
+  const TourSummaryCard({super.key, required this.tour});
 
   final Tour tour;
 
@@ -129,7 +126,11 @@ class TourSummaryCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text('Frais de transport:'),
-                    Text(CurrencyFormatter.formatDouble(tour.totalTransportExpenses)),
+                    Text(
+                      CurrencyFormatter.formatDouble(
+                        tour.totalTransportExpenses,
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -145,7 +146,9 @@ class TourSummaryCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text('Frais de déchargement:'),
-                    Text(CurrencyFormatter.formatDouble(tour.totalUnloadingFees)),
+                    Text(
+                      CurrencyFormatter.formatDouble(tour.totalUnloadingFees),
+                    ),
                   ],
                 ),
               ],
@@ -156,4 +159,3 @@ class TourSummaryCard extends StatelessWidget {
     );
   }
 }
-

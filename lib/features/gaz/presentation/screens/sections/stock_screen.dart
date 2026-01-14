@@ -31,25 +31,26 @@ class _GazStockScreenState extends ConsumerState<GazStockScreen> {
 
     // Récupérer les points de vente depuis le provider
     final pointsOfSaleAsync = ref.watch(
-      pointsOfSaleProvider(
-        (enterpriseId: _enterpriseId!, moduleId: _moduleId!),
-      ),
+      pointsOfSaleProvider((
+        enterpriseId: _enterpriseId!,
+        moduleId: _moduleId!,
+      )),
     );
 
     // Get all stocks
     final allStocksAsync = ref.watch(
-      cylinderStocksProvider(
-        (
-          enterpriseId: _enterpriseId!,
-          status: null, // Get all statuses
-          siteId: null,
-        ),
-      ),
+      cylinderStocksProvider((
+        enterpriseId: _enterpriseId!,
+        status: null, // Get all statuses
+        siteId: null,
+      )),
     );
 
     return pointsOfSaleAsync.when(
       data: (pointsOfSale) {
-        final activePointsOfSale = pointsOfSale.where((pos) => pos.isActive).toList();
+        final activePointsOfSale = pointsOfSale
+            .where((pos) => pos.isActive)
+            .toList();
 
         return CustomScrollView(
           slivers: [
@@ -99,7 +100,10 @@ class _GazStockScreenState extends ConsumerState<GazStockScreen> {
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 9,
+                      vertical: 5,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(14),

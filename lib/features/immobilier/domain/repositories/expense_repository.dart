@@ -29,4 +29,3 @@ abstract class PropertyExpenseRepository {
   /// Supprime une dépense.
   Future<void> deleteExpense(String id);
 }
-

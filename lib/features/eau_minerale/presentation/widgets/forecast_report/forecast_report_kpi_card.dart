@@ -58,4 +58,3 @@ class ForecastKpiCard extends StatelessWidget {
     );
   }
 }
-

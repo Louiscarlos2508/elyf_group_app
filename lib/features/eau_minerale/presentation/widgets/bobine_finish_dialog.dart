@@ -6,6 +6,7 @@ import '../../domain/entities/bobine_usage.dart';
 import '../../domain/entities/production_session.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../../../shared/utils/notification_service.dart';
+
 /// Dialog pour signaler qu'une bobine est finie.
 class BobineFinishDialog extends ConsumerStatefulWidget {
   const BobineFinishDialog({
@@ -20,8 +21,7 @@ class BobineFinishDialog extends ConsumerStatefulWidget {
   final ValueChanged<ProductionSession> onFinished;
 
   @override
-  ConsumerState<BobineFinishDialog> createState() =>
-      _BobineFinishDialogState();
+  ConsumerState<BobineFinishDialog> createState() => _BobineFinishDialogState();
 }
 
 class _BobineFinishDialogState extends ConsumerState<BobineFinishDialog> {
@@ -33,12 +33,9 @@ class _BobineFinishDialogState extends ConsumerState<BobineFinishDialog> {
     try {
       // Mettre à jour la bobine pour la marquer comme finie
       final bobinesMisesAJour = widget.session.bobinesUtilisees.map((b) {
-        if (b.bobineType == widget.bobine.bobineType && 
+        if (b.bobineType == widget.bobine.bobineType &&
             b.machineId == widget.bobine.machineId) {
-          return b.copyWith(
-            estFinie: true,
-            dateUtilisation: DateTime.now(),
-          );
+          return b.copyWith(estFinie: true, dateUtilisation: DateTime.now());
         }
         return b;
       }).toList();
@@ -50,7 +47,9 @@ class _BobineFinishDialogState extends ConsumerState<BobineFinishDialog> {
 
       // Sauvegarder la session
       final controller = ref.read(productionSessionControllerProvider);
-      final sessionSauvegardee = await controller.updateSession(sessionMiseAJour);
+      final sessionSauvegardee = await controller.updateSession(
+        sessionMiseAJour,
+      );
 
       // Invalider le provider pour rafraîchir les données et éviter de réutiliser cette bobine
       ref.invalidate(productionSessionsStateProvider);
@@ -58,10 +57,11 @@ class _BobineFinishDialogState extends ConsumerState<BobineFinishDialog> {
       if (!mounted) return;
       Navigator.of(context).pop();
       widget.onFinished(sessionSauvegardee);
-      
-      NotificationService.showSuccess(context, 
-            'Bobine ${widget.bobine.bobineType} marquée comme finie',
-          );
+
+      NotificationService.showSuccess(
+        context,
+        'Bobine ${widget.bobine.bobineType} marquée comme finie',
+      );
     } catch (e) {
       if (!mounted) return;
       NotificationService.showError(context, e.toString());
@@ -125,11 +125,7 @@ class _BobineFinishDialogState extends ConsumerState<BobineFinishDialog> {
                       widget.bobine.machineName,
                     ),
                     const SizedBox(height: 8),
-                    _buildInfoRow(
-                      context,
-                      'Type',
-                      widget.bobine.bobineType,
-                    ),
+                    _buildInfoRow(context, 'Type', widget.bobine.bobineType),
                   ],
                 ),
               ),
@@ -137,33 +133,33 @@ class _BobineFinishDialogState extends ConsumerState<BobineFinishDialog> {
             const SizedBox(height: 24),
             Row(
               children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: _isLoading
-                          ? null
-                          : () => Navigator.of(context).pop(),
-                      child: const Text('Annuler'),
-                    ),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: _isLoading
+                        ? null
+                        : () => Navigator.of(context).pop(),
+                    child: const Text('Annuler'),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: FilledButton(
-                      onPressed: _isLoading ? null : _submit,
-                      child: _isLoading
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Text('Confirmer'),
-                    ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: FilledButton(
+                    onPressed: _isLoading ? null : _submit,
+                    child: _isLoading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('Confirmer'),
                   ),
-                ],
-              ),
-            ],
-          ),
+                ),
+              ],
+            ),
+          ],
         ),
-      );
+      ),
+    );
   }
 
   Widget _buildInfoRow(BuildContext context, String label, String value) {
@@ -173,14 +169,14 @@ class _BobineFinishDialogState extends ConsumerState<BobineFinishDialog> {
         Text(
           label,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
         Text(
           value,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
         ),
       ],
     );

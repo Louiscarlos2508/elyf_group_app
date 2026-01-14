@@ -49,14 +49,16 @@ class SyncOperationProcessor {
     );
 
     try {
-      await syncHandler!.processOperation(operation).timeout(
-        Duration(milliseconds: config.operationTimeoutMs),
-        onTimeout: () {
-          throw SyncException(
-            'Operation timeout after ${config.operationTimeoutMs}ms',
+      await syncHandler!
+          .processOperation(operation)
+          .timeout(
+            Duration(milliseconds: config.operationTimeoutMs),
+            onTimeout: () {
+              throw SyncException(
+                'Operation timeout after ${config.operationTimeoutMs}ms',
+              );
+            },
           );
-        },
-      );
     } catch (e) {
       developer.log(
         'Failed to process operation ${operation.id}: $e',

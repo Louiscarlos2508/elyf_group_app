@@ -36,14 +36,14 @@ class SyncManager {
     required ConnectivityService connectivityService,
     this.config = const SyncConfig(),
     this.syncHandler,
-  })  : _driftService = driftService,
-        _connectivityService = connectivityService,
-        _processor = SyncOperationProcessor(
-          driftService: driftService,
-          config: config,
-          retryHandler: RetryHandler(config: config),
-          syncHandler: syncHandler,
-        );
+  }) : _driftService = driftService,
+       _connectivityService = connectivityService,
+       _processor = SyncOperationProcessor(
+         driftService: driftService,
+         config: config,
+         retryHandler: RetryHandler(config: config),
+         syncHandler: syncHandler,
+       );
 
   final DriftService _driftService;
   final ConnectivityService _connectivityService;
@@ -180,10 +180,7 @@ class SyncManager {
       await _driftService.syncOperations.markSynced(operation.id);
     } catch (e) {
       final errorMsg = e.toString();
-      await _driftService.syncOperations.markFailed(
-        operation.id,
-        errorMsg,
-      );
+      await _driftService.syncOperations.markFailed(operation.id, errorMsg);
 
       // Reset to pending if retries not exceeded
       if (operation.retryCount < config.maxRetryAttempts) {
@@ -419,35 +416,24 @@ class SyncProgress {
     required int current,
     required int total,
     String? currentOperation,
-  }) =>
-      SyncProgress._(
-        status: SyncStatus.syncing,
-        current: current,
-        total: total,
-        currentOperation: currentOperation,
-      );
+  }) => SyncProgress._(
+    status: SyncStatus.syncing,
+    current: current,
+    total: total,
+    currentOperation: currentOperation,
+  );
 
-  factory SyncProgress.completed(int count) => SyncProgress._(
-        status: SyncStatus.synced,
-        total: count,
-        current: count,
-      );
+  factory SyncProgress.completed(int count) =>
+      SyncProgress._(status: SyncStatus.synced, total: count, current: count);
 
-  factory SyncProgress.failed(String error) => SyncProgress._(
-        status: SyncStatus.error,
-        error: error,
-      );
+  factory SyncProgress.failed(String error) =>
+      SyncProgress._(status: SyncStatus.error, error: error);
 
   double get progress => total > 0 ? current / total : 0;
 }
 
 /// Conflict resolution strategy.
-enum ConflictResolution {
-  serverWins,
-  clientWins,
-  lastWriteWins,
-  merge,
-}
+enum ConflictResolution { serverWins, clientWins, lastWriteWins, merge }
 
 /// Resolves conflicts between local and server data.
 class ConflictResolver {

@@ -7,10 +7,7 @@ import 'production_report_components.dart';
 
 /// Section consommation électrique du rapport.
 class ProductionReportConsumption extends ConsumerWidget {
-  const ProductionReportConsumption({
-    super.key,
-    required this.session,
-  });
+  const ProductionReportConsumption({super.key, required this.session});
 
   final ProductionSession session;
 
@@ -31,7 +28,8 @@ class ProductionReportConsumption extends ConsumerWidget {
         meterTypeAsync.when(
           data: (meterType) => ProductionReportComponents.buildInfoItem(
             label: 'Consommation électrique',
-            value: '${session.consommationCourant.toStringAsFixed(2)} ${meterType.unit}',
+            value:
+                '${session.consommationCourant.toStringAsFixed(2)} ${meterType.unit}',
             icon: Icons.bolt,
             theme: theme,
           ),
@@ -52,4 +50,3 @@ class ProductionReportConsumption extends ConsumerWidget {
     );
   }
 }
-

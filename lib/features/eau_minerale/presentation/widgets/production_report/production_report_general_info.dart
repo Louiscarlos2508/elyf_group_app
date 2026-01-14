@@ -6,10 +6,7 @@ import 'production_report_helpers.dart';
 
 /// Informations générales de la production.
 class ProductionReportGeneralInfo extends StatelessWidget {
-  const ProductionReportGeneralInfo({
-    super.key,
-    required this.session,
-  });
+  const ProductionReportGeneralInfo({super.key, required this.session});
 
   final ProductionSession session;
 
@@ -55,4 +52,3 @@ class ProductionReportGeneralInfo extends StatelessWidget {
     );
   }
 }
-

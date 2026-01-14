@@ -7,7 +7,7 @@ import '../repositories/gas_repository.dart';
 import '../repositories/tour_repository.dart';
 
 /// Service de validation de cohérence des données entre les modules.
-/// 
+///
 /// Assure que les données sont cohérentes entre :
 /// - Tours et Collections
 /// - Stocks et Ventes
@@ -25,7 +25,7 @@ class DataConsistencyService {
   final TourRepository tourRepository;
 
   /// Valide la cohérence d'une vente avec le stock disponible.
-  /// 
+  ///
   /// Retourne null si cohérent, sinon un message d'erreur.
   Future<String?> validateSaleStockConsistency({
     required String enterpriseId,
@@ -52,7 +52,7 @@ class DataConsistencyService {
   }
 
   /// Valide la cohérence d'une collection avec les données du tour.
-  /// 
+  ///
   /// Retourne null si cohérent, sinon un message d'erreur.
   Future<String?> validateCollectionTourConsistency({
     required String tourId,
@@ -82,12 +82,10 @@ class DataConsistencyService {
   }
 
   /// Valide la cohérence du stock après une opération de tour.
-  /// 
+  ///
   /// Vérifie que les quantités de bouteilles collectées/transportées
   /// sont cohérentes avec les stocks.
-  Future<String?> validateTourStockConsistency({
-    required Tour tour,
-  }) async {
+  Future<String?> validateTourStockConsistency({required Tour tour}) async {
     // Pour chaque collection, vérifier que les quantités sont valides
     for (final collection in tour.collections) {
       for (final entry in collection.emptyBottles.entries) {
@@ -110,7 +108,7 @@ class DataConsistencyService {
   }
 
   /// Valide la cohérence globale d'un tour.
-  /// 
+  ///
   /// Vérifie :
   /// - Les collections sont valides
   /// - Les montants sont cohérents
@@ -155,7 +153,7 @@ class DataConsistencyService {
   }
 
   /// Valide la cohérence d'une vente complète.
-  /// 
+  ///
   /// Vérifie :
   /// - Stock disponible
   /// - Montants cohérents
@@ -164,7 +162,8 @@ class DataConsistencyService {
     required GasSale sale,
     required String enterpriseId,
     String? siteId,
-    int? weight, // Poids de la bouteille (peut être null si on doit le récupérer)
+    int?
+    weight, // Poids de la bouteille (peut être null si on doit le récupérer)
   }) async {
     // Si le poids n'est pas fourni, on ne peut pas valider le stock
     // Dans ce cas, on valide juste les montants
@@ -201,7 +200,7 @@ class DataConsistencyService {
   }
 
   /// Valide la cohérence globale du module.
-  /// 
+  ///
   /// Effectue des vérifications croisées entre toutes les entités.
   Future<List<String>> validateGlobalConsistency({
     required String enterpriseId,
@@ -239,4 +238,3 @@ class DataConsistencyService {
     return errors;
   }
 }
-

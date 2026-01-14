@@ -3,20 +3,21 @@ import '../repositories/expense_repository.dart';
 
 /// Service de calcul financier pour les rapports et reliquat siège.
 class FinancialCalculationService {
-  const FinancialCalculationService({
-    required this.expenseRepository,
-  });
+  const FinancialCalculationService({required this.expenseRepository});
 
   final GazExpenseRepository expenseRepository;
 
   /// Calcule les charges totales pour une période.
-  Future<({
-    double fixedCharges,
-    double variableCharges,
-    double salaries,
-    double loadingEventExpenses,
-    double totalExpenses,
-  })> calculateCharges(
+  Future<
+    ({
+      double fixedCharges,
+      double variableCharges,
+      double salaries,
+      double loadingEventExpenses,
+      double totalExpenses,
+    })
+  >
+  calculateCharges(
     String enterpriseId,
     DateTime startDate,
     DateTime endDate,
@@ -27,9 +28,9 @@ class FinancialCalculationService {
     );
 
     // Filtrer par entreprise
-    final enterpriseExpenses = expenses.where(
-      (e) => e.enterpriseId == enterpriseId,
-    ).toList();
+    final enterpriseExpenses = expenses
+        .where((e) => e.enterpriseId == enterpriseId)
+        .toList();
 
     double fixedCharges = 0.0;
     double variableCharges = 0.0;
@@ -66,11 +67,7 @@ class FinancialCalculationService {
     DateTime endDate,
     double totalRevenue,
   ) async {
-    final charges = await calculateCharges(
-      enterpriseId,
-      startDate,
-      endDate,
-    );
+    final charges = await calculateCharges(enterpriseId, startDate, endDate);
 
     return totalRevenue - charges.totalExpenses;
   }
@@ -86,9 +83,9 @@ class FinancialCalculationService {
       to: endDate,
     );
 
-    final enterpriseExpenses = expenses.where(
-      (e) => e.enterpriseId == enterpriseId,
-    ).toList();
+    final enterpriseExpenses = expenses
+        .where((e) => e.enterpriseId == enterpriseId)
+        .toList();
 
     final Map<ExpenseCategory, double> aggregated = {};
 

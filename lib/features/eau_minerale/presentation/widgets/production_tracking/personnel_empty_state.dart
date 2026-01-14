@@ -16,10 +16,7 @@ class PersonnelEmptyState extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(
-            Icons.info_outline,
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
+          Icon(Icons.info_outline, color: theme.colorScheme.onSurfaceVariant),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -32,4 +29,3 @@ class PersonnelEmptyState extends StatelessWidget {
     );
   }
 }
-

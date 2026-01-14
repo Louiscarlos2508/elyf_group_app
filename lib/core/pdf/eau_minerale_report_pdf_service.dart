@@ -1,6 +1,5 @@
 import 'dart:io';
 
-
 import '../../features/eau_minerale/domain/entities/report_data.dart';
 import '../../features/eau_minerale/domain/entities/report_period.dart';
 import 'base_report_pdf_service.dart';
@@ -36,14 +35,8 @@ class EauMineraleReportPdfService extends BaseReportPdfService {
             'label': 'Charges Totales',
             'value': formatCurrency(reportData.totalExpenses),
           },
-          {
-            'label': 'Trésorerie',
-            'value': formatCurrency(reportData.treasury),
-          },
-          {
-            'label': 'Nombre de ventes',
-            'value': '${reportData.salesCount}',
-          },
+          {'label': 'Trésorerie', 'value': formatCurrency(reportData.treasury)},
+          {'label': 'Nombre de ventes', 'value': '${reportData.salesCount}'},
         ],
       ),
     ];
@@ -57,4 +50,3 @@ class EauMineraleReportPdfService extends BaseReportPdfService {
     );
   }
 }
-

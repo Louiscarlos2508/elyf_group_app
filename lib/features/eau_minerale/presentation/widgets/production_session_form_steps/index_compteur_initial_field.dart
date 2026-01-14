@@ -5,10 +5,7 @@ import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart
 
 /// Champ pour l'index compteur électrique initial.
 class IndexCompteurInitialField extends ConsumerWidget {
-  const IndexCompteurInitialField({
-    super.key,
-    required this.controller,
-  });
+  const IndexCompteurInitialField({super.key, required this.controller});
 
   final TextEditingController controller;
 
@@ -60,4 +57,3 @@ class IndexCompteurInitialField extends ConsumerWidget {
     );
   }
 }
-

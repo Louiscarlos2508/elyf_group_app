@@ -243,4 +243,3 @@ class MachineOfflineRepository extends OfflineRepository<Machine>
     }
   }
 }
-

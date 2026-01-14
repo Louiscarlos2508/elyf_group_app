@@ -49,13 +49,9 @@ class PriceStockManager {
 
     try {
       final controller = ref.read(cylinderStockControllerProvider);
-      return await controller.getAvailableStock(
-        enterpriseId,
-        cylinder.weight,
-      );
+      return await controller.getAvailableStock(enterpriseId, cylinder.weight);
     } catch (e) {
       return 0;
     }
   }
 }
-

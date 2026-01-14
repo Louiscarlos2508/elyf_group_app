@@ -6,10 +6,7 @@ import '../../domain/entities/expense_record.dart';
 
 /// Widget displaying monthly expense summary.
 class MonthlyExpenseSummary extends ConsumerWidget {
-  const MonthlyExpenseSummary({
-    super.key,
-    required this.expenses,
-  });
+  const MonthlyExpenseSummary({super.key, required this.expenses});
 
   final List<ExpenseRecord> expenses;
 
@@ -20,8 +17,11 @@ class MonthlyExpenseSummary extends ConsumerWidget {
     final calculationService = ref.read(dashboardCalculationServiceProvider);
     final now = DateTime.now();
     final monthStart = calculationService.getMonthStart(now);
-    final monthlyTotal = calculationService.calculateMonthlyExpensesFromRecords(expenses, monthStart);
-    
+    final monthlyTotal = calculationService.calculateMonthlyExpensesFromRecords(
+      expenses,
+      monthStart,
+    );
+
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
@@ -56,10 +56,7 @@ class MonthlyExpenseSummary extends ConsumerWidget {
             Padding(
               padding: const EdgeInsets.only(top: 16),
               child: Text(
-                '${monthlyTotal.toString().replaceAllMapped(
-                  RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-                  (Match m) => '${m[1]} ',
-                )} FCFA',
+                '${monthlyTotal.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]} ')} FCFA',
                 style: theme.textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: Colors.red,
@@ -71,4 +68,3 @@ class MonthlyExpenseSummary extends ConsumerWidget {
     );
   }
 }
-

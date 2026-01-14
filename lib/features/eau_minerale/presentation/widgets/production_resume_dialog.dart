@@ -18,8 +18,10 @@ class ProductionResumeDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final eventsNonTermines = session.events.where((e) => !e.estTermine).toList();
-    
+    final eventsNonTermines = session.events
+        .where((e) => !e.estTermine)
+        .toList();
+
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       title: const Text('Reprendre la production'),
@@ -65,9 +67,9 @@ class ProductionResumeDialog extends StatelessWidget {
                         size: 16,
                         color: theme.colorScheme.error,
                       ),
-                ],
-              ),
-            );
+                  ],
+                ),
+              );
             }),
             if (eventsNonTermines.isNotEmpty) ...[
               const SizedBox(height: 16),
@@ -91,8 +93,8 @@ class ProductionResumeDialog extends StatelessWidget {
                       final typeLabel = event.type == ProductionEventType.panne
                           ? 'Panne'
                           : event.type == ProductionEventType.coupure
-                              ? 'Coupure'
-                              : 'Arrêt forcé';
+                          ? 'Coupure'
+                          : 'Arrêt forcé';
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 4),
                         child: Text(

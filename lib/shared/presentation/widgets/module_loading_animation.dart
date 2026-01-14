@@ -17,8 +17,7 @@ class ModuleLoadingAnimation extends StatefulWidget {
   final String? message;
 
   @override
-  State<ModuleLoadingAnimation> createState() =>
-      _ModuleLoadingAnimationState();
+  State<ModuleLoadingAnimation> createState() => _ModuleLoadingAnimationState();
 }
 
 class _ModuleLoadingAnimationState extends State<ModuleLoadingAnimation>
@@ -45,16 +44,10 @@ class _ModuleLoadingAnimationState extends State<ModuleLoadingAnimation>
       duration: const Duration(milliseconds: 2000),
     )..repeat(reverse: true);
     _iconScale = Tween<double>(begin: 0.8, end: 1.2).animate(
-      CurvedAnimation(
-        parent: _iconController,
-        curve: Curves.easeInOut,
-      ),
+      CurvedAnimation(parent: _iconController, curve: Curves.easeInOut),
     );
     _iconRotation = Tween<double>(begin: 0.0, end: 0.1).animate(
-      CurvedAnimation(
-        parent: _iconController,
-        curve: Curves.easeInOut,
-      ),
+      CurvedAnimation(parent: _iconController, curve: Curves.easeInOut),
     );
 
     // Text animation
@@ -63,16 +56,10 @@ class _ModuleLoadingAnimationState extends State<ModuleLoadingAnimation>
       duration: const Duration(milliseconds: 1500),
     )..repeat(reverse: true);
     _textFade = Tween<double>(begin: 0.6, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _textController,
-        curve: Curves.easeInOut,
-      ),
+      CurvedAnimation(parent: _textController, curve: Curves.easeInOut),
     );
     _textSlide = Tween<double>(begin: 0.0, end: 10.0).animate(
-      CurvedAnimation(
-        parent: _textController,
-        curve: Curves.easeInOut,
-      ),
+      CurvedAnimation(parent: _textController, curve: Curves.easeInOut),
     );
 
     // Glow animation
@@ -81,10 +68,7 @@ class _ModuleLoadingAnimationState extends State<ModuleLoadingAnimation>
       duration: const Duration(milliseconds: 2000),
     )..repeat(reverse: true);
     _glowAnimation = Tween<double>(begin: 0.3, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _glowController,
-        curve: Curves.easeInOut,
-      ),
+      CurvedAnimation(parent: _glowController, curve: Curves.easeInOut),
     );
 
     // Particle animation
@@ -93,10 +77,7 @@ class _ModuleLoadingAnimationState extends State<ModuleLoadingAnimation>
       duration: const Duration(seconds: 3),
     )..repeat();
     _particleAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _particleController,
-        curve: Curves.linear,
-      ),
+      CurvedAnimation(parent: _particleController, curve: Curves.linear),
     );
   }
 
@@ -119,10 +100,7 @@ class _ModuleLoadingAnimationState extends State<ModuleLoadingAnimation>
       body: Stack(
         children: [
           // Animated background particles
-          _AnimatedParticles(
-            animation: _particleAnimation,
-            colors: colors,
-          ),
+          _AnimatedParticles(animation: _particleAnimation, colors: colors),
           // Main content
           Center(
             child: AnimatedBuilder(
@@ -212,10 +190,7 @@ class _ModuleLoadingAnimationState extends State<ModuleLoadingAnimation>
 }
 
 class _AnimatedParticles extends StatelessWidget {
-  const _AnimatedParticles({
-    required this.animation,
-    required this.colors,
-  });
+  const _AnimatedParticles({required this.animation, required this.colors});
 
   final Animation<double> animation;
   final ColorScheme colors;
@@ -238,10 +213,7 @@ class _AnimatedParticles extends StatelessWidget {
 }
 
 class _ParticlePainter extends CustomPainter {
-  _ParticlePainter({
-    required this.progress,
-    required this.color,
-  });
+  _ParticlePainter({required this.progress, required this.color});
 
   final double progress;
   final Color color;
@@ -260,11 +232,7 @@ class _ParticlePainter extends CustomPainter {
       final y = size.height / 2 + math.sin(angle) * radius;
       final particleSize = 4.0 + (math.sin(progress * 2 * math.pi + i) * 2);
 
-      canvas.drawCircle(
-        Offset(x, y),
-        particleSize,
-        paint,
-      );
+      canvas.drawCircle(Offset(x, y), particleSize, paint);
     }
 
     // Draw connecting lines
@@ -290,4 +258,3 @@ class _ParticlePainter extends CustomPainter {
     return oldDelegate.progress != progress;
   }
 }
-

@@ -31,8 +31,8 @@ class PaymentCollection {
       ..paymentDate = map['paymentDate'] != null
           ? DateTime.parse(map['paymentDate'] as String)
           : (map['date'] != null
-              ? DateTime.parse(map['date'] as String)
-              : DateTime.now())
+                ? DateTime.parse(map['date'] as String)
+                : DateTime.now())
       ..paymentMethod = map['paymentMethod'] as String? ?? 'cash'
       ..reference = map['reference'] as String?
       ..notes = map['notes'] as String?
@@ -41,15 +41,15 @@ class PaymentCollection {
   }
 
   Map<String, dynamic> toMap() => {
-        'id': remoteId ?? localId,
-        'localId': localId,
-        'enterpriseId': enterpriseId,
-        'contractId': contractId,
-        'amount': amount,
-        'paymentDate': paymentDate.toIso8601String(),
-        'date': paymentDate.toIso8601String(),
-        'paymentMethod': paymentMethod,
-        'reference': reference,
-        'notes': notes,
-      };
+    'id': remoteId ?? localId,
+    'localId': localId,
+    'enterpriseId': enterpriseId,
+    'contractId': contractId,
+    'amount': amount,
+    'paymentDate': paymentDate.toIso8601String(),
+    'date': paymentDate.toIso8601String(),
+    'paymentMethod': paymentMethod,
+    'reference': reference,
+    'notes': notes,
+  };
 }

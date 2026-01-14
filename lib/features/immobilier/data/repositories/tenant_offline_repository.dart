@@ -272,4 +272,3 @@ class TenantOfflineRepository extends OfflineRepository<Tenant>
     }
   }
 }
-

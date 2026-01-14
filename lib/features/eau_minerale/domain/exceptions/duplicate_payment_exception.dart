@@ -14,4 +14,3 @@ class DuplicatePaymentException implements Exception {
     return 'Un paiement existe déjà pour $employeeName pour la période $period';
   }
 }
-

@@ -31,7 +31,9 @@ class DriftService {
   AppDatabase get db {
     final db = _db;
     if (db == null) {
-      throw StateError('DriftService not initialized. Call initialize() first.');
+      throw StateError(
+        'DriftService not initialized. Call initialize() first.',
+      );
     }
     return db;
   }
@@ -40,7 +42,9 @@ class DriftService {
   OfflineRecordDao get records {
     final dao = _records;
     if (dao == null) {
-      throw StateError('DriftService not initialized. Call initialize() first.');
+      throw StateError(
+        'DriftService not initialized. Call initialize() first.',
+      );
     }
     return dao;
   }
@@ -49,7 +53,9 @@ class DriftService {
   SyncOperationDao get syncOperations {
     final dao = _syncOperations;
     if (dao == null) {
-      throw StateError('DriftService not initialized. Call initialize() first.');
+      throw StateError(
+        'DriftService not initialized. Call initialize() first.',
+      );
     }
     return dao;
   }
@@ -84,12 +90,11 @@ class DriftService {
 
   Future<Map<String, int>> getStats() async {
     final countExpr = db.offlineRecords.id.count();
-    final row = await (db.selectOnly(db.offlineRecords)..addColumns([countExpr]))
-        .getSingle();
+    final row = await (db.selectOnly(
+      db.offlineRecords,
+    )..addColumns([countExpr])).getSingle();
     final total = row.read(countExpr) ?? 0;
-    return {
-      'offlineRecords': total,
-    };
+    return {'offlineRecords': total};
   }
 
   Future<void> close() async {

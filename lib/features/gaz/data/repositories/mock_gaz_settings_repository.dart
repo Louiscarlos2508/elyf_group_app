@@ -33,4 +33,3 @@ class MockGazSettingsRepository implements GazSettingsRepository {
     _settings.remove(key);
   }
 }
-

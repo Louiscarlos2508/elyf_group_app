@@ -16,16 +16,12 @@ import 'gas_sale_form/tour_wholesaler_selector_widget.dart';
 
 /// Dialog de formulaire pour créer une vente de gaz.
 class GasSaleFormDialog extends ConsumerStatefulWidget {
-  const GasSaleFormDialog({
-    super.key,
-    required this.saleType,
-  });
+  const GasSaleFormDialog({super.key, required this.saleType});
 
   final SaleType saleType;
 
   @override
-  ConsumerState<GasSaleFormDialog> createState() =>
-      _GasSaleFormDialogState();
+  ConsumerState<GasSaleFormDialog> createState() => _GasSaleFormDialogState();
 }
 
 class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
@@ -108,7 +104,10 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
       return;
     }
     if (_selectedCylinder == null) {
-      NotificationService.showError(context, 'Veuillez sélectionner une bouteille');
+      NotificationService.showError(
+        context,
+        'Veuillez sélectionner une bouteille',
+      );
       return;
     }
 
@@ -134,8 +133,9 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
       totalAmount: _totalAmount,
       unitPrice: _unitPrice,
       tourId: widget.saleType == SaleType.wholesale ? _selectedTour?.id : null,
-      wholesalerId:
-          widget.saleType == SaleType.wholesale ? _selectedWholesalerId : null,
+      wholesalerId: widget.saleType == SaleType.wholesale
+          ? _selectedWholesalerId
+          : null,
       wholesalerName: widget.saleType == SaleType.wholesale
           ? _selectedWholesalerName
           : null,
@@ -147,7 +147,7 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final activeEnterpriseAsync = ref.watch(activeEnterpriseProvider);
-    
+
     // Récupérer l'ID de l'entreprise active
     final enterpriseId = activeEnterpriseAsync.when(
       data: (enterprise) => enterprise?.id,
@@ -157,9 +157,7 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
 
     try {
       return Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 500),
           child: Form(
@@ -178,7 +176,8 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
                     ),
                     const SizedBox(height: 24),
                     // Sélection du tour et grossiste (uniquement pour ventes en gros)
-                    if (widget.saleType == SaleType.wholesale && enterpriseId != null)
+                    if (widget.saleType == SaleType.wholesale &&
+                        enterpriseId != null)
                       TourWholesalerSelectorWidget(
                         selectedTour: _selectedTour,
                         selectedWholesalerId: _selectedWholesalerId,

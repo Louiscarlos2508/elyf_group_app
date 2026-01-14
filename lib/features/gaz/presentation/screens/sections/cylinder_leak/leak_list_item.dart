@@ -4,10 +4,7 @@ import '../../../../domain/entities/cylinder_leak.dart';
 
 /// Item de liste pour une fuite.
 class LeakListItem extends StatelessWidget {
-  const LeakListItem({
-    super.key,
-    required this.leak,
-  });
+  const LeakListItem({super.key, required this.leak});
 
   final CylinderLeak leak;
 
@@ -26,7 +23,8 @@ class LeakListItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final statusColor = _getStatusColor(leak.status);
-    final dateStr = '${leak.reportedDate.day}/${leak.reportedDate.month}/${leak.reportedDate.year}';
+    final dateStr =
+        '${leak.reportedDate.day}/${leak.reportedDate.month}/${leak.reportedDate.year}';
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -47,11 +45,7 @@ class LeakListItem extends StatelessWidget {
               color: statusColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(
-              Icons.warning,
-              color: statusColor,
-              size: 24,
-            ),
+            child: Icon(Icons.warning, color: statusColor, size: 24),
           ),
           const SizedBox(width: 16),
           // Content
@@ -86,10 +80,7 @@ class LeakListItem extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: statusColor.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(6),
-                        border: Border.all(
-                          color: statusColor,
-                          width: 1,
-                        ),
+                        border: Border.all(color: statusColor, width: 1),
                       ),
                       child: Text(
                         leak.status.label,
@@ -135,4 +126,3 @@ class LeakListItem extends StatelessWidget {
     );
   }
 }
-

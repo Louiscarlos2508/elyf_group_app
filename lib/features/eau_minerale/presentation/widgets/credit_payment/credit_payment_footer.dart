@@ -53,4 +53,3 @@ class CreditPaymentFooter extends StatelessWidget {
     );
   }
 }
-

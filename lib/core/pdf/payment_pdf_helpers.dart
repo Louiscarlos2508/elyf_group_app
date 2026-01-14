@@ -12,9 +12,7 @@ class PaymentPdfHelpers {
   PaymentPdfHelpers._();
 
   /// Construit un conteneur avec bordure.
-  static pw.Widget buildBorderedContainer({
-    required List<pw.Widget> children,
-  }) {
+  static pw.Widget buildBorderedContainer({required List<pw.Widget> children}) {
     return pw.Container(
       padding: const pw.EdgeInsets.all(15),
       decoration: pw.BoxDecoration(
@@ -82,7 +80,8 @@ class PaymentPdfHelpers {
     required Tenant? tenant,
     required DateFormat dateFormat,
     required BasePaymentPdfService service,
-    bool showDepositInfo = false, // Afficher les infos de caution uniquement si nécessaire
+    bool showDepositInfo =
+        false, // Afficher les infos de caution uniquement si nécessaire
   }) {
     return buildBorderedContainer(
       children: [
@@ -94,27 +93,38 @@ class PaymentPdfHelpers {
         if (tenant != null && tenant.phone.isNotEmpty)
           service.buildInfoRow('Téléphone:', tenant.phone),
         if (contract != null) ...[
-          service.buildInfoRow('Loyer mensuel:',
-              '${service.formatCurrency(contract.monthlyRent)} FCFA'),
           service.buildInfoRow(
-              'Date de début:', dateFormat.format(contract.startDate)),
+            'Loyer mensuel:',
+            '${service.formatCurrency(contract.monthlyRent)} FCFA',
+          ),
           service.buildInfoRow(
-              'Date de fin:', dateFormat.format(contract.endDate)),
+            'Date de début:',
+            dateFormat.format(contract.startDate),
+          ),
+          service.buildInfoRow(
+            'Date de fin:',
+            dateFormat.format(contract.endDate),
+          ),
           if (contract.paymentDay != null)
-            service.buildInfoRow('Jour de paiement:',
-                'Le ${contract.paymentDay} de chaque mois'),
+            service.buildInfoRow(
+              'Jour de paiement:',
+              'Le ${contract.paymentDay} de chaque mois',
+            ),
           // Afficher la caution uniquement si demandé (pour les factures de caution)
           if (showDepositInfo) ...[
             if (contract.depositInMonths != null)
-              service.buildInfoRow('Caution:',
-                  '${contract.depositInMonths} mois (${service.formatCurrency(contract.calculatedDeposit)} FCFA)')
+              service.buildInfoRow(
+                'Caution:',
+                '${contract.depositInMonths} mois (${service.formatCurrency(contract.calculatedDeposit)} FCFA)',
+              )
             else if (contract.deposit > 0)
               service.buildInfoRow(
-                  'Caution:', '${service.formatCurrency(contract.deposit)} FCFA'),
+                'Caution:',
+                '${service.formatCurrency(contract.deposit)} FCFA',
+              ),
           ],
         ],
       ],
     );
   }
 }
-

@@ -10,10 +10,7 @@ import 'tracking_dialogs.dart';
 
 /// Widget pour l'étape "InProgress" (en cours) de la session de production.
 class InProgressStep extends ConsumerWidget {
-  const InProgressStep({
-    super.key,
-    required this.session,
-  });
+  const InProgressStep({super.key, required this.session});
 
   final ProductionSession session;
 
@@ -33,10 +30,7 @@ class InProgressStep extends ConsumerWidget {
           children: [
             Row(
               children: [
-                Icon(
-                  Icons.settings,
-                  color: theme.colorScheme.primary,
-                ),
+                Icon(Icons.settings, color: theme.colorScheme.primary),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
@@ -101,7 +95,8 @@ class InProgressStep extends ConsumerWidget {
             _buildConsumptionInfoRow(context, ref),
             const SizedBox(height: 24),
             OutlinedButton.icon(
-              onPressed: () => TrackingDialogs.showAddMachineDialog(context, ref, session),
+              onPressed: () =>
+                  TrackingDialogs.showAddMachineDialog(context, ref, session),
               icon: const Icon(Icons.add),
               label: const Text('Ajouter une machine'),
             ),
@@ -114,7 +109,8 @@ class InProgressStep extends ConsumerWidget {
               children: [
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: () => TrackingDialogs.showEventDialog(context, ref, session),
+                    onPressed: () =>
+                        TrackingDialogs.showEventDialog(context, ref, session),
                     icon: const Icon(Icons.warning),
                     label: const Text('Enregistrer événement'),
                   ),
@@ -122,7 +118,11 @@ class InProgressStep extends ConsumerWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: FilledButton.icon(
-                    onPressed: () => TrackingDialogs.showFinalizationDialog(context, ref, session),
+                    onPressed: () => TrackingDialogs.showFinalizationDialog(
+                      context,
+                      ref,
+                      session,
+                    ),
                     icon: const Icon(Icons.check),
                     label: const Text('Finaliser'),
                   ),
@@ -143,7 +143,8 @@ class InProgressStep extends ConsumerWidget {
         return InfoRow(
           icon: Icons.flash_on,
           label: 'Consommation électrique',
-          value: '${session.consommationCourant.toStringAsFixed(2)} ${meterType.unit}',
+          value:
+              '${session.consommationCourant.toStringAsFixed(2)} ${meterType.unit}',
         );
       },
       loading: () => InfoRow(
@@ -159,4 +160,3 @@ class InProgressStep extends ConsumerWidget {
     );
   }
 }
-

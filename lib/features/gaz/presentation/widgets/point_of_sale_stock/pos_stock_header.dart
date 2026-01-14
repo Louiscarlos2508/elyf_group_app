@@ -4,10 +4,7 @@ import '../../../domain/entities/point_of_sale.dart';
 
 /// En-tête de la carte de stock d'un point de vente.
 class PosStockHeader extends StatelessWidget {
-  const PosStockHeader({
-    super.key,
-    required this.pointOfSale,
-  });
+  const PosStockHeader({super.key, required this.pointOfSale});
 
   final PointOfSale pointOfSale;
 
@@ -90,4 +87,3 @@ class PosStockHeader extends StatelessWidget {
     );
   }
 }
-

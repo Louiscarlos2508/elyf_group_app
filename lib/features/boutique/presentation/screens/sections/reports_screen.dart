@@ -44,7 +44,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       lastDate: DateTime.now(),
     );
     if (picked != null) {
-    setState(() {
+      setState(() {
         if (isStartDate) {
           _startDate = picked;
         } else {
@@ -59,9 +59,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (context) => const Center(
-          child: CircularProgressIndicator(),
-        ),
+        builder: (context) => const Center(child: CircularProgressIndicator()),
       );
 
       final reportData = await ref.read(
@@ -92,7 +90,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     } catch (e) {
       if (mounted) {
         Navigator.of(context).pop();
-        NotificationService.showError(context, 'Erreur lors de la génération PDF: $e');
+        NotificationService.showError(
+          context,
+          'Erreur lors de la génération PDF: $e',
+        );
       }
     }
   }
@@ -115,36 +116,36 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final isWide = constraints.maxWidth > 600;
-    
-    return CustomScrollView(
-      slivers: [
+
+        return CustomScrollView(
+          slivers: [
             // Header
-        SliverToBoxAdapter(
-          child: Padding(
+            SliverToBoxAdapter(
+              child: Padding(
                 padding: EdgeInsets.fromLTRB(24, 24, 24, isWide ? 24 : 16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'Rapports',
-                    style: theme.textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Rapports',
+                        style: theme.textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
-                  ),
-                ),
                     RefreshButton(
                       onRefresh: _invalidateProviders,
                       tooltip: 'Actualiser les rapports',
                     ),
-              ],
+                  ],
+                ),
+              ),
             ),
-          ),
-        ),
 
             // Period selector
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: ReportPeriodSelectorV2(
                   startDate: _startDate,
                   endDate: _endDate,
@@ -152,19 +153,19 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                   onEndDateSelected: () => _selectDate(context, false),
                   onDownload: _downloadReport,
                 ),
-                  ),
-                ),
+              ),
+            ),
 
             // KPI Cards
-        SliverToBoxAdapter(
-          child: Padding(
+            SliverToBoxAdapter(
+              child: Padding(
                 padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
                 child: ReportKpiCardsV2(
-              startDate: _startDate,
-              endDate: _endDate,
+                  startDate: _startDate,
+                  endDate: _endDate,
+                ),
+              ),
             ),
-          ),
-        ),
 
             // Tabs
             SliverToBoxAdapter(
@@ -178,17 +179,15 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             ),
 
             // Tab content
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: _buildTabContent(),
-          ),
-        ),
-
-            const SliverToBoxAdapter(
-              child: SizedBox(height: 24),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: _buildTabContent(),
+              ),
             ),
-      ],
+
+            const SliverToBoxAdapter(child: SizedBox(height: 24)),
+          ],
         );
       },
     );
@@ -197,10 +196,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   Widget _buildTabContent() {
     switch (_selectedTab) {
       case 0:
-        return SalesReportContentV2(
-          startDate: _startDate,
-          endDate: _endDate,
-        );
+        return SalesReportContentV2(startDate: _startDate, endDate: _endDate);
       case 1:
         return PurchasesReportContentV2(
           startDate: _startDate,
@@ -212,10 +208,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           endDate: _endDate,
         );
       case 3:
-        return ProfitReportContentV2(
-          startDate: _startDate,
-          endDate: _endDate,
-        );
+        return ProfitReportContentV2(startDate: _startDate, endDate: _endDate);
       default:
         return const SizedBox.shrink();
     }

@@ -7,19 +7,24 @@ abstract class AdminRepository {
   Future<List<EnterpriseModuleUser>> getEnterpriseModuleUsers();
 
   /// Get enterprise module users for a specific user
-  Future<List<EnterpriseModuleUser>> getUserEnterpriseModuleUsers(String userId);
+  Future<List<EnterpriseModuleUser>> getUserEnterpriseModuleUsers(
+    String userId,
+  );
 
   /// Get enterprise module users for a specific enterprise
   Future<List<EnterpriseModuleUser>> getEnterpriseUsers(String enterpriseId);
 
   /// Get enterprise module users for a specific enterprise and module
-  Future<List<EnterpriseModuleUser>> getEnterpriseModuleUsersByEnterpriseAndModule(
+  Future<List<EnterpriseModuleUser>>
+  getEnterpriseModuleUsersByEnterpriseAndModule(
     String enterpriseId,
     String moduleId,
   );
 
   /// Assign a user to an enterprise and module with a role
-  Future<void> assignUserToEnterprise(EnterpriseModuleUser enterpriseModuleUser);
+  Future<void> assignUserToEnterprise(
+    EnterpriseModuleUser enterpriseModuleUser,
+  );
 
   /// Update a user's role in an enterprise and module
   Future<void> updateUserRole(
@@ -48,7 +53,7 @@ abstract class AdminRepository {
   Future<List<UserRole>> getAllRoles();
 
   /// Get roles with pagination (LIMIT/OFFSET au niveau Drift).
-  /// 
+  ///
   /// Returns a paginated list of roles and the total count.
   Future<({List<UserRole> roles, int totalCount})> getRolesPaginated({
     int page = 0,
@@ -67,4 +72,3 @@ abstract class AdminRepository {
   /// Delete a role (if not system role)
   Future<void> deleteRole(String roleId);
 }
-

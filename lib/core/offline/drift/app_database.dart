@@ -23,8 +23,8 @@ class OfflineRecords extends Table {
 
   @override
   List<String> get customConstraints => [
-        'UNIQUE(collection_name, enterprise_id, module_type, local_id)',
-      ];
+    'UNIQUE(collection_name, enterprise_id, module_type, local_id)',
+  ];
 }
 
 /// Queue of sync operations to be processed.
@@ -38,20 +38,21 @@ class SyncOperations extends Table {
   TextColumn get collectionName => text()();
   TextColumn get documentId => text()(); // localId or remoteId
   TextColumn get enterpriseId => text()();
-  TextColumn get payload => text().nullable()(); // JSON payload for create/update
+  TextColumn get payload =>
+      text().nullable()(); // JSON payload for create/update
   IntColumn get retryCount => integer().withDefault(const Constant(0))();
   TextColumn get lastError => text().nullable()();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get processedAt => dateTime().nullable()();
-  TextColumn get status =>
-      text()
-          .withDefault(const Constant('pending'))(); // 'pending', 'processing', 'synced', 'failed'
+  TextColumn get status => text().withDefault(
+    const Constant('pending'),
+  )(); // 'pending', 'processing', 'synced', 'failed'
   DateTimeColumn get localUpdatedAt => dateTime()();
 
   @override
   List<String> get customConstraints => [
-        'UNIQUE(operation_type, collection_name, document_id, enterprise_id, status)',
-      ];
+    'UNIQUE(operation_type, collection_name, document_id, enterprise_id, status)',
+  ];
 }
 
 @DriftDatabase(tables: [OfflineRecords, SyncOperations])
@@ -73,4 +74,3 @@ class AppDatabase extends _$AppDatabase {
     );
   }
 }
-

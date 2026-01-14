@@ -14,10 +14,10 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Enregistrer le handler background AVANT toute autre initialisation Firebase
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-  
+
   await bootstrap();
   runApp(const ProviderScope(child: ElyfApp()));
 }

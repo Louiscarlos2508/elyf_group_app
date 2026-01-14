@@ -41,29 +41,19 @@ class SettingsSystemInfoCard extends StatelessWidget {
             const SizedBox(height: 16),
             Row(
               children: [
-                Expanded(
-                  child: _buildInfoItem('Version', '1.0.0'),
-                ),
+                Expanded(child: _buildInfoItem('Version', '1.0.0')),
                 Expanded(
                   child: _buildInfoItem('Dernière mise à jour', '16 Nov 2024'),
                 ),
-                Expanded(
-                  child: _buildInfoItem('Entreprise', 'Groupe ELYF'),
-                ),
-                Expanded(
-                  child: _buildInfoItem('Application', 'Mobile Money'),
-                ),
+                Expanded(child: _buildInfoItem('Entreprise', 'Groupe ELYF')),
+                Expanded(child: _buildInfoItem('Application', 'Mobile Money')),
               ],
             ),
             const Divider(height: 32),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(
-                  Icons.settings,
-                  size: 20,
-                  color: Color(0xFF0A0A0A),
-                ),
+                const Icon(Icons.settings, size: 20, color: Color(0xFF0A0A0A)),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -122,4 +112,3 @@ class SettingsSystemInfoCard extends StatelessWidget {
     );
   }
 }
-

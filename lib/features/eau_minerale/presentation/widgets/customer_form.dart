@@ -34,11 +34,15 @@ class CustomerFormState extends ConsumerState<CustomerForm>
       formKey: _formKey,
       onLoadingChanged: (isLoading) => setState(() => _isLoading = isLoading),
       onSubmit: () async {
-        await ref.read(clientsControllerProvider).createCustomer(
-          _nameController.text.trim(),
-          _phoneController.text.trim(),
-          cnib: _cnibController.text.isEmpty ? null : _cnibController.text.trim(),
-        );
+        await ref
+            .read(clientsControllerProvider)
+            .createCustomer(
+              _nameController.text.trim(),
+              _phoneController.text.trim(),
+              cnib: _cnibController.text.isEmpty
+                  ? null
+                  : _cnibController.text.trim(),
+            );
 
         if (mounted) {
           Navigator.of(context).pop();
@@ -69,7 +73,8 @@ class CustomerFormState extends ConsumerState<CustomerForm>
               textCapitalization: TextCapitalization.words,
               validator: (v) => Validators.combine([
                 () => Validators.required(v),
-                () => Validators.minLength(v, 2, customMessage: 'Nom trop court'),
+                () =>
+                    Validators.minLength(v, 2, customMessage: 'Nom trop court'),
               ]),
             ),
             const SizedBox(height: 16),

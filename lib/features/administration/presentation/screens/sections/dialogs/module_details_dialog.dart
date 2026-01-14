@@ -9,18 +9,14 @@ import 'widgets/module_details_content.dart';
 
 /// Dialogue pour afficher les détails d'un module
 class ModuleDetailsDialog extends ConsumerWidget {
-  const ModuleDetailsDialog({
-    super.key,
-    required this.module,
-  });
+  const ModuleDetailsDialog({super.key, required this.module});
 
   final AdminModule module;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final statsAsync = ref.watch(moduleStatsProvider(module.id));
-    final enterpriseModuleUsersAsync =
-        ref.watch(enterpriseModuleUsersProvider);
+    final enterpriseModuleUsersAsync = ref.watch(enterpriseModuleUsersProvider);
     final usersAsync = ref.watch(usersProvider);
     final enterprisesAsync = ref.watch(enterprisesProvider);
 
@@ -49,33 +45,23 @@ class ModuleDetailsDialog extends ConsumerWidget {
                         users: users,
                         enterprises: enterprises,
                       ),
-                      loading: () => const Center(
-                        child: CircularProgressIndicator(),
-                      ),
-                      error: (error, stack) => Center(
-                        child: Text('Erreur: $error'),
-                      ),
+                      loading: () =>
+                          const Center(child: CircularProgressIndicator()),
+                      error: (error, stack) =>
+                          Center(child: Text('Erreur: $error')),
                     ),
-                    loading: () => const Center(
-                      child: CircularProgressIndicator(),
-                    ),
-                    error: (error, stack) => Center(
-                      child: Text('Erreur: $error'),
-                    ),
+                    loading: () =>
+                        const Center(child: CircularProgressIndicator()),
+                    error: (error, stack) =>
+                        Center(child: Text('Erreur: $error')),
                   ),
-                  loading: () => const Center(
-                    child: CircularProgressIndicator(),
-                  ),
-                  error: (error, stack) => Center(
-                    child: Text('Erreur: $error'),
-                  ),
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator()),
+                  error: (error, stack) =>
+                      Center(child: Text('Erreur: $error')),
                 ),
-                loading: () => const Center(
-                  child: CircularProgressIndicator(),
-                ),
-                error: (error, stack) => Center(
-                  child: Text('Erreur: $error'),
-                ),
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (error, stack) => Center(child: Text('Erreur: $error')),
               ),
             ),
           ],
@@ -84,4 +70,3 @@ class ModuleDetailsDialog extends ConsumerWidget {
     );
   }
 }
-

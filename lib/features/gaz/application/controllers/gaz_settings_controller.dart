@@ -3,9 +3,7 @@ import '../../domain/repositories/gaz_settings_repository.dart';
 
 /// Contrôleur pour gérer les paramètres du module Gaz.
 class GazSettingsController {
-  const GazSettingsController({
-    required this.repository,
-  });
+  const GazSettingsController({required this.repository});
 
   final GazSettingsRepository repository;
 
@@ -77,4 +75,3 @@ class GazSettingsController {
     return settings?.getWholesalePrice(weight);
   }
 }
-

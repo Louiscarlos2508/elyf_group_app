@@ -43,15 +43,17 @@ class MockCustomerRepository implements CustomerRepository {
           ? sales.reduce((a, b) => a.date.isAfter(b.date) ? a : b).date
           : null;
 
-      summaries.add(CustomerSummary(
-        id: customer.id,
-        name: customer.name,
-        phone: customer.phone,
-        totalCredit: totalCredit,
-        purchaseCount: purchaseCount,
-        lastPurchaseDate: lastPurchase,
-        cnib: customer.cnib,
-      ));
+      summaries.add(
+        CustomerSummary(
+          id: customer.id,
+          name: customer.name,
+          phone: customer.phone,
+          totalCredit: totalCredit,
+          purchaseCount: purchaseCount,
+          lastPurchaseDate: lastPurchase,
+          cnib: customer.cnib,
+        ),
+      );
     }
 
     return summaries;
@@ -93,7 +95,11 @@ class MockCustomerRepository implements CustomerRepository {
   }
 
   @override
-  Future<String> createCustomer(String name, String phone, {String? cnib}) async {
+  Future<String> createCustomer(
+    String name,
+    String phone, {
+    String? cnib,
+  }) async {
     await Future<void>.delayed(const Duration(milliseconds: 150));
     final id = 'customer-${_customers.length}';
     _customers[id] = _CustomerData(

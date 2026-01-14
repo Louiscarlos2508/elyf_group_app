@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:elyf_groupe_app/features/gaz/application/providers.dart' show gazReportCalculationServiceProvider;
+import 'package:elyf_groupe_app/features/gaz/application/providers.dart'
+    show gazReportCalculationServiceProvider;
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import '../../../domain/entities/gas_sale.dart';
@@ -10,10 +11,7 @@ import 'sales_report_helpers.dart';
 
 /// Statistiques des ventes au détail.
 class SalesReportRetailStats extends ConsumerWidget {
-  const SalesReportRetailStats({
-    super.key,
-    required this.retailSales,
-  });
+  const SalesReportRetailStats({super.key, required this.retailSales});
 
   final List<GasSale> retailSales;
 
@@ -24,12 +22,19 @@ class SalesReportRetailStats extends ConsumerWidget {
     final reportService = ref.read(gazReportCalculationServiceProvider);
     final salesByClient = _groupSalesByClient(retailSales);
     final totalRetail = reportService.calculateRetailTotal(retailSales);
-    final totalQuantity = SalesReportHelpers.calculateTotalQuantity(retailSales);
+    final totalQuantity = SalesReportHelpers.calculateTotalQuantity(
+      retailSales,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSummaryCard(theme, retailSales.length, totalRetail, totalQuantity),
+        _buildSummaryCard(
+          theme,
+          retailSales.length,
+          totalRetail,
+          totalQuantity,
+        ),
         const SizedBox(height: 16),
         if (salesByClient.isNotEmpty) _buildTopClients(theme, salesByClient),
       ],
@@ -47,9 +52,7 @@ class SalesReportRetailStats extends ConsumerWidget {
       decoration: BoxDecoration(
         color: Colors.orange.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Colors.orange.withValues(alpha: 0.3),
-        ),
+        border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -114,9 +117,10 @@ class SalesReportRetailStats extends ConsumerWidget {
     ThemeData theme,
     Map<String, ({int count, double total})> salesByClient,
   ) {
-    final topClients = (salesByClient.entries.toList()
-          ..sort((a, b) => b.value.total.compareTo(a.value.total)))
-        .take(5);
+    final topClients =
+        (salesByClient.entries.toList()
+              ..sort((a, b) => b.value.total.compareTo(a.value.total)))
+            .take(5);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -146,11 +150,7 @@ class SalesReportRetailStats extends ConsumerWidget {
               children: [
                 Row(
                   children: [
-                    Icon(
-                      Icons.person,
-                      size: 16,
-                      color: Colors.orange,
-                    ),
+                    Icon(Icons.person, size: 16, color: Colors.orange),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -206,4 +206,3 @@ class SalesReportRetailStats extends ConsumerWidget {
     return result;
   }
 }
-

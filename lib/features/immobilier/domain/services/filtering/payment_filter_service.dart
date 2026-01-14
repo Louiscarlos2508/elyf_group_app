@@ -49,4 +49,3 @@ class PaymentFilterService {
     return filtered;
   }
 }
-

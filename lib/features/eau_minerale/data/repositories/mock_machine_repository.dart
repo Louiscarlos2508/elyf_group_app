@@ -44,4 +44,3 @@ class MockMachineRepository implements MachineRepository {
     await _storage.deleteMachine(id);
   }
 }
-

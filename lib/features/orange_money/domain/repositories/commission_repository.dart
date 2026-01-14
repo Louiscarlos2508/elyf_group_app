@@ -17,8 +17,5 @@ abstract class CommissionRepository {
   Future<void> updateCommission(Commission commission);
 
   /// Obtenir les statistiques des commissions.
-  Future<Map<String, dynamic>> getStatistics({
-    String? enterpriseId,
-  });
+  Future<Map<String, dynamic>> getStatistics({String? enterpriseId});
 }
-

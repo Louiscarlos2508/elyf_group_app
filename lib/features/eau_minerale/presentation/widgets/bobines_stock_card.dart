@@ -2,10 +2,7 @@ import 'package:flutter/material.dart';
 
 /// Card displaying bobines stock summary.
 class BobinesStockCard extends StatelessWidget {
-  const BobinesStockCard({
-    super.key,
-    required this.availableBobines,
-  });
+  const BobinesStockCard({super.key, required this.availableBobines});
 
   final int availableBobines;
 
@@ -17,10 +14,7 @@ class BobinesStockCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.blue.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Colors.blue.withValues(alpha: 0.3),
-          width: 1,
-        ),
+        border: Border.all(color: Colors.blue.withValues(alpha: 0.3), width: 1),
       ),
       padding: const EdgeInsets.all(20),
       child: Column(

@@ -43,10 +43,7 @@ class FormFieldWithLabel extends StatelessWidget {
           onChanged: onChanged,
           decoration: InputDecoration(
             hintText: hintText,
-            hintStyle: const TextStyle(
-              fontSize: 14,
-              color: Color(0xFF717182),
-            ),
+            hintStyle: const TextStyle(fontSize: 14, color: Color(0xFF717182)),
             filled: true,
             fillColor: const Color(0xFFF3F3F5),
             border: OutlineInputBorder(
@@ -64,10 +61,7 @@ class FormFieldWithLabel extends StatelessWidget {
                   )
                 : null,
             prefixIconConstraints: prefixIcon != null
-                ? const BoxConstraints(
-                    minWidth: 16,
-                    minHeight: 16,
-                  )
+                ? const BoxConstraints(minWidth: 16, minHeight: 16)
                 : null,
           ),
         ),
@@ -75,4 +69,3 @@ class FormFieldWithLabel extends StatelessWidget {
     );
   }
 }
-

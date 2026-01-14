@@ -8,6 +8,7 @@ import '../payment_form_dialog.dart';
 import '../wholesaler_payment_card.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
+
 /// Contenu de l'étape retour du tour.
 class ReturnStepContent extends ConsumerWidget {
   const ReturnStepContent({
@@ -22,7 +23,7 @@ class ReturnStepContent extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    
+
     // Filtrer les collections de type grossiste
     final wholesalerCollections = tour.collections
         .where((c) => c.type == CollectionType.wholesaler)
@@ -108,15 +109,19 @@ class ReturnStepContent extends ConsumerWidget {
                           );
                           if (result == true) {
                             ref.invalidate(
-                              toursProvider(
-                                (enterpriseId: enterpriseId, status: null),
-                              ),
+                              toursProvider((
+                                enterpriseId: enterpriseId,
+                                status: null,
+                              )),
                             );
                           }
                         } catch (e) {
                           debugPrint('Erreur: $e');
                           if (context.mounted) {
-                            NotificationService.showError(context, 'Erreur: $e');
+                            NotificationService.showError(
+                              context,
+                              'Erreur: $e',
+                            );
                           }
                         }
                       },
@@ -130,4 +135,3 @@ class ReturnStepContent extends ConsumerWidget {
     );
   }
 }
-

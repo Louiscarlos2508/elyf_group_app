@@ -61,7 +61,9 @@ class LiquidityController {
     );
 
     if (existingCheckpoint != null) {
-      return await _repository.updateCheckpoint(checkpoint).then((_) => checkpoint.id);
+      return await _repository
+          .updateCheckpoint(checkpoint)
+          .then((_) => checkpoint.id);
     } else {
       return await _repository.createCheckpoint(checkpoint);
     }
@@ -91,4 +93,3 @@ class LiquidityController {
     );
   }
 }
-

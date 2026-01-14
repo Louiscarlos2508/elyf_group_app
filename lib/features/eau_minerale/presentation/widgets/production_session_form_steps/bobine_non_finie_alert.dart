@@ -31,11 +31,7 @@ class BobineNonFinieAlert extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(
-                Icons.info_outline,
-                color: Colors.orange.shade700,
-                size: 24,
-              ),
+              Icon(Icons.info_outline, color: Colors.orange.shade700, size: 24),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
@@ -113,4 +109,3 @@ class BobineNonFinieAlert extends StatelessWidget {
     );
   }
 }
-

@@ -26,7 +26,8 @@ class GazSettingsOfflineRepository extends OfflineRepository<GazSettings>
   @override
   GazSettings fromMap(Map<String, dynamic> map) {
     final wholesalePricesRaw = map['wholesalePrices'] as Map<String, dynamic>?;
-    final wholesalePrices = wholesalePricesRaw?.map(
+    final wholesalePrices =
+        wholesalePricesRaw?.map(
           (k, v) => MapEntry(int.parse(k), (v as num).toDouble()),
         ) ??
         {};

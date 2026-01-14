@@ -20,10 +20,7 @@ void main() {
       connectivityService = MockConnectivityService(isOnline: true);
 
       // Create sync handler using MockSyncHandler from handlers
-      final syncHandler = MockSyncHandler(
-        shouldFail: false,
-        delayMs: 10,
-      );
+      final syncHandler = MockSyncHandler(shouldFail: false, delayMs: 10);
 
       // Create SyncManager
       syncManager = SyncManager(
@@ -46,10 +43,7 @@ void main() {
 
     test('should queue and sync create operation', () async {
       // Arrange
-      final testData = {
-        'name': 'Test Item',
-        'value': 100,
-      };
+      final testData = {'name': 'Test Item', 'value': 100};
 
       // Act
       await syncManager.queueCreate(
@@ -75,10 +69,7 @@ void main() {
 
     test('should queue and sync update operation', () async {
       // Arrange
-      final updateData = {
-        'name': 'Updated Item',
-        'value': 200,
-      };
+      final updateData = {'name': 'Updated Item', 'value': 200};
 
       // Act
       await syncManager.queueUpdate(
@@ -135,18 +126,12 @@ void main() {
 
     test('should retry failed operations', () async {
       // Arrange - Create a sync manager with a failing handler
-      final failingHandler = MockSyncHandler(
-        shouldFail: true,
-        delayMs: 10,
-      );
+      final failingHandler = MockSyncHandler(shouldFail: true, delayMs: 10);
       final testSyncManager = SyncManager(
         driftService: driftService,
         connectivityService: connectivityService,
         syncHandler: failingHandler,
-        config: const SyncConfig(
-          syncIntervalMinutes: 0,
-          maxRetryAttempts: 2,
-        ),
+        config: const SyncConfig(syncIntervalMinutes: 0, maxRetryAttempts: 2),
       );
       await testSyncManager.initialize();
 
@@ -221,8 +206,7 @@ class MockConnectivityService implements ConnectivityService {
       isOnline ? ConnectivityStatus.wifi : ConnectivityStatus.offline;
 
   @override
-  Stream<ConnectivityStatus> get statusStream =>
-      Stream.value(currentStatus);
+  Stream<ConnectivityStatus> get statusStream => Stream.value(currentStatus);
 
   @override
   Future<void> initialize() async {
@@ -237,5 +221,3 @@ class MockConnectivityService implements ConnectivityService {
     // No-op for testing
   }
 }
-
-

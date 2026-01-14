@@ -23,10 +23,7 @@ class ExpenseBalanceFilters extends StatelessWidget {
   final ValueChanged<DateTime> onEndDateChanged;
   final ValueChanged<Set<String>> onCategoriesChanged;
 
-  Future<void> _selectDate(
-    BuildContext context,
-    bool isStartDate,
-  ) async {
+  Future<void> _selectDate(BuildContext context, bool isStartDate) async {
     final picked = await showDatePicker(
       context: context,
       initialDate: isStartDate ? startDate : endDate,
@@ -59,9 +56,9 @@ class ExpenseBalanceFilters extends StatelessWidget {
           children: [
             Text(
               'Filtres',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             Row(
@@ -94,10 +91,7 @@ class ExpenseBalanceFilters extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
-            Text(
-              'Catégories',
-              style: Theme.of(context).textTheme.titleSmall,
-            ),
+            Text('Catégories', style: Theme.of(context).textTheme.titleSmall),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
@@ -118,7 +112,9 @@ class ExpenseBalanceFilters extends StatelessWidget {
                     label: Text(getCategoryLabel(category)),
                     selected: isSelected,
                     onSelected: (selected) {
-                      final newCategories = Set<String>.from(selectedCategories);
+                      final newCategories = Set<String>.from(
+                        selectedCategories,
+                      );
                       if (selected) {
                         newCategories.add(category);
                       } else {
@@ -136,4 +132,3 @@ class ExpenseBalanceFilters extends StatelessWidget {
     );
   }
 }
-

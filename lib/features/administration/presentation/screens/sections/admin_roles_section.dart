@@ -7,7 +7,8 @@ import 'dialogs/create_role_dialog.dart';
 import 'dialogs/edit_role_dialog.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../../../shared/utils/notification_service.dart';
-import 'package:elyf_groupe_app/core/auth/providers.dart' show currentUserIdProvider;
+import 'package:elyf_groupe_app/core/auth/providers.dart'
+    show currentUserIdProvider;
 
 /// Section pour gérer les rôles.
 class AdminRolesSection extends ConsumerWidget {
@@ -51,7 +52,10 @@ class AdminRolesSection extends ConsumerWidget {
     UserRole role,
   ) async {
     if (role.isSystemRole) {
-      NotificationService.showInfo(context, 'Les rôles système ne peuvent pas être supprimés');
+      NotificationService.showInfo(
+        context,
+        'Les rôles système ne peuvent pas être supprimés',
+      );
       return;
     }
 
@@ -79,12 +83,10 @@ class AdminRolesSection extends ConsumerWidget {
         // Récupérer l'ID de l'utilisateur actuel pour l'audit trail
         final currentUserId = ref.read(currentUserIdProvider);
 
-        await ref.read(adminControllerProvider).deleteRole(
-          role.id,
-          currentUserId: currentUserId,
-          roleData: role,
-        );
-        ref.invalidate(rolesProvider);
+        await ref
+            .read(adminControllerProvider)
+            .deleteRole(role.id, currentUserId: currentUserId, roleData: role);
+        ref.refresh(rolesProvider);
         if (context.mounted) {
           NotificationService.showSuccess(context, 'Rôle supprimé');
         }
@@ -100,9 +102,8 @@ class AdminRolesSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final rolesAsync = ref.watch(rolesProvider);
-    final enterpriseModuleUsersAsync =
-        ref.watch(enterpriseModuleUsersProvider);
-    
+    final enterpriseModuleUsersAsync = ref.watch(enterpriseModuleUsersProvider);
+
     return rolesAsync.when(
       data: (roles) {
         return enterpriseModuleUsersAsync.when(
@@ -114,12 +115,12 @@ class AdminRolesSection extends ConsumerWidget {
               assignments: assignments,
             );
 
-        return CustomScrollView(
-          slivers: [
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
+            return CustomScrollView(
+              slivers: [
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
@@ -138,8 +139,8 @@ class AdminRolesSection extends ConsumerWidget {
                         const SizedBox(height: 16),
                         FilledButton.icon(
                           onPressed: () => _handleCreateRole(context, ref),
-                            icon: const Icon(Icons.add),
-                            label: const Text('Nouveau Rôle'),
+                          icon: const Icon(Icons.add),
+                          label: const Text('Nouveau Rôle'),
                         ),
                       ],
                     ),
@@ -170,102 +171,104 @@ class AdminRolesSection extends ConsumerWidget {
                                 color: theme.colorScheme.onSurfaceVariant,
                               ),
                             ),
-                  ],
-                ),
-              ),
-            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   )
                 else
-            SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  final role = roles[index];
-                        final userCount = usersByRole[role.id] ?? 0;
+                  SliverList(
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      final role = roles[index];
+                      final userCount = usersByRole[role.id] ?? 0;
 
-                  return Card(
-                    margin: const EdgeInsets.fromLTRB(24, 0, 24, 12),
-                    child: ListTile(
-                            title: Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                        role.name,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                                  ),
-                                ),
-                                if (role.isSystemRole)
-                                  Chip(
-                                    label: const Text('Système'),
-                                    visualDensity: VisualDensity.compact,
-                                    backgroundColor:
-                                        theme.colorScheme.primaryContainer,
-                                  ),
-                              ],
-                      ),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SizedBox(height: 4),
-                          Text(role.description),
-                          const SizedBox(height: 8),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 4,
+                      return Card(
+                        margin: const EdgeInsets.fromLTRB(24, 0, 24, 12),
+                        child: ListTile(
+                          title: Row(
                             children: [
-                              Chip(
-                                label: Text(
-                                  '${role.permissions.length} permission${role.permissions.length > 1 ? 's' : ''}',
-                                  style: theme.textTheme.labelSmall,
+                              Expanded(
+                                child: Text(
+                                  role.name,
+                                  style: theme.textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
-                                visualDensity: VisualDensity.compact,
                               ),
-                                    if (userCount > 0)
+                              if (role.isSystemRole)
                                 Chip(
-                                        label: Text(
-                                          '$userCount utilisateur${userCount > 1 ? 's' : ''}',
-                                          style: theme.textTheme.labelSmall,
-                                        ),
+                                  label: const Text('Système'),
                                   visualDensity: VisualDensity.compact,
-                                        backgroundColor:
-                                            theme.colorScheme.secondaryContainer,
+                                  backgroundColor:
+                                      theme.colorScheme.primaryContainer,
                                 ),
                             ],
                           ),
-                        ],
-                      ),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                        icon: const Icon(Icons.edit),
-                                  onPressed: () => _handleEditRole(context, ref, role),
-                                  tooltip: 'Modifier',
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const SizedBox(height: 4),
+                              Text(role.description),
+                              const SizedBox(height: 8),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 4,
+                                children: [
+                                  Chip(
+                                    label: Text(
+                                      '${role.permissions.length} permission${role.permissions.length > 1 ? 's' : ''}',
+                                      style: theme.textTheme.labelSmall,
+                                    ),
+                                    visualDensity: VisualDensity.compact,
+                                  ),
+                                  if (userCount > 0)
+                                    Chip(
+                                      label: Text(
+                                        '$userCount utilisateur${userCount > 1 ? 's' : ''}',
+                                        style: theme.textTheme.labelSmall,
+                                      ),
+                                      visualDensity: VisualDensity.compact,
+                                      backgroundColor:
+                                          theme.colorScheme.secondaryContainer,
+                                    ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.edit),
+                                onPressed: () =>
+                                    _handleEditRole(context, ref, role),
+                                tooltip: 'Modifier',
+                              ),
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.delete,
+                                  color: Colors.red,
                                 ),
-                                IconButton(
-                                  icon: const Icon(Icons.delete, color: Colors.red),
-                                  onPressed: role.isSystemRole
-                                      ? null
-                                      : () => _handleDeleteRole(context, ref, role),
-                                  tooltip: 'Supprimer',
-                                ),
-                              ],
-                      ),
-                            isThreeLine: true,
-                    ),
-                  );
-                },
-                childCount: roles.length,
-              ),
-            ),
-            const SliverToBoxAdapter(child: SizedBox(height: 24)),
-          ],
-        );
-      },
+                                onPressed: role.isSystemRole
+                                    ? null
+                                    : () =>
+                                          _handleDeleteRole(context, ref, role),
+                                tooltip: 'Supprimer',
+                              ),
+                            ],
+                          ),
+                          isThreeLine: true,
+                        ),
+                      );
+                    }, childCount: roles.length),
+                  ),
+                const SliverToBoxAdapter(child: SizedBox(height: 24)),
+              ],
+            );
+          },
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, stack) => Center(child: Text('Erreur: $error')),
-    );
+        );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stack) => Center(
@@ -280,10 +283,7 @@ class AdminRolesSection extends ConsumerWidget {
                 color: theme.colorScheme.error,
               ),
               const SizedBox(height: 16),
-              Text(
-                'Erreur de chargement',
-                style: theme.textTheme.titleLarge,
-              ),
+              Text('Erreur de chargement', style: theme.textTheme.titleLarge),
               const SizedBox(height: 8),
               Text(
                 error.toString(),
@@ -297,5 +297,5 @@ class AdminRolesSection extends ConsumerWidget {
         ),
       ),
     );
-}
+  }
 }

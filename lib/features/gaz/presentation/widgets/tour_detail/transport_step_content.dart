@@ -31,10 +31,7 @@ class TransportStepContent extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          TransportStepHeader(
-            tour: tour,
-            enterpriseId: enterpriseId,
-          ),
+          TransportStepHeader(tour: tour, enterpriseId: enterpriseId),
           const SizedBox(height: 30),
           Column(
             mainAxisSize: MainAxisSize.min,

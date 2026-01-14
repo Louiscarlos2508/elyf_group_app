@@ -1,16 +1,16 @@
 /// Base permission type that can be extended by modules.
 abstract class ModulePermission {
   const ModulePermission();
-  
+
   /// Unique identifier for the permission
   String get id;
-  
+
   /// Human-readable name
   String get name;
-  
+
   /// Module this permission belongs to
   String get module;
-  
+
   /// Description of what this permission allows
   String get description;
 }
@@ -44,4 +44,3 @@ class ActionPermission extends ModulePermission {
   @override
   int get hashCode => id.hashCode ^ module.hashCode;
 }
-

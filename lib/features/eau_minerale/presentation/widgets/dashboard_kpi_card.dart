@@ -62,8 +62,9 @@ class DashboardKpiCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
-                      color: (iconColor ?? colors.primary)
-                          .withValues(alpha: backgroundColor != null ? 0.2 : 0.1),
+                      color: (iconColor ?? colors.primary).withValues(
+                        alpha: backgroundColor != null ? 0.2 : 0.1,
+                      ),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(
@@ -79,7 +80,11 @@ class DashboardKpiCard extends StatelessWidget {
               value,
               style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: valueColor ?? (backgroundColor != null ? iconColor ?? colors.onSurface : colors.onSurface),
+                color:
+                    valueColor ??
+                    (backgroundColor != null
+                        ? iconColor ?? colors.onSurface
+                        : colors.onSurface),
                 fontSize: 22,
               ),
             ),
@@ -99,4 +104,3 @@ class DashboardKpiCard extends StatelessWidget {
     );
   }
 }
-

@@ -31,12 +31,8 @@ class StockMovement {
       'Réception',
       'Perte',
     ];
-    final products = [
-      'Pack',
-      'Emballage',
-      'Bobine',
-    ];
-    
+    final products = ['Pack', 'Emballage', 'Bobine'];
+
     return StockMovement(
       id: 'movement-$index',
       date: DateTime.now().subtract(Duration(days: index)),

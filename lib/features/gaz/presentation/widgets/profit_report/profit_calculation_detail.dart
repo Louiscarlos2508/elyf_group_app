@@ -6,10 +6,7 @@ import '../../../domain/entities/report_data.dart';
 
 /// Détail des calculs du rapport de profit.
 class ProfitCalculationDetail extends StatelessWidget {
-  const ProfitCalculationDetail({
-    super.key,
-    required this.data,
-  });
+  const ProfitCalculationDetail({super.key, required this.data});
 
   final GazReportData data;
 
@@ -81,4 +78,3 @@ class ProfitCalculationDetail extends StatelessWidget {
     );
   }
 }
-

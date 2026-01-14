@@ -125,10 +125,7 @@ class _OnboardingSlideState extends State<OnboardingSlide>
       vsync: this,
       duration: const Duration(seconds: 2),
     )..repeat();
-    _animation = CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeInOut,
-    );
+    _animation = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
   }
 
   @override
@@ -157,11 +154,7 @@ class _OnboardingSlideState extends State<OnboardingSlide>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Expanded(
-            child: Center(
-              child: _buildAnimation(colors),
-            ),
-          ),
+          Expanded(child: Center(child: _buildAnimation(colors))),
           const SizedBox(height: 32),
           Text(
             widget.slide.title,
@@ -186,29 +179,17 @@ class _OnboardingSlideState extends State<OnboardingSlide>
   Widget _buildAnimation(ColorScheme colors) {
     switch (widget.slide.animationType) {
       case OnboardingAnimationType.connected:
-        return _ConnectedAnimation(
-          animation: _animation,
-          colors: colors,
-        );
+        return _ConnectedAnimation(animation: _animation, colors: colors);
       case OnboardingAnimationType.sync:
-        return _SyncAnimation(
-          animation: _animation,
-          colors: colors,
-        );
+        return _SyncAnimation(animation: _animation, colors: colors);
       case OnboardingAnimationType.print:
-        return _PrintAnimation(
-          animation: _animation,
-          colors: colors,
-        );
+        return _PrintAnimation(animation: _animation, colors: colors);
     }
   }
 }
 
 class _ConnectedAnimation extends StatelessWidget {
-  const _ConnectedAnimation({
-    required this.animation,
-    required this.colors,
-  });
+  const _ConnectedAnimation({required this.animation, required this.colors});
 
   final Animation<double> animation;
   final ColorScheme colors;
@@ -241,16 +222,13 @@ class _ConnectedAnimation extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: Icon(
-                    Icons.layers,
-                    size: 50,
-                    color: colors.onPrimary,
-                  ),
+                  child: Icon(Icons.layers, size: 50, color: colors.onPrimary),
                 ),
               ),
               // Rotating connected nodes
               ...List.generate(4, (index) {
-                final angle = (index * 90 + animation.value * 360) * math.pi / 180;
+                final angle =
+                    (index * 90 + animation.value * 360) * math.pi / 180;
                 final radius = 100.0;
                 final progress = animation.value * 0.5 + 0.5;
                 final x = radius * progress * math.cos(angle);
@@ -307,10 +285,7 @@ class _ConnectedAnimation extends StatelessWidget {
 }
 
 class _SyncAnimation extends StatelessWidget {
-  const _SyncAnimation({
-    required this.animation,
-    required this.colors,
-  });
+  const _SyncAnimation({required this.animation, required this.colors});
 
   final Animation<double> animation;
   final ColorScheme colors;
@@ -368,18 +343,16 @@ class _SyncAnimation extends StatelessWidget {
               ...List.generate(3, (index) {
                 final progress = (animation.value + index * 0.33) % 1.0;
                 final y = 140 - (progress * 100);
-                final opacity = progress < 0.5 ? progress * 2 : (1 - progress) * 2;
+                final opacity = progress < 0.5
+                    ? progress * 2
+                    : (1 - progress) * 2;
 
                 return Positioned(
                   left: 120,
                   top: y,
                   child: Opacity(
                     opacity: opacity,
-                    child: Icon(
-                      Icons.sync,
-                      size: 30,
-                      color: colors.primary,
-                    ),
+                    child: Icon(Icons.sync, size: 30, color: colors.primary),
                   ),
                 );
               }),
@@ -392,10 +365,7 @@ class _SyncAnimation extends StatelessWidget {
 }
 
 class _PrintAnimation extends StatelessWidget {
-  const _PrintAnimation({
-    required this.animation,
-    required this.colors,
-  });
+  const _PrintAnimation({required this.animation, required this.colors});
 
   final Animation<double> animation;
   final ColorScheme colors;
@@ -426,11 +396,7 @@ class _PrintAnimation extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: Icon(
-                  Icons.print,
-                  size: 60,
-                  color: colors.primary,
-                ),
+                child: Icon(Icons.print, size: 60, color: colors.primary),
               ),
               // Paper coming out
               Positioned(
@@ -543,8 +509,4 @@ class OnboardingSlideData {
   final OnboardingAnimationType animationType;
 }
 
-enum OnboardingAnimationType {
-  connected,
-  sync,
-  print,
-}
+enum OnboardingAnimationType { connected, sync, print }

@@ -106,4 +106,3 @@ class PropertyValidationService {
     return errors;
   }
 }
-

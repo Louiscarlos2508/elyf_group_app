@@ -10,14 +10,11 @@ class BobineStock {
     this.prixUnitaire,
     this.createdAt,
     this.updatedAt,
-  }) : assert(
-          quantity >= 0,
-          'La quantité ne peut pas être négative',
-        ),
-        assert(
-          seuilAlerte == null || seuilAlerte >= 0,
-          'Le seuil d\'alerte ne peut pas être négatif',
-        );
+  }) : assert(quantity >= 0, 'La quantité ne peut pas être négative'),
+       assert(
+         seuilAlerte == null || seuilAlerte >= 0,
+         'Le seuil d\'alerte ne peut pas être négatif',
+       );
 
   final String id;
   final String type; // Type de bobine (par défaut: "Bobine standard")
@@ -70,4 +67,3 @@ class BobineStock {
     );
   }
 }
-

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:elyf_groupe_app/features/administration/application/providers.dart' show permissionServiceProvider;
+import 'package:elyf_groupe_app/features/administration/application/providers.dart'
+    show permissionServiceProvider;
 import '../../../../core/permissions/services/permission_service.dart';
 import '../../../../core/auth/providers.dart' as auth;
 import '../../domain/adapters/eau_minerale_permission_adapter.dart';
@@ -24,33 +25,30 @@ void _initializeEauMineralePermissions() {
 
 /// Provider for centralized permission service.
 /// Uses the shared permission service from administration module.
-final centralizedPermissionServiceProvider = Provider<PermissionService>(
-  (ref) {
-    // Initialize permissions on first access
-    _initializeEauMineralePermissions();
-    return ref.watch(permissionServiceProvider);
-  },
-);
+final centralizedPermissionServiceProvider = Provider<PermissionService>((ref) {
+  // Initialize permissions on first access
+  _initializeEauMineralePermissions();
+  return ref.watch(permissionServiceProvider);
+});
 
 /// Provider for current user ID.
 /// Uses the authenticated user ID from auth service, or falls back to default user for development.
-final currentUserIdProvider = Provider<String>(
-  (ref) {
-    final authUserId = ref.watch(auth.currentUserIdProvider);
-    if (authUserId != null && authUserId.isNotEmpty) {
-      return authUserId;
-    }
-    return 'default_user_eau_minerale';
-  },
-);
+final currentUserIdProvider = Provider<String>((ref) {
+  final authUserId = ref.watch(auth.currentUserIdProvider);
+  if (authUserId != null && authUserId.isNotEmpty) {
+    return authUserId;
+  }
+  return 'default_user_eau_minerale';
+});
 
 /// Provider for eau_minerale permission adapter.
-final eauMineralePermissionAdapterProvider = Provider<EauMineralePermissionAdapter>(
-  (ref) => EauMineralePermissionAdapter(
-    permissionService: ref.watch(centralizedPermissionServiceProvider),
-    userId: ref.watch(currentUserIdProvider),
-  ),
-);
+final eauMineralePermissionAdapterProvider =
+    Provider<EauMineralePermissionAdapter>(
+      (ref) => EauMineralePermissionAdapter(
+        permissionService: ref.watch(centralizedPermissionServiceProvider),
+        userId: ref.watch(currentUserIdProvider),
+      ),
+    );
 
 /// Configuration for a section in the module shell.
 class EauMineraleSectionConfig {
@@ -132,28 +130,26 @@ final _allSections = [
 
 /// Provider that caches accessible sections for the module shell.
 /// Uses autoDispose to allow reloading when navigating away and back.
-final accessibleSectionsProvider = FutureProvider.autoDispose<List<EauMineraleSectionConfig>>(
-  (ref) async {
-    // Ensure minimum loading time to show animation
-    final loadingStart = DateTime.now();
-    
-    final adapter = ref.watch(eauMineralePermissionAdapterProvider);
-    final accessible = <EauMineraleSectionConfig>[];
-    
-    for (final section in _allSections) {
-      if (await adapter.canAccessSection(section.id)) {
-        accessible.add(section);
-      }
-    }
-    
-    // Ensure animation is visible for at least 1.2 seconds
-    final elapsed = DateTime.now().difference(loadingStart);
-    const minimumDuration = Duration(milliseconds: 1200);
-    if (elapsed < minimumDuration) {
-      await Future.delayed(minimumDuration - elapsed);
-    }
-    
-    return accessible;
-  },
-);
+final accessibleSectionsProvider =
+    FutureProvider.autoDispose<List<EauMineraleSectionConfig>>((ref) async {
+      // Ensure minimum loading time to show animation
+      final loadingStart = DateTime.now();
 
+      final adapter = ref.watch(eauMineralePermissionAdapterProvider);
+      final accessible = <EauMineraleSectionConfig>[];
+
+      for (final section in _allSections) {
+        if (await adapter.canAccessSection(section.id)) {
+          accessible.add(section);
+        }
+      }
+
+      // Ensure animation is visible for at least 1.2 seconds
+      final elapsed = DateTime.now().difference(loadingStart);
+      const minimumDuration = Duration(milliseconds: 1200);
+      if (elapsed < minimumDuration) {
+        await Future.delayed(minimumDuration - elapsed);
+      }
+
+      return accessible;
+    });

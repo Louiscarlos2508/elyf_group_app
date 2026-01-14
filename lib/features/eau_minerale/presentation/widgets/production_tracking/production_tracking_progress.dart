@@ -4,10 +4,7 @@ import '../../../domain/entities/production_session_status.dart';
 
 /// Indicateur de progression pour le suivi de production.
 class ProductionTrackingProgress extends StatelessWidget {
-  const ProductionTrackingProgress({
-    super.key,
-    required this.status,
-  });
+  const ProductionTrackingProgress({super.key, required this.status});
 
   final ProductionSessionStatus status;
 
@@ -111,8 +108,9 @@ class ProductionTrackingProgress extends StatelessWidget {
                             color: isActive
                                 ? theme.colorScheme.primary
                                 : theme.colorScheme.onSurfaceVariant,
-                            fontWeight:
-                                isActive ? FontWeight.w600 : FontWeight.normal,
+                            fontWeight: isActive
+                                ? FontWeight.w600
+                                : FontWeight.normal,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -132,8 +130,9 @@ class ProductionTrackingProgress extends StatelessWidget {
                             borderRadius: BorderRadius.circular(2),
                             color: isCompleted
                                 ? theme.colorScheme.primary
-                                : theme.colorScheme.outline
-                                    .withValues(alpha: 0.2),
+                                : theme.colorScheme.outline.withValues(
+                                    alpha: 0.2,
+                                  ),
                           ),
                         ),
                       ),
@@ -159,4 +158,3 @@ class _StepInfo {
   final IconData icon;
   final String description;
 }
-

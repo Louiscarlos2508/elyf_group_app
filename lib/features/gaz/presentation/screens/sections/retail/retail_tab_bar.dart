@@ -2,10 +2,7 @@ import 'package:flutter/material.dart';
 
 /// Barre d'onglets personnalisée pour la vente au détail.
 class RetailTabBar extends StatelessWidget {
-  const RetailTabBar({
-    super.key,
-    required this.tabController,
-  });
+  const RetailTabBar({super.key, required this.tabController});
 
   final TabController tabController;
 
@@ -39,10 +36,7 @@ class RetailTabBar extends StatelessWidget {
                         : Colors.transparent,
                     borderRadius: BorderRadius.circular(14),
                     border: tabController.index == 0
-                        ? Border.all(
-                            color: Colors.transparent,
-                            width: 1.3,
-                          )
+                        ? Border.all(color: Colors.transparent, width: 1.3)
                         : null,
                   ),
                   child: Text(
@@ -89,4 +83,3 @@ class RetailTabBar extends StatelessWidget {
     );
   }
 }
-

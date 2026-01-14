@@ -5,10 +5,7 @@ import 'payment_actions_dialog.dart';
 
 /// Widget pour les boutons d'action d'une carte de paiement.
 class PaymentCardActions extends StatelessWidget {
-  const PaymentCardActions({
-    super.key,
-    required this.payment,
-  });
+  const PaymentCardActions({super.key, required this.payment});
 
   final Payment payment;
 
@@ -25,9 +22,7 @@ class PaymentCardActions extends StatelessWidget {
           onPressed: () {
             showDialog(
               context: context,
-              builder: (context) => PaymentActionsDialog(
-                payment: payment,
-              ),
+              builder: (context) => PaymentActionsDialog(payment: payment),
             );
           },
           style: IconButton.styleFrom(
@@ -40,9 +35,7 @@ class PaymentCardActions extends StatelessWidget {
           onPressed: () {
             showDialog(
               context: context,
-              builder: (context) => PaymentActionsDialog(
-                payment: payment,
-              ),
+              builder: (context) => PaymentActionsDialog(payment: payment),
             );
           },
           style: IconButton.styleFrom(
@@ -53,4 +46,3 @@ class PaymentCardActions extends StatelessWidget {
     );
   }
 }
-

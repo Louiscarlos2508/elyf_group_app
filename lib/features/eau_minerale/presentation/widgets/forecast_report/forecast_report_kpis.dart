@@ -20,8 +20,9 @@ class ForecastKpis extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final trendPercent =
-        weeklyAverage > 0 ? (trend / weeklyAverage) * 100 : 0.0;
+    final trendPercent = weeklyAverage > 0
+        ? (trend / weeklyAverage) * 100
+        : 0.0;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -36,7 +37,8 @@ class ForecastKpis extends StatelessWidget {
           ),
           ForecastKpiCard(
             label: 'Tendance',
-            value: '${trendPercent >= 0 ? '+' : ''}${trendPercent.toStringAsFixed(1)}%',
+            value:
+                '${trendPercent >= 0 ? '+' : ''}${trendPercent.toStringAsFixed(1)}%',
             icon: trendPercent >= 0 ? Icons.trending_up : Icons.trending_down,
             color: trendPercent >= 0 ? Colors.green : Colors.red,
           ),
@@ -57,12 +59,14 @@ class ForecastKpis extends StatelessWidget {
         if (isWide) {
           return Row(
             children: items
-                .map((item) => Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 6),
-                        child: item,
-                      ),
-                    ))
+                .map(
+                  (item) => Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                      child: item,
+                    ),
+                  ),
+                )
                 .toList(),
           );
         }
@@ -90,4 +94,3 @@ class ForecastKpis extends StatelessWidget {
     );
   }
 }
-

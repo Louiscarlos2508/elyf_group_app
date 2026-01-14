@@ -206,9 +206,7 @@ class PaymentOfflineRepository extends OfflineRepository<Payment>
   Future<List<Payment>> getPaymentsByContract(String contractId) async {
     try {
       final allPayments = await getAllForEnterprise(enterpriseId);
-      return allPayments
-          .where((p) => p.contractId == contractId)
-          .toList();
+      return allPayments.where((p) => p.contractId == contractId).toList();
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
@@ -229,8 +227,10 @@ class PaymentOfflineRepository extends OfflineRepository<Payment>
     try {
       final allPayments = await getAllForEnterprise(enterpriseId);
       return allPayments.where((p) {
-        return (p.paymentDate.isAfter(start) || p.paymentDate.isAtSameMomentAs(start)) &&
-            (p.paymentDate.isBefore(end) || p.paymentDate.isAtSameMomentAs(end));
+        return (p.paymentDate.isAfter(start) ||
+                p.paymentDate.isAtSameMomentAs(start)) &&
+            (p.paymentDate.isBefore(end) ||
+                p.paymentDate.isAtSameMomentAs(end));
       }).toList();
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
@@ -355,4 +355,3 @@ class PaymentOfflineRepository extends OfflineRepository<Payment>
     }
   }
 }
-

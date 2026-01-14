@@ -15,9 +15,9 @@ class DatePickerField extends StatelessWidget {
     this.validator,
     this.enabled = true,
   }) : assert(
-          onTap != null || onDateSelected != null,
-          'Either onTap or onDateSelected must be provided',
-        );
+         onTap != null || onDateSelected != null,
+         'Either onTap or onDateSelected must be provided',
+       );
 
   final DateTime selectedDate;
 
@@ -72,13 +72,12 @@ class DatePickerField extends StatelessWidget {
           style: enabled
               ? null
               : TextStyle(
-                  color: Theme.of(context).colorScheme.onSurface.withValues(
-                        alpha: 0.38,
-                      ),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.38),
                 ),
         ),
       ),
     );
   }
 }
-

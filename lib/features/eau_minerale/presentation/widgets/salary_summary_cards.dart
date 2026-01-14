@@ -7,10 +7,7 @@ import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart
 
 /// Summary cards for salaries module.
 class SalarySummaryCards extends ConsumerWidget {
-  const SalarySummaryCards({
-    super.key,
-    this.onNewPayment,
-  });
+  const SalarySummaryCards({super.key, this.onNewPayment});
 
   final VoidCallback? onNewPayment;
 
@@ -41,14 +38,17 @@ class SalarySummaryCards extends ConsumerWidget {
                           value: '${data.productionPaymentsCount}',
                           icon: Icons.factory,
                           color: Colors.purple,
-                          subtitle: '${data.uniqueProductionWorkers} personne(s) unique(s)',
+                          subtitle:
+                              '${data.uniqueProductionWorkers} personne(s) unique(s)',
                         ),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
                         child: _SalarySummaryCard(
                           label: 'Total Mois en Cours',
-                          value: CurrencyFormatter.formatFCFA(data.currentMonthTotal),
+                          value: CurrencyFormatter.formatFCFA(
+                            data.currentMonthTotal,
+                          ),
                           icon: Icons.trending_up,
                           color: Colors.green,
                           subtitle: 'FCFA',
@@ -71,12 +71,15 @@ class SalarySummaryCards extends ConsumerWidget {
                         value: '${data.productionPaymentsCount}',
                         icon: Icons.factory,
                         color: Colors.purple,
-                        subtitle: '${data.uniqueProductionWorkers} personne(s) unique(s)',
+                        subtitle:
+                            '${data.uniqueProductionWorkers} personne(s) unique(s)',
                       ),
                       const SizedBox(height: 16),
                       _SalarySummaryCard(
                         label: 'Total Mois en Cours',
-                        value: CurrencyFormatter.formatFCFA(data.currentMonthTotal),
+                        value: CurrencyFormatter.formatFCFA(
+                          data.currentMonthTotal,
+                        ),
                         icon: Icons.trending_up,
                         color: Colors.green,
                         subtitle: 'FCFA',
@@ -118,9 +121,7 @@ class _SalarySummaryCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: color.withValues(alpha: 0.2),
-        ),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -147,9 +148,7 @@ class _SalarySummaryCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     subtitle!,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: color,
-                    ),
+                    style: theme.textTheme.bodySmall?.copyWith(color: color),
                   ),
                 ],
               ],
@@ -161,4 +160,3 @@ class _SalarySummaryCard extends StatelessWidget {
     );
   }
 }
-

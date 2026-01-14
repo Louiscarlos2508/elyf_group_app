@@ -64,7 +64,11 @@ class PropertyFilters extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(Icons.filter_list, size: 20, color: theme.colorScheme.onSurfaceVariant),
+          Icon(
+            Icons.filter_list,
+            size: 20,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
           const SizedBox(width: 8),
           Expanded(
             child: SingleChildScrollView(
@@ -129,15 +133,10 @@ class _FilterChip<T> extends StatelessWidget {
       initialValue: value,
       onSelected: onChanged,
       itemBuilder: (context) => [
-        PopupMenuItem<T?>(
-          value: null,
-          child: Text('Tous les $label'),
-        ),
+        PopupMenuItem<T?>(value: null, child: Text('Tous les $label')),
         ...options.map(
-          (option) => PopupMenuItem<T?>(
-            value: option,
-            child: Text(getLabel(option)),
-          ),
+          (option) =>
+              PopupMenuItem<T?>(value: option, child: Text(getLabel(option))),
         ),
       ],
       child: Chip(
@@ -152,11 +151,7 @@ class _FilterChip<T> extends StatelessWidget {
           ),
         ),
         avatar: isSelected
-            ? Icon(
-                Icons.check,
-                size: 16,
-                color: theme.colorScheme.primary,
-              )
+            ? Icon(Icons.check, size: 16, color: theme.colorScheme.primary)
             : null,
         backgroundColor: isSelected
             ? theme.colorScheme.primaryContainer
@@ -171,4 +166,3 @@ class _FilterChip<T> extends StatelessWidget {
     );
   }
 }
-

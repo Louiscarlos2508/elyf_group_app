@@ -43,9 +43,9 @@ class Sale {
   int get remainingAmount => totalPrice - amountPaid;
   bool get isCredit => remainingAmount > 0;
   bool get isFullyPaid => remainingAmount == 0;
-  
+
   /// Vérifie si la somme des paiements correspond au montant payé
-  bool get isPaymentSplitValid => 
+  bool get isPaymentSplitValid =>
       (cashAmount + orangeMoneyAmount) == amountPaid;
 }
 

@@ -7,7 +7,7 @@ import 'form_fields/date_picker_field.dart';
 import 'form_fields/category_selector_field.dart';
 
 /// Dialog générique pour créer/modifier une dépense.
-/// 
+///
 /// Utilise FormDialog et fournit les champs communs (montant, date, catégorie, description, notes).
 /// Les champs supplémentaires peuvent être fournis via [additionalFields].
 class ExpenseFormDialog<T extends Enum> extends StatefulWidget {
@@ -34,13 +34,13 @@ class ExpenseFormDialog<T extends Enum> extends StatefulWidget {
 
   /// Titre du dialog.
   final String title;
-  
+
   /// Liste des catégories disponibles.
   final List<T> categories;
-  
+
   /// Fonction pour obtenir le label d'une catégorie.
   final String Function(T) getCategoryLabel;
-  
+
   /// Callback appelé lors de la sauvegarde.
   /// Reçoit les valeurs des champs communs et doit retourner null si succès, ou un message d'erreur.
   final Future<String?> Function({
@@ -49,44 +49,45 @@ class ExpenseFormDialog<T extends Enum> extends StatefulWidget {
     required T category,
     required String description,
     String? notes,
-  }) onSave;
-  
+  })
+  onSave;
+
   /// Label du champ description.
   final String descriptionLabel;
-  
+
   /// Hint du champ description.
   final String? descriptionHint;
-  
+
   /// Label du champ montant.
   final String amountLabel;
-  
+
   /// Label du champ date.
   final String dateLabel;
-  
+
   /// Label du champ catégorie.
   final String categoryLabel;
-  
+
   /// Label du champ notes.
   final String notesLabel;
-  
+
   /// Widgets supplémentaires à insérer avant les notes.
   final List<Widget> additionalFields;
-  
+
   /// Valeur initiale du montant.
   final double? initialAmount;
-  
+
   /// Valeur initiale de la date.
   final DateTime? initialDate;
-  
+
   /// Valeur initiale de la catégorie.
   final T? initialCategory;
-  
+
   /// Valeur initiale de la description.
   final String? initialDescription;
-  
+
   /// Valeur initiale des notes.
   final String? initialNotes;
-  
+
   /// Indique si le formulaire est en cours de sauvegarde.
   final bool isLoading;
 
@@ -112,11 +113,8 @@ class _ExpenseFormDialogState<T extends Enum>
     _descriptionController = TextEditingController(
       text: widget.initialDescription ?? '',
     );
-    _notesController = TextEditingController(
-      text: widget.initialNotes ?? '',
-    );
-    _selectedCategory =
-        widget.initialCategory ?? widget.categories.first;
+    _notesController = TextEditingController(text: widget.initialNotes ?? '');
+    _selectedCategory = widget.initialCategory ?? widget.categories.first;
     _selectedDate = widget.initialDate ?? DateTime.now();
   }
 
@@ -156,10 +154,7 @@ class _ExpenseFormDialogState<T extends Enum>
 
     if (error != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(error),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text(error), backgroundColor: Colors.red),
       );
     } else {
       Navigator.of(context).pop();
@@ -225,10 +220,12 @@ class _ExpenseFormDialogState<T extends Enum>
               validator: (value) => Validators.required(value),
               maxLines: 2,
             ),
-            ...widget.additionalFields.map((field) => Padding(
-                  padding: const EdgeInsets.only(top: 16),
-                  child: field,
-                )),
+            ...widget.additionalFields.map(
+              (field) => Padding(
+                padding: const EdgeInsets.only(top: 16),
+                child: field,
+              ),
+            ),
             const SizedBox(height: 16),
             TextFormField(
               controller: _notesController,
@@ -244,4 +241,3 @@ class _ExpenseFormDialogState<T extends Enum>
     );
   }
 }
-

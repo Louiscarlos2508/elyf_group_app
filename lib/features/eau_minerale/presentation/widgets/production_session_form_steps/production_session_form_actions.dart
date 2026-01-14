@@ -7,7 +7,8 @@ import '../../../domain/entities/production_day.dart';
 import '../../../domain/entities/production_session.dart';
 import '../../../domain/entities/production_session_status.dart';
 import '../../widgets/machine_selector_field.dart';
-import '../../widgets/bobine_usage_form_field.dart' show bobineStocksDisponiblesProvider;
+import '../../widgets/bobine_usage_form_field.dart'
+    show bobineStocksDisponiblesProvider;
 
 /// Helper class for production session form actions.
 /// Extracted from ProductionSessionFormSteps to reduce file size.
@@ -28,11 +29,13 @@ class ProductionSessionFormActions {
     try {
       // Récupérer toutes les sessions précédentes pour vérifier l'état des machines
       final sessions = await ref.read(productionSessionsStateProvider.future);
-      
+
       // Récupérer les machines et les stocks pour les noms et types disponibles
       final machines = await ref.read(machinesProvider.future);
-      final bobineStocks = await ref.read(bobineStocksDisponiblesProvider.future);
-      
+      final bobineStocks = await ref.read(
+        bobineStocksDisponiblesProvider.future,
+      );
+
       // Utiliser ProductionService pour charger les bobines non finies
       final productionService = ref.read(productionServiceProvider);
       final result = await productionService.chargerBobinesNonFinies(
@@ -45,8 +48,10 @@ class ProductionSessionFormActions {
       // Mettre à jour la liste des bobines utilisées
       onBobinesChanged(result.bobinesUtilisees);
       onMachinesAvecBobineChanged(result.machinesAvecBobineNonFinie);
-      
-      debugPrint('Bobines assignées: ${result.bobinesUtilisees.length} pour ${machinesSelectionnees.length} machines');
+
+      debugPrint(
+        'Bobines assignées: ${result.bobinesUtilisees.length} pour ${machinesSelectionnees.length} machines',
+      );
     } catch (e) {
       debugPrint('Erreur lors de la vérification de l\'état des machines: $e');
     }
@@ -100,14 +105,14 @@ class ProductionSessionFormActions {
     }
 
     final sessions = await ref.read(productionSessionsStateProvider.future);
-    final sessionsNonTerminees = sessions.where(
-      (s) => s.effectiveStatus != ProductionSessionStatus.completed,
-    ).toList();
-    
+    final sessionsNonTerminees = sessions
+        .where((s) => s.effectiveStatus != ProductionSessionStatus.completed)
+        .toList();
+
     if (sessionsNonTerminees.isNotEmpty) {
       return sessionsNonTerminees.first.id;
     }
-    
+
     return null;
   }
 
@@ -126,9 +131,9 @@ class ProductionSessionFormActions {
     if (!(formState?.validate() ?? false)) {
       return false;
     }
-    
+
     final isEditing = session != null;
-    
+
     switch (currentStep) {
       case 0:
         // Démarrage : date, machines, index initial kWh
@@ -145,7 +150,9 @@ class ProductionSessionFormActions {
         return isEditing && quantiteText.isNotEmpty;
       case 2:
         // Finalisation : index final, consommation (seulement en mode édition)
-        return isEditing && indexCompteurFinalKwh != null && consommationText.isNotEmpty;
+        return isEditing &&
+            indexCompteurFinalKwh != null &&
+            consommationText.isNotEmpty;
       default:
         return true;
     }
@@ -170,4 +177,3 @@ class ProductionSessionFormActions {
     );
   }
 }
-

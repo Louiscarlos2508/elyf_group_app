@@ -7,6 +7,7 @@ import '../../domain/entities/machine.dart';
 import 'bobine_usage_form_field.dart' show bobineStocksDisponiblesProvider;
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../../../shared/utils/notification_service.dart';
+
 /// Formulaire pour installer une bobine.
 /// Crée automatiquement une nouvelle bobine et l'installe sur la machine.
 class BobineInstallationForm extends ConsumerStatefulWidget {
@@ -41,20 +42,20 @@ class _BobineInstallationFormState
 
   Future<void> _chargerBobineNonFinie() async {
     if (_aChargeBobines) return;
-    
+
     try {
       // Vérifier s'il existe déjà une bobine non finie pour cette machine
       final sessions = await ref.read(productionSessionsStateProvider.future);
-      
+
       // Parcourir TOUTES les sessions de la plus récente à la plus ancienne
       // IMPORTANT: Même les sessions terminées peuvent avoir des bobines non finies
       // qui restent sur les machines et doivent être réutilisées
       final sessionsTriees = sessions.toList()
         ..sort((a, b) => b.date.compareTo(a.date));
-      
+
       // Chercher la bobine non finie la plus récente pour cette machine
       BobineUsage? bobineNonFinieTrouvee;
-      
+
       for (final session in sessionsTriees) {
         for (final bobine in session.bobinesUtilisees) {
           // Si la bobine n'est pas finie et est sur cette machine
@@ -62,7 +63,9 @@ class _BobineInstallationFormState
             // Prendre la première trouvée (la plus récente car les sessions sont triées)
             if (bobineNonFinieTrouvee == null) {
               bobineNonFinieTrouvee = bobine;
-              debugPrint('Bobine non finie trouvée pour ${widget.machine.nom}: ${bobine.bobineType} dans session ${session.id}');
+              debugPrint(
+                'Bobine non finie trouvée pour ${widget.machine.nom}: ${bobine.bobineType} dans session ${session.id}',
+              );
             }
             // Si on a trouvé une bobine, on peut arrêter (on prend la plus récente)
             break;
@@ -71,7 +74,7 @@ class _BobineInstallationFormState
         // Si on a trouvé une bobine, on peut arrêter de chercher
         if (bobineNonFinieTrouvee != null) break;
       }
-      
+
       setState(() {
         _bobineNonFinieExistante = bobineNonFinieTrouvee;
         _aChargeBobines = true;
@@ -86,7 +89,7 @@ class _BobineInstallationFormState
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     setState(() => _isLoading = true);
 
     try {
@@ -99,7 +102,7 @@ class _BobineInstallationFormState
       );
 
       BobineUsage usage;
-      
+
       if (_bobineNonFinieExistante != null) {
         // Réutiliser la bobine non finie existante (ne pas décrémenter car déjà fait)
         usage = _bobineNonFinieExistante!.copyWith(
@@ -108,39 +111,48 @@ class _BobineInstallationFormState
         );
       } else {
         // Prendre automatiquement le premier type de bobine disponible
-        final bobineStocks = await ref.read(bobineStocksDisponiblesProvider.future);
+        final bobineStocks = await ref.read(
+          bobineStocksDisponiblesProvider.future,
+        );
         if (bobineStocks.isEmpty) {
           if (mounted) {
-            NotificationService.showError(context, 'Aucune bobine disponible en stock');
+            NotificationService.showError(
+              context,
+              'Aucune bobine disponible en stock',
+            );
           }
           setState(() => _isLoading = false);
           return;
         }
-        
+
         final bobineStock = bobineStocks.first;
-        
+
         // Décrémenter le stock IMMÉDIATEMENT en temps réel lors de l'installation
         final stockController = ref.read(stockControllerProvider);
         try {
           await stockController.recordBobineExit(
             bobineType: bobineStock.type,
             quantite: 1,
-            productionId: null, // Sera mis à jour lors de la sauvegarde de la session
+            productionId:
+                null, // Sera mis à jour lors de la sauvegarde de la session
             machineId: widget.machine.id,
             notes: 'Installation en production - ${widget.machine.nom}',
           );
-          
+
           // Invalider le provider pour rafraîchir le stock en temps réel
           ref.invalidate(bobineStocksDisponiblesProvider);
           ref.invalidate(stockStateProvider);
         } catch (e) {
           if (mounted) {
-            NotificationService.showError(context, 'Erreur lors de la décrémentation du stock: $e');
+            NotificationService.showError(
+              context,
+              'Erreur lors de la décrémentation du stock: $e',
+            );
           }
           setState(() => _isLoading = false);
           return;
         }
-        
+
         usage = BobineUsage(
           bobineType: bobineStock.type,
           machineId: widget.machine.id,
@@ -155,15 +167,19 @@ class _BobineInstallationFormState
       widget.onInstalled?.call(usage);
       if (mounted) {
         Navigator.of(context).pop(usage);
-        NotificationService.showSuccess(context, 
-              _bobineNonFinieExistante != null
-                  ? 'Bobine non finie réutilisée: ${_bobineNonFinieExistante!.bobineType}'
-                  : 'Bobine installée: ${usage.bobineType}',
-            );
+        NotificationService.showSuccess(
+          context,
+          _bobineNonFinieExistante != null
+              ? 'Bobine non finie réutilisée: ${_bobineNonFinieExistante!.bobineType}'
+              : 'Bobine installée: ${usage.bobineType}',
+        );
       }
     } catch (e) {
       if (mounted) {
-        NotificationService.showError(context, 'Erreur lors de l\'installation de la bobine: $e');
+        NotificationService.showError(
+          context,
+          'Erreur lors de l\'installation de la bobine: $e',
+        );
       }
     } finally {
       if (mounted) {
@@ -211,10 +227,7 @@ class _BobineInstallationFormState
                 ),
                 child: Row(
                   children: [
-                    Icon(
-                      Icons.info_outline,
-                      color: Colors.orange.shade700,
-                    ),
+                    Icon(Icons.info_outline, color: Colors.orange.shade700),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
@@ -242,13 +255,94 @@ class _BobineInstallationFormState
               )
             else
               // Affichage informatif : une bobine sera automatiquement assignée
-              ref.watch(bobineStocksDisponiblesProvider).when(
-                data: (bobineStocks) {
-                  if (bobineStocks.isEmpty) {
-                    return Container(
+              ref
+                  .watch(bobineStocksDisponiblesProvider)
+                  .when(
+                    data: (bobineStocks) {
+                      if (bobineStocks.isEmpty) {
+                        return Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.errorContainer.withValues(
+                              alpha: 0.2,
+                            ),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.error_outline,
+                                color: theme.colorScheme.error,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Aucune bobine disponible en stock',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: theme.colorScheme.error,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Veuillez réapprovisionner le stock avant de continuer.',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.onErrorContainer,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+
+                      return Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.primaryContainer.withValues(
+                            alpha: 0.3,
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.info_outline,
+                              color: theme.colorScheme.primary,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Une bobine sera automatiquement assignée',
+                                    style: theme.textTheme.bodyMedium,
+                                  ),
+                                  Text(
+                                    '${bobineStocks.fold<int>(0, (sum, stock) => sum + stock.quantity)} bobine${bobineStocks.fold<int>(0, (sum, stock) => sum + stock.quantity) > 1 ? 's' : ''} disponible${bobineStocks.fold<int>(0, (sum, stock) => sum + stock.quantity) > 1 ? 's' : ''}',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                    loading: () => const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(16.0),
+                        child: CircularProgressIndicator(),
+                      ),
+                    ),
+                    error: (error, stack) => Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.errorContainer.withValues(alpha: 0.2),
+                        color: theme.colorScheme.errorContainer.withValues(
+                          alpha: 0.2,
+                        ),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Column(
@@ -259,88 +353,15 @@ class _BobineInstallationFormState
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'Aucune bobine disponible en stock',
+                            'Erreur lors du chargement des bobines',
                             style: theme.textTheme.bodyMedium?.copyWith(
                               color: theme.colorScheme.error,
-                              fontWeight: FontWeight.w600,
                             ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Veuillez réapprovisionner le stock avant de continuer.',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onErrorContainer,
-                            ),
-                            textAlign: TextAlign.center,
                           ),
                         ],
                       ),
-                    );
-                  }
-                  
-                  return Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
-                      borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.info_outline,
-                          color: theme.colorScheme.primary,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Une bobine sera automatiquement assignée',
-                                style: theme.textTheme.bodyMedium,
-                              ),
-                              Text(
-                                '${bobineStocks.fold<int>(0, (sum, stock) => sum + stock.quantity)} bobine${bobineStocks.fold<int>(0, (sum, stock) => sum + stock.quantity) > 1 ? 's' : ''} disponible${bobineStocks.fold<int>(0, (sum, stock) => sum + stock.quantity) > 1 ? 's' : ''}',
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-                loading: () => const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(16.0),
-                    child: CircularProgressIndicator(),
                   ),
-                ),
-                error: (error, stack) => Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.errorContainer.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Column(
-                    children: [
-                      Icon(
-                        Icons.error_outline,
-                        color: theme.colorScheme.error,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Erreur lors du chargement des bobines',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.error,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
             const SizedBox(height: 24),
             InkWell(
               onTap: () => _selectDate(context),
@@ -373,7 +394,9 @@ class _BobineInstallationFormState
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.add),
-              label: Text(_isLoading ? 'Création...' : 'Ajouter et installer la bobine'),
+              label: Text(
+                _isLoading ? 'Création...' : 'Ajouter et installer la bobine',
+              ),
             ),
           ],
         ),

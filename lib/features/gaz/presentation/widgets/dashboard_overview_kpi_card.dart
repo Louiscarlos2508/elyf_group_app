@@ -49,11 +49,7 @@ class DashboardOverviewKpiCard extends StatelessWidget {
               SizedBox(
                 width: 16,
                 height: 16,
-                child: Icon(
-                  icon,
-                  size: 16,
-                  color: const Color(0xFF4A5565),
-                ),
+                child: Icon(icon, size: 16, color: const Color(0xFF4A5565)),
               ),
             ],
           ),
@@ -85,4 +81,3 @@ class DashboardOverviewKpiCard extends StatelessWidget {
     );
   }
 }
-

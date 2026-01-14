@@ -62,10 +62,7 @@ class ClosureDetailsCard extends ConsumerWidget {
           ),
           const SizedBox(height: 16),
           // Divider
-          Container(
-            height: 1,
-            color: Colors.black.withValues(alpha: 0.1),
-          ),
+          Container(height: 1, color: Colors.black.withValues(alpha: 0.1)),
           const SizedBox(height: 16),
           // Détail des dépenses
           _ExpensesDetailSection(
@@ -77,10 +74,7 @@ class ClosureDetailsCard extends ConsumerWidget {
           ),
           const SizedBox(height: 16),
           // Divider
-          Container(
-            height: 1,
-            color: Colors.black.withValues(alpha: 0.1),
-          ),
+          Container(height: 1, color: Colors.black.withValues(alpha: 0.1)),
           const SizedBox(height: 16),
           // Boutons d'action
           _ClosureActionButtons(
@@ -88,14 +82,13 @@ class ClosureDetailsCard extends ConsumerWidget {
             enterpriseId: enterpriseId,
             onTourClosed: () {
               ref.invalidate(
-                toursProvider(
-                  (enterpriseId: enterpriseId, status: null),
-                ),
+                toursProvider((enterpriseId: enterpriseId, status: null)),
               );
               ref.invalidate(
-                toursProvider(
-                  (enterpriseId: enterpriseId, status: TourStatus.closure),
-                ),
+                toursProvider((
+                  enterpriseId: enterpriseId,
+                  status: TourStatus.closure,
+                )),
               );
             },
           ),
@@ -228,10 +221,7 @@ class _ClosureActionButtons extends ConsumerWidget {
           onPressed: () => Navigator.of(context).pop(),
           child: const Text(
             'Retour',
-            style: TextStyle(
-              fontSize: 14,
-              color: Color(0xFF0A0A0A),
-            ),
+            style: TextStyle(fontSize: 14, color: Color(0xFF0A0A0A)),
           ),
         ),
         if (!isAlreadyClosed) ...[
@@ -246,7 +236,10 @@ class _ClosureActionButtons extends ConsumerWidget {
                 await controller.moveToNextStep(tour.id);
                 onTourClosed();
                 if (context.mounted) {
-                  NotificationService.showSuccess(context, 'Tour clôturé avec succès');
+                  NotificationService.showSuccess(
+                    context,
+                    'Tour clôturé avec succès',
+                  );
                 }
               } catch (e) {
                 if (context.mounted) {
@@ -265,4 +258,3 @@ class _ClosureActionButtons extends ConsumerWidget {
     );
   }
 }
-

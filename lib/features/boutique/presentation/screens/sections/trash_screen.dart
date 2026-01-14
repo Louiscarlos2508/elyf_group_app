@@ -63,23 +63,14 @@ class _TrashScreenState extends ConsumerState<TrashScreen>
             TabBar(
               controller: _tabController,
               tabs: const [
-                Tab(
-                  icon: Icon(Icons.inventory_2),
-                  text: 'Produits',
-                ),
-                Tab(
-                  icon: Icon(Icons.receipt_long),
-                  text: 'Dépenses',
-                ),
+                Tab(icon: Icon(Icons.inventory_2), text: 'Produits'),
+                Tab(icon: Icon(Icons.receipt_long), text: 'Dépenses'),
               ],
             ),
             Expanded(
               child: TabBarView(
                 controller: _tabController,
-                children: const [
-                  _DeletedProductsTab(),
-                  _DeletedExpensesTab(),
-                ],
+                children: const [_DeletedProductsTab(), _DeletedExpensesTab()],
               ),
             ),
           ],
@@ -116,8 +107,9 @@ class _DeletedProductsTab extends ConsumerWidget {
                 Icon(
                   Icons.inventory_2_outlined,
                   size: 64,
-                  color: theme.colorScheme.onSurfaceVariant
-                      .withValues(alpha: 0.5),
+                  color: theme.colorScheme.onSurfaceVariant.withValues(
+                    alpha: 0.5,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 Text(
@@ -145,11 +137,7 @@ class _DeletedProductsTab extends ConsumerWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: theme.colorScheme.error,
-            ),
+            Icon(Icons.error_outline, size: 64, color: theme.colorScheme.error),
             const SizedBox(height: 16),
             Text(
               'Erreur de chargement',
@@ -188,8 +176,9 @@ class _DeletedExpensesTab extends ConsumerWidget {
                 Icon(
                   Icons.receipt_long_outlined,
                   size: 64,
-                  color: theme.colorScheme.onSurfaceVariant
-                      .withValues(alpha: 0.5),
+                  color: theme.colorScheme.onSurfaceVariant.withValues(
+                    alpha: 0.5,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 Text(
@@ -217,11 +206,7 @@ class _DeletedExpensesTab extends ConsumerWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: theme.colorScheme.error,
-            ),
+            Icon(Icons.error_outline, size: 64, color: theme.colorScheme.error),
             const SizedBox(height: 16),
             Text(
               'Erreur de chargement',
@@ -452,4 +437,3 @@ final deletedProductsProvider = FutureProvider.autoDispose<List<Product>>(
 final deletedExpensesProvider = FutureProvider.autoDispose<List<Expense>>(
   (ref) => ref.watch(storeControllerProvider).getDeletedExpenses(),
 );
-

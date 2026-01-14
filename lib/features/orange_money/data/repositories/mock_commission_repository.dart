@@ -17,8 +17,9 @@ class MockCommissionRepository implements CommissionRepository {
     var commissions = _commissions.values.toList();
 
     if (enterpriseId != null) {
-      commissions =
-          commissions.where((c) => c.enterpriseId == enterpriseId).toList();
+      commissions = commissions
+          .where((c) => c.enterpriseId == enterpriseId)
+          .toList();
     }
 
     if (status != null) {
@@ -65,9 +66,7 @@ class MockCommissionRepository implements CommissionRepository {
   }
 
   @override
-  Future<Map<String, dynamic>> getStatistics({
-    String? enterpriseId,
-  }) async {
+  Future<Map<String, dynamic>> getStatistics({String? enterpriseId}) async {
     await Future<void>.delayed(const Duration(milliseconds: 200));
     final commissions = await fetchCommissions(enterpriseId: enterpriseId);
 
@@ -76,8 +75,9 @@ class MockCommissionRepository implements CommissionRepository {
     final pendingAmount = commissions
         .where((c) => c.isPending)
         .fold<int>(0, (sum, c) => sum + c.amount);
-    final paidAmount =
-        commissions.where((c) => c.isPaid).fold<int>(0, (sum, c) => sum + c.amount);
+    final paidAmount = commissions
+        .where((c) => c.isPaid)
+        .fold<int>(0, (sum, c) => sum + c.amount);
 
     // Estimé du mois en cours
     final currentMonth = await getCurrentMonthCommission(enterpriseId ?? '');
@@ -93,4 +93,3 @@ class MockCommissionRepository implements CommissionRepository {
     };
   }
 }
-

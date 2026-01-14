@@ -17,12 +17,8 @@ class OrangeMoneyCalculationService {
   }
 
   /// Calculates percentage.
-  double calculatePercentage({
-    required int part,
-    required int total,
-  }) {
+  double calculatePercentage({required int part, required int total}) {
     if (total == 0) return 0.0;
     return (part / total) * 100;
   }
 }
-

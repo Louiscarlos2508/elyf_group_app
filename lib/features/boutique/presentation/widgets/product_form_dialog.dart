@@ -12,10 +12,7 @@ import 'product_image_selector.dart';
 import 'package:elyf_groupe_app/shared/utils/form_helper_mixin.dart';
 
 class ProductFormDialog extends ConsumerStatefulWidget {
-  const ProductFormDialog({
-    super.key,
-    this.product,
-  });
+  const ProductFormDialog({super.key, this.product});
 
   final Product? product;
 
@@ -43,7 +40,8 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog>
     if (widget.product != null) {
       _nameController.text = widget.product!.name;
       _priceController.text = widget.product!.price.toString();
-      _purchasePriceController.text = widget.product!.purchasePrice?.toString() ?? '';
+      _purchasePriceController.text =
+          widget.product!.purchasePrice?.toString() ?? '';
       _stockController.text = widget.product!.stock.toString();
       _descriptionController.text = widget.product!.description ?? '';
       _categoryController.text = widget.product!.category ?? '';
@@ -82,7 +80,7 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog>
         final totalPurchasePrice = _purchasePriceController.text.isEmpty
             ? null
             : int.tryParse(_purchasePriceController.text);
-        
+
         // Utiliser ProductCalculationService pour calculer le prix unitaire d'achat
         final calculationService = ref.read(productCalculationServiceProvider);
         final unitPurchasePrice = calculationService.calculateUnitPurchasePrice(
@@ -91,7 +89,9 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog>
         );
 
         final product = Product(
-          id: widget.product?.id ?? 'prod-${DateTime.now().millisecondsSinceEpoch}',
+          id:
+              widget.product?.id ??
+              'prod-${DateTime.now().millisecondsSinceEpoch}',
           name: _nameController.text.trim(),
           price: int.parse(_priceController.text),
           stock: stockInitial,
@@ -108,13 +108,13 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog>
           imageUrl: _selectedImage != null
               ? _selectedImage!.path
               : (_imageUrlController.text.isEmpty
-                  ? null
-                  : _imageUrlController.text.trim()),
+                    ? null
+                    : _imageUrlController.text.trim()),
         );
 
         if (widget.product == null) {
           await ref.read(storeControllerProvider).createProduct(product);
-          
+
           // Si stock initial et prix total sont définis, créer une dépense automatique
           if (stockInitial > 0 && totalPurchasePrice != null) {
             final expense = Expense(
@@ -123,7 +123,8 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog>
               amountCfa: totalPurchasePrice,
               category: ExpenseCategory.other,
               date: DateTime.now(),
-              notes: 'Stock initial de $stockInitial unité(s) à $unitPurchasePrice FCFA/unité',
+              notes:
+                  'Stock initial de $stockInitial unité(s) à $unitPurchasePrice FCFA/unité',
             );
             await ref.read(storeControllerProvider).createExpense(expense);
             ref.invalidate(expensesProvider);
@@ -212,6 +213,4 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog>
       ),
     );
   }
-
 }
-

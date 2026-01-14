@@ -3,10 +3,7 @@ import 'package:flutter/services.dart';
 
 /// Input pour le montant de la dépense.
 class ExpenseAmountInput extends StatelessWidget {
-  const ExpenseAmountInput({
-    super.key,
-    required this.controller,
-  });
+  const ExpenseAmountInput({super.key, required this.controller});
 
   final TextEditingController controller;
 
@@ -30,4 +27,3 @@ class ExpenseAmountInput extends StatelessWidget {
     );
   }
 }
-

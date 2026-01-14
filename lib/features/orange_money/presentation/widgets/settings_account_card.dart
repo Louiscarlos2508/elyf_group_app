@@ -10,10 +10,7 @@ class SettingsAccountCard extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(25, 25, 1, 1),
       decoration: BoxDecoration(
         color: const Color(0xFFEFF6FF),
-        border: Border.all(
-          color: const Color(0xFFBEDBFF),
-          width: 1.219,
-        ),
+        border: Border.all(color: const Color(0xFFBEDBFF), width: 1.219),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
@@ -21,11 +18,7 @@ class SettingsAccountCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(
-                Icons.person,
-                size: 20,
-                color: Color(0xFF0A0A0A),
-              ),
+              const Icon(Icons.person, size: 20, color: Color(0xFF0A0A0A)),
               const SizedBox(width: 8),
               const Text(
                 'Mon compte',
@@ -158,4 +151,3 @@ class SettingsAccountCard extends StatelessWidget {
     );
   }
 }
-

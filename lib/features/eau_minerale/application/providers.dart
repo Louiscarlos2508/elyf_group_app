@@ -1,8 +1,8 @@
 /// Barrel file for all providers in the eau_minerale module.
-/// 
+///
 /// This file exports all providers organized by category:
 /// - Repository providers
-/// - Service providers  
+/// - Service providers
 /// - Controller providers
 /// - State providers (FutureProvider, etc.)
 /// - Permission providers

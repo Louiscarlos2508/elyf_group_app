@@ -9,4 +9,3 @@ abstract class ExpenseRepository {
   Future<void> restoreExpense(String id);
   Future<List<Expense>> getDeletedExpenses();
 }
-

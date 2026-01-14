@@ -87,8 +87,10 @@ class DashboardTrendsChart extends ConsumerWidget {
 
     // Find max values for scaling
     final maxSales = salesByDay.values.fold<int>(0, (a, b) => a > b ? a : b);
-    final maxProduction =
-        productionByDay.values.fold<int>(0, (a, b) => a > b ? a : b);
+    final maxProduction = productionByDay.values.fold<int>(
+      0,
+      (a, b) => a > b ? a : b,
+    );
 
     // Normalize production to sales scale for display
     final scaleFactor = maxSales > 0 && maxProduction > 0
@@ -172,9 +174,7 @@ class DashboardTrendsChart extends ConsumerWidget {
                         if (index < 0 || index > 6) {
                           return const SizedBox.shrink();
                         }
-                        final day = now.subtract(
-                          Duration(days: 6 - index),
-                        );
+                        final day = now.subtract(Duration(days: 6 - index));
                         return Padding(
                           padding: const EdgeInsets.only(top: 8),
                           child: Text(
@@ -232,10 +232,7 @@ class DashboardTrendsChart extends ConsumerWidget {
 }
 
 class _LegendItem extends StatelessWidget {
-  const _LegendItem({
-    required this.color,
-    required this.label,
-  });
+  const _LegendItem({required this.color, required this.label});
 
   final Color color;
   final String label;
@@ -254,10 +251,7 @@ class _LegendItem extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 4),
-        Text(
-          label,
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
+        Text(label, style: Theme.of(context).textTheme.bodySmall),
       ],
     );
   }

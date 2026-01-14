@@ -1,7 +1,7 @@
 import '../../../domain/entities/audit_log.dart';
 
 /// Service for audit trail management.
-/// 
+///
 /// Records all administrative actions for compliance and debugging.
 abstract class AuditService {
   /// Log an administrative action
@@ -34,9 +34,5 @@ abstract class AuditService {
   Future<List<AuditLog>> getLogsForEnterprise(String enterpriseId);
 
   /// Get recent audit logs
-  Future<List<AuditLog>> getRecentLogs({
-    int limit = 50,
-    DateTime? since,
-  });
+  Future<List<AuditLog>> getRecentLogs({int limit = 50, DateTime? since});
 }
-

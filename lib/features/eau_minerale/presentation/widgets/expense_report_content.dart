@@ -10,10 +10,7 @@ import 'production_period_formatter.dart';
 
 /// Content widget for expense report tab.
 class ExpenseReportContent extends ConsumerWidget {
-  const ExpenseReportContent({
-    super.key,
-    required this.period,
-  });
+  const ExpenseReportContent({super.key, required this.period});
 
   final ReportPeriod period;
 
@@ -92,10 +89,7 @@ class ExpenseReportContent extends ConsumerWidget {
                     ),
                     child: Row(
                       children: [
-                        Icon(
-                          _getCategoryIcon(entry.key),
-                          color: Colors.red,
-                        ),
+                        Icon(_getCategoryIcon(entry.key), color: Colors.red),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
@@ -134,24 +128,28 @@ class ExpenseReportContent extends ConsumerWidget {
                   ),
                 )
               else
-                ...data.expenses.map((expense) => Card(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      child: ListTile(
-                        leading: Icon(
-                          _getCategoryIcon(expense.category),
+                ...data.expenses.map(
+                  (expense) => Card(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    child: ListTile(
+                      leading: Icon(
+                        _getCategoryIcon(expense.category),
+                        color: Colors.red,
+                      ),
+                      title: Text(expense.label),
+                      subtitle: Text(
+                        ProductionPeriodFormatter.formatDate(expense.date),
+                      ),
+                      trailing: Text(
+                        CurrencyFormatter.formatFCFA(expense.amountCfa),
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
                           color: Colors.red,
                         ),
-                        title: Text(expense.label),
-                        subtitle: Text(ProductionPeriodFormatter.formatDate(expense.date)),
-                        trailing: Text(
-                          CurrencyFormatter.formatFCFA(expense.amountCfa),
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.red,
-                          ),
-                        ),
                       ),
-                    )),
+                    ),
+                  ),
+                ),
             ],
           ),
         );
@@ -161,4 +159,3 @@ class ExpenseReportContent extends ConsumerWidget {
     );
   }
 }
-

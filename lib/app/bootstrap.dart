@@ -135,6 +135,12 @@ Future<void> _initializeOfflineServices() async {
     final firebaseHandler = FirebaseSyncHandler(
       firestore: firestore,
       collectionPaths: {
+        // Administration module (collections globales)
+        'enterprises': (enterpriseId) => 'enterprises',
+        'users': (enterpriseId) => 'users',
+        'roles': (enterpriseId) => 'roles',
+        'enterprise_module_users': (enterpriseId) => 'enterprise_module_users',
+
         // Boutique module
         'sales': (enterpriseId) => 'enterprises/$enterpriseId/sales',
         'products': (enterpriseId) => 'enterprises/$enterpriseId/products',

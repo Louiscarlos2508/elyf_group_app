@@ -35,34 +35,52 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
 
     return Sale(
       id: map['id'] as String? ?? map['localId'] as String,
-      productId: map['productId'] as String? ?? 
-                 (metadata?['productId'] as String?) ?? '',
-      productName: map['productName'] as String? ?? 
-                   (metadata?['productName'] as String?) ?? '',
-      quantity: (map['quantity'] as num?)?.toInt() ?? 
-                (metadata?['quantity'] as int?) ?? 0,
-      unitPrice: (map['unitPrice'] as num?)?.toInt() ?? 
-                 (metadata?['unitPrice'] as int?) ?? 0,
-      totalPrice: (map['totalPrice'] as num?)?.toInt() ?? 
-                  (map['totalAmount'] as num?)?.toInt() ?? 0,
-      amountPaid: (map['amountPaid'] as num?)?.toInt() ?? 
-                  (map['paidAmount'] as num?)?.toInt() ?? 0,
+      productId:
+          map['productId'] as String? ??
+          (metadata?['productId'] as String?) ??
+          '',
+      productName:
+          map['productName'] as String? ??
+          (metadata?['productName'] as String?) ??
+          '',
+      quantity:
+          (map['quantity'] as num?)?.toInt() ??
+          (metadata?['quantity'] as int?) ??
+          0,
+      unitPrice:
+          (map['unitPrice'] as num?)?.toInt() ??
+          (metadata?['unitPrice'] as int?) ??
+          0,
+      totalPrice:
+          (map['totalPrice'] as num?)?.toInt() ??
+          (map['totalAmount'] as num?)?.toInt() ??
+          0,
+      amountPaid:
+          (map['amountPaid'] as num?)?.toInt() ??
+          (map['paidAmount'] as num?)?.toInt() ??
+          0,
       customerName: map['customerName'] as String? ?? '',
-      customerPhone: map['customerPhone'] as String? ?? 
-                     (metadata?['customerPhone'] as String?) ?? '',
-      customerId: map['customerId'] as String? ?? 
-                  (metadata?['customerId'] as String?) ?? '',
+      customerPhone:
+          map['customerPhone'] as String? ??
+          (metadata?['customerPhone'] as String?) ??
+          '',
+      customerId:
+          map['customerId'] as String? ??
+          (metadata?['customerId'] as String?) ??
+          '',
       date: map['date'] != null
           ? DateTime.parse(map['date'] as String)
           : (map['saleDate'] != null
-              ? DateTime.parse(map['saleDate'] as String)
-              : DateTime.now()),
-      status: _parseSaleStatus(map['status'] as String? ?? 
-                                (map['isComplete'] == true ? 'validated' : 'validated')),
-      createdBy: map['createdBy'] as String? ?? 
-                 map['soldBy'] as String? ?? '',
-      customerCnib: map['customerCnib'] as String? ?? 
-                    (metadata?['customerCnib'] as String?),
+                ? DateTime.parse(map['saleDate'] as String)
+                : DateTime.now()),
+      status: _parseSaleStatus(
+        map['status'] as String? ??
+            (map['isComplete'] == true ? 'validated' : 'validated'),
+      ),
+      createdBy: map['createdBy'] as String? ?? map['soldBy'] as String? ?? '',
+      customerCnib:
+          map['customerCnib'] as String? ??
+          (metadata?['customerCnib'] as String?),
       notes: metadata == null ? map['notes'] as String? : null,
       cashAmount: (metadata?['cashAmount'] as int?) ?? 0,
       orangeMoneyAmount: (metadata?['orangeMoneyAmount'] as int?) ?? 0,
@@ -75,13 +93,16 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
     // Store additional fields in metadata JSON within notes
     final metadata = <String, dynamic>{
       if (entity.cashAmount > 0) 'cashAmount': entity.cashAmount,
-      if (entity.orangeMoneyAmount > 0) 'orangeMoneyAmount': entity.orangeMoneyAmount,
-      if (entity.productionSessionId != null) 'productionSessionId': entity.productionSessionId,
+      if (entity.orangeMoneyAmount > 0)
+        'orangeMoneyAmount': entity.orangeMoneyAmount,
+      if (entity.productionSessionId != null)
+        'productionSessionId': entity.productionSessionId,
       'productId': entity.productId,
       'productName': entity.productName,
       'quantity': entity.quantity,
       'unitPrice': entity.unitPrice,
-      if (entity.customerPhone.isNotEmpty) 'customerPhone': entity.customerPhone,
+      if (entity.customerPhone.isNotEmpty)
+        'customerPhone': entity.customerPhone,
       if (entity.customerCnib != null) 'customerCnib': entity.customerCnib,
     };
 
@@ -223,13 +244,20 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
 
       if (startDate != null) {
         allSales = allSales
-            .where((s) => s.date.isAfter(startDate) || s.date.isAtSameMomentAs(startDate))
+            .where(
+              (s) =>
+                  s.date.isAfter(startDate) ||
+                  s.date.isAtSameMomentAs(startDate),
+            )
             .toList();
       }
 
       if (endDate != null) {
         allSales = allSales
-            .where((s) => s.date.isBefore(endDate) || s.date.isAtSameMomentAs(endDate))
+            .where(
+              (s) =>
+                  s.date.isBefore(endDate) || s.date.isAtSameMomentAs(endDate),
+            )
             .toList();
       }
 
@@ -347,8 +375,8 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
           customerPhone: sale.customerPhone,
           customerId: sale.customerId,
           date: sale.date,
-          status: newAmountPaid >= sale.totalPrice 
-              ? SaleStatus.fullyPaid 
+          status: newAmountPaid >= sale.totalPrice
+              ? SaleStatus.fullyPaid
               : SaleStatus.validated,
           createdBy: sale.createdBy,
           customerCnib: sale.customerCnib,
@@ -382,4 +410,3 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
     }
   }
 }
-

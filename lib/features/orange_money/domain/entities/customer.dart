@@ -18,4 +18,3 @@ class Customer {
   final int totalAmount; // Total in FCFA
   final DateTime? lastTransactionDate;
 }
-

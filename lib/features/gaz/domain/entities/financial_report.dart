@@ -68,8 +68,7 @@ class FinancialReport {
       period: period ?? this.period,
       totalRevenue: totalRevenue ?? this.totalRevenue,
       totalExpenses: totalExpenses ?? this.totalExpenses,
-      loadingEventExpenses:
-          loadingEventExpenses ?? this.loadingEventExpenses,
+      loadingEventExpenses: loadingEventExpenses ?? this.loadingEventExpenses,
       fixedCharges: fixedCharges ?? this.fixedCharges,
       variableCharges: variableCharges ?? this.variableCharges,
       salaries: salaries ?? this.salaries,

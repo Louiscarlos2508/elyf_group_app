@@ -19,10 +19,9 @@ class RetailStatisticsTab extends ConsumerWidget {
 
     return salesAsync.when(
       data: (allSales) {
-        final retailSales = allSales
-            .where((s) => s.saleType == SaleType.retail)
-            .toList()
-          ..sort((a, b) => b.saleDate.compareTo(a.saleDate));
+        final retailSales =
+            allSales.where((s) => s.saleType == SaleType.retail).toList()
+              ..sort((a, b) => b.saleDate.compareTo(a.saleDate));
 
         // Calculs pour aujourd'hui
         final todaySales = GazCalculationService.calculateTodaySalesByType(
@@ -37,18 +36,32 @@ class RetailStatisticsTab extends ConsumerWidget {
         // Calculs pour cette semaine
         final now = DateTime.now();
         final weekStart = now.subtract(Duration(days: now.weekday - 1));
-        final weekStartDate = DateTime(weekStart.year, weekStart.month, weekStart.day);
+        final weekStartDate = DateTime(
+          weekStart.year,
+          weekStart.month,
+          weekStart.day,
+        );
         final weekSales = retailSales.where((s) {
-          return s.saleDate.isAfter(weekStartDate.subtract(const Duration(seconds: 1)));
+          return s.saleDate.isAfter(
+            weekStartDate.subtract(const Duration(seconds: 1)),
+          );
         }).toList();
-        final weekRevenue = weekSales.fold<double>(0, (sum, s) => sum + s.totalAmount);
+        final weekRevenue = weekSales.fold<double>(
+          0,
+          (sum, s) => sum + s.totalAmount,
+        );
 
         // Calculs pour ce mois
         final monthStart = DateTime(now.year, now.month, 1);
         final monthSales = retailSales.where((s) {
-          return s.saleDate.isAfter(monthStart.subtract(const Duration(seconds: 1)));
+          return s.saleDate.isAfter(
+            monthStart.subtract(const Duration(seconds: 1)),
+          );
         }).toList();
-        final monthRevenue = monthSales.fold<double>(0, (sum, s) => sum + s.totalAmount);
+        final monthRevenue = monthSales.fold<double>(
+          0,
+          (sum, s) => sum + s.totalAmount,
+        );
 
         return CustomScrollView(
           slivers: [
@@ -116,9 +129,9 @@ class RetailStatisticsTab extends ConsumerWidget {
                     Text(
                       'Ventes récentes',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: const Color(0xFF101828),
-                          ),
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF101828),
+                      ),
                     ),
                     const SizedBox(height: 16),
                   ],
@@ -140,33 +153,26 @@ class RetailStatisticsTab extends ConsumerWidget {
                           const SizedBox(height: 16),
                           Text(
                             'Aucune vente enregistrée',
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  color: Colors.grey[600],
-                                ),
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(color: Colors.grey[600]),
                           ),
                           const SizedBox(height: 8),
                           Text(
                             'Les ventes effectuées apparaîtront ici',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: Colors.grey[500],
-                                ),
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(color: Colors.grey[500]),
                           ),
                         ],
                       ),
                     ),
                   )
                 : SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final sale = retailSales[index];
-                        return _RetailSaleItem(sale: sale);
-                      },
-                      childCount: retailSales.length,
-                    ),
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      final sale = retailSales[index];
+                      return _RetailSaleItem(sale: sale);
+                    }, childCount: retailSales.length),
                   ),
-            const SliverToBoxAdapter(
-              child: SizedBox(height: 24),
-            ),
+            const SliverToBoxAdapter(child: SizedBox(height: 24)),
           ],
         );
       },

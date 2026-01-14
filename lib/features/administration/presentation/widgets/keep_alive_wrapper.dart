@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 /// Wrapper widget that keeps its child alive when scrolled out of view.
-/// 
+///
 /// Useful for caching critical data and maintaining state in scrollable lists.
 /// Prevents expensive rebuilds when navigating back to the widget.
 class KeepAliveWrapper extends StatefulWidget {
@@ -37,4 +37,3 @@ extension KeepAliveExtension on Widget {
     return KeepAliveWrapper(keepAlive: keepAlive, child: this);
   }
 }
-

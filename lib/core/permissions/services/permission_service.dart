@@ -42,7 +42,7 @@ class MockPermissionService implements PermissionService {
   MockPermissionService({bool initializeDefaults = true}) {
     // Initialize with default roles
     _initializeDefaultRoles();
-    
+
     // Initialize default users if requested
     if (initializeDefaults) {
       _initializeDefaultUsers();
@@ -162,17 +162,14 @@ class MockPermissionService implements PermissionService {
   }
 
   @override
-  Future<Set<String>> getUserPermissions(
-    String userId,
-    String moduleId,
-  ) async {
+  Future<Set<String>> getUserPermissions(String userId, String moduleId) async {
     final role = await getUserRole(userId, moduleId);
     if (role == null) {
       return {};
     }
 
     final permissions = <String>{...role.permissions};
-    
+
     final moduleUser = await getModuleUser(userId, moduleId);
     if (moduleUser != null) {
       permissions.addAll(moduleUser.customPermissions);
@@ -209,4 +206,3 @@ class MockPermissionService implements PermissionService {
     return true;
   }
 }
-

@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/auth/providers.dart' show currentUserIdProvider;
-import 'package:elyf_groupe_app/shared.dart' show NavigationSection, ProfileScreen;
-import '../../application/providers.dart' show userControllerProvider, usersProvider;
+import 'package:elyf_groupe_app/shared.dart'
+    show NavigationSection, ProfileScreen, AdaptiveNavigationScaffold;
+import '../../application/providers.dart'
+    show userControllerProvider, usersProvider;
 import '../../domain/entities/user.dart' show User;
-import '../widgets/lazy_section_builder.dart';
 import 'sections/admin_dashboard_section.dart';
 import 'sections/admin_enterprises_section.dart';
 import 'sections/admin_modules_section.dart';
@@ -28,49 +29,50 @@ class _AdminHomeScreenState extends ConsumerState<AdminHomeScreen> {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => Scaffold(
-          appBar: AppBar(
-            title: const Text('Mon Profil'),
-          ),
+          appBar: AppBar(title: const Text('Mon Profil')),
           body: ProfileScreen(
             // Utiliser le callback du module administration pour la mise à jour
             // Cela permet d'utiliser UserController et d'avoir l'audit trail
-            onProfileUpdate: ({
-              required userId,
-              required firstName,
-              required lastName,
-              required username,
-              email,
-              phone,
-            }) async {
-              final currentUserId = ref.read(currentUserIdProvider);
-              if (currentUserId == null || currentUserId != userId) {
-                throw Exception('Utilisateur non connecté ou ID invalide');
-              }
+            onProfileUpdate:
+                ({
+                  required userId,
+                  required firstName,
+                  required lastName,
+                  required username,
+                  email,
+                  phone,
+                }) async {
+                  final currentUserId = ref.read(currentUserIdProvider);
+                  if (currentUserId == null || currentUserId != userId) {
+                    throw Exception('Utilisateur non connecté ou ID invalide');
+                  }
 
-              // Récupérer l'utilisateur actuel
-              final List<User> users = await ref.read(usersProvider.future);
-              final currentUser = users.firstWhere(
-                (u) => u.id == currentUserId,
-                orElse: () => throw Exception('Utilisateur non trouvé'),
-              );
+                  // Récupérer l'utilisateur actuel
+                  final List<User> users = await ref.read(usersProvider.future);
+                  final currentUser = users.firstWhere(
+                    (u) => u.id == currentUserId,
+                    orElse: () => throw Exception('Utilisateur non trouvé'),
+                  );
 
-              // Créer l'utilisateur mis à jour
-              final updatedUser = currentUser.copyWith(
-                firstName: firstName,
-                lastName: lastName,
-                username: username,
-                email: email,
-                phone: phone,
-                updatedAt: DateTime.now(),
-              );
+                  // Créer l'utilisateur mis à jour
+                  final updatedUser = currentUser.copyWith(
+                    firstName: firstName,
+                    lastName: lastName,
+                    username: username,
+                    email: email,
+                    phone: phone,
+                    updatedAt: DateTime.now(),
+                  );
 
-              // Utiliser UserController pour la mise à jour (inclut audit trail)
-              await ref.read(userControllerProvider).updateUser(
-                updatedUser,
-                currentUserId: currentUserId,
-                oldUser: currentUser,
-              );
-            },
+                  // Utiliser UserController pour la mise à jour (inclut audit trail)
+                  await ref
+                      .read(userControllerProvider)
+                      .updateUser(
+                        updatedUser,
+                        currentUserId: currentUserId,
+                        oldUser: currentUser,
+                      );
+                },
           ),
         ),
       ),
@@ -120,44 +122,22 @@ class _AdminHomeScreenState extends ConsumerState<AdminHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Administration • ELYF Groupe'),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.person_outline),
-            onPressed: () => _navigateToProfile(context),
-            tooltip: 'Mon Profil',
-          ),
-        ],
-      ),
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _buildSections().asMap().entries.map((entry) {
-          return LazySectionBuilder(
-            index: entry.key,
-            currentIndex: _selectedIndex,
-            builder: (_) => entry.value.builder(),
-          );
-        }).toList(),
-      ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: (index) {
-          setState(() => _selectedIndex = index);
-        },
-        destinations: _buildSections()
-            .map(
-              (section) => NavigationDestination(
-                icon: Icon(section.icon),
-                selectedIcon: Icon(section.icon),
-                label: section.label,
-              ),
-            )
-            .toList(),
-      ),
+    final sections = _buildSections();
+
+    return AdaptiveNavigationScaffold(
+      sections: sections,
+      appTitle: 'Administration • ELYF Groupe',
+      selectedIndex: _selectedIndex,
+      onIndexChanged: (index) {
+        setState(() => _selectedIndex = index);
+      },
+      appBarActions: [
+        IconButton(
+          icon: const Icon(Icons.person_outline),
+          onPressed: () => _navigateToProfile(context),
+          tooltip: 'Mon Profil',
+        ),
+      ],
     );
   }
 }
-

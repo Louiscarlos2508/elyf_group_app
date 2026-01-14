@@ -76,4 +76,3 @@ class _PropertySearchBarState extends State<PropertySearchBar> {
     );
   }
 }
-

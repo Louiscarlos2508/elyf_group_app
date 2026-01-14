@@ -33,7 +33,8 @@ class PointOfSaleOfflineRepository extends OfflineRepository<PointOfSale>
       enterpriseId: map['enterpriseId'] as String,
       moduleId: map['moduleId'] as String,
       isActive: map['isActive'] as bool? ?? true,
-      cylinderIds: (map['cylinderIds'] as List<dynamic>?)
+      cylinderIds:
+          (map['cylinderIds'] as List<dynamic>?)
               ?.map((e) => e as String)
               .toList() ??
           [],

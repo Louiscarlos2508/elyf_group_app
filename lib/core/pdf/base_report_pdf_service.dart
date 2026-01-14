@@ -42,10 +42,11 @@ abstract class BaseReportPdfService {
     );
 
     final output = await getTemporaryDirectory();
-    final fileNameFinal = fileName ??
+    final fileNameFinal =
+        fileName ??
         'rapport_${moduleName.toLowerCase().replaceAll(' ', '_')}_'
-        '${DateFormat('yyyyMMdd').format(startDate)}_'
-        '${DateFormat('yyyyMMdd').format(endDate)}.pdf';
+            '${DateFormat('yyyyMMdd').format(startDate)}_'
+            '${DateFormat('yyyyMMdd').format(endDate)}.pdf';
     final file = File('${output.path}/$fileNameFinal');
     await file.writeAsBytes(await pdf.save());
     return file;
@@ -68,10 +69,7 @@ abstract class BaseReportPdfService {
             pw.SizedBox(height: 4),
             pw.Text(
               moduleName,
-              style: pw.TextStyle(
-                fontSize: 14,
-                color: PdfColors.blueGrey600,
-              ),
+              style: pw.TextStyle(fontSize: 14, color: PdfColors.blueGrey600),
             ),
           ],
         ),
@@ -102,10 +100,7 @@ abstract class BaseReportPdfService {
         ),
         child: pw.Text(
           periodText,
-          style: pw.TextStyle(
-            fontSize: 12,
-            color: PdfColors.blueGrey700,
-          ),
+          style: pw.TextStyle(fontSize: 12, color: PdfColors.blueGrey700),
         ),
       ),
     );
@@ -124,10 +119,7 @@ abstract class BaseReportPdfService {
         children: [
           pw.Text(
             'Généré le ${DateFormat('dd/MM/yyyy à HH:mm').format(DateTime.now())}',
-            style: pw.TextStyle(
-              fontSize: 10,
-              color: PdfColors.grey600,
-            ),
+            style: pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
           ),
           pw.Text(
             'ELYF GROUPE',
@@ -203,10 +195,7 @@ abstract class BaseReportPdfService {
 
   /// Formate un montant en devise.
   String formatCurrency(int amount) {
-    return '${amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        )} FCFA';
+    return '${amount.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]} ')} FCFA';
   }
 
   /// Formate une date.
@@ -214,4 +203,3 @@ abstract class BaseReportPdfService {
     return DateFormat('dd/MM/yyyy').format(date);
   }
 }
-

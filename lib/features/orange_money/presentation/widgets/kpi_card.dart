@@ -44,7 +44,8 @@ class KpiCard extends StatelessWidget {
             if (icon != null || iconWidget != null)
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
-                child: iconWidget ??
+                child:
+                    iconWidget ??
                     Icon(
                       icon,
                       size: 32,
@@ -63,7 +64,8 @@ class KpiCard extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               value,
-              style: valueStyle ??
+              style:
+                  valueStyle ??
                   TextStyle(
                     fontWeight: FontWeight.bold,
                     color: valueColor ?? const Color(0xFF101828),
@@ -77,4 +79,3 @@ class KpiCard extends StatelessWidget {
     );
   }
 }
-

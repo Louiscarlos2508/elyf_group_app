@@ -121,11 +121,19 @@ class PurchasesReportContentV2 extends ConsumerWidget {
       ),
       child: Column(
         children: [
-          _buildStatRow(theme, 'Total articles achetés', '${data.totalItemsPurchased}'),
+          _buildStatRow(
+            theme,
+            'Total articles achetés',
+            '${data.totalItemsPurchased}',
+          ),
           const Divider(),
           _buildStatRow(theme, 'Nombre d\'achats', '${data.purchasesCount}'),
           const Divider(),
-          _buildStatRow(theme, 'Achat moyen', CurrencyFormatter.formatFCFA(data.averagePurchaseAmount)),
+          _buildStatRow(
+            theme,
+            'Achat moyen',
+            CurrencyFormatter.formatFCFA(data.averagePurchaseAmount),
+          ),
         ],
       ),
     );

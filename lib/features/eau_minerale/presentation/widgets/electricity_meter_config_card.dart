@@ -52,12 +52,8 @@ class ElectricityMeterConfigCard extends ConsumerWidget {
             ),
             const SizedBox(height: 24),
             meterTypeAsync.when(
-              data: (currentType) => _buildMeterTypeSelector(
-                context,
-                ref,
-                theme,
-                currentType,
-              ),
+              data: (currentType) =>
+                  _buildMeterTypeSelector(context, ref, theme, currentType),
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (error, stack) => Text(
                 'Erreur: $error',
@@ -202,10 +198,13 @@ class ElectricityMeterConfigCard extends ConsumerWidget {
   ) async {
     final service = ref.read(electricityMeterConfigServiceProvider);
     await service.setMeterType(type);
-    
+
     if (context.mounted) {
       ref.invalidate(electricityMeterTypeProvider);
-      NotificationService.showInfo(context, 'Type de compteur configuré: ${type.label}');
+      NotificationService.showInfo(
+        context,
+        'Type de compteur configuré: ${type.label}',
+      );
     }
   }
 }

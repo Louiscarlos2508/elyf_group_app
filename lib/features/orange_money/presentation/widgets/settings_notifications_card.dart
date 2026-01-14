@@ -90,4 +90,3 @@ class SettingsNotificationsCard extends StatelessWidget {
     );
   }
 }
-

@@ -10,10 +10,7 @@ void main() {
     testWidgets('adaptive padding respects breakpoints', (tester) async {
       Widget testWidget(BuildContext context) {
         final padding = ResponsiveHelper.adaptivePadding(context);
-        return Container(
-          padding: padding,
-          child: const Text('Test'),
-        );
+        return Container(padding: padding, child: const Text('Test'));
       }
 
       // Test mobile
@@ -78,8 +75,9 @@ void main() {
         ),
       );
 
-      var gridDelegate = tester.widget<GridView>(find.byType(GridView))
-          .gridDelegate as SliverGridDelegateWithFixedCrossAxisCount;
+      var gridDelegate =
+          tester.widget<GridView>(find.byType(GridView)).gridDelegate
+              as SliverGridDelegateWithFixedCrossAxisCount;
       expect(gridDelegate.crossAxisCount, equals(1));
 
       // Test tablet - 2 columns
@@ -92,8 +90,9 @@ void main() {
         ),
       );
 
-      gridDelegate = tester.widget<GridView>(find.byType(GridView))
-          .gridDelegate as SliverGridDelegateWithFixedCrossAxisCount;
+      gridDelegate =
+          tester.widget<GridView>(find.byType(GridView)).gridDelegate
+              as SliverGridDelegateWithFixedCrossAxisCount;
       expect(gridDelegate.crossAxisCount, equals(2));
 
       // Test desktop - 3 columns
@@ -106,8 +105,9 @@ void main() {
         ),
       );
 
-      gridDelegate = tester.widget<GridView>(find.byType(GridView))
-          .gridDelegate as SliverGridDelegateWithFixedCrossAxisCount;
+      gridDelegate =
+          tester.widget<GridView>(find.byType(GridView)).gridDelegate
+              as SliverGridDelegateWithFixedCrossAxisCount;
       expect(gridDelegate.crossAxisCount, equals(3));
     });
 
@@ -138,64 +138,69 @@ void main() {
       // Vérifier que les design tokens sont appliqués
       final container = tester.widget<Container>(find.byType(Container));
       expect(container.padding, equals(const EdgeInsets.all(AppSpacing.small)));
-      
+
       final decoration = container.decoration as BoxDecoration;
       expect(decoration.borderRadius, equals(AppRadius.card));
       expect(decoration.boxShadow, isNotNull);
     });
 
-    testWidgets('LayoutBuilder provides correct constraints at different screen sizes', (tester) async {
-      Widget testWidget(BuildContext context) {
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            final isWide = constraints.maxWidth > AppSizes.breakpointWide;
-            return SizedBox(
-              width: isWide ? 1200 : 600,
-              child: const Text('Test'),
-            );
-          },
+    testWidgets(
+      'LayoutBuilder provides correct constraints at different screen sizes',
+      (tester) async {
+        Widget testWidget(BuildContext context) {
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              final isWide = constraints.maxWidth > AppSizes.breakpointWide;
+              return SizedBox(
+                width: isWide ? 1200 : 600,
+                child: const Text('Test'),
+              );
+            },
+          );
+        }
+
+        // Test narrow screen
+        await tester.pumpWidget(
+          MaterialApp(
+            home: MediaQuery(
+              data: const MediaQueryData(size: Size(400, 800)),
+              child: Builder(builder: testWidget),
+            ),
+          ),
         );
-      }
 
-      // Test narrow screen
-      await tester.pumpWidget(
-        MaterialApp(
-          home: MediaQuery(
-            data: const MediaQueryData(size: Size(400, 800)),
-            child: Builder(builder: testWidget),
+        final sizedBox = tester.widget<SizedBox>(find.byType(SizedBox));
+        expect(sizedBox.width, equals(600));
+
+        // Test wide screen
+        await tester.pumpWidget(
+          MaterialApp(
+            home: MediaQuery(
+              data: const MediaQueryData(size: Size(1440, 900)),
+              child: Builder(builder: testWidget),
+            ),
           ),
-        ),
-      );
+        );
 
-      final sizedBox = tester.widget<SizedBox>(find.byType(SizedBox));
-      expect(sizedBox.width, equals(600));
+        final sizedBoxWide = tester.widget<SizedBox>(find.byType(SizedBox));
+        expect(sizedBoxWide.width, equals(1200));
+      },
+    );
 
-      // Test wide screen
-      await tester.pumpWidget(
-        MaterialApp(
-          home: MediaQuery(
-            data: const MediaQueryData(size: Size(1440, 900)),
-            child: Builder(builder: testWidget),
-          ),
-        ),
-      );
-
-      final sizedBoxWide = tester.widget<SizedBox>(find.byType(SizedBox));
-      expect(sizedBoxWide.width, equals(1200));
-    });
-
-    testWidgets('responsive breakpoints align with design tokens', (tester) async {
+    testWidgets('responsive breakpoints align with design tokens', (
+      tester,
+    ) async {
       // Vérifier que les breakpoints utilisés correspondent aux design tokens
       expect(
         ResponsiveHelper.mobileBreakpoint,
         lessThan(AppSizes.breakpointMedium),
       );
-      
+
       expect(
         ResponsiveHelper.tabletBreakpoint,
         greaterThan(AppSizes.breakpointMedium),
       );
-      
+
       expect(
         ResponsiveHelper.desktopBreakpoint,
         greaterThan(AppSizes.breakpointWide),
@@ -203,4 +208,3 @@ void main() {
     });
   });
 }
-

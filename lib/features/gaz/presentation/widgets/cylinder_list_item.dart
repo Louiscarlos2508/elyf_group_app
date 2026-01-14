@@ -31,20 +31,19 @@ class CylinderListItem extends ConsumerWidget {
 
     // Récupérer le stock disponible (pleines) pour ce cylinder
     final stocksAsync = ref.watch(
-      cylinderStocksProvider(
-        (
-          enterpriseId: cylinder.enterpriseId,
-          status: CylinderStatus.full,
-          siteId: null,
-        ),
-      ),
+      cylinderStocksProvider((
+        enterpriseId: cylinder.enterpriseId,
+        status: CylinderStatus.full,
+        siteId: null,
+      )),
     );
 
     // Récupérer les settings pour le prix en gros
     final settingsAsync = ref.watch(
-      gazSettingsProvider(
-        (enterpriseId: cylinder.enterpriseId, moduleId: cylinder.moduleId),
-      ),
+      gazSettingsProvider((
+        enterpriseId: cylinder.enterpriseId,
+        moduleId: cylinder.moduleId,
+      )),
     );
 
     return stocksAsync.when(
@@ -58,97 +57,97 @@ class CylinderListItem extends ConsumerWidget {
           data: (settings) {
             final wholesalePrice = settings?.getWholesalePrice(cylinder.weight);
 
-        return Card(
-          margin: const EdgeInsets.only(bottom: 8),
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: BorderSide(
-              color: theme.colorScheme.outline.withValues(alpha: 0.1),
-            ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    Icons.local_fire_department,
-                    color: theme.colorScheme.onPrimaryContainer,
-                  ),
+            return Card(
+              margin: const EdgeInsets.only(bottom: 8),
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(
+                  color: theme.colorScheme.outline.withValues(alpha: 0.1),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primaryContainer,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        Icons.local_fire_department,
+                        color: theme.colorScheme.onPrimaryContainer,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            child: Text(
-                              '${cylinder.weight} kg',
-                              style: theme.textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.bold,
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  '${cylinder.weight} kg',
+                                  style: theme.textTheme.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                               ),
-                            ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: stockColor.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  'Stock: $fullStock',
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    color: stockColor,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: stockColor.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              'Stock: $fullStock',
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: stockColor,
-                                fontWeight: FontWeight.bold,
-                              ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Détail: ${CurrencyFormatter.formatDouble(cylinder.sellPrice)} FCFA | '
+                            'Gros: ${wholesalePrice != null && wholesalePrice > 0 ? CurrencyFormatter.formatDouble(wholesalePrice) : "-"} FCFA',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Détail: ${CurrencyFormatter.formatDouble(cylinder.sellPrice)} FCFA | '
-                            'Gros: ${wholesalePrice != null && wholesalePrice > 0 ? CurrencyFormatter.formatDouble(wholesalePrice) : "-"} FCFA',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.edit, size: 20),
-                      onPressed: onEdit,
-                      tooltip: 'Modifier',
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.delete, size: 20),
-                      onPressed: onDelete,
-                      tooltip: 'Supprimer',
-                      color: theme.colorScheme.error,
+                    const SizedBox(width: 8),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.edit, size: 20),
+                          onPressed: onEdit,
+                          tooltip: 'Modifier',
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete, size: 20),
+                          onPressed: onDelete,
+                          tooltip: 'Supprimer',
+                          color: theme.colorScheme.error,
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
-            ),
-          ),
-        );
+              ),
+            );
           },
           loading: () => Card(
             child: Padding(

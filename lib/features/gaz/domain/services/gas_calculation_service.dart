@@ -26,7 +26,10 @@ class GasCalculationService {
     required double unitPrice,
     required String? quantityText,
   }) {
-    if (cylinder == null || unitPrice == 0.0 || quantityText == null || quantityText.isEmpty) {
+    if (cylinder == null ||
+        unitPrice == 0.0 ||
+        quantityText == null ||
+        quantityText.isEmpty) {
       return 0.0;
     }
     final quantity = int.tryParse(quantityText) ?? 0;
@@ -96,10 +99,6 @@ class GasCalculationService {
       return 'Veuillez entrer une quantité';
     }
     final quantity = int.tryParse(quantityText);
-    return validateQuantity(
-      quantity: quantity,
-      availableStock: availableStock,
-    );
+    return validateQuantity(quantity: quantity, availableStock: availableStock);
   }
 }
-

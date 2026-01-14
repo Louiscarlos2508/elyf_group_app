@@ -6,10 +6,7 @@ import 'info_row.dart';
 
 /// Widget pour l'étape "Completed" (terminée) de la session de production.
 class CompletedStep extends StatelessWidget {
-  const CompletedStep({
-    super.key,
-    required this.session,
-  });
+  const CompletedStep({super.key, required this.session});
 
   final ProductionSession session;
 
@@ -44,7 +41,8 @@ class CompletedStep extends StatelessWidget {
             InfoRow(
               icon: Icons.inventory_2,
               label: 'Quantité produite',
-              value: '${session.quantiteProduite} ${session.quantiteProduiteUnite}',
+              value:
+                  '${session.quantiteProduite} ${session.quantiteProduiteUnite}',
             ),
             InfoRow(
               icon: Icons.access_time,
@@ -57,4 +55,3 @@ class CompletedStep extends StatelessWidget {
     );
   }
 }
-

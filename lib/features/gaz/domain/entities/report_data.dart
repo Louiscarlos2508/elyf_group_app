@@ -28,10 +28,4 @@ class GazReportData {
 }
 
 /// Period for reports.
-enum GazReportPeriod {
-  today,
-  week,
-  month,
-  year,
-  custom,
-}
+enum GazReportPeriod { today, week, month, year, custom }

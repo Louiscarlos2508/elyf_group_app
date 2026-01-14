@@ -10,10 +10,7 @@ import 'production_session_form_screen.dart';
 
 /// Écran de suivi de production en temps réel avec progression dynamique.
 class ProductionTrackingScreen extends ConsumerStatefulWidget {
-  const ProductionTrackingScreen({
-    super.key,
-    required this.sessionId,
-  });
+  const ProductionTrackingScreen({super.key, required this.sessionId});
 
   final String sessionId;
 
@@ -40,9 +37,8 @@ class _ProductionTrackingScreenState
               sessionAsync.whenData((session) {
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (context) => ProductionSessionFormScreen(
-                      session: session,
-                    ),
+                    builder: (context) =>
+                        ProductionSessionFormScreen(session: session),
                   ),
                 );
               });
@@ -79,9 +75,7 @@ class _ProductionTrackingContent extends ConsumerWidget {
 
     return CustomScrollView(
       slivers: [
-        SliverToBoxAdapter(
-          child: ProductionTrackingProgress(status: status),
-        ),
+        SliverToBoxAdapter(child: ProductionTrackingProgress(status: status)),
         SliverPadding(
           padding: const EdgeInsets.all(24),
           sliver: SliverList(

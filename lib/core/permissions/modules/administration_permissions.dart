@@ -181,4 +181,3 @@ class AdministrationPermissions {
     changePassword,
   ];
 }
-

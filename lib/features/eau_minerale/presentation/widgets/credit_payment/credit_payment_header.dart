@@ -58,13 +58,9 @@ class CreditPaymentHeader extends StatelessWidget {
               ],
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: onClose,
-          ),
+          IconButton(icon: const Icon(Icons.close), onPressed: onClose),
         ],
       ),
     );
   }
 }
-

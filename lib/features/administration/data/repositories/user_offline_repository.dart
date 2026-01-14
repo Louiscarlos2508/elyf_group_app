@@ -7,7 +7,7 @@ import '../../domain/repositories/user_repository.dart';
 import 'optimized_queries.dart';
 
 /// Offline-first repository for User entities.
-/// 
+///
 /// Note: Users are global (not enterprise-specific), so enterpriseId is not used.
 class UserOfflineRepository extends OfflineRepository<User>
     implements UserRepository {
@@ -71,7 +71,7 @@ class UserOfflineRepository extends OfflineRepository<User>
   }
 
   @override
-  String? getEnterpriseId(User entity) => null; 
+  String? getEnterpriseId(User entity) => null;
   // ✅ Users are global - not tied to a specific enterprise
   // ✅ Assignment to enterprises is done via EnterpriseModuleUser
 
@@ -85,7 +85,7 @@ class UserOfflineRepository extends OfflineRepository<User>
         collectionName: collectionName,
         localId: localId,
         remoteId: remoteId,
-        enterpriseId: 'global', 
+        enterpriseId: 'global',
         // ✅ Users are stored globally (not tied to a specific enterprise)
         // ✅ Assignment to enterprises/modules is done via EnterpriseModuleUser
         moduleType: 'administration',
@@ -239,22 +239,22 @@ class UserOfflineRepository extends OfflineRepository<User>
     if (query.isEmpty) {
       return [];
     }
-    
+
     // Optimize: Load all users once and filter in memory
     // In production, this should use SQL LIKE queries with Drift
     final allUsers = await getAllUsers();
     final lowerQuery = query.toLowerCase();
-    
+
     // Use optimized query limit
     const maxResults = 100;
     final results = <User>[];
-    
+
     // Early return optimization with limit
     for (final user in allUsers) {
       if (results.length >= maxResults) {
         break; // Early exit when limit reached
       }
-      
+
       if (user.firstName.toLowerCase().contains(lowerQuery) ||
           user.lastName.toLowerCase().contains(lowerQuery) ||
           user.username.toLowerCase().contains(lowerQuery) ||
@@ -341,7 +341,10 @@ class UserOfflineRepository extends OfflineRepository<User>
   Future<void> toggleUserStatus(String userId, bool isActive) async {
     final user = await getUserById(userId);
     if (user != null) {
-      final updatedUser = user.copyWith(isActive: isActive, updatedAt: DateTime.now());
+      final updatedUser = user.copyWith(
+        isActive: isActive,
+        updatedAt: DateTime.now(),
+      );
       await save(updatedUser);
     }
   }
@@ -377,4 +380,3 @@ class UserOfflineRepository extends OfflineRepository<User>
     return createdUser;
   }
 }
-

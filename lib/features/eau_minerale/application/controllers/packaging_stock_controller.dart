@@ -51,4 +51,3 @@ class PackagingStockController {
     return await _repository.fetchLowStockAlerts();
   }
 }
-

@@ -4,10 +4,7 @@ import '../../domain/services/tour_service.dart';
 
 /// Contrôleur pour gérer les tours d'approvisionnement.
 class TourController {
-  const TourController({
-    required this.repository,
-    required this.service,
-  });
+  const TourController({required this.repository, required this.service});
 
   final TourRepository repository;
   final TourService service;
@@ -57,4 +54,3 @@ class TourController {
     await repository.deleteTour(id);
   }
 }
-

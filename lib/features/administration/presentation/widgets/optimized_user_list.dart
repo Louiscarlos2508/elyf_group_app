@@ -4,9 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/features/administration/domain/entities/user.dart';
 import 'package:elyf_groupe_app/core/auth/entities/enterprise_module_user.dart';
 import '../../application/providers.dart' show userFilterServiceProvider;
+import 'package:elyf_groupe_app/core/auth/providers.dart'
+    show currentUserIdProvider;
 
 /// Optimized user list widget with pagination and filtering.
-/// 
+///
 /// Uses memoization and selective rebuilds for better performance.
 class OptimizedUserList extends ConsumerStatefulWidget {
   const OptimizedUserList({
@@ -60,15 +62,17 @@ class _OptimizedUserListState extends ConsumerState<OptimizedUserList> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     // Memoize filtered users
     final filterService = ref.watch(userFilterServiceProvider);
+    final currentUserId = ref.watch(currentUserIdProvider);
     final filteredUsers = filterService.filterAndSort(
       users: widget.users,
       assignments: widget.assignments,
       searchQuery: widget.searchQuery,
       enterpriseId: widget.enterpriseId,
       moduleId: widget.moduleId,
+      excludeUserId: currentUserId,
     );
 
     final displayedUsers = filteredUsers.take(_visibleItems).toList();
@@ -118,10 +122,7 @@ class _OptimizedUserListState extends ConsumerState<OptimizedUserList> {
               color: theme.colorScheme.onSurfaceVariant,
             ),
             const SizedBox(height: 16),
-            Text(
-              'Aucun utilisateur',
-              style: theme.textTheme.titleLarge,
-            ),
+            Text('Aucun utilisateur', style: theme.textTheme.titleLarge),
             const SizedBox(height: 8),
             Text(
               widget.searchQuery != null && widget.searchQuery!.isNotEmpty
@@ -154,32 +155,26 @@ class _UserListItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
       child: Card(
         child: ExpansionTile(
           key: ValueKey('user_${user.id}'), // Stable key
-          leading: CircleAvatar(
-            child: Text(user.firstName[0].toUpperCase()),
-          ),
+          leading: CircleAvatar(child: Text(user.firstName[0].toUpperCase())),
           title: Text(
             user.fullName,
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.bold,
             ),
           ),
-          subtitle: _UserListItemSubtitle(
-            user: user,
-            assignments: assignments,
-          ),
-          trailing: _UserListItemTrailing(
-            user: user,
-            onTap: onTap,
-          ),
+          subtitle: _UserListItemSubtitle(user: user, assignments: assignments),
+          trailing: _UserListItemTrailing(user: user, onTap: onTap),
           children: assignments.map((assignment) {
             return ListTile(
-              title: Text('${assignment.enterpriseId} - ${assignment.moduleId}'),
+              title: Text(
+                '${assignment.enterpriseId} - ${assignment.moduleId}',
+              ),
               subtitle: Text('Rôle: ${assignment.roleId}'),
             );
           }).toList(),
@@ -191,10 +186,7 @@ class _UserListItem extends StatelessWidget {
 
 /// Separate widget for subtitle to enable const optimization.
 class _UserListItemSubtitle extends StatelessWidget {
-  const _UserListItemSubtitle({
-    required this.user,
-    required this.assignments,
-  });
+  const _UserListItemSubtitle({required this.user, required this.assignments});
 
   final User user;
   final List<EnterpriseModuleUser> assignments;
@@ -202,7 +194,7 @@ class _UserListItemSubtitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -215,13 +207,15 @@ class _UserListItemSubtitle extends StatelessWidget {
             runSpacing: 4,
             children: assignments
                 .take(3)
-                .map((a) => Chip(
-                      label: Text(
-                        '${a.enterpriseId} - ${a.moduleId}',
-                        style: theme.textTheme.labelSmall,
-                      ),
-                      visualDensity: VisualDensity.compact,
-                    ))
+                .map(
+                  (a) => Chip(
+                    label: Text(
+                      '${a.enterpriseId} - ${a.moduleId}',
+                      style: theme.textTheme.labelSmall,
+                    ),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                )
                 .toList(),
           ),
           if (assignments.length > 3)
@@ -237,10 +231,7 @@ class _UserListItemSubtitle extends StatelessWidget {
 
 /// Separate widget for trailing actions.
 class _UserListItemTrailing extends StatelessWidget {
-  const _UserListItemTrailing({
-    required this.user,
-    required this.onTap,
-  });
+  const _UserListItemTrailing({required this.user, required this.onTap});
 
   final User user;
   final VoidCallback onTap;
@@ -255,12 +246,8 @@ class _UserListItemTrailing extends StatelessWidget {
             label: Text('Inactif'),
             visualDensity: VisualDensity.compact,
           ),
-        IconButton(
-          icon: const Icon(Icons.more_vert),
-          onPressed: onTap,
-        ),
+        IconButton(icon: const Icon(Icons.more_vert), onPressed: onTap),
       ],
     );
   }
 }
-

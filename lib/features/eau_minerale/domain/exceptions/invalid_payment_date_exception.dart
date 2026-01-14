@@ -1,8 +1,6 @@
 /// Exception thrown when a payment date is invalid.
 class InvalidPaymentDateException implements Exception {
-  const InvalidPaymentDateException({
-    required this.reason,
-  });
+  const InvalidPaymentDateException({required this.reason});
 
   final String reason;
 
@@ -11,4 +9,3 @@ class InvalidPaymentDateException implements Exception {
     return 'Date de paiement invalide: $reason';
   }
 }
-

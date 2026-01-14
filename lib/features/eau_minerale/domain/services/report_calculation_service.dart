@@ -63,4 +63,3 @@ class ReportCalculationService {
     return (collections / revenue) * 100;
   }
 }
-

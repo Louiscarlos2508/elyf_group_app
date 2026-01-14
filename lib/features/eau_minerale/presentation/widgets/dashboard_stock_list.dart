@@ -5,10 +5,7 @@ import '../../application/controllers/stock_controller.dart' show StockState;
 
 /// Widget displaying finished goods stock list.
 class DashboardStockList extends StatelessWidget {
-  const DashboardStockList({
-    super.key,
-    required this.stockState,
-  });
+  const DashboardStockList({super.key, required this.stockState});
 
   final StockState stockState;
 
@@ -145,4 +142,3 @@ class DashboardStockList extends StatelessWidget {
     );
   }
 }
-

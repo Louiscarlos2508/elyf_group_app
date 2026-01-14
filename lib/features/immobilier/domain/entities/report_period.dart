@@ -1,9 +1,2 @@
 /// Période pour les rapports.
-enum ReportPeriod {
-  today,
-  thisWeek,
-  thisMonth,
-  thisYear,
-  custom,
-}
-
+enum ReportPeriod { today, thisWeek, thisMonth, thisYear, custom }

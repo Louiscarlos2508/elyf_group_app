@@ -35,215 +35,206 @@ import '../../domain/repositories/salary_repository.dart';
 import '../../domain/repositories/stock_repository.dart';
 
 // Repository Providers
-final saleRepositoryProvider = Provider<SaleRepository>(
-  (ref) {
-    final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
-    final driftService = DriftService.instance;
-    final syncManager = ref.watch(syncManagerProvider);
-    final connectivityService = ref.watch(connectivityServiceProvider);
-    
-    return SaleOfflineRepository(
-      driftService: driftService,
-      syncManager: syncManager,
-      connectivityService: connectivityService,
-      enterpriseId: enterpriseId,
-    );
-  },
-);
+final saleRepositoryProvider = Provider<SaleRepository>((ref) {
+  final enterpriseId =
+      ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+  final driftService = DriftService.instance;
+  final syncManager = ref.watch(syncManagerProvider);
+  final connectivityService = ref.watch(connectivityServiceProvider);
 
-final stockRepositoryProvider = Provider<StockRepository>(
-  (ref) {
-    final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
-    final driftService = DriftService.instance;
-    final syncManager = ref.watch(syncManagerProvider);
-    final connectivityService = ref.watch(connectivityServiceProvider);
-    
-    return StockOfflineRepository(
-      driftService: driftService,
-      syncManager: syncManager,
-      connectivityService: connectivityService,
-      enterpriseId: enterpriseId,
-      moduleType: 'eau_minerale',
-      productRepository: ref.watch(productRepositoryProvider),
-    );
-  },
-);
+  return SaleOfflineRepository(
+    driftService: driftService,
+    syncManager: syncManager,
+    connectivityService: connectivityService,
+    enterpriseId: enterpriseId,
+  );
+});
+
+final stockRepositoryProvider = Provider<StockRepository>((ref) {
+  final enterpriseId =
+      ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+  final driftService = DriftService.instance;
+  final syncManager = ref.watch(syncManagerProvider);
+  final connectivityService = ref.watch(connectivityServiceProvider);
+
+  return StockOfflineRepository(
+    driftService: driftService,
+    syncManager: syncManager,
+    connectivityService: connectivityService,
+    enterpriseId: enterpriseId,
+    moduleType: 'eau_minerale',
+    productRepository: ref.watch(productRepositoryProvider),
+  );
+});
 
 final creditRepositoryProvider = Provider<CreditRepository>(
   (ref) => MockCreditRepository(ref.watch(saleRepositoryProvider)),
 );
 
-final inventoryRepositoryProvider = Provider<InventoryRepository>(
-  (ref) {
-    final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
-    final driftService = DriftService.instance;
-    final syncManager = ref.watch(syncManagerProvider);
-    final connectivityService = ref.watch(connectivityServiceProvider);
-    
-    return InventoryOfflineRepository(
-      driftService: driftService,
-      syncManager: syncManager,
-      connectivityService: connectivityService,
-      enterpriseId: enterpriseId,
-      moduleType: 'eau_minerale',
-    );
-  },
-);
+final inventoryRepositoryProvider = Provider<InventoryRepository>((ref) {
+  final enterpriseId =
+      ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+  final driftService = DriftService.instance;
+  final syncManager = ref.watch(syncManagerProvider);
+  final connectivityService = ref.watch(connectivityServiceProvider);
 
-final customerRepositoryProvider = Provider<CustomerRepository>(
-  (ref) {
-    final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
-    final driftService = DriftService.instance;
-    final syncManager = ref.watch(syncManagerProvider);
-    final connectivityService = ref.watch(connectivityServiceProvider);
-    final saleRepo = ref.watch(saleRepositoryProvider);
-    
-    return CustomerOfflineRepository(
-      driftService: driftService,
-      syncManager: syncManager,
-      connectivityService: connectivityService,
-      enterpriseId: enterpriseId,
-      saleRepository: saleRepo,
-    );
-  },
-);
+  return InventoryOfflineRepository(
+    driftService: driftService,
+    syncManager: syncManager,
+    connectivityService: connectivityService,
+    enterpriseId: enterpriseId,
+    moduleType: 'eau_minerale',
+  );
+});
 
-final financeRepositoryProvider = Provider<FinanceRepository>(
-  (ref) {
-    final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
-    final driftService = DriftService.instance;
-    final syncManager = ref.watch(syncManagerProvider);
-    final connectivityService = ref.watch(connectivityServiceProvider);
-    
-    return FinanceOfflineRepository(
-      driftService: driftService,
-      syncManager: syncManager,
-      connectivityService: connectivityService,
-      enterpriseId: enterpriseId,
-      moduleType: 'eau_minerale',
-    );
-  },
-);
+final customerRepositoryProvider = Provider<CustomerRepository>((ref) {
+  final enterpriseId =
+      ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+  final driftService = DriftService.instance;
+  final syncManager = ref.watch(syncManagerProvider);
+  final connectivityService = ref.watch(connectivityServiceProvider);
+  final saleRepo = ref.watch(saleRepositoryProvider);
 
-final productRepositoryProvider = Provider<ProductRepository>(
-  (ref) {
-    final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
-    final driftService = DriftService.instance;
-    final syncManager = ref.watch(syncManagerProvider);
-    final connectivityService = ref.watch(connectivityServiceProvider);
-    
-    return ProductOfflineRepository(
-      driftService: driftService,
-      syncManager: syncManager,
-      connectivityService: connectivityService,
-      enterpriseId: enterpriseId,
-    );
-  },
-);
+  return CustomerOfflineRepository(
+    driftService: driftService,
+    syncManager: syncManager,
+    connectivityService: connectivityService,
+    enterpriseId: enterpriseId,
+    saleRepository: saleRepo,
+  );
+});
+
+final financeRepositoryProvider = Provider<FinanceRepository>((ref) {
+  final enterpriseId =
+      ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+  final driftService = DriftService.instance;
+  final syncManager = ref.watch(syncManagerProvider);
+  final connectivityService = ref.watch(connectivityServiceProvider);
+
+  return FinanceOfflineRepository(
+    driftService: driftService,
+    syncManager: syncManager,
+    connectivityService: connectivityService,
+    enterpriseId: enterpriseId,
+    moduleType: 'eau_minerale',
+  );
+});
+
+final productRepositoryProvider = Provider<ProductRepository>((ref) {
+  final enterpriseId =
+      ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+  final driftService = DriftService.instance;
+  final syncManager = ref.watch(syncManagerProvider);
+  final connectivityService = ref.watch(connectivityServiceProvider);
+
+  return ProductOfflineRepository(
+    driftService: driftService,
+    syncManager: syncManager,
+    connectivityService: connectivityService,
+    enterpriseId: enterpriseId,
+  );
+});
 
 final activityRepositoryProvider = Provider<ActivityRepository>(
   (ref) => MockActivityRepository(),
 );
 
 final productionSessionRepositoryProvider =
-    Provider<ProductionSessionRepository>(
-  (ref) {
-    final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
-    final driftService = DriftService.instance;
-    final syncManager = ref.watch(syncManagerProvider);
-    final connectivityService = ref.watch(connectivityServiceProvider);
-    
-    return ProductionSessionOfflineRepository(
-      driftService: driftService,
-      syncManager: syncManager,
-      connectivityService: connectivityService,
-      enterpriseId: enterpriseId,
-    );
-  },
-);
+    Provider<ProductionSessionRepository>((ref) {
+      final enterpriseId =
+          ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+      final driftService = DriftService.instance;
+      final syncManager = ref.watch(syncManagerProvider);
+      final connectivityService = ref.watch(connectivityServiceProvider);
 
-final machineRepositoryProvider = Provider<MachineRepository>(
-  (ref) {
-    final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
-    final driftService = DriftService.instance;
-    final syncManager = ref.watch(syncManagerProvider);
-    final connectivityService = ref.watch(connectivityServiceProvider);
-    
-    return MachineOfflineRepository(
-      driftService: driftService,
-      syncManager: syncManager,
-      connectivityService: connectivityService,
-      enterpriseId: enterpriseId,
-    );
-  },
-);
+      return ProductionSessionOfflineRepository(
+        driftService: driftService,
+        syncManager: syncManager,
+        connectivityService: connectivityService,
+        enterpriseId: enterpriseId,
+      );
+    });
 
-final bobineStockQuantityRepositoryProvider = Provider<BobineStockQuantityRepository>(
-  (ref) {
-    final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
-    final driftService = DriftService.instance;
-    final syncManager = ref.watch(syncManagerProvider);
-    final connectivityService = ref.watch(connectivityServiceProvider);
-    
-    return BobineStockQuantityOfflineRepository(
-      driftService: driftService,
-      syncManager: syncManager,
-      connectivityService: connectivityService,
-      enterpriseId: enterpriseId,
-    );
-  },
-);
+final machineRepositoryProvider = Provider<MachineRepository>((ref) {
+  final enterpriseId =
+      ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+  final driftService = DriftService.instance;
+  final syncManager = ref.watch(syncManagerProvider);
+  final connectivityService = ref.watch(connectivityServiceProvider);
 
-final packagingStockRepositoryProvider = Provider<PackagingStockRepository>(
-  (ref) {
-    final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
-    final driftService = DriftService.instance;
-    final syncManager = ref.watch(syncManagerProvider);
-    final connectivityService = ref.watch(connectivityServiceProvider);
-    
-    return PackagingStockOfflineRepository(
-      driftService: driftService,
-      syncManager: syncManager,
-      connectivityService: connectivityService,
-      enterpriseId: enterpriseId,
-      moduleType: 'eau_minerale',
-    );
-  },
-);
+  return MachineOfflineRepository(
+    driftService: driftService,
+    syncManager: syncManager,
+    connectivityService: connectivityService,
+    enterpriseId: enterpriseId,
+  );
+});
 
-final dailyWorkerRepositoryProvider = Provider<DailyWorkerRepository>(
-  (ref) {
-    final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
-    final driftService = DriftService.instance;
-    final syncManager = ref.watch(syncManagerProvider);
-    final connectivityService = ref.watch(connectivityServiceProvider);
-    
-    return DailyWorkerOfflineRepository(
-      driftService: driftService,
-      syncManager: syncManager,
-      connectivityService: connectivityService,
-      enterpriseId: enterpriseId,
-      moduleType: 'eau_minerale',
-    );
-  },
-);
+final bobineStockQuantityRepositoryProvider =
+    Provider<BobineStockQuantityRepository>((ref) {
+      final enterpriseId =
+          ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+      final driftService = DriftService.instance;
+      final syncManager = ref.watch(syncManagerProvider);
+      final connectivityService = ref.watch(connectivityServiceProvider);
 
-final salaryRepositoryProvider = Provider<SalaryRepository>(
-  (ref) {
-    final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
-    final driftService = DriftService.instance;
-    final syncManager = ref.watch(syncManagerProvider);
-    final connectivityService = ref.watch(connectivityServiceProvider);
-    
-    return SalaryOfflineRepository(
-      driftService: driftService,
-      syncManager: syncManager,
-      connectivityService: connectivityService,
-      enterpriseId: enterpriseId,
-      moduleType: 'eau_minerale',
-    );
-  },
-);
+      return BobineStockQuantityOfflineRepository(
+        driftService: driftService,
+        syncManager: syncManager,
+        connectivityService: connectivityService,
+        enterpriseId: enterpriseId,
+      );
+    });
+
+final packagingStockRepositoryProvider = Provider<PackagingStockRepository>((
+  ref,
+) {
+  final enterpriseId =
+      ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+  final driftService = DriftService.instance;
+  final syncManager = ref.watch(syncManagerProvider);
+  final connectivityService = ref.watch(connectivityServiceProvider);
+
+  return PackagingStockOfflineRepository(
+    driftService: driftService,
+    syncManager: syncManager,
+    connectivityService: connectivityService,
+    enterpriseId: enterpriseId,
+    moduleType: 'eau_minerale',
+  );
+});
+
+final dailyWorkerRepositoryProvider = Provider<DailyWorkerRepository>((ref) {
+  final enterpriseId =
+      ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+  final driftService = DriftService.instance;
+  final syncManager = ref.watch(syncManagerProvider);
+  final connectivityService = ref.watch(connectivityServiceProvider);
+
+  return DailyWorkerOfflineRepository(
+    driftService: driftService,
+    syncManager: syncManager,
+    connectivityService: connectivityService,
+    enterpriseId: enterpriseId,
+    moduleType: 'eau_minerale',
+  );
+});
+
+final salaryRepositoryProvider = Provider<SalaryRepository>((ref) {
+  final enterpriseId =
+      ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+  final driftService = DriftService.instance;
+  final syncManager = ref.watch(syncManagerProvider);
+  final connectivityService = ref.watch(connectivityServiceProvider);
+
+  return SalaryOfflineRepository(
+    driftService: driftService,
+    syncManager: syncManager,
+    connectivityService: connectivityService,
+    enterpriseId: enterpriseId,
+    moduleType: 'eau_minerale',
+  );
+});
 
 final reportRepositoryProvider = Provider<ReportRepository>(
   (ref) => MockReportRepository(
@@ -253,4 +244,3 @@ final reportRepositoryProvider = Provider<ReportRepository>(
     productionSessionRepository: ref.watch(productionSessionRepositoryProvider),
   ),
 );
-

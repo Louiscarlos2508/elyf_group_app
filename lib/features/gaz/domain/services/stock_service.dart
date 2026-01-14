@@ -3,9 +3,7 @@ import '../repositories/cylinder_stock_repository.dart';
 
 /// Service de gestion des stocks avec logique métier.
 class StockService {
-  const StockService({
-    required this.stockRepository,
-  });
+  const StockService({required this.stockRepository});
 
   final CylinderStockRepository stockRepository;
 
@@ -60,10 +58,7 @@ class StockService {
   }
 
   /// Ajuste la quantité d'un stock.
-  Future<void> adjustStockQuantity(
-    String stockId,
-    int newQuantity,
-  ) async {
+  Future<void> adjustStockQuantity(String stockId, int newQuantity) async {
     if (newQuantity < 0) {
       throw Exception('La quantité ne peut pas être négative');
     }

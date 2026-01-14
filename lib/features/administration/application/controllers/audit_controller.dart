@@ -2,7 +2,7 @@ import '../../domain/entities/audit_log.dart';
 import '../../domain/services/audit/audit_service.dart';
 
 /// Controller pour gérer l'audit trail.
-/// 
+///
 /// Encapsule la logique métier pour l'audit trail.
 class AuditController {
   AuditController(this._auditService);
@@ -44,7 +44,7 @@ class AuditController {
   }
 
   /// Enregistre une action dans l'audit trail.
-  /// 
+  ///
   /// Cette méthode est principalement utilisée par les autres controllers.
   Future<void> logAction({
     required AuditAction action,
@@ -70,4 +70,3 @@ class AuditController {
     );
   }
 }
-

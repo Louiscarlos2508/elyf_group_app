@@ -6,10 +6,7 @@ import 'package:elyf_groupe_app/shared.dart';
 
 /// KPI cards row for reports screen.
 class ReportKpiCards extends StatelessWidget {
-  const ReportKpiCards({
-    super.key,
-    required this.stats,
-  });
+  const ReportKpiCards({super.key, required this.stats});
 
   final Map<String, dynamic> stats;
 
@@ -76,7 +73,6 @@ class ReportKpiCards extends StatelessWidget {
       ],
     );
   }
-
 }
 
 /// Individual KPI card for reports.
@@ -126,11 +122,7 @@ class _ReportKpiCard extends StatelessWidget {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
-              Text(
-                value,
-                style: valueStyle,
-                textAlign: TextAlign.center,
-              ),
+              Text(value, style: valueStyle, textAlign: TextAlign.center),
               if (subtitle != null) ...[
                 const SizedBox(height: 8),
                 Text(
@@ -150,4 +142,3 @@ class _ReportKpiCard extends StatelessWidget {
     );
   }
 }
-

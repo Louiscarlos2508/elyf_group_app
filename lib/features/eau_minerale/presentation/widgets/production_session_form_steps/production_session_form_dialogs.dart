@@ -12,6 +12,7 @@ import '../../widgets/machine_breakdown_dialog.dart';
 import '../../widgets/machine_selector_field.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
+
 /// Helper class for production session form dialogs.
 /// Extracted from ProductionSessionFormSteps to reduce file size.
 class ProductionSessionFormDialogs {
@@ -30,13 +31,18 @@ class ProductionSessionFormDialogs {
         .toList();
 
     if (machinesSansBobine.isEmpty) {
-      NotificationService.showInfo(context, 'Toutes les machines ont une bobine');
+      NotificationService.showInfo(
+        context,
+        'Toutes les machines ont une bobine',
+      );
       return;
     }
 
     // Récupérer les machines
     final machines = await ref.read(machinesProvider.future);
-    final machine = machines.firstWhere((m) => m.id == machinesSansBobine.first);
+    final machine = machines.firstWhere(
+      (m) => m.id == machinesSansBobine.first,
+    );
 
     if (!context.mounted) return;
     final result = await showDialog<BobineUsage>(
@@ -53,13 +59,16 @@ class ProductionSessionFormDialogs {
     if (result != null && context.mounted) {
       // Vérifier si cette bobine n'est pas déjà dans la liste (cas de réutilisation)
       final existeDeja = bobinesUtilisees.any(
-        (b) => b.bobineType == result.bobineType && b.machineId == result.machineId,
+        (b) =>
+            b.bobineType == result.bobineType &&
+            b.machineId == result.machineId,
       );
-      
+
       if (!existeDeja) {
         // Le stock est déjà décrémenté dans BobineInstallationForm pour les nouvelles bobines
         // Les bobines non finie réutilisées n'ont pas besoin de décrément
-        final updatedBobines = List<BobineUsage>.from(bobinesUtilisees)..add(result);
+        final updatedBobines = List<BobineUsage>.from(bobinesUtilisees)
+          ..add(result);
         onBobinesChanged(updatedBobines);
       }
     }
@@ -123,12 +132,12 @@ class ProductionSessionFormDialogs {
               } else {
                 onDayAdded(productionDay);
               }
-              
+
               // IMPORTANT: Ne pas mettre à jour les stocks ici
               // Les mouvements de stock seront enregistrés UNIQUEMENT lors de la finalisation
               // pour éviter les duplications et garantir un historique cohérent
               // Les modifications des jours de production sont juste sauvegardées dans la session
-              
+
               if (context.mounted) {
                 ref.invalidate(stockStateProvider);
                 Navigator.of(context).pop();
@@ -159,7 +168,7 @@ class ProductionSessionFormDialogs {
       nom: bobine.machineName,
       reference: bobine.machineId,
     );
-    
+
     // Créer une session temporaire pour le dialog
     final tempSession = ProductionSession(
       id: session?.id ?? 'temp',
@@ -193,4 +202,3 @@ class ProductionSessionFormDialogs {
     );
   }
 }
-

@@ -47,4 +47,3 @@ class StockAdjustmentHeader extends StatelessWidget {
     );
   }
 }
-

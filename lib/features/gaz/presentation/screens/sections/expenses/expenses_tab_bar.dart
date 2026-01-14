@@ -2,10 +2,7 @@ import 'package:flutter/material.dart';
 
 /// Barre d'onglets personnalisée pour les dépenses.
 class ExpensesTabBar extends StatelessWidget {
-  const ExpensesTabBar({
-    super.key,
-    required this.tabController,
-  });
+  const ExpensesTabBar({super.key, required this.tabController});
 
   final TabController tabController;
 
@@ -39,10 +36,7 @@ class ExpensesTabBar extends StatelessWidget {
                         : Colors.transparent,
                     borderRadius: BorderRadius.circular(14),
                     border: tabController.index == 0
-                        ? Border.all(
-                            color: Colors.transparent,
-                            width: 1.3,
-                          )
+                        ? Border.all(color: Colors.transparent, width: 1.3)
                         : null,
                   ),
                   child: Text(
@@ -89,4 +83,3 @@ class ExpensesTabBar extends StatelessWidget {
     );
   }
 }
-

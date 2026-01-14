@@ -6,15 +6,16 @@ import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
 import '../../../../domain/entities/user.dart';
 import 'package:elyf_groupe_app/core.dart';
 import '../../../../application/providers.dart';
-import '../../../../domain/entities/admin_module.dart';
-import 'package:elyf_groupe_app/core/auth/entities/enterprise_module_user.dart';
+import 'package:elyf_groupe_app/core/permissions/services/permission_registry.dart';
+import 'widgets/module_selection_widget.dart';
+import 'widgets/multiple_module_enterprise_selection_widget.dart';
 
-/// Dialogue pour attribuer un utilisateur à une entreprise et un module.
+/// Dialogue pour attribuer un utilisateur à une ou plusieurs entreprises avec un ou plusieurs modules et un rôle.
+///
+/// Ordre de sélection : Rôle → Module(s) → Entreprise(s)
+/// Plus logique car les rôles sont globaux et peuvent avoir des permissions pour plusieurs modules.
 class AssignEnterpriseDialog extends ConsumerStatefulWidget {
-  const AssignEnterpriseDialog({
-    super.key,
-    required this.user,
-  });
+  const AssignEnterpriseDialog({super.key, required this.user});
 
   final User user;
 
@@ -25,9 +26,9 @@ class AssignEnterpriseDialog extends ConsumerStatefulWidget {
 
 class _AssignEnterpriseDialogState
     extends ConsumerState<AssignEnterpriseDialog> {
-  String? _selectedEnterpriseId;
-  String? _selectedModuleId;
   String? _selectedRoleId;
+  Set<String> _selectedModuleIds = {};
+  Set<String> _selectedEnterpriseIds = {};
   bool _isActive = true;
   bool _isLoading = false;
 
@@ -53,7 +54,7 @@ class _AssignEnterpriseDialogState
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
-            children: [
+          children: [
             Padding(
               padding: const EdgeInsets.all(24),
               child: Column(
@@ -67,7 +68,7 @@ class _AssignEnterpriseDialogState
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Attribuez ${widget.user.fullName} à une entreprise et un module',
+                    'Attribuez ${widget.user.fullName} à une ou plusieurs entreprises',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -80,34 +81,43 @@ class _AssignEnterpriseDialogState
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Column(
                   children: [
-                    enterprisesAsync.when(
-                      data: (enterprises) {
-                        final activeEnterprises =
-                            enterprises.where((e) => e.isActive).toList();
-                        if (activeEnterprises.isEmpty) {
-                          return const Text('Aucune entreprise active');
+                    // Sélection du Rôle (en premier)
+                    rolesAsync.when(
+                      data: (roles) {
+                        final uniqueRoles = <String, UserRole>{};
+                        for (final role in roles) {
+                          if (!uniqueRoles.containsKey(role.id)) {
+                            uniqueRoles[role.id] = role;
+                          }
+                        }
+                        final deduplicatedRoles = uniqueRoles.values.toList();
+
+                        if (deduplicatedRoles.isEmpty) {
+                          return const Text('Aucun rôle disponible');
                         }
 
                         return DropdownButtonFormField<String>(
-                          initialValue: _selectedEnterpriseId,
+                          initialValue: _selectedRoleId,
                           decoration: const InputDecoration(
-                            labelText: 'Entreprise *',
+                            labelText: 'Rôle *',
+                            helperText: 'Sélectionnez d\'abord le rôle',
                           ),
-                          items: activeEnterprises.map((enterprise) {
+                          items: deduplicatedRoles.map((role) {
                             return DropdownMenuItem(
-                              value: enterprise.id,
-                              child: Text(enterprise.name),
+                              value: role.id,
+                              child: Text(role.name),
                             );
                           }).toList(),
                           onChanged: (value) {
                             setState(() {
-                              _selectedEnterpriseId = value;
-                              _selectedModuleId = null; // Reset module
+                              _selectedRoleId = value;
+                              _selectedModuleIds.clear();
+                              _selectedEnterpriseIds.clear();
                             });
                           },
                           validator: (value) {
                             if (value == null) {
-                              return 'Sélectionnez une entreprise';
+                              return 'Sélectionnez un rôle';
                             }
                             return null;
                           },
@@ -117,100 +127,40 @@ class _AssignEnterpriseDialogState
                       error: (error, stack) => Text('Erreur: $error'),
                     ),
                     const SizedBox(height: 16),
-                    if (_selectedEnterpriseId != null)
-                      Builder(
-                        builder: (context) {
-                          final enterprises = enterprisesAsync.value ?? [];
-                          final enterprise = enterprises.firstWhere(
-                            (e) => e.id == _selectedEnterpriseId,
-                          );
 
-                          // Déterminer le module basé sur le type d'entreprise
-                          String? moduleId;
-                          if (enterprise.type == 'eau_minerale') {
-                            moduleId = 'eau_minerale';
-                          } else {
-                            moduleId = enterprise.type;
-                          }
-
-                          // Trouver les modules disponibles pour ce type
-                          final availableModules = AdminModules.all
-                              .where((module) => module.id == moduleId)
-                              .toList();
-
-                          if (availableModules.isEmpty) {
-                            return const Text('Aucun module disponible');
-                          }
-
-                          return DropdownButtonFormField<String>(
-                            initialValue: _selectedModuleId ?? moduleId,
-                            decoration: const InputDecoration(
-                              labelText: 'Module *',
-                            ),
-                            items: availableModules.map((module) {
-                              return DropdownMenuItem(
-                                value: module.id,
-                                child: Text(module.name),
-                              );
-                            }).toList(),
-                            onChanged: (value) {
-                              setState(() {
-                                _selectedModuleId = value;
-                                _selectedRoleId = null; // Reset role
-                              });
-                            },
-                            validator: (value) {
-                              if (value == null) {
-                                return 'Sélectionnez un module';
-                              }
-                              return null;
-                            },
-                          );
+                    // Sélection multiple des Modules (si rôle sélectionné)
+                    if (_selectedRoleId != null)
+                      MultipleModuleSelection(
+                        selectedModuleIds: _selectedModuleIds,
+                        onChanged: (moduleIds) {
+                          setState(() {
+                            _selectedModuleIds = moduleIds;
+                            _selectedEnterpriseIds.clear();
+                          });
                         },
                       ),
                     const SizedBox(height: 16),
-                    if (_selectedModuleId != null)
-                      rolesAsync.when(
-                        data: (roles) {
-                          // Dédupliquer les rôles par ID pour éviter les duplications
-                          // (peut arriver si la synchronisation crée des doublons dans Drift)
-                          final uniqueRoles = <String, UserRole>{};
-                          for (final role in roles) {
-                            if (!uniqueRoles.containsKey(role.id)) {
-                              uniqueRoles[role.id] = role;
-                            }
-                          }
-                          final deduplicatedRoles = uniqueRoles.values.toList();
 
-                          if (deduplicatedRoles.isEmpty) {
-                            return const Text('Aucun rôle disponible');
-                          }
-
-                          return DropdownButtonFormField<String>(
-                            initialValue: _selectedRoleId,
-                            decoration: const InputDecoration(
-                              labelText: 'Rôle *',
-                            ),
-                            items: deduplicatedRoles.map((role) {
-                              return DropdownMenuItem(
-                                value: role.id,
-                                child: Text(role.name),
-                              );
-                            }).toList(),
-                            onChanged: (value) {
-                              setState(() => _selectedRoleId = value);
+                    // Sélection d'entreprise(s) (si rôle et modules sélectionnés)
+                    if (_selectedRoleId != null &&
+                        _selectedModuleIds.isNotEmpty)
+                      enterprisesAsync.when(
+                        data: (enterprises) {
+                          return MultipleModuleEnterpriseSelection(
+                            enterprises: enterprises,
+                            selectedEnterpriseIds: _selectedEnterpriseIds,
+                            onChanged: (ids) {
+                              setState(() {
+                                _selectedEnterpriseIds = ids;
+                              });
                             },
-                            validator: (value) {
-                              if (value == null) {
-                                return 'Sélectionnez un rôle';
-                              }
-                              return null;
-                            },
+                            moduleIds: _selectedModuleIds,
                           );
                         },
                         loading: () => const LinearProgressIndicator(),
                         error: (error, stack) => Text('Erreur: $error'),
                       ),
+
                     const SizedBox(height: 16),
                     SwitchListTile(
                       title: const Text('Accès actif'),
@@ -228,37 +178,43 @@ class _AssignEnterpriseDialogState
               ),
             ),
             Padding(
-                padding: const EdgeInsets.all(24),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton(
-                      onPressed: _isLoading
+              padding: const EdgeInsets.all(24),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: _isLoading
+                        ? null
+                        : () => Navigator.of(context).pop(),
+                    child: const Text('Annuler'),
+                  ),
+                  const SizedBox(width: 16),
+                  Flexible(
+                    child: FilledButton(
+                      onPressed:
+                          (_isLoading ||
+                              _selectedRoleId == null ||
+                              _selectedModuleIds.isEmpty ||
+                              _selectedEnterpriseIds.isEmpty)
                           ? null
-                          : () => Navigator.of(context).pop(),
-                      child: const Text('Annuler'),
+                          : _handleSubmit,
+                      child: _isLoading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                'Attribuer (${_selectedModuleIds.length}/${_selectedEnterpriseIds.length})',
+                              ),
+                            ),
                     ),
-                    const SizedBox(width: 16),
-                    IntrinsicWidth(
-                      child: FilledButton(
-                        onPressed: (_isLoading ||
-                                _selectedEnterpriseId == null ||
-                                _selectedModuleId == null ||
-                                _selectedRoleId == null)
-                            ? null
-                            : _handleSubmit,
-                        child: _isLoading
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              )
-                            : const Text('Attribuer'),
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
+            ),
           ],
         ),
       ),
@@ -266,32 +222,32 @@ class _AssignEnterpriseDialogState
   }
 
   Future<void> _handleSubmit() async {
-    if (_selectedEnterpriseId == null ||
-        _selectedModuleId == null ||
-        _selectedRoleId == null) {
+    if (_selectedRoleId == null ||
+        _selectedModuleIds.isEmpty ||
+        _selectedEnterpriseIds.isEmpty) {
       return;
     }
 
     setState(() => _isLoading = true);
 
     try {
-      final enterpriseModuleUser = EnterpriseModuleUser(
-        userId: widget.user.id,
-        enterpriseId: _selectedEnterpriseId!,
-        moduleId: _selectedModuleId!,
-        roleId: _selectedRoleId!,
-        isActive: _isActive,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      );
-
+      // Utiliser la méthode batch pour plusieurs modules et entreprises
       await ref
           .read(adminControllerProvider)
-          .assignUserToEnterprise(enterpriseModuleUser);
+          .batchAssignUserToModulesAndEnterprises(
+            userId: widget.user.id,
+            moduleIds: _selectedModuleIds.toList(),
+            enterpriseIds: _selectedEnterpriseIds.toList(),
+            roleId: _selectedRoleId!,
+            isActive: _isActive,
+          );
 
       if (mounted) {
-        Navigator.of(context).pop(enterpriseModuleUser);
-        NotificationService.showInfo(context, 'Utilisateur attribué avec succès');
+        Navigator.of(context).pop(true);
+        NotificationService.showInfo(
+          context,
+          'Utilisateur attribué à ${_selectedModuleIds.length} module(s) et ${_selectedEnterpriseIds.length} entreprise(s) avec succès',
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -304,4 +260,3 @@ class _AssignEnterpriseDialogState
     }
   }
 }
-

@@ -92,4 +92,3 @@ class ApprovisionnementHeader extends StatelessWidget {
     );
   }
 }
-

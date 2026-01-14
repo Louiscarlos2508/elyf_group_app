@@ -1,5 +1,5 @@
 /// Service for pagination calculations.
-/// 
+///
 /// Helps paginate large datasets efficiently.
 class PaginationService {
   PaginationService();
@@ -70,4 +70,3 @@ class PaginationInfo {
   final bool hasNextPage;
   final bool hasPreviousPage;
 }
-

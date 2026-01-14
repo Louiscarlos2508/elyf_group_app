@@ -91,4 +91,3 @@ class PropertyDetailRow extends StatelessWidget {
     );
   }
 }
-

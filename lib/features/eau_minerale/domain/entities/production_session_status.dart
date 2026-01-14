@@ -59,4 +59,3 @@ extension ProductionSessionStatusExtension on ProductionSessionStatus {
     return stepNumber == step;
   }
 }
-

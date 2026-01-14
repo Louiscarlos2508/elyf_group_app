@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:open_file/open_file.dart';
 
@@ -6,6 +5,7 @@ import '../../../domain/entities/sale.dart';
 import 'invoice_print_service.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
+
 /// Widget bouton d'impression pour les factures eau minérale.
 class EauMineralePrintButton extends StatefulWidget {
   const EauMineralePrintButton({
@@ -18,8 +18,7 @@ class EauMineralePrintButton extends StatefulWidget {
   final bool compact;
 
   @override
-  State<EauMineralePrintButton> createState() =>
-      _EauMineralePrintButtonState();
+  State<EauMineralePrintButton> createState() => _EauMineralePrintButtonState();
 }
 
 class _EauMineralePrintButtonState extends State<EauMineralePrintButton> {
@@ -33,8 +32,8 @@ class _EauMineralePrintButtonState extends State<EauMineralePrintButton> {
   }
 
   Future<void> _checkSunmi() async {
-    final available =
-        await EauMineraleInvoiceService.instance.isSunmiAvailable();
+    final available = await EauMineraleInvoiceService.instance
+        .isSunmiAvailable();
     if (mounted) {
       setState(() => _isSunmiAvailable = available);
     }
@@ -71,8 +70,9 @@ class _EauMineralePrintButtonState extends State<EauMineralePrintButton> {
 
     try {
       if (result == 'pdf') {
-        final file = await EauMineraleInvoiceService.instance
-            .generateSalePdf(widget.sale);
+        final file = await EauMineraleInvoiceService.instance.generateSalePdf(
+          widget.sale,
+        );
         if (!mounted || !context.mounted) return;
         await OpenFile.open(file.path);
         if (!mounted || !context.mounted) return;
@@ -130,4 +130,3 @@ class _EauMineralePrintButtonState extends State<EauMineralePrintButton> {
     );
   }
 }
-

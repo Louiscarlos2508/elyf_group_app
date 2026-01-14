@@ -40,7 +40,8 @@ class _TourFormDialogState extends ConsumerState<TourFormDialog>
     await handleFormSubmit(
       context: context,
       formKey: _formKey,
-      onLoadingChanged: (_) {}, // Pas besoin de gestion d'état de chargement séparée
+      onLoadingChanged:
+          (_) {}, // Pas besoin de gestion d'état de chargement séparée
       onSubmit: () async {
         final controller = ref.read(tourControllerProvider);
 
@@ -50,7 +51,8 @@ class _TourFormDialogState extends ConsumerState<TourFormDialog>
           tourDate: _selectedDate,
           status: TourStatus.collection,
           collections: const [],
-          loadingFeePerBottle: double.tryParse(_loadingFeeController.text) ?? 0.0,
+          loadingFeePerBottle:
+              double.tryParse(_loadingFeeController.text) ?? 0.0,
           unloadingFeePerBottle:
               double.tryParse(_unloadingFeeController.text) ?? 0.0,
         );
@@ -72,9 +74,7 @@ class _TourFormDialogState extends ConsumerState<TourFormDialog>
     _enterpriseId ??= 'default_enterprise';
 
     return Dialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       child: Container(
         constraints: const BoxConstraints(maxWidth: 500, maxHeight: 600),
         decoration: BoxDecoration(
@@ -111,7 +111,8 @@ class _TourFormDialogState extends ConsumerState<TourFormDialog>
                 // Date du tour
                 TourDatePicker(
                   selectedDate: _selectedDate,
-                  onDateSelected: (date) => setState(() => _selectedDate = date),
+                  onDateSelected: (date) =>
+                      setState(() => _selectedDate = date),
                 ),
                 const SizedBox(height: 16),
                 // Frais de chargement

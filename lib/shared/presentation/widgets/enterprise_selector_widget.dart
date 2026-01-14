@@ -6,7 +6,7 @@ import '../../../features/administration/domain/entities/enterprise.dart';
 import '../../../core/tenant/tenant_provider.dart';
 
 /// Widget pour sélectionner l'entreprise active
-/// 
+///
 /// Affiche un dialogue permettant à l'utilisateur de choisir parmi
 /// les entreprises auxquelles il a accès.
 class EnterpriseSelectorWidget extends ConsumerWidget {
@@ -23,14 +23,11 @@ class EnterpriseSelectorWidget extends ConsumerWidget {
   final bool compact;
 
   /// Affiche le sélecteur d'entreprise depuis n'importe quel contexte
-  static Future<void> showSelector(
-    BuildContext context,
-    WidgetRef ref,
-  ) async {
+  static Future<void> showSelector(BuildContext context, WidgetRef ref) async {
     final accessibleEnterprisesAsync = ref.read(
       userAccessibleEnterprisesProvider,
     );
-    
+
     final accessibleEnterprises = accessibleEnterprisesAsync.when(
       data: (enterprises) => enterprises,
       loading: () => <Enterprise>[],
@@ -40,9 +37,7 @@ class EnterpriseSelectorWidget extends ConsumerWidget {
     if (accessibleEnterprises.isEmpty) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Aucune entreprise accessible'),
-          ),
+          const SnackBar(content: Text('Aucune entreprise accessible')),
         );
       }
       return;
@@ -73,6 +68,13 @@ class EnterpriseSelectorWidget extends ConsumerWidget {
 
       // Rafraîchir les providers qui dépendent de l'entreprise active
       ref.invalidate(activeEnterpriseProvider);
+
+      // Attendre que le provider soit rechargé avant de naviguer
+      try {
+        await ref.read(activeEnterpriseProvider.future);
+      } catch (e) {
+        // Ignorer les erreurs, on naviguera quand même
+      }
 
       // Afficher un message de confirmation
       if (context.mounted) {
@@ -107,7 +109,7 @@ class EnterpriseSelectorWidget extends ConsumerWidget {
     final accessibleEnterprisesAsync = ref.read(
       userAccessibleEnterprisesProvider,
     );
-    
+
     final accessibleEnterprises = accessibleEnterprisesAsync.when(
       data: (enterprises) => enterprises,
       loading: () => <Enterprise>[],
@@ -117,9 +119,7 @@ class EnterpriseSelectorWidget extends ConsumerWidget {
     if (accessibleEnterprises.isEmpty) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Aucune entreprise accessible'),
-          ),
+          const SnackBar(content: Text('Aucune entreprise accessible')),
         );
       }
       return;
@@ -150,6 +150,13 @@ class EnterpriseSelectorWidget extends ConsumerWidget {
 
       // Rafraîchir les providers qui dépendent de l'entreprise active
       ref.invalidate(activeEnterpriseProvider);
+
+      // Attendre que le provider soit rechargé avant de naviguer
+      try {
+        await ref.read(activeEnterpriseProvider.future);
+      } catch (e) {
+        // Ignorer les erreurs, on naviguera quand même
+      }
 
       // Afficher un message de confirmation
       if (context.mounted) {
@@ -301,9 +308,7 @@ class _EnterpriseSelectorDialog extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Dialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(24),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 400, maxHeight: 600),
         child: Column(
@@ -385,4 +390,3 @@ class _EnterpriseSelectorDialog extends StatelessWidget {
     );
   }
 }
-

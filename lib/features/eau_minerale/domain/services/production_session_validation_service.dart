@@ -123,10 +123,7 @@ class ProductionSessionValidationService {
       errors.add(consumptionError);
     }
 
-    final timeError = validateTimeRange(
-      startTime: startTime,
-      endTime: endTime,
-    );
+    final timeError = validateTimeRange(startTime: startTime, endTime: endTime);
     if (timeError != null) {
       errors.add(timeError);
     }
@@ -134,4 +131,3 @@ class ProductionSessionValidationService {
     return errors;
   }
 }
-

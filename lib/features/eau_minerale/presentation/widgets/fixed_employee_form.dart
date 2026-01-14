@@ -5,6 +5,7 @@ import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart
 import '../../domain/entities/employee.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../../../shared/utils/notification_service.dart';
+
 /// Form for creating/editing a fixed employee.
 class FixedEmployeeForm extends ConsumerStatefulWidget {
   const FixedEmployeeForm({super.key, this.employee});
@@ -12,8 +13,7 @@ class FixedEmployeeForm extends ConsumerStatefulWidget {
   final Employee? employee;
 
   @override
-  ConsumerState<FixedEmployeeForm> createState() =>
-      FixedEmployeeFormState();
+  ConsumerState<FixedEmployeeForm> createState() => FixedEmployeeFormState();
 }
 
 class FixedEmployeeFormState extends ConsumerState<FixedEmployeeForm> {
@@ -30,8 +30,9 @@ class FixedEmployeeFormState extends ConsumerState<FixedEmployeeForm> {
     if (widget.employee != null) {
       final nameParts = widget.employee!.name.split(' ');
       _firstNameController.text = nameParts.isNotEmpty ? nameParts.first : '';
-      _lastNameController.text =
-          nameParts.length > 1 ? nameParts.sublist(1).join(' ') : '';
+      _lastNameController.text = nameParts.length > 1
+          ? nameParts.sublist(1).join(' ')
+          : '';
       _positionController.text = widget.employee!.position ?? '';
       _monthlySalaryController.text = widget.employee!.monthlySalary.toString();
     }
@@ -52,8 +53,11 @@ class FixedEmployeeFormState extends ConsumerState<FixedEmployeeForm> {
     setState(() => _isLoading = true);
     try {
       final employee = Employee(
-        id: widget.employee?.id ?? 'emp-${DateTime.now().millisecondsSinceEpoch}',
-        name: '${_firstNameController.text.trim()} ${_lastNameController.text.trim()}',
+        id:
+            widget.employee?.id ??
+            'emp-${DateTime.now().millisecondsSinceEpoch}',
+        name:
+            '${_firstNameController.text.trim()} ${_lastNameController.text.trim()}',
         phone: '', // Not required for fixed employees
         type: EmployeeType.fixed,
         monthlySalary: int.parse(_monthlySalaryController.text),
@@ -72,9 +76,10 @@ class FixedEmployeeFormState extends ConsumerState<FixedEmployeeForm> {
       if (!mounted) return;
       Navigator.of(context).pop();
       ref.invalidate(salaryStateProvider);
-      NotificationService.showInfo(context, widget.employee == null
-              ? 'Employé créé'
-              : 'Employé modifié');
+      NotificationService.showInfo(
+        context,
+        widget.employee == null ? 'Employé créé' : 'Employé modifié',
+      );
     } catch (e) {
       if (!mounted) return;
       NotificationService.showError(context, e.toString());
@@ -145,4 +150,3 @@ class FixedEmployeeFormState extends ConsumerState<FixedEmployeeForm> {
     );
   }
 }
-

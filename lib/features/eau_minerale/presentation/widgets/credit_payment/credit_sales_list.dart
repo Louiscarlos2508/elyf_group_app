@@ -78,7 +78,9 @@ class CreditSalesList extends StatelessWidget {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? theme.colorScheme.primaryContainer.withValues(alpha: 0.3)
+                      ? theme.colorScheme.primaryContainer.withValues(
+                          alpha: 0.3,
+                        )
                       : theme.colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
@@ -99,7 +101,9 @@ class CreditSalesList extends StatelessWidget {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Icon(
-                        isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
+                        isSelected
+                            ? Icons.check_circle
+                            : Icons.radio_button_unchecked,
                         size: 20,
                         color: isSelected
                             ? theme.colorScheme.onPrimary
@@ -155,4 +159,3 @@ class CreditSalesList extends StatelessWidget {
     );
   }
 }
-

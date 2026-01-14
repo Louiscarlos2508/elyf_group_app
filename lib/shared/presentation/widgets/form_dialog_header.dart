@@ -21,11 +21,7 @@ class FormDialogHeader extends StatelessWidget {
     return Row(
       children: [
         if (icon != null) ...[
-          Icon(
-            icon,
-            size: 24,
-            color: const Color(0xFF0A0A0A),
-          ),
+          Icon(icon, size: 24, color: const Color(0xFF0A0A0A)),
           const SizedBox(width: 8),
         ],
         Expanded(
@@ -62,4 +58,3 @@ class FormDialogHeader extends StatelessWidget {
     );
   }
 }
-

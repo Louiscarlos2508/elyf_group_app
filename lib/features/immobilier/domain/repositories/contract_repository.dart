@@ -26,4 +26,3 @@ abstract class ContractRepository {
   /// Supprime un contrat.
   Future<void> deleteContract(String id);
 }
-

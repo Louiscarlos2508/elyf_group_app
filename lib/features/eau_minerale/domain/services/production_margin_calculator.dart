@@ -23,11 +23,9 @@ class ProductionMarginCalculator {
 
     // Calculer les coûts
     final coutBobines = session.coutBobines ?? 0;
-    final coutElectricite = session.coutElectricite ??
-        _calculerCoutElectricite(
-          session.consommationCourant,
-          prixKwh,
-        );
+    final coutElectricite =
+        session.coutElectricite ??
+        _calculerCoutElectricite(session.consommationCourant, prixKwh);
     final coutTotal = coutBobines + coutElectricite;
 
     // Calculer la marge brute
@@ -51,10 +49,7 @@ class ProductionMarginCalculator {
   }
 
   /// Calcule le coût de l'électricité.
-  static int _calculerCoutElectricite(
-    double consommationKwh,
-    double? prixKwh,
-  ) {
+  static int _calculerCoutElectricite(double consommationKwh, double? prixKwh) {
     if (prixKwh == null || prixKwh <= 0) return 0;
     return (consommationKwh * prixKwh).round();
   }
@@ -83,6 +78,6 @@ class ProductionMargin {
   final bool estRentable; // Indique si la session est rentable
 
   /// Formate le pourcentage de marge avec 2 décimales
-  String get pourcentageMargeFormate => '${pourcentageMarge.toStringAsFixed(2)}%';
+  String get pourcentageMargeFormate =>
+      '${pourcentageMarge.toStringAsFixed(2)}%';
 }
-

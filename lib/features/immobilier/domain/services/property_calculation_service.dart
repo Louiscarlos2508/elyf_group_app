@@ -85,4 +85,3 @@ class PropertyCalculationService {
     return null;
   }
 }
-

@@ -35,20 +35,13 @@ class GazSettings {
   GazSettings setWholesalePrice(int weight, double price) {
     final updatedPrices = Map<int, double>.from(wholesalePrices);
     updatedPrices[weight] = price;
-    return copyWith(
-      wholesalePrices: updatedPrices,
-      updatedAt: DateTime.now(),
-    );
+    return copyWith(wholesalePrices: updatedPrices, updatedAt: DateTime.now());
   }
 
   /// Supprime le prix en gros pour un poids donné.
   GazSettings removeWholesalePrice(int weight) {
     final updatedPrices = Map<int, double>.from(wholesalePrices);
     updatedPrices.remove(weight);
-    return copyWith(
-      wholesalePrices: updatedPrices,
-      updatedAt: DateTime.now(),
-    );
+    return copyWith(wholesalePrices: updatedPrices, updatedAt: DateTime.now());
   }
 }
-

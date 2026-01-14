@@ -37,8 +37,9 @@ class MachineSelectorField extends ConsumerWidget {
                 spacing: 8,
                 runSpacing: 8,
                 children: machinesActives.map((machine) {
-                  final estSelectionnee =
-                      machinesSelectionnees.contains(machine.id);
+                  final estSelectionnee = machinesSelectionnees.contains(
+                    machine.id,
+                  );
                   return FilterChip(
                     label: Text(machine.nom),
                     selected: estSelectionnee,
@@ -68,9 +69,6 @@ class MachineSelectorField extends ConsumerWidget {
 }
 
 /// Provider pour récupérer les machines.
-final machinesProvider = FutureProvider.autoDispose<List<Machine>>(
-  (ref) async {
-    return ref.read(machineControllerProvider).fetchMachines(estActive: true);
-  },
-);
-
+final machinesProvider = FutureProvider.autoDispose<List<Machine>>((ref) async {
+  return ref.read(machineControllerProvider).fetchMachines(estActive: true);
+});

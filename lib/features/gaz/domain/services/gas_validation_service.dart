@@ -89,4 +89,3 @@ class GasValidationService {
     return errors;
   }
 }
-

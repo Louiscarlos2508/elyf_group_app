@@ -7,10 +7,7 @@ import 'package:elyf_groupe_app/shared/utils/form_helper_mixin.dart';
 
 /// Dialogue pour modifier un utilisateur existant.
 class EditUserDialog extends StatefulWidget {
-  const EditUserDialog({
-    super.key,
-    required this.user,
-  });
+  const EditUserDialog({super.key, required this.user});
 
   final User user;
 
@@ -18,8 +15,7 @@ class EditUserDialog extends StatefulWidget {
   State<EditUserDialog> createState() => _EditUserDialogState();
 }
 
-class _EditUserDialogState extends State<EditUserDialog>
-    with FormHelperMixin {
+class _EditUserDialogState extends State<EditUserDialog> with FormHelperMixin {
   late final GlobalKey<FormState> _formKey;
   late final TextEditingController _firstNameController;
   late final TextEditingController _lastNameController;
@@ -34,8 +30,7 @@ class _EditUserDialogState extends State<EditUserDialog>
   void initState() {
     super.initState();
     _formKey = GlobalKey<FormState>();
-    _firstNameController =
-        TextEditingController(text: widget.user.firstName);
+    _firstNameController = TextEditingController(text: widget.user.firstName);
     _lastNameController = TextEditingController(text: widget.user.lastName);
     _usernameController = TextEditingController(text: widget.user.username);
     _emailController = TextEditingController(text: widget.user.email ?? '');
@@ -220,7 +215,9 @@ class _EditUserDialogState extends State<EditUserDialog>
                         ),
                         keyboardType: TextInputType.phone,
                         inputFormatters: [
-                          FilteringTextInputFormatter.allow(RegExp(r'[\d\s\+]')),
+                          FilteringTextInputFormatter.allow(
+                            RegExp(r'[\d\s\+]'),
+                          ),
                         ],
                         validator: _validatePhone,
                       ),
@@ -259,7 +256,9 @@ class _EditUserDialogState extends State<EditUserDialog>
                             ? const SizedBox(
                                 width: 20,
                                 height: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               )
                             : const Text('Enregistrer'),
                       ),
@@ -274,4 +273,3 @@ class _EditUserDialogState extends State<EditUserDialog>
     );
   }
 }
-

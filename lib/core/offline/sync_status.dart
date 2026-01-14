@@ -3,23 +3,22 @@ import 'dart:convert';
 /// Sync status classes for managing sync operations.
 
 /// Enum for sync status.
-enum SyncStatus {
-  idle,
-  syncing,
-  synced,
-  error,
-}
+enum SyncStatus { idle, syncing, synced, error }
 
 /// Enum for entity sync state.
 enum SyncState {
   /// Entity is pending upload/sync.
   pending,
+
   /// Alias for pending (backward compatibility).
   pendingUpload,
+
   /// Entity is pending delete sync.
   pendingDelete,
+
   /// Entity is synced with server.
   synced,
+
   /// Sync failed for this entity.
   failed,
 }
@@ -37,8 +36,8 @@ class SyncMetadata {
     this.pendingCount = 0,
     DateTime? createdAt,
     DateTime? localUpdatedAt,
-  })  : createdAt = createdAt ?? DateTime.now(),
-        localUpdatedAt = localUpdatedAt ?? DateTime.now();
+  }) : createdAt = createdAt ?? DateTime.now(),
+       localUpdatedAt = localUpdatedAt ?? DateTime.now();
 
   int id;
   String? localId;

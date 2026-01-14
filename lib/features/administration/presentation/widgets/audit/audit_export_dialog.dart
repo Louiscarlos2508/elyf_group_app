@@ -72,7 +72,8 @@ class _AuditExportDialogState extends State<AuditExportDialog> {
         );
 
         setState(() {
-          _exportResult = 'Fichier exporté: $filename\n'
+          _exportResult =
+              'Fichier exporté: $filename\n'
               'Emplacement: ${directory.path}';
           _exportSuccess = true;
         });
@@ -187,10 +188,7 @@ class _AuditExportDialogState extends State<AuditExportDialog> {
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(
-                _exportResult!,
-                style: theme.textTheme.bodySmall,
-              ),
+              child: Text(_exportResult!, style: theme.textTheme.bodySmall),
             ),
           ],
         ),

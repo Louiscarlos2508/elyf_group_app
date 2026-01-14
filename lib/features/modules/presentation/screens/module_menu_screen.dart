@@ -2,14 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:elyf_groupe_app/shared.dart';
 import '../../../../core/tenant/tenant_provider.dart';
-import '../../../administration/domain/entities/admin_module.dart';
 
-class ModuleMenuScreen extends ConsumerWidget {
+class ModuleMenuScreen extends ConsumerStatefulWidget {
   const ModuleMenuScreen({super.key});
 
-  /// Mapping des IDs de modules vers les routes
+  @override
+  ConsumerState<ModuleMenuScreen> createState() => _ModuleMenuScreenState();
+}
+
+class _ModuleMenuScreenState extends ConsumerState<ModuleMenuScreen> {
+  /// Mapping des types d'entreprises vers les routes de modules
   static const _moduleRoutes = {
     'eau_minerale': '/modules/eau_sachet',
     'gaz': '/modules/gaz',
@@ -19,26 +22,31 @@ class ModuleMenuScreen extends ConsumerWidget {
   };
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final theme = Theme.of(context);
-    
+
     // Déclencher la sélection automatique si nécessaire
     ref.watch(autoSelectEnterpriseProvider);
-    
+
     // Vérifier l'entreprise active
     final activeEnterpriseAsync = ref.watch(activeEnterpriseProvider);
-    final accessibleEnterprisesAsync = ref.watch(userAccessibleEnterprisesProvider);
-    final accessibleModulesAsync = ref.watch(userAccessibleModulesForActiveEnterpriseProvider);
+    final accessibleEnterprisesAsync = ref.watch(
+      userAccessibleEnterprisesProvider,
+    );
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Sélectionnez un module'),
+        title: Text(
+          activeEnterpriseAsync.when(
+            data: (enterprise) => enterprise == null
+                ? 'Sélectionnez une entreprise'
+                : enterprise.name,
+            loading: () => 'Chargement...',
+            error: (_, __) => 'Sélectionnez une entreprise',
+          ),
+        ),
         centerTitle: true,
-        actions: [
-          // Sélecteur d'entreprise
-          const EnterpriseSelectorWidget(compact: true),
-        ],
       ),
       body: activeEnterpriseAsync.when(
         data: (activeEnterprise) {
@@ -47,53 +55,56 @@ class ModuleMenuScreen extends ConsumerWidget {
             return accessibleEnterprisesAsync.when(
               data: (enterprises) {
                 if (enterprises.length > 1) {
-                  // L'utilisateur doit sélectionner une entreprise
-                  return Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.business_outlined,
-                            size: 64,
+                  // Afficher la liste des entreprises accessibles
+                  return ListView.separated(
+                    padding: const EdgeInsets.all(24),
+                    itemBuilder: (context, index) {
+                      final enterprise = enterprises[index];
+                      return Card(
+                        child: ListTile(
+                          leading: Icon(
+                            Icons.business,
+                            size: 32,
                             color: theme.colorScheme.primary,
                           ),
-                          const SizedBox(height: 24),
-                          Text(
-                            'Sélectionnez une entreprise',
-                            style: textTheme.headlineSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
+                          title: Text(
+                            enterprise.name,
+                            style: textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
                             ),
-                            textAlign: TextAlign.center,
                           ),
-                          const SizedBox(height: 12),
-                          Text(
-                            'Vous avez accès à ${enterprises.length} entreprises.\n'
-                            'Veuillez sélectionner une entreprise pour continuer.',
-                            style: textTheme.bodyLarge,
-                            textAlign: TextAlign.center,
+                          subtitle: Text(enterprise.description ?? ''),
+                          trailing: const Icon(
+                            Icons.arrow_forward_ios,
+                            size: 16,
                           ),
-                          const SizedBox(height: 32),
-                          FilledButton.icon(
-                            onPressed: () {
-                              // Le sélecteur d'entreprise est dans l'AppBar
-                              NotificationService.showInfo(context, 
-                                    'Cliquez sur l\'icône entreprise en haut à droite',
-                                  );
-                            },
-                            icon: const Icon(Icons.business),
-                            label: const Text('Sélectionner une entreprise'),
-                          ),
-                        ],
-                      ),
-                    ),
+                          onTap: () async {
+                            // Sélectionner l'entreprise active
+                            final tenantNotifier = ref.read(
+                              activeEnterpriseIdProvider.notifier,
+                            );
+                            await tenantNotifier.setActiveEnterpriseId(
+                              enterprise.id,
+                            );
+
+                            // Attendre que le provider soit mis à jour
+                            await ref.read(activeEnterpriseProvider.future);
+
+                            // Rediriger directement vers le module correspondant au type de l'entreprise
+                            final route = _moduleRoutes[enterprise.type];
+                            if (route != null && mounted) {
+                              context.go(route);
+                            }
+                          },
+                        ),
+                      );
+                    },
+                    separatorBuilder: (_, __) => const SizedBox(height: 12),
+                    itemCount: enterprises.length,
                   );
                 }
                 // Si une seule entreprise, elle sera sélectionnée automatiquement
-                return const Center(
-                  child: CircularProgressIndicator(),
-                );
+                return const Center(child: CircularProgressIndicator());
               },
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (error, stack) => Center(
@@ -116,97 +127,35 @@ class ModuleMenuScreen extends ConsumerWidget {
               ),
             );
           }
-          
-          // Entreprise sélectionnée, afficher les modules accessibles
-          return accessibleModulesAsync.when(
-            data: (accessibleModuleIds) {
-              // Filtrer les modules selon les accès utilisateur
-              final accessibleModules = AdminModules.all
-                  .where((module) => accessibleModuleIds.contains(module.id))
-                  .toList();
 
-              if (accessibleModules.isEmpty) {
-                return Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.lock_outline,
-                          size: 64,
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(height: 24),
-                        Text(
-                          'Aucun module accessible',
-                          style: textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'Vous n\'avez pas accès à des modules pour cette entreprise.\n'
-                          'Contactez un administrateur pour obtenir les accès nécessaires.',
-                          style: textTheme.bodyLarge,
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  ),
-                );
+          // Entreprise sélectionnée : rediriger automatiquement vers le module correspondant
+          final route = _moduleRoutes[activeEnterprise.type];
+          if (route != null) {
+            // Utiliser WidgetsBinding pour éviter les problèmes de timing
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                context.go(route);
               }
-
-              return ListView.separated(
-                padding: const EdgeInsets.all(24),
-                itemBuilder: (context, index) {
-                  final module = accessibleModules[index];
-                  final route = _moduleRoutes[module.id];
-                  
-                  // Si pas de route, on ne montre pas le module
-                  if (route == null) return const SizedBox.shrink();
-                  
-                  return Card(
-                    child: ListTile(
-                      leading: Icon(
-                        _getIcon(module.icon),
-                        size: 32,
-                      ),
-                      title: Text(
-                        module.name,
-                        style: textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      subtitle: Text(module.description),
-                      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                      onTap: () => context.go(route),
-                    ),
-                  );
-                },
-                separatorBuilder: (_, __) => const SizedBox(height: 12),
-                itemCount: accessibleModules.length,
-              );
-            },
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (error, stack) => Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.error_outline,
-                    size: 64,
-                    color: theme.colorScheme.error,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Erreur lors du chargement des modules',
-                    style: textTheme.titleMedium,
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
+            });
+            return const Center(child: CircularProgressIndicator());
+          }
+          // Si aucun module ne correspond au type d'entreprise
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  size: 64,
+                  color: theme.colorScheme.error,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Aucun module disponible pour ce type d\'entreprise',
+                  style: textTheme.titleMedium,
+                  textAlign: TextAlign.center,
+                ),
+              ],
             ),
           );
         },
@@ -231,22 +180,5 @@ class ModuleMenuScreen extends ConsumerWidget {
         ),
       ),
     );
-  }
-
-  IconData _getIcon(String? iconName) {
-    switch (iconName) {
-      case 'water_drop':
-        return Icons.water_drop_outlined;
-      case 'local_fire_department':
-        return Icons.local_fire_department_outlined;
-      case 'account_balance_wallet':
-        return Icons.account_balance_wallet_outlined;
-      case 'home_work':
-        return Icons.home_work_outlined;
-      case 'storefront':
-        return Icons.storefront_outlined;
-      default:
-        return Icons.business_outlined;
-    }
   }
 }

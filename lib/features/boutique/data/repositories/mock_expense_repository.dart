@@ -51,8 +51,7 @@ class MockExpenseRepository implements ExpenseRepository {
   @override
   Future<List<Expense>> fetchExpenses({int limit = 50}) async {
     await Future<void>.delayed(const Duration(milliseconds: 200));
-    return _expenses.values.toList()
-      ..sort((a, b) => b.date.compareTo(a.date));
+    return _expenses.values.toList()..sort((a, b) => b.date.compareTo(a.date));
   }
 
   @override
@@ -107,11 +106,10 @@ class MockExpenseRepository implements ExpenseRepository {
   @override
   Future<List<Expense>> getDeletedExpenses() async {
     await Future<void>.delayed(const Duration(milliseconds: 200));
-    return _expenses.values
-        .where((e) => e.isDeleted)
-        .toList()
-      ..sort((a, b) => (b.deletedAt ?? DateTime(1970))
-          .compareTo(a.deletedAt ?? DateTime(1970)));
+    return _expenses.values.where((e) => e.isDeleted).toList()..sort(
+      (a, b) => (b.deletedAt ?? DateTime(1970)).compareTo(
+        a.deletedAt ?? DateTime(1970),
+      ),
+    );
   }
 }
-

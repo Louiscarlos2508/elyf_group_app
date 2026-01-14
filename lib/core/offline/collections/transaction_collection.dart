@@ -30,7 +30,8 @@ class TransactionCollection {
       ..localId = localId
       ..enterpriseId = enterpriseId
       ..agentId = map['agentId'] as String? ?? ''
-      ..transactionType = map['transactionType'] as String? ??
+      ..transactionType =
+          map['transactionType'] as String? ??
           map['type'] as String? ??
           'cashIn'
       ..amount = (map['amount'] as num?)?.toDouble() ?? 0
@@ -42,26 +43,26 @@ class TransactionCollection {
       ..transactionDate = map['transactionDate'] != null
           ? DateTime.parse(map['transactionDate'] as String)
           : (map['date'] != null
-              ? DateTime.parse(map['date'] as String)
-              : DateTime.now())
+                ? DateTime.parse(map['date'] as String)
+                : DateTime.now())
       ..localUpdatedAt = DateTime.now();
     return collection;
   }
 
   Map<String, dynamic> toMap() => {
-        'id': remoteId ?? localId,
-        'localId': localId,
-        'enterpriseId': enterpriseId,
-        'agentId': agentId,
-        'transactionType': transactionType,
-        'type': transactionType,
-        'amount': amount,
-        'commission': commission,
-        'customerName': customerName,
-        'customerPhone': customerPhone,
-        'reference': reference,
-        'notes': notes,
-        'transactionDate': transactionDate.toIso8601String(),
-        'date': transactionDate.toIso8601String(),
-      };
+    'id': remoteId ?? localId,
+    'localId': localId,
+    'enterpriseId': enterpriseId,
+    'agentId': agentId,
+    'transactionType': transactionType,
+    'type': transactionType,
+    'amount': amount,
+    'commission': commission,
+    'customerName': customerName,
+    'customerPhone': customerPhone,
+    'reference': reference,
+    'notes': notes,
+    'transactionDate': transactionDate.toIso8601String(),
+    'date': transactionDate.toIso8601String(),
+  };
 }

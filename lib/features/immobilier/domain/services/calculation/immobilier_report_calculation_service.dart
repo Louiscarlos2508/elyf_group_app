@@ -10,7 +10,8 @@ import '../dashboard_calculation_service.dart';
 class ImmobilierReportCalculationService {
   ImmobilierReportCalculationService({
     ImmobilierDashboardCalculationService? dashboardService,
-  }) : _dashboardService = dashboardService ?? ImmobilierDashboardCalculationService();
+  }) : _dashboardService =
+           dashboardService ?? ImmobilierDashboardCalculationService();
 
   final ImmobilierDashboardCalculationService _dashboardService;
 
@@ -115,4 +116,3 @@ class ImmobilierReportMetrics {
 
   bool get isProfit => netRevenue >= 0;
 }
-

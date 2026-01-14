@@ -20,7 +20,7 @@ class GazPermissionGuard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final adapter = ref.watch(gazPermissionAdapterProvider);
-    
+
     return FutureBuilder<bool>(
       future: adapter.hasPermission(permission.id),
       builder: (context, snapshot) {
@@ -54,11 +54,9 @@ class GazPermissionGuardAny extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final adapter = ref.watch(gazPermissionAdapterProvider);
-    
+
     return FutureBuilder<bool>(
-      future: adapter.hasAnyPermission(
-        permissions.map((p) => p.id).toSet(),
-      ),
+      future: adapter.hasAnyPermission(permissions.map((p) => p.id).toSet()),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const SizedBox.shrink();
@@ -90,11 +88,9 @@ class GazPermissionGuardAll extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final adapter = ref.watch(gazPermissionAdapterProvider);
-    
+
     return FutureBuilder<bool>(
-      future: adapter.hasAllPermissions(
-        permissions.map((p) => p.id).toSet(),
-      ),
+      future: adapter.hasAllPermissions(permissions.map((p) => p.id).toSet()),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const SizedBox.shrink();
@@ -109,4 +105,3 @@ class GazPermissionGuardAll extends ConsumerWidget {
     );
   }
 }
-

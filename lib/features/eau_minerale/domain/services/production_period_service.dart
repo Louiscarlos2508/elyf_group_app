@@ -4,7 +4,7 @@ import '../entities/production_period_config.dart';
 /// Service simple qui peut être remplacé par une implémentation avec stockage plus tard.
 class ProductionPeriodService {
   static const _defaultConfig = ProductionPeriodConfig(daysPerPeriod: 10);
-  
+
   ProductionPeriodConfig _config = _defaultConfig;
 
   /// Récupère la configuration actuelle des périodes.
@@ -19,4 +19,3 @@ class ProductionPeriodService {
     _config = config;
   }
 }
-

@@ -21,9 +21,9 @@ class CollectionTypeSelector extends StatelessWidget {
         Text(
           'Type de collecte',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontSize: 14,
-                color: const Color(0xFF0A0A0A),
-              ),
+            fontSize: 14,
+            color: const Color(0xFF0A0A0A),
+          ),
         ),
         const SizedBox(height: 8),
         Row(
@@ -92,4 +92,3 @@ class _TypeButton extends StatelessWidget {
     );
   }
 }
-

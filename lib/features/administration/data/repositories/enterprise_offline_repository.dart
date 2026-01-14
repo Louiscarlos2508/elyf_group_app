@@ -7,7 +7,7 @@ import '../../domain/repositories/enterprise_repository.dart';
 import 'optimized_queries.dart';
 
 /// Offline-first repository for Enterprise entities.
-/// 
+///
 /// Note: Enterprises are global (not enterprise-specific), so enterpriseId is not used.
 class EnterpriseOfflineRepository extends OfflineRepository<Enterprise>
     implements EnterpriseRepository {
@@ -146,10 +146,8 @@ class EnterpriseOfflineRepository extends OfflineRepository<Enterprise>
   }
 
   @override
-  Future<({List<Enterprise> enterprises, int totalCount})> getEnterprisesPaginated({
-    int page = 0,
-    int limit = 50,
-  }) async {
+  Future<({List<Enterprise> enterprises, int totalCount})>
+  getEnterprisesPaginated({int page = 0, int limit = 50}) async {
     try {
       // Validate and clamp pagination parameters
       final validated = OptimizedQueries.validatePagination(
@@ -260,4 +258,3 @@ class EnterpriseOfflineRepository extends OfflineRepository<Enterprise>
     }
   }
 }
-

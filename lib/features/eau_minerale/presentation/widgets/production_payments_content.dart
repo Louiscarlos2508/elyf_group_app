@@ -9,10 +9,7 @@ import 'weekly_salary_calculator.dart';
 
 /// Content widget for production payments tab.
 class ProductionPaymentsContent extends ConsumerWidget {
-  const ProductionPaymentsContent({
-    super.key,
-    required this.onNewPayment,
-  });
+  const ProductionPaymentsContent({super.key, required this.onNewPayment});
 
   final VoidCallback onNewPayment;
 
@@ -40,7 +37,7 @@ class ProductionPaymentsContent extends ConsumerWidget {
               LayoutBuilder(
                 builder: (context, constraints) {
                   final isWide = constraints.maxWidth > 600;
-                  
+
                   if (isWide) {
                     return Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -128,8 +125,9 @@ class ProductionPaymentsContent extends ConsumerWidget {
                       Icon(
                         Icons.history,
                         size: 48,
-                        color: theme.colorScheme.onSurfaceVariant
-                            .withValues(alpha: 0.5),
+                        color: theme.colorScheme.onSurfaceVariant.withValues(
+                          alpha: 0.5,
+                        ),
                       ),
                       const SizedBox(height: 16),
                       Text(
@@ -266,4 +264,3 @@ class _PaymentCard extends StatelessWidget {
     );
   }
 }
-

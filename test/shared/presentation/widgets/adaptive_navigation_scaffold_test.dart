@@ -41,7 +41,7 @@ void main() {
 
       // Sur mobile, il devrait y avoir un AppBar avec un menu drawer
       expect(find.byType(AppBar), findsOneWidget);
-      
+
       // Vérifier qu'il y a un IconButton pour ouvrir le drawer (menu hamburger)
       expect(find.byIcon(Icons.menu), findsOneWidget);
 
@@ -55,7 +55,9 @@ void main() {
       expect(find.text('Section 3'), findsOneWidget);
     });
 
-    testWidgets('displays NavigationRail on tablet screens (600px - 1023px)', (tester) async {
+    testWidgets('displays NavigationRail on tablet screens (600px - 1023px)', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: MediaQuery(
@@ -75,7 +77,9 @@ void main() {
       expect(find.byIcon(Icons.menu), findsNothing);
 
       // Vérifier que le NavigationRail n'est pas étendu (compact mode)
-      final navigationRail = tester.widget<NavigationRail>(find.byType(NavigationRail));
+      final navigationRail = tester.widget<NavigationRail>(
+        find.byType(NavigationRail),
+      );
       expect(navigationRail.extended, isFalse);
       expect(navigationRail.labelType, NavigationRailLabelType.selected);
 
@@ -83,7 +87,9 @@ void main() {
       expect(find.text('Content 1'), findsOneWidget);
     });
 
-    testWidgets('displays NavigationRail on desktop screens (>= 1024px)', (tester) async {
+    testWidgets('displays NavigationRail on desktop screens (>= 1024px)', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: MediaQuery(
@@ -106,7 +112,9 @@ void main() {
       expect(find.text('Content 1'), findsOneWidget);
     });
 
-    testWidgets('displays extended NavigationRail on wide screens (>= 800px)', (tester) async {
+    testWidgets('displays extended NavigationRail on wide screens (>= 800px)', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: MediaQuery(
@@ -120,30 +128,39 @@ void main() {
       );
 
       // Vérifier que le NavigationRail est présent et étendu
-      final navigationRail = tester.widget<NavigationRail>(find.byType(NavigationRail));
+      final navigationRail = tester.widget<NavigationRail>(
+        find.byType(NavigationRail),
+      );
       expect(navigationRail.extended, isTrue);
       expect(navigationRail.labelType, NavigationRailLabelType.none);
     });
 
-    testWidgets('displays compact NavigationRail on narrow desktop screens (800px - 1024px)', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: MediaQuery(
-            data: const MediaQueryData(size: Size(900, 1200)),
-            child: AdaptiveNavigationScaffold(
-              sections: testSections,
-              appTitle: 'Test App',
+    testWidgets(
+      'displays compact NavigationRail on narrow desktop screens (800px - 1024px)',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: MediaQuery(
+              data: const MediaQueryData(size: Size(900, 1200)),
+              child: AdaptiveNavigationScaffold(
+                sections: testSections,
+                appTitle: 'Test App',
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      // À 900px de large, c'est encore une tablette, donc compact
-      final navigationRail = tester.widget<NavigationRail>(find.byType(NavigationRail));
-      expect(navigationRail.extended, isFalse);
-    });
+        // À 900px de large, c'est encore une tablette, donc compact
+        final navigationRail = tester.widget<NavigationRail>(
+          find.byType(NavigationRail),
+        );
+        expect(navigationRail.extended, isFalse);
+      },
+    );
 
-    testWidgets('switches content when section is selected on mobile', (tester) async {
+    testWidgets('switches content when section is selected on mobile', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: MediaQuery(
@@ -173,7 +190,9 @@ void main() {
       expect(find.text('Content 2'), findsOneWidget);
     });
 
-    testWidgets('switches content when section is selected on tablet/desktop', (tester) async {
+    testWidgets('switches content when section is selected on tablet/desktop', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: MediaQuery(
@@ -203,7 +222,9 @@ void main() {
       expect(find.text('Content 2'), findsOneWidget);
     });
 
-    testWidgets('displays AppBar with correct title on all screen sizes', (tester) async {
+    testWidgets('displays AppBar with correct title on all screen sizes', (
+      tester,
+    ) async {
       const appTitle = 'Test App Title';
 
       // Test mobile
@@ -252,7 +273,9 @@ void main() {
       expect(find.text(appTitle), findsOneWidget);
     });
 
-    testWidgets('displays loading widget when isLoading is true', (tester) async {
+    testWidgets('displays loading widget when isLoading is true', (
+      tester,
+    ) async {
       const loadingWidget = Center(child: CircularProgressIndicator());
 
       await tester.pumpWidget(
@@ -330,4 +353,3 @@ void main() {
     });
   });
 }
-

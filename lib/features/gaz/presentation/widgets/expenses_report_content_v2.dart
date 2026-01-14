@@ -7,6 +7,7 @@ import '../../domain/entities/report_data.dart';
 import '../../domain/services/gaz_report_calculation_service.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../../../shared/utils/currency_formatter.dart';
+
 /// Content widget for expenses report tab - style eau_minerale.
 class GazExpensesReportContentV2 extends ConsumerWidget {
   const GazExpensesReportContentV2({
@@ -23,15 +24,14 @@ class GazExpensesReportContentV2 extends ConsumerWidget {
     final theme = Theme.of(context);
     final expensesAsync = ref.watch(gazExpensesProvider);
     final reportDataAsync = ref.watch(
-      gazReportDataProvider((
-        period: GazReportPeriod.custom,
-        startDate: startDate,
-        endDate: endDate,
-      ) as ({
-          GazReportPeriod period,
-          DateTime? startDate,
-          DateTime? endDate,
-        })),
+      gazReportDataProvider(
+        (period: GazReportPeriod.custom, startDate: startDate, endDate: endDate)
+            as ({
+              GazReportPeriod period,
+              DateTime? startDate,
+              DateTime? endDate,
+            }),
+      ),
     );
 
     final isWide = MediaQuery.of(context).size.width > 600;
@@ -50,7 +50,9 @@ class GazExpensesReportContentV2 extends ConsumerWidget {
           return expensesAsync.when(
             data: (expenses) {
               // Utiliser le service de calcul pour extraire la logique métier
-              final reportService = ref.read(gazReportCalculationServiceProvider);
+              final reportService = ref.read(
+                gazReportCalculationServiceProvider,
+              );
               final expensesAnalysis = reportService.calculateExpensesAnalysis(
                 expenses: expenses,
                 startDate: startDate,
@@ -84,7 +86,11 @@ class GazExpensesReportContentV2 extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  _buildCategoryBreakdown(theme, expensesAnalysis.byCategory, expensesAnalysis.totalAmount),
+                  _buildCategoryBreakdown(
+                    theme,
+                    expensesAnalysis.byCategory,
+                    expensesAnalysis.totalAmount,
+                  ),
 
                   const SizedBox(height: 24),
 
@@ -183,8 +189,12 @@ class GazExpensesReportContentV2 extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(4),
                 child: LinearProgressIndicator(
                   value: percentage,
-                  backgroundColor: _getCategoryColor(entry.key).withValues(alpha: 0.1),
-                  valueColor: AlwaysStoppedAnimation(_getCategoryColor(entry.key)),
+                  backgroundColor: _getCategoryColor(
+                    entry.key,
+                  ).withValues(alpha: 0.1),
+                  valueColor: AlwaysStoppedAnimation(
+                    _getCategoryColor(entry.key),
+                  ),
                   minHeight: 8,
                 ),
               ),

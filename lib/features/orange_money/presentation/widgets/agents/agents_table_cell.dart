@@ -3,7 +3,11 @@ import 'package:flutter/material.dart';
 /// Cellule de tableau pour les agents.
 class AgentsTableCell {
   /// Construit un en-tête de colonne.
-  static Widget buildHeader(String text, double width, {bool alignRight = false}) {
+  static Widget buildHeader(
+    String text,
+    double width, {
+    bool alignRight = false,
+  }) {
     return Container(
       width: width,
       padding: const EdgeInsets.only(left: 8, top: 9),
@@ -20,7 +24,12 @@ class AgentsTableCell {
   }
 
   /// Construit une cellule de tableau.
-  static Widget buildCell(dynamic content, double width, {bool alignRight = false, Color? color}) {
+  static Widget buildCell(
+    dynamic content,
+    double width, {
+    bool alignRight = false,
+    Color? color,
+  }) {
     return SizedBox(
       width: width,
       child: Padding(
@@ -42,4 +51,3 @@ class AgentsTableCell {
     );
   }
 }
-

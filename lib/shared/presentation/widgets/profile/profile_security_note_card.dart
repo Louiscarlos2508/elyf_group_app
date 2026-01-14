@@ -12,17 +12,11 @@ class ProfileSecurityNoteCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.blue.shade50,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Colors.blue.shade200,
-        ),
+        border: Border.all(color: Colors.blue.shade200),
       ),
       child: Row(
         children: [
-          Icon(
-            Icons.info_outline,
-            color: Colors.blue.shade700,
-            size: 20,
-          ),
+          Icon(Icons.info_outline, color: Colors.blue.shade700, size: 20),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
@@ -37,4 +31,3 @@ class ProfileSecurityNoteCard extends StatelessWidget {
     );
   }
 }
-

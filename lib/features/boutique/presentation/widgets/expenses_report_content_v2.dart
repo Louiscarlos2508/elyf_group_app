@@ -164,9 +164,17 @@ class ExpensesReportContentV2 extends ConsumerWidget {
         children: [
           _buildStatRow(theme, 'Nombre de dépenses', '${data.expensesCount}'),
           const Divider(),
-          _buildStatRow(theme, 'Dépense moyenne', CurrencyFormatter.formatFCFA(data.averageExpenseAmount)),
+          _buildStatRow(
+            theme,
+            'Dépense moyenne',
+            CurrencyFormatter.formatFCFA(data.averageExpenseAmount),
+          ),
           const Divider(),
-          _buildStatRow(theme, 'Total', CurrencyFormatter.formatFCFA(data.totalAmount)),
+          _buildStatRow(
+            theme,
+            'Total',
+            CurrencyFormatter.formatFCFA(data.totalAmount),
+          ),
         ],
       ),
     );

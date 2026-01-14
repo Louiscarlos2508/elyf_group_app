@@ -8,7 +8,7 @@ import 'machine_dialogs.dart';
 import 'session_dialogs.dart';
 
 /// Dialogs pour les actions de suivi de production.
-/// 
+///
 /// Cette classe délègue aux classes spécialisées :
 /// - [MachineDialogs] pour les dialogs liés aux machines
 /// - [BobineDialogs] pour les dialogs liés aux bobines
@@ -85,4 +85,3 @@ class TrackingDialogs {
     SessionDialogs.showResumeDialog(context, ref, session);
   }
 }
-

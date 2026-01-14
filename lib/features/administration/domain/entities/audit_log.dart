@@ -1,5 +1,5 @@
 /// Audit log entry for tracking changes in the administration module.
-/// 
+///
 /// Records who, what, when, and why for all administrative actions.
 class AuditLog {
   const AuditLog({
@@ -106,4 +106,3 @@ enum AuditAction {
   roleChange,
   unknown,
 }
-

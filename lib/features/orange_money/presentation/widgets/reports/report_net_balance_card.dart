@@ -4,10 +4,7 @@ import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 
 /// Net balance card for reports screen.
 class ReportNetBalanceCard extends StatelessWidget {
-  const ReportNetBalanceCard({
-    super.key,
-    required this.stats,
-  });
+  const ReportNetBalanceCard({super.key, required this.stats});
 
   final Map<String, dynamic> stats;
 
@@ -21,10 +18,7 @@ class ReportNetBalanceCard extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(25.219, 25.219, 1.219, 1.219),
       decoration: BoxDecoration(
         color: const Color(0xFFF0FDF4),
-        border: Border.all(
-          color: const Color(0xFFB9F8CF),
-          width: 1.219,
-        ),
+        border: Border.all(color: const Color(0xFFB9F8CF), width: 1.219),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Center(
@@ -61,6 +55,4 @@ class ReportNetBalanceCard extends StatelessWidget {
       ),
     );
   }
-
 }
-

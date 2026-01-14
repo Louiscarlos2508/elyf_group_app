@@ -18,8 +18,9 @@ final connectivityServiceProvider = Provider<ConnectivityService>((ref) {
 });
 
 /// Provider for the current connectivity status.
-final connectivityStatusProvider =
-    StreamProvider<ConnectivityStatus>((ref) async* {
+final connectivityStatusProvider = StreamProvider<ConnectivityStatus>((
+  ref,
+) async* {
   final service = ref.watch(connectivityServiceProvider);
   yield service.currentStatus;
   yield* service.statusStream;
@@ -28,10 +29,7 @@ final connectivityStatusProvider =
 /// Provider for whether the device is online.
 final isOnlineProvider = Provider<bool>((ref) {
   final status = ref.watch(connectivityStatusProvider);
-  return status.maybeWhen(
-    data: (s) => s.isOnline,
-    orElse: () => false,
-  );
+  return status.maybeWhen(data: (s) => s.isOnline, orElse: () => false);
 });
 
 /// Provider for the sync manager (stub).
@@ -84,15 +82,16 @@ class OfflineModeNotifier extends Notifier<bool> {
 }
 
 /// Provider for offline mode state.
-final offlineModeProvider =
-    NotifierProvider<OfflineModeNotifier, bool>(OfflineModeNotifier.new);
+final offlineModeProvider = NotifierProvider<OfflineModeNotifier, bool>(
+  OfflineModeNotifier.new,
+);
 
 /// Provider for sync metadata for a specific entity (stub returns null).
 final syncMetadataProvider =
     FutureProvider.family<SyncMetadata?, (String, String)>((ref, params) async {
-  // Stub: return null (sync metadata persistence not implemented yet).
-  return null;
-});
+      // Stub: return null (sync metadata persistence not implemented yet).
+      return null;
+    });
 
 /// Actions provider for triggering sync operations.
 class SyncActionsNotifier extends Notifier<void> {
@@ -113,5 +112,6 @@ class SyncActionsNotifier extends Notifier<void> {
 }
 
 /// Provider for sync actions.
-final syncActionsProvider =
-    NotifierProvider<SyncActionsNotifier, void>(SyncActionsNotifier.new);
+final syncActionsProvider = NotifierProvider<SyncActionsNotifier, void>(
+  SyncActionsNotifier.new,
+);

@@ -85,9 +85,7 @@ class GazEnhancedKpiCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   subtitle!,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: cardColor,
-                  ),
+                  style: theme.textTheme.bodySmall?.copyWith(color: cardColor),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),

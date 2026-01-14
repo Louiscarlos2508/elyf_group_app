@@ -8,12 +8,10 @@ import '../../domain/entities/payment.dart';
 import 'payment_form_helpers.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../../../shared/utils/notification_service.dart';
+
 /// Dialog pour les actions sur un paiement (impression, PDF).
 class PaymentActionsDialog extends StatefulWidget {
-  const PaymentActionsDialog({
-    super.key,
-    required this.payment,
-  });
+  const PaymentActionsDialog({super.key, required this.payment});
 
   final Payment payment;
 
@@ -49,9 +47,13 @@ class _PaymentActionsDialogState extends State<PaymentActionsDialog> {
       final tenant = contract?.tenant;
 
       final receiptNumber = widget.payment.receiptNumber ?? widget.payment.id;
-      final paymentDate = PaymentFormHelpers.formatDate(widget.payment.paymentDate);
+      final paymentDate = PaymentFormHelpers.formatDate(
+        widget.payment.paymentDate,
+      );
       final amount = PaymentFormHelpers.formatCurrency(widget.payment.amount);
-      final paymentMethod = PaymentFormHelpers.getMethodLabel(widget.payment.paymentMethod);
+      final paymentMethod = PaymentFormHelpers.getMethodLabel(
+        widget.payment.paymentMethod,
+      );
       final tenantName = tenant?.fullName ?? 'N/A';
       final propertyAddress = property != null
           ? '${property.address}, ${property.city}'
@@ -71,22 +73,26 @@ class _PaymentActionsDialogState extends State<PaymentActionsDialog> {
         notes: widget.payment.notes,
       );
 
-      final success = await SunmiV3Service.instance.printPaymentReceipt(content);
+      final success = await SunmiV3Service.instance.printPaymentReceipt(
+        content,
+      );
       if (mounted) {
         Navigator.of(context).pop();
-        if (success ) {
-        NotificationService.showSuccess(context, 
-              success
-                  ? 'Reçu imprimé avec succès'
-                  : 'Erreur lors de l\'impression',
-            );
-      } else {
-        NotificationService.showError(context, 
-              success
-                  ? 'Reçu imprimé avec succès'
-                  : 'Erreur lors de l\'impression',
-            );
-      }
+        if (success) {
+          NotificationService.showSuccess(
+            context,
+            success
+                ? 'Reçu imprimé avec succès'
+                : 'Erreur lors de l\'impression',
+          );
+        } else {
+          NotificationService.showError(
+            context,
+            success
+                ? 'Reçu imprimé avec succès'
+                : 'Erreur lors de l\'impression',
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -120,7 +126,10 @@ class _PaymentActionsDialogState extends State<PaymentActionsDialog> {
     } catch (e) {
       if (mounted) {
         Navigator.of(context).pop();
-        NotificationService.showError(context, 'Erreur lors de la génération PDF: $e');
+        NotificationService.showError(
+          context,
+          'Erreur lors de la génération PDF: $e',
+        );
       }
     } finally {
       if (mounted) {
@@ -178,4 +187,3 @@ class _PaymentActionsDialogState extends State<PaymentActionsDialog> {
     );
   }
 }
-

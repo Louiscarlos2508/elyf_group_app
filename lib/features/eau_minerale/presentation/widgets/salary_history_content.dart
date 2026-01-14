@@ -39,8 +39,9 @@ class SalaryHistoryContent extends ConsumerWidget {
                   Icon(
                     Icons.history_outlined,
                     size: 64,
-                    color: theme.colorScheme.onSurfaceVariant
-                        .withValues(alpha: 0.5),
+                    color: theme.colorScheme.onSurfaceVariant.withValues(
+                      alpha: 0.5,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   Text(
@@ -81,9 +82,9 @@ class SalaryHistoryContent extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 24),
-              ...allPayments.map((payment) => SalaryHistoryItem(
-                    payment: payment,
-                  )),
+              ...allPayments.map(
+                (payment) => SalaryHistoryItem(payment: payment),
+              ),
             ],
           ),
         );
@@ -100,27 +101,30 @@ class SalaryHistoryContent extends ConsumerWidget {
     final items = <SalaryHistoryItemData>[];
 
     for (final payment in monthlyPayments) {
-      items.add(SalaryHistoryItemData(
-        date: payment.date,
-        amount: payment.amount,
-        type: SalaryPaymentType.monthly,
-        label: payment.employeeName,
-        period: payment.period,
-      ));
+      items.add(
+        SalaryHistoryItemData(
+          date: payment.date,
+          amount: payment.amount,
+          type: SalaryPaymentType.monthly,
+          label: payment.employeeName,
+          period: payment.period,
+        ),
+      );
     }
 
     for (final payment in productionPayments) {
-      items.add(SalaryHistoryItemData(
-        date: payment.paymentDate,
-        amount: payment.totalAmount,
-        type: SalaryPaymentType.production,
-        label: 'Paiement Production',
-        period: payment.period,
-      ));
+      items.add(
+        SalaryHistoryItemData(
+          date: payment.paymentDate,
+          amount: payment.totalAmount,
+          type: SalaryPaymentType.production,
+          label: 'Paiement Production',
+          period: payment.period,
+        ),
+      );
     }
 
     items.sort((a, b) => b.date.compareTo(a.date));
     return items;
   }
 }
-

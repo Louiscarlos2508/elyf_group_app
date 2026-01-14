@@ -10,6 +10,7 @@ import 'package:open_file/open_file.dart';
 import '../../domain/entities/employee.dart';
 import '../../domain/entities/salary_payment.dart';
 import 'package:elyf_groupe_app/shared.dart';
+
 /// Dialog pour générer et afficher un reçu de paiement de salaire.
 class SalaryReceiptDialog extends StatelessWidget {
   const SalaryReceiptDialog({
@@ -63,10 +64,7 @@ class SalaryReceiptDialog extends StatelessWidget {
               pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
-                  pw.Text(
-                    'Période:',
-                    style: const pw.TextStyle(fontSize: 12),
-                  ),
+                  pw.Text('Période:', style: const pw.TextStyle(fontSize: 12)),
                   pw.Text(
                     payment.period,
                     style: pw.TextStyle(
@@ -116,14 +114,8 @@ class SalaryReceiptDialog extends StatelessWidget {
                 pw.SizedBox(height: 10),
                 pw.Divider(),
                 pw.SizedBox(height: 10),
-                pw.Text(
-                  'Notes:',
-                  style: pw.TextStyle(fontSize: 12),
-                ),
-                pw.Text(
-                  payment.notes!,
-                  style: pw.TextStyle(fontSize: 12),
-                ),
+                pw.Text('Notes:', style: pw.TextStyle(fontSize: 12)),
+                pw.Text(payment.notes!, style: pw.TextStyle(fontSize: 12)),
               ],
               pw.Spacer(),
               pw.Divider(),
@@ -149,9 +141,7 @@ class SalaryReceiptDialog extends StatelessWidget {
                         pw.Container(
                           width: 150,
                           height: 60,
-                          decoration: pw.BoxDecoration(
-                            border: pw.Border.all(),
-                          ),
+                          decoration: pw.BoxDecoration(border: pw.Border.all()),
                         ),
                     ],
                   ),
@@ -166,9 +156,7 @@ class SalaryReceiptDialog extends StatelessWidget {
                       pw.Container(
                         width: 150,
                         height: 60,
-                        decoration: pw.BoxDecoration(
-                          border: pw.Border.all(),
-                        ),
+                        decoration: pw.BoxDecoration(border: pw.Border.all()),
                       ),
                     ],
                   ),
@@ -185,10 +173,10 @@ class SalaryReceiptDialog extends StatelessWidget {
     final directory = await getApplicationDocumentsDirectory();
     final file = File('${directory.path}/receipt_${payment.id}.pdf');
     await file.writeAsBytes(bytes);
-    
+
     // Ouvrir le fichier
     await OpenFile.open(file.path);
-    
+
     if (context.mounted) {
       NotificationService.showInfo(context, 'Reçu généré: ${file.path}');
     }
@@ -223,19 +211,13 @@ class SalaryReceiptDialog extends StatelessWidget {
                   ),
                   if (employee.position != null) ...[
                     const SizedBox(height: 4),
-                    Text(
-                      employee.position!,
-                      style: theme.textTheme.bodyMedium,
-                    ),
+                    Text(employee.position!, style: theme.textTheme.bodyMedium),
                   ],
                 ],
               ),
             ),
             const SizedBox(height: 16),
-            _ReceiptRow(
-              label: 'Période',
-              value: payment.period,
-            ),
+            _ReceiptRow(label: 'Période', value: payment.period),
             _ReceiptRow(
               label: 'Date de paiement',
               value: _formatDate(payment.date),
@@ -254,10 +236,7 @@ class SalaryReceiptDialog extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 4),
-              Text(
-                payment.notes!,
-                style: theme.textTheme.bodyMedium,
-              ),
+              Text(payment.notes!, style: theme.textTheme.bodyMedium),
             ],
             if (payment.aSignature) ...[
               const SizedBox(height: 16),
@@ -279,10 +258,7 @@ class SalaryReceiptDialog extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Image.memory(
-                      payment.signature!,
-                      height: 80,
-                    ),
+                    Image.memory(payment.signature!, height: 80),
                   ],
                 ),
               ),
@@ -324,10 +300,7 @@ class _ReceiptRow extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: theme.textTheme.bodyMedium,
-          ),
+          Text(label, style: theme.textTheme.bodyMedium),
           Text(
             value,
             style: theme.textTheme.bodyMedium?.copyWith(

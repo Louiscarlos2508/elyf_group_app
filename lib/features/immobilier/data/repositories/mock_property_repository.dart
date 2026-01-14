@@ -67,12 +67,8 @@ class MockPropertyRepository implements PropertyRepository {
   }
 
   @override
-  Future<List<Property>> getPropertiesByStatus(
-    PropertyStatus status,
-  ) async {
-    return _properties.values
-        .where((p) => p.status == status)
-        .toList();
+  Future<List<Property>> getPropertiesByStatus(PropertyStatus status) async {
+    return _properties.values.where((p) => p.status == status).toList();
   }
 
   @override
@@ -132,4 +128,3 @@ class MockPropertyRepository implements PropertyRepository {
     _properties.remove(id);
   }
 }
-

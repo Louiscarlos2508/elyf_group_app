@@ -54,15 +54,12 @@ class GasController extends ChangeNotifier {
   }
 
   /// Updates the stock of a cylinder after a sale.
-  Future<void> updateCylinderStock(
-    String cylinderId,
-    int newStock,
-  ) async {
-    final cylinderIndex =
-        _cylinders.indexWhere((c) => c.id == cylinderId);
+  Future<void> updateCylinderStock(String cylinderId, int newStock) async {
+    final cylinderIndex = _cylinders.indexWhere((c) => c.id == cylinderId);
     if (cylinderIndex != -1) {
-      _cylinders[cylinderIndex] =
-          _cylinders[cylinderIndex].copyWith(stock: newStock);
+      _cylinders[cylinderIndex] = _cylinders[cylinderIndex].copyWith(
+        stock: newStock,
+      );
       await _repository.updateCylinder(_cylinders[cylinderIndex]);
       notifyListeners();
     }

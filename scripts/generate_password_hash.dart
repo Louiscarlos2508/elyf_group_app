@@ -1,13 +1,13 @@
 #!/usr/bin/env dart
 
 /// Script utilitaire pour générer le hash d'un mot de passe.
-/// 
+///
 /// Usage:
 ///   dart scripts/generate_password_hash.dart <password>
-/// 
+///
 /// Exemple:
 ///   dart scripts/generate_password_hash.dart admin123
-/// 
+///
 /// Le hash généré peut être utilisé dans le fichier .env comme valeur
 /// pour ADMIN_PASSWORD_HASH.
 
@@ -36,4 +36,3 @@ void main(List<String> args) {
   print('ADMIN_PASSWORD_HASH=$hash');
   print('');
 }
-

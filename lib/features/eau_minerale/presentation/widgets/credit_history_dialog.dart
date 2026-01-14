@@ -26,13 +26,15 @@ class CreditHistoryDialog extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final creditRepo = ref.read(creditRepositoryProvider);
-    
+
     return FutureBuilder<List<Sale>>(
       future: creditRepo.fetchCustomerCredits(customerId),
       builder: (context, salesSnapshot) {
         if (salesSnapshot.connectionState == ConnectionState.waiting) {
           return Dialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+            ),
             child: const Padding(
               padding: EdgeInsets.all(48),
               child: CircularProgressIndicator(),
@@ -42,7 +44,9 @@ class CreditHistoryDialog extends ConsumerWidget {
 
         if (salesSnapshot.hasError) {
           return Dialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+            ),
             child: Padding(
               padding: const EdgeInsets.all(24),
               child: Column(
@@ -54,10 +58,7 @@ class CreditHistoryDialog extends ConsumerWidget {
                     color: theme.colorScheme.error,
                   ),
                   const SizedBox(height: 16),
-                  Text(
-                    'Erreur',
-                    style: theme.textTheme.titleLarge,
-                  ),
+                  Text('Erreur', style: theme.textTheme.titleLarge),
                   const SizedBox(height: 8),
                   Text(
                     salesSnapshot.error.toString(),
@@ -75,8 +76,9 @@ class CreditHistoryDialog extends ConsumerWidget {
           );
         }
 
-        final creditSales = salesSnapshot.data?.where((s) => s.isCredit).toList() ?? [];
-        
+        final creditSales =
+            salesSnapshot.data?.where((s) => s.isCredit).toList() ?? [];
+
         return FutureBuilder<Map<String, List<CreditPayment>>>(
           future: Future.wait(
             creditSales.map((sale) async {
@@ -118,7 +120,9 @@ class CreditHistoryDialog extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: theme.colorScheme.primaryContainer.withValues(alpha: 0.1),
+                color: theme.colorScheme.primaryContainer.withValues(
+                  alpha: 0.1,
+                ),
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(24),
                   topRight: Radius.circular(24),
@@ -205,15 +209,20 @@ class CreditHistoryDialog extends ConsumerWidget {
                       const SizedBox(height: 16),
                       ...creditSales.map((sale) {
                         final payments = paymentsMap[sale.id] ?? [];
-                        final totalPaid = payments.fold<int>(0, (sum, p) => sum + p.amount);
-                        
+                        final totalPaid = payments.fold<int>(
+                          0,
+                          (sum, p) => sum + p.amount,
+                        );
+
                         return Container(
                           margin: const EdgeInsets.only(bottom: 16),
                           decoration: BoxDecoration(
                             color: theme.colorScheme.surfaceContainerHighest,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: theme.colorScheme.outline.withValues(alpha: 0.2),
+                              color: theme.colorScheme.outline.withValues(
+                                alpha: 0.2,
+                              ),
                             ),
                           ),
                           child: Column(
@@ -222,7 +231,8 @@ class CreditHistoryDialog extends ConsumerWidget {
                               Container(
                                 padding: const EdgeInsets.all(16),
                                 decoration: BoxDecoration(
-                                  color: theme.colorScheme.surfaceContainerHighest,
+                                  color:
+                                      theme.colorScheme.surfaceContainerHighest,
                                   borderRadius: const BorderRadius.only(
                                     topLeft: Radius.circular(12),
                                     topRight: Radius.circular(12),
@@ -233,50 +243,65 @@ class CreditHistoryDialog extends ConsumerWidget {
                                     Container(
                                       padding: const EdgeInsets.all(8),
                                       decoration: BoxDecoration(
-                                        color: theme.colorScheme.primaryContainer,
+                                        color:
+                                            theme.colorScheme.primaryContainer,
                                         borderRadius: BorderRadius.circular(8),
                                       ),
                                       child: Icon(
                                         Icons.shopping_cart,
                                         size: 20,
-                                        color: theme.colorScheme.onPrimaryContainer,
+                                        color: theme
+                                            .colorScheme
+                                            .onPrimaryContainer,
                                       ),
                                     ),
                                     const SizedBox(width: 12),
                                     Expanded(
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Text(
                                             sale.productName,
-                                            style: theme.textTheme.bodyLarge?.copyWith(
-                                              fontWeight: FontWeight.w600,
-                                            ),
+                                            style: theme.textTheme.bodyLarge
+                                                ?.copyWith(
+                                                  fontWeight: FontWeight.w600,
+                                                ),
                                           ),
                                           const SizedBox(height: 4),
                                           Text(
                                             '${_formatDate(sale.date)} • ${sale.quantity} unités',
-                                            style: theme.textTheme.bodySmall?.copyWith(
-                                              color: theme.colorScheme.onSurfaceVariant,
-                                            ),
+                                            style: theme.textTheme.bodySmall
+                                                ?.copyWith(
+                                                  color: theme
+                                                      .colorScheme
+                                                      .onSurfaceVariant,
+                                                ),
                                           ),
                                         ],
                                       ),
                                     ),
                                     Column(
-                                      crossAxisAlignment: CrossAxisAlignment.end,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.end,
                                       children: [
                                         Text(
-                                          CurrencyFormatter.formatFCFA(sale.totalPrice),
-                                          style: theme.textTheme.bodyLarge?.copyWith(
-                                            fontWeight: FontWeight.bold,
+                                          CurrencyFormatter.formatFCFA(
+                                            sale.totalPrice,
                                           ),
+                                          style: theme.textTheme.bodyLarge
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.bold,
+                                              ),
                                         ),
                                         Text(
                                           'Total',
-                                          style: theme.textTheme.labelSmall?.copyWith(
-                                            color: theme.colorScheme.onSurfaceVariant,
-                                          ),
+                                          style: theme.textTheme.labelSmall
+                                              ?.copyWith(
+                                                color: theme
+                                                    .colorScheme
+                                                    .onSurfaceVariant,
+                                              ),
                                         ),
                                       ],
                                     ),
@@ -288,7 +313,8 @@ class CreditHistoryDialog extends ConsumerWidget {
                                 padding: const EdgeInsets.all(16),
                                 color: theme.colorScheme.surface,
                                 child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceAround,
                                   children: [
                                     _buildStatItem(
                                       theme,
@@ -299,12 +325,15 @@ class CreditHistoryDialog extends ConsumerWidget {
                                     Container(
                                       width: 1,
                                       height: 40,
-                                      color: theme.colorScheme.outline.withValues(alpha: 0.2),
+                                      color: theme.colorScheme.outline
+                                          .withValues(alpha: 0.2),
                                     ),
                                     _buildStatItem(
                                       theme,
                                       'Restant',
-                                      CurrencyFormatter.formatFCFA(sale.remainingAmount),
+                                      CurrencyFormatter.formatFCFA(
+                                        sale.remainingAmount,
+                                      ),
                                       theme.colorScheme.error,
                                     ),
                                   ],
@@ -314,27 +343,37 @@ class CreditHistoryDialog extends ConsumerWidget {
                               if (payments.isNotEmpty) ...[
                                 Divider(
                                   height: 1,
-                                  color: theme.colorScheme.outline.withValues(alpha: 0.2),
+                                  color: theme.colorScheme.outline.withValues(
+                                    alpha: 0.2,
+                                  ),
                                 ),
                                 Padding(
                                   padding: const EdgeInsets.all(16),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         'Paiements (${payments.length})',
-                                        style: theme.textTheme.titleSmall?.copyWith(
-                                          fontWeight: FontWeight.w600,
-                                        ),
+                                        style: theme.textTheme.titleSmall
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w600,
+                                            ),
                                       ),
                                       const SizedBox(height: 12),
                                       ...payments.map((payment) {
                                         return Container(
-                                          margin: const EdgeInsets.only(bottom: 8),
+                                          margin: const EdgeInsets.only(
+                                            bottom: 8,
+                                          ),
                                           padding: const EdgeInsets.all(12),
                                           decoration: BoxDecoration(
-                                            color: theme.colorScheme.surfaceContainerHighest,
-                                            borderRadius: BorderRadius.circular(8),
+                                            color: theme
+                                                .colorScheme
+                                                .surfaceContainerHighest,
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
                                           ),
                                           child: Row(
                                             children: [
@@ -346,21 +385,34 @@ class CreditHistoryDialog extends ConsumerWidget {
                                               const SizedBox(width: 12),
                                               Expanded(
                                                 child: Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
                                                   children: [
                                                     Text(
-                                                      CurrencyFormatter.formatFCFA(payment.amount),
-                                                      style: theme.textTheme.bodyMedium?.copyWith(
-                                                        fontWeight: FontWeight.w600,
+                                                      CurrencyFormatter.formatFCFA(
+                                                        payment.amount,
                                                       ),
+                                                      style: theme
+                                                          .textTheme
+                                                          .bodyMedium
+                                                          ?.copyWith(
+                                                            fontWeight:
+                                                                FontWeight.w600,
+                                                          ),
                                                     ),
-                                                    if (payment.notes != null) ...[
+                                                    if (payment.notes !=
+                                                        null) ...[
                                                       const SizedBox(height: 4),
                                                       Text(
                                                         payment.notes!,
-                                                        style: theme.textTheme.bodySmall?.copyWith(
-                                                          color: theme.colorScheme.onSurfaceVariant,
-                                                        ),
+                                                        style: theme
+                                                            .textTheme
+                                                            .bodySmall
+                                                            ?.copyWith(
+                                                              color: theme
+                                                                  .colorScheme
+                                                                  .onSurfaceVariant,
+                                                            ),
                                                       ),
                                                     ],
                                                   ],
@@ -368,9 +420,12 @@ class CreditHistoryDialog extends ConsumerWidget {
                                               ),
                                               Text(
                                                 _formatDate(payment.date),
-                                                style: theme.textTheme.bodySmall?.copyWith(
-                                                  color: theme.colorScheme.onSurfaceVariant,
-                                                ),
+                                                style: theme.textTheme.bodySmall
+                                                    ?.copyWith(
+                                                      color: theme
+                                                          .colorScheme
+                                                          .onSurfaceVariant,
+                                                    ),
                                               ),
                                             ],
                                           ),
@@ -424,7 +479,12 @@ class CreditHistoryDialog extends ConsumerWidget {
     );
   }
 
-  Widget _buildStatItem(ThemeData theme, String label, String value, Color color) {
+  Widget _buildStatItem(
+    ThemeData theme,
+    String label,
+    String value,
+    Color color,
+  ) {
     return Column(
       children: [
         Text(
@@ -445,4 +505,3 @@ class CreditHistoryDialog extends ConsumerWidget {
     );
   }
 }
-

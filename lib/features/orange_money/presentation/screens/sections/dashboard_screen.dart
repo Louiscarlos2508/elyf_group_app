@@ -120,9 +120,7 @@ class DashboardScreen extends ConsumerWidget {
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) => Center(
-        child: Text('Erreur: $error'),
-      ),
+      error: (error, stack) => Center(child: Text('Erreur: $error')),
     );
   }
 
@@ -167,6 +165,4 @@ class DashboardScreen extends ConsumerWidget {
       ),
     );
   }
-
 }
-

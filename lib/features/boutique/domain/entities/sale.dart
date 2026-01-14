@@ -22,12 +22,13 @@ class Sale {
   final PaymentMethod? paymentMethod;
   final String? notes;
   final int cashAmount; // Montant payé en espèces (pour paiement mixte)
-  final int mobileMoneyAmount; // Montant payé en Mobile Money (pour paiement mixte)
+  final int
+  mobileMoneyAmount; // Montant payé en Mobile Money (pour paiement mixte)
 
   int get change => amountPaid > totalAmount ? amountPaid - totalAmount : 0;
-  
+
   /// Vérifie si la somme des paiements correspond au montant payé
-  bool get isPaymentSplitValid => 
+  bool get isPaymentSplitValid =>
       (cashAmount + mobileMoneyAmount) == amountPaid;
 }
 
@@ -53,4 +54,3 @@ enum PaymentMethod {
   mobileMoney,
   both, // Permet de payer avec les deux méthodes en même temps
 }
-

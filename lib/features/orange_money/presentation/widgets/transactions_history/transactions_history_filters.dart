@@ -24,10 +24,7 @@ class TransactionsHistoryFilters extends StatelessWidget {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(14),
-        side: const BorderSide(
-          color: Color(0xFFFFD6A7),
-          width: 1.219,
-        ),
+        side: const BorderSide(color: Color(0xFFFFD6A7), width: 1.219),
       ),
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -40,13 +37,9 @@ class TransactionsHistoryFilters extends StatelessWidget {
             // Filtres Type et Date
             Row(
               children: [
-                Expanded(
-                  child: _buildTypeFilter(),
-                ),
+                Expanded(child: _buildTypeFilter()),
                 const SizedBox(width: 12),
-                Expanded(
-                  child: _buildDateFilter(),
-                ),
+                Expanded(child: _buildDateFilter()),
               ],
             ),
           ],
@@ -74,10 +67,7 @@ class TransactionsHistoryFilters extends StatelessWidget {
           decoration: BoxDecoration(
             color: const Color(0xFFF3F3F5),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: Colors.transparent,
-              width: 1.219,
-            ),
+            border: Border.all(color: Colors.transparent, width: 1.219),
           ),
           child: TextFormField(
             controller: searchController,
@@ -94,11 +84,7 @@ class TransactionsHistoryFilters extends StatelessWidget {
               ),
               prefixIcon: const Padding(
                 padding: EdgeInsets.only(left: 12, right: 8),
-                child: Icon(
-                  Icons.search,
-                  size: 16,
-                  color: Color(0xFF717182),
-                ),
+                child: Icon(Icons.search, size: 16, color: Color(0xFF717182)),
               ),
               prefixIconConstraints: const BoxConstraints(
                 minWidth: 16,
@@ -117,11 +103,7 @@ class TransactionsHistoryFilters extends StatelessWidget {
       children: [
         Row(
           children: const [
-            Icon(
-              Icons.filter_list,
-              size: 16,
-              color: Color(0xFF0A0A0A),
-            ),
+            Icon(Icons.filter_list, size: 16, color: Color(0xFF0A0A0A)),
             SizedBox(width: 8),
             Text(
               'Type',
@@ -139,26 +121,17 @@ class TransactionsHistoryFilters extends StatelessWidget {
           decoration: BoxDecoration(
             color: const Color(0xFFF3F3F5),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: Colors.transparent,
-              width: 1.219,
-            ),
+            border: Border.all(color: Colors.transparent, width: 1.219),
           ),
           child: DropdownButtonFormField<TransactionType?>(
             initialValue: selectedTypeFilter,
             decoration: const InputDecoration(
               border: InputBorder.none,
-              contentPadding: EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 8,
-              ),
+              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             ),
             hint: const Text(
               'Tous les types',
-              style: TextStyle(
-                fontSize: 14,
-                color: Color(0xFF0A0A0A),
-              ),
+              style: TextStyle(fontSize: 14, color: Color(0xFF0A0A0A)),
             ),
             items: [
               const DropdownMenuItem<TransactionType?>(
@@ -192,11 +165,7 @@ class TransactionsHistoryFilters extends StatelessWidget {
       children: [
         Row(
           children: const [
-            Icon(
-              Icons.calendar_today,
-              size: 16,
-              color: Color(0xFF0A0A0A),
-            ),
+            Icon(Icons.calendar_today, size: 16, color: Color(0xFF0A0A0A)),
             SizedBox(width: 8),
             Text(
               'Date',
@@ -217,10 +186,7 @@ class TransactionsHistoryFilters extends StatelessWidget {
             decoration: BoxDecoration(
               color: const Color(0xFFF3F3F5),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: Colors.transparent,
-                width: 1.219,
-              ),
+              border: Border.all(color: Colors.transparent, width: 1.219),
             ),
             child: Row(
               children: [
@@ -250,4 +216,3 @@ class TransactionsHistoryFilters extends StatelessWidget {
     );
   }
 }
-

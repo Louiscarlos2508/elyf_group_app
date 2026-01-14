@@ -9,10 +9,7 @@ import '../../domain/repositories/stock_repository.dart';
 /// Mock implementation of StockRepository for development.
 /// Utilise InventoryRepository comme source unique de vérité pour les produits finis.
 class MockStockRepository implements StockRepository {
-  MockStockRepository(
-    this._inventoryRepository,
-    this._productRepository,
-  );
+  MockStockRepository(this._inventoryRepository, this._productRepository);
 
   final InventoryRepository _inventoryRepository;
   final ProductRepository _productRepository;
@@ -22,7 +19,7 @@ class MockStockRepository implements StockRepository {
   @override
   Future<int> getStock(String productId) async {
     await Future<void>.delayed(const Duration(milliseconds: 100));
-    
+
     // Pour les produits finis, utiliser InventoryRepository
     try {
       final product = await _productRepository.getProduct(productId);
@@ -39,7 +36,7 @@ class MockStockRepository implements StockRepository {
     } catch (_) {
       // Si le produit n'est pas un produit fini ou n'existe pas, retourner 0
     }
-    
+
     return 0;
   }
 
@@ -49,7 +46,7 @@ class MockStockRepository implements StockRepository {
     if (quantity < 0) {
       throw Exception('Le stock ne peut pas être négatif');
     }
-    
+
     // Pour les produits finis, mettre à jour InventoryRepository
     try {
       final product = await _productRepository.getProduct(productId);
@@ -61,7 +58,9 @@ class MockStockRepository implements StockRepository {
             (item) =>
                 item.type == StockType.finishedGoods &&
                 (item.name.toLowerCase().contains('pack') ||
-                    item.name.toLowerCase().contains(product.name.toLowerCase())),
+                    item.name.toLowerCase().contains(
+                      product.name.toLowerCase(),
+                    )),
           );
         } catch (_) {
           // Créer un nouveau StockItem si aucun n'existe
@@ -74,7 +73,7 @@ class MockStockRepository implements StockRepository {
             updatedAt: DateTime.now(),
           );
         }
-        
+
         final updatedItem = StockItem(
           id: packItem.id,
           name: packItem.name,
@@ -116,13 +115,18 @@ class MockStockRepository implements StockRepository {
 
     if (startDate != null) {
       movements = movements
-          .where((m) => m.date.isAfter(startDate) || m.date.isAtSameMomentAs(startDate))
+          .where(
+            (m) =>
+                m.date.isAfter(startDate) || m.date.isAtSameMomentAs(startDate),
+          )
           .toList();
     }
 
     if (endDate != null) {
       movements = movements
-          .where((m) => m.date.isBefore(endDate) || m.date.isAtSameMomentAs(endDate))
+          .where(
+            (m) => m.date.isBefore(endDate) || m.date.isAtSameMomentAs(endDate),
+          )
           .toList();
     }
 
@@ -138,4 +142,3 @@ class MockStockRepository implements StockRepository {
     return [];
   }
 }
-

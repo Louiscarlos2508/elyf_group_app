@@ -5,11 +5,7 @@ import 'property_card_helpers.dart';
 
 /// Carte réutilisable pour afficher une propriété.
 class PropertyCard extends StatelessWidget {
-  const PropertyCard({
-    super.key,
-    required this.property,
-    this.onTap,
-  });
+  const PropertyCard({super.key, required this.property, this.onTap});
 
   final Property property;
   final VoidCallback? onTap;
@@ -21,9 +17,7 @@ class PropertyCard extends StatelessWidget {
     return Card(
       elevation: 2,
       margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
@@ -37,13 +31,16 @@ class PropertyCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: PropertyCardHelpers.getStatusColor(property.status)
-                          .withValues(alpha: 0.1),
+                      color: PropertyCardHelpers.getStatusColor(
+                        property.status,
+                      ).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
                       PropertyCardHelpers.getTypeIcon(property.propertyType),
-                      color: PropertyCardHelpers.getStatusColor(property.status),
+                      color: PropertyCardHelpers.getStatusColor(
+                        property.status,
+                      ),
                       size: 24,
                     ),
                   ),
@@ -76,12 +73,14 @@ class PropertyCard extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
-                        color: PropertyCardHelpers.getStatusColor(property.status),
+                        color: PropertyCardHelpers.getStatusColor(
+                          property.status,
+                        ),
                       ),
                     ),
-                    backgroundColor: PropertyCardHelpers
-                        .getStatusColor(property.status)
-                        .withValues(alpha: 0.1),
+                    backgroundColor: PropertyCardHelpers.getStatusColor(
+                      property.status,
+                    ).withValues(alpha: 0.1),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 8,
                       vertical: 2,
@@ -105,11 +104,14 @@ class PropertyCard extends StatelessWidget {
                   const SizedBox(width: 8),
                   _InfoChip(
                     icon: Icons.category_outlined,
-                    label: PropertyCardHelpers.getTypeLabel(property.propertyType),
+                    label: PropertyCardHelpers.getTypeLabel(
+                      property.propertyType,
+                    ),
                   ),
                 ],
               ),
-              if (property.amenities != null && property.amenities!.isNotEmpty) ...[
+              if (property.amenities != null &&
+                  property.amenities!.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 Wrap(
                   spacing: 6,
@@ -164,10 +166,7 @@ class PropertyCard extends StatelessWidget {
 }
 
 class _InfoChip extends StatelessWidget {
-  const _InfoChip({
-    required this.icon,
-    required this.label,
-  });
+  const _InfoChip({required this.icon, required this.label});
 
   final IconData icon;
   final String label;
@@ -190,4 +189,3 @@ class _InfoChip extends StatelessWidget {
     );
   }
 }
-

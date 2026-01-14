@@ -19,7 +19,7 @@ class SalesTableMobile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return ListView.separated(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -64,10 +64,7 @@ class SalesTableMobile extends StatelessWidget {
               const SizedBox(height: 8),
               Row(
                 children: [
-                  Text(
-                    'Qté: ',
-                    style: theme.textTheme.bodySmall,
-                  ),
+                  Text('Qté: ', style: theme.textTheme.bodySmall),
                   Text(
                     sale.quantity.toString(),
                     style: theme.textTheme.bodyMedium?.copyWith(
@@ -75,10 +72,7 @@ class SalesTableMobile extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 16),
-                  Text(
-                    'Client: ',
-                    style: theme.textTheme.bodySmall,
-                  ),
+                  Text('Client: ', style: theme.textTheme.bodySmall),
                   Expanded(
                     child: Text(
                       sale.customerName,
@@ -142,4 +136,3 @@ class SalesTableMobile extends StatelessWidget {
     );
   }
 }
-

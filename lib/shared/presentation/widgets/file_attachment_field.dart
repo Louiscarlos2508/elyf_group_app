@@ -64,9 +64,9 @@ class FileAttachmentField extends StatelessWidget {
         if (attachedFiles.isEmpty)
           Text(
             'Aucun fichier joint',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.grey[600],
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
           )
         else
           Wrap(
@@ -90,9 +90,9 @@ class FileAttachmentField extends StatelessWidget {
             padding: const EdgeInsets.only(top: 8),
             child: Text(
               '${attachedFiles.length} fichier(s) joint(s)',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.grey[600],
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
             ),
           ),
       ],
@@ -168,4 +168,3 @@ class _FilePickerDialog extends StatelessWidget {
     );
   }
 }
-

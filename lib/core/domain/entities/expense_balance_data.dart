@@ -16,4 +16,3 @@ class ExpenseBalanceData {
   final DateTime date;
   final String? description;
 }
-

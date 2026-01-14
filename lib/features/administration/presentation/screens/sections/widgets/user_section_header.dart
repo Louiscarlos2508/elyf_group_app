@@ -4,20 +4,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../application/providers.dart' show usersProvider;
 
 /// Header widget for user section.
-/// 
+///
 /// Extracted for better code organization.
 class UserSectionHeader extends ConsumerWidget {
-  const UserSectionHeader({
-    super.key,
-    required this.onCreateUser,
-  });
+  const UserSectionHeader({super.key, required this.onCreateUser});
 
   final VoidCallback onCreateUser;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    
+
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -67,4 +64,3 @@ class UserSectionHeader extends ConsumerWidget {
     );
   }
 }
-

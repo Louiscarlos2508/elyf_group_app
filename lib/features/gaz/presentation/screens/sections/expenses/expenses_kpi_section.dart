@@ -77,4 +77,3 @@ class ExpensesKpiSection extends StatelessWidget {
     );
   }
 }
-

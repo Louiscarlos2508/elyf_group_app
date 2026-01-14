@@ -2,13 +2,13 @@ import '../../../domain/entities/user.dart';
 import 'package:elyf_groupe_app/core/auth/entities/enterprise_module_user.dart';
 
 /// Service for filtering users.
-/// 
+///
 /// Extracts business logic from UI widgets to make it testable and reusable.
 class UserFilterService {
   UserFilterService();
 
   /// Filters users by search query.
-  /// 
+  ///
   /// Searches in firstName, lastName, username, and email.
   List<User> filterBySearch({
     required List<User> users,
@@ -28,7 +28,7 @@ class UserFilterService {
   }
 
   /// Filters users by enterprise and module assignments.
-  /// 
+  ///
   /// Returns only users that have assignments matching the filters.
   List<User> filterByEnterpriseAndModule({
     required List<User> users,
@@ -55,23 +55,27 @@ class UserFilterService {
   }
 
   /// Filters and sorts users.
-  /// 
+  ///
   /// Combines search and enterprise/module filtering.
+  /// Excludes the current logged-in user from the results.
   List<User> filterAndSort({
     required List<User> users,
     required List<EnterpriseModuleUser> assignments,
     String? searchQuery,
     String? enterpriseId,
     String? moduleId,
+    String? excludeUserId,
   }) {
     var filtered = users;
 
+    // Exclude current user
+    if (excludeUserId != null && excludeUserId.isNotEmpty) {
+      filtered = filtered.where((user) => user.id != excludeUserId).toList();
+    }
+
     // Apply search filter
     if (searchQuery != null && searchQuery.isNotEmpty) {
-      filtered = filterBySearch(
-        users: filtered,
-        searchQuery: searchQuery,
-      );
+      filtered = filterBySearch(users: filtered, searchQuery: searchQuery);
     }
 
     // Apply enterprise/module filter
@@ -88,4 +92,3 @@ class UserFilterService {
     return filtered;
   }
 }
-

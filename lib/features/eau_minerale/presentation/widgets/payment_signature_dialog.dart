@@ -4,6 +4,7 @@ import 'package:flutter/rendering.dart';
 import 'dart:ui' as ui;
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../../../shared/utils/notification_service.dart';
+
 /// Dialog pour enregistrer une signature numérique après paiement.
 class PaymentSignatureDialog extends StatefulWidget {
   const PaymentSignatureDialog({
@@ -24,8 +25,7 @@ class PaymentSignatureDialog extends StatefulWidget {
   final ValueChanged<Uint8List> onPaid;
 
   @override
-  State<PaymentSignatureDialog> createState() =>
-      _PaymentSignatureDialogState();
+  State<PaymentSignatureDialog> createState() => _PaymentSignatureDialogState();
 }
 
 class _PaymentSignatureDialogState extends State<PaymentSignatureDialog> {
@@ -49,11 +49,13 @@ class _PaymentSignatureDialogState extends State<PaymentSignatureDialog> {
 
   Future<Uint8List?> _captureSignature() async {
     try {
-      final RenderRepaintBoundary boundary = _signatureKey.currentContext!
-          .findRenderObject() as RenderRepaintBoundary;
+      final RenderRepaintBoundary boundary =
+          _signatureKey.currentContext!.findRenderObject()
+              as RenderRepaintBoundary;
       final ui.Image image = await boundary.toImage(pixelRatio: 3.0);
-      final ByteData? byteData =
-          await image.toByteData(format: ui.ImageByteFormat.png);
+      final ByteData? byteData = await image.toByteData(
+        format: ui.ImageByteFormat.png,
+      );
       return byteData?.buffer.asUint8List();
     } catch (e) {
       return null;
@@ -62,7 +64,10 @@ class _PaymentSignatureDialogState extends State<PaymentSignatureDialog> {
 
   Future<void> _submit() async {
     if (!_hasSignature) {
-      NotificationService.showError(context, 'Veuillez signer avant de valider');
+      NotificationService.showError(
+        context,
+        'Veuillez signer avant de valider',
+      );
       return;
     }
 
@@ -71,14 +76,17 @@ class _PaymentSignatureDialogState extends State<PaymentSignatureDialog> {
     if (signature != null) {
       widget.onPaid(signature);
     } else {
-      NotificationService.showError(context, 'Erreur lors de la capture de la signature');
+      NotificationService.showError(
+        context,
+        'Erreur lors de la capture de la signature',
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       title: const Text('Signature de paiement'),
@@ -124,10 +132,7 @@ class _PaymentSignatureDialogState extends State<PaymentSignatureDialog> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          'Période:',
-                          style: theme.textTheme.bodyMedium,
-                        ),
+                        Text('Période:', style: theme.textTheme.bodyMedium),
                         Text(
                           widget.period!,
                           style: theme.textTheme.bodyMedium?.copyWith(
@@ -140,10 +145,7 @@ class _PaymentSignatureDialogState extends State<PaymentSignatureDialog> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'Montant:',
-                        style: theme.textTheme.bodyMedium,
-                      ),
+                      Text('Montant:', style: theme.textTheme.bodyMedium),
                       Text(
                         '${widget.amount} CFA',
                         style: theme.textTheme.titleMedium?.copyWith(
@@ -179,7 +181,9 @@ class _PaymentSignatureDialogState extends State<PaymentSignatureDialog> {
                   onPanUpdate: (details) {
                     final RenderBox box =
                         context.findRenderObject() as RenderBox;
-                    final localPosition = box.globalToLocal(details.globalPosition);
+                    final localPosition = box.globalToLocal(
+                      details.globalPosition,
+                    );
                     _addPoint(localPosition);
                   },
                   onPanEnd: (details) {

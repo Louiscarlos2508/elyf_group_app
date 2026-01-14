@@ -104,13 +104,11 @@ class _CylinderCardWithStock extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final stocksAsync = ref.watch(
-      cylinderStocksProvider(
-        (
-          enterpriseId: enterpriseId,
-          status: CylinderStatus.full,
-          siteId: null,
-        ),
-      ),
+      cylinderStocksProvider((
+        enterpriseId: enterpriseId,
+        status: CylinderStatus.full,
+        siteId: null,
+      )),
     );
 
     return stocksAsync.when(
@@ -119,11 +117,7 @@ class _CylinderCardWithStock extends ConsumerWidget {
             .where((s) => s.weight == cylinder.weight)
             .fold<int>(0, (sum, s) => sum + s.quantity);
 
-        return CylinderSaleCard(
-          cylinder: cylinder,
-          stock: stock,
-          onTap: onTap,
-        );
+        return CylinderSaleCard(cylinder: cylinder, stock: stock, onTap: onTap);
       },
       loading: () => Container(
         width: 325,
@@ -154,4 +148,3 @@ class _CylinderCardWithStock extends ConsumerWidget {
     );
   }
 }
-

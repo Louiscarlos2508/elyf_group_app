@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:elyf_groupe_app/features/administration/application/providers.dart' show permissionServiceProvider;
+import 'package:elyf_groupe_app/features/administration/application/providers.dart'
+    show permissionServiceProvider;
 import '../../../../core/permissions/services/permission_service.dart';
 import '../../../../core/auth/providers.dart' as auth;
 import '../../domain/adapters/gaz_permission_adapter.dart';
@@ -13,15 +14,13 @@ final centralizedPermissionServiceProvider = Provider<PermissionService>(
 
 /// Provider for current user ID.
 /// Uses the authenticated user ID from auth service, or falls back to default user for development.
-final currentUserIdProvider = Provider<String>(
-  (ref) {
-    final authUserId = ref.watch(auth.currentUserIdProvider);
-    if (authUserId != null && authUserId.isNotEmpty) {
-      return authUserId;
-    }
-    return 'default_user_gaz';
-  },
-);
+final currentUserIdProvider = Provider<String>((ref) {
+  final authUserId = ref.watch(auth.currentUserIdProvider);
+  if (authUserId != null && authUserId.isNotEmpty) {
+    return authUserId;
+  }
+  return 'default_user_gaz';
+});
 
 /// Provider for gaz permission adapter.
 final gazPermissionAdapterProvider = Provider<GazPermissionAdapter>(
@@ -30,4 +29,3 @@ final gazPermissionAdapterProvider = Provider<GazPermissionAdapter>(
     userId: ref.watch(currentUserIdProvider),
   ),
 );
-

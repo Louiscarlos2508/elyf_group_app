@@ -54,10 +54,8 @@ class EmployeePaymentCard extends ConsumerWidget {
   void _showReceipt(BuildContext context, SalaryPayment payment) {
     showDialog(
       context: context,
-      builder: (context) => SalaryReceiptDialog(
-        employee: employee,
-        payment: payment,
-      ),
+      builder: (context) =>
+          SalaryReceiptDialog(employee: employee, payment: payment),
     );
   }
 
@@ -66,8 +64,9 @@ class EmployeePaymentCard extends ConsumerWidget {
     final theme = Theme.of(context);
     final currentMonth = DateTime.now().month;
     final currentYear = DateTime.now().year;
-    final hasCurrentMonthPayment = monthlyPayments.any((p) =>
-        p.date.month == currentMonth && p.date.year == currentYear);
+    final hasCurrentMonthPayment = monthlyPayments.any(
+      (p) => p.date.month == currentMonth && p.date.year == currentYear,
+    );
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -80,9 +79,7 @@ class EmployeePaymentCard extends ConsumerWidget {
               children: [
                 Row(
                   children: [
-                    CircleAvatar(
-                      child: Text(employee.name[0].toUpperCase()),
-                    ),
+                    CircleAvatar(child: Text(employee.name[0].toUpperCase())),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
@@ -183,11 +180,13 @@ class EmployeePaymentCard extends ConsumerWidget {
                   const SizedBox(height: 8),
                   ...monthlyPayments
                       .take(3)
-                      .map((payment) => _PaymentHistoryItem(
-                            payment: payment,
-                            onTap: () => _showReceipt(context, payment),
-                            theme: theme,
-                          )),
+                      .map(
+                        (payment) => _PaymentHistoryItem(
+                          payment: payment,
+                          onTap: () => _showReceipt(context, payment),
+                          theme: theme,
+                        ),
+                      ),
                 ],
               ),
             ),
@@ -238,7 +237,8 @@ class _PaymentHistoryItem extends StatelessWidget {
                             fontWeight: FontWeight.w500,
                           ),
                         ),
-                        if (payment.notes != null && payment.notes!.isNotEmpty) ...[
+                        if (payment.notes != null &&
+                            payment.notes!.isNotEmpty) ...[
                           const SizedBox(height: 2),
                           Text(
                             payment.notes!,
@@ -281,4 +281,3 @@ class _PaymentHistoryItem extends StatelessWidget {
     );
   }
 }
-

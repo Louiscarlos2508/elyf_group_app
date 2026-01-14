@@ -2,10 +2,7 @@ import 'package:flutter/material.dart';
 
 /// Empty state widget when no tours are in progress - matches Figma design.
 class ToursEmptyState extends StatelessWidget {
-  const ToursEmptyState({
-    super.key,
-    required this.onNewTourPressed,
-  });
+  const ToursEmptyState({super.key, required this.onNewTourPressed});
 
   final VoidCallback onNewTourPressed;
 
@@ -47,10 +44,7 @@ class ToursEmptyState extends StatelessWidget {
             style: FilledButton.styleFrom(
               backgroundColor: const Color(0xFF030213),
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 10,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             ),
           ),
         ],
@@ -58,4 +52,3 @@ class ToursEmptyState extends StatelessWidget {
     );
   }
 }
-

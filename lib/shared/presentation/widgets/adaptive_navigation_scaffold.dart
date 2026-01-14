@@ -42,6 +42,7 @@ class AdaptiveNavigationScaffold extends StatefulWidget {
     this.loadingWidget,
     this.enterpriseId,
     this.moduleId,
+    this.appBarActions,
   });
 
   final List<NavigationSection> sections;
@@ -52,6 +53,7 @@ class AdaptiveNavigationScaffold extends StatefulWidget {
   final Widget? loadingWidget;
   final String? enterpriseId;
   final String? moduleId;
+  final List<Widget>? appBarActions;
 
   @override
   State<AdaptiveNavigationScaffold> createState() =>
@@ -79,7 +81,8 @@ class _AdaptiveNavigationScaffoldState
       _selectedIndex = widget.selectedIndex;
       // Construire le widget si pas encore en cache
       if (!_cachedWidgets.containsKey(_selectedIndex)) {
-        _cachedWidgets[_selectedIndex] = widget.sections[_selectedIndex].builder();
+        _cachedWidgets[_selectedIndex] = widget.sections[_selectedIndex]
+            .builder();
       }
     }
   }
@@ -128,14 +131,15 @@ class _AdaptiveNavigationScaffoldState
       appBar: AppBar(
         title: Text(widget.appTitle),
         centerTitle: true,
+        actions: widget.appBarActions,
       ),
       resizeToAvoidBottomInset: false,
       body: LayoutBuilder(
         builder: (context, constraints) {
-          final maxHeight = constraints.maxHeight.isFinite 
-              ? constraints.maxHeight 
+          final maxHeight = constraints.maxHeight.isFinite
+              ? constraints.maxHeight
               : MediaQuery.of(context).size.height;
-          
+
           return Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -162,9 +166,7 @@ class _AdaptiveNavigationScaffoldState
                 ),
               ),
               const VerticalDivider(thickness: 1, width: 1),
-              Expanded(
-                child: _getWidgetForIndex(_selectedIndex),
-              ),
+              Expanded(child: _getWidgetForIndex(_selectedIndex)),
             ],
           );
         },
@@ -174,19 +176,20 @@ class _AdaptiveNavigationScaffoldState
 
   Widget _buildDesktopScreen() {
     final isExtended = ResponsiveHelper.isExtendedScreen(context);
-    
+
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.appTitle),
         centerTitle: true,
+        actions: widget.appBarActions,
       ),
       resizeToAvoidBottomInset: false,
       body: LayoutBuilder(
         builder: (context, constraints) {
-          final maxHeight = constraints.maxHeight.isFinite 
-              ? constraints.maxHeight 
+          final maxHeight = constraints.maxHeight.isFinite
+              ? constraints.maxHeight
               : MediaQuery.of(context).size.height;
-          
+
           return Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -216,9 +219,7 @@ class _AdaptiveNavigationScaffoldState
                 ),
               ),
               const VerticalDivider(thickness: 1, width: 1),
-              Expanded(
-                child: _getWidgetForIndex(_selectedIndex),
-              ),
+              Expanded(child: _getWidgetForIndex(_selectedIndex)),
             ],
           );
         },
@@ -229,14 +230,21 @@ class _AdaptiveNavigationScaffoldState
   Widget _buildMobileScreen() {
     final theme = Theme.of(context);
     final sectionsCount = widget.sections.length;
-    
-    // Si plus de 5 sections, utiliser un drawer, sinon NavigationBar
-    if (sectionsCount > 5) {
+
+    // Si plus de 4 sections, utiliser un drawer pour une meilleure ergonomie
+    // Le drawer offre plus d'espace et une meilleure lisibilité sur petits écrans
+    if (sectionsCount > 4) {
       return _buildMobileWithDrawer(theme);
     }
-    
+
+    // Pour 4 sections ou moins, utiliser NavigationBar en bas
     return Scaffold(
       key: _scaffoldKey,
+      appBar: AppBar(
+        title: Text(widget.appTitle),
+        centerTitle: true,
+        actions: widget.appBarActions,
+      ),
       body: _getWidgetForIndex(_selectedIndex),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
@@ -282,6 +290,7 @@ class _AdaptiveNavigationScaffoldState
           onPressed: () => _scaffoldKey.currentState?.openDrawer(),
           tooltip: 'Menu',
         ),
+        actions: widget.appBarActions,
       ),
       drawer: _buildDrawer(theme),
       body: _getWidgetForIndex(_selectedIndex),
@@ -341,7 +350,7 @@ class _AdaptiveNavigationScaffoldState
                 itemBuilder: (context, index) {
                   final section = widget.sections[index];
                   final isSelected = _selectedIndex == index;
-                  
+
                   return Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 12,
@@ -407,4 +416,3 @@ class _AdaptiveNavigationScaffoldState
     );
   }
 }
-

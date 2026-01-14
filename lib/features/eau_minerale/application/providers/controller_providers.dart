@@ -33,12 +33,16 @@ final machineControllerProvider = Provider<MachineController>(
   (ref) => MachineController(ref.watch(machineRepositoryProvider)),
 );
 
-final bobineStockQuantityControllerProvider = Provider<BobineStockQuantityController>(
-  (ref) => BobineStockQuantityController(ref.watch(bobineStockQuantityRepositoryProvider)),
-);
+final bobineStockQuantityControllerProvider =
+    Provider<BobineStockQuantityController>(
+      (ref) => BobineStockQuantityController(
+        ref.watch(bobineStockQuantityRepositoryProvider),
+      ),
+    );
 
 final packagingStockControllerProvider = Provider<PackagingStockController>(
-  (ref) => PackagingStockController(ref.watch(packagingStockRepositoryProvider)),
+  (ref) =>
+      PackagingStockController(ref.watch(packagingStockRepositoryProvider)),
 );
 
 final stockControllerProvider = Provider<StockController>(
@@ -52,12 +56,12 @@ final stockControllerProvider = Provider<StockController>(
 
 final productionSessionControllerProvider =
     Provider<ProductionSessionController>(
-  (ref) => ProductionSessionController(
-    ref.watch(productionSessionRepositoryProvider),
-    ref.watch(stockControllerProvider),
-    ref.watch(bobineStockQuantityRepositoryProvider),
-  ),
-);
+      (ref) => ProductionSessionController(
+        ref.watch(productionSessionRepositoryProvider),
+        ref.watch(stockControllerProvider),
+        ref.watch(bobineStockQuantityRepositoryProvider),
+      ),
+    );
 
 final salesControllerProvider = Provider<SalesController>(
   (ref) => SalesController(
@@ -81,4 +85,3 @@ final salaryControllerProvider = Provider<SalaryController>(
 final reportControllerProvider = Provider<ReportController>(
   (ref) => ReportController(ref.watch(reportRepositoryProvider)),
 );
-

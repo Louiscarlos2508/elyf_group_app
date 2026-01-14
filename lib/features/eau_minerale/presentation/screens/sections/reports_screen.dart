@@ -39,10 +39,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     _endDate = DateTime(now.year, now.month + 1, 0);
   }
 
-  Future<void> _selectDate(
-    BuildContext context,
-    bool isStartDate,
-  ) async {
+  Future<void> _selectDate(BuildContext context, bool isStartDate) async {
     final picked = await showDatePicker(
       context: context,
       initialDate: isStartDate ? _startDate : _endDate,
@@ -66,16 +63,12 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (context) => const Center(
-          child: CircularProgressIndicator(),
-        ),
+        builder: (context) => const Center(child: CircularProgressIndicator()),
       );
 
       // Récupérer les données du rapport
       final period = ReportPeriod(startDate: _startDate, endDate: _endDate);
-      final reportData = await ref.read(
-        reportDataProvider(period).future,
-      );
+      final reportData = await ref.read(reportDataProvider(period).future);
 
       // Générer le PDF
       final pdfService = EauMineraleReportPdfService.instance;
@@ -99,7 +92,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     } catch (e) {
       if (mounted) {
         Navigator.of(context).pop(); // Fermer le dialog de chargement
-        NotificationService.showError(context, 'Erreur lors de la génération PDF: $e');
+        NotificationService.showError(
+          context,
+          'Erreur lors de la génération PDF: $e',
+        );
       }
     }
   }
@@ -129,12 +125,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           slivers: [
             SliverToBoxAdapter(
               child: Padding(
-                padding: EdgeInsets.fromLTRB(
-                  24,
-                  24,
-                  24,
-                  isWide ? 24 : 16,
-                ),
+                padding: EdgeInsets.fromLTRB(24, 24, 24, isWide ? 24 : 16),
                 child: isWide
                     ? Row(
                         children: [
@@ -159,10 +150,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                               Expanded(
                                 child: Text(
                                   'Rapports',
-                                  style:
-                                      theme.textTheme.headlineMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                  style: theme.textTheme.headlineMedium
+                                      ?.copyWith(fontWeight: FontWeight.bold),
                                 ),
                               ),
                               RefreshButton(
@@ -191,8 +180,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
                 child: ReportKpiCards(
-                  period:
-                      ReportPeriod(startDate: _startDate, endDate: _endDate),
+                  period: ReportPeriod(
+                    startDate: _startDate,
+                    endDate: _endDate,
+                  ),
                 ),
               ),
             ),
@@ -211,9 +202,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 child: _buildTabContent(context),
               ),
             ),
-            const SliverToBoxAdapter(
-              child: SizedBox(height: 24),
-            ),
+            const SliverToBoxAdapter(child: SizedBox(height: 24)),
           ],
         );
       },

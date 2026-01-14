@@ -8,10 +8,7 @@ import 'retail_kpi_section.dart';
 
 /// Onglet nouvelle vente pour la vente au détail.
 class RetailNewSaleTab extends ConsumerWidget {
-  const RetailNewSaleTab({
-    super.key,
-    required this.onCylinderTap,
-  });
+  const RetailNewSaleTab({super.key, required this.onCylinderTap});
 
   final ValueChanged<Cylinder> onCylinderTap;
 
@@ -65,13 +62,11 @@ class RetailNewSaleTab extends ConsumerWidget {
             loading: () => const SliverFillRemaining(
               child: Center(child: CircularProgressIndicator()),
             ),
-            error: (e, _) => SliverFillRemaining(
-              child: Center(child: Text('Erreur: $e')),
-            ),
+            error: (e, _) =>
+                SliverFillRemaining(child: Center(child: Text('Erreur: $e'))),
           ),
         ),
       ],
     );
   }
 }
-

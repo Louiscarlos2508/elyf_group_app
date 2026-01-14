@@ -20,13 +20,11 @@ class PosStockDialog extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final stocksAsync = ref.watch(
-      cylinderStocksProvider(
-        (
-          enterpriseId: enterpriseId,
-          status: null, // Tous les statuts
-          siteId: pointOfSale.id,
-        ),
-      ),
+      cylinderStocksProvider((
+        enterpriseId: enterpriseId,
+        status: null, // Tous les statuts
+        siteId: pointOfSale.id,
+      )),
     );
 
     return Dialog(
@@ -45,29 +43,31 @@ class PosStockDialog extends ConsumerWidget {
                 .where((s) => s.status == CylinderStatus.full)
                 .fold<int>(0, (sum, s) => sum + s.quantity);
             final posEmpty = posStocks
-                .where((s) =>
-                    s.status == CylinderStatus.emptyAtStore ||
-                    s.status == CylinderStatus.emptyInTransit)
+                .where(
+                  (s) =>
+                      s.status == CylinderStatus.emptyAtStore ||
+                      s.status == CylinderStatus.emptyInTransit,
+                )
                 .fold<int>(0, (sum, s) => sum + s.quantity);
 
             // Grouper par capacité
             final stockByCapacity = <int, ({int full, int empty})>{};
-            final availableWeights = posStocks
-                .map((s) => s.weight)
-                .toSet()
-                .toList()
-              ..sort();
+            final availableWeights =
+                posStocks.map((s) => s.weight).toSet().toList()..sort();
             for (final weight in availableWeights) {
               final full = posStocks
-                  .where((s) =>
-                      s.weight == weight &&
-                      s.status == CylinderStatus.full)
+                  .where(
+                    (s) =>
+                        s.weight == weight && s.status == CylinderStatus.full,
+                  )
                   .fold<int>(0, (sum, s) => sum + s.quantity);
               final empty = posStocks
-                  .where((s) =>
-                      s.weight == weight &&
-                      (s.status == CylinderStatus.emptyAtStore ||
-                          s.status == CylinderStatus.emptyInTransit))
+                  .where(
+                    (s) =>
+                        s.weight == weight &&
+                        (s.status == CylinderStatus.emptyAtStore ||
+                            s.status == CylinderStatus.emptyInTransit),
+                  )
                   .fold<int>(0, (sum, s) => sum + s.quantity);
               if (full > 0 || empty > 0) {
                 stockByCapacity[weight] = (full: full, empty: empty);
@@ -84,8 +84,8 @@ class PosStockDialog extends ConsumerWidget {
                       child: Text(
                         'Stock - ${pointOfSale.name}',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                     IconButton(
@@ -123,8 +123,8 @@ class PosStockDialog extends ConsumerWidget {
                     child: Text(
                       'Stock - ${pointOfSale.name}',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                   IconButton(
@@ -157,8 +157,8 @@ class PosStockDialog extends ConsumerWidget {
                     child: Text(
                       'Stock - ${pointOfSale.name}',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                   IconButton(
@@ -197,4 +197,3 @@ class PosStockDialog extends ConsumerWidget {
     );
   }
 }
-

@@ -23,7 +23,7 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
   final _customerPhoneController = TextEditingController();
   final _quantityController = TextEditingController();
   final _amountPaidController = TextEditingController();
-  
+
   Product? _selectedProduct;
   CustomerSummary? _selectedCustomer;
   int _cashAmount = 0;
@@ -41,9 +41,8 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
 
   int? get _unitPrice => _selectedProduct?.unitPrice;
   int? get _quantity => int.tryParse(_quantityController.text);
-  int? get _totalPrice => _unitPrice != null && _quantity != null
-      ? _unitPrice! * _quantity!
-      : null;
+  int? get _totalPrice =>
+      _unitPrice != null && _quantity != null ? _unitPrice! * _quantity! : null;
   int? get _amountPaid => int.tryParse(_amountPaidController.text);
 
   void _handleProductSelected(Product product) {
@@ -114,12 +113,18 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
 
   Future<void> submit() async {
     if (_selectedProduct == null) {
-      NotificationService.showWarning(context, 'Veuillez sélectionner un produit');
+      NotificationService.showWarning(
+        context,
+        'Veuillez sélectionner un produit',
+      );
       return;
     }
 
     if (_totalPrice == null || _amountPaid == null) {
-      NotificationService.showWarning(context, 'Veuillez remplir tous les champs');
+      NotificationService.showWarning(
+        context,
+        'Veuillez remplir tous les champs',
+      );
       return;
     }
 
@@ -131,7 +136,7 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
       totalPrice: _totalPrice,
       amountPaid: _amountPaid,
     );
-    
+
     if (!mounted) return;
     if (validationError != null) {
       NotificationService.showError(context, validationError);
@@ -147,7 +152,7 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
         String customerId = _selectedCustomer?.id ?? '';
         final customerName = _customerNameController.text.trim();
         final customerPhone = _customerPhoneController.text.trim();
-        
+
         if (customerId.isEmpty && customerName.isNotEmpty) {
           // Créer le nouveau client via le controller (logique métier dans le controller)
           final clientsController = ref.read(clientsControllerProvider);
@@ -159,10 +164,13 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
           // Client anonyme (logique métier simple)
           customerId = 'anonymous-${DateTime.now().millisecondsSinceEpoch}';
         }
-        
+
         // Utiliser SaleService pour déterminer le statut (logique métier dans le service)
-        final saleStatus = saleService.determineSaleStatus(_totalPrice!, _amountPaid!);
-        
+        final saleStatus = saleService.determineSaleStatus(
+          _totalPrice!,
+          _amountPaid!,
+        );
+
         final sale = Sale(
           id: '',
           productId: _selectedProduct!.id,
@@ -184,7 +192,7 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
         );
 
         final userId = ref.read(currentUserIdProvider);
-        
+
         await ref.read(salesControllerProvider).createSale(sale, userId);
 
         if (mounted) {
@@ -205,208 +213,208 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
-    
+
     return Form(
       key: _formKey,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-            // Produit
-            SaleProductSelector(
-              selectedProduct: _selectedProduct,
-              onProductSelected: _handleProductSelected,
+          // Produit
+          SaleProductSelector(
+            selectedProduct: _selectedProduct,
+            onProductSelected: _handleProductSelected,
+          ),
+          const SizedBox(height: 16),
+          // Client (optionnel)
+          SaleCustomerSelector(
+            selectedCustomer: _selectedCustomer,
+            onCustomerSelected: _handleCustomerSelected,
+          ),
+          const SizedBox(height: 16),
+          // Nom et téléphone (pré-remplis si client sélectionné)
+          TextFormField(
+            controller: _customerNameController,
+            decoration: const InputDecoration(
+              labelText: 'Nom du client',
+              prefixIcon: Icon(Icons.person_outline),
             ),
-            const SizedBox(height: 16),
-            // Client (optionnel)
-            SaleCustomerSelector(
-              selectedCustomer: _selectedCustomer,
-              onCustomerSelected: _handleCustomerSelected,
+          ),
+          const SizedBox(height: 16),
+          TextFormField(
+            controller: _customerPhoneController,
+            decoration: const InputDecoration(
+              labelText: 'Téléphone',
+              prefixIcon: Icon(Icons.phone),
             ),
-            const SizedBox(height: 16),
-            // Nom et téléphone (pré-remplis si client sélectionné)
-            TextFormField(
-              controller: _customerNameController,
-              decoration: const InputDecoration(
-                labelText: 'Nom du client',
-                prefixIcon: Icon(Icons.person_outline),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _customerPhoneController,
-              decoration: const InputDecoration(
-                labelText: 'Téléphone',
-                prefixIcon: Icon(Icons.phone),
-              ),
-              keyboardType: TextInputType.phone,
-            ),
-            const SizedBox(height: 16),
-            // Quantité avec validation du stock
-            if (_selectedProduct != null)
-              FutureBuilder<int>(
-                future: ref.read(saleServiceProvider).getCurrentStock(_selectedProduct!.id),
-                builder: (context, snapshot) {
-                  final stock = snapshot.data ?? 0;
-                  final stockError = _quantity != null && stock < _quantity!;
-                  
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      TextFormField(
-                        controller: _quantityController,
-                        decoration: InputDecoration(
-                          labelText: 'Quantité',
-                          prefixIcon: const Icon(Icons.inventory_2),
-                          helperText: snapshot.hasData
-                              ? (stockError
+            keyboardType: TextInputType.phone,
+          ),
+          const SizedBox(height: 16),
+          // Quantité avec validation du stock
+          if (_selectedProduct != null)
+            FutureBuilder<int>(
+              future: ref
+                  .read(saleServiceProvider)
+                  .getCurrentStock(_selectedProduct!.id),
+              builder: (context, snapshot) {
+                final stock = snapshot.data ?? 0;
+                final stockError = _quantity != null && stock < _quantity!;
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextFormField(
+                      controller: _quantityController,
+                      decoration: InputDecoration(
+                        labelText: 'Quantité',
+                        prefixIcon: const Icon(Icons.inventory_2),
+                        helperText: snapshot.hasData
+                            ? (stockError
                                   ? 'Stock insuffisant. Disponible: $stock'
                                   : 'Stock disponible: $stock')
-                              : 'Vérification du stock...',
-                          helperMaxLines: 2,
-                          errorText: stockError && _quantity != null
-                              ? 'Stock insuffisant. Disponible: $stock'
-                              : null,
-                        ),
-                        keyboardType: TextInputType.number,
-                        onChanged: (_) => setState(() {}),
-                        validator: (v) {
-                          if (v == null || v.isEmpty) return 'Requis';
-                          final qty = int.tryParse(v);
-                          if (qty == null || qty <= 0) return 'Quantité invalide';
-                          if (snapshot.hasData && qty > stock) {
-                            return 'Stock insuffisant. Disponible: $stock';
-                          }
-                          return null;
-                        },
+                            : 'Vérification du stock...',
+                        helperMaxLines: 2,
+                        errorText: stockError && _quantity != null
+                            ? 'Stock insuffisant. Disponible: $stock'
+                            : null,
                       ),
-                    ],
-                  );
-                },
-              )
-            else
-              TextFormField(
-                controller: _quantityController,
-                decoration: const InputDecoration(
-                  labelText: 'Quantité',
-                  prefixIcon: Icon(Icons.inventory_2),
-                  helperText: 'Sélectionnez d\'abord un produit',
-                ),
-                keyboardType: TextInputType.number,
-                onChanged: (_) => setState(() {}),
-                validator: (v) {
-                  if (v == null || v.isEmpty) return 'Requis';
-                  final qty = int.tryParse(v);
-                  if (qty == null || qty <= 0) return 'Quantité invalide';
-                  return null;
-                },
-              ),
-            if (_totalPrice != null) ...[
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: colors.primaryContainer.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Total',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      CurrencyFormatter.formatFCFA(_totalPrice!),
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: colors.primary,
-                      ),
+                      keyboardType: TextInputType.number,
+                      onChanged: (_) => setState(() {}),
+                      validator: (v) {
+                        if (v == null || v.isEmpty) return 'Requis';
+                        final qty = int.tryParse(v);
+                        if (qty == null || qty <= 0) return 'Quantité invalide';
+                        if (snapshot.hasData && qty > stock) {
+                          return 'Stock insuffisant. Disponible: $stock';
+                        }
+                        return null;
+                      },
                     ),
                   ],
-                ),
-              ),
-            ],
-            const SizedBox(height: 24),
-            const Divider(),
-            const SizedBox(height: 16),
-            // Mode de paiement - SIMPLIFIÉ
-            Text(
-              'Mode de paiement',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 12),
-            SegmentedButton<PaymentMethod>(
-              segments: const [
-                ButtonSegment<PaymentMethod>(
-                  value: PaymentMethod.cash,
-                  label: Text('Cash'),
-                  icon: Icon(Icons.money),
-                ),
-                ButtonSegment<PaymentMethod>(
-                  value: PaymentMethod.orangeMoney,
-                  label: Text('Orange Money'),
-                  icon: Icon(Icons.account_balance_wallet),
-                ),
-                ButtonSegment<PaymentMethod>(
-                  value: PaymentMethod.both,
-                  label: Text('Les deux'),
-                  icon: Icon(Icons.payment),
-                ),
-              ],
-              selected: {_paymentMethod},
-              onSelectionChanged: (Set<PaymentMethod> selection) {
-                _onPaymentMethodChanged(selection.first);
+                );
               },
-            ),
-            const SizedBox(height: 16),
-            // Montant payé
+            )
+          else
             TextFormField(
-              controller: _amountPaidController,
-              decoration: InputDecoration(
-                labelText: 'Montant payé (CFA)',
-                prefixIcon: const Icon(Icons.attach_money),
-                helperText: _totalPrice != null && _amountPaid != null
-                    ? (_totalPrice! - _amountPaid! > 0
-                        ? 'Crédit: ${CurrencyFormatter.formatFCFA(_totalPrice! - _amountPaid!)}'
-                        : 'Paiement complet')
-                    : null,
+              controller: _quantityController,
+              decoration: const InputDecoration(
+                labelText: 'Quantité',
+                prefixIcon: Icon(Icons.inventory_2),
+                helperText: 'Sélectionnez d\'abord un produit',
               ),
               keyboardType: TextInputType.number,
-              onChanged: _onAmountPaidChanged,
+              onChanged: (_) => setState(() {}),
               validator: (v) {
                 if (v == null || v.isEmpty) return 'Requis';
-                final amount = int.tryParse(v);
-                if (amount == null || amount < 0) return 'Montant invalide';
-                if (_totalPrice != null && amount > _totalPrice!) {
-                  return 'Ne peut pas dépasser le total';
-                }
+                final qty = int.tryParse(v);
+                if (qty == null || qty <= 0) return 'Quantité invalide';
                 return null;
               },
             ),
-            // Répartition si les deux modes sont sélectionnés
-            if (_paymentMethod == PaymentMethod.both && _amountPaid != null && _amountPaid! > 0) ...[
-              const SizedBox(height: 16),
-              PaymentSplitter(
-                totalAmount: _amountPaid!,
-                onSplitChanged: _onSplitChanged,
-                initialCashAmount: _cashAmount,
-                initialMobileMoneyAmount: _orangeMoneyAmount,
-                mobileMoneyLabel: 'Orange Money',
+          if (_totalPrice != null) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: colors.primaryContainer.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Total',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    CurrencyFormatter.formatFCFA(_totalPrice!),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: colors.primary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          const SizedBox(height: 24),
+          const Divider(),
+          const SizedBox(height: 16),
+          // Mode de paiement - SIMPLIFIÉ
+          Text(
+            'Mode de paiement',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 12),
+          SegmentedButton<PaymentMethod>(
+            segments: const [
+              ButtonSegment<PaymentMethod>(
+                value: PaymentMethod.cash,
+                label: Text('Cash'),
+                icon: Icon(Icons.money),
+              ),
+              ButtonSegment<PaymentMethod>(
+                value: PaymentMethod.orangeMoney,
+                label: Text('Orange Money'),
+                icon: Icon(Icons.account_balance_wallet),
+              ),
+              ButtonSegment<PaymentMethod>(
+                value: PaymentMethod.both,
+                label: Text('Les deux'),
+                icon: Icon(Icons.payment),
               ),
             ],
+            selected: {_paymentMethod},
+            onSelectionChanged: (Set<PaymentMethod> selection) {
+              _onPaymentMethodChanged(selection.first);
+            },
+          ),
+          const SizedBox(height: 16),
+          // Montant payé
+          TextFormField(
+            controller: _amountPaidController,
+            decoration: InputDecoration(
+              labelText: 'Montant payé (CFA)',
+              prefixIcon: const Icon(Icons.attach_money),
+              helperText: _totalPrice != null && _amountPaid != null
+                  ? (_totalPrice! - _amountPaid! > 0
+                        ? 'Crédit: ${CurrencyFormatter.formatFCFA(_totalPrice! - _amountPaid!)}'
+                        : 'Paiement complet')
+                  : null,
+            ),
+            keyboardType: TextInputType.number,
+            onChanged: _onAmountPaidChanged,
+            validator: (v) {
+              if (v == null || v.isEmpty) return 'Requis';
+              final amount = int.tryParse(v);
+              if (amount == null || amount < 0) return 'Montant invalide';
+              if (_totalPrice != null && amount > _totalPrice!) {
+                return 'Ne peut pas dépasser le total';
+              }
+              return null;
+            },
+          ),
+          // Répartition si les deux modes sont sélectionnés
+          if (_paymentMethod == PaymentMethod.both &&
+              _amountPaid != null &&
+              _amountPaid! > 0) ...[
+            const SizedBox(height: 16),
+            PaymentSplitter(
+              totalAmount: _amountPaid!,
+              onSplitChanged: _onSplitChanged,
+              initialCashAmount: _cashAmount,
+              initialMobileMoneyAmount: _orangeMoneyAmount,
+              mobileMoneyLabel: 'Orange Money',
+            ),
           ],
-        ),
+        ],
+      ),
     );
   }
 }
 
-enum PaymentMethod {
-  cash,
-  orangeMoney,
-  both,
-}
+enum PaymentMethod { cash, orangeMoney, both }

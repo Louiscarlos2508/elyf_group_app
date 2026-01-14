@@ -169,4 +169,3 @@ pw.Widget _buildRemainingAmountSection(int remainingAfterPayment) {
     ),
   );
 }
-

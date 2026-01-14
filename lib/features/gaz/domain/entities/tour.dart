@@ -133,4 +133,3 @@ class Tour {
     return collections.every((collection) => collection.isPaymentComplete);
   }
 }
-

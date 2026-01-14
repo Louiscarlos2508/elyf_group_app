@@ -23,10 +23,7 @@ class CustomerNameFields extends StatelessWidget {
             children: [
               const Text(
                 'Prénom *',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFF0A0A0A),
-                ),
+                style: TextStyle(fontSize: 14, color: Color(0xFF0A0A0A)),
               ),
               const SizedBox(height: 8),
               TextFormField(
@@ -60,10 +57,7 @@ class CustomerNameFields extends StatelessWidget {
             children: [
               const Text(
                 'Nom *',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFF0A0A0A),
-                ),
+                style: TextStyle(fontSize: 14, color: Color(0xFF0A0A0A)),
               ),
               const SizedBox(height: 8),
               TextFormField(
@@ -94,4 +88,3 @@ class CustomerNameFields extends StatelessWidget {
     );
   }
 }
-

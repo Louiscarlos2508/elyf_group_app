@@ -5,7 +5,9 @@ import 'package:elyf_groupe_app/shared/utils/focus_manager.dart';
 
 void main() {
   group('AppFocusManager', () {
-    testWidgets('nextFocus déplace le focus vers le prochain champ', (tester) async {
+    testWidgets('nextFocus déplace le focus vers le prochain champ', (
+      tester,
+    ) async {
       final focusNode1 = FocusNode();
       final focusNode2 = FocusNode();
 
@@ -38,14 +40,14 @@ void main() {
       expect(focusNode2.hasFocus, isTrue);
     });
 
-    testWidgets('unfocusAll enlève le focus de tous les champs', (tester) async {
+    testWidgets('unfocusAll enlève le focus de tous les champs', (
+      tester,
+    ) async {
       final focusNode = FocusNode();
 
       await tester.pumpWidget(
         MaterialApp(
-          home: Scaffold(
-            body: TextField(focusNode: focusNode),
-          ),
+          home: Scaffold(body: TextField(focusNode: focusNode)),
         ),
       );
 
@@ -61,7 +63,9 @@ void main() {
       expect(focusNode.hasFocus, isFalse);
     });
 
-    testWidgets('requestFocus déplace le focus vers un node spécifique', (tester) async {
+    testWidgets('requestFocus déplace le focus vers un node spécifique', (
+      tester,
+    ) async {
       final focusNode1 = FocusNode();
       final focusNode2 = FocusNode();
 
@@ -79,7 +83,7 @@ void main() {
       );
 
       final context = tester.element(find.byType(Scaffold));
-      
+
       // Demander le focus sur le deuxième champ
       AppFocusManager.requestFocus(context, focusNode2);
       await tester.pump();
@@ -93,14 +97,12 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          home: Scaffold(
-            body: TextField(focusNode: focusNode),
-          ),
+          home: Scaffold(body: TextField(focusNode: focusNode)),
         ),
       );
 
       final context = tester.element(find.byType(Scaffold));
-      
+
       expect(AppFocusManager.hasFocus(context, focusNode), isFalse);
 
       focusNode.requestFocus();
@@ -112,17 +114,13 @@ void main() {
 
   group('FocusMixin', () {
     testWidgets('FocusMixin crée et gère les focus nodes', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: _TestWidget(),
-        ),
-      );
+      await tester.pumpWidget(MaterialApp(home: _TestWidget()));
 
       final state = tester.state<_TestState>(find.byType(_TestWidget));
-      
+
       expect(state.emailFocus, isNotNull);
       expect(state.emailFocus.debugLabel, 'email');
-      
+
       state.dispose();
     });
   });
@@ -132,10 +130,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: FocusTrap(
-              autofocus: true,
-              child: const Text('Test'),
-            ),
+            body: FocusTrap(autofocus: true, child: const Text('Test')),
           ),
         ),
       );
@@ -166,4 +161,3 @@ class _TestState extends State<_TestWidget> with FocusMixin {
     super.dispose();
   }
 }
-

@@ -24,8 +24,8 @@ class GazExpenseFormDialog extends ConsumerStatefulWidget {
       _GazExpenseFormDialogState();
 }
 
-class _GazExpenseFormDialogState
-    extends ConsumerState<GazExpenseFormDialog> with FormHelperMixin {
+class _GazExpenseFormDialogState extends ConsumerState<GazExpenseFormDialog>
+    with FormHelperMixin {
   bool _isLoading = false;
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _amountController;
@@ -47,9 +47,7 @@ class _GazExpenseFormDialogState
     _descriptionController = TextEditingController(
       text: widget.expense?.description ?? '',
     );
-    _notesController = TextEditingController(
-      text: widget.expense?.notes ?? '',
-    );
+    _notesController = TextEditingController(text: widget.expense?.notes ?? '');
     if (widget.expense != null) {
       _selectedCategory = widget.expense!.category;
       _selectedDate = widget.expense!.date;
@@ -83,7 +81,8 @@ class _GazExpenseFormDialogState
         }
 
         final expense = GazExpense(
-          id: widget.expense?.id ??
+          id:
+              widget.expense?.id ??
               'exp-${DateTime.now().millisecondsSinceEpoch}',
           description: _descriptionController.text.trim(),
           amount: amount,
@@ -118,14 +117,14 @@ class _GazExpenseFormDialogState
   @override
   Widget build(BuildContext context) {
     final activeEnterpriseAsync = ref.watch(activeEnterpriseProvider);
-    
+
     // Récupérer l'ID de l'entreprise active
     final enterpriseId = activeEnterpriseAsync.when(
       data: (enterprise) => enterprise?.id,
       loading: () => null,
       error: (_, __) => null,
     );
-    
+
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       child: ConstrainedBox(
@@ -147,14 +146,15 @@ class _GazExpenseFormDialogState
                     selectedCategory: _selectedCategory,
                     onCategoryChanged: (category) {
                       setState(() => _selectedCategory = category);
-                                        },
+                    },
                   ),
                   const SizedBox(height: 16),
                   ExpenseDescriptionInput(controller: _descriptionController),
                   const SizedBox(height: 16),
                   ExpenseDateInput(
                     selectedDate: _selectedDate,
-                    onDateSelected: (date) => setState(() => _selectedDate = date),
+                    onDateSelected: (date) =>
+                        setState(() => _selectedDate = date),
                   ),
                   const SizedBox(height: 16),
                   ExpenseFixedCheckbox(

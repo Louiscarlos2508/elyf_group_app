@@ -33,7 +33,9 @@ class _PosAssociateCylindersDialogState
   @override
   void initState() {
     super.initState();
-    _currentSelectedCylinderIds = Set<String>.from(widget.pointOfSale.cylinderIds);
+    _currentSelectedCylinderIds = Set<String>.from(
+      widget.pointOfSale.cylinderIds,
+    );
   }
 
   Future<void> _save() async {
@@ -54,9 +56,10 @@ class _PosAssociateCylindersDialogState
       if (!mounted) return;
 
       ref.invalidate(
-        pointsOfSaleProvider(
-          (enterpriseId: widget.enterpriseId, moduleId: widget.moduleId),
-        ),
+        pointsOfSaleProvider((
+          enterpriseId: widget.enterpriseId,
+          moduleId: widget.moduleId,
+        )),
       );
       ref.invalidate(
         pointOfSaleCylindersProvider((
@@ -84,9 +87,7 @@ class _PosAssociateCylindersDialogState
           context: widget.dialogContext,
           builder: (errorContext) => AlertDialog(
             title: const Text('Erreur'),
-            content: Text(
-              'Erreur lors de l\'enregistrement: ${e.toString()}',
-            ),
+            content: Text('Erreur lors de l\'enregistrement: ${e.toString()}'),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(errorContext).pop(),
@@ -118,43 +119,48 @@ class _PosAssociateCylindersDialogState
                     ),
                   )
                 : allCylinders.isEmpty
-                    ? const Padding(
-                        padding: EdgeInsets.all(24),
-                        child: Center(
-                          child: Text(
-                            'Aucun type de bouteille disponible.\nCréez d\'abord des types dans les paramètres.',
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      )
-                    : ListView.builder(
-                        shrinkWrap: true,
-                        itemCount: allCylinders.length,
-                        itemBuilder: (context, index) {
-                          final cylinder = allCylinders[index];
-                          final isSelected =
-                              _currentSelectedCylinderIds.contains(cylinder.id);
-
-                          return CheckboxListTile(
-                            title: Text('${cylinder.weight}kg'),
-                            subtitle: Text(
-                              'Prix détail: ${cylinder.sellPrice.toStringAsFixed(0)} FCFA',
-                            ),
-                            value: isSelected,
-                            onChanged: _isLoading
-                                ? null
-                                : (value) {
-                                    setState(() {
-                                      if (value == true) {
-                                        _currentSelectedCylinderIds.add(cylinder.id);
-                                      } else {
-                                        _currentSelectedCylinderIds.remove(cylinder.id);
-                                      }
-                                    });
-                                  },
-                          );
-                        },
+                ? const Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Center(
+                      child: Text(
+                        'Aucun type de bouteille disponible.\nCréez d\'abord des types dans les paramètres.',
+                        textAlign: TextAlign.center,
                       ),
+                    ),
+                  )
+                : ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: allCylinders.length,
+                    itemBuilder: (context, index) {
+                      final cylinder = allCylinders[index];
+                      final isSelected = _currentSelectedCylinderIds.contains(
+                        cylinder.id,
+                      );
+
+                      return CheckboxListTile(
+                        title: Text('${cylinder.weight}kg'),
+                        subtitle: Text(
+                          'Prix détail: ${cylinder.sellPrice.toStringAsFixed(0)} FCFA',
+                        ),
+                        value: isSelected,
+                        onChanged: _isLoading
+                            ? null
+                            : (value) {
+                                setState(() {
+                                  if (value == true) {
+                                    _currentSelectedCylinderIds.add(
+                                      cylinder.id,
+                                    );
+                                  } else {
+                                    _currentSelectedCylinderIds.remove(
+                                      cylinder.id,
+                                    );
+                                  }
+                                });
+                              },
+                      );
+                    },
+                  ),
           ),
         ),
         actions: [
@@ -192,4 +198,3 @@ class _PosAssociateCylindersDialogState
     );
   }
 }
-

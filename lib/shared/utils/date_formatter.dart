@@ -49,7 +49,7 @@ class DateFormatter {
       'sept',
       'oct',
       'nov',
-      'déc'
+      'déc',
     ];
     final dayName = days[date.weekday % 7];
     return '$dayName ${date.day} ${months[date.month - 1]} ${date.year}';
@@ -61,4 +61,3 @@ class DateFormatter {
     return formatDate(date);
   }
 }
-

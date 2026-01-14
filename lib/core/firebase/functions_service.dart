@@ -54,9 +54,7 @@ class FunctionsService {
 
         final callable = functions.httpsCallable(
           functionName,
-          options: HttpsCallableOptions(
-            timeout: effectiveTimeout,
-          ),
+          options: HttpsCallableOptions(timeout: effectiveTimeout),
         );
 
         final result = await callable.call(dataWithMetadata);
@@ -136,4 +134,3 @@ class FunctionsService {
     );
   }
 }
-

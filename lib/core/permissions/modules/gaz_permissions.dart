@@ -233,4 +233,3 @@ class GazPermissions {
     changePassword,
   ];
 }
-

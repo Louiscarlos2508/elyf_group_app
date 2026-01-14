@@ -32,4 +32,3 @@ class MachineController {
     return await _repository.deleteMachine(id);
   }
 }
-

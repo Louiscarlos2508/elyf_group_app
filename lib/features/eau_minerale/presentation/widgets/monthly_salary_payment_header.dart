@@ -6,10 +6,7 @@ import '../../domain/entities/employee.dart';
 
 /// Header section showing employee info and monthly salary.
 class MonthlySalaryPaymentHeader extends StatelessWidget {
-  const MonthlySalaryPaymentHeader({
-    super.key,
-    required this.employee,
-  });
+  const MonthlySalaryPaymentHeader({super.key, required this.employee});
 
   final Employee employee;
 
@@ -68,10 +65,7 @@ class MonthlySalaryPaymentHeader extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Salaire mensuel',
-                style: theme.textTheme.bodyLarge,
-              ),
+              Text('Salaire mensuel', style: theme.textTheme.bodyLarge),
               Text(
                 CurrencyFormatter.format(employee.monthlySalary),
                 style: theme.textTheme.titleLarge?.copyWith(
@@ -86,4 +80,3 @@ class MonthlySalaryPaymentHeader extends StatelessWidget {
     );
   }
 }
-

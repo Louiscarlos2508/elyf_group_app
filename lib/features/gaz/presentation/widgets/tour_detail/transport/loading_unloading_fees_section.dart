@@ -6,10 +6,7 @@ import '../../../../domain/entities/tour.dart';
 
 /// Section des frais de chargement et déchargement.
 class LoadingUnloadingFeesSection extends StatelessWidget {
-  const LoadingUnloadingFeesSection({
-    super.key,
-    required this.tour,
-  });
+  const LoadingUnloadingFeesSection({super.key, required this.tour});
 
   final Tour tour;
 
@@ -32,10 +29,7 @@ class LoadingUnloadingFeesSection extends StatelessWidget {
                 children: [
                   const Text(
                     'Frais de chargement',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF4A5565),
-                    ),
+                    style: TextStyle(fontSize: 14, color: Color(0xFF4A5565)),
                   ),
                   Text(
                     '${tour.totalBottlesToLoad} × ${tour.loadingFeePerBottle.toStringAsFixed(0)} F',
@@ -77,10 +71,7 @@ class LoadingUnloadingFeesSection extends StatelessWidget {
                 children: [
                   const Text(
                     'Frais de déchargement',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF4A5565),
-                    ),
+                    style: TextStyle(fontSize: 14, color: Color(0xFF4A5565)),
                   ),
                   Text(
                     '${tour.totalBottlesToLoad} × ${tour.unloadingFeePerBottle.toStringAsFixed(0)} F',
@@ -109,17 +100,11 @@ class LoadingUnloadingFeesSection extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         // Divider
-        Container(
-          height: 1,
-          color: Colors.black.withValues(alpha: 0.1),
-        ),
+        Container(height: 1, color: Colors.black.withValues(alpha: 0.1)),
         const SizedBox(height: 8),
         // Total chargement/déchargement
         Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 11.99,
-            vertical: 0,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 11.99, vertical: 0),
           decoration: BoxDecoration(
             color: const Color(0xFFFFF7ED),
             borderRadius: BorderRadius.circular(10),
@@ -129,19 +114,13 @@ class LoadingUnloadingFeesSection extends StatelessWidget {
             children: [
               const Text(
                 'Total chargement/déchargement',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Color(0xFF0A0A0A),
-                ),
+                style: TextStyle(fontSize: 16, color: Color(0xFF0A0A0A)),
               ),
               Text(
                 CurrencyFormatter.formatDouble(
                   tour.totalLoadingFees + tour.totalUnloadingFees,
                 ),
-                style: const TextStyle(
-                  fontSize: 18,
-                  color: Color(0xFFE7000B),
-                ),
+                style: const TextStyle(fontSize: 18, color: Color(0xFFE7000B)),
               ),
             ],
           ),
@@ -150,4 +129,3 @@ class LoadingUnloadingFeesSection extends StatelessWidget {
     );
   }
 }
-

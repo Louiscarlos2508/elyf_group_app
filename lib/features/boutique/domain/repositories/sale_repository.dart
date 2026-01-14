@@ -6,4 +6,3 @@ abstract class SaleRepository {
   Future<String> createSale(Sale sale);
   Future<Sale?> getSale(String id);
 }
-

@@ -22,13 +22,15 @@ class RawMaterialsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     // Filter raw materials (excluding sachets which are managed as bobines, and bidons which are packaging)
     final rawMaterials = items
-        .where((item) => 
-            item.type == StockType.rawMaterial &&
-            !item.name.toLowerCase().contains('sachet') &&
-            !item.name.toLowerCase().contains('bidon'))
+        .where(
+          (item) =>
+              item.type == StockType.rawMaterial &&
+              !item.name.toLowerCase().contains('sachet') &&
+              !item.name.toLowerCase().contains('bidon'),
+        )
         .toList();
 
     return Container(
@@ -108,7 +110,9 @@ class RawMaterialsCard extends StatelessWidget {
               ),
               'unité',
               packagingStocks.any((stock) => stock.estStockFaible),
-              packagingStocks.isNotEmpty ? packagingStocks.first.seuilAlerte : null,
+              packagingStocks.isNotEmpty
+                  ? packagingStocks.first.seuilAlerte
+                  : null,
             ),
           ],
           // Afficher les autres matières premières
@@ -184,7 +188,7 @@ class RawMaterialsCard extends StatelessWidget {
   ) {
     final theme = Theme.of(context);
     final color = isLowStock ? Colors.red : Colors.orange.shade800;
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -257,4 +261,3 @@ class RawMaterialsCard extends StatelessWidget {
     );
   }
 }
-

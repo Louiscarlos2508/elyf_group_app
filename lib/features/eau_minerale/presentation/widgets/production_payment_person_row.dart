@@ -33,10 +33,12 @@ class _ProductionPaymentPersonRowState
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.person.name);
-    _pricePerDayController =
-        TextEditingController(text: widget.person.pricePerDay.toString());
-    _daysController =
-        TextEditingController(text: widget.person.daysWorked.toString());
+    _pricePerDayController = TextEditingController(
+      text: widget.person.pricePerDay.toString(),
+    );
+    _daysController = TextEditingController(
+      text: widget.person.daysWorked.toString(),
+    );
     _totalController = TextEditingController(
       text: widget.person.effectiveTotalAmount > 0
           ? widget.person.effectiveTotalAmount.toString()
@@ -64,7 +66,9 @@ class _ProductionPaymentPersonRowState
     final days = int.tryParse(_daysController.text) ?? 0;
 
     // Utiliser le service de calcul pour extraire la logique métier
-    final calculationService = ref.read(productionPaymentCalculationServiceProvider);
+    final calculationService = ref.read(
+      productionPaymentCalculationServiceProvider,
+    );
     final updatedPerson = calculationService.updatePersonCalculations(
       person: widget.person,
       newPricePerDay: pricePerDay,
@@ -73,7 +77,8 @@ class _ProductionPaymentPersonRowState
 
     // Mettre à jour le champ total si calculé automatiquement
     if (updatedPerson.effectiveTotalAmount > 0 &&
-        _totalController.text != updatedPerson.effectiveTotalAmount.toString()) {
+        _totalController.text !=
+            updatedPerson.effectiveTotalAmount.toString()) {
       _totalController.text = updatedPerson.effectiveTotalAmount.toString();
     }
 
@@ -86,7 +91,9 @@ class _ProductionPaymentPersonRowState
 
     if (total > 0 && days > 0) {
       // Utiliser le service de calcul pour extraire la logique métier
-      final calculationService = ref.read(productionPaymentCalculationServiceProvider);
+      final calculationService = ref.read(
+        productionPaymentCalculationServiceProvider,
+      );
       final calculatedPricePerDay = calculationService.calculatePricePerDay(
         totalAmount: total,
         daysWorked: days,
@@ -186,4 +193,3 @@ class _ProductionPaymentPersonRowState
     );
   }
 }
-

@@ -28,9 +28,9 @@ class IndexCompteurFinalField extends ConsumerWidget {
           children: [
             Text(
               meterType.finalLabel,
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
             TextFormField(
@@ -53,8 +53,10 @@ class IndexCompteurFinalField extends ConsumerWidget {
                 if (finalValue < 0) {
                   return 'Le nombre doit être positif';
                 }
-                final indexInitial = ProductionSessionFormHelpers
-                    .parseIndexCompteur(indexCompteurInitialController.text);
+                final indexInitial =
+                    ProductionSessionFormHelpers.parseIndexCompteur(
+                      indexCompteurInitialController.text,
+                    );
                 if (indexInitial != null) {
                   if (!meterType.isValidRange(
                     indexInitial.toDouble(),
@@ -66,8 +68,10 @@ class IndexCompteurFinalField extends ConsumerWidget {
                 return null;
               },
               onChanged: (value) {
-                final indexInitial = ProductionSessionFormHelpers
-                    .parseIndexCompteur(indexCompteurInitialController.text);
+                final indexInitial =
+                    ProductionSessionFormHelpers.parseIndexCompteur(
+                      indexCompteurInitialController.text,
+                    );
                 if (indexInitial != null && value.isNotEmpty) {
                   final cleanedValue = value.replaceAll(',', '.');
                   final finalValue = double.tryParse(cleanedValue);
@@ -76,7 +80,9 @@ class IndexCompteurFinalField extends ConsumerWidget {
                       indexInitial.toDouble(),
                       finalValue,
                     );
-                    consommationController.text = consommation.toStringAsFixed(2);
+                    consommationController.text = consommation.toStringAsFixed(
+                      2,
+                    );
                   }
                 }
               },
@@ -102,4 +108,3 @@ class IndexCompteurFinalField extends ConsumerWidget {
     );
   }
 }
-

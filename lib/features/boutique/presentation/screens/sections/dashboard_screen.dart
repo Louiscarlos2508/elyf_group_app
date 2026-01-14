@@ -26,18 +26,18 @@ class DashboardScreen extends ConsumerWidget {
 
     return Scaffold(
       body: CustomScrollView(
-      slivers: [
+        slivers: [
           // Header
-        SliverToBoxAdapter(
-          child: Padding(
+          SliverToBoxAdapter(
+            child: Padding(
               padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-            child: Row(
-              children: [
+              child: Row(
+                children: [
                   Expanded(
                     child: DashboardHeader(
                       date: DateTime.now(),
                       role: 'Gérant',
-                ),
+                    ),
                   ),
                   RefreshButton(
                     onRefresh: () {
@@ -48,11 +48,11 @@ class DashboardScreen extends ConsumerWidget {
                       ref.invalidate(expensesProvider);
                     },
                     tooltip: 'Actualiser le tableau de bord',
-                ),
-              ],
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
 
           // Today section header
           _buildSectionHeader("AUJOURD'HUI", 8, 8),
@@ -62,7 +62,7 @@ class DashboardScreen extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
             sliver: SliverToBoxAdapter(
               child: salesAsync.when(
-                  data: (sales) {
+                data: (sales) {
                   final calculationService = ref.read(
                     boutiqueDashboardCalculationServiceProvider,
                   );
@@ -157,11 +157,12 @@ class DashboardScreen extends ConsumerWidget {
             );
 
             // Use the calculation service for monthly metrics
-            final metrics = calculationService.calculateMonthlyMetricsWithPurchases(
-              sales: sales,
-              expenses: expenses,
-              purchases: purchases,
-            );
+            final metrics = calculationService
+                .calculateMonthlyMetricsWithPurchases(
+                  sales: sales,
+                  expenses: expenses,
+                  purchases: purchases,
+                );
 
             return DashboardMonthSection(
               monthRevenue: metrics.revenue,

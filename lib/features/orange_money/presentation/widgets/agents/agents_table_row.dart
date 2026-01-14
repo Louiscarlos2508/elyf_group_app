@@ -70,4 +70,3 @@ class AgentsTableRow extends StatelessWidget {
     );
   }
 }
-

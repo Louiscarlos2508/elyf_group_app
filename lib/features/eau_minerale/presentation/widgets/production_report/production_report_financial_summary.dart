@@ -36,10 +36,7 @@ class ProductionReportFinancialSummary extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        ProductionReportComponents.buildSectionTitle(
-          'Résumé Financier',
-          theme,
-        ),
+        ProductionReportComponents.buildSectionTitle('Résumé Financier', theme),
         const SizedBox(height: 16),
         Container(
           padding: const EdgeInsets.all(16),
@@ -126,4 +123,3 @@ class ProductionReportFinancialSummary extends StatelessWidget {
     );
   }
 }
-

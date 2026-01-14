@@ -22,7 +22,7 @@ class CreditKpiCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Container(
       decoration: BoxDecoration(
         color: backgroundColor ?? theme.colorScheme.surface,
@@ -69,11 +69,7 @@ class CreditKpiCard extends StatelessWidget {
                 ],
               ),
               if (icon != null)
-                Icon(
-                  icon,
-                  color: theme.colorScheme.primary,
-                  size: 24,
-                ),
+                Icon(icon, color: theme.colorScheme.primary, size: 24),
               if (trend != null) trend!,
             ],
           ),
@@ -82,4 +78,3 @@ class CreditKpiCard extends StatelessWidget {
     );
   }
 }
-

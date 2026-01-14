@@ -112,7 +112,8 @@ class PaymentMethodSelector extends StatelessWidget {
   }
 
   String _getMethodLabel(PaymentMethod method) {
-    if (method == PaymentMethod.mobileMoney && config.mobileMoneyLabel != null) {
+    if (method == PaymentMethod.mobileMoney &&
+        config.mobileMoneyLabel != null) {
       return config.mobileMoneyLabel!;
     }
     return method.label;
@@ -138,4 +139,3 @@ enum PaymentMethodSelectorStyle {
   /// Style avec DropdownButton (liste déroulante)
   dropdown,
 }
-

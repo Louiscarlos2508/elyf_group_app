@@ -19,8 +19,7 @@ class MockConnectivityService implements ConnectivityService {
       isOnline ? ConnectivityStatus.wifi : ConnectivityStatus.offline;
 
   @override
-  Stream<ConnectivityStatus> get statusStream =>
-      Stream.value(currentStatus);
+  Stream<ConnectivityStatus> get statusStream => Stream.value(currentStatus);
 
   @override
   Future<void> initialize() async {
@@ -56,7 +55,7 @@ void main() {
         syncHandler: MockSyncHandler(),
       );
       await syncManager.initialize();
-      
+
       repository = StockOfflineRepository(
         driftService: driftService,
         syncManager: syncManager,
@@ -80,7 +79,7 @@ void main() {
 
       await repository.recordMovement(movement);
       final movements = await repository.fetchMovements();
-      
+
       expect(movements.length, greaterThan(0));
     });
 
@@ -121,4 +120,3 @@ void main() {
     });
   });
 }
-

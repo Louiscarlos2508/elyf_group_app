@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:elyf_groupe_app/features/administration/application/providers.dart' show permissionServiceProvider;
+import 'package:elyf_groupe_app/features/administration/application/providers.dart'
+    show permissionServiceProvider;
 import '../../../../core/permissions/services/permission_service.dart';
 import '../../../../core/auth/providers.dart' as auth;
 import '../../domain/adapters/boutique_permission_adapter.dart';
@@ -13,21 +14,19 @@ final centralizedPermissionServiceProvider = Provider<PermissionService>(
 
 /// Provider for current user ID.
 /// Uses the authenticated user ID from auth service, or falls back to default user for development.
-final currentUserIdProvider = Provider<String>(
-  (ref) {
-    // Récupérer l'ID de l'utilisateur authentifié
-    final authUserId = ref.watch(auth.currentUserIdProvider);
-    
-    // Si un utilisateur est authentifié, utiliser son ID
-    if (authUserId != null && authUserId.isNotEmpty) {
-      return authUserId;
-    }
-    
-    // Sinon, utiliser l'utilisateur par défaut pour le développement
-    // TODO: En production, retourner null ou gérer l'erreur si pas d'utilisateur
-    return 'default_user_boutique';
-  },
-);
+final currentUserIdProvider = Provider<String>((ref) {
+  // Récupérer l'ID de l'utilisateur authentifié
+  final authUserId = ref.watch(auth.currentUserIdProvider);
+
+  // Si un utilisateur est authentifié, utiliser son ID
+  if (authUserId != null && authUserId.isNotEmpty) {
+    return authUserId;
+  }
+
+  // Sinon, utiliser l'utilisateur par défaut pour le développement
+  // TODO: En production, retourner null ou gérer l'erreur si pas d'utilisateur
+  return 'default_user_boutique';
+});
 
 /// Provider for boutique permission adapter.
 final boutiquePermissionAdapterProvider = Provider<BoutiquePermissionAdapter>(
@@ -36,4 +35,3 @@ final boutiquePermissionAdapterProvider = Provider<BoutiquePermissionAdapter>(
     userId: ref.watch(currentUserIdProvider),
   ),
 );
-

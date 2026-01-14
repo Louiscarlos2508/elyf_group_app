@@ -47,14 +47,14 @@ class CustomerCollection {
   }
 
   Map<String, dynamic> toMap() => {
-        'id': remoteId,
-        'enterpriseId': enterpriseId,
-        'name': name,
-        'phone': phone,
-        'phoneNumber': phoneNumber,
-        'email': email,
-        'address': address,
-        'balance': balance,
-        'isActive': isActive,
-      };
+    'id': remoteId,
+    'enterpriseId': enterpriseId,
+    'name': name,
+    'phone': phone,
+    'phoneNumber': phoneNumber,
+    'email': email,
+    'address': address,
+    'balance': balance,
+    'isActive': isActive,
+  };
 }

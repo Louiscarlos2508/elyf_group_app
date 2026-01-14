@@ -7,10 +7,7 @@ import 'contract_detail_components.dart';
 
 /// Section des dates du contrat.
 class ContractDatesSection extends StatelessWidget {
-  const ContractDatesSection({
-    super.key,
-    required this.contract,
-  });
+  const ContractDatesSection({super.key, required this.contract});
 
   final Contract contract;
 
@@ -66,10 +63,7 @@ class ContractDatesSection extends StatelessWidget {
 
 /// Section financière du contrat.
 class ContractFinancialSection extends StatelessWidget {
-  const ContractFinancialSection({
-    super.key,
-    required this.contract,
-  });
+  const ContractFinancialSection({super.key, required this.contract});
 
   final Contract contract;
 
@@ -95,7 +89,9 @@ class ContractFinancialSection extends StatelessWidget {
           Expanded(
             child: ContractInfoColumn(
               label: 'Caution',
-              value: ContractCardHelpers.formatCurrency(contract.calculatedDeposit),
+              value: ContractCardHelpers.formatCurrency(
+                contract.calculatedDeposit,
+              ),
               subtitle: contract.depositInMonths != null
                   ? '(${contract.depositInMonths} mois)'
                   : null,
@@ -146,7 +142,8 @@ class ContractLinkedEntitiesSection extends StatelessWidget {
               icon: Icons.home,
               label: 'Propriété',
               value: contract.property!.address,
-              subtitle: '${contract.property!.city} - ${contract.property!.rooms} pièces',
+              subtitle:
+                  '${contract.property!.city} - ${contract.property!.rooms} pièces',
               onTap: onPropertyTap != null
                   ? () {
                       Navigator.of(context).pop();
@@ -163,10 +160,7 @@ class ContractLinkedEntitiesSection extends StatelessWidget {
 
 /// Section des notes.
 class ContractNotesSection extends StatelessWidget {
-  const ContractNotesSection({
-    super.key,
-    required this.notes,
-  });
+  const ContractNotesSection({super.key, required this.notes});
 
   final String notes;
 
@@ -179,4 +173,3 @@ class ContractNotesSection extends StatelessWidget {
     );
   }
 }
-

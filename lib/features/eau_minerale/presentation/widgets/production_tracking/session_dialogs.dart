@@ -10,6 +10,7 @@ import '../production_finalization_dialog.dart';
 import '../production_resume_dialog.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
+
 /// Dialogs pour la gestion de la session de production.
 class SessionDialogs {
   /// Affiche le dialog de finalisation.
@@ -56,7 +57,10 @@ class SessionDialogs {
             if (context.mounted) {
               Navigator.of(context).pop();
               ref.invalidate(productionSessionDetailProvider((session.id)));
-              NotificationService.showInfo(context, 'Événement enregistré. Production suspendue.');
+              NotificationService.showInfo(
+                context,
+                'Événement enregistré. Production suspendue.',
+              );
             }
           },
         ),
@@ -92,11 +96,13 @@ class SessionDialogs {
 
           if (context.mounted) {
             ref.invalidate(productionSessionDetailProvider((session.id)));
-            NotificationService.showInfo(context, 'Production reprise avec succès.');
+            NotificationService.showInfo(
+              context,
+              'Production reprise avec succès.',
+            );
           }
         },
       ),
     );
   }
 }
-

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../../../shared/utils/date_formatter.dart';
+
 /// Card for filtering sales by date period - matches Figma design.
 class WholesaleDateFilterCard extends StatelessWidget {
   const WholesaleDateFilterCard({
@@ -17,10 +18,7 @@ class WholesaleDateFilterCard extends StatelessWidget {
   final ValueChanged<DateTime> onStartDateChanged;
   final ValueChanged<DateTime> onEndDateChanged;
 
-  Future<void> _selectDate(
-    BuildContext context,
-    bool isStartDate,
-  ) async {
+  Future<void> _selectDate(BuildContext context, bool isStartDate) async {
     final picked = await showDatePicker(
       context: context,
       initialDate: isStartDate
@@ -190,4 +188,3 @@ class WholesaleDateFilterCard extends StatelessWidget {
     );
   }
 }
-

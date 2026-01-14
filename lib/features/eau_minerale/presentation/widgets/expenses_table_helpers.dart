@@ -8,10 +8,13 @@ class ExpensesTableHelpers {
     return category.label;
   }
 
-  static Widget buildCategoryChip(BuildContext context, ExpenseCategory category) {
+  static Widget buildCategoryChip(
+    BuildContext context,
+    ExpenseCategory category,
+  ) {
     final theme = Theme.of(context);
     final categoryName = getCategoryName(category);
-    
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
@@ -42,10 +45,7 @@ class ExpensesTableHelpers {
           onPressed: () => onActionTap?.call(expense, 'view'),
           tooltip: 'Voir',
           padding: const EdgeInsets.all(8),
-          constraints: const BoxConstraints(
-            minWidth: 32,
-            minHeight: 32,
-          ),
+          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
           color: theme.colorScheme.primary,
         ),
         const SizedBox(width: 4),
@@ -54,14 +54,10 @@ class ExpensesTableHelpers {
           onPressed: () => onActionTap?.call(expense, 'edit'),
           tooltip: 'Modifier',
           padding: const EdgeInsets.all(8),
-          constraints: const BoxConstraints(
-            minWidth: 32,
-            minHeight: 32,
-          ),
+          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
           color: theme.colorScheme.primary,
         ),
       ],
     );
   }
 }
-

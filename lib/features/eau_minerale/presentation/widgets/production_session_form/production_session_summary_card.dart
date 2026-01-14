@@ -41,14 +41,14 @@ class ProductionSessionSummaryCard extends ConsumerWidget {
           Text(
             label,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
           Text(
             value,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
           ),
         ],
       ),
@@ -66,10 +66,9 @@ class ProductionSessionSummaryCard extends ConsumerWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
             side: BorderSide(
-              color: Theme.of(context)
-                  .colorScheme
-                  .outline
-                  .withValues(alpha: 0.2),
+              color: Theme.of(
+                context,
+              ).colorScheme.outline.withValues(alpha: 0.2),
             ),
           ),
           child: Padding(
@@ -79,13 +78,17 @@ class ProductionSessionSummaryCard extends ConsumerWidget {
               children: [
                 Text(
                   'Résumé de la session',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
                 _buildSummaryRow(context, 'Date', formatDate(date)),
-                _buildSummaryRow(context, 'Heure début', formatTime(heureDebut)),
+                _buildSummaryRow(
+                  context,
+                  'Heure début',
+                  formatTime(heureDebut),
+                ),
                 _buildSummaryRow(context, 'Machines', '$machinesCount'),
                 _buildSummaryRow(context, 'Bobines', '$bobinesCount'),
                 if (indexInitialKwh != null)
@@ -137,4 +140,3 @@ class ProductionSessionSummaryCard extends ConsumerWidget {
     );
   }
 }
-

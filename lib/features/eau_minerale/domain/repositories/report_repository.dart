@@ -10,9 +10,10 @@ import '../entities/sale.dart';
 abstract class ReportRepository {
   Future<ReportData> fetchReportData(ReportPeriod period);
   Future<List<Sale>> fetchSalesForPeriod(ReportPeriod period);
-  Future<List<ProductSalesSummary>> fetchProductSalesSummary(ReportPeriod period);
+  Future<List<ProductSalesSummary>> fetchProductSalesSummary(
+    ReportPeriod period,
+  );
   Future<ProductionReportData> fetchProductionReport(ReportPeriod period);
   Future<ExpenseReportData> fetchExpenseReport(ReportPeriod period);
   Future<SalaryReportData> fetchSalaryReport(ReportPeriod period);
 }
-

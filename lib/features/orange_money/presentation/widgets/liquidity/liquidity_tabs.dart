@@ -21,14 +21,8 @@ class LiquidityTabs extends StatelessWidget {
       ),
       child: Row(
         children: [
-          _buildTab(
-            index: 0,
-            label: 'Historique récent',
-          ),
-          _buildTab(
-            index: 1,
-            label: 'Tous les pointages',
-          ),
+          _buildTab(index: 0, label: 'Historique récent'),
+          _buildTab(index: 1, label: 'Tous les pointages'),
         ],
       ),
     );
@@ -53,14 +47,10 @@ class LiquidityTabs extends StatelessWidget {
           alignment: Alignment.center,
           child: Text(
             label,
-            style: const TextStyle(
-              fontSize: 14,
-              color: Color(0xFF0A0A0A),
-            ),
+            style: const TextStyle(fontSize: 14, color: Color(0xFF0A0A0A)),
           ),
         ),
       ),
     );
   }
 }
-

@@ -67,14 +67,14 @@ class TransactionTypeSelector extends StatelessWidget {
     // Couleurs selon Figma: vert pour Dépôt sélectionné, rouge pour Retrait sélectionné
     final backgroundColor = isActive
         ? (type == TransactionType.cashIn
-            ? const Color(0xFF00A63E) // Vert pour Dépôt
-            : const Color(0xFFE7000B)) // Rouge pour Retrait
+              ? const Color(0xFF00A63E) // Vert pour Dépôt
+              : const Color(0xFFE7000B)) // Rouge pour Retrait
         : Colors.white;
     final textColor = isActive ? Colors.white : const Color(0xFF0A0A0A);
     final borderColor = isActive
         ? (type == TransactionType.cashIn
-            ? const Color(0xFF00A63E)
-            : const Color(0xFFE7000B))
+              ? const Color(0xFF00A63E)
+              : const Color(0xFFE7000B))
         : const Color(0xFFE5E5E5);
     final iconColor = isActive ? Colors.white : const Color(0xFF0A0A0A);
 
@@ -85,10 +85,7 @@ class TransactionTypeSelector extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
           color: backgroundColor,
-          border: Border.all(
-            color: borderColor,
-            width: 1.219,
-          ),
+          border: Border.all(color: borderColor, width: 1.219),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Row(
@@ -110,4 +107,3 @@ class TransactionTypeSelector extends StatelessWidget {
     );
   }
 }
-

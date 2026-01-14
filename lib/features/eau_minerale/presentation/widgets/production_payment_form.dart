@@ -21,8 +21,7 @@ class ProductionPaymentForm extends ConsumerStatefulWidget {
       ProductionPaymentFormState();
 }
 
-class ProductionPaymentFormState
-    extends ConsumerState<ProductionPaymentForm> {
+class ProductionPaymentFormState extends ConsumerState<ProductionPaymentForm> {
   final _formKey = GlobalKey<FormState>();
   final _notesController = TextEditingController();
   DateTime _paymentDate = DateTime.now();
@@ -62,11 +61,9 @@ class ProductionPaymentFormState
 
   void _addPerson() {
     setState(() {
-      _persons.add(const ProductionPaymentPerson(
-        name: '',
-        pricePerDay: 0,
-        daysWorked: 0,
-      ));
+      _persons.add(
+        const ProductionPaymentPerson(name: '', pricePerDay: 0, daysWorked: 0),
+      );
     });
   }
 
@@ -80,9 +77,13 @@ class ProductionPaymentFormState
 
   Future<void> submit() async {
     if (!_formKey.currentState!.validate()) return;
-    
-    final validationService = ref.read(productionPaymentValidationServiceProvider);
-    final validationError = validationService.getPersonsValidationError(_persons);
+
+    final validationService = ref.read(
+      productionPaymentValidationServiceProvider,
+    );
+    final validationError = validationService.getPersonsValidationError(
+      _persons,
+    );
     if (validationError != null) {
       NotificationService.showWarning(context, validationError);
       return;
@@ -95,7 +96,9 @@ class ProductionPaymentFormState
         period: _period,
         paymentDate: _paymentDate,
         persons: _persons,
-        notes: _notesController.text.isEmpty ? null : _notesController.text.trim(),
+        notes: _notesController.text.isEmpty
+            ? null
+            : _notesController.text.trim(),
       );
 
       await ref.read(salaryControllerProvider).createProductionPayment(payment);
@@ -164,4 +167,3 @@ class ProductionPaymentFormState
     );
   }
 }
-

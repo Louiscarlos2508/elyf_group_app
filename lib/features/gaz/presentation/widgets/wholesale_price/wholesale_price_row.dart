@@ -7,6 +7,7 @@ import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import '../../../domain/entities/gaz_settings.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
+
 /// Ligne d'édition de prix pour un poids de bouteille.
 class WholesalePriceRow extends ConsumerStatefulWidget {
   const WholesalePriceRow({
@@ -47,7 +48,9 @@ class _WholesalePriceRowState extends ConsumerState<WholesalePriceRow> {
     super.didUpdateWidget(oldWidget);
     // Mettre à jour le controller si le prix a changé et qu'on n'est pas en mode édition
     if (oldWidget.price != widget.price && !_isEditing) {
-      _controller.text = widget.price > 0 ? widget.price.toStringAsFixed(0) : '';
+      _controller.text = widget.price > 0
+          ? widget.price.toStringAsFixed(0)
+          : '';
     }
   }
 
@@ -63,7 +66,10 @@ class _WholesalePriceRowState extends ConsumerState<WholesalePriceRow> {
 
     if (price <= 0) {
       if (mounted) {
-        NotificationService.showError(context, 'Le prix doit être supérieur à 0');
+        NotificationService.showError(
+          context,
+          'Le prix doit être supérieur à 0',
+        );
       }
       return;
     }
@@ -79,16 +85,20 @@ class _WholesalePriceRowState extends ConsumerState<WholesalePriceRow> {
 
       if (mounted) {
         ref.invalidate(
-          gazSettingsProvider(
-            (enterpriseId: widget.enterpriseId, moduleId: widget.moduleId),
-          ),
+          gazSettingsProvider((
+            enterpriseId: widget.enterpriseId,
+            moduleId: widget.moduleId,
+          )),
         );
 
         setState(() {
           _isEditing = false;
         });
 
-        NotificationService.showSuccess(context, 'Prix en gros enregistré avec succès');
+        NotificationService.showSuccess(
+          context,
+          'Prix en gros enregistré avec succès',
+        );
 
         widget.onPriceSaved();
       }
@@ -102,7 +112,8 @@ class _WholesalePriceRowState extends ConsumerState<WholesalePriceRow> {
   void _cancelEdit() {
     setState(() {
       _isEditing = false;
-      final prevPrice = widget.settings?.getWholesalePrice(widget.weight) ?? 0.0;
+      final prevPrice =
+          widget.settings?.getWholesalePrice(widget.weight) ?? 0.0;
       _controller.text = prevPrice > 0 ? prevPrice.toStringAsFixed(0) : '';
     });
   }
@@ -119,18 +130,13 @@ class _WholesalePriceRowState extends ConsumerState<WholesalePriceRow> {
       decoration: BoxDecoration(
         color: colors.surfaceContainerHighest.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: colors.outline.withValues(alpha: 0.1),
-        ),
+        border: Border.all(color: colors.outline.withValues(alpha: 0.1)),
       ),
       child: Row(
         children: [
           // Poids
           Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 8,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
               color: colors.primaryContainer,
               borderRadius: BorderRadius.circular(8),
@@ -152,9 +158,7 @@ class _WholesalePriceRowState extends ConsumerState<WholesalePriceRow> {
                     keyboardType: const TextInputType.numberWithOptions(
                       decimal: false,
                     ),
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                    ],
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     decoration: InputDecoration(
                       labelText: 'Prix en gros (FCFA)',
                       hintText: 'Entrez le prix',
@@ -236,4 +240,3 @@ class _WholesalePriceRowState extends ConsumerState<WholesalePriceRow> {
     );
   }
 }
-

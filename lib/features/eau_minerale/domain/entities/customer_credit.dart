@@ -18,7 +18,7 @@ class CustomerCredit {
 
   int get remainingAmount => amount - amountPaid;
   bool get isFullyPaid => remainingAmount == 0;
-  
+
   factory CustomerCredit.sample(String id, int index) {
     return CustomerCredit(
       id: id,
@@ -30,4 +30,3 @@ class CustomerCredit {
     );
   }
 }
-

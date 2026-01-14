@@ -55,7 +55,10 @@ class StoreController {
   }
 
   Future<void> deleteProduct(String id) async {
-    return await _productRepository.deleteProduct(id, deletedBy: _currentUserId);
+    return await _productRepository.deleteProduct(
+      id,
+      deletedBy: _currentUserId,
+    );
   }
 
   Future<void> restoreProduct(String id) async {
@@ -105,8 +108,9 @@ class StoreController {
           stock: newStock,
           purchasePrice: item.purchasePrice,
         );
+        // Mise à jour unique : utiliser updateProduct qui met déjà à jour le stock
         await _productRepository.updateProduct(updatedProduct);
-        await _stockRepository.updateStock(item.productId, newStock);
+        // Ne pas appeler updateStock car updateProduct le fait déjà
       }
     }
     return await _purchaseRepository.createPurchase(purchase);
@@ -122,7 +126,10 @@ class StoreController {
   }
 
   Future<void> deleteExpense(String id) async {
-    return await _expenseRepository.deleteExpense(id, deletedBy: _currentUserId);
+    return await _expenseRepository.deleteExpense(
+      id,
+      deletedBy: _currentUserId,
+    );
   }
 
   Future<void> restoreExpense(String id) async {
@@ -194,4 +201,3 @@ class StoreController {
     );
   }
 }
-

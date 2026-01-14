@@ -194,4 +194,3 @@ class MockSalaryRepository implements SalaryRepository {
     return payment.id;
   }
 }
-

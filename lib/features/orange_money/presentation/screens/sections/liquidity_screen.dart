@@ -30,20 +30,23 @@ class _LiquidityScreenState extends ConsumerState<LiquidityScreen> {
   @override
   Widget build(BuildContext context) {
     final enterpriseKey = widget.enterpriseId ?? '';
-    final todayCheckpointAsync =
-        ref.watch(todayLiquidityCheckpointProvider(enterpriseKey));
+    final todayCheckpointAsync = ref.watch(
+      todayLiquidityCheckpointProvider(enterpriseKey),
+    );
 
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final sevenDaysAgo = today.subtract(const Duration(days: 7));
     final recentCheckpointsKey =
         '$enterpriseKey|${sevenDaysAgo.millisecondsSinceEpoch}|${today.millisecondsSinceEpoch}';
-    final recentCheckpointsAsync =
-        ref.watch(liquidityCheckpointsProvider((recentCheckpointsKey)));
+    final recentCheckpointsAsync = ref.watch(
+      liquidityCheckpointsProvider((recentCheckpointsKey)),
+    );
 
     final allCheckpointsKey = enterpriseKey.isEmpty ? '' : '$enterpriseKey||';
-    final allCheckpointsAsync =
-        ref.watch(liquidityCheckpointsProvider((allCheckpointsKey)));
+    final allCheckpointsAsync = ref.watch(
+      liquidityCheckpointsProvider((allCheckpointsKey)),
+    );
 
     return Container(
       color: const Color(0xFFF9FAFB),
@@ -73,10 +76,15 @@ class _LiquidityScreenState extends ConsumerState<LiquidityScreen> {
     final formattedDate = dateFormat.format(today);
 
     final enterpriseKey = widget.enterpriseId ?? '';
-    final todayMillis =
-        DateTime(today.year, today.month, today.day).millisecondsSinceEpoch;
+    final todayMillis = DateTime(
+      today.year,
+      today.month,
+      today.day,
+    ).millisecondsSinceEpoch;
     final dailyStatsKey = '$enterpriseKey|$todayMillis';
-    final dailyStatsAsync = ref.watch(dailyTransactionStatsProvider(dailyStatsKey));
+    final dailyStatsAsync = ref.watch(
+      dailyTransactionStatsProvider(dailyStatsKey),
+    );
 
     return Container(
       decoration: BoxDecoration(
@@ -134,7 +142,9 @@ class _LiquidityScreenState extends ConsumerState<LiquidityScreen> {
   }
 
   Widget _buildCheckpointCards(
-      BuildContext context, LiquidityCheckpoint? checkpoint) {
+    BuildContext context,
+    LiquidityCheckpoint? checkpoint,
+  ) {
     return Row(
       children: [
         Expanded(
@@ -146,7 +156,10 @@ class _LiquidityScreenState extends ConsumerState<LiquidityScreen> {
             cashAmount: checkpoint?.morningCashAmount,
             simAmount: checkpoint?.morningSimAmount,
             onPressed: () => _showCheckpointDialog(
-                context, LiquidityCheckpointType.morning, checkpoint),
+              context,
+              LiquidityCheckpointType.morning,
+              checkpoint,
+            ),
           ),
         ),
         const SizedBox(width: 16),
@@ -159,7 +172,10 @@ class _LiquidityScreenState extends ConsumerState<LiquidityScreen> {
             cashAmount: checkpoint?.eveningCashAmount,
             simAmount: checkpoint?.eveningSimAmount,
             onPressed: () => _showCheckpointDialog(
-                context, LiquidityCheckpointType.evening, checkpoint),
+              context,
+              LiquidityCheckpointType.evening,
+              checkpoint,
+            ),
           ),
         ),
       ],
@@ -184,7 +200,8 @@ class _LiquidityScreenState extends ConsumerState<LiquidityScreen> {
   }
 
   Widget _buildHistoryContent(
-      AsyncValue<List<LiquidityCheckpoint>> checkpointsAsync) {
+    AsyncValue<List<LiquidityCheckpoint>> checkpointsAsync,
+  ) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -241,8 +258,10 @@ class _LiquidityScreenState extends ConsumerState<LiquidityScreen> {
             error: (error, stack) => Center(
               child: Padding(
                 padding: EdgeInsets.all(24),
-                child: Text('Erreur: $error',
-                    style: const TextStyle(color: Colors.red)),
+                child: Text(
+                  'Erreur: $error',
+                  style: const TextStyle(color: Colors.red),
+                ),
               ),
             ),
           ),
@@ -251,7 +270,9 @@ class _LiquidityScreenState extends ConsumerState<LiquidityScreen> {
     );
   }
 
-  List<LiquidityCheckpoint> _applyFilters(List<LiquidityCheckpoint> checkpoints) {
+  List<LiquidityCheckpoint> _applyFilters(
+    List<LiquidityCheckpoint> checkpoints,
+  ) {
     var filtered = checkpoints;
 
     if (_selectedPeriodFilter != null) {
@@ -365,4 +386,3 @@ class _LiquidityScreenState extends ConsumerState<LiquidityScreen> {
     ref.invalidate(liquidityCheckpointsProvider((allCheckpointsKey)));
   }
 }
-

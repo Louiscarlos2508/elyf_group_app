@@ -14,7 +14,8 @@ class ReportPeriodSelector extends StatefulWidget {
   final ReportPeriod selectedPeriod;
   final DateTime? startDate;
   final DateTime? endDate;
-  final void Function(ReportPeriod period, DateTime? start, DateTime? end) onPeriodChanged;
+  final void Function(ReportPeriod period, DateTime? start, DateTime? end)
+  onPeriodChanged;
 
   @override
   State<ReportPeriodSelector> createState() => _ReportPeriodSelectorState();
@@ -27,9 +28,7 @@ class _ReportPeriodSelectorState extends State<ReportPeriodSelector> {
 
     return Card(
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -86,7 +85,9 @@ class _ReportPeriodSelectorState extends State<ReportPeriodSelector> {
                     final now = DateTime.now();
                     final start = await showDatePicker(
                       context: context,
-                      initialDate: widget.startDate ?? now.subtract(const Duration(days: 30)),
+                      initialDate:
+                          widget.startDate ??
+                          now.subtract(const Duration(days: 30)),
                       firstDate: DateTime(2000),
                       lastDate: now,
                     );
@@ -113,17 +114,11 @@ class _ReportPeriodSelectorState extends State<ReportPeriodSelector> {
               Row(
                 children: [
                   Expanded(
-                    child: _DateDisplay(
-                      label: 'Du',
-                      date: widget.startDate!,
-                    ),
+                    child: _DateDisplay(label: 'Du', date: widget.startDate!),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
-                    child: _DateDisplay(
-                      label: 'Au',
-                      date: widget.endDate!,
-                    ),
+                    child: _DateDisplay(label: 'Au', date: widget.endDate!),
                   ),
                 ],
               ),
@@ -168,10 +163,7 @@ class _PeriodChip extends StatelessWidget {
 }
 
 class _DateDisplay extends StatelessWidget {
-  const _DateDisplay({
-    required this.label,
-    required this.date,
-  });
+  const _DateDisplay({required this.label, required this.date});
 
   final String label;
   final DateTime date;
@@ -212,4 +204,3 @@ class _DateDisplay extends StatelessWidget {
     );
   }
 }
-

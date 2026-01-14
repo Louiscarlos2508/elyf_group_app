@@ -30,10 +30,7 @@ class FormDialogActions extends StatelessWidget {
             style: GazButtonStyles.outlined,
             child: Text(
               cancelLabel,
-              style: const TextStyle(
-                fontSize: 14,
-                color: Color(0xFF0A0A0A),
-              ),
+              style: const TextStyle(fontSize: 14, color: Color(0xFF0A0A0A)),
             ),
           ),
         ),
@@ -51,14 +48,10 @@ class FormDialogActions extends StatelessWidget {
                       valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                     ),
                   )
-                : Text(
-                    submitLabel,
-                    style: const TextStyle(fontSize: 14),
-                  ),
+                : Text(submitLabel, style: const TextStyle(fontSize: 14)),
           ),
         ),
       ],
     );
   }
 }
-

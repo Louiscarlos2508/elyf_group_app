@@ -111,4 +111,3 @@ class TrackingActions extends StatelessWidget {
     TrackingDialogs.showResumeDialog(context, ref, session);
   }
 }
-

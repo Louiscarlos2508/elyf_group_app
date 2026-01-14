@@ -38,10 +38,7 @@ class LiquidityFiltersCard extends StatelessWidget {
                     SizedBox(width: 8),
                     Text(
                       'Période',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Color(0xFF0A0A0A),
-                      ),
+                      style: TextStyle(fontSize: 14, color: Color(0xFF0A0A0A)),
                     ),
                   ],
                 ),
@@ -88,15 +85,15 @@ class LiquidityFiltersCard extends StatelessWidget {
               children: [
                 const Row(
                   children: [
-                    Icon(Icons.calendar_today,
-                        size: 16, color: Color(0xFF0A0A0A)),
+                    Icon(
+                      Icons.calendar_today,
+                      size: 16,
+                      color: Color(0xFF0A0A0A),
+                    ),
                     SizedBox(width: 8),
                     Text(
                       'Date',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Color(0xFF0A0A0A),
-                      ),
+                      style: TextStyle(fontSize: 14, color: Color(0xFF0A0A0A)),
                     ),
                   ],
                 ),
@@ -119,8 +116,9 @@ class LiquidityFiltersCard extends StatelessWidget {
                         Expanded(
                           child: Text(
                             selectedDateFilter != null
-                                ? DateFormat('dd/MM/yyyy')
-                                    .format(selectedDateFilter!)
+                                ? DateFormat(
+                                    'dd/MM/yyyy',
+                                  ).format(selectedDateFilter!)
                                 : '',
                             style: const TextStyle(
                               fontSize: 14,
@@ -158,10 +156,7 @@ class LiquidityFiltersCard extends StatelessWidget {
                 ),
                 child: const Text(
                   'Réinitialiser filtres',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF0A0A0A),
-                  ),
+                  style: TextStyle(fontSize: 14, color: Color(0xFF0A0A0A)),
                 ),
               ),
             ),
@@ -171,4 +166,3 @@ class LiquidityFiltersCard extends StatelessWidget {
     );
   }
 }
-

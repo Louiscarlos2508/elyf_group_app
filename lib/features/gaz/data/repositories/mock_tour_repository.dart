@@ -20,8 +20,7 @@ class MockTourRepository implements TourRepository {
       if (from != null && t.tourDate.isBefore(from)) return false;
       if (to != null && t.tourDate.isAfter(to)) return false;
       return true;
-    }).toList()
-      ..sort((a, b) => b.tourDate.compareTo(a.tourDate));
+    }).toList()..sort((a, b) => b.tourDate.compareTo(a.tourDate));
   }
 
   @override
@@ -31,9 +30,7 @@ class MockTourRepository implements TourRepository {
 
   @override
   Future<String> createTour(Tour tour) async {
-    final id = tour.id.isEmpty
-        ? 'tour_${_random.nextInt(1000000)}'
-        : tour.id;
+    final id = tour.id.isEmpty ? 'tour_${_random.nextInt(1000000)}' : tour.id;
     final newTour = tour.copyWith(id: id);
     _tours.add(newTour);
     return id;
@@ -67,7 +64,10 @@ class MockTourRepository implements TourRepository {
           updated = updated.copyWith(transportCompletedDate: now);
           break;
         case TourStatus.closure:
-          updated = updated.copyWith(returnCompletedDate: now, closureDate: now);
+          updated = updated.copyWith(
+            returnCompletedDate: now,
+            closureDate: now,
+          );
           break;
         case TourStatus.cancelled:
           updated = updated.copyWith(cancelledDate: now);
@@ -88,4 +88,3 @@ class MockTourRepository implements TourRepository {
     _tours.removeWhere((t) => t.id == id);
   }
 }
-

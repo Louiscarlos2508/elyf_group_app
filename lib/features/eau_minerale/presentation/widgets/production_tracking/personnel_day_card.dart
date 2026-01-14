@@ -8,6 +8,7 @@ import '../../../domain/entities/production_session.dart';
 import 'tracking_helpers.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
+
 /// Widget pour afficher une carte de jour de production.
 class PersonnelDayCard extends ConsumerWidget {
   const PersonnelDayCard({
@@ -85,7 +86,8 @@ class PersonnelDayCard extends ConsumerWidget {
                   Padding(
                     padding: const EdgeInsets.only(right: 8),
                     child: OutlinedButton.icon(
-                      onPressed: () => _showPersonnelForm(context, ref, day.date, day),
+                      onPressed: () =>
+                          _showPersonnelForm(context, ref, day.date, day),
                       icon: const Icon(Icons.inventory_2, size: 18),
                       label: const Text('Production'),
                       style: OutlinedButton.styleFrom(
@@ -100,7 +102,8 @@ class PersonnelDayCard extends ConsumerWidget {
                   IconButton(
                     icon: const Icon(Icons.edit),
                     tooltip: 'Modifier le personnel et la production',
-                    onPressed: () => _showPersonnelForm(context, ref, day.date, day),
+                    onPressed: () =>
+                        _showPersonnelForm(context, ref, day.date, day),
                   ),
                 IconButton(
                   icon: const Icon(Icons.delete_outline),
@@ -132,10 +135,14 @@ class PersonnelDayCard extends ConsumerWidget {
             date: date,
             existingDay: existingDay,
             onSaved: (productionDay) async {
-              final updatedDays = List<ProductionDay>.from(session.productionDays);
+              final updatedDays = List<ProductionDay>.from(
+                session.productionDays,
+              );
 
               if (existingDay != null) {
-                final index = updatedDays.indexWhere((d) => d.id == existingDay.id);
+                final index = updatedDays.indexWhere(
+                  (d) => d.id == existingDay.id,
+                );
                 if (index >= 0) {
                   updatedDays[index] = productionDay;
                 }
@@ -143,7 +150,9 @@ class PersonnelDayCard extends ConsumerWidget {
                 updatedDays.add(productionDay);
               }
 
-              final updatedSession = session.copyWith(productionDays: updatedDays);
+              final updatedSession = session.copyWith(
+                productionDays: updatedDays,
+              );
 
               final controller = ref.read(productionSessionControllerProvider);
               await controller.updateSession(updatedSession);
@@ -152,7 +161,10 @@ class PersonnelDayCard extends ConsumerWidget {
                 Navigator.of(context).pop();
                 ref.invalidate(productionSessionDetailProvider((session.id)));
                 ref.invalidate(stockStateProvider);
-                NotificationService.showInfo(context, 'Personnel enregistré avec succès');
+                NotificationService.showInfo(
+                  context,
+                  'Personnel enregistré avec succès',
+                );
               }
             },
           ),
@@ -161,4 +173,3 @@ class PersonnelDayCard extends ConsumerWidget {
     );
   }
 }
-

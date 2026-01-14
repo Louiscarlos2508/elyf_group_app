@@ -37,7 +37,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   Future<void> _loadSettings() async {
     if (widget.enterpriseId == null) return;
-    
+
     setState(() {
       _isLoading = true;
     });
@@ -45,7 +45,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     try {
       final controller = ref.read(settingsControllerProvider);
       final settings = await controller.getSettings(widget.enterpriseId!);
-      
+
       if (settings != null && mounted) {
         setState(() {
           _notifications = settings.notifications;
@@ -81,7 +81,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       if (_thresholds.criticalLiquidityThreshold < 0) {
         throw Exception('Le seuil de liquidité ne peut pas être négatif');
       }
-      if (_thresholds.paymentDueDaysBefore < 0 || _thresholds.paymentDueDaysBefore > 30) {
+      if (_thresholds.paymentDueDaysBefore < 0 ||
+          _thresholds.paymentDueDaysBefore > 30) {
         throw Exception('Le nombre de jours doit être entre 0 et 30');
       }
 
@@ -92,23 +93,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       );
 
       // Update thresholds
-      await controller.updateThresholds(
-        widget.enterpriseId!,
-        _thresholds,
-      );
+      await controller.updateThresholds(widget.enterpriseId!, _thresholds);
 
       // Update SIM number
-      await controller.updateSimNumber(
-        widget.enterpriseId!,
-        _simNumber,
-      );
+      await controller.updateSimNumber(widget.enterpriseId!, _simNumber);
 
       if (mounted) {
         setState(() {
           _hasChanges = false;
         });
-        
-        NotificationService.showSuccess(context, 'Paramètres enregistrés avec succès');
+
+        NotificationService.showSuccess(
+          context,
+          'Paramètres enregistrés avec succès',
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -221,9 +219,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       runSpacing: 12,
       children: [
         OutlinedButton(
-          onPressed: _isLoading ? null : () {
-            _loadSettings();
-          },
+          onPressed: _isLoading
+              ? null
+              : () {
+                  _loadSettings();
+                },
           style: OutlinedButton.styleFrom(
             backgroundColor: Colors.white,
             side: BorderSide(
@@ -238,16 +238,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           child: const Text(
             'Annuler',
-            style: TextStyle(
-              fontSize: 14,
-              color: Color(0xFF0A0A0A),
-            ),
+            style: TextStyle(fontSize: 14, color: Color(0xFF0A0A0A)),
           ),
         ),
         ElevatedButton.icon(
-          onPressed: _isLoading || !_hasChanges
-              ? null
-              : _saveSettings,
+          onPressed: _isLoading || !_hasChanges ? null : _saveSettings,
           icon: _isLoading
               ? const SizedBox(
                   width: 16,
@@ -258,11 +253,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                 )
               : const Icon(Icons.save, size: 16),
-          label: Text(_isLoading ? 'Enregistrement...' : 'Enregistrer les paramètres'),
+          label: Text(
+            _isLoading ? 'Enregistrement...' : 'Enregistrer les paramètres',
+          ),
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFFF54900),
             foregroundColor: Colors.white,
-            disabledBackgroundColor: const Color(0xFFF54900).withValues(alpha: 0.5),
+            disabledBackgroundColor: const Color(
+              0xFFF54900,
+            ).withValues(alpha: 0.5),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             minimumSize: const Size(0, 36),
             shape: RoundedRectangleBorder(

@@ -5,14 +5,14 @@ import 'package:elyf_groupe_app/core.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../../application/providers.dart';
 import 'package:elyf_groupe_app/core/permissions/services/permission_registry.dart';
-import 'package:elyf_groupe_app/core/auth/providers.dart' show currentUserIdProvider;
+import 'package:elyf_groupe_app/core/auth/providers.dart'
+    show currentUserIdProvider;
+import '../../../../domain/services/permission_section_mapper.dart';
+import '../../../../domain/entities/module_sections_info.dart';
 
 /// Dialogue pour modifier un rôle existant.
 class EditRoleDialog extends ConsumerStatefulWidget {
-  const EditRoleDialog({
-    super.key,
-    required this.role,
-  });
+  const EditRoleDialog({super.key, required this.role});
 
   final UserRole role;
 
@@ -34,8 +34,9 @@ class _EditRoleDialogState extends ConsumerState<EditRoleDialog>
     super.initState();
     _formKey = GlobalKey<FormState>();
     _nameController = TextEditingController(text: widget.role.name);
-    _descriptionController =
-        TextEditingController(text: widget.role.description);
+    _descriptionController = TextEditingController(
+      text: widget.role.description,
+    );
     _selectedPermissions = Set.from(widget.role.permissions);
   }
 
@@ -48,12 +49,18 @@ class _EditRoleDialogState extends ConsumerState<EditRoleDialog>
 
   Future<void> _handleSubmit() async {
     if (_selectedPermissions.isEmpty) {
-      NotificationService.showInfo(context, 'Sélectionnez au moins une permission');
+      NotificationService.showInfo(
+        context,
+        'Sélectionnez au moins une permission',
+      );
       return;
     }
 
     if (widget.role.isSystemRole) {
-      NotificationService.showInfo(context, 'Les rôles système ne peuvent pas être modifiés');
+      NotificationService.showInfo(
+        context,
+        'Les rôles système ne peuvent pas être modifiés',
+      );
       return;
     }
 
@@ -71,11 +78,13 @@ class _EditRoleDialogState extends ConsumerState<EditRoleDialog>
         // Récupérer l'ID de l'utilisateur actuel pour l'audit trail
         final currentUserId = ref.read(currentUserIdProvider);
 
-        await ref.read(adminControllerProvider).updateRole(
-          updatedRole,
-          currentUserId: currentUserId,
-          oldRole: widget.role,
-        );
+        await ref
+            .read(adminControllerProvider)
+            .updateRole(
+              updatedRole,
+              currentUserId: currentUserId,
+              oldRole: widget.role,
+            );
 
         if (mounted) {
           Navigator.of(context).pop(updatedRole);
@@ -186,16 +195,32 @@ class _EditRoleDialogState extends ConsumerState<EditRoleDialog>
                           // Récupérer toutes les permissions enregistrées depuis PermissionRegistry
                           final registry = PermissionRegistry.instance;
                           final allPermissionsMap = <String, String>{};
-                          
+                          final permissionsByModuleList =
+                              <String, List<ModulePermission>>{};
+
                           // Parcourir tous les modules enregistrés
                           for (final moduleId in registry.registeredModules) {
-                            final modulePermissions = registry.getModulePermissions(moduleId);
+                            final modulePermissions = registry
+                                .getModulePermissions(moduleId);
                             if (modulePermissions != null) {
-                              for (final permission in modulePermissions.values) {
-                                allPermissionsMap[permission.id] = permission.name;
+                              final modulePerms = <ModulePermission>[];
+                              for (final permission
+                                  in modulePermissions.values) {
+                                allPermissionsMap[permission.id] =
+                                    permission.name;
+                                modulePerms.add(permission);
+                              }
+                              if (modulePerms.isNotEmpty) {
+                                permissionsByModuleList[moduleId] = modulePerms;
                               }
                             }
                           }
+
+                          // Organiser les permissions par module et section
+                          final organizedPermissions =
+                              PermissionSectionMapper.organizeAllPermissions(
+                                permissionsByModule: permissionsByModuleList,
+                              );
 
                           // Si aucune permission n'est enregistrée, essayer de récupérer depuis les rôles existants
                           if (allPermissionsMap.isEmpty) {
@@ -215,7 +240,9 @@ class _EditRoleDialogState extends ConsumerState<EditRoleDialog>
                                         Icon(
                                           Icons.info_outline,
                                           size: 48,
-                                          color: theme.colorScheme.onSurfaceVariant,
+                                          color: theme
+                                              .colorScheme
+                                              .onSurfaceVariant,
                                         ),
                                         const SizedBox(height: 8),
                                         Text(
@@ -225,9 +252,12 @@ class _EditRoleDialogState extends ConsumerState<EditRoleDialog>
                                         const SizedBox(height: 4),
                                         Text(
                                           'Les permissions doivent être enregistrées dans PermissionRegistry',
-                                          style: theme.textTheme.bodySmall?.copyWith(
-                                            color: theme.colorScheme.onSurfaceVariant,
-                                          ),
+                                          style: theme.textTheme.bodySmall
+                                              ?.copyWith(
+                                                color: theme
+                                                    .colorScheme
+                                                    .onSurfaceVariant,
+                                              ),
                                           textAlign: TextAlign.center,
                                         ),
                                       ],
@@ -235,7 +265,8 @@ class _EditRoleDialogState extends ConsumerState<EditRoleDialog>
                                   );
                                 }
 
-                                final sortedPermissions = allPermissions.toList()..sort();
+                                final sortedPermissions =
+                                    allPermissions.toList()..sort();
 
                                 return Column(
                                   children: [
@@ -244,16 +275,21 @@ class _EditRoleDialogState extends ConsumerState<EditRoleDialog>
                                         children: [
                                           Expanded(
                                             child: CheckboxListTile(
-                                              title: const Text('Toutes les permissions'),
-                                              value: _selectedPermissions.length ==
+                                              title: const Text(
+                                                'Toutes les permissions',
+                                              ),
+                                              value:
+                                                  _selectedPermissions.length ==
                                                   sortedPermissions.length,
                                               onChanged: (value) {
                                                 setState(() {
                                                   if (value == true) {
-                                                    _selectedPermissions
-                                                        .addAll(sortedPermissions);
+                                                    _selectedPermissions.addAll(
+                                                      sortedPermissions,
+                                                    );
                                                   } else {
-                                                    _selectedPermissions.clear();
+                                                    _selectedPermissions
+                                                        .clear();
                                                   }
                                                 });
                                               },
@@ -261,20 +297,27 @@ class _EditRoleDialogState extends ConsumerState<EditRoleDialog>
                                           ),
                                         ],
                                       ),
-                                    if (!widget.role.isSystemRole) const Divider(),
+                                    if (!widget.role.isSystemRole)
+                                      const Divider(),
                                     ...sortedPermissions.map((permission) {
                                       return CheckboxListTile(
                                         title: Text(permission),
-                                        value: _selectedPermissions.contains(permission),
+                                        value: _selectedPermissions.contains(
+                                          permission,
+                                        ),
                                         enabled: !widget.role.isSystemRole,
                                         onChanged: widget.role.isSystemRole
                                             ? null
                                             : (value) {
                                                 setState(() {
                                                   if (value == true) {
-                                                    _selectedPermissions.add(permission);
+                                                    _selectedPermissions.add(
+                                                      permission,
+                                                    );
                                                   } else {
-                                                    _selectedPermissions.remove(permission);
+                                                    _selectedPermissions.remove(
+                                                      permission,
+                                                    );
                                                   }
                                                 });
                                               },
@@ -288,8 +331,9 @@ class _EditRoleDialogState extends ConsumerState<EditRoleDialog>
                             );
                           }
 
-                          // Afficher les permissions organisées par module
-                          final sortedPermissionIds = allPermissionsMap.keys.toList()..sort();
+                          // Afficher les permissions organisées par module → section → permissions
+                          final sortedPermissionIds =
+                              allPermissionsMap.keys.toList()..sort();
 
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -299,15 +343,19 @@ class _EditRoleDialogState extends ConsumerState<EditRoleDialog>
                                   children: [
                                     Expanded(
                                       child: CheckboxListTile(
-                                        title: const Text('Toutes les permissions'),
-                                        value: _selectedPermissions.length ==
+                                        title: const Text(
+                                          'Toutes les permissions',
+                                        ),
+                                        value:
+                                            _selectedPermissions.length ==
                                                 sortedPermissionIds.length &&
                                             _selectedPermissions.isNotEmpty,
                                         onChanged: (value) {
                                           setState(() {
                                             if (value == true) {
-                                              _selectedPermissions
-                                                  .addAll(sortedPermissionIds);
+                                              _selectedPermissions.addAll(
+                                                sortedPermissionIds,
+                                              );
                                             } else {
                                               _selectedPermissions.clear();
                                             }
@@ -318,31 +366,320 @@ class _EditRoleDialogState extends ConsumerState<EditRoleDialog>
                                   ],
                                 ),
                               if (!widget.role.isSystemRole) const Divider(),
-                              ...sortedPermissionIds.map((permissionId) {
-                                final permissionName = allPermissionsMap[permissionId] ?? permissionId;
-                                return CheckboxListTile(
-                                  title: Text(permissionName),
-                                  subtitle: Text(
-                                    permissionId,
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      color: theme.colorScheme.onSurfaceVariant,
+                              // Afficher les permissions organisées par module → section
+                              if (organizedPermissions.length > 1)
+                                ...organizedPermissions.map((moduleData) {
+                                  final moduleId = moduleData.moduleId;
+                                  final sections = moduleData.sections;
+                                  final moduleSections =
+                                      ModuleSectionsRegistry.getSectionsForModule(
+                                        moduleId,
+                                      );
+
+                                  final modulePermissionIds = sections.values
+                                      .expand((perms) => perms.map((p) => p.id))
+                                      .toSet();
+                                  final allModuleSelected = modulePermissionIds
+                                      .every(
+                                        (id) =>
+                                            _selectedPermissions.contains(id),
+                                      );
+
+                                  return ExpansionTile(
+                                    leading: Checkbox(
+                                      value:
+                                          allModuleSelected &&
+                                          modulePermissionIds.isNotEmpty,
+                                      onChanged: widget.role.isSystemRole
+                                          ? null
+                                          : (value) {
+                                              setState(() {
+                                                if (value == true) {
+                                                  _selectedPermissions.addAll(
+                                                    modulePermissionIds,
+                                                  );
+                                                } else {
+                                                  _selectedPermissions
+                                                      .removeAll(
+                                                        modulePermissionIds,
+                                                      );
+                                                }
+                                              });
+                                            },
                                     ),
-                                  ),
-                                  value: _selectedPermissions.contains(permissionId),
-                                  enabled: !widget.role.isSystemRole,
-                                  onChanged: widget.role.isSystemRole
-                                      ? null
-                                      : (value) {
-                                          setState(() {
-                                            if (value == true) {
-                                              _selectedPermissions.add(permissionId);
-                                            } else {
-                                              _selectedPermissions.remove(permissionId);
-                                            }
-                                          });
-                                        },
-                                );
-                              }),
+                                    title: Text(
+                                      _getModuleName(moduleId),
+                                      style: theme.textTheme.titleSmall
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                    ),
+                                    subtitle: Text(
+                                      '${sections.values.fold<int>(0, (sum, perms) => sum + perms.length)} permission${sections.values.fold<int>(0, (sum, perms) => sum + perms.length) > 1 ? 's' : ''}',
+                                      style: theme.textTheme.bodySmall,
+                                    ),
+                                    children: sections.entries.map((
+                                      sectionEntry,
+                                    ) {
+                                      final sectionId = sectionEntry.key;
+                                      final sectionPermissions =
+                                          sectionEntry.value;
+                                      final sectionInfo = moduleSections
+                                          .firstWhere(
+                                            (s) => s.id == sectionId,
+                                            orElse: () => ModuleSection(
+                                              id: sectionId,
+                                              name: sectionId,
+                                              icon: Icons.category_outlined,
+                                            ),
+                                          );
+                                      final sectionPermissionIds =
+                                          sectionPermissions
+                                              .map((p) => p.id)
+                                              .toSet();
+                                      final allSectionSelected =
+                                          sectionPermissionIds.every(
+                                            (id) => _selectedPermissions
+                                                .contains(id),
+                                          );
+
+                                      return ExpansionTile(
+                                        leading: Checkbox(
+                                          value:
+                                              allSectionSelected &&
+                                              sectionPermissionIds.isNotEmpty,
+                                          onChanged: widget.role.isSystemRole
+                                              ? null
+                                              : (value) {
+                                                  setState(() {
+                                                    if (value == true) {
+                                                      _selectedPermissions
+                                                          .addAll(
+                                                            sectionPermissionIds,
+                                                          );
+                                                    } else {
+                                                      _selectedPermissions
+                                                          .removeAll(
+                                                            sectionPermissionIds,
+                                                          );
+                                                    }
+                                                  });
+                                                },
+                                        ),
+                                        title: Row(
+                                          children: [
+                                            Icon(
+                                              sectionInfo.icon,
+                                              size: 18,
+                                              color: theme.colorScheme.primary,
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Expanded(
+                                              child: Text(
+                                                sectionInfo.name,
+                                                style: theme.textTheme.bodyLarge
+                                                    ?.copyWith(
+                                                      fontWeight:
+                                                          FontWeight.w500,
+                                                    ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        subtitle: Text(
+                                          '${sectionPermissions.length} permission${sectionPermissions.length > 1 ? 's' : ''}',
+                                          style: theme.textTheme.bodySmall,
+                                        ),
+                                        children: sectionPermissions.map((
+                                          permission,
+                                        ) {
+                                          return CheckboxListTile(
+                                            title: Text(permission.name),
+                                            subtitle: Text(
+                                              permission.id,
+                                              style: theme.textTheme.bodySmall
+                                                  ?.copyWith(
+                                                    color: theme
+                                                        .colorScheme
+                                                        .onSurfaceVariant,
+                                                  ),
+                                            ),
+                                            value: _selectedPermissions
+                                                .contains(permission.id),
+                                            enabled: !widget.role.isSystemRole,
+                                            onChanged: widget.role.isSystemRole
+                                                ? null
+                                                : (value) {
+                                                    setState(() {
+                                                      if (value == true) {
+                                                        _selectedPermissions
+                                                            .add(permission.id);
+                                                      } else {
+                                                        _selectedPermissions
+                                                            .remove(
+                                                              permission.id,
+                                                            );
+                                                      }
+                                                    });
+                                                  },
+                                          );
+                                        }).toList(),
+                                      );
+                                    }).toList(),
+                                  );
+                                })
+                              else if (organizedPermissions.isNotEmpty)
+                                // Un seul module : afficher directement les sections
+                                ...organizedPermissions.first.sections.entries.map((
+                                  sectionEntry,
+                                ) {
+                                  final moduleId =
+                                      organizedPermissions.first.moduleId;
+                                  final sectionId = sectionEntry.key;
+                                  final sectionPermissions = sectionEntry.value;
+                                  final moduleSections =
+                                      ModuleSectionsRegistry.getSectionsForModule(
+                                        moduleId,
+                                      );
+                                  final sectionInfo = moduleSections.firstWhere(
+                                    (s) => s.id == sectionId,
+                                    orElse: () => ModuleSection(
+                                      id: sectionId,
+                                      name: sectionId,
+                                      icon: Icons.category_outlined,
+                                    ),
+                                  );
+
+                                  final sectionPermissionIds =
+                                      sectionPermissions
+                                          .map((p) => p.id)
+                                          .toSet();
+                                  final allSectionSelected =
+                                      sectionPermissionIds.every(
+                                        (id) =>
+                                            _selectedPermissions.contains(id),
+                                      );
+
+                                  return ExpansionTile(
+                                    leading: Checkbox(
+                                      value:
+                                          allSectionSelected &&
+                                          sectionPermissionIds.isNotEmpty,
+                                      onChanged: widget.role.isSystemRole
+                                          ? null
+                                          : (value) {
+                                              setState(() {
+                                                if (value == true) {
+                                                  _selectedPermissions.addAll(
+                                                    sectionPermissionIds,
+                                                  );
+                                                } else {
+                                                  _selectedPermissions
+                                                      .removeAll(
+                                                        sectionPermissionIds,
+                                                      );
+                                                }
+                                              });
+                                            },
+                                    ),
+                                    title: Row(
+                                      children: [
+                                        Icon(
+                                          sectionInfo.icon,
+                                          size: 18,
+                                          color: theme.colorScheme.primary,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            sectionInfo.name,
+                                            style: theme.textTheme.bodyLarge
+                                                ?.copyWith(
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    subtitle: Text(
+                                      '${sectionPermissions.length} permission${sectionPermissions.length > 1 ? 's' : ''}',
+                                      style: theme.textTheme.bodySmall,
+                                    ),
+                                    children: sectionPermissions.map((
+                                      permission,
+                                    ) {
+                                      return CheckboxListTile(
+                                        title: Text(permission.name),
+                                        subtitle: Text(
+                                          permission.id,
+                                          style: theme.textTheme.bodySmall
+                                              ?.copyWith(
+                                                color: theme
+                                                    .colorScheme
+                                                    .onSurfaceVariant,
+                                              ),
+                                        ),
+                                        value: _selectedPermissions.contains(
+                                          permission.id,
+                                        ),
+                                        enabled: !widget.role.isSystemRole,
+                                        onChanged: widget.role.isSystemRole
+                                            ? null
+                                            : (value) {
+                                                setState(() {
+                                                  if (value == true) {
+                                                    _selectedPermissions.add(
+                                                      permission.id,
+                                                    );
+                                                  } else {
+                                                    _selectedPermissions.remove(
+                                                      permission.id,
+                                                    );
+                                                  }
+                                                });
+                                              },
+                                      );
+                                    }).toList(),
+                                  );
+                                })
+                              else
+                                // Fallback : afficher toutes les permissions en liste simple
+                                ...sortedPermissionIds.map((permissionId) {
+                                  final permissionName =
+                                      allPermissionsMap[permissionId] ??
+                                      permissionId;
+                                  return CheckboxListTile(
+                                    title: Text(permissionName),
+                                    subtitle: Text(
+                                      permissionId,
+                                      style: theme.textTheme.bodySmall
+                                          ?.copyWith(
+                                            color: theme
+                                                .colorScheme
+                                                .onSurfaceVariant,
+                                          ),
+                                    ),
+                                    value: _selectedPermissions.contains(
+                                      permissionId,
+                                    ),
+                                    enabled: !widget.role.isSystemRole,
+                                    onChanged: widget.role.isSystemRole
+                                        ? null
+                                        : (value) {
+                                            setState(() {
+                                              if (value == true) {
+                                                _selectedPermissions.add(
+                                                  permissionId,
+                                                );
+                                              } else {
+                                                _selectedPermissions.remove(
+                                                  permissionId,
+                                                );
+                                              }
+                                            });
+                                          },
+                                  );
+                                }),
                             ],
                           );
                         },
@@ -373,7 +710,9 @@ class _EditRoleDialogState extends ConsumerState<EditRoleDialog>
                             ? const SizedBox(
                                 width: 20,
                                 height: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               )
                             : const Text('Enregistrer'),
                       ),
@@ -387,5 +726,23 @@ class _EditRoleDialogState extends ConsumerState<EditRoleDialog>
       ),
     );
   }
-}
 
+  String _getModuleName(String moduleId) {
+    switch (moduleId) {
+      case 'eau_minerale':
+        return 'Eau Minérale';
+      case 'gaz':
+        return 'Gaz';
+      case 'orange_money':
+        return 'Orange Money';
+      case 'immobilier':
+        return 'Immobilier';
+      case 'boutique':
+        return 'Boutique';
+      case 'administration':
+        return 'Administration';
+      default:
+        return moduleId;
+    }
+  }
+}

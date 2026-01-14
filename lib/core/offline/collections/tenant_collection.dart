@@ -43,17 +43,17 @@ class TenantCollection {
   }
 
   Map<String, dynamic> toMap() => {
-        'id': remoteId ?? localId,
-        'localId': localId,
-        'enterpriseId': enterpriseId,
-        'firstName': firstName,
-        'lastName': lastName,
-        'email': email,
-        'phone': phone,
-        'idNumber': idNumber,
-        'address': address,
-        'occupation': occupation,
-        'emergencyContact': emergencyContact,
-        'notes': notes,
-      };
+    'id': remoteId ?? localId,
+    'localId': localId,
+    'enterpriseId': enterpriseId,
+    'firstName': firstName,
+    'lastName': lastName,
+    'email': email,
+    'phone': phone,
+    'idNumber': idNumber,
+    'address': address,
+    'occupation': occupation,
+    'emergencyContact': emergencyContact,
+    'notes': notes,
+  };
 }

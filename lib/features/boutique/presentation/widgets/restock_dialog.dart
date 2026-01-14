@@ -11,10 +11,7 @@ import '../../domain/entities/purchase.dart';
 
 /// Dialog simplifié pour réapprovisionner un seul produit.
 class RestockDialog extends ConsumerStatefulWidget {
-  const RestockDialog({
-    super.key,
-    required this.product,
-  });
+  const RestockDialog({super.key, required this.product});
 
   final Product product;
 
@@ -80,7 +77,7 @@ class _RestockDialogState extends ConsumerState<RestockDialog> {
       );
 
       final controller = ref.read(storeControllerProvider);
-      
+
       // Créer l'achat
       await controller.createPurchase(purchase);
 
@@ -158,82 +155,75 @@ class _RestockDialogState extends ConsumerState<RestockDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _quantityController,
-                        decoration: const InputDecoration(
-                          labelText: 'Quantité',
-                          prefixIcon: Icon(Icons.add_box),
-                        ),
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                        ],
-                        validator: (v) {
-                          if (v == null || v.isEmpty) return 'Requis';
-                          final qty = int.tryParse(v);
-                          if (qty == null || qty <= 0) return 'Min 1';
-                          return null;
-                        },
-                        onChanged: (_) => setState(() {}),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _quantityController,
+                      decoration: const InputDecoration(
+                        labelText: 'Quantité',
+                        prefixIcon: Icon(Icons.add_box),
                       ),
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      validator: (v) {
+                        if (v == null || v.isEmpty) return 'Requis';
+                        final qty = int.tryParse(v);
+                        if (qty == null || qty <= 0) return 'Min 1';
+                        return null;
+                      },
+                      onChanged: (_) => setState(() {}),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _priceController,
-                        decoration: const InputDecoration(
-                          labelText: 'Prix total',
-                          suffixText: 'FCFA',
-                          prefixIcon: Icon(Icons.payments),
-                        ),
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                        ],
-                        validator: (v) {
-                          if (v == null || v.isEmpty) return 'Requis';
-                          return null;
-                        },
-                        onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _priceController,
+                      decoration: const InputDecoration(
+                        labelText: 'Prix total',
+                        suffixText: 'FCFA',
+                        prefixIcon: Icon(Icons.payments),
+                      ),
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      validator: (v) {
+                        if (v == null || v.isEmpty) return 'Requis';
+                        return null;
+                      },
+                      onChanged: (_) => setState(() {}),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _supplierController,
+                decoration: const InputDecoration(
+                  labelText: 'Fournisseur (optionnel)',
+                  prefixIcon: Icon(Icons.store),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Prix unitaire:', style: theme.textTheme.titleMedium),
+                    Text(
+                      CurrencyFormatter.formatFCFA(_calculateUnitPrice()),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onPrimaryContainer,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _supplierController,
-                  decoration: const InputDecoration(
-                    labelText: 'Fournisseur (optionnel)',
-                    prefixIcon: Icon(Icons.store),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Prix unitaire:',
-                        style: theme.textTheme.titleMedium,
-                      ),
-                      Text(
-                        CurrencyFormatter.formatFCFA(_calculateUnitPrice()),
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.onPrimaryContainer,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+              ),
             ],
           ),
         ),

@@ -35,4 +35,3 @@ class RetailHeader extends StatelessWidget {
     );
   }
 }
-

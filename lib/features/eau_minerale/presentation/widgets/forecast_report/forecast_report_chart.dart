@@ -57,8 +57,9 @@ class ForecastProjectionChart extends StatelessWidget {
                         color: isProjection
                             ? Colors.purple
                             : theme.colorScheme.onSurfaceVariant,
-                        fontWeight:
-                            isProjection ? FontWeight.bold : FontWeight.normal,
+                        fontWeight: isProjection
+                            ? FontWeight.bold
+                            : FontWeight.normal,
                       ),
                     ),
                   );
@@ -94,10 +95,12 @@ class ForecastProjectionChart extends StatelessWidget {
                     (historicalData.length - 1).toDouble(),
                     historicalData.last,
                   ),
-                ...projections.asMap().entries.map((e) => FlSpot(
-                      (historicalData.length + e.key).toDouble(),
-                      e.value,
-                    )),
+                ...projections.asMap().entries.map(
+                  (e) => FlSpot(
+                    (historicalData.length + e.key).toDouble(),
+                    e.value,
+                  ),
+                ),
               ],
               isCurved: true,
               color: Colors.purple,
@@ -125,4 +128,3 @@ class ForecastProjectionChart extends StatelessWidget {
     );
   }
 }
-

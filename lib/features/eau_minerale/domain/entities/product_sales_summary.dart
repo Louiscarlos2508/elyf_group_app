@@ -10,4 +10,3 @@ class ProductSalesSummary {
   final int quantity;
   final int revenue;
 }
-

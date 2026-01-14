@@ -23,7 +23,8 @@ class AdminOfflineRepository implements AdminRepository {
   final ConnectivityService connectivityService;
 
   static const String _rolesCollection = 'roles';
-  static const String _enterpriseModuleUsersCollection = 'enterprise_module_users';
+  static const String _enterpriseModuleUsersCollection =
+      'enterprise_module_users';
 
   // EnterpriseModuleUser methods
   EnterpriseModuleUser _enterpriseModuleUserFromMap(Map<String, dynamic> map) {
@@ -32,7 +33,8 @@ class AdminOfflineRepository implements AdminRepository {
       enterpriseId: map['enterpriseId'] as String,
       moduleId: map['moduleId'] as String,
       roleId: map['roleId'] as String,
-      customPermissions: (map['customPermissions'] as List<dynamic>?)
+      customPermissions:
+          (map['customPermissions'] as List<dynamic>?)
               ?.map((e) => e as String)
               .toSet() ??
           {},
@@ -65,7 +67,8 @@ class AdminOfflineRepository implements AdminRepository {
       id: map['id'] as String? ?? map['localId'] as String,
       name: map['name'] as String,
       description: map['description'] as String,
-      permissions: (map['permissions'] as List<dynamic>?)
+      permissions:
+          (map['permissions'] as List<dynamic>?)
               ?.map((e) => e as String)
               .toSet() ??
           {},
@@ -122,34 +125,38 @@ class AdminOfflineRepository implements AdminRepository {
 
   @override
   Future<List<EnterpriseModuleUser>> getUserEnterpriseModuleUsers(
-      String userId) async {
+    String userId,
+  ) async {
     final all = await getEnterpriseModuleUsers();
     return all.where((emu) => emu.userId == userId).toList();
   }
 
   @override
   Future<List<EnterpriseModuleUser>> getEnterpriseUsers(
-      String enterpriseId) async {
+    String enterpriseId,
+  ) async {
     final all = await getEnterpriseModuleUsers();
     return all.where((emu) => emu.enterpriseId == enterpriseId).toList();
   }
 
   @override
   Future<List<EnterpriseModuleUser>>
-      getEnterpriseModuleUsersByEnterpriseAndModule(
+  getEnterpriseModuleUsersByEnterpriseAndModule(
     String enterpriseId,
     String moduleId,
   ) async {
     final all = await getEnterpriseModuleUsers();
     return all
-        .where((emu) =>
-            emu.enterpriseId == enterpriseId && emu.moduleId == moduleId)
+        .where(
+          (emu) => emu.enterpriseId == enterpriseId && emu.moduleId == moduleId,
+        )
         .toList();
   }
 
   @override
   Future<void> assignUserToEnterprise(
-      EnterpriseModuleUser enterpriseModuleUser) async {
+    EnterpriseModuleUser enterpriseModuleUser,
+  ) async {
     final localId = _getLocalId(enterpriseModuleUser.documentId);
     final remoteId = _getRemoteId(enterpriseModuleUser.documentId);
     final map = _enterpriseModuleUserToMap(enterpriseModuleUser)
@@ -217,10 +224,12 @@ class AdminOfflineRepository implements AdminRepository {
     String enterpriseId,
     String moduleId,
   ) async {
-    final localId = _getLocalId('${userId}_${enterpriseId}_$moduleId');
-    await driftService.records.deleteByLocalId(
+    // Le documentId est utilisé comme remoteId dans Drift
+    // Il faut utiliser deleteByRemoteId avec le documentId
+    final documentId = '${userId}_${enterpriseId}_$moduleId';
+    await driftService.records.deleteByRemoteId(
       collectionName: _enterpriseModuleUsersCollection,
-      localId: localId,
+      remoteId: documentId,
       enterpriseId: 'global',
       moduleType: 'administration',
     );
@@ -331,10 +340,11 @@ class AdminOfflineRepository implements AdminRepository {
 
   @override
   Future<void> deleteRole(String roleId) async {
-    final localId = _getLocalId(roleId);
-    await driftService.records.deleteByLocalId(
+    // Le roleId est utilisé comme remoteId dans Drift
+    // Il faut utiliser deleteByRemoteId avec le roleId
+    await driftService.records.deleteByRemoteId(
       collectionName: _rolesCollection,
-      localId: localId,
+      remoteId: roleId,
       enterpriseId: 'global',
       moduleType: 'administration',
     );
@@ -347,4 +357,3 @@ class AdminOfflineRepository implements AdminRepository {
     return allRoles;
   }
 }
-

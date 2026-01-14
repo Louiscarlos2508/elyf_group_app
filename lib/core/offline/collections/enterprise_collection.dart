@@ -14,10 +14,10 @@ class EnterpriseCollection {
   EnterpriseCollection();
 
   Map<String, dynamic> toMap() => {
-        'id': remoteId,
-        'name': name,
-        'description': description,
-        'type': type,
-        'isActive': isActive,
-      };
+    'id': remoteId,
+    'name': name,
+    'description': description,
+    'type': type,
+    'isActive': isActive,
+  };
 }

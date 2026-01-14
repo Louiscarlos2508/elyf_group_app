@@ -18,7 +18,8 @@ class Purchase {
   final int totalAmount; // Montant total en CFA
   final String? supplier; // Fournisseur
   final String? notes; // Notes additionnelles
-  final List<AttachedFile>? attachedFiles; // Fichiers joints (factures, photos, etc.)
+  final List<AttachedFile>?
+  attachedFiles; // Fichiers joints (factures, photos, etc.)
 }
 
 /// Represents an item in a purchase.
@@ -37,4 +38,3 @@ class PurchaseItem {
   final int purchasePrice;
   final int totalPrice;
 }
-

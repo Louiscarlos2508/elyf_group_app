@@ -12,10 +12,7 @@ import 'production_period_formatter.dart';
 
 /// Widget pour afficher les rapports hebdomadaires et mensuels avec graphiques.
 class WeeklyMonthlyReportContent extends ConsumerWidget {
-  const WeeklyMonthlyReportContent({
-    super.key,
-    required this.period,
-  });
+  const WeeklyMonthlyReportContent({super.key, required this.period});
 
   final ReportPeriod period;
 
@@ -27,7 +24,7 @@ class WeeklyMonthlyReportContent extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    
+
     // Récupérer les données
     final sessionsAsync = ref.watch(productionSessionsStateProvider);
     final expensesAsync = ref.watch(financesStateProvider);
@@ -37,13 +34,17 @@ class WeeklyMonthlyReportContent extends ConsumerWidget {
       data: (allSessions) {
         // Filtrer les sessions dans la période
         final sessions = allSessions.where((s) {
-          return s.date.isAfter(period.startDate.subtract(const Duration(days: 1))) &&
+          return s.date.isAfter(
+                period.startDate.subtract(const Duration(days: 1)),
+              ) &&
               s.date.isBefore(period.endDate.add(const Duration(days: 1)));
         }).toList();
 
         final expenses = expensesAsync.maybeWhen(
           data: (data) => data.expenses.where((e) {
-            return e.date.isAfter(period.startDate.subtract(const Duration(days: 1))) &&
+            return e.date.isAfter(
+                  period.startDate.subtract(const Duration(days: 1)),
+                ) &&
                 e.date.isBefore(period.endDate.add(const Duration(days: 1)));
           }).toList(),
           orElse: () => <ExpenseRecord>[],
@@ -51,7 +52,9 @@ class WeeklyMonthlyReportContent extends ConsumerWidget {
 
         final salaries = salariesAsync.maybeWhen(
           data: (data) => data.monthlySalaryPayments.where((s) {
-            return s.date.isAfter(period.startDate.subtract(const Duration(days: 1))) &&
+            return s.date.isAfter(
+                  period.startDate.subtract(const Duration(days: 1)),
+                ) &&
                 s.date.isBefore(period.endDate.add(const Duration(days: 1)));
           }).toList(),
           orElse: () => <SalaryPayment>[],
@@ -71,10 +74,7 @@ class WeeklyMonthlyReportContent extends ConsumerWidget {
           0,
           (sum, e) => sum + e.amountCfa,
         );
-        final totalSalaries = salaries.fold<int>(
-          0,
-          (sum, s) => sum + s.amount,
-        );
+        final totalSalaries = salaries.fold<int>(0, (sum, s) => sum + s.amount);
         final totalCosts = totalExpenses + totalSalaries;
 
         return Container(
@@ -104,7 +104,7 @@ class WeeklyMonthlyReportContent extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 24),
-              
+
               // KPIs
               _KpiGrid(
                 items: [
@@ -147,7 +147,7 @@ class WeeklyMonthlyReportContent extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: 24),
-              
+
               // Graphique des dépenses par catégorie
               if (expenses.isNotEmpty) ...[
                 _SectionTitle(title: 'Dépenses par Catégorie'),
@@ -155,7 +155,7 @@ class WeeklyMonthlyReportContent extends ConsumerWidget {
                 _ExpenseCategoryChart(expenses: expenses),
                 const SizedBox(height: 24),
               ],
-              
+
               // Détail des productions
               _SectionTitle(title: 'Détail des Productions'),
               const SizedBox(height: 16),
@@ -169,10 +169,12 @@ class WeeklyMonthlyReportContent extends ConsumerWidget {
                   ),
                 )
               else
-                ...sessions.map((session) => _ProductionSummaryCard(
-                      session: session,
-                      formatCurrency: CurrencyFormatter.formatFCFA,
-                    )),
+                ...sessions.map(
+                  (session) => _ProductionSummaryCard(
+                    session: session,
+                    formatCurrency: CurrencyFormatter.formatFCFA,
+                  ),
+                ),
             ],
           ),
         );
@@ -193,9 +195,7 @@ class _SectionTitle extends StatelessWidget {
     final theme = Theme.of(context);
     return Text(
       title,
-      style: theme.textTheme.titleLarge?.copyWith(
-        fontWeight: FontWeight.bold,
-      ),
+      style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
     );
   }
 }
@@ -225,10 +225,14 @@ class _KpiGrid extends StatelessWidget {
           );
         } else {
           return Column(
-            children: items.map((item) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: item,
-            )).toList(),
+            children: items
+                .map(
+                  (item) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: item,
+                  ),
+                )
+                .toList(),
           );
         }
       },
@@ -257,9 +261,7 @@ class _KpiItem extends StatelessWidget {
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: color.withValues(alpha: 0.3),
-        ),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
@@ -302,7 +304,7 @@ class _ExpenseCategoryChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     // Grouper par catégorie
     final byCategory = <String, int>{};
     for (final expense in expenses) {
@@ -425,12 +427,14 @@ class _ProductionSummaryCard extends StatelessWidget {
                 if (session.consommationCourant > 0)
                   _InfoChip(
                     icon: Icons.bolt,
-                    label: '${session.consommationCourant.toStringAsFixed(2)} kWh',
+                    label:
+                        '${session.consommationCourant.toStringAsFixed(2)} kWh',
                   ),
                 if (session.coutTotalPersonnel > 0)
                   _InfoChip(
                     icon: Icons.people,
-                    label: 'Personnel: ${formatCurrency(session.coutTotalPersonnel)}',
+                    label:
+                        'Personnel: ${formatCurrency(session.coutTotalPersonnel)}',
                   ),
               ],
             ),
@@ -442,10 +446,7 @@ class _ProductionSummaryCard extends StatelessWidget {
 }
 
 class _InfoChip extends StatelessWidget {
-  const _InfoChip({
-    required this.icon,
-    required this.label,
-  });
+  const _InfoChip({required this.icon, required this.label});
 
   final IconData icon;
   final String label;
@@ -464,10 +465,7 @@ class _InfoChip extends StatelessWidget {
         children: [
           Icon(icon, size: 16, color: theme.colorScheme.primary),
           const SizedBox(width: 4),
-          Text(
-            label,
-            style: theme.textTheme.bodySmall,
-          ),
+          Text(label, style: theme.textTheme.bodySmall),
         ],
       ),
     );

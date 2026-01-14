@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart' show productValidationServiceProvider;
+import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart'
+    show productValidationServiceProvider;
 import '../../domain/entities/product.dart';
 
 /// Form fields for product form dialog.
@@ -25,7 +26,7 @@ class ProductFormFields extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // Utiliser le service de validation pour extraire la logique métier
     final validationService = ref.read(productValidationServiceProvider);
-    
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -90,4 +91,3 @@ class ProductFormFields extends ConsumerWidget {
     );
   }
 }
-

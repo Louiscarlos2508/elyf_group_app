@@ -58,11 +58,13 @@ class DailyWorkerOfflineRepository extends OfflineRepository<DailyWorker>
       'phone': entity.phone,
       'salaireJournalier': entity.salaireJournalier,
       'joursTravailles': entity.joursTravailles
-          .map((w) => {
-                'date': w.date.toIso8601String(),
-                'productionId': w.productionId,
-                'salaireJournalier': w.salaireJournalier,
-              })
+          .map(
+            (w) => {
+              'date': w.date.toIso8601String(),
+              'productionId': w.productionId,
+              'salaireJournalier': w.salaireJournalier,
+            },
+          )
           .toList(),
       'createdAt': entity.createdAt?.toIso8601String(),
       'updatedAt': entity.updatedAt?.toIso8601String(),

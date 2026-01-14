@@ -8,22 +8,19 @@ import 'sales_report_table.dart';
 
 /// Content widget for sales report tab.
 class SalesReportContent extends ConsumerWidget {
-  const SalesReportContent({
-    super.key,
-    required this.period,
-  });
+  const SalesReportContent({super.key, required this.period});
 
   final ReportPeriod period;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    
+
     final salesAsync = ref.watch(reportSalesProvider(period));
     final productSummaryAsync = ref.watch(reportProductSummaryProvider(period));
 
     final isWide = MediaQuery.of(context).size.width > 600;
-    
+
     return Container(
       padding: EdgeInsets.all(isWide ? 24 : 16),
       decoration: BoxDecoration(
@@ -70,9 +67,9 @@ class SalesReportContent extends ConsumerWidget {
                       ),
                     )
                   else
-                    ...productSummaries.map((summary) => SalesReportProductSummary(
-                          summary: summary,
-                        )),
+                    ...productSummaries.map(
+                      (summary) => SalesReportProductSummary(summary: summary),
+                    ),
                   const SizedBox(height: 24),
                   Text(
                     'Tableau des Ventes',
@@ -94,6 +91,4 @@ class SalesReportContent extends ConsumerWidget {
       ),
     );
   }
-
 }
-

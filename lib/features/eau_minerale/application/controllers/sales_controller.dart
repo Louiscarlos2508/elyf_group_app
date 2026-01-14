@@ -3,10 +3,7 @@ import '../../domain/repositories/sale_repository.dart';
 import '../../domain/services/sale_service.dart';
 
 class SalesController {
-  SalesController(
-    this._saleRepository,
-    this._saleService,
-  );
+  SalesController(this._saleRepository, this._saleService);
 
   final SaleRepository _saleRepository;
   final SaleService _saleService;

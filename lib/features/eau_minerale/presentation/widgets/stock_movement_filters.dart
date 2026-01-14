@@ -5,25 +5,22 @@ import '../../domain/entities/stock_movement.dart';
 
 /// Widget pour filtrer les mouvements de stock par période et type
 class StockMovementFilters extends ConsumerStatefulWidget {
-  const StockMovementFilters({
-    super.key,
-    required this.onFiltersChanged,
-  });
+  const StockMovementFilters({super.key, required this.onFiltersChanged});
 
   final void Function({
     DateTime? startDate,
     DateTime? endDate,
     StockMovementType? type,
     String? productName,
-  }) onFiltersChanged;
+  })
+  onFiltersChanged;
 
   @override
   ConsumerState<StockMovementFilters> createState() =>
       _StockMovementFiltersState();
 }
 
-class _StockMovementFiltersState
-    extends ConsumerState<StockMovementFilters> {
+class _StockMovementFiltersState extends ConsumerState<StockMovementFilters> {
   DateTime? _startDate;
   DateTime? _endDate;
   StockMovementType? _selectedType;
@@ -126,7 +123,7 @@ class _StockMovementFiltersState
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -172,7 +169,7 @@ class _StockMovementFiltersState
             LayoutBuilder(
               builder: (context, constraints) {
                 final isWide = constraints.maxWidth > 600;
-                
+
                 if (isWide) {
                   return Row(
                     children: [
@@ -194,9 +191,7 @@ class _StockMovementFiltersState
                         ),
                       ),
                       const SizedBox(width: 16),
-                      Expanded(
-                        child: _buildTypeFilter(context),
-                      ),
+                      Expanded(child: _buildTypeFilter(context)),
                     ],
                   );
                 } else {
@@ -239,7 +234,7 @@ class _StockMovementFiltersState
   Widget _buildPeriodButton(BuildContext context, String label, String period) {
     final theme = Theme.of(context);
     final isSelected = _isPeriodSelected(period);
-    
+
     return FilterChip(
       label: Text(label),
       selected: isSelected,
@@ -297,14 +292,9 @@ class _StockMovementFiltersState
         decoration: InputDecoration(
           labelText: label,
           prefixIcon: const Icon(Icons.calendar_today, size: 20),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         ),
-        child: Text(
-          _formatDate(date),
-          style: theme.textTheme.bodyMedium,
-        ),
+        child: Text(_formatDate(date), style: theme.textTheme.bodyMedium),
       ),
     );
   }
@@ -313,14 +303,12 @@ class _StockMovementFiltersState
     return LayoutBuilder(
       builder: (context, constraints) {
         final isWide = constraints.maxWidth > 400;
-        
+
         return DropdownButtonFormField<StockMovementType?>(
           decoration: InputDecoration(
             labelText: 'Type',
             prefixIcon: const Icon(Icons.swap_vert, size: 20),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           ),
           initialValue: _selectedType,
           items: [
@@ -334,7 +322,11 @@ class _StockMovementFiltersState
                   ? Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.arrow_downward, size: 16, color: Colors.green),
+                        Icon(
+                          Icons.arrow_downward,
+                          size: 16,
+                          color: Colors.green,
+                        ),
                         const SizedBox(width: 8),
                         const Text('Entrées'),
                       ],
@@ -366,4 +358,3 @@ class _StockMovementFiltersState
     );
   }
 }
-

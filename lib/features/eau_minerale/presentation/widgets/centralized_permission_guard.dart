@@ -21,7 +21,7 @@ class CentralizedPermissionGuard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final adapter = ref.watch(eauMineralePermissionAdapterProvider);
-    
+
     return FutureBuilder<bool>(
       future: adapter.hasPermission(permissionId),
       builder: (context, snapshot) {
@@ -55,7 +55,7 @@ class CentralizedPermissionGuardAny extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final adapter = ref.watch(eauMineralePermissionAdapterProvider);
-    
+
     return FutureBuilder<bool>(
       future: adapter.hasAnyPermission(permissionIds),
       builder: (context, snapshot) {
@@ -89,7 +89,7 @@ class CentralizedPermissionGuardAll extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final adapter = ref.watch(eauMineralePermissionAdapterProvider);
-    
+
     return FutureBuilder<bool>(
       future: adapter.hasAllPermissions(permissionIds),
       builder: (context, snapshot) {
@@ -129,4 +129,3 @@ class EauMineralePermissionGuard extends ConsumerWidget {
     );
   }
 }
-

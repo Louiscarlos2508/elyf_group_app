@@ -27,9 +27,7 @@ class TourWholesalerSelectorWidget extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final toursAsync = ref.watch(
-      toursProvider(
-        (enterpriseId: enterpriseId, status: null),
-      ),
+      toursProvider((enterpriseId: enterpriseId, status: null)),
     );
 
     return Column(
@@ -40,9 +38,11 @@ class TourWholesalerSelectorWidget extends ConsumerWidget {
           data: (tours) {
             // Filtrer les tours actifs (pas clôturés)
             final activeTours = tours
-                .where((t) =>
-                    t.status != TourStatus.closure &&
-                    t.status != TourStatus.cancelled)
+                .where(
+                  (t) =>
+                      t.status != TourStatus.closure &&
+                      t.status != TourStatus.cancelled,
+                )
                 .toList();
 
             return DropdownButtonFormField<Tour?>(
@@ -122,8 +122,7 @@ class TourWholesalerSelectorWidget extends ConsumerWidget {
         const SizedBox(height: 16),
 
         // Sélection du grossiste (seulement si un tour est sélectionné)
-        if (selectedTour != null)
-          _buildWholesalerSelector(selectedTour!),
+        if (selectedTour != null) _buildWholesalerSelector(selectedTour!),
       ],
     );
   }
@@ -144,8 +143,11 @@ class TourWholesalerSelectorWidget extends ConsumerWidget {
         ),
         child: Row(
           children: [
-            Icon(Icons.warning_amber_rounded,
-                color: Colors.orange[700], size: 20),
+            Icon(
+              Icons.warning_amber_rounded,
+              color: Colors.orange[700],
+              size: 20,
+            ),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
@@ -180,10 +182,7 @@ class TourWholesalerSelectorWidget extends ConsumerWidget {
               if (collection.clientPhone.isNotEmpty)
                 Text(
                   collection.clientPhone,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                 ),
             ],
           ),
@@ -215,4 +214,3 @@ class TourWholesalerSelectorWidget extends ConsumerWidget {
     return '${date.day}/${date.month}/${date.year}';
   }
 }
-

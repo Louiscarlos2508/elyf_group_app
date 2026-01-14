@@ -29,7 +29,8 @@ class ProductionSessionBuilder {
     required int period,
   }) {
     // Calculate status if not provided
-    final calculatedStatus = status ??
+    final calculatedStatus =
+        status ??
         ProductionSessionStatusCalculator.calculateStatus(
           quantiteProduite: quantiteProduite,
           heureFin: heureFin,
@@ -88,4 +89,3 @@ class ProductionSessionBuilder {
     );
   }
 }
-

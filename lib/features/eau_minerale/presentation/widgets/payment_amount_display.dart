@@ -2,12 +2,10 @@ import 'package:flutter/material.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../../../shared/utils/currency_formatter.dart';
+
 /// Widget to display the payment amount in a consistent format.
 class PaymentAmountDisplay extends StatelessWidget {
-  const PaymentAmountDisplay({
-    super.key,
-    required this.amount,
-  });
+  const PaymentAmountDisplay({super.key, required this.amount});
 
   final int amount;
 
@@ -26,10 +24,7 @@ class PaymentAmountDisplay extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            'Montant à payer',
-            style: theme.textTheme.bodyLarge,
-          ),
+          Text('Montant à payer', style: theme.textTheme.bodyLarge),
           Text(
             CurrencyFormatter.format(amount),
             style: theme.textTheme.titleLarge?.copyWith(
@@ -42,4 +37,3 @@ class PaymentAmountDisplay extends StatelessWidget {
     );
   }
 }
-

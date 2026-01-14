@@ -31,7 +31,10 @@ class StockOfflineRepository extends OfflineRepository<StockMovement>
     return StockMovement(
       id: map['id'] as String? ?? map['localId'] as String,
       date: DateTime.parse(map['date'] as String),
-      productName: map['productName'] as String? ?? map['productId'] as String? ?? 'Unknown',
+      productName:
+          map['productName'] as String? ??
+          map['productId'] as String? ??
+          'Unknown',
       type: StockMovementType.values.firstWhere(
         (e) => e.name == map['type'],
         orElse: () => StockMovementType.entry,
@@ -155,10 +158,12 @@ class StockOfflineRepository extends OfflineRepository<StockMovement>
       return 0;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log('Error getting stock for product: $productId',
-          name: 'StockOfflineRepository',
-          error: error,
-          stackTrace: stackTrace);
+      developer.log(
+        'Error getting stock for product: $productId',
+        name: 'StockOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
       throw appException;
     }
   }
@@ -168,14 +173,18 @@ class StockOfflineRepository extends OfflineRepository<StockMovement>
     try {
       // Stock updates are done through movements, not directly on Product
       // Product entity doesn't have stock properties
-      developer.log('updateStock called but Product entity does not have stock properties. Use recordMovement instead.',
-          name: 'StockOfflineRepository');
+      developer.log(
+        'updateStock called but Product entity does not have stock properties. Use recordMovement instead.',
+        name: 'StockOfflineRepository',
+      );
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log('Error updating stock for product: $productId',
-          name: 'StockOfflineRepository',
-          error: error,
-          stackTrace: stackTrace);
+      developer.log(
+        'Error updating stock for product: $productId',
+        name: 'StockOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
       throw appException;
     }
   }
@@ -186,10 +195,12 @@ class StockOfflineRepository extends OfflineRepository<StockMovement>
       await save(movement);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log('Error recording stock movement',
-          name: 'StockOfflineRepository',
-          error: error,
-          stackTrace: stackTrace);
+      developer.log(
+        'Error recording stock movement',
+        name: 'StockOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
       throw appException;
     }
   }
@@ -202,14 +213,14 @@ class StockOfflineRepository extends OfflineRepository<StockMovement>
   }) async {
     try {
       final movements = await getAllForEnterprise(enterpriseId);
-      
+
       // If productId is provided, fetch the product to get its name for filtering
       String? productName;
       if (productId != null) {
         final product = await productRepository.getProduct(productId);
         productName = product?.name;
       }
-      
+
       return movements.where((m) {
         if (productName != null && m.productName != productName) return false;
         if (startDate != null && m.date.isBefore(startDate)) return false;
@@ -218,10 +229,12 @@ class StockOfflineRepository extends OfflineRepository<StockMovement>
       }).toList();
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log('Error fetching stock movements',
-          name: 'StockOfflineRepository',
-          error: error,
-          stackTrace: stackTrace);
+      developer.log(
+        'Error fetching stock movements',
+        name: 'StockOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
       throw appException;
     }
   }
@@ -235,10 +248,12 @@ class StockOfflineRepository extends OfflineRepository<StockMovement>
       return [];
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log('Error getting low stock alerts',
-          name: 'StockOfflineRepository',
-          error: error,
-          stackTrace: stackTrace);
+      developer.log(
+        'Error getting low stock alerts',
+        name: 'StockOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
       throw appException;
     }
   }

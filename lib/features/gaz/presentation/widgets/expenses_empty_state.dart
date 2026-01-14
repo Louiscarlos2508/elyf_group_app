@@ -39,4 +39,3 @@ class ExpensesEmptyState extends StatelessWidget {
     );
   }
 }
-

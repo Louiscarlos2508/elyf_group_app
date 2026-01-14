@@ -17,8 +17,7 @@ class GazShellScreen extends BaseModuleShellScreen {
       _GazShellScreenState();
 }
 
-class _GazShellScreenState
-    extends BaseModuleShellScreenState<GazShellScreen> {
+class _GazShellScreenState extends BaseModuleShellScreenState<GazShellScreen> {
   @override
   String get moduleName => 'Gaz';
 

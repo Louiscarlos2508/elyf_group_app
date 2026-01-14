@@ -27,15 +27,16 @@ class ExpenseOfflineRepository extends OfflineRepository<Expense>
     return Expense(
       id: map['id'] as String? ?? map['localId'] as String,
       label: map['label'] as String? ?? map['description'] as String? ?? '',
-      amountCfa: (map['amountCfa'] as num?)?.toInt() ??
+      amountCfa:
+          (map['amountCfa'] as num?)?.toInt() ??
           (map['amount'] as num?)?.toInt() ??
           0,
       category: _parseCategory(map['category'] as String?),
       date: map['date'] != null
           ? DateTime.parse(map['date'] as String)
           : (map['expenseDate'] != null
-              ? DateTime.parse(map['expenseDate'] as String)
-              : DateTime.now()),
+                ? DateTime.parse(map['expenseDate'] as String)
+                : DateTime.now()),
     );
   }
 
@@ -251,9 +252,11 @@ class ExpenseOfflineRepository extends OfflineRepository<Expense>
         .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
         .where((expense) => expense.isDeleted)
         .toList();
-    expenses.sort((a, b) => (b.deletedAt ?? DateTime(1970))
-        .compareTo(a.deletedAt ?? DateTime(1970)));
+    expenses.sort(
+      (a, b) => (b.deletedAt ?? DateTime(1970)).compareTo(
+        a.deletedAt ?? DateTime(1970),
+      ),
+    );
     return expenses;
   }
 }
-

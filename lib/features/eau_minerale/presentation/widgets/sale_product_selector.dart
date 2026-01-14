@@ -28,16 +28,18 @@ class SaleProductSelector extends ConsumerWidget {
     }
 
     final stockRepository = ref.read(stockRepositoryProvider);
-    
+
     // Charger les stocks avant d'afficher le dialogue
-    final stockFutures = finishedGoods.map((p) => 
-      stockRepository.getStock(p.id).then((s) => MapEntry(p.id, s))
+    final stockFutures = finishedGoods.map(
+      (p) => stockRepository.getStock(p.id).then((s) => MapEntry(p.id, s)),
     );
-    final stocksMap = await Future.wait(stockFutures).then((entries) => Map.fromEntries(entries));
+    final stocksMap = await Future.wait(
+      stockFutures,
+    ).then((entries) => Map.fromEntries(entries));
 
     if (!context.mounted) return;
     final theme = Theme.of(context);
-    
+
     final selected = await showDialog<Product>(
       context: context,
       builder: (dialogContext) => Dialog(
@@ -73,7 +75,7 @@ class SaleProductSelector extends ConsumerWidget {
                   children: finishedGoods.map((product) {
                     final availableStock = stocksMap[product.id] ?? 0;
                     final isOutOfStock = availableStock <= 0;
-                    
+
                     return ListTile(
                       enabled: !isOutOfStock,
                       leading: Icon(
@@ -143,7 +145,7 @@ class SaleProductSelector extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final stockRepository = ref.watch(stockRepositoryProvider);
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -193,22 +195,27 @@ class SaleProductSelector extends ConsumerWidget {
                         LayoutBuilder(
                           builder: (context, constraints) {
                             final isWide = constraints.maxWidth > 300;
-                            
+
                             if (isWide) {
                               return Row(
                                 children: [
                                   Flexible(
                                     child: Text(
                                       '${selectedProduct!.unitPrice} CFA/${selectedProduct!.unit}',
-                                      style: theme.textTheme.bodySmall?.copyWith(
-                                        color: theme.colorScheme.onSurfaceVariant,
-                                      ),
+                                      style: theme.textTheme.bodySmall
+                                          ?.copyWith(
+                                            color: theme
+                                                .colorScheme
+                                                .onSurfaceVariant,
+                                          ),
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
                                   const SizedBox(width: 12),
                                   FutureBuilder<int>(
-                                    future: stockRepository.getStock(selectedProduct!.id),
+                                    future: stockRepository.getStock(
+                                      selectedProduct!.id,
+                                    ),
                                     builder: (context, snapshot) {
                                       final stock = snapshot.data ?? 0;
                                       return Row(
@@ -224,12 +231,15 @@ class SaleProductSelector extends ConsumerWidget {
                                           const SizedBox(width: 4),
                                           Text(
                                             'Stock: $stock',
-                                            style: theme.textTheme.bodySmall?.copyWith(
-                                              color: stock > 0
-                                                  ? theme.colorScheme.primary
-                                                  : theme.colorScheme.error,
-                                              fontWeight: FontWeight.w600,
-                                            ),
+                                            style: theme.textTheme.bodySmall
+                                                ?.copyWith(
+                                                  color: stock > 0
+                                                      ? theme
+                                                            .colorScheme
+                                                            .primary
+                                                      : theme.colorScheme.error,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
                                           ),
                                         ],
                                       );
@@ -250,7 +260,9 @@ class SaleProductSelector extends ConsumerWidget {
                                   ),
                                   const SizedBox(height: 4),
                                   FutureBuilder<int>(
-                                    future: stockRepository.getStock(selectedProduct!.id),
+                                    future: stockRepository.getStock(
+                                      selectedProduct!.id,
+                                    ),
                                     builder: (context, snapshot) {
                                       final stock = snapshot.data ?? 0;
                                       return Row(
@@ -266,12 +278,15 @@ class SaleProductSelector extends ConsumerWidget {
                                           const SizedBox(width: 4),
                                           Text(
                                             'Stock: $stock',
-                                            style: theme.textTheme.bodySmall?.copyWith(
-                                              color: stock > 0
-                                                  ? theme.colorScheme.primary
-                                                  : theme.colorScheme.error,
-                                              fontWeight: FontWeight.w600,
-                                            ),
+                                            style: theme.textTheme.bodySmall
+                                                ?.copyWith(
+                                                  color: stock > 0
+                                                      ? theme
+                                                            .colorScheme
+                                                            .primary
+                                                      : theme.colorScheme.error,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
                                           ),
                                         ],
                                       );
@@ -308,4 +323,3 @@ class SaleProductSelector extends ConsumerWidget {
     );
   }
 }
-

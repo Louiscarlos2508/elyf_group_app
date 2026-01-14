@@ -32,7 +32,8 @@ class NewCustomerFormCard extends StatefulWidget {
     required String idNumber,
     DateTime? idIssueDate,
     DateTime? idExpiryDate,
-  }) onSave;
+  })
+  onSave;
 
   @override
   State<NewCustomerFormCard> createState() => _NewCustomerFormCardState();
@@ -43,7 +44,7 @@ class _NewCustomerFormCardState extends State<NewCustomerFormCard> {
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
   final _idNumberController = TextEditingController();
-  
+
   final String _idType = "Carte Nationale d'Identité";
   DateTime? _idIssueDate;
   DateTime? _idExpiryDate;
@@ -99,10 +100,7 @@ class _NewCustomerFormCardState extends State<NewCustomerFormCard> {
     }
   }
 
-  Future<void> _selectDate(
-    BuildContext context,
-    bool isIssueDate,
-  ) async {
+  Future<void> _selectDate(BuildContext context, bool isIssueDate) async {
     final picked = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
@@ -127,10 +125,7 @@ class _NewCustomerFormCardState extends State<NewCustomerFormCard> {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(14),
-        side: const BorderSide(
-          color: Color(0xFFBEDBFF),
-          width: 1.219,
-        ),
+        side: const BorderSide(color: Color(0xFFBEDBFF), width: 1.219),
       ),
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -186,10 +181,7 @@ class _NewCustomerFormCardState extends State<NewCustomerFormCard> {
                 children: [
                   const Text(
                     'Numéro de pièce *',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF0A0A0A),
-                    ),
+                    style: TextStyle(fontSize: 14, color: Color(0xFF0A0A0A)),
                   ),
                   const SizedBox(height: 8),
                   TextFormField(
@@ -247,8 +239,9 @@ class _NewCustomerFormCardState extends State<NewCustomerFormCard> {
                                 Expanded(
                                   child: Text(
                                     _idIssueDate != null
-                                        ? DateFormat('dd/MM/yyyy')
-                                            .format(_idIssueDate!)
+                                        ? DateFormat(
+                                            'dd/MM/yyyy',
+                                          ).format(_idIssueDate!)
                                         : '',
                                     style: TextStyle(
                                       fontSize: 14,
@@ -299,8 +292,9 @@ class _NewCustomerFormCardState extends State<NewCustomerFormCard> {
                                 Expanded(
                                   child: Text(
                                     _idExpiryDate != null
-                                        ? DateFormat('dd/MM/yyyy')
-                                            .format(_idExpiryDate!)
+                                        ? DateFormat(
+                                            'dd/MM/yyyy',
+                                          ).format(_idExpiryDate!)
                                         : '',
                                     style: TextStyle(
                                       fontSize: 14,
@@ -395,4 +389,3 @@ class _NewCustomerFormCardState extends State<NewCustomerFormCard> {
     );
   }
 }
-

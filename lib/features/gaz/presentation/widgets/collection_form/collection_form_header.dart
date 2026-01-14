@@ -13,4 +13,3 @@ class CollectionFormHeader extends StatelessWidget {
     );
   }
 }
-

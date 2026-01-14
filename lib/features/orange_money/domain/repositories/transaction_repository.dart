@@ -23,4 +23,3 @@ abstract class TransactionRepository {
     DateTime? endDate,
   });
 }
-

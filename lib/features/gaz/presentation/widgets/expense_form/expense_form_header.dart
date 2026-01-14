@@ -2,10 +2,7 @@ import 'package:flutter/material.dart';
 
 /// En-tête du formulaire de dépense.
 class ExpenseFormHeader extends StatelessWidget {
-  const ExpenseFormHeader({
-    super.key,
-    required this.isEditing,
-  });
+  const ExpenseFormHeader({super.key, required this.isEditing});
 
   final bool isEditing;
 
@@ -21,10 +18,7 @@ class ExpenseFormHeader extends StatelessWidget {
             color: Colors.red.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: const Icon(
-            Icons.receipt_long,
-            color: Colors.red,
-          ),
+          child: const Icon(Icons.receipt_long, color: Colors.red),
         ),
         const SizedBox(width: 16),
         Expanded(
@@ -43,4 +37,3 @@ class ExpenseFormHeader extends StatelessWidget {
     );
   }
 }
-

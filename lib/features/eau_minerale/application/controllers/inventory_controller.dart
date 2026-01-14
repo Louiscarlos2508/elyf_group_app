@@ -22,4 +22,3 @@ class InventoryController {
     return await _repository.updateStockItem(item);
   }
 }
-

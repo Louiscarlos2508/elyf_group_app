@@ -58,12 +58,9 @@ class _ModuleHomeScaffoldState extends State<ModuleHomeScaffold> {
     }
     final colors = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-    
+
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: Text(widget.title), centerTitle: true),
       body: IndexedStack(
         index: _selectedIndex,
         children: [

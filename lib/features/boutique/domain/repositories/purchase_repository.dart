@@ -6,4 +6,3 @@ abstract class PurchaseRepository {
   Future<Purchase?> getPurchase(String id);
   Future<String> createPurchase(Purchase purchase);
 }
-

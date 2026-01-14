@@ -4,10 +4,7 @@ import '../../../core/domain/entities/expense_balance_data.dart';
 
 /// Widget pour afficher un graphique des dépenses par catégorie.
 class ExpenseBalanceChart extends StatelessWidget {
-  const ExpenseBalanceChart({
-    super.key,
-    required this.expenses,
-  });
+  const ExpenseBalanceChart({super.key, required this.expenses});
 
   final List<ExpenseBalanceData> expenses;
 
@@ -27,14 +24,15 @@ class ExpenseBalanceChart extends StatelessWidget {
       return const Card(
         child: Padding(
           padding: EdgeInsets.all(24),
-          child: Center(
-            child: Text('Aucune donnée à afficher'),
-          ),
+          child: Center(child: Text('Aucune donnée à afficher')),
         ),
       );
     }
 
-    final total = categoryTotals.values.fold<int>(0, (sum, amount) => sum + amount);
+    final total = categoryTotals.values.fold<int>(
+      0,
+      (sum, amount) => sum + amount,
+    );
     final sortedCategories = categoryTotals.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
 
@@ -46,9 +44,9 @@ class ExpenseBalanceChart extends StatelessWidget {
           children: [
             Text(
               'Répartition par catégorie',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             ...sortedCategories.map((entry) {
@@ -66,13 +64,9 @@ class ExpenseBalanceChart extends StatelessWidget {
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
                         Text(
-                          '${entry.value.toString().replaceAllMapped(
-                                RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-                                (Match m) => '${m[1]} ',
-                              )} FCFA (${percentage.toStringAsFixed(1)}%)',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                fontWeight: FontWeight.w500,
-                              ),
+                          '${entry.value.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]} ')} FCFA (${percentage.toStringAsFixed(1)}%)',
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(fontWeight: FontWeight.w500),
                         ),
                       ],
                     ),
@@ -92,4 +86,3 @@ class ExpenseBalanceChart extends StatelessWidget {
     );
   }
 }
-

@@ -6,11 +6,7 @@ import 'payment_card_helpers.dart';
 
 /// Carte réutilisable pour afficher un paiement.
 class PaymentCard extends StatelessWidget {
-  const PaymentCard({
-    super.key,
-    required this.payment,
-    this.onTap,
-  });
+  const PaymentCard({super.key, required this.payment, this.onTap});
 
   final Payment payment;
   final VoidCallback? onTap;
@@ -22,9 +18,7 @@ class PaymentCard extends StatelessWidget {
     return Card(
       elevation: 2,
       margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
@@ -38,8 +32,9 @@ class PaymentCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: PaymentCardHelpers.getStatusColor(payment.status)
-                          .withValues(alpha: 0.1),
+                      color: PaymentCardHelpers.getStatusColor(
+                        payment.status,
+                      ).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
@@ -76,12 +71,14 @@ class PaymentCard extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
-                        color: PaymentCardHelpers.getStatusColor(payment.status),
+                        color: PaymentCardHelpers.getStatusColor(
+                          payment.status,
+                        ),
                       ),
                     ),
-                    backgroundColor: PaymentCardHelpers
-                        .getStatusColor(payment.status)
-                        .withValues(alpha: 0.1),
+                    backgroundColor: PaymentCardHelpers.getStatusColor(
+                      payment.status,
+                    ).withValues(alpha: 0.1),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 8,
                       vertical: 2,
@@ -170,10 +167,7 @@ class PaymentCard extends StatelessWidget {
 }
 
 class _LinkedEntityRow extends StatelessWidget {
-  const _LinkedEntityRow({
-    required this.icon,
-    required this.label,
-  });
+  const _LinkedEntityRow({required this.icon, required this.label});
 
   final IconData icon;
   final String label;
@@ -184,11 +178,7 @@ class _LinkedEntityRow extends StatelessWidget {
 
     return Row(
       children: [
-        Icon(
-          icon,
-          size: 14,
-          color: theme.colorScheme.primary,
-        ),
+        Icon(icon, size: 14, color: theme.colorScheme.primary),
         const SizedBox(width: 6),
         Expanded(
           child: Text(
@@ -204,4 +194,3 @@ class _LinkedEntityRow extends StatelessWidget {
     );
   }
 }
-

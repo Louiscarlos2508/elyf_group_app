@@ -96,21 +96,16 @@ class _SalesContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final isWide = constraints.maxWidth > 600;
-        
+
         return CustomScrollView(
           slivers: [
             SliverToBoxAdapter(
               child: Padding(
-                padding: EdgeInsets.fromLTRB(
-                  24,
-                  24,
-                  24,
-                  isWide ? 24 : 16,
-                ),
+                padding: EdgeInsets.fromLTRB(24, 24, 24, isWide ? 24 : 16),
                 child: isWide
                     ? Row(
                         children: [
@@ -146,13 +141,13 @@ class _SalesContent extends StatelessWidget {
                               Expanded(
                                 child: Text(
                                   'Ventes',
-                                  style: theme.textTheme.headlineMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                  style: theme.textTheme.headlineMedium
+                                      ?.copyWith(fontWeight: FontWeight.bold),
                                 ),
                               ),
                               RefreshButton(
-                                onRefresh: () => ref.invalidate(salesStateProvider),
+                                onRefresh: () =>
+                                    ref.invalidate(salesStateProvider),
                                 tooltip: 'Actualiser les ventes',
                               ),
                             ],
@@ -218,10 +213,7 @@ class _SalesContent extends StatelessWidget {
                           ],
                         ),
                       ),
-                      SalesTable(
-                        sales: state.sales,
-                        onActionTap: onActionTap,
-                      ),
+                      SalesTable(sales: state.sales, onActionTap: onActionTap),
                     ] else
                       Container(
                         padding: const EdgeInsets.all(48),
@@ -229,7 +221,9 @@ class _SalesContent extends StatelessWidget {
                           color: theme.colorScheme.surfaceContainerHighest,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: theme.colorScheme.outline.withValues(alpha: 0.2),
+                            color: theme.colorScheme.outline.withValues(
+                              alpha: 0.2,
+                            ),
                           ),
                         ),
                         child: Column(
@@ -237,7 +231,8 @@ class _SalesContent extends StatelessWidget {
                             Icon(
                               Icons.point_of_sale_outlined,
                               size: 64,
-                              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                              color: theme.colorScheme.onSurfaceVariant
+                                  .withValues(alpha: 0.5),
                             ),
                             const SizedBox(height: 16),
                             Text(
@@ -261,9 +256,7 @@ class _SalesContent extends StatelessWidget {
                 ),
               ),
             ),
-            const SliverToBoxAdapter(
-              child: SizedBox(height: 24),
-            ),
+            const SliverToBoxAdapter(child: SizedBox(height: 24)),
           ],
         );
       },

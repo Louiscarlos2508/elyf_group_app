@@ -36,10 +36,11 @@ class SaleCollection {
       ..saleDate = map['saleDate'] != null
           ? DateTime.parse(map['saleDate'] as String)
           : (map['date'] != null
-              ? DateTime.parse(map['date'] as String)
-              : DateTime.now())
+                ? DateTime.parse(map['date'] as String)
+                : DateTime.now())
       ..totalAmount = (map['totalAmount'] as num?)?.toDouble() ?? 0
-      ..paidAmount = (map['paidAmount'] as num?)?.toDouble() ??
+      ..paidAmount =
+          (map['paidAmount'] as num?)?.toDouble() ??
           (map['amountPaid'] as num?)?.toDouble() ??
           0
       ..paymentMethod = map['paymentMethod'] as String? ?? 'cash'
@@ -50,19 +51,19 @@ class SaleCollection {
   }
 
   Map<String, dynamic> toMap() => {
-        'id': remoteId ?? localId,
-        'localId': localId,
-        'enterpriseId': enterpriseId,
-        'customerId': customerId,
-        'customerName': customerName,
-        'saleDate': saleDate.toIso8601String(),
-        'date': saleDate.toIso8601String(),
-        'totalAmount': totalAmount,
-        'paidAmount': paidAmount,
-        'paymentMethod': paymentMethod,
-        'status': status,
-        'notes': notes,
-      };
+    'id': remoteId ?? localId,
+    'localId': localId,
+    'enterpriseId': enterpriseId,
+    'customerId': customerId,
+    'customerName': customerName,
+    'saleDate': saleDate.toIso8601String(),
+    'date': saleDate.toIso8601String(),
+    'totalAmount': totalAmount,
+    'paidAmount': paidAmount,
+    'paymentMethod': paymentMethod,
+    'status': status,
+    'notes': notes,
+  };
 
   double get remainingAmount => totalAmount - paidAmount;
   bool get isPaid => paidAmount >= totalAmount;
@@ -98,10 +99,10 @@ class SaleItemCollection {
   }
 
   Map<String, dynamic> toMap() => {
-        'productId': productId,
-        'productName': productName,
-        'quantity': quantity,
-        'unitPrice': unitPrice,
-        'totalPrice': totalPrice,
-      };
+    'productId': productId,
+    'productName': productName,
+    'quantity': quantity,
+    'unitPrice': unitPrice,
+    'totalPrice': totalPrice,
+  };
 }

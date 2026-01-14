@@ -36,7 +36,7 @@ class _PrintReceiptButtonState extends State<PrintReceiptButton> {
     final sunmi = SunmiV3Service.instance;
     final isSunmi = await sunmi.isSunmiDevice;
     final isAvailable = isSunmi && await sunmi.isPrinterAvailable();
-    
+
     if (mounted) {
       setState(() {
         _isSunmiDevice = isSunmi;
@@ -60,11 +60,11 @@ class _PrintReceiptButtonState extends State<PrintReceiptButton> {
     try {
       final template = SalesReceiptTemplate(widget.sale);
       final content = template.generate();
-      
+
       final success = await SunmiV3Service.instance.printReceipt(content);
-      
+
       if (!mounted) return;
-      
+
       if (success) {
         widget.onPrintSuccess?.call();
         ScaffoldMessenger.of(context).showSnackBar(
@@ -104,7 +104,7 @@ class _PrintReceiptButtonState extends State<PrintReceiptButton> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     // Ne pas afficher le bouton si l'appareil n'est pas Sunmi
     if (!_isSunmiDevice) {
       return const SizedBox.shrink();
@@ -128,4 +128,3 @@ class _PrintReceiptButtonState extends State<PrintReceiptButton> {
     );
   }
 }
-

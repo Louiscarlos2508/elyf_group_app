@@ -229,9 +229,7 @@ class ExpensesTableV2 extends StatelessWidget {
             children: [
               Text(
                 _getCategoryLabel(expense.category),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: color,
-                ),
+                style: theme.textTheme.bodySmall?.copyWith(color: color),
               ),
               if (expense.property != null)
                 Text(

@@ -187,7 +187,10 @@ class _ReportQuickActions extends StatelessWidget {
                     color: Colors.black.withValues(alpha: 0.1),
                     width: 1.219,
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 1.219),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 13,
+                    vertical: 1.219,
+                  ),
                   minimumSize: const Size(0, 32),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
@@ -195,10 +198,7 @@ class _ReportQuickActions extends StatelessWidget {
                 ),
                 child: const Text(
                   'Aujourd\'hui',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF0A0A0A),
-                  ),
+                  style: TextStyle(fontSize: 14, color: Color(0xFF0A0A0A)),
                 ),
               ),
             ),
@@ -212,7 +212,10 @@ class _ReportQuickActions extends StatelessWidget {
                     color: Colors.black.withValues(alpha: 0.1),
                     width: 1.219,
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 1.219),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 13,
+                    vertical: 1.219,
+                  ),
                   minimumSize: const Size(0, 32),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
@@ -220,10 +223,7 @@ class _ReportQuickActions extends StatelessWidget {
                 ),
                 child: const Text(
                   '7 jours',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF0A0A0A),
-                  ),
+                  style: TextStyle(fontSize: 14, color: Color(0xFF0A0A0A)),
                 ),
               ),
             ),
@@ -233,4 +233,3 @@ class _ReportQuickActions extends StatelessWidget {
     );
   }
 }
-

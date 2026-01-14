@@ -109,4 +109,3 @@ class MonthlySalaryPaymentDateSection extends StatelessWidget {
     );
   }
 }
-

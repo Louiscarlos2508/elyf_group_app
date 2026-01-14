@@ -8,11 +8,7 @@ import 'sales_table_mobile.dart';
 
 /// Table widget for displaying sales list.
 class SalesTable extends StatelessWidget {
-  const SalesTable({
-    super.key,
-    required this.sales,
-    this.onActionTap,
-  });
+  const SalesTable({super.key, required this.sales, this.onActionTap});
 
   final List<Sale> sales;
   final void Function(Sale sale, String action)? onActionTap;
@@ -23,11 +19,7 @@ class SalesTable extends StatelessWidget {
     final today = DateTime.now();
     final todayStart = DateTime(today.year, today.month, today.day);
     final todaySales = sales.where((sale) {
-      final saleDate = DateTime(
-        sale.date.year,
-        sale.date.month,
-        sale.date.day,
-      );
+      final saleDate = DateTime(sale.date.year, sale.date.month, sale.date.day);
       return saleDate.isAtSameMomentAs(todayStart);
     }).toList();
 
@@ -47,7 +39,7 @@ class SalesTable extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final isWide = constraints.maxWidth > 900;
-        
+
         if (isWide) {
           return SalesTableDesktop(
             sales: todaySales,
@@ -64,6 +56,4 @@ class SalesTable extends StatelessWidget {
       },
     );
   }
-
 }
-

@@ -22,9 +22,7 @@ class CustomerInfoWidget extends StatelessWidget {
           controller: customerNameController,
           decoration: InputDecoration(
             labelText: 'Nom du client (optionnel)',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             prefixIcon: const Icon(Icons.person),
           ),
         ),
@@ -33,9 +31,7 @@ class CustomerInfoWidget extends StatelessWidget {
           controller: customerPhoneController,
           decoration: InputDecoration(
             labelText: 'Téléphone (optionnel)',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             prefixIcon: const Icon(Icons.phone),
           ),
           keyboardType: TextInputType.phone,
@@ -45,9 +41,7 @@ class CustomerInfoWidget extends StatelessWidget {
           controller: notesController,
           decoration: InputDecoration(
             labelText: 'Notes (optionnel)',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             prefixIcon: const Icon(Icons.note),
           ),
           maxLines: 2,
@@ -56,4 +50,3 @@ class CustomerInfoWidget extends StatelessWidget {
     );
   }
 }
-

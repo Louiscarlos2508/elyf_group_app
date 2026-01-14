@@ -24,20 +24,23 @@ class ClientsScreen extends ConsumerWidget {
   ) async {
     final creditRepo = ref.read(creditRepositoryProvider);
     final customerRepo = ref.read(customerRepositoryProvider);
-    
+
     try {
       // Charger les crédits réels du client
       final allCreditSales = await creditRepo.fetchCreditSales();
       final customerCreditSales = allCreditSales
           .where((s) => s.customerId == customerId && s.isCredit)
           .toList();
-      
+
       if (customerCreditSales.isEmpty) {
         if (!context.mounted) return;
-        NotificationService.showInfo(context, 'Ce client n\'a pas de crédit en cours');
+        NotificationService.showInfo(
+          context,
+          'Ce client n\'a pas de crédit en cours',
+        );
         return;
       }
-      
+
       // Calculer le crédit total réel
       // Note: sale.amountPaid est déjà mis à jour avec les paiements via updateSaleAmountPaid
       // donc on utilise directement remainingAmount
@@ -47,20 +50,26 @@ class ClientsScreen extends ConsumerWidget {
           totalCreditReal += sale.remainingAmount;
         }
       }
-      
+
       if (totalCreditReal <= 0) {
         if (!context.mounted) return;
-        NotificationService.showInfo(context, 'Ce client n\'a pas de crédit en cours');
+        NotificationService.showInfo(
+          context,
+          'Ce client n\'a pas de crédit en cours',
+        );
         return;
       }
-      
+
       // Récupérer le nom du client
       final customer = await customerRepo.getCustomer(customerId);
-      final customerName = customer?.name ?? 
-          (customerCreditSales.isNotEmpty ? customerCreditSales.first.customerName : 'Client');
-      
+      final customerName =
+          customer?.name ??
+          (customerCreditSales.isNotEmpty
+              ? customerCreditSales.first.customerName
+              : 'Client');
+
       if (!context.mounted) return;
-      
+
       showDialog(
         context: context,
         builder: (context) => CreditPaymentDialog(
@@ -82,21 +91,24 @@ class ClientsScreen extends ConsumerWidget {
   ) async {
     final creditRepo = ref.read(creditRepositoryProvider);
     final customerRepo = ref.read(customerRepositoryProvider);
-    
+
     try {
       // Vérifier que le client a des crédits
       final allCreditSales = await creditRepo.fetchCreditSales();
       final customerCreditSales = allCreditSales
           .where((s) => s.customerId == customerId && s.isCredit)
           .toList();
-      
+
       // Récupérer le nom du client
       final customer = await customerRepo.getCustomer(customerId);
-      final customerName = customer?.name ?? 
-          (customerCreditSales.isNotEmpty ? customerCreditSales.first.customerName : 'Client');
-      
+      final customerName =
+          customer?.name ??
+          (customerCreditSales.isNotEmpty
+              ? customerCreditSales.first.customerName
+              : 'Client');
+
       if (!context.mounted) return;
-      
+
       showDialog(
         context: context,
         builder: (context) => CreditHistoryDialog(
@@ -163,22 +175,17 @@ class _CreditsContentState extends ConsumerState<_CreditsContent> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final isWide = constraints.maxWidth > 600;
-        
+
         return CustomScrollView(
           slivers: [
             // Header - Style uniforme avec les autres pages
             SliverToBoxAdapter(
               child: Padding(
-                padding: EdgeInsets.fromLTRB(
-                  24,
-                  24,
-                  24,
-                  isWide ? 24 : 16,
-                ),
+                padding: EdgeInsets.fromLTRB(24, 24, 24, isWide ? 24 : 16),
                 child: isWide
                     ? Row(
                         children: [
@@ -233,31 +240,35 @@ class _CreditsContentState extends ConsumerState<_CreditsContent> {
                       );
                     }
 
-                    final creditsData = snapshot.data ?? _CreditsData(
-                      creditsMap: <String, List<CustomerCredit>>{},
-                      customersMap: <String, CustomerSummary>{},
-                    );
+                    final creditsData =
+                        snapshot.data ??
+                        _CreditsData(
+                          creditsMap: <String, List<CustomerCredit>>{},
+                          customersMap: <String, CustomerSummary>{},
+                        );
                     final creditsMap = creditsData.creditsMap;
                     final allCustomersMap = creditsData.customersMap;
-                    
+
                     // Combiner les clients de widget.state.customers avec ceux qui ont des crédits
                     final allCustomersList = <CustomerSummary>[];
-                    final existingCustomerIds = widget.state.customers.map((c) => c.id).toSet();
-                    
+                    final existingCustomerIds = widget.state.customers
+                        .map((c) => c.id)
+                        .toSet();
+
                     // Ajouter les clients de widget.state.customers
                     allCustomersList.addAll(widget.state.customers);
-                    
+
                     // Ajouter les clients qui ont des crédits mais ne sont pas dans state.customers
                     for (final entry in allCustomersMap.entries) {
                       if (!existingCustomerIds.contains(entry.key)) {
                         allCustomersList.add(entry.value);
                       }
                     }
-                    
+
                     // Calculer les KPI à partir des crédits réels
                     int totalCreditReal = 0;
                     int customersWithCreditReal = 0;
-                    
+
                     for (final customer in allCustomersList) {
                       final credits = creditsMap[customer.id] ?? [];
                       final totalCreditFromCredits = credits.fold<int>(
@@ -269,7 +280,7 @@ class _CreditsContentState extends ConsumerState<_CreditsContent> {
                         customersWithCreditReal++;
                       }
                     }
-                    
+
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -282,7 +293,8 @@ class _CreditsContentState extends ConsumerState<_CreditsContent> {
                         // Customers List
                         CreditsCustomersList(
                           customers: allCustomersList,
-                          getCredits: (customer) => creditsMap[customer.id] ?? [],
+                          getCredits: (customer) =>
+                              creditsMap[customer.id] ?? [],
                           onHistoryTap: widget.onHistoryTap,
                           onPaymentTap: widget.onPaymentTap,
                         ),
@@ -292,9 +304,7 @@ class _CreditsContentState extends ConsumerState<_CreditsContent> {
                 ),
               ),
             ),
-            const SliverToBoxAdapter(
-              child: SizedBox(height: 24),
-            ),
+            const SliverToBoxAdapter(child: SizedBox(height: 24)),
           ],
         );
       },
@@ -309,7 +319,7 @@ class _CreditsContentState extends ConsumerState<_CreditsContent> {
 
     // Charger toutes les ventes en crédit validées (pas seulement celles des clients dans state.customers)
     final allCreditSales = await creditRepo.fetchCreditSales();
-    
+
     // Grouper les ventes par customerId
     final salesByCustomer = <String, List<Sale>>{};
     for (final sale in allCreditSales) {
@@ -322,11 +332,11 @@ class _CreditsContentState extends ConsumerState<_CreditsContent> {
     for (final entry in salesByCustomer.entries) {
       final customerId = entry.key;
       final creditSales = entry.value;
-      
+
       try {
         // Essayer de récupérer le client depuis le repository
         CustomerSummary? customer = await customerRepo.getCustomer(customerId);
-        
+
         // Si le client n'existe pas, créer un CustomerSummary temporaire à partir de la première vente
         if (customer == null && creditSales.isNotEmpty) {
           final firstSale = creditSales.first;
@@ -336,13 +346,15 @@ class _CreditsContentState extends ConsumerState<_CreditsContent> {
             phone: firstSale.customerPhone,
             totalCredit: 0, // Sera calculé plus tard
             purchaseCount: creditSales.length,
-            lastPurchaseDate: creditSales.map((s) => s.date).reduce((a, b) => a.isAfter(b) ? a : b),
+            lastPurchaseDate: creditSales
+                .map((s) => s.date)
+                .reduce((a, b) => a.isAfter(b) ? a : b),
             cnib: firstSale.customerCnib,
           );
         }
-        
+
         if (customer == null) continue;
-        
+
         // Utiliser directement sale.amountPaid car il est déjà mis à jour par CreditService
         final credits = creditSales.map((sale) {
           return CustomerCredit(
@@ -354,9 +366,11 @@ class _CreditsContentState extends ConsumerState<_CreditsContent> {
             dueDate: sale.date.add(const Duration(days: 30)),
           );
         }).toList();
-        
+
         // Ne garder que les crédits avec un montant restant > 0
-        final validCredits = credits.where((c) => c.remainingAmount > 0).toList();
+        final validCredits = credits
+            .where((c) => c.remainingAmount > 0)
+            .toList();
         if (validCredits.isNotEmpty) {
           creditsMap[customerId] = validCredits;
           customersMap[customerId] = customer;
@@ -371,10 +385,7 @@ class _CreditsContentState extends ConsumerState<_CreditsContent> {
 }
 
 class _CreditsData {
-  const _CreditsData({
-    required this.creditsMap,
-    required this.customersMap,
-  });
+  const _CreditsData({required this.creditsMap, required this.customersMap});
 
   final Map<String, List<CustomerCredit>> creditsMap;
   final Map<String, CustomerSummary> customersMap;

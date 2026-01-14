@@ -11,9 +11,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 /// - `enterprises/{enterpriseId}/modules/{moduleId}/collections/{collectionName}`
 /// - Ou `enterprises/{enterpriseId}/collections/{collectionName}` si pas de module
 class FirestoreService {
-  FirestoreService({
-    required this.firestore,
-  });
+  FirestoreService({required this.firestore});
 
   final FirebaseFirestore firestore;
 
@@ -251,15 +249,13 @@ class FirestoreService {
 
       final querySnapshot = await query.get();
 
-      return querySnapshot.docs
-          .map((doc) {
-            final data = doc.data() as Map<String, dynamic>?;
-            if (data == null) return <String, dynamic>{'id': doc.id};
-            final result = Map<String, dynamic>.from(data);
-            result['id'] = doc.id;
-            return result;
-          })
-          .toList();
+      return querySnapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>?;
+        if (data == null) return <String, dynamic>{'id': doc.id};
+        final result = Map<String, dynamic>.from(data);
+        result['id'] = doc.id;
+        return result;
+      }).toList();
     } catch (e, stackTrace) {
       developer.log(
         'Error getting collection from Firestore',
@@ -310,15 +306,13 @@ class FirestoreService {
       }
 
       return query.snapshots().map((snapshot) {
-        return snapshot.docs
-            .map((doc) {
-              final data = doc.data() as Map<String, dynamic>?;
-              if (data == null) return <String, dynamic>{'id': doc.id};
-              final result = Map<String, dynamic>.from(data);
-              result['id'] = doc.id;
-              return result;
-            })
-            .toList();
+        return snapshot.docs.map((doc) {
+          final data = doc.data() as Map<String, dynamic>?;
+          if (data == null) return <String, dynamic>{'id': doc.id};
+          final result = Map<String, dynamic>.from(data);
+          result['id'] = doc.id;
+          return result;
+        }).toList();
       });
     } catch (e, stackTrace) {
       developer.log(
@@ -448,15 +442,13 @@ class FirestoreService {
 
       final querySnapshot = await query.get();
 
-      return querySnapshot.docs
-          .map((doc) {
-            final data = doc.data() as Map<String, dynamic>?;
-            if (data == null) return <String, dynamic>{'id': doc.id};
-            final result = Map<String, dynamic>.from(data);
-            result['id'] = doc.id;
-            return result;
-          })
-          .toList();
+      return querySnapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>?;
+        if (data == null) return <String, dynamic>{'id': doc.id};
+        final result = Map<String, dynamic>.from(data);
+        result['id'] = doc.id;
+        return result;
+      }).toList();
     } catch (e, stackTrace) {
       developer.log(
         'Error querying Firestore',
@@ -468,4 +460,3 @@ class FirestoreService {
     }
   }
 }
-

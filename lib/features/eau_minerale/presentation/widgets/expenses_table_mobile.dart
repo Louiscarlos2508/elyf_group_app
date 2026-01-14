@@ -19,7 +19,7 @@ class ExpensesTableMobile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return ListView.separated(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -41,7 +41,10 @@ class ExpensesTableMobile extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  ExpensesTableHelpers.buildCategoryChip(context, expense.category),
+                  ExpensesTableHelpers.buildCategoryChip(
+                    context,
+                    expense.category,
+                  ),
                   Text(
                     '${formatCurrency(expense.amountCfa)} FCFA',
                     style: theme.textTheme.titleSmall?.copyWith(
@@ -86,4 +89,3 @@ class ExpensesTableMobile extends StatelessWidget {
     );
   }
 }
-

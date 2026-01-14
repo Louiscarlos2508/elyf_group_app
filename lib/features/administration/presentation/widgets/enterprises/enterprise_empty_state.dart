@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../../shared/utils/responsive_helper.dart';
+
 /// Empty state widget for when there are no enterprises.
 class EnterpriseEmptyState extends StatelessWidget {
   const EnterpriseEmptyState({super.key});
@@ -7,29 +9,28 @@ class EnterpriseEmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isMobile = ResponsiveHelper.isMobile(context);
 
     return Padding(
-      padding: const EdgeInsets.all(24),
+      padding: ResponsiveHelper.adaptivePadding(context),
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               Icons.business_outlined,
-              size: 64,
+              size: isMobile ? 48 : 64,
               color: theme.colorScheme.onSurfaceVariant,
             ),
             const SizedBox(height: 16),
-            Text(
-              'Aucune entreprise',
-              style: theme.textTheme.titleLarge,
-            ),
+            Text('Aucune entreprise', style: theme.textTheme.titleLarge),
             const SizedBox(height: 8),
             Text(
               'Créez votre première entreprise',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
+              textAlign: TextAlign.center,
             ),
           ],
         ),

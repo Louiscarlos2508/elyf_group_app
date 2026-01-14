@@ -5,14 +5,13 @@ import 'package:image_picker/image_picker.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../../../shared/utils/notification_service.dart';
 import '../../domain/services/commission_calculation_service.dart';
+
 /// Dialog for recording a manual commission entry.
 class CommissionFormDialog extends StatefulWidget {
-  const CommissionFormDialog({
-    super.key,
-    required this.onSave,
-  });
+  const CommissionFormDialog({super.key, required this.onSave});
 
-  final Function(String period, int amount, File? photoFile, String? notes) onSave;
+  final Function(String period, int amount, File? photoFile, String? notes)
+  onSave;
 
   @override
   State<CommissionFormDialog> createState() => _CommissionFormDialogState();
@@ -23,7 +22,7 @@ class _CommissionFormDialogState extends State<CommissionFormDialog> {
   final _amountController = TextEditingController();
   final _notesController = TextEditingController();
   final _imagePicker = ImagePicker();
-  
+
   DateTime? _selectedMonth;
   File? _selectedPhotoFile;
 
@@ -104,7 +103,10 @@ class _CommissionFormDialogState extends State<CommissionFormDialog> {
       }
     } catch (e) {
       if (mounted) {
-        NotificationService.showError(context, 'Erreur lors de la sélection: $e');
+        NotificationService.showError(
+          context,
+          'Erreur lors de la sélection: $e',
+        );
       }
     }
   }
@@ -114,7 +116,9 @@ class _CommissionFormDialogState extends State<CommissionFormDialog> {
       return;
     }
 
-    final periodError = CommissionCalculationService.validatePeriod(_selectedMonth);
+    final periodError = CommissionCalculationService.validatePeriod(
+      _selectedMonth,
+    );
     if (periodError != null) {
       NotificationService.showWarning(context, periodError);
       return;
@@ -128,8 +132,8 @@ class _CommissionFormDialogState extends State<CommissionFormDialog> {
     }
 
     final period = CommissionCalculationService.formatPeriod(_selectedMonth!);
-    final notes = _notesController.text.trim().isEmpty 
-        ? null 
+    final notes = _notesController.text.trim().isEmpty
+        ? null
         : _notesController.text.trim();
 
     widget.onSave(period, amount!, _selectedPhotoFile, notes);
@@ -216,11 +220,17 @@ class _CommissionFormDialogState extends State<CommissionFormDialog> {
                     onTap: () => _selectMonth(context),
                     child: Container(
                       height: 36,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFFF3F3F5),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.transparent, width: 1.219),
+                        border: Border.all(
+                          color: Colors.transparent,
+                          width: 1.219,
+                        ),
                       ),
                       child: Row(
                         children: [
@@ -324,7 +334,12 @@ class _CommissionFormDialogState extends State<CommissionFormDialog> {
                     onTap: _pickImage,
                     child: Container(
                       height: 94.436,
-                      padding: const EdgeInsets.fromLTRB(17.219, 17.219, 17.219, 1.219),
+                      padding: const EdgeInsets.fromLTRB(
+                        17.219,
+                        17.219,
+                        17.219,
+                        1.219,
+                      ),
                       decoration: BoxDecoration(
                         border: Border.all(
                           color: Colors.black.withValues(alpha: 0.1),
@@ -356,7 +371,8 @@ class _CommissionFormDialogState extends State<CommissionFormDialog> {
                                       backgroundColor: Colors.black54,
                                       padding: const EdgeInsets.all(4),
                                       minimumSize: const Size(24, 24),
-                                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                      tapTargetSize:
+                                          MaterialTapTargetSize.shrinkWrap,
                                     ),
                                     onPressed: () {
                                       setState(() {
@@ -451,7 +467,10 @@ class _CommissionFormDialogState extends State<CommissionFormDialog> {
                           color: Colors.black.withValues(alpha: 0.1),
                           width: 1.219,
                         ),
-                        padding: const EdgeInsets.symmetric(horizontal: 17, vertical: 9),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 17,
+                          vertical: 9,
+                        ),
                         minimumSize: const Size(0, 36),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
@@ -473,7 +492,10 @@ class _CommissionFormDialogState extends State<CommissionFormDialog> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFF54900),
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
                         minimumSize: const Size(0, 36),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
@@ -481,9 +503,7 @@ class _CommissionFormDialogState extends State<CommissionFormDialog> {
                       ),
                       child: const Text(
                         'Enregistrer',
-                        style: TextStyle(
-                          fontSize: 14,
-                        ),
+                        style: TextStyle(fontSize: 14),
                       ),
                     ),
                   ),
@@ -496,4 +516,3 @@ class _CommissionFormDialogState extends State<CommissionFormDialog> {
     );
   }
 }
-

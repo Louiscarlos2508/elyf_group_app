@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart' show Timestamp;
+
 /// Représente un utilisateur du système avec toutes ses informations.
 class User {
   const User({
@@ -92,12 +94,8 @@ class User {
       email: map['email'] as String?,
       phone: map['phone'] as String?,
       isActive: map['isActive'] as bool? ?? true,
-      createdAt: map['createdAt'] != null
-          ? DateTime.parse(map['createdAt'] as String)
-          : null,
-      updatedAt: map['updatedAt'] != null
-          ? DateTime.parse(map['updatedAt'] as String)
-          : null,
+      createdAt: _parseTimestamp(map['createdAt']),
+      updatedAt: _parseTimestamp(map['updatedAt']),
     );
   }
 
@@ -114,5 +112,16 @@ class User {
 
   @override
   int get hashCode => id.hashCode;
-}
 
+  /// Convertit un timestamp Firestore (Timestamp ou String) en DateTime
+  static DateTime? _parseTimestamp(dynamic timestamp) {
+    if (timestamp == null) return null;
+    if (timestamp is Timestamp) {
+      return timestamp.toDate();
+    }
+    if (timestamp is String) {
+      return DateTime.tryParse(timestamp);
+    }
+    return null;
+  }
+}

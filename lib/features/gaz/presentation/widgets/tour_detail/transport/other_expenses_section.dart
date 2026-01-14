@@ -6,10 +6,7 @@ import '../../../../domain/entities/tour.dart';
 
 /// Section des autres dépenses du trajet.
 class OtherExpensesSection extends StatelessWidget {
-  const OtherExpensesSection({
-    super.key,
-    required this.tour,
-  });
+  const OtherExpensesSection({super.key, required this.tour});
 
   final Tour tour;
 
@@ -20,10 +17,7 @@ class OtherExpensesSection extends StatelessWidget {
       children: [
         Text(
           'Autres dépenses du trajet',
-          style: TextStyle(
-            fontSize: 14,
-            color: const Color(0xFF364153),
-          ),
+          style: TextStyle(fontSize: 14, color: const Color(0xFF364153)),
         ),
         const SizedBox(height: 8),
         // Liste des dépenses
@@ -36,10 +30,7 @@ class OtherExpensesSection extends StatelessWidget {
             ),
             child: Text(
               'Aucune dépense enregistrée',
-              style: TextStyle(
-                fontSize: 14,
-                color: const Color(0xFF6A7282),
-              ),
+              style: TextStyle(fontSize: 14, color: const Color(0xFF6A7282)),
             ),
           )
         else ...[
@@ -77,10 +68,7 @@ class OtherExpensesSection extends StatelessWidget {
           }),
           const SizedBox(height: 8),
           // Divider
-          Container(
-            height: 1,
-            color: Colors.black.withValues(alpha: 0.1),
-          ),
+          Container(height: 1, color: Colors.black.withValues(alpha: 0.1)),
           const SizedBox(height: 8),
           // Total général des dépenses
           Row(
@@ -88,10 +76,7 @@ class OtherExpensesSection extends StatelessWidget {
             children: [
               const Text(
                 'Total général des dépenses',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Color(0xFF0A0A0A),
-                ),
+                style: TextStyle(fontSize: 16, color: Color(0xFF0A0A0A)),
               ),
               Text(
                 CurrencyFormatter.formatDouble(
@@ -99,10 +84,7 @@ class OtherExpensesSection extends StatelessWidget {
                       tour.totalUnloadingFees +
                       tour.totalTransportExpenses,
                 ),
-                style: const TextStyle(
-                  fontSize: 18,
-                  color: Color(0xFFE7000B),
-                ),
+                style: const TextStyle(fontSize: 18, color: Color(0xFFE7000B)),
               ),
             ],
           ),
@@ -111,4 +93,3 @@ class OtherExpensesSection extends StatelessWidget {
     );
   }
 }
-

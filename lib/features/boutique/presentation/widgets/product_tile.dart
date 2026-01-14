@@ -74,15 +74,16 @@ class ProductTile extends StatelessWidget {
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
-                        'Stock: ${product.stock}',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: isLowStock
-                              ? Colors.orange
-                              : theme.colorScheme.onSurfaceVariant,
-                          fontWeight:
-                              isLowStock ? FontWeight.w600 : FontWeight.normal,
+                          'Stock: ${product.stock}',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: isLowStock
+                                ? Colors.orange
+                                : theme.colorScheme.onSurfaceVariant,
+                            fontWeight: isLowStock
+                                ? FontWeight.w600
+                                : FontWeight.normal,
+                          ),
                         ),
-                      ),
                       ),
                       if (showRestockButton && onRestock != null)
                         InkWell(
@@ -140,4 +141,3 @@ class ProductTile extends StatelessWidget {
     }
   }
 }
-

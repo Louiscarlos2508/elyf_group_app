@@ -36,8 +36,9 @@ class CommissionOfflineRepository extends OfflineRepository<Commission>
       transactionsCount: (map['transactionsCount'] as num).toInt(),
       estimatedAmount: (map['estimatedAmount'] as num).toInt(),
       enterpriseId: map['enterpriseId'] as String,
-      paidAt:
-          map['paidAt'] != null ? DateTime.parse(map['paidAt'] as String) : null,
+      paidAt: map['paidAt'] != null
+          ? DateTime.parse(map['paidAt'] as String)
+          : null,
       paymentDueDate: map['paymentDueDate'] != null
           ? DateTime.parse(map['paymentDueDate'] as String)
           : null,
@@ -163,8 +164,9 @@ class CommissionOfflineRepository extends OfflineRepository<Commission>
     String? period,
   }) async {
     try {
-      final commissions =
-          await getAllForEnterprise(enterpriseId ?? this.enterpriseId);
+      final commissions = await getAllForEnterprise(
+        enterpriseId ?? this.enterpriseId,
+      );
       return commissions.where((c) {
         if (status != null && c.status != status) return false;
         if (period != null && c.period != period) return false;
@@ -286,10 +288,12 @@ class CommissionOfflineRepository extends OfflineRepository<Commission>
   @override
   Future<Map<String, dynamic>> getStatistics({String? enterpriseId}) async {
     try {
-      final commissions =
-          await getAllForEnterprise(enterpriseId ?? this.enterpriseId);
-      final paidCommissions =
-          commissions.where((c) => c.status == CommissionStatus.paid).toList();
+      final commissions = await getAllForEnterprise(
+        enterpriseId ?? this.enterpriseId,
+      );
+      final paidCommissions = commissions
+          .where((c) => c.status == CommissionStatus.paid)
+          .toList();
       final pendingCommissions = commissions
           .where((c) => c.status == CommissionStatus.pending)
           .toList();
@@ -297,8 +301,10 @@ class CommissionOfflineRepository extends OfflineRepository<Commission>
       return {
         'totalCommissions': commissions.length,
         'totalPaid': paidCommissions.fold<int>(0, (sum, c) => sum + c.amount),
-        'totalPending':
-            pendingCommissions.fold<int>(0, (sum, c) => sum + c.amount),
+        'totalPending': pendingCommissions.fold<int>(
+          0,
+          (sum, c) => sum + c.amount,
+        ),
         'paidCount': paidCommissions.length,
         'pendingCount': pendingCommissions.length,
       };

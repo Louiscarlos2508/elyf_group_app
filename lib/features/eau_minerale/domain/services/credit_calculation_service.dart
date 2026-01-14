@@ -57,4 +57,3 @@ class CreditCalculationService {
     return (totalPaid / initialCredit) * 100;
   }
 }
-

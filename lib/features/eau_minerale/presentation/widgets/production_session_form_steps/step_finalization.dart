@@ -7,7 +7,7 @@ import 'consommation_field.dart';
 import 'production_session_form_helpers.dart';
 
 /// Étape 3 : Finalisation.
-/// 
+///
 /// Permet d'enregistrer :
 /// - Index compteur final
 /// - Consommation électrique
@@ -43,16 +43,16 @@ class StepFinalization extends ConsumerWidget {
       children: [
         Text(
           'Finalisation',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         Text(
           'Enregistrez les index finaux et la consommation pour finaliser la session.',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
         const SizedBox(height: 24),
         IndexCompteurFinalField(
@@ -61,9 +61,7 @@ class StepFinalization extends ConsumerWidget {
           consommationController: consommationController,
         ),
         const SizedBox(height: 16),
-        ConsommationField(
-          controller: consommationController,
-        ),
+        ConsommationField(controller: consommationController),
         const SizedBox(height: 24),
         ProductionSessionSummaryCard(
           date: selectedDate,
@@ -88,4 +86,3 @@ class StepFinalization extends ConsumerWidget {
     );
   }
 }
-

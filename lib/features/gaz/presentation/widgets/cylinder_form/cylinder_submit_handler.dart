@@ -5,6 +5,7 @@ import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import '../../../domain/entities/cylinder.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
+
 /// Handler pour la soumission du formulaire de bouteille.
 class CylinderSubmitHandler {
   CylinderSubmitHandler._();
@@ -22,7 +23,10 @@ class CylinderSubmitHandler {
   }) async {
     if (selectedWeight == null || enterpriseId == null || moduleId == null) {
       if (context.mounted) {
-        NotificationService.showError(context, 'Veuillez remplir tous les champs requis');
+        NotificationService.showError(
+          context,
+          'Veuillez remplir tous les champs requis',
+        );
       }
       return false;
     }
@@ -33,7 +37,8 @@ class CylinderSubmitHandler {
       final sellPrice = double.tryParse(sellPriceText) ?? 0.0;
 
       final cylinder = Cylinder(
-        id: existingCylinder?.id ??
+        id:
+            existingCylinder?.id ??
             'cyl-${DateTime.now().millisecondsSinceEpoch}',
         weight: weight,
         buyPrice: 0.0, // Prix d'achat non utilisé, mis à 0
@@ -73,21 +78,20 @@ class CylinderSubmitHandler {
 
       // Invalider les providers pour forcer le rafraîchissement
       ref.invalidate(cylindersProvider);
-      
+
       // Invalider le provider spécifique avec les bons paramètres
       ref.invalidate(
-        gazSettingsProvider(
-          (enterpriseId: enterpriseId, moduleId: moduleId),
-        ),
+        gazSettingsProvider((enterpriseId: enterpriseId, moduleId: moduleId)),
       );
-          Navigator.of(context).pop();
+      Navigator.of(context).pop();
 
       if (context.mounted) {
-        NotificationService.showSuccess(context, 
-              existingCylinder == null
-                  ? 'Bouteille créée avec succès'
-                  : 'Bouteille mise à jour',
-            );
+        NotificationService.showSuccess(
+          context,
+          existingCylinder == null
+              ? 'Bouteille créée avec succès'
+              : 'Bouteille mise à jour',
+        );
       }
       return true;
     } catch (e) {
@@ -98,4 +102,3 @@ class CylinderSubmitHandler {
     }
   }
 }
-

@@ -20,14 +20,9 @@ class MachineInstallationFormDialog {
     await showDialog<BobineUsage>(
       context: context,
       builder: (dialogContext) => Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         child: ConstrainedBox(
-          constraints: const BoxConstraints(
-            maxWidth: 600,
-            maxHeight: 700,
-          ),
+          constraints: const BoxConstraints(maxWidth: 600, maxHeight: 700),
           child: BobineInstallationForm(
             machine: machine,
             onInstalled: (newBobine) async {
@@ -50,4 +45,3 @@ class MachineInstallationFormDialog {
     );
   }
 }
-

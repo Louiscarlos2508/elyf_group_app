@@ -7,13 +7,10 @@ import '../../../domain/services/audit/audit_service.dart';
 import '../firestore_sync_service.dart';
 
 /// Offline-first implementation of AuditService using Drift.
-/// 
+///
 /// Enregistre les logs localement et synchronise avec Firestore.
 class AuditOfflineService implements AuditService {
-  AuditOfflineService({
-    required this.driftService,
-    this.firestoreSync,
-  });
+  AuditOfflineService({required this.driftService, this.firestoreSync});
 
   final DriftService driftService;
   final FirestoreSyncService? firestoreSync;
@@ -56,12 +53,13 @@ class AuditOfflineService implements AuditService {
       );
 
       final map = log.toMap()..['localId'] = log.id;
-      
+
       // Sauvegarder localement dans Drift (SQLite)
       await driftService.records.upsert(
         collectionName: _collectionName,
         localId: log.id,
-        remoteId: log.id, // Utiliser l'ID local comme remoteId pour les audit logs
+        remoteId:
+            log.id, // Utiliser l'ID local comme remoteId pour les audit logs
         enterpriseId: enterpriseId ?? 'global',
         moduleType: moduleId ?? 'administration',
         dataJson: jsonEncode(map),
@@ -107,12 +105,15 @@ class AuditOfflineService implements AuditService {
         moduleType: 'administration',
       );
 
-      return records.map((record) {
-        final map = jsonDecode(record.dataJson) as Map<String, dynamic>;
-        return AuditLog.fromMap(map);
-      }).where((log) {
-        return log.entityType == entityType && log.entityId == entityId;
-      }).toList()
+      return records
+          .map((record) {
+            final map = jsonDecode(record.dataJson) as Map<String, dynamic>;
+            return AuditLog.fromMap(map);
+          })
+          .where((log) {
+            return log.entityType == entityType && log.entityId == entityId;
+          })
+          .toList()
         ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
     } catch (e) {
       developer.log('Error fetching audit logs', name: 'admin.audit', error: e);
@@ -129,13 +130,20 @@ class AuditOfflineService implements AuditService {
         moduleType: 'administration',
       );
 
-      return records.map((record) {
-        final map = jsonDecode(record.dataJson) as Map<String, dynamic>;
-        return AuditLog.fromMap(map);
-      }).where((log) => log.userId == userId).toList()
+      return records
+          .map((record) {
+            final map = jsonDecode(record.dataJson) as Map<String, dynamic>;
+            return AuditLog.fromMap(map);
+          })
+          .where((log) => log.userId == userId)
+          .toList()
         ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
     } catch (e) {
-      developer.log('Error fetching audit logs for user', name: 'admin.audit', error: e);
+      developer.log(
+        'Error fetching audit logs for user',
+        name: 'admin.audit',
+        error: e,
+      );
       return [];
     }
   }
@@ -149,13 +157,20 @@ class AuditOfflineService implements AuditService {
         moduleType: 'administration',
       );
 
-      return records.map((record) {
-        final map = jsonDecode(record.dataJson) as Map<String, dynamic>;
-        return AuditLog.fromMap(map);
-      }).where((log) => log.moduleId == moduleId).toList()
+      return records
+          .map((record) {
+            final map = jsonDecode(record.dataJson) as Map<String, dynamic>;
+            return AuditLog.fromMap(map);
+          })
+          .where((log) => log.moduleId == moduleId)
+          .toList()
         ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
     } catch (e) {
-      developer.log('Error fetching audit logs for module', name: 'admin.audit', error: e);
+      developer.log(
+        'Error fetching audit logs for module',
+        name: 'admin.audit',
+        error: e,
+      );
       return [];
     }
   }
@@ -172,10 +187,13 @@ class AuditOfflineService implements AuditService {
       return records.map((record) {
         final map = jsonDecode(record.dataJson) as Map<String, dynamic>;
         return AuditLog.fromMap(map);
-      }).toList()
-        ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+      }).toList()..sort((a, b) => b.timestamp.compareTo(a.timestamp));
     } catch (e) {
-      developer.log('Error fetching audit logs for enterprise', name: 'admin.audit', error: e);
+      developer.log(
+        'Error fetching audit logs for enterprise',
+        name: 'admin.audit',
+        error: e,
+      );
       return [];
     }
   }
@@ -204,10 +222,12 @@ class AuditOfflineService implements AuditService {
       logs.sort((a, b) => b.timestamp.compareTo(a.timestamp));
       return logs.take(limit).toList();
     } catch (e) {
-      developer.log('Error fetching recent audit logs', name: 'admin.audit', error: e);
+      developer.log(
+        'Error fetching recent audit logs',
+        name: 'admin.audit',
+        error: e,
+      );
       return [];
     }
   }
 }
-
-

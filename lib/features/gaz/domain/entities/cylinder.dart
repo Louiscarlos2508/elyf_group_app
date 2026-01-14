@@ -11,7 +11,8 @@ class Cylinder {
   });
 
   final String id;
-  final int weight; // Poids en kg (dynamique, récupéré depuis les bouteilles créées)
+  final int
+  weight; // Poids en kg (dynamique, récupéré depuis les bouteilles créées)
   final double buyPrice;
   final double sellPrice;
   final String enterpriseId;

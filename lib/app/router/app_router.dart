@@ -48,16 +48,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/modules',
         name: AppRoute.moduleMenu.name,
-        builder: (context, state) => const AuthGuard(
-          child: ModuleMenuScreen(),
-        ),
+        builder: (context, state) => const AuthGuard(child: ModuleMenuScreen()),
       ),
       GoRoute(
         path: '/admin',
         name: AppRoute.admin.name,
-        builder: (context, state) => const AuthGuard(
-          child: AdminHomeScreen(),
-        ),
+        builder: (context, state) => const AuthGuard(child: AdminHomeScreen()),
       ),
       GoRoute(
         path: '/',
@@ -74,37 +70,31 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/modules/eau_sachet',
         name: AppRoute.homeEauSachet.name,
-        builder: (context, state) => const AuthGuard(
-          child: EauMineraleRouteWrapper(),
-        ),
+        builder: (context, state) =>
+            const AuthGuard(child: EauMineraleRouteWrapper()),
       ),
       GoRoute(
         path: '/modules/gaz',
         name: AppRoute.homeGaz.name,
-        builder: (context, state) => const AuthGuard(
-          child: GazRouteWrapper(),
-        ),
+        builder: (context, state) => const AuthGuard(child: GazRouteWrapper()),
       ),
       GoRoute(
         path: '/modules/orange_money',
         name: AppRoute.homeOrangeMoney.name,
-        builder: (context, state) => const AuthGuard(
-          child: OrangeMoneyRouteWrapper(),
-        ),
+        builder: (context, state) =>
+            const AuthGuard(child: OrangeMoneyRouteWrapper()),
       ),
       GoRoute(
         path: '/modules/immobilier',
         name: AppRoute.homeImmobilier.name,
-        builder: (context, state) => const AuthGuard(
-          child: ImmobilierRouteWrapper(),
-        ),
+        builder: (context, state) =>
+            const AuthGuard(child: ImmobilierRouteWrapper()),
       ),
       GoRoute(
         path: '/modules/boutique',
         name: AppRoute.homeBoutique.name,
-        builder: (context, state) => const AuthGuard(
-          child: BoutiqueRouteWrapper(),
-        ),
+        builder: (context, state) =>
+            const AuthGuard(child: BoutiqueRouteWrapper()),
       ),
       GoRoute(
         path: '/tenants',

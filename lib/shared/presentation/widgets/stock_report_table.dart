@@ -18,10 +18,7 @@ class StockItemData {
 
 /// Widget pour afficher un tableau des stocks.
 class StockReportTable extends StatelessWidget {
-  const StockReportTable({
-    super.key,
-    required this.stockData,
-  });
+  const StockReportTable({super.key, required this.stockData});
 
   final List<StockItemData> stockData;
 
@@ -35,9 +32,7 @@ class StockReportTable extends StatelessWidget {
       return const Card(
         child: Padding(
           padding: EdgeInsets.all(24),
-          child: Center(
-            child: Text('Aucun stock trouvé'),
-          ),
+          child: Center(child: Text('Aucun stock trouvé')),
         ),
       );
     }
@@ -53,9 +48,9 @@ class StockReportTable extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             child: Text(
               'Détail du stock',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
           ),
           SingleChildScrollView(
@@ -71,10 +66,12 @@ class StockReportTable extends StatelessWidget {
                 return DataRow(
                   cells: [
                     DataCell(Text(item.name)),
-                    DataCell(Text(
-                      item.quantity.toStringAsFixed(0),
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    )),
+                    DataCell(
+                      Text(
+                        item.quantity.toStringAsFixed(0),
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
                     DataCell(Text(item.unit)),
                     DataCell(Text(_formatDate(item.updatedAt))),
                   ],
@@ -87,4 +84,3 @@ class StockReportTable extends StatelessWidget {
     );
   }
 }
-

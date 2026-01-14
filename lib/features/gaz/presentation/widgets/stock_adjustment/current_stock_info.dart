@@ -2,10 +2,7 @@ import 'package:flutter/material.dart';
 
 /// Widget displaying current stock information.
 class CurrentStockInfo extends StatelessWidget {
-  const CurrentStockInfo({
-    super.key,
-    required this.quantity,
-  });
+  const CurrentStockInfo({super.key, required this.quantity});
 
   final int quantity;
 
@@ -23,11 +20,7 @@ class CurrentStockInfo extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(
-            Icons.info_outline,
-            color: Color(0xFF0EA5E9),
-            size: 20,
-          ),
+          const Icon(Icons.info_outline, color: Color(0xFF0EA5E9), size: 20),
           const SizedBox(width: 8),
           Text(
             'Quantité actuelle: $quantity',
@@ -40,4 +33,3 @@ class CurrentStockInfo extends StatelessWidget {
     );
   }
 }
-

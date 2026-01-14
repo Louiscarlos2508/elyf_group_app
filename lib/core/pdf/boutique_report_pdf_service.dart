@@ -1,14 +1,12 @@
 import 'dart:io';
 
-
 import '../../features/boutique/domain/entities/report_data.dart';
 import 'base_report_pdf_service.dart';
 
 /// Service pour générer des PDF de rapports pour le module Boutique.
 class BoutiqueReportPdfService extends BaseReportPdfService {
   BoutiqueReportPdfService._();
-  static final BoutiqueReportPdfService instance =
-      BoutiqueReportPdfService._();
+  static final BoutiqueReportPdfService instance = BoutiqueReportPdfService._();
 
   /// Génère un PDF de rapport complet pour une période.
   Future<File> generateReport({
@@ -35,18 +33,12 @@ class BoutiqueReportPdfService extends BaseReportPdfService {
             'label': 'Montant des Dépenses',
             'value': formatCurrency(reportData.expensesAmount),
           },
-          {
-            'label': 'Bénéfice Net',
-            'value': formatCurrency(reportData.profit),
-          },
+          {'label': 'Bénéfice Net', 'value': formatCurrency(reportData.profit)},
           {
             'label': 'Taux de Marge',
             'value': '${reportData.profitMarginPercentage.toStringAsFixed(1)}%',
           },
-          {
-            'label': 'Nombre de ventes',
-            'value': '${reportData.salesCount}',
-          },
+          {'label': 'Nombre de ventes', 'value': '${reportData.salesCount}'},
           {
             'label': 'Nombre d\'achats',
             'value': '${reportData.purchasesCount}',
@@ -68,4 +60,3 @@ class BoutiqueReportPdfService extends BaseReportPdfService {
     );
   }
 }
-

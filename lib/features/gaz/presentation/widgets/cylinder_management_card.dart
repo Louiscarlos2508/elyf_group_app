@@ -7,6 +7,7 @@ import 'cylinder_form_dialog.dart';
 import 'cylinder_list_item.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../../../shared/utils/notification_service.dart';
+
 /// Carte de gestion des bouteilles de gaz dans les paramètres.
 class CylinderManagementCard extends ConsumerStatefulWidget {
   const CylinderManagementCard({super.key});
@@ -18,7 +19,6 @@ class CylinderManagementCard extends ConsumerStatefulWidget {
 
 class _CylinderManagementCardState
     extends ConsumerState<CylinderManagementCard> {
-
   Future<void> _deleteCylinder(String id) async {
     try {
       final controller = ref.read(cylinderControllerProvider);
@@ -28,7 +28,10 @@ class _CylinderManagementCardState
       ref.invalidate(cylindersProvider);
 
       if (!mounted) return;
-      NotificationService.showSuccess(context, 'Bouteille supprimée avec succès');
+      NotificationService.showSuccess(
+        context,
+        'Bouteille supprimée avec succès',
+      );
     } catch (e) {
       if (!mounted) return;
       NotificationService.showError(context, e.toString());
@@ -45,9 +48,7 @@ class _CylinderManagementCardState
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: colors.outline.withValues(alpha: 0.2),
-        ),
+        side: BorderSide(color: colors.outline.withValues(alpha: 0.2)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -148,11 +149,7 @@ class _CylinderManagementCardState
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        Icons.error_outline,
-                        size: 48,
-                        color: colors.error,
-                      ),
+                      Icon(Icons.error_outline, size: 48, color: colors.error),
                       const SizedBox(height: 12),
                       Text(
                         'Erreur lors du chargement',
@@ -193,9 +190,7 @@ class _CylinderManagementCardState
     try {
       showDialog(
         context: context,
-        builder: (dialogContext) => CylinderFormDialog(
-          cylinder: cylinder,
-        ),
+        builder: (dialogContext) => CylinderFormDialog(cylinder: cylinder),
       );
     } catch (e) {
       debugPrint('Erreur lors de l\'ouverture du dialog: $e');
@@ -222,9 +217,7 @@ class _CylinderManagementCardState
               Navigator.of(context).pop();
               await _deleteCylinder(cylinder.id);
             },
-            style: FilledButton.styleFrom(
-              backgroundColor: Colors.red,
-            ),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
             child: const Text('Supprimer'),
           ),
         ],

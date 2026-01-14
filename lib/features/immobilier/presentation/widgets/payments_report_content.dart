@@ -25,11 +25,11 @@ class PaymentsReportContent extends ConsumerWidget {
     return paymentsAsync.when(
       data: (payments) {
         final periodPayments = payments.where((p) {
-          return p.paymentDate
-                  .isAfter(startDate.subtract(const Duration(days: 1))) &&
+          return p.paymentDate.isAfter(
+                startDate.subtract(const Duration(days: 1)),
+              ) &&
               p.paymentDate.isBefore(endDate.add(const Duration(days: 1)));
-        }).toList()
-          ..sort((a, b) => b.paymentDate.compareTo(a.paymentDate));
+        }).toList()..sort((a, b) => b.paymentDate.compareTo(a.paymentDate));
 
         if (periodPayments.isEmpty) {
           return _buildEmptyState(theme, 'Aucun paiement sur cette période');
@@ -165,11 +165,7 @@ class PaymentsReportContent extends ConsumerWidget {
               color: statusColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(
-              Icons.payments,
-              color: statusColor,
-              size: 20,
-            ),
+            child: Icon(Icons.payments, color: statusColor, size: 20),
           ),
           title: Text(
             payment.contract?.property?.address ?? 'Paiement',
@@ -204,10 +200,7 @@ class PaymentsReportContent extends ConsumerWidget {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 6,
-                  vertical: 2,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: statusColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(4),

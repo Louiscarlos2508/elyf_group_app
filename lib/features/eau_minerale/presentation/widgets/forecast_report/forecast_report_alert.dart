@@ -89,39 +89,46 @@ List<ForecastAlert> generateForecastAlerts(
 
   // Declining trend alert
   if (trend < -average * 0.1) {
-    alerts.add(ForecastAlert(
-      type: ForecastAlertType.warning,
-      title: 'Tendance baissière détectée',
-      message:
-          'Les ventes montrent une tendance à la baisse de ${(trend / average * 100).abs().toStringAsFixed(1)}% par semaine.',
-    ));
+    alerts.add(
+      ForecastAlert(
+        type: ForecastAlertType.warning,
+        title: 'Tendance baissière détectée',
+        message:
+            'Les ventes montrent une tendance à la baisse de ${(trend / average * 100).abs().toStringAsFixed(1)}% par semaine.',
+      ),
+    );
   }
 
   // Increasing trend
   if (trend > average * 0.1) {
-    alerts.add(ForecastAlert(
-      type: ForecastAlertType.success,
-      title: 'Croissance positive',
-      message:
-          'Les ventes augmentent de ${(trend / average * 100).toStringAsFixed(1)}% par semaine.',
-    ));
+    alerts.add(
+      ForecastAlert(
+        type: ForecastAlertType.success,
+        title: 'Croissance positive',
+        message:
+            'Les ventes augmentent de ${(trend / average * 100).toStringAsFixed(1)}% par semaine.',
+      ),
+    );
   }
 
   // High variability
   if (weeklyData.length >= 2) {
-    final variance = ForecastReportHelpers.calculateVariance(weeklyData, average);
-    final coefficientOfVariation =
-        average > 0 ? (variance / average) * 100 : 0;
+    final variance = ForecastReportHelpers.calculateVariance(
+      weeklyData,
+      average,
+    );
+    final coefficientOfVariation = average > 0 ? (variance / average) * 100 : 0;
     if (coefficientOfVariation > 30) {
-      alerts.add(ForecastAlert(
-        type: ForecastAlertType.info,
-        title: 'Forte variabilité',
-        message:
-            'Les ventes présentent une variabilité importante (${coefficientOfVariation.toStringAsFixed(0)}%). Les prévisions peuvent être moins fiables.',
-      ));
+      alerts.add(
+        ForecastAlert(
+          type: ForecastAlertType.info,
+          title: 'Forte variabilité',
+          message:
+              'Les ventes présentent une variabilité importante (${coefficientOfVariation.toStringAsFixed(0)}%). Les prévisions peuvent être moins fiables.',
+        ),
+      );
     }
   }
 
   return alerts;
 }
-

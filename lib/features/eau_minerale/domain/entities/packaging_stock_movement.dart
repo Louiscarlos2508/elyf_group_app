@@ -20,7 +20,8 @@ class PackagingStockMovement {
   final PackagingMovementType type;
   final DateTime date;
   final int quantite; // Quantité en unités
-  final String raison; // Ex: "Livraison", "Utilisation en production", "Ajustement"
+  final String
+  raison; // Ex: "Livraison", "Utilisation en production", "Ajustement"
   final String? productionId; // ID de la production si lié à une production
   final String? fournisseur; // Fournisseur si entrée
   final String? notes;
@@ -58,8 +59,10 @@ class PackagingStockMovement {
 enum PackagingMovementType {
   /// Entrée en stock (livraison)
   entree,
+
   /// Sortie du stock (utilisation en production)
   sortie,
+
   /// Ajustement manuel
   ajustement,
 }

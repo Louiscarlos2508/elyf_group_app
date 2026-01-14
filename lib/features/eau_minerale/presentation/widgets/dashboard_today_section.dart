@@ -7,10 +7,7 @@ import 'dashboard_kpi_card.dart';
 
 /// Section displaying today's KPIs.
 class DashboardTodaySection extends StatelessWidget {
-  const DashboardTodaySection({
-    super.key,
-    required this.salesState,
-  });
+  const DashboardTodaySection({super.key, required this.salesState});
 
   final SalesState salesState;
 
@@ -65,4 +62,3 @@ class DashboardTodaySection extends StatelessWidget {
     );
   }
 }
-

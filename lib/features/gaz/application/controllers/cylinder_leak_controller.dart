@@ -5,10 +5,7 @@ import '../../domain/repositories/cylinder_stock_repository.dart';
 
 /// Contrôleur pour la gestion des bouteilles avec fuites.
 class CylinderLeakController {
-  CylinderLeakController(
-    this._leakRepository,
-    this._stockRepository,
-  );
+  CylinderLeakController(this._leakRepository, this._stockRepository);
 
   final CylinderLeakRepository _leakRepository;
   final CylinderStockRepository _stockRepository;
@@ -61,10 +58,7 @@ class CylinderLeakController {
     if (fullStocks.isNotEmpty) {
       // On diminue la quantité du premier stock trouvé
       final stock = fullStocks.first;
-      await _stockRepository.updateStockQuantity(
-        stock.id,
-        stock.quantity - 1,
-      );
+      await _stockRepository.updateStockQuantity(stock.id, stock.quantity - 1);
     }
 
     return leakId;

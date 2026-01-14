@@ -3,11 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/administration/domain/entities/user.dart';
 import 'package:elyf_groupe_app/core/auth/entities/enterprise_module_user.dart';
-import '../dialogs/manage_permissions_dialog.dart';
-import '../../../../application/providers.dart' show enterpriseModuleUsersProvider;
+import '../../../../application/providers.dart';
+import '../../../../../../shared/utils/notification_service.dart';
 
 /// User list item widget extracted for better code organization.
-/// 
+///
 /// Displays a single user with their assignments in an ExpansionTile.
 class UserListItem extends ConsumerWidget {
   const UserListItem({
@@ -30,14 +30,12 @@ class UserListItem extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
       child: Card(
         child: ExpansionTile(
-          leading: CircleAvatar(
-            child: Text(user.firstName[0].toUpperCase()),
-          ),
+          leading: CircleAvatar(child: Text(user.firstName[0].toUpperCase())),
           title: Text(
             user.fullName,
             style: theme.textTheme.titleMedium?.copyWith(
@@ -57,19 +55,63 @@ class UserListItem extends ConsumerWidget {
           ),
           children: userAssignments.map((assignment) {
             return ListTile(
-              title: Text('${assignment.enterpriseId} - ${assignment.moduleId}'),
+              title: Text(
+                '${assignment.enterpriseId} - ${assignment.moduleId}',
+              ),
               subtitle: Text('Rôle: ${assignment.roleId}'),
               trailing: IconButton(
-                icon: const Icon(Icons.settings),
+                icon: const Icon(Icons.delete_outline, color: Colors.red),
+                tooltip: 'Retirer l\'assignation',
                 onPressed: () async {
-                  final result = await showDialog<Set<String>>(
+                  final confirmed = await showDialog<bool>(
                     context: context,
-                    builder: (context) => ManagePermissionsDialog(
-                      enterpriseModuleUser: assignment,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Retirer l\'assignation'),
+                      content: Text(
+                        'Êtes-vous sûr de vouloir retirer cette assignation?\n\n'
+                        'Entreprise: ${assignment.enterpriseId}\n'
+                        'Module: ${assignment.moduleId}',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(false),
+                          child: const Text('Annuler'),
+                        ),
+                        FilledButton(
+                          onPressed: () => Navigator.of(context).pop(true),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: Colors.red,
+                          ),
+                          child: const Text('Retirer'),
+                        ),
+                      ],
                     ),
                   );
-                  if (result != null) {
-                    ref.invalidate(enterpriseModuleUsersProvider);
+
+                  if (confirmed == true && context.mounted) {
+                    try {
+                      await ref
+                          .read(adminControllerProvider)
+                          .removeUserFromEnterprise(
+                            assignment.userId,
+                            assignment.enterpriseId,
+                            assignment.moduleId,
+                          );
+                      ref.refresh(enterpriseModuleUsersProvider);
+                      ref.refresh(
+                        userEnterpriseModuleUsersProvider(assignment.userId),
+                      );
+                      if (context.mounted) {
+                        NotificationService.showSuccess(
+                          context,
+                          'Assignation retirée avec succès',
+                        );
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
+                        NotificationService.showError(context, e.toString());
+                      }
+                    }
                   }
                 },
               ),
@@ -83,10 +125,7 @@ class UserListItem extends ConsumerWidget {
 
 /// Subtitle widget for user list item.
 class _UserListItemSubtitle extends StatelessWidget {
-  const _UserListItemSubtitle({
-    required this.user,
-    required this.assignments,
-  });
+  const _UserListItemSubtitle({required this.user, required this.assignments});
 
   final User user;
   final List<EnterpriseModuleUser> assignments;
@@ -94,7 +133,7 @@ class _UserListItemSubtitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -107,13 +146,15 @@ class _UserListItemSubtitle extends StatelessWidget {
             runSpacing: 4,
             children: assignments
                 .take(3)
-                .map((a) => Chip(
-                      label: Text(
-                        '${a.enterpriseId} - ${a.moduleId}',
-                        style: theme.textTheme.labelSmall,
-                      ),
-                      visualDensity: VisualDensity.compact,
-                    ))
+                .map(
+                  (a) => Chip(
+                    label: Text(
+                      '${a.enterpriseId} - ${a.moduleId}',
+                      style: theme.textTheme.labelSmall,
+                    ),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                )
                 .toList(),
           ),
           if (assignments.length > 3)
@@ -220,4 +261,3 @@ class _UserListItemActions extends StatelessWidget {
     );
   }
 }
-

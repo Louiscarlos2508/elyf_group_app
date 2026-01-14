@@ -24,8 +24,7 @@ class StockReportScreen extends ConsumerStatefulWidget {
   final int availableBobines;
 
   @override
-  ConsumerState<StockReportScreen> createState() =>
-      _StockReportScreenState();
+  ConsumerState<StockReportScreen> createState() => _StockReportScreenState();
 }
 
 class _StockReportScreenState extends ConsumerState<StockReportScreen> {
@@ -34,9 +33,11 @@ class _StockReportScreenState extends ConsumerState<StockReportScreen> {
   List<StockItem> _getFilteredStockItems() {
     // Filtrer les items "sachet" et "bidon" qui ne doivent pas apparaître dans le rapport
     return widget.stockItems
-        .where((item) =>
-            !item.name.toLowerCase().contains('sachet') &&
-            !item.name.toLowerCase().contains('bidon'))
+        .where(
+          (item) =>
+              !item.name.toLowerCase().contains('sachet') &&
+              !item.name.toLowerCase().contains('bidon'),
+        )
         .toList();
   }
 
@@ -63,12 +64,14 @@ class _StockReportScreenState extends ConsumerState<StockReportScreen> {
 
     // Ajouter les bobines disponibles
     if (widget.availableBobines > 0) {
-      stockData.add(StockItemData(
-        name: 'Bobines disponibles',
-        quantity: widget.availableBobines.toDouble(),
-        unit: 'unité',
-        updatedAt: DateTime.now(),
-      ));
+      stockData.add(
+        StockItemData(
+          name: 'Bobines disponibles',
+          quantity: widget.availableBobines.toDouble(),
+          unit: 'unité',
+          updatedAt: DateTime.now(),
+        ),
+      );
     }
 
     return [...stockData, ...packagingData];
@@ -79,9 +82,7 @@ class _StockReportScreenState extends ConsumerState<StockReportScreen> {
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (context) => const Center(
-          child: CircularProgressIndicator(),
-        ),
+        builder: (context) => const Center(child: CircularProgressIndicator()),
       );
 
       final pdfService = EauMineraleStockReportPdfService();
@@ -101,9 +102,7 @@ class _StockReportScreenState extends ConsumerState<StockReportScreen> {
       if (!mounted || !context.mounted) return;
       if (result.type != ResultType.done) {
         messenger.showSnackBar(
-          SnackBar(
-            content: Text('PDF généré: $filePath'),
-          ),
+          SnackBar(content: Text('PDF généré: $filePath')),
         );
       }
     } catch (e) {
@@ -158,4 +157,3 @@ class _StockReportScreenState extends ConsumerState<StockReportScreen> {
     );
   }
 }
-

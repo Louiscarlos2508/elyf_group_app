@@ -6,10 +6,7 @@ import '../../../../domain/entities/expense.dart';
 
 /// Dialog pour afficher les détails d'une dépense.
 class ExpenseDetailDialog extends StatelessWidget {
-  const ExpenseDetailDialog({
-    super.key,
-    required this.expense,
-  });
+  const ExpenseDetailDialog({super.key, required this.expense});
 
   final GazExpense expense;
 
@@ -36,14 +33,11 @@ class ExpenseDetailDialog extends StatelessWidget {
           _DetailRow(
             theme: theme,
             label: 'Date',
-            value: '${expense.date.day}/${expense.date.month}/${expense.date.year}',
+            value:
+                '${expense.date.day}/${expense.date.month}/${expense.date.year}',
           ),
           if (expense.notes != null)
-            _DetailRow(
-              theme: theme,
-              label: 'Notes',
-              value: expense.notes!,
-            ),
+            _DetailRow(theme: theme, label: 'Notes', value: expense.notes!),
         ],
       ),
       actions: [
@@ -96,4 +90,3 @@ class _DetailRow extends StatelessWidget {
     );
   }
 }
-

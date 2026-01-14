@@ -8,10 +8,7 @@ import '../../../widgets/dashboard_point_of_sale_performance.dart';
 
 /// Section de performance par point de vente pour le dashboard.
 class DashboardPosPerformanceSection extends ConsumerWidget {
-  const DashboardPosPerformanceSection({
-    super.key,
-    required this.sales,
-  });
+  const DashboardPosPerformanceSection({super.key, required this.sales});
 
   final List<GasSale> sales;
 
@@ -24,9 +21,7 @@ class DashboardPosPerformanceSection extends ConsumerWidget {
 
     // Récupérer les points de vente depuis le provider
     final pointsOfSaleAsync = ref.watch(
-      pointsOfSaleProvider(
-        (enterpriseId: enterpriseId, moduleId: moduleId),
-      ),
+      pointsOfSaleProvider((enterpriseId: enterpriseId, moduleId: moduleId)),
     );
 
     return pointsOfSaleAsync.when(
@@ -55,7 +50,7 @@ class DashboardPosPerformanceSection extends ConsumerWidget {
           salesByPos[pos.id] = retailSales.isEmpty
               ? 0.0
               : (retailSales.fold<double>(0, (sum, s) => sum + s.totalAmount) /
-                  pointsOfSale.length);
+                    pointsOfSale.length);
           salesCountByPos[pos.id] = retailSales.isEmpty
               ? 0
               : (retailSales.length / pointsOfSale.length).round();
@@ -89,4 +84,3 @@ class DashboardPosPerformanceSection extends ConsumerWidget {
     );
   }
 }
-

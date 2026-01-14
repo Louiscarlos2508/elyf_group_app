@@ -85,8 +85,10 @@ class ForecastWeeklyBreakdown extends StatelessWidget {
               ),
               const SizedBox(width: 16),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: isAboveAverage
                       ? Colors.green.withValues(alpha: 0.1)
@@ -108,4 +110,3 @@ class ForecastWeeklyBreakdown extends StatelessWidget {
     );
   }
 }
-

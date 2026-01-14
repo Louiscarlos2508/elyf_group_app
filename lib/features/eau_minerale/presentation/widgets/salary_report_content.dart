@@ -9,10 +9,7 @@ import 'production_period_formatter.dart';
 
 /// Content widget for salary report tab.
 class SalaryReportContent extends ConsumerWidget {
-  const SalaryReportContent({
-    super.key,
-    required this.period,
-  });
+  const SalaryReportContent({super.key, required this.period});
 
   final ReportPeriod period;
 
@@ -56,7 +53,9 @@ class SalaryReportContent extends ConsumerWidget {
                   Expanded(
                     child: _SummaryCard(
                       label: 'Salaires Mensuels',
-                      value: CurrencyFormatter.formatFCFA(data.totalMonthlySalaries),
+                      value: CurrencyFormatter.formatFCFA(
+                        data.totalMonthlySalaries,
+                      ),
                       icon: Icons.calendar_month,
                       color: Colors.blue,
                     ),
@@ -65,7 +64,9 @@ class SalaryReportContent extends ConsumerWidget {
                   Expanded(
                     child: _SummaryCard(
                       label: 'Paiements Production',
-                      value: CurrencyFormatter.formatFCFA(data.totalProductionPayments),
+                      value: CurrencyFormatter.formatFCFA(
+                        data.totalProductionPayments,
+                      ),
                       icon: Icons.factory,
                       color: Colors.purple,
                     ),
@@ -90,21 +91,28 @@ class SalaryReportContent extends ConsumerWidget {
                   ),
                 )
               else
-                ...data.monthlyPayments.map((payment) => Card(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      child: ListTile(
-                        leading: const Icon(Icons.calendar_month, color: Colors.blue),
-                        title: Text(payment.employeeName),
-                        subtitle: Text('${payment.period} • ${ProductionPeriodFormatter.formatDate(payment.date)}'),
-                        trailing: Text(
-                          CurrencyFormatter.formatFCFA(payment.amount),
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blue,
-                          ),
+                ...data.monthlyPayments.map(
+                  (payment) => Card(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    child: ListTile(
+                      leading: const Icon(
+                        Icons.calendar_month,
+                        color: Colors.blue,
+                      ),
+                      title: Text(payment.employeeName),
+                      subtitle: Text(
+                        '${payment.period} • ${ProductionPeriodFormatter.formatDate(payment.date)}',
+                      ),
+                      trailing: Text(
+                        CurrencyFormatter.formatFCFA(payment.amount),
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue,
                         ),
                       ),
-                    )),
+                    ),
+                  ),
+                ),
               const SizedBox(height: 24),
               Text(
                 'Paiements Production',
@@ -123,21 +131,25 @@ class SalaryReportContent extends ConsumerWidget {
                   ),
                 )
               else
-                ...data.productionPayments.map((payment) => Card(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      child: ListTile(
-                        leading: const Icon(Icons.factory, color: Colors.purple),
-                        title: Text('Paiement Production'),
-                        subtitle: Text('${payment.period} • ${payment.persons.length} personne(s) • ${ProductionPeriodFormatter.formatDate(payment.paymentDate)}'),
-                        trailing: Text(
-                          CurrencyFormatter.formatFCFA(payment.totalAmount),
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.purple,
-                          ),
+                ...data.productionPayments.map(
+                  (payment) => Card(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    child: ListTile(
+                      leading: const Icon(Icons.factory, color: Colors.purple),
+                      title: Text('Paiement Production'),
+                      subtitle: Text(
+                        '${payment.period} • ${payment.persons.length} personne(s) • ${ProductionPeriodFormatter.formatDate(payment.paymentDate)}',
+                      ),
+                      trailing: Text(
+                        CurrencyFormatter.formatFCFA(payment.totalAmount),
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.purple,
                         ),
                       ),
-                    )),
+                    ),
+                  ),
+                ),
             ],
           ),
         );
@@ -169,9 +181,7 @@ class _SummaryCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: color.withValues(alpha: 0.2),
-        ),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Row(
         children: [
@@ -203,4 +213,3 @@ class _SummaryCard extends StatelessWidget {
     );
   }
 }
-

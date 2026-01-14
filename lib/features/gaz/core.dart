@@ -5,4 +5,3 @@ export '../../../core/auth/entities/entities.dart';
 export '../../../core/permissions/entities/entities.dart';
 export '../../../core/offline/offline.dart';
 export '../../../core/offline/providers.dart';
-

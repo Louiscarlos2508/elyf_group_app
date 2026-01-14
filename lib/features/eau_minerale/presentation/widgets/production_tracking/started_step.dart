@@ -9,10 +9,7 @@ import 'tracking_dialogs.dart';
 
 /// Widget pour l'étape "Started" (démarrée) de la session de production.
 class StartedStep extends ConsumerWidget {
-  const StartedStep({
-    super.key,
-    required this.session,
-  });
+  const StartedStep({super.key, required this.session});
 
   final ProductionSession session;
 
@@ -55,8 +52,10 @@ class StartedStep extends ConsumerWidget {
             const SizedBox(height: 16),
             TrackingActions(
               session: session,
-              onAddMachine: () => TrackingDialogs.showAddMachineDialog(context, ref, session),
-              onFinalize: () => TrackingDialogs.showFinalizationDialog(context, ref, session),
+              onAddMachine: () =>
+                  TrackingDialogs.showAddMachineDialog(context, ref, session),
+              onFinalize: () =>
+                  TrackingDialogs.showFinalizationDialog(context, ref, session),
             ),
           ],
         ),
@@ -64,4 +63,3 @@ class StartedStep extends ConsumerWidget {
     );
   }
 }
-

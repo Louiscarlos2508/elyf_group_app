@@ -218,9 +218,7 @@ class ExpensesTable extends StatelessWidget {
           ),
           subtitle: Text(
             _getCategoryLabel(expense.category),
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: color,
-            ),
+            style: theme.textTheme.bodySmall?.copyWith(color: color),
           ),
           trailing: Text(
             formatCurrency(expense.amountCfa),

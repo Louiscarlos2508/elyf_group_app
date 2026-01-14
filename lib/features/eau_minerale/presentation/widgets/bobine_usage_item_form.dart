@@ -24,15 +24,17 @@ class BobineUsageItemForm extends ConsumerStatefulWidget {
       _BobineUsageItemFormState();
 }
 
-class _BobineUsageItemFormState
-    extends ConsumerState<BobineUsageItemForm> {
+class _BobineUsageItemFormState extends ConsumerState<BobineUsageItemForm> {
   final formKey = GlobalKey<FormState>();
   Machine? _machineSelectionnee;
 
   void _submit() {
     if (!formKey.currentState!.validate()) return;
     if (widget.bobineStocksDisponibles.isEmpty) {
-      NotificationService.showWarning(context, 'Aucune bobine disponible en stock');
+      NotificationService.showWarning(
+        context,
+        'Aucune bobine disponible en stock',
+      );
       return;
     }
     if (_machineSelectionnee == null) {
@@ -68,7 +70,9 @@ class _BobineUsageItemFormState
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.2),
+                color: Theme.of(
+                  context,
+                ).colorScheme.errorContainer.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -93,7 +97,9 @@ class _BobineUsageItemFormState
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
+                color: Theme.of(
+                  context,
+                ).colorScheme.primaryContainer.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -113,9 +119,12 @@ class _BobineUsageItemFormState
                         ),
                         Text(
                           '${widget.bobineStocksDisponibles.fold<int>(0, (sum, stock) => sum + stock.quantity)} bobine${widget.bobineStocksDisponibles.fold<int>(0, (sum, stock) => sum + stock.quantity) > 1 ? 's' : ''} disponible${widget.bobineStocksDisponibles.fold<int>(0, (sum, stock) => sum + stock.quantity) > 1 ? 's' : ''}',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
                         ),
                       ],
                     ),
@@ -131,17 +140,16 @@ class _BobineUsageItemFormState
               prefixIcon: Icon(Icons.precision_manufacturing),
             ),
             items: widget.machinesDisponibles.map((machine) {
-              return DropdownMenuItem(
-                value: machine,
-                child: Text(machine.nom),
-              );
+              return DropdownMenuItem(value: machine, child: Text(machine.nom));
             }).toList(),
             onChanged: (machine) {
               setState(() => _machineSelectionnee = machine);
             },
             validator: (value) {
               // Utiliser le service de validation pour extraire la logique métier
-              final validationService = ref.read(productionValidationServiceProvider);
+              final validationService = ref.read(
+                productionValidationServiceProvider,
+              );
               return validationService.validateMachineSelection(value);
             },
           ),
@@ -155,4 +163,3 @@ class _BobineUsageItemFormState
     );
   }
 }
-

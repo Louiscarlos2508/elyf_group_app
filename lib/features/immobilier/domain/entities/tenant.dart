@@ -24,4 +24,3 @@ class Tenant {
   final DateTime? createdAt;
   final DateTime? updatedAt;
 }
-

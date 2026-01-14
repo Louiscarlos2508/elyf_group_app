@@ -21,11 +21,14 @@ class ReportController {
   }
 
   Future<List<ProductSalesSummary>> fetchProductSalesSummary(
-      ReportPeriod period) async {
+    ReportPeriod period,
+  ) async {
     return await _repository.fetchProductSalesSummary(period);
   }
 
-  Future<ProductionReportData> fetchProductionReport(ReportPeriod period) async {
+  Future<ProductionReportData> fetchProductionReport(
+    ReportPeriod period,
+  ) async {
     return await _repository.fetchProductionReport(period);
   }
 
@@ -37,4 +40,3 @@ class ReportController {
     return await _repository.fetchSalaryReport(period);
   }
 }
-

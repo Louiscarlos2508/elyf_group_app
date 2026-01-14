@@ -13,6 +13,7 @@ class TenantCard extends StatelessWidget {
 
   final Tenant tenant;
   final VoidCallback? onTap;
+
   /// Nombre de contrats actifs pour ce locataire.
   final int activeContractsCount;
 
@@ -23,9 +24,7 @@ class TenantCard extends StatelessWidget {
     return Card(
       elevation: 2,
       margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
@@ -164,7 +163,8 @@ class TenantCard extends StatelessWidget {
                         ],
                       ),
                     ],
-                    if (tenant.address != null && tenant.address!.isNotEmpty) ...[
+                    if (tenant.address != null &&
+                        tenant.address!.isNotEmpty) ...[
                       const SizedBox(height: 4),
                       Row(
                         children: [
@@ -201,4 +201,3 @@ class TenantCard extends StatelessWidget {
     );
   }
 }
-

@@ -9,10 +9,7 @@ class PosTableHeader extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 7.99,
-        vertical: 8.97,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 7.99, vertical: 8.97),
       decoration: const BoxDecoration(
         color: Color(0xFFF9FAFB),
         border: Border(
@@ -84,4 +81,3 @@ class PosTableHeader extends StatelessWidget {
     );
   }
 }
-

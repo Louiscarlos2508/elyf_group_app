@@ -7,10 +7,10 @@ import '../../application/controllers/admin_controller.dart';
 class _NoAccessException implements Exception {}
 
 /// Implémentation réelle de PermissionService qui utilise les données Firestore.
-/// 
+///
 /// Récupère les permissions via AdminController (qui lit depuis Drift offline-first).
 /// Prend en compte l'entreprise active pour le multi-tenant.
-/// 
+///
 /// Respecte l'architecture Clean Architecture en utilisant le controller
 /// au lieu d'accéder directement au repository.
 class RealPermissionService implements PermissionService {
@@ -36,10 +36,11 @@ class RealPermissionService implements PermissionService {
       }
 
       // Récupérer l'accès EnterpriseModuleUser pour cet utilisateur, entreprise et module
-      final accesses = await adminController.getEnterpriseModuleUsersByEnterpriseAndModule(
-        enterpriseId,
-        moduleId,
-      );
+      final accesses = await adminController
+          .getEnterpriseModuleUsersByEnterpriseAndModule(
+            enterpriseId,
+            moduleId,
+          );
 
       final access = accesses.firstWhere(
         (a) => a.userId == userId && a.isActive,
@@ -85,10 +86,11 @@ class RealPermissionService implements PermissionService {
         return null;
       }
 
-      final accesses = await adminController.getEnterpriseModuleUsersByEnterpriseAndModule(
-        enterpriseId,
-        moduleId,
-      );
+      final accesses = await adminController
+          .getEnterpriseModuleUsersByEnterpriseAndModule(
+            enterpriseId,
+            moduleId,
+          );
 
       final access = accesses.firstWhere(
         (a) => a.userId == userId && a.isActive,
@@ -115,10 +117,11 @@ class RealPermissionService implements PermissionService {
         return null;
       }
 
-      final accesses = await adminController.getEnterpriseModuleUsersByEnterpriseAndModule(
-        enterpriseId,
-        moduleId,
-      );
+      final accesses = await adminController
+          .getEnterpriseModuleUsersByEnterpriseAndModule(
+            enterpriseId,
+            moduleId,
+          );
 
       final access = accesses.firstWhere(
         (a) => a.userId == userId,
@@ -187,4 +190,3 @@ class RealPermissionService implements PermissionService {
     return true;
   }
 }
-

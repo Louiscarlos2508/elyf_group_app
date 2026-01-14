@@ -6,10 +6,7 @@ import '../../domain/entities/expense.dart';
 
 /// Widget displaying monthly expense summary for immobilier - style eau_minerale.
 class MonthlyExpenseSummaryV2 extends StatelessWidget {
-  const MonthlyExpenseSummaryV2({
-    super.key,
-    required this.expenses,
-  });
+  const MonthlyExpenseSummaryV2({super.key, required this.expenses});
 
   final List<PropertyExpense> expenses;
 
@@ -17,7 +14,8 @@ class MonthlyExpenseSummaryV2 extends StatelessWidget {
     final now = DateTime.now();
     final monthStart = DateTime(now.year, now.month, 1);
     final monthExpenses = expenses.where(
-      (e) => e.expenseDate.isAfter(monthStart.subtract(const Duration(days: 1))),
+      (e) =>
+          e.expenseDate.isAfter(monthStart.subtract(const Duration(days: 1))),
     );
     return monthExpenses.fold(0, (sum, e) => sum + e.amount);
   }
@@ -26,7 +24,8 @@ class MonthlyExpenseSummaryV2 extends StatelessWidget {
     final now = DateTime.now();
     final monthStart = DateTime(now.year, now.month, 1);
     final monthExpenses = expenses.where(
-      (e) => e.expenseDate.isAfter(monthStart.subtract(const Duration(days: 1))),
+      (e) =>
+          e.expenseDate.isAfter(monthStart.subtract(const Duration(days: 1))),
     );
 
     final byCategory = <ExpenseCategory, int>{};
@@ -95,10 +94,7 @@ class MonthlyExpenseSummaryV2 extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(
-                Icons.calendar_month,
-                color: theme.colorScheme.primary,
-              ),
+              Icon(Icons.calendar_month, color: theme.colorScheme.primary),
               const SizedBox(width: 8),
               Text(
                 'Résumé Mensuel',
@@ -118,10 +114,7 @@ class MonthlyExpenseSummaryV2 extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Total ce mois',
-                  style: theme.textTheme.titleMedium,
-                ),
+                Text('Total ce mois', style: theme.textTheme.titleMedium),
                 Text(
                   CurrencyFormatter.formatFCFA(monthlyTotal),
                   style: theme.textTheme.titleLarge?.copyWith(

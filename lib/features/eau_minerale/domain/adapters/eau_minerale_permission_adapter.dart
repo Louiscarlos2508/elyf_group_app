@@ -25,17 +25,29 @@ class EauMineralePermissionAdapter {
 
   /// Check if user has a specific permission
   Future<bool> hasPermission(String permissionId) async {
-    return await permissionService.hasPermission(userId, moduleId, permissionId);
+    return await permissionService.hasPermission(
+      userId,
+      moduleId,
+      permissionId,
+    );
   }
 
   /// Check if user has any of the specified permissions
   Future<bool> hasAnyPermission(Set<String> permissionIds) async {
-    return await permissionService.hasAnyPermission(userId, moduleId, permissionIds);
+    return await permissionService.hasAnyPermission(
+      userId,
+      moduleId,
+      permissionIds,
+    );
   }
 
   /// Check if user has all specified permissions
   Future<bool> hasAllPermissions(Set<String> permissionIds) async {
-    return await permissionService.hasAllPermissions(userId, moduleId, permissionIds);
+    return await permissionService.hasAllPermissions(
+      userId,
+      moduleId,
+      permissionIds,
+    );
   }
 
   /// Check if user can access a section
@@ -64,4 +76,3 @@ class EauMineralePermissionAdapter {
     }
   }
 }
-

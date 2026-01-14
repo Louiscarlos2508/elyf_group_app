@@ -620,31 +620,48 @@ class AuthService {
     } catch (e) {
       // Vérifier d'abord si Firebase Auth a réellement fonctionné
       // Si oui, ignorer les erreurs non-critiques (GoogleApiManager, DEVELOPER_ERROR, etc.)
+      // MAIS ne pas utiliser currentUser si l'erreur est invalid-credential ou wrong-password
+      final errorString = e.toString().toLowerCase();
+      final isAuthError =
+          errorString.contains('invalid-credential') ||
+          errorString.contains('wrong-password') ||
+          errorString.contains('user-not-found') ||
+          errorString.contains('identifiants invalides');
+
       final firebaseUser = _firebaseAuth.currentUser;
-      if (firebaseUser != null && firebaseUser.uid.isNotEmpty) {
-        // Firebase Auth a fonctionné ! Les erreurs GoogleApiManager/DEVELOPER_ERROR sont non-bloquantes
-        developer.log(
-          'Firebase Auth successful (user: ${firebaseUser.uid}). Error is non-critical (likely GoogleApiManager/DEVELOPER_ERROR): $e',
-          name: 'auth',
-        );
+      if (firebaseUser != null && firebaseUser.uid.isNotEmpty && !isAuthError) {
+        // Vérifier que l'email du currentUser correspond à l'email utilisé pour la connexion
+        // Si ce n'est pas le cas, ne pas utiliser currentUser (c'est un utilisateur précédemment connecté)
+        if (firebaseUser.email != null &&
+            firebaseUser.email!.toLowerCase() != email.toLowerCase()) {
+          developer.log(
+            'Current user email (${firebaseUser.email}) does not match login email ($email). Ignoring currentUser.',
+            name: 'auth',
+          );
+        } else {
+          // Firebase Auth a fonctionné ! Les erreurs GoogleApiManager/DEVELOPER_ERROR sont non-bloquantes
+          developer.log(
+            'Firebase Auth successful (user: ${firebaseUser.uid}). Error is non-critical (likely GoogleApiManager/DEVELOPER_ERROR): $e',
+            name: 'auth',
+          );
 
-        // Créer l'utilisateur et continuer la connexion
-        final appUser = AppUser(
-          id: firebaseUser.uid,
-          email: firebaseUser.email ?? email,
-          displayName: 'Administrateur',
-          isAdmin: email == _adminEmail,
-        );
+          // Créer l'utilisateur et continuer la connexion
+          final appUser = AppUser(
+            id: firebaseUser.uid,
+            email: firebaseUser.email ?? email,
+            displayName: 'Administrateur',
+            isAdmin: email == _adminEmail,
+          );
 
-        // Sauvegarder dans le stockage sécurisé
-        await _saveUser(appUser);
-        _currentUser = appUser;
+          // Sauvegarder dans le stockage sécurisé
+          await _saveUser(appUser);
+          _currentUser = appUser;
 
-        return appUser;
+          return appUser;
+        }
       }
 
       // Si Firebase Auth n'a pas fonctionné, analyser l'erreur
-      final errorString = e.toString().toLowerCase();
 
       // Ignorer les erreurs GoogleApiManager/DEVELOPER_ERROR qui sont non-bloquantes
       // Ces erreurs apparaissent dans les logs mais n'empêchent pas Firebase Auth de fonctionner
@@ -661,8 +678,10 @@ class AuthService {
           const Duration(milliseconds: 500),
           () => _firebaseAuth.currentUser,
         );
-        if (userAfterDelay != null) {
-          // L'utilisateur existe, la connexion a réussi malgré les erreurs
+        if (userAfterDelay != null &&
+            userAfterDelay.email != null &&
+            userAfterDelay.email!.toLowerCase() == email.toLowerCase()) {
+          // L'utilisateur existe et l'email correspond, la connexion a réussi malgré les erreurs
           final appUser = AppUser(
             id: userAfterDelay.uid,
             email: userAfterDelay.email ?? email,
@@ -690,24 +709,30 @@ class AuthService {
 
       // Avant de lever une exception, vérifier une dernière fois si Firebase Auth a fonctionné
       // (au cas où l'utilisateur serait disponible maintenant)
-      final finalUserCheck = await Future.delayed(
-        const Duration(milliseconds: 1000),
-        () => _firebaseAuth.currentUser,
-      );
-      if (finalUserCheck != null && finalUserCheck.uid.isNotEmpty) {
-        developer.log(
-          'Firebase Auth worked after delay (user: ${finalUserCheck.uid}). Error was non-critical: $e',
-          name: 'auth',
+      // MAIS seulement si ce n'est pas une erreur d'authentification
+      if (!isAuthError) {
+        final finalUserCheck = await Future.delayed(
+          const Duration(milliseconds: 1000),
+          () => _firebaseAuth.currentUser,
         );
-        final appUser = AppUser(
-          id: finalUserCheck.uid,
-          email: finalUserCheck.email ?? email,
-          displayName: 'Administrateur',
-          isAdmin: email == _adminEmail,
-        );
-        await _saveUser(appUser);
-        _currentUser = appUser;
-        return appUser;
+        if (finalUserCheck != null &&
+            finalUserCheck.uid.isNotEmpty &&
+            finalUserCheck.email != null &&
+            finalUserCheck.email!.toLowerCase() == email.toLowerCase()) {
+          developer.log(
+            'Firebase Auth worked after delay (user: ${finalUserCheck.uid}). Error was non-critical: $e',
+            name: 'auth',
+          );
+          final appUser = AppUser(
+            id: finalUserCheck.uid,
+            email: finalUserCheck.email ?? email,
+            displayName: 'Administrateur',
+            isAdmin: email == _adminEmail,
+          );
+          await _saveUser(appUser);
+          _currentUser = appUser;
+          return appUser;
+        }
       }
 
       // Seulement si Firebase Auth n'a vraiment pas fonctionné, vérifier si c'est une erreur d'init

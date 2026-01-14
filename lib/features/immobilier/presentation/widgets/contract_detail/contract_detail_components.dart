@@ -78,9 +78,9 @@ class ContractInfoColumn extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           value,
-          style: valueStyle ?? theme.textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.w500,
-          ),
+          style:
+              valueStyle ??
+              theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
         ),
         if (subtitle != null)
           Text(
@@ -125,7 +125,11 @@ class ContractEntityLinkTile extends StatelessWidget {
             CircleAvatar(
               radius: 20,
               backgroundColor: theme.colorScheme.primaryContainer,
-              child: Icon(icon, size: 20, color: theme.colorScheme.onPrimaryContainer),
+              child: Icon(
+                icon,
+                size: 20,
+                color: theme.colorScheme.onPrimaryContainer,
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -167,4 +171,3 @@ class ContractEntityLinkTile extends StatelessWidget {
     );
   }
 }
-

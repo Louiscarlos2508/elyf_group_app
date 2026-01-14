@@ -43,7 +43,9 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
     final filterService = ref.read(paymentFilterServiceProvider);
     return filterService.filterAndSort(
       payments: payments,
-      searchQuery: _searchController.text.isEmpty ? null : _searchController.text,
+      searchQuery: _searchController.text.isEmpty
+          ? null
+          : _searchController.text,
       status: _selectedStatus,
       method: _selectedMethod,
     );
@@ -88,14 +90,20 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
     final now = DateTime.now();
     final monthStart = DateTime(now.year, now.month, 1);
 
-    final paidCount =
-        payments.where((p) => p.status == PaymentStatus.paid).length;
-    final overdueCount =
-        payments.where((p) => p.status == PaymentStatus.overdue).length;
+    final paidCount = payments
+        .where((p) => p.status == PaymentStatus.paid)
+        .length;
+    final overdueCount = payments
+        .where((p) => p.status == PaymentStatus.overdue)
+        .length;
     final monthTotal = payments
-        .where((p) =>
-            p.status == PaymentStatus.paid &&
-            p.paymentDate.isAfter(monthStart.subtract(const Duration(days: 1))))
+        .where(
+          (p) =>
+              p.status == PaymentStatus.paid &&
+              p.paymentDate.isAfter(
+                monthStart.subtract(const Duration(days: 1)),
+              ),
+        )
         .fold(0, (sum, p) => sum + p.amount);
     final overdueTotal = payments
         .where((p) => p.status == PaymentStatus.overdue)
@@ -178,7 +186,10 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
   }
 
   Widget _buildKpiSection(
-      ThemeData theme, int totalCount, _PaymentMetrics metrics) {
+    ThemeData theme,
+    int totalCount,
+    _PaymentMetrics metrics,
+  ) {
     return SliverToBoxAdapter(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -289,7 +300,10 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
   }
 
   Widget _buildPaymentsList(
-      ThemeData theme, List<Payment> filtered, bool isEmpty) {
+    ThemeData theme,
+    List<Payment> filtered,
+    bool isEmpty,
+  ) {
     if (filtered.isEmpty) {
       return SliverFillRemaining(
         hasScrollBody: false,
@@ -300,16 +314,13 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
     return SliverPadding(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
       sliver: SliverList(
-        delegate: SliverChildBuilderDelegate(
-          (context, index) {
-            final payment = filtered[index];
-            return PaymentCard(
-              payment: payment,
-              onTap: () => _showPaymentDetails(payment),
-            );
-          },
-          childCount: filtered.length,
-        ),
+        delegate: SliverChildBuilderDelegate((context, index) {
+          final payment = filtered[index];
+          return PaymentCard(
+            payment: payment,
+            onTap: () => _showPaymentDetails(payment),
+          );
+        }, childCount: filtered.length),
       ),
     );
   }
@@ -358,7 +369,8 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
           Text(
             'Erreur de chargement',
             style: theme.textTheme.bodyLarge?.copyWith(
-                color: theme.colorScheme.error),
+              color: theme.colorScheme.error,
+            ),
           ),
           const SizedBox(height: 16),
           FilledButton(
@@ -464,7 +476,10 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
         await controller.deletePayment(payment.id);
         ref.invalidate(paymentsProvider);
         if (mounted) {
-          NotificationService.showSuccess(context, 'Paiement supprimé avec succès');
+          NotificationService.showSuccess(
+            context,
+            'Paiement supprimé avec succès',
+          );
         }
       } catch (e) {
         if (mounted) {

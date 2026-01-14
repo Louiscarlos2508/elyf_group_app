@@ -19,8 +19,10 @@ class DashboardPerformanceSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Utiliser le service pour les calculs
-    final performanceData =
-        GazCalculationService.calculateLast7DaysPerformance(sales, expenses);
+    final performanceData = GazCalculationService.calculateLast7DaysPerformance(
+      sales,
+      expenses,
+    );
 
     return DashboardPerformanceChart(
       profitData: performanceData.profitData,
@@ -29,4 +31,3 @@ class DashboardPerformanceSection extends StatelessWidget {
     );
   }
 }
-

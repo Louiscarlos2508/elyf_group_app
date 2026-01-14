@@ -98,15 +98,11 @@ pw.Widget _buildProductTable(Sale sale) {
           ),
           pw.Padding(
             padding: const pw.EdgeInsets.all(8),
-            child: pw.Text(
-              InvoicePrintHelpers.formatCurrency(sale.unitPrice),
-            ),
+            child: pw.Text(InvoicePrintHelpers.formatCurrency(sale.unitPrice)),
           ),
           pw.Padding(
             padding: const pw.EdgeInsets.all(8),
-            child: pw.Text(
-              InvoicePrintHelpers.formatCurrency(sale.totalPrice),
-            ),
+            child: pw.Text(InvoicePrintHelpers.formatCurrency(sale.totalPrice)),
           ),
         ],
       ),
@@ -136,9 +132,7 @@ pw.Widget _buildTotalsSection(Sale sale) {
           mainAxisSize: pw.MainAxisSize.min,
           children: [
             pw.Text('Payé: '),
-            pw.Text(
-              InvoicePrintHelpers.formatCurrency(sale.amountPaid),
-            ),
+            pw.Text(InvoicePrintHelpers.formatCurrency(sale.amountPaid)),
           ],
         ),
         if (sale.cashAmount > 0)
@@ -171,4 +165,3 @@ pw.Widget _buildTotalsSection(Sale sale) {
     ),
   );
 }
-

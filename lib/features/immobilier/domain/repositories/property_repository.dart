@@ -23,4 +23,3 @@ abstract class PropertyRepository {
   /// Supprime une propriété.
   Future<void> deleteProperty(String id);
 }
-

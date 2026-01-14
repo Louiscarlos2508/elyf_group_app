@@ -9,10 +9,7 @@ import 'dashboard_kpi_card.dart';
 ///
 /// Uses [DashboardTodayMetrics] from the calculation service.
 class DashboardTodaySection extends StatelessWidget {
-  const DashboardTodaySection({
-    super.key,
-    required this.metrics,
-  });
+  const DashboardTodaySection({super.key, required this.metrics});
 
   /// Pre-calculated today metrics from [BoutiqueDashboardCalculationService].
   final DashboardTodayMetrics metrics;

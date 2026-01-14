@@ -23,12 +23,13 @@ class CustomerFormFields {
       ),
       textCapitalization: TextCapitalization.words,
       enabled: enabled,
-      validator: validator ??
+      validator:
+          validator ??
           ((value) => Validators.combine([
-                () => Validators.required(value),
-                () => Validators.minLength(value, 2,
-                    customMessage: 'Nom trop court'),
-              ])),
+            () => Validators.required(value),
+            () =>
+                Validators.minLength(value, 2, customMessage: 'Nom trop court'),
+          ])),
     );
   }
 
@@ -105,4 +106,3 @@ class CustomerFormFields {
     ];
   }
 }
-

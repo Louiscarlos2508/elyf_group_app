@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:elyf_groupe_app/shared.dart' show BaseModuleShellScreen, BaseModuleShellScreenState, NavigationSection;
+import 'package:elyf_groupe_app/shared.dart'
+    show BaseModuleShellScreen, BaseModuleShellScreenState, NavigationSection;
 import 'package:elyf_groupe_app/features/orange_money/application/providers.dart';
 
 class OrangeMoneyShellScreen extends BaseModuleShellScreen {
@@ -39,4 +40,3 @@ class _OrangeMoneyShellScreenState
     return [];
   }
 }
-

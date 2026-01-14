@@ -85,10 +85,7 @@ class CylinderSaleCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: const Color(0xFFECEEF2),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: Colors.transparent,
-                      width: 1.3,
-                    ),
+                    border: Border.all(color: Colors.transparent, width: 1.3),
                   ),
                   child: Text(
                     '$stock en stock',
@@ -180,8 +177,9 @@ class CylinderSaleCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        CurrencyFormatter.formatDouble(cylinder.sellPrice)
-                            .replaceAll(' FCFA', ''),
+                        CurrencyFormatter.formatDouble(
+                          cylinder.sellPrice,
+                        ).replaceAll(' FCFA', ''),
                         style: theme.textTheme.headlineSmall?.copyWith(
                           fontSize: 30,
                           fontWeight: FontWeight.normal,
@@ -233,4 +231,3 @@ class CylinderSaleCard extends StatelessWidget {
     );
   }
 }
-

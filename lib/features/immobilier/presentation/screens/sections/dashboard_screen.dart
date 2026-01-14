@@ -25,8 +25,9 @@ class DashboardScreen extends ConsumerWidget {
     final paymentsAsync = ref.watch(paymentsProvider);
     final expensesAsync = ref.watch(expensesProvider);
     final tenantsAsync = ref.watch(tenantsProvider);
-    final calculationService =
-        ref.watch(immobilierDashboardCalculationServiceProvider);
+    final calculationService = ref.watch(
+      immobilierDashboardCalculationServiceProvider,
+    );
 
     return Scaffold(
       body: CustomScrollView(
@@ -134,10 +135,12 @@ class _DashboardTodayKpis extends StatelessWidget {
       data: (payments) {
         final today = DateTime.now();
         final todayPayments = payments
-            .where((p) =>
-                p.paymentDate.year == today.year &&
-                p.paymentDate.month == today.month &&
-                p.paymentDate.day == today.day)
+            .where(
+              (p) =>
+                  p.paymentDate.year == today.year &&
+                  p.paymentDate.month == today.month &&
+                  p.paymentDate.day == today.day,
+            )
             .toList();
         return DashboardTodaySectionV2(todayPayments: todayPayments);
       },
@@ -181,13 +184,15 @@ class _DashboardMonthKpis extends StatelessWidget {
                     return expensesAsync.when(
                       data: (expenses) {
                         // Use calculation service for business logic
-                        final metrics = calculationService.calculateMonthlyMetrics(
-                          properties: properties,
-                          tenants: (tenants as List).cast<Tenant>(),
-                          contracts: contracts,
-                          payments: payments,
-                          expenses: (expenses as List).cast<PropertyExpense>(),
-                        );
+                        final metrics = calculationService
+                            .calculateMonthlyMetrics(
+                              properties: properties,
+                              tenants: (tenants as List).cast<Tenant>(),
+                              contracts: contracts,
+                              payments: payments,
+                              expenses: (expenses as List)
+                                  .cast<PropertyExpense>(),
+                            );
 
                         return DashboardMonthSectionV2(
                           monthRevenue: metrics.monthRevenue,
@@ -249,19 +254,23 @@ class _DashboardAlerts extends StatelessWidget {
     return paymentsAsync.when(
       data: (payments) {
         final unpaidPayments = payments
-            .where((p) =>
-                p.status == PaymentStatus.pending ||
-                p.status == PaymentStatus.overdue)
+            .where(
+              (p) =>
+                  p.status == PaymentStatus.pending ||
+                  p.status == PaymentStatus.overdue,
+            )
             .toList();
 
         return contractsAsync.when(
           data: (contracts) {
             final now = DateTime.now();
             final expiringContracts = contracts
-                .where((c) =>
-                    c.status == ContractStatus.active &&
-                    c.endDate.difference(now).inDays <= 30 &&
-                    c.endDate.isAfter(now))
+                .where(
+                  (c) =>
+                      c.status == ContractStatus.active &&
+                      c.endDate.difference(now).inDays <= 30 &&
+                      c.endDate.isAfter(now),
+                )
                 .toList();
 
             return DashboardAlertsSection(

@@ -26,8 +26,12 @@ String generateSaleReceipt(Sale sale) {
     '${InvoicePrintHelpers.formatCurrency(sale.unitPrice)}\n',
   );
   buffer.write('--------------------------------\n');
-  buffer.write('TOTAL: ${InvoicePrintHelpers.formatCurrency(sale.totalPrice)}\n');
-  buffer.write('Paye: ${InvoicePrintHelpers.formatCurrency(sale.amountPaid)}\n');
+  buffer.write(
+    'TOTAL: ${InvoicePrintHelpers.formatCurrency(sale.totalPrice)}\n',
+  );
+  buffer.write(
+    'Paye: ${InvoicePrintHelpers.formatCurrency(sale.amountPaid)}\n',
+  );
 
   if (sale.cashAmount > 0) {
     buffer.write(
@@ -107,4 +111,3 @@ String generateCreditPaymentReceipt({
 
   return buffer.toString();
 }
-

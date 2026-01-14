@@ -20,4 +20,3 @@ abstract class ProductionSessionRepository {
   /// Supprime une session de production.
   Future<void> deleteSession(String id);
 }
-

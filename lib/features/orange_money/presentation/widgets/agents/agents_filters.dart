@@ -30,19 +30,11 @@ class AgentsFilters extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Expanded(
-          child: AgentsSearchField(onChanged: onSearchChanged),
-        ),
+        Expanded(child: AgentsSearchField(onChanged: onSearchChanged)),
         const SizedBox(width: 16),
-        AgentsStatusFilter(
-          value: statusFilter,
-          onChanged: onStatusChanged,
-        ),
+        AgentsStatusFilter(value: statusFilter, onChanged: onStatusChanged),
         const SizedBox(width: 16),
-        AgentsNameFilter(
-          value: sortBy,
-          onChanged: onSortChanged,
-        ),
+        AgentsNameFilter(value: sortBy, onChanged: onSortChanged),
         const SizedBox(width: 16),
         SizedBox(
           width: 210.586,
@@ -70,4 +62,3 @@ class AgentsFilters extends StatelessWidget {
     );
   }
 }
-

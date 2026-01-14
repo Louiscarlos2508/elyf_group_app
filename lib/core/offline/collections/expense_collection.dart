@@ -36,8 +36,8 @@ class ExpenseCollection {
       ..expenseDate = map['expenseDate'] != null
           ? DateTime.parse(map['expenseDate'] as String)
           : (map['date'] != null
-              ? DateTime.parse(map['date'] as String)
-              : DateTime.now())
+                ? DateTime.parse(map['date'] as String)
+                : DateTime.now())
       ..paymentMethod = map['paymentMethod'] as String?
       ..reference = map['reference'] as String?
       ..notes = map['notes'] as String?
@@ -46,17 +46,17 @@ class ExpenseCollection {
   }
 
   Map<String, dynamic> toMap() => {
-        'id': remoteId ?? localId,
-        'localId': localId,
-        'enterpriseId': enterpriseId,
-        'moduleType': moduleType,
-        'category': category,
-        'description': description,
-        'amount': amount,
-        'expenseDate': expenseDate.toIso8601String(),
-        'date': expenseDate.toIso8601String(),
-        'paymentMethod': paymentMethod,
-        'reference': reference,
-        'notes': notes,
-      };
+    'id': remoteId ?? localId,
+    'localId': localId,
+    'enterpriseId': enterpriseId,
+    'moduleType': moduleType,
+    'category': category,
+    'description': description,
+    'amount': amount,
+    'expenseDate': expenseDate.toIso8601String(),
+    'date': expenseDate.toIso8601String(),
+    'paymentMethod': paymentMethod,
+    'reference': reference,
+    'notes': notes,
+  };
 }

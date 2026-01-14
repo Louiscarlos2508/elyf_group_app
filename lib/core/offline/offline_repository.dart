@@ -37,7 +37,7 @@ abstract class OfflineRepository<T> {
   bool get isOnline => connectivityService.isOnline;
 
   /// Saves an entity to local storage and queues for sync.
-  /// 
+  ///
   /// Ne lance pas d'exception si la sauvegarde locale échoue (erreur SQLite),
   /// pour permettre à l'opération de continuer. L'entité sera récupérée depuis
   /// Firestore lors de la prochaine synchronisation.
@@ -153,20 +153,28 @@ abstract class OfflineRepository<T> {
 
   /// Gets the sync state for an entity.
   Future<SyncState> getSyncState(String localId) async {
-    final pendingOps = await syncManager.getPendingForCollection(collectionName);
+    final pendingOps = await syncManager.getPendingForCollection(
+      collectionName,
+    );
     final hasPending = pendingOps.any((op) => op.documentId == localId);
     return hasPending ? SyncState.pending : SyncState.synced;
   }
 
   /// Gets all entities pending sync.
   Future<List<SyncMetadata>> getPendingSync() async {
-    final pendingOps = await syncManager.getPendingForCollection(collectionName);
-    return pendingOps.map((op) => SyncMetadata(
-      localId: op.documentId,
-      collectionName: op.collectionName,
-      operationType: op.operationType,
-      createdAt: op.createdAt,
-    )).toList();
+    final pendingOps = await syncManager.getPendingForCollection(
+      collectionName,
+    );
+    return pendingOps
+        .map(
+          (op) => SyncMetadata(
+            localId: op.documentId,
+            collectionName: op.collectionName,
+            operationType: op.operationType,
+            createdAt: op.createdAt,
+          ),
+        )
+        .toList();
   }
 }
 

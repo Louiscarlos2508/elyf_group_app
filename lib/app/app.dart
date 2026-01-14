@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../shared/providers/app_boot_status_provider.dart';
@@ -34,6 +35,24 @@ class _ElyfAppState extends ConsumerState<ElyfApp> {
       darkTheme: AppTheme.dark(bootStatus),
       themeMode: ThemeMode.system,
       debugShowCheckedModeBanner: false,
+      builder: (context, child) {
+        // Configurer SystemUIOverlayStyle pour s'assurer que les AppBar
+        // respectent les safe areas sur Android
+        final brightness = Theme.of(context).brightness;
+        SystemChrome.setSystemUIOverlayStyle(
+          SystemUiOverlayStyle(
+            statusBarColor: Colors.transparent,
+            statusBarIconBrightness: brightness == Brightness.dark
+                ? Brightness.light
+                : Brightness.dark,
+            systemNavigationBarColor: Theme.of(context).colorScheme.surface,
+            systemNavigationBarIconBrightness: brightness == Brightness.dark
+                ? Brightness.light
+                : Brightness.dark,
+          ),
+        );
+        return child ?? const SizedBox.shrink();
+      },
     );
   }
 }

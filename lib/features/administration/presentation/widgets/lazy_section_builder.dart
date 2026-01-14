@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 /// Lazy builder for sections in IndexedStack.
-/// 
+///
 /// Only builds the widget when the section becomes visible,
 /// reducing initial build time and memory usage.
 class LazySectionBuilder extends StatefulWidget {
@@ -28,7 +28,7 @@ class _LazySectionBuilderState extends State<LazySectionBuilder> {
   Widget build(BuildContext context) {
     // Only build if this section is visible or has been built before
     final isVisible = widget.index == widget.currentIndex;
-    
+
     if (isVisible || _hasBeenBuilt) {
       _hasBeenBuilt = true;
       _cachedWidget ??= widget.builder(context);
@@ -39,4 +39,3 @@ class _LazySectionBuilderState extends State<LazySectionBuilder> {
     return const SizedBox.shrink();
   }
 }
-

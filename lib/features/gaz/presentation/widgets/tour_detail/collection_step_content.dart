@@ -20,7 +20,7 @@ class CollectionStepContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     // Séparer les collections par type
     final wholesalerCollections = tour.collections
         .where((c) => c.type == CollectionType.wholesaler)
@@ -42,10 +42,7 @@ class CollectionStepContent extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CollectionStepHeader(
-            tour: tour,
-            enterpriseId: enterpriseId,
-          ),
+          CollectionStepHeader(tour: tour, enterpriseId: enterpriseId),
           const SizedBox(height: 24),
           CollectionListSection(
             tour: tour,

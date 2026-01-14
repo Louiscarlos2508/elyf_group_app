@@ -64,4 +64,3 @@ extension CommissionStatusExtension on CommissionStatus {
     }
   }
 }
-

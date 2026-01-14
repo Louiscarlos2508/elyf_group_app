@@ -20,9 +20,7 @@ class ContractDetailActions extends ConsumerWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         border: Border(
-          top: BorderSide(
-            color: Theme.of(context).colorScheme.outlineVariant,
-          ),
+          top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
         ),
       ),
       child: Row(
@@ -64,4 +62,3 @@ class ContractDetailActions extends ConsumerWidget {
     );
   }
 }
-

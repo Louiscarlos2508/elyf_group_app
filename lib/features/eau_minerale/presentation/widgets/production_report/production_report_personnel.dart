@@ -7,10 +7,7 @@ import 'production_report_helpers.dart';
 
 /// Section personnel du rapport.
 class ProductionReportPersonnel extends StatelessWidget {
-  const ProductionReportPersonnel({
-    super.key,
-    required this.session,
-  });
+  const ProductionReportPersonnel({super.key, required this.session});
 
   final ProductionSession session;
 
@@ -27,20 +24,16 @@ class ProductionReportPersonnel extends StatelessWidget {
       children: [
         ProductionReportComponents.buildSectionTitle('Personnel', theme),
         const SizedBox(height: 16),
-        ...session.productionDays.map((day) => _PersonnelDayCard(
-          theme: theme,
-          day: day,
-        )),
+        ...session.productionDays.map(
+          (day) => _PersonnelDayCard(theme: theme, day: day),
+        ),
       ],
     );
   }
 }
 
 class _PersonnelDayCard extends StatelessWidget {
-  const _PersonnelDayCard({
-    required this.theme,
-    required this.day,
-  });
+  const _PersonnelDayCard({required this.theme, required this.day});
 
   final ThemeData theme;
   final ProductionDay day;
@@ -57,11 +50,7 @@ class _PersonnelDayCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(
-              Icons.people,
-              size: 20,
-              color: theme.colorScheme.primary,
-            ),
+            Icon(Icons.people, size: 20, color: theme.colorScheme.primary),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -95,4 +84,3 @@ class _PersonnelDayCard extends StatelessWidget {
     );
   }
 }
-

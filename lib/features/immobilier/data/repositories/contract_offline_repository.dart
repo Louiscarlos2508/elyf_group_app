@@ -214,9 +214,7 @@ class ContractOfflineRepository extends OfflineRepository<Contract>
   Future<List<Contract>> getContractsByProperty(String propertyId) async {
     try {
       final allContracts = await getAllForEnterprise(enterpriseId);
-      return allContracts
-          .where((c) => c.propertyId == propertyId)
-          .toList();
+      return allContracts.where((c) => c.propertyId == propertyId).toList();
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
@@ -233,9 +231,7 @@ class ContractOfflineRepository extends OfflineRepository<Contract>
   Future<List<Contract>> getContractsByTenant(String tenantId) async {
     try {
       final allContracts = await getAllForEnterprise(enterpriseId);
-      return allContracts
-          .where((c) => c.tenantId == tenantId)
-          .toList();
+      return allContracts.where((c) => c.tenantId == tenantId).toList();
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
@@ -335,4 +331,3 @@ class ContractOfflineRepository extends OfflineRepository<Contract>
     }
   }
 }
-

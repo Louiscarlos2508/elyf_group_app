@@ -31,9 +31,10 @@ class GasSaleSubmitHandler {
     // Vérifier le stock disponible
     if (quantity > availableStock) {
       if (!context.mounted) return false;
-      NotificationService.showError(context, 
-            'Stock insuffisant. Stock disponible: $availableStock',
-          );
+      NotificationService.showError(
+        context,
+        'Stock insuffisant. Stock disponible: $availableStock',
+      );
       return false;
     }
 
@@ -74,10 +75,7 @@ class GasSaleSubmitHandler {
       if (fullStock != null) {
         final newQuantity = fullStock.quantity - quantity;
         if (newQuantity >= 0) {
-          await stockController.adjustStockQuantity(
-            fullStock.id,
-            newQuantity,
-          );
+          await stockController.adjustStockQuantity(fullStock.id, newQuantity);
         } else {
           throw Exception('Stock insuffisant après validation');
         }
@@ -90,13 +88,11 @@ class GasSaleSubmitHandler {
       // Invalider les providers
       ref.invalidate(gasSalesProvider);
       ref.invalidate(
-        cylinderStocksProvider(
-          (
-            enterpriseId: enterpriseId,
-            status: null,
-            siteId: null,
-          ),
-        ),
+        cylinderStocksProvider((
+          enterpriseId: enterpriseId,
+          status: null,
+          siteId: null,
+        )),
       );
 
       Navigator.of(context).pop();
@@ -116,4 +112,3 @@ class GasSaleSubmitHandler {
     }
   }
 }
-

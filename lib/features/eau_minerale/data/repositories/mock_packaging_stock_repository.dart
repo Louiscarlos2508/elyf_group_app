@@ -74,11 +74,20 @@ class MockPackagingStockRepository implements PackagingStockRepository {
     }
 
     if (startDate != null) {
-      filtered = filtered.where((m) => m.date.isAfter(startDate) || m.date.isAtSameMomentAs(startDate)).toList();
+      filtered = filtered
+          .where(
+            (m) =>
+                m.date.isAfter(startDate) || m.date.isAtSameMomentAs(startDate),
+          )
+          .toList();
     }
 
     if (endDate != null) {
-      filtered = filtered.where((m) => m.date.isBefore(endDate) || m.date.isAtSameMomentAs(endDate)).toList();
+      filtered = filtered
+          .where(
+            (m) => m.date.isBefore(endDate) || m.date.isAtSameMomentAs(endDate),
+          )
+          .toList();
     }
 
     return filtered..sort((a, b) => b.date.compareTo(a.date));

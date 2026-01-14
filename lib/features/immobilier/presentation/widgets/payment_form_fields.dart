@@ -28,10 +28,7 @@ class PaymentFormFields {
         final label = property != null && tenant != null
             ? '${property.address} - ${tenant.fullName}'
             : contract.id;
-        return DropdownMenuItem(
-          value: contract,
-          child: Text(label),
-        );
+        return DropdownMenuItem(value: contract, child: Text(label));
       }).toList(),
       onChanged: onChanged,
       validator: validator,
@@ -212,9 +209,7 @@ class PaymentFormFields {
     );
   }
 
-  static Widget notesField({
-    required TextEditingController controller,
-  }) {
+  static Widget notesField({required TextEditingController controller}) {
     return TextFormField(
       controller: controller,
       decoration: const InputDecoration(
@@ -227,4 +222,3 @@ class PaymentFormFields {
     );
   }
 }
-

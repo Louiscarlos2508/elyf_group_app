@@ -199,10 +199,7 @@ class _PaymentSplitterState extends State<PaymentSplitter> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'Total attendu',
-                      style: theme.textTheme.bodySmall,
-                    ),
+                    Text('Total attendu', style: theme.textTheme.bodySmall),
                     Text(
                       CurrencyFormatter.formatFCFA(widget.totalAmount),
                       style: theme.textTheme.bodySmall,
@@ -229,4 +226,3 @@ class _PaymentSplitterState extends State<PaymentSplitter> {
     );
   }
 }
-

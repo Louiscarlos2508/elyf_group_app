@@ -5,10 +5,7 @@ class CollectionCalculationService {
   CollectionCalculationService._();
 
   /// Calcule le montant dû pour une collection après déduction des fuites.
-  static double calculateAmountDue(
-    Collection collection,
-    Map<int, int> leaks,
-  ) {
+  static double calculateAmountDue(Collection collection, Map<int, int> leaks) {
     double total = 0.0;
     for (final entry in collection.emptyBottles.entries) {
       final weight = entry.key;
@@ -22,4 +19,3 @@ class CollectionCalculationService {
     return (total - collection.amountPaid).clamp(0.0, double.infinity);
   }
 }
-

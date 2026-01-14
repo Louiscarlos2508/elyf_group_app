@@ -156,10 +156,12 @@ class FinanceOfflineRepository extends OfflineRepository<ExpenseRecord>
       return expenses.take(limit).toList();
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log('Error fetching recent expenses',
-          name: 'FinanceOfflineRepository',
-          error: error,
-          stackTrace: stackTrace);
+      developer.log(
+        'Error fetching recent expenses',
+        name: 'FinanceOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
       throw appException;
     }
   }
@@ -177,10 +179,12 @@ class FinanceOfflineRepository extends OfflineRepository<ExpenseRecord>
       return localId;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log('Error creating expense',
-          name: 'FinanceOfflineRepository',
-          error: error,
-          stackTrace: stackTrace);
+      developer.log(
+        'Error creating expense',
+        name: 'FinanceOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
       throw appException;
     }
   }
@@ -192,10 +196,12 @@ class FinanceOfflineRepository extends OfflineRepository<ExpenseRecord>
       await save(updated);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log('Error updating expense: ${expense.id}',
-          name: 'FinanceOfflineRepository',
-          error: error,
-          stackTrace: stackTrace);
+      developer.log(
+        'Error updating expense: ${expense.id}',
+        name: 'FinanceOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
       throw appException;
     }
   }

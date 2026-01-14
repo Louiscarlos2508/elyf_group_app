@@ -27,10 +27,12 @@ class KpiGrid extends StatelessWidget {
         } else {
           return Column(
             children: items
-                .map((item) => Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: item,
-                    ))
+                .map(
+                  (item) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: item,
+                  ),
+                )
                 .toList(),
           );
         }
@@ -38,4 +40,3 @@ class KpiGrid extends StatelessWidget {
     );
   }
 }
-

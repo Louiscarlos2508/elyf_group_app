@@ -48,15 +48,13 @@ class ProductionDay {
   final DateTime? updatedAt;
 
   /// Coût total du personnel pour ce jour.
-  int get coutTotalPersonnel =>
-      nombrePersonnes * salaireJournalierParPersonne;
+  int get coutTotalPersonnel => nombrePersonnes * salaireJournalierParPersonne;
 
   /// Indique si au moins une personne est enregistrée pour ce jour.
   bool get aPersonnel => nombrePersonnes > 0 && personnelIds.isNotEmpty;
 
   /// Indique si une production a été saisie pour ce jour.
-  bool get aProduction =>
-      packsProduits > 0 || emballagesUtilises > 0;
+  bool get aProduction => packsProduits > 0 || emballagesUtilises > 0;
 
   ProductionDay copyWith({
     String? id,

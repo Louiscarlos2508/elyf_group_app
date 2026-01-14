@@ -28,4 +28,3 @@ abstract class TourRepository {
   /// Supprime un tour.
   Future<void> deleteTour(String id);
 }
-

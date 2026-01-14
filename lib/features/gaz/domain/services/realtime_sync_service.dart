@@ -7,17 +7,14 @@ import '../entities/gas_sale.dart';
 import '../entities/tour.dart';
 
 /// Service de synchronisation en temps réel avec Firestore.
-/// 
+///
 /// Gère :
 /// - L'écoute des changements en temps réel
 /// - La synchronisation bidirectionnelle Drift ↔ Firestore
 /// - La résolution des conflits basée sur updated_at
 /// - Les transactions pour opérations critiques
 class RealtimeSyncService {
-  RealtimeSyncService({
-    required this.enterpriseId,
-    required this.moduleId,
-  });
+  RealtimeSyncService({required this.enterpriseId, required this.moduleId});
 
   final String enterpriseId;
   final String moduleId;
@@ -29,7 +26,7 @@ class RealtimeSyncService {
   final Map<String, StreamController<Collection>> _collectionControllers = {};
 
   /// Écoute les changements d'un tour en temps réel.
-  /// 
+  ///
   /// Retourne un Stream qui émet à chaque modification du tour.
   Stream<Tour> watchTour(String tourId) {
     if (!_tourControllers.containsKey(tourId)) {
@@ -41,10 +38,7 @@ class RealtimeSyncService {
   }
 
   /// Écoute les changements de toutes les ventes en temps réel.
-  Stream<List<GasSale>> watchSales({
-    DateTime? from,
-    DateTime? to,
-  }) {
+  Stream<List<GasSale>> watchSales({DateTime? from, DateTime? to}) {
     // TODO: Implémenter avec Firestore
     return Stream.value([]);
   }
@@ -66,7 +60,7 @@ class RealtimeSyncService {
   }
 
   /// Synchronise une entité avec Firestore.
-  /// 
+  ///
   /// Gère les conflits en utilisant updated_at (last-write-wins avec timestamp).
   Future<void> syncEntity<T>({
     required T entity,
@@ -81,7 +75,7 @@ class RealtimeSyncService {
   }
 
   /// Exécute une transaction atomique pour une opération critique.
-  /// 
+  ///
   /// Exemples : Vente (débit stock + création vente), Tour closure, etc.
   Future<T> executeTransaction<T>({
     required Future<T> Function() operation,
@@ -98,7 +92,7 @@ class RealtimeSyncService {
   }
 
   /// Résout un conflit entre une version locale et Firestore.
-  /// 
+  ///
   /// Stratégie : Last-write-wins basé sur updated_at.
   T resolveConflict<T>({
     required T localEntity,
@@ -134,4 +128,3 @@ class RealtimeSyncService {
     _collectionControllers.clear();
   }
 }
-

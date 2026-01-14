@@ -45,18 +45,18 @@ class PropertyCollection {
   }
 
   Map<String, dynamic> toMap() => {
-        'id': remoteId ?? localId,
-        'localId': localId,
-        'enterpriseId': enterpriseId,
-        'name': name,
-        'address': address,
-        'propertyType': propertyType,
-        'bedrooms': bedrooms,
-        'bathrooms': bathrooms,
-        'area': area,
-        'monthlyRent': monthlyRent,
-        'status': status,
-        'description': description,
-        'notes': notes,
-      };
+    'id': remoteId ?? localId,
+    'localId': localId,
+    'enterpriseId': enterpriseId,
+    'name': name,
+    'address': address,
+    'propertyType': propertyType,
+    'bedrooms': bedrooms,
+    'bathrooms': bathrooms,
+    'area': area,
+    'monthlyRent': monthlyRent,
+    'status': status,
+    'description': description,
+    'notes': notes,
+  };
 }

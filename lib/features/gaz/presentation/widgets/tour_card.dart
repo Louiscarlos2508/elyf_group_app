@@ -5,11 +5,7 @@ import '../../domain/entities/tour.dart';
 
 /// Carte affichant les informations principales d'un tour.
 class TourCard extends StatelessWidget {
-  const TourCard({
-    super.key,
-    required this.tour,
-    required this.onTap,
-  });
+  const TourCard({super.key, required this.tour, required this.onTap});
 
   final Tour tour;
   final VoidCallback onTap;
@@ -57,11 +53,7 @@ class TourCard extends StatelessWidget {
                   color: statusColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(
-                  Icons.local_shipping,
-                  color: statusColor,
-                  size: 24,
-                ),
+                child: Icon(Icons.local_shipping, color: statusColor, size: 24),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -109,4 +101,3 @@ class TourCard extends StatelessWidget {
     );
   }
 }
-

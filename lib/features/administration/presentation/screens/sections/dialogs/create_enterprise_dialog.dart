@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
+import '../../../../../../shared/utils/responsive_helper.dart';
 import '../../../../domain/entities/enterprise.dart';
 import 'package:elyf_groupe_app/shared/utils/form_helper_mixin.dart';
 
@@ -94,14 +95,23 @@ class _CreateEnterpriseDialogState extends State<CreateEnterpriseDialog>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final mediaQuery = MediaQuery.of(context);
+    final isMobile = ResponsiveHelper.isMobile(context);
     final screenWidth = mediaQuery.size.width;
     final screenHeight = mediaQuery.size.height;
     final keyboardHeight = mediaQuery.viewInsets.bottom;
-    final availableHeight = screenHeight - keyboardHeight - 100;
-    final maxWidth = (screenWidth * 0.9).clamp(320.0, 600.0);
+    final availableHeight =
+        screenHeight - keyboardHeight - (isMobile ? 60 : 100);
+    final maxWidth = isMobile
+        ? screenWidth * 0.95
+        : (screenWidth * 0.9).clamp(320.0, 600.0);
 
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      insetPadding: isMobile
+          ? const EdgeInsets.symmetric(horizontal: 8, vertical: 24)
+          : const EdgeInsets.symmetric(horizontal: 40, vertical: 24),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(isMobile ? 16 : 24),
+      ),
       child: ConstrainedBox(
         constraints: BoxConstraints(
           maxWidth: maxWidth,
@@ -113,15 +123,17 @@ class _CreateEnterpriseDialogState extends State<CreateEnterpriseDialog>
             mainAxisSize: MainAxisSize.min,
             children: [
               Padding(
-                padding: const EdgeInsets.all(24),
+                padding: EdgeInsets.all(isMobile ? 16 : 24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'Nouvelle Entreprise',
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style:
+                          (isMobile
+                                  ? theme.textTheme.titleLarge
+                                  : theme.textTheme.headlineSmall)
+                              ?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
                     Text(
@@ -135,7 +147,7 @@ class _CreateEnterpriseDialogState extends State<CreateEnterpriseDialog>
               ),
               Flexible(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 24),
                   child: Column(
                     children: [
                       TextFormField(
@@ -155,9 +167,7 @@ class _CreateEnterpriseDialogState extends State<CreateEnterpriseDialog>
                       const SizedBox(height: 16),
                       DropdownButtonFormField<String>(
                         initialValue: _selectedType,
-                        decoration: const InputDecoration(
-                          labelText: 'Type *',
-                        ),
+                        decoration: const InputDecoration(labelText: 'Type *'),
                         items: EnterpriseType.values.map((type) {
                           return DropdownMenuItem(
                             value: type.id,
@@ -197,7 +207,9 @@ class _CreateEnterpriseDialogState extends State<CreateEnterpriseDialog>
                         ),
                         keyboardType: TextInputType.phone,
                         inputFormatters: [
-                          FilteringTextInputFormatter.allow(RegExp(r'[\d\s\+]')),
+                          FilteringTextInputFormatter.allow(
+                            RegExp(r'[\d\s\+]'),
+                          ),
                         ],
                         validator: _validatePhone,
                       ),
@@ -222,37 +234,70 @@ class _CreateEnterpriseDialogState extends State<CreateEnterpriseDialog>
                           setState(() => _isActive = value);
                         },
                       ),
-                      const SizedBox(height: 24),
+                      SizedBox(height: isMobile ? 16 : 24),
                     ],
                   ),
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.all(24),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton(
-                      onPressed: _isLoading
-                          ? null
-                          : () => Navigator.of(context).pop(),
-                      child: const Text('Annuler'),
-                    ),
-                    const SizedBox(width: 16),
-                    IntrinsicWidth(
-                      child: FilledButton(
-                        onPressed: _isLoading ? null : _handleSubmit,
-                        child: _isLoading
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              )
-                            : const Text('Créer'),
+                padding: EdgeInsets.all(isMobile ? 16 : 24),
+                child: isMobile
+                    ? Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(
+                            width: double.infinity,
+                            child: FilledButton(
+                              onPressed: _isLoading ? null : _handleSubmit,
+                              child: _isLoading
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Text('Créer'),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          SizedBox(
+                            width: double.infinity,
+                            child: TextButton(
+                              onPressed: _isLoading
+                                  ? null
+                                  : () => Navigator.of(context).pop(),
+                              child: const Text('Annuler'),
+                            ),
+                          ),
+                        ],
+                      )
+                    : Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          TextButton(
+                            onPressed: _isLoading
+                                ? null
+                                : () => Navigator.of(context).pop(),
+                            child: const Text('Annuler'),
+                          ),
+                          const SizedBox(width: 16),
+                          IntrinsicWidth(
+                            child: FilledButton(
+                              onPressed: _isLoading ? null : _handleSubmit,
+                              child: _isLoading
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Text('Créer'),
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
-                ),
               ),
             ],
           ),
@@ -261,4 +306,3 @@ class _CreateEnterpriseDialogState extends State<CreateEnterpriseDialog>
     );
   }
 }
-

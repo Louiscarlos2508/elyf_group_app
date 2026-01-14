@@ -26,9 +26,13 @@ class ProductOfflineRepository extends OfflineRepository<Product>
     return Product(
       id: map['id'] as String? ?? map['remoteId'] as String,
       name: map['name'] as String,
-      type: _parseProductType(map['category'] as String? ?? map['type'] as String? ?? 'finishedGood'),
-      unitPrice: (map['unitPrice'] as num?)?.toInt() ?? 
-                 (map['sellingPrice'] as num?)?.toInt() ?? 0,
+      type: _parseProductType(
+        map['category'] as String? ?? map['type'] as String? ?? 'finishedGood',
+      ),
+      unitPrice:
+          (map['unitPrice'] as num?)?.toInt() ??
+          (map['sellingPrice'] as num?)?.toInt() ??
+          0,
       unit: map['unit'] as String? ?? 'Unité',
       description: map['description'] as String?,
     );
@@ -253,4 +257,3 @@ class ProductOfflineRepository extends OfflineRepository<Product>
     }
   }
 }
-

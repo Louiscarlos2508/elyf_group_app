@@ -26,14 +26,17 @@ void main() {
       expect(ratio, lessThanOrEqualTo(21.0));
     });
 
-    test('calcule correctement le contraste entre deux couleurs similaires', () {
-      final ratio = ContrastChecker.calculateContrastRatio(
-        Colors.grey.shade600,
-        Colors.grey.shade700,
-      );
-      // Deux gris similaires devraient avoir un faible ratio
-      expect(ratio, lessThan(5.0));
-    });
+    test(
+      'calcule correctement le contraste entre deux couleurs similaires',
+      () {
+        final ratio = ContrastChecker.calculateContrastRatio(
+          Colors.grey.shade600,
+          Colors.grey.shade700,
+        );
+        // Deux gris similaires devraient avoir un faible ratio
+        expect(ratio, lessThan(5.0));
+      },
+    );
 
     test('vérifie que noir sur blanc respecte WCAG AA', () {
       final meets = ContrastChecker.meetsContrastRatio(
@@ -82,7 +85,7 @@ void main() {
       );
       // Devrait retourner une couleur ajustée (pas null)
       expect(adjusted, isNotNull);
-      
+
       // La couleur ajustée devrait avoir un meilleur contraste
       final adjustedMeets = ContrastChecker.meetsContrastRatio(
         foreground: adjusted!,
@@ -103,7 +106,9 @@ void main() {
   });
 
   group('AccessibleWidgets', () {
-    testWidgets('accessibleButton ajoute les semantics correctes', (tester) async {
+    testWidgets('accessibleButton ajoute les semantics correctes', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -124,7 +129,9 @@ void main() {
       expect(semantics.hasFlag(SemanticsFlag.isButton), isTrue);
     });
 
-    testWidgets('accessibleTextField ajoute les semantics correctes', (tester) async {
+    testWidgets('accessibleTextField ajoute les semantics correctes', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -145,7 +152,9 @@ void main() {
       expect(semantics.value, 'test@example.com');
     });
 
-    testWidgets('accessibleTextField ajoute "requis" si required', (tester) async {
+    testWidgets('accessibleTextField ajoute "requis" si required', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -162,7 +171,9 @@ void main() {
       expect(semantics.label, 'Email (requis)');
     });
 
-    testWidgets('accessibleImage exclut semantics si décorative', (tester) async {
+    testWidgets('accessibleImage exclut semantics si décorative', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -180,7 +191,9 @@ void main() {
       expect(semantics.label, isEmpty);
     });
 
-    testWidgets('accessibleHeader ajoute les semantics d\'en-tête', (tester) async {
+    testWidgets('accessibleHeader ajoute les semantics d\'en-tête', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -199,4 +212,3 @@ void main() {
     });
   });
 }
-

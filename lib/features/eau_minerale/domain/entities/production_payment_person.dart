@@ -10,7 +10,8 @@ class ProductionPaymentPerson {
   final String name;
   final int pricePerDay; // Price per day in CFA
   final int daysWorked;
-  final int? totalAmount; // Total amount (can be manually set or auto-calculated)
+  final int?
+  totalAmount; // Total amount (can be manually set or auto-calculated)
 
   /// Calculated total amount if not manually set.
   int get calculatedTotalAmount => pricePerDay * daysWorked;
@@ -32,4 +33,3 @@ class ProductionPaymentPerson {
     );
   }
 }
-

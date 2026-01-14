@@ -66,7 +66,11 @@ class PaymentDetailDialog extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context, ThemeData theme, Color statusColor) {
+  Widget _buildHeader(
+    BuildContext context,
+    ThemeData theme,
+    Color statusColor,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -189,7 +193,8 @@ class PaymentDetailDialog extends StatelessWidget {
             _DetailRow(
               icon: Icons.calendar_month,
               label: 'Période',
-              value: '${PaymentCardHelpers.getMonthName(payment.month!)} ${payment.year}',
+              value:
+                  '${PaymentCardHelpers.getMonthName(payment.month!)} ${payment.year}',
             ),
           if (payment.receiptNumber != null)
             _DetailRow(
@@ -217,7 +222,8 @@ class PaymentDetailDialog extends StatelessWidget {
             icon: Icons.description,
             label: 'Contrat',
             value: 'Contrat #${contract.id.substring(0, 8)}',
-            subtitle: '${PaymentCardHelpers.formatCurrency(contract.monthlyRent)}/mois',
+            subtitle:
+                '${PaymentCardHelpers.formatCurrency(contract.monthlyRent)}/mois',
             onTap: onContractTap != null
                 ? () {
                     Navigator.of(context).pop();
@@ -246,7 +252,8 @@ class PaymentDetailDialog extends StatelessWidget {
               icon: Icons.home,
               label: 'Propriété',
               value: contract.property!.address,
-              subtitle: '${contract.property!.city} - ${contract.property!.rooms} pièces',
+              subtitle:
+                  '${contract.property!.city} - ${contract.property!.rooms} pièces',
               onTap: onPropertyTap != null
                   ? () {
                       Navigator.of(context).pop();
@@ -270,7 +277,7 @@ class PaymentDetailDialog extends StatelessWidget {
 
   Widget _buildActions(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -461,7 +468,11 @@ class _EntityLinkTile extends StatelessWidget {
             CircleAvatar(
               radius: 18,
               backgroundColor: theme.colorScheme.primaryContainer,
-              child: Icon(icon, size: 18, color: theme.colorScheme.onPrimaryContainer),
+              child: Icon(
+                icon,
+                size: 18,
+                color: theme.colorScheme.onPrimaryContainer,
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(

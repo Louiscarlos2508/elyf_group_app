@@ -10,8 +10,7 @@ class ExpenseFormDialog extends ConsumerStatefulWidget {
   const ExpenseFormDialog({super.key});
 
   @override
-  ConsumerState<ExpenseFormDialog> createState() =>
-      _ExpenseFormDialogState();
+  ConsumerState<ExpenseFormDialog> createState() => _ExpenseFormDialogState();
 }
 
 class _ExpenseFormDialogState extends ConsumerState<ExpenseFormDialog> {
@@ -77,4 +76,3 @@ class _ExpenseFormDialogState extends ConsumerState<ExpenseFormDialog> {
     );
   }
 }
-

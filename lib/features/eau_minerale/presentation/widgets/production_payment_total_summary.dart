@@ -8,10 +8,7 @@ import '../../domain/entities/production_payment_person.dart';
 
 /// Summary widget showing total amount and number of persons.
 class ProductionPaymentTotalSummary extends ConsumerWidget {
-  const ProductionPaymentTotalSummary({
-    super.key,
-    required this.persons,
-  });
+  const ProductionPaymentTotalSummary({super.key, required this.persons});
 
   final List<ProductionPaymentPerson> persons;
 
@@ -19,10 +16,14 @@ class ProductionPaymentTotalSummary extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     if (persons.isEmpty) return const SizedBox.shrink();
-    
+
     // Utiliser le service de calcul pour extraire la logique métier
-    final calculationService = ref.read(productionPaymentCalculationServiceProvider);
-    final totalAmount = calculationService.calculateTotalAmountForPersons(persons);
+    final calculationService = ref.read(
+      productionPaymentCalculationServiceProvider,
+    );
+    final totalAmount = calculationService.calculateTotalAmountForPersons(
+      persons,
+    );
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -78,4 +79,3 @@ class ProductionPaymentTotalSummary extends ConsumerWidget {
     );
   }
 }
-

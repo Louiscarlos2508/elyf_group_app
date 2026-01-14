@@ -64,8 +64,7 @@ class SalaryOfflineRepository extends OfflineRepository<Employee>
       period: map['period'] as String,
       notes: map['notes'] as String?,
       signature: map['signature'] != null
-          ? Uint8List.fromList(
-              (map['signature'] as List<dynamic>).cast<int>())
+          ? Uint8List.fromList((map['signature'] as List<dynamic>).cast<int>())
           : null,
     );
   }
@@ -296,7 +295,10 @@ class SalaryOfflineRepository extends OfflineRepository<Employee>
       final pm = p as Map<String, dynamic>;
       return ProductionPaymentPerson(
         name: pm['name'] as String,
-        pricePerDay: (pm['pricePerDay'] as num?)?.toInt() ?? (pm['dailyRate'] as num?)?.toInt() ?? 0,
+        pricePerDay:
+            (pm['pricePerDay'] as num?)?.toInt() ??
+            (pm['dailyRate'] as num?)?.toInt() ??
+            0,
         daysWorked: (pm['daysWorked'] as num).toInt(),
         totalAmount: (pm['totalAmount'] as num?)?.toInt(),
       );
@@ -323,12 +325,14 @@ class SalaryOfflineRepository extends OfflineRepository<Employee>
         'period': payment.period,
         'paymentDate': payment.paymentDate.toIso8601String(),
         'persons': payment.persons
-            .map((p) => {
-                  'name': p.name,
-                  'pricePerDay': p.pricePerDay,
-                  'daysWorked': p.daysWorked,
-                  'totalAmount': p.totalAmount,
-                })
+            .map(
+              (p) => {
+                'name': p.name,
+                'pricePerDay': p.pricePerDay,
+                'daysWorked': p.daysWorked,
+                'totalAmount': p.totalAmount,
+              },
+            )
             .toList(),
         'notes': payment.notes,
       };

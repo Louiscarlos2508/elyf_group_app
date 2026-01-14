@@ -9,10 +9,7 @@ import 'dashboard_kpi_card.dart';
 ///
 /// Uses [GazDashboardTodayMetrics] from the calculation service.
 class GazDashboardTodaySection extends StatelessWidget {
-  const GazDashboardTodaySection({
-    super.key,
-    required this.metrics,
-  });
+  const GazDashboardTodaySection({super.key, required this.metrics});
 
   /// Pre-calculated today metrics from [GazDashboardCalculationService].
   final GazDashboardTodayMetrics metrics;
@@ -29,7 +26,9 @@ class GazDashboardTodaySection extends StatelessWidget {
         final cards = [
           GazDashboardKpiCard(
             label: "Chiffre d'Affaires",
-            value: CurrencyFormatter.formatDouble(todayRevenue).replaceAll(' FCFA', ' F'),
+            value: CurrencyFormatter.formatDouble(
+              todayRevenue,
+            ).replaceAll(' FCFA', ' F'),
             subtitle: '$todayCount vente(s)',
             icon: Icons.trending_up,
             iconColor: Colors.blue,
@@ -37,7 +36,9 @@ class GazDashboardTodaySection extends StatelessWidget {
           ),
           GazDashboardKpiCard(
             label: 'Ticket Moyen',
-            value: CurrencyFormatter.formatDouble(avgTicket).replaceAll(' FCFA', ' F'),
+            value: CurrencyFormatter.formatDouble(
+              avgTicket,
+            ).replaceAll(' FCFA', ' F'),
             subtitle: todayCount > 0 ? 'par transaction' : 'aucune vente',
             icon: Icons.receipt,
             iconColor: Colors.green,

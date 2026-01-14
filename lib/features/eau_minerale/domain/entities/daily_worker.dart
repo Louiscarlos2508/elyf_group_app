@@ -34,13 +34,13 @@ class DailyWorker {
 
   /// Calcule le nombre de jours travaillés dans une semaine donnée.
   int joursTravaillesSemaine(DateTime semaine) {
-    final debutSemaine = semaine.subtract(
-      Duration(days: semaine.weekday - 1),
-    );
+    final debutSemaine = semaine.subtract(Duration(days: semaine.weekday - 1));
     final finSemaine = debutSemaine.add(const Duration(days: 6));
 
     return joursTravailles.where((jour) {
-      return jour.date.isAfter(debutSemaine.subtract(const Duration(days: 1))) &&
+      return jour.date.isAfter(
+            debutSemaine.subtract(const Duration(days: 1)),
+          ) &&
           jour.date.isBefore(finSemaine.add(const Duration(days: 1)));
     }).length;
   }

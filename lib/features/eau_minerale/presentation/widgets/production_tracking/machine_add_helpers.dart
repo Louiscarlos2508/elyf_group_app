@@ -7,6 +7,7 @@ import '../../../domain/entities/production_session.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
+
 /// Helpers pour l'ajout de machines.
 class MachineAddHelpers {
   /// Recherche une bobine non finie existante pour une machine donnée.
@@ -14,7 +15,9 @@ class MachineAddHelpers {
     WidgetRef ref,
     String machineId,
   ) async {
-    for (final session in await ref.read(productionSessionsStateProvider.future)) {
+    for (final session in await ref.read(
+      productionSessionsStateProvider.future,
+    )) {
       for (final bobine in session.bobinesUtilisees) {
         if (!bobine.estFinie && bobine.machineId == machineId) {
           return bobine;
@@ -53,9 +56,10 @@ class MachineAddHelpers {
 
     if (context.mounted) {
       ref.invalidate(productionSessionDetailProvider((session.id)));
-      NotificationService.showSuccess(context, 
-            'Machine ${machine.nom} ajoutée. Bobine non finie réutilisée: ${bobineNonFinie.bobineType}',
-          );
+      NotificationService.showSuccess(
+        context,
+        'Machine ${machine.nom} ajoutée. Bobine non finie réutilisée: ${bobineNonFinie.bobineType}',
+      );
     }
   }
 
@@ -82,10 +86,10 @@ class MachineAddHelpers {
 
     if (context.mounted) {
       ref.invalidate(productionSessionDetailProvider((session.id)));
-      NotificationService.showSuccess(context, 
-            'Machine ${machine.nom} ajoutée avec succès',
-          );
+      NotificationService.showSuccess(
+        context,
+        'Machine ${machine.nom} ajoutée avec succès',
+      );
     }
   }
 }
-

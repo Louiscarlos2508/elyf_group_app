@@ -3,10 +3,7 @@ import '../../domain/repositories/property_repository.dart';
 import '../../domain/services/immobilier_validation_service.dart';
 
 class PropertyController {
-  PropertyController(
-    this._propertyRepository,
-    this._validationService,
-  );
+  PropertyController(this._propertyRepository, this._validationService);
 
   final PropertyRepository _propertyRepository;
   final ImmobilierValidationService _validationService;
@@ -41,10 +38,8 @@ class PropertyController {
 
     // Valider le changement de statut
     if (oldProperty.status != property.status) {
-      final validationError = await _validationService.validatePropertyStatusUpdate(
-        property.id,
-        property.status,
-      );
+      final validationError = await _validationService
+          .validatePropertyStatusUpdate(property.id, property.status);
       if (validationError != null) {
         throw Exception(validationError);
       }
@@ -56,7 +51,9 @@ class PropertyController {
   /// Supprime une propriété après validation.
   Future<void> deleteProperty(String id) async {
     // Valider la suppression
-    final validationError = await _validationService.validatePropertyDeletion(id);
+    final validationError = await _validationService.validatePropertyDeletion(
+      id,
+    );
     if (validationError != null) {
       throw Exception(validationError);
     }
@@ -64,4 +61,3 @@ class PropertyController {
     await _propertyRepository.deleteProperty(id);
   }
 }
-

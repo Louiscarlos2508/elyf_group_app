@@ -48,10 +48,7 @@ class PropertySortMenu extends StatelessWidget {
     final theme = Theme.of(context);
 
     return PopupMenuButton<PropertySortOption>(
-      icon: Icon(
-        Icons.sort,
-        color: theme.colorScheme.onSurfaceVariant,
-      ),
+      icon: Icon(Icons.sort, color: theme.colorScheme.onSurfaceVariant),
       tooltip: 'Trier',
       onSelected: onSortChanged,
       itemBuilder: (context) => PropertySortOption.values.map((sort) {
@@ -60,11 +57,7 @@ class PropertySortMenu extends StatelessWidget {
           child: Row(
             children: [
               if (selectedSort == sort)
-                Icon(
-                  Icons.check,
-                  size: 20,
-                  color: theme.colorScheme.primary,
-                )
+                Icon(Icons.check, size: 20, color: theme.colorScheme.primary)
               else
                 const SizedBox(width: 20),
               const SizedBox(width: 8),
@@ -76,4 +69,3 @@ class PropertySortMenu extends StatelessWidget {
     );
   }
 }
-

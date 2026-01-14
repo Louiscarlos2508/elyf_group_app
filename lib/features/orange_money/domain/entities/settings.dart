@@ -60,9 +60,7 @@ class ThresholdSettings {
     return ThresholdSettings(
       criticalLiquidityThreshold:
           criticalLiquidityThreshold ?? this.criticalLiquidityThreshold,
-      paymentDueDaysBefore:
-          paymentDueDaysBefore ?? this.paymentDueDaysBefore,
+      paymentDueDaysBefore: paymentDueDaysBefore ?? this.paymentDueDaysBefore,
     );
   }
 }
-

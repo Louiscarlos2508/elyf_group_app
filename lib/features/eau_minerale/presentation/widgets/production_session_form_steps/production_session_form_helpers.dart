@@ -1,4 +1,3 @@
-
 /// Helpers pour le formulaire de session de production.
 class ProductionSessionFormHelpers {
   /// Formate une date au format DD/MM/YYYY.
@@ -19,11 +18,10 @@ class ProductionSessionFormHelpers {
   static int? parseIndexCompteur(String value) {
     final trimmed = value.trim();
     if (trimmed.isEmpty) return null;
-    
+
     // Accepter les décimales et arrondir
     final cleanedValue = trimmed.replaceAll(',', '.');
     final doubleValue = double.tryParse(cleanedValue);
     return doubleValue?.round();
   }
 }
-

@@ -9,7 +9,7 @@ import '../../data/services/firebase_auth_integration_service.dart';
 import '../../data/services/firestore_sync_service.dart';
 
 /// Controller pour gérer les utilisateurs.
-/// 
+///
 /// Intègre Firebase Auth, Firestore sync, audit trail et validation des permissions.
 class UserController {
   UserController(
@@ -27,13 +27,13 @@ class UserController {
   final FirestoreSyncService? firestoreSync;
 
   /// Récupère tous les utilisateurs.
-  /// 
-  /// Lire UNIQUEMENT depuis la base locale (Drift) pour éviter la lecture simultanée.
-  /// La synchronisation avec Firestore est gérée par le sync manager.
+  ///
+  /// Lit UNIQUEMENT depuis la base locale (Drift) pour éviter la lecture simultanée.
+  /// La synchronisation avec Firestore est gérée par le RealtimeSyncService.
   Future<List<User>> getAllUsers() async {
     try {
       // Lire UNIQUEMENT depuis la base locale (Drift) pour éviter la lecture simultanée
-      // La synchronisation avec Firestore est gérée par le sync manager
+      // La synchronisation avec Firestore est gérée par le RealtimeSyncService
       final localUsers = await _repository.getAllUsers();
 
       // Dédupliquer les utilisateurs par ID pour éviter les duplications
@@ -46,94 +46,14 @@ class UserController {
         }
       }
 
-      final deduplicatedUsers = uniqueUsers.values.toList();
-
-      // Si la base locale contient des utilisateurs, les retourner (dédupliqués)
-      if (deduplicatedUsers.isNotEmpty) {
-        return deduplicatedUsers;
-      }
-
-      // Si la base locale est vide, essayer de récupérer depuis Firestore
-      // UNIQUEMENT si la base locale est vraiment vide (pas de lecture simultanée)
-      if (firestoreSync != null) {
-        try {
-          final firestoreUsers = await firestoreSync!.pullUsersFromFirestore();
-
-          // Sauvegarder chaque utilisateur dans la base locale SANS déclencher de sync
-          // (ces utilisateurs viennent déjà de Firestore, pas besoin de les re-synchroniser)
-          for (final user in firestoreUsers) {
-            try {
-              // Utiliser directement saveToLocal pour éviter de mettre dans la queue de sync
-              // Les utilisateurs viennent déjà de Firestore, donc pas besoin de les re-sync
-              await (_repository as dynamic).saveToLocal(user);
-            } catch (e) {
-              // Ignorer les erreurs de sauvegarde locale individuelle
-              // (peut-être que l'utilisateur existe déjà)
-              developer.log(
-                'Error saving user from Firestore to local database: ${user.id}',
-                name: 'user.controller',
-              );
-            }
-          }
-
-          // Retourner les utilisateurs depuis Firestore (dédupliqués aussi)
-          if (firestoreUsers.isNotEmpty) {
-            developer.log(
-              'Loaded ${firestoreUsers.length} users from Firestore (local database was empty)',
-              name: 'user.controller',
-            );
-            // Dédupliquer aussi les utilisateurs de Firestore au cas où
-            final uniqueFirestoreUsers = <String, User>{};
-            for (final user in firestoreUsers) {
-              if (!uniqueFirestoreUsers.containsKey(user.id)) {
-                uniqueFirestoreUsers[user.id] = user;
-              }
-            }
-            return uniqueFirestoreUsers.values.toList();
-          }
-        } catch (e) {
-          developer.log(
-            'Error fetching users from Firestore (will use empty local list): $e',
-            name: 'user.controller',
-          );
-          // Continuer avec la liste locale (vide)
-        }
-      }
-
-      return deduplicatedUsers;
+      return uniqueUsers.values.toList();
     } catch (e, stackTrace) {
       developer.log(
-        'Error getting all users from local database, trying Firestore: $e',
+        'Error getting all users from local database: $e',
         name: 'user.controller',
         error: e,
         stackTrace: stackTrace,
       );
-      
-      // En cas d'erreur locale, essayer Firestore
-      if (firestoreSync != null) {
-        try {
-          final firestoreUsers = await firestoreSync!.pullUsersFromFirestore();
-          developer.log(
-            'Loaded ${firestoreUsers.length} users from Firestore (local database error)',
-            name: 'user.controller',
-          );
-          // Dédupliquer aussi les utilisateurs de Firestore
-          final uniqueFirestoreUsers = <String, User>{};
-          for (final user in firestoreUsers) {
-            if (!uniqueFirestoreUsers.containsKey(user.id)) {
-              uniqueFirestoreUsers[user.id] = user;
-            }
-          }
-          return uniqueFirestoreUsers.values.toList();
-        } catch (e) {
-          developer.log(
-            'Error fetching users from Firestore: $e',
-            name: 'user.controller',
-          );
-        }
-      }
-      
-      // Si tout échoue, retourner une liste vide
       return [];
     }
   }
@@ -154,7 +74,7 @@ class UserController {
   }
 
   /// Crée un nouvel utilisateur.
-  /// 
+  ///
   /// Optionally creates Firebase Auth user if email and password are provided.
   /// Logs audit trail and syncs to Firestore.
   Future<User> createUser(
@@ -237,10 +157,7 @@ class UserController {
         userDisplayName: userDisplayName,
       );
     } catch (e) {
-      developer.log(
-        'Error logging audit trail: $e',
-        name: 'user.controller',
-      );
+      developer.log('Error logging audit trail: $e', name: 'user.controller');
       // Ne pas bloquer si l'audit échoue
     }
 
@@ -248,7 +165,7 @@ class UserController {
   }
 
   /// Met à jour un utilisateur existant.
-  /// 
+  ///
   /// Logs audit trail and syncs to Firestore.
   Future<User> updateUser(
     User user, {
@@ -308,7 +225,7 @@ class UserController {
   }
 
   /// Supprime un utilisateur.
-  /// 
+  ///
   /// Optionally deletes Firebase Auth user and logs audit trail.
   Future<void> deleteUser(
     String userId, {
@@ -329,10 +246,7 @@ class UserController {
     }
 
     // Delete from Firestore
-    firestoreSync?.deleteFromFirestore(
-      collection: 'users',
-      documentId: userId,
-    );
+    firestoreSync?.deleteFromFirestore(collection: 'users', documentId: userId);
 
     // Delete from repository
     await _repository.deleteUser(userId);
@@ -364,7 +278,7 @@ class UserController {
   }
 
   /// Active ou désactive un utilisateur.
-  /// 
+  ///
   /// Logs audit trail and syncs to Firestore.
   Future<void> toggleUserStatus(
     String userId,
@@ -401,7 +315,8 @@ class UserController {
         entityType: 'user',
         entityId: userId,
         userId: currentUserId ?? 'system',
-        description: 'User ${isActive ? 'activated' : 'deactivated'}: ${updatedUser.fullName}',
+        description:
+            'User ${isActive ? 'activated' : 'deactivated'}: ${updatedUser.fullName}',
         oldValue: oldUser.toMap(),
         newValue: updatedUser.toMap(),
         userDisplayName: userDisplayName,
@@ -409,4 +324,3 @@ class UserController {
     }
   }
 }
-

@@ -6,12 +6,10 @@ abstract class EnterpriseRepository {
   Future<List<Enterprise>> getAllEnterprises();
 
   /// Récupère les entreprises avec pagination (LIMIT/OFFSET au niveau Drift).
-  /// 
+  ///
   /// Returns a paginated list of enterprises and the total count.
-  Future<({List<Enterprise> enterprises, int totalCount})> getEnterprisesPaginated({
-    int page = 0,
-    int limit = 50,
-  });
+  Future<({List<Enterprise> enterprises, int totalCount})>
+  getEnterprisesPaginated({int page = 0, int limit = 50});
 
   /// Récupère les entreprises par type
   Future<List<Enterprise>> getEnterprisesByType(String type);
@@ -31,4 +29,3 @@ abstract class EnterpriseRepository {
   /// Active/désactive une entreprise
   Future<void> toggleEnterpriseStatus(String enterpriseId, bool isActive);
 }
-

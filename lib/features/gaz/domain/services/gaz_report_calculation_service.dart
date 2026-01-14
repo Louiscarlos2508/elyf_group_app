@@ -32,12 +32,14 @@ class GazReportCalculationService {
   }
 
   /// Separates sales by type (retail/wholesale).
-  ({
-    List<GasSale> retailSales,
-    List<GasSale> wholesaleSales,
-  }) separateSalesByType(List<GasSale> sales) {
-    final retailSales = sales.where((s) => s.saleType == SaleType.retail).toList();
-    final wholesaleSales = sales.where((s) => s.saleType == SaleType.wholesale).toList();
+  ({List<GasSale> retailSales, List<GasSale> wholesaleSales})
+  separateSalesByType(List<GasSale> sales) {
+    final retailSales = sales
+        .where((s) => s.saleType == SaleType.retail)
+        .toList();
+    final wholesaleSales = sales
+        .where((s) => s.saleType == SaleType.wholesale)
+        .toList();
     return (retailSales: retailSales, wholesaleSales: wholesaleSales);
   }
 
@@ -71,7 +73,9 @@ class GazReportCalculationService {
   }
 
   /// Groups expenses by category.
-  Map<ExpenseCategory, double> groupExpensesByCategory(List<GazExpense> expenses) {
+  Map<ExpenseCategory, double> groupExpensesByCategory(
+    List<GazExpense> expenses,
+  ) {
     final byCategory = <ExpenseCategory, double>{};
     for (final expense in expenses) {
       byCategory[expense.category] =
@@ -175,4 +179,3 @@ class ExpensesAnalysis {
   final double averageAmount;
   final Map<ExpenseCategory, double> byCategory;
 }
-

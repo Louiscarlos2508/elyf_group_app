@@ -6,12 +6,10 @@ import '../../domain/entities/tour.dart';
 import '../../domain/entities/transport_expense.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../../../shared/utils/notification_service.dart';
+
 /// Formulaire d'ajout d'une dépense de transport selon le design Figma.
 class TransportExpenseFormDialog extends ConsumerStatefulWidget {
-  const TransportExpenseFormDialog({
-    super.key,
-    required this.tour,
-  });
+  const TransportExpenseFormDialog({super.key, required this.tour});
 
   final Tour tour;
 
@@ -40,7 +38,10 @@ class _TransportExpenseFormDialogState
 
     final amount = double.tryParse(_amountController.text) ?? 0.0;
     if (amount <= 0) {
-      NotificationService.showWarning(context, 'Le montant doit être supérieur à 0');
+      NotificationService.showWarning(
+        context,
+        'Le montant doit être supérieur à 0',
+      );
       return;
     }
 
@@ -55,8 +56,9 @@ class _TransportExpenseFormDialogState
       );
 
       final updatedExpenses = [...widget.tour.transportExpenses, expense];
-      final updatedTour =
-          widget.tour.copyWith(transportExpenses: updatedExpenses);
+      final updatedTour = widget.tour.copyWith(
+        transportExpenses: updatedExpenses,
+      );
 
       await controller.updateTour(updatedTour);
 
@@ -150,15 +152,9 @@ class _TransportExpenseFormDialogState
                             vertical: 4,
                           ),
                           hintText: 'Ex: Carburant, péage, repas...',
-                          hintStyle: TextStyle(
-                            fontSize: 14,
-                            color: textGray,
-                          ),
+                          hintStyle: TextStyle(fontSize: 14, color: textGray),
                         ),
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: textGray,
-                        ),
+                        style: TextStyle(fontSize: 14, color: textGray),
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
                             return 'Ce champ est requis';
@@ -192,10 +188,7 @@ class _TransportExpenseFormDialogState
                                 vertical: 4,
                               ),
                             ),
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: textGray,
-                            ),
+                            style: TextStyle(fontSize: 14, color: textGray),
                             keyboardType: TextInputType.number,
                             validator: (value) {
                               if (value == null || value.isEmpty) {

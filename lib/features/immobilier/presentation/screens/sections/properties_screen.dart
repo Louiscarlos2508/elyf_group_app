@@ -50,7 +50,10 @@ class _PropertiesScreenState extends ConsumerState<PropertiesScreen> {
       await controller.deleteProperty(property.id);
       if (mounted) {
         ref.invalidate(propertiesProvider);
-        NotificationService.showSuccess(context, 'Propriété supprimée avec succès');
+        NotificationService.showSuccess(
+          context,
+          'Propriété supprimée avec succès',
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -107,7 +110,10 @@ class _PropertiesScreenState extends ConsumerState<PropertiesScreen> {
     } catch (e) {
       if (context.mounted) {
         Navigator.of(context).pop();
-        NotificationService.showError(context, 'Erreur lors de la génération PDF: $e');
+        NotificationService.showError(
+          context,
+          'Erreur lors de la génération PDF: $e',
+        );
       }
     }
   }
@@ -121,8 +127,12 @@ class _PropertiesScreenState extends ConsumerState<PropertiesScreen> {
       body: propertiesAsync.when(
         data: (properties) {
           final filtered = _filterAndSort(properties);
-          final availableCount = properties.where((p) => p.status == PropertyStatus.available).length;
-          final rentedCount = properties.where((p) => p.status == PropertyStatus.rented).length;
+          final availableCount = properties
+              .where((p) => p.status == PropertyStatus.available)
+              .length;
+          final rentedCount = properties
+              .where((p) => p.status == PropertyStatus.rented)
+              .length;
 
           return LayoutBuilder(
             builder: (context, constraints) {
@@ -133,29 +143,36 @@ class _PropertiesScreenState extends ConsumerState<PropertiesScreen> {
                   // Header
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: EdgeInsets.fromLTRB(24, 24, 24, isWide ? 24 : 16),
+                      padding: EdgeInsets.fromLTRB(
+                        24,
+                        24,
+                        24,
+                        isWide ? 24 : 16,
+                      ),
                       child: isWide
                           ? Row(
                               children: [
                                 Text(
                                   'Propriétés',
-                                  style: theme.textTheme.headlineMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                  style: theme.textTheme.headlineMedium
+                                      ?.copyWith(fontWeight: FontWeight.bold),
                                 ),
                                 const Spacer(),
                                 RefreshButton(
-                                  onRefresh: () => ref.invalidate(propertiesProvider),
+                                  onRefresh: () =>
+                                      ref.invalidate(propertiesProvider),
                                   tooltip: 'Actualiser',
                                 ),
                                 IconButton(
                                   icon: const Icon(Icons.download),
-                                  onPressed: () => _downloadStockReport(context),
+                                  onPressed: () =>
+                                      _downloadStockReport(context),
                                   tooltip: 'Télécharger rapport PDF',
                                 ),
                                 PropertySortMenu(
                                   selectedSort: _sortOption,
-                                  onSortChanged: (sort) => setState(() => _sortOption = sort),
+                                  onSortChanged: (sort) =>
+                                      setState(() => _sortOption = sort),
                                 ),
                                 const SizedBox(width: 8),
                                 Flexible(
@@ -175,23 +192,27 @@ class _PropertiesScreenState extends ConsumerState<PropertiesScreen> {
                                     Expanded(
                                       child: Text(
                                         'Propriétés',
-                                        style: theme.textTheme.titleLarge?.copyWith(
-                                          fontWeight: FontWeight.bold,
-                                        ),
+                                        style: theme.textTheme.titleLarge
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.bold,
+                                            ),
                                       ),
                                     ),
                                     RefreshButton(
-                                      onRefresh: () => ref.invalidate(propertiesProvider),
+                                      onRefresh: () =>
+                                          ref.invalidate(propertiesProvider),
                                       tooltip: 'Actualiser',
                                     ),
                                     IconButton(
                                       icon: const Icon(Icons.download),
-                                      onPressed: () => _downloadStockReport(context),
+                                      onPressed: () =>
+                                          _downloadStockReport(context),
                                       tooltip: 'Télécharger rapport PDF',
                                     ),
                                     PropertySortMenu(
                                       selectedSort: _sortOption,
-                                      onSortChanged: (sort) => setState(() => _sortOption = sort),
+                                      onSortChanged: (sort) =>
+                                          setState(() => _sortOption = sort),
                                     ),
                                   ],
                                 ),
@@ -213,7 +234,12 @@ class _PropertiesScreenState extends ConsumerState<PropertiesScreen> {
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: _buildKpiCards(theme, properties.length, availableCount, rentedCount),
+                      child: _buildKpiCards(
+                        theme,
+                        properties.length,
+                        availableCount,
+                        rentedCount,
+                      ),
                     ),
                   ),
 
@@ -247,8 +273,10 @@ class _PropertiesScreenState extends ConsumerState<PropertiesScreen> {
                     child: PropertyFilters(
                       selectedStatus: _selectedStatus,
                       selectedType: _selectedType,
-                      onStatusChanged: (status) => setState(() => _selectedStatus = status),
-                      onTypeChanged: (type) => setState(() => _selectedType = type),
+                      onStatusChanged: (status) =>
+                          setState(() => _selectedStatus = status),
+                      onTypeChanged: (type) =>
+                          setState(() => _selectedType = type),
                       onClear: () => setState(() {
                         _selectedStatus = null;
                         _selectedType = null;
@@ -331,7 +359,9 @@ class _PropertiesScreenState extends ConsumerState<PropertiesScreen> {
           const SizedBox(height: 16),
           Text(
             'Erreur de chargement',
-            style: theme.textTheme.bodyLarge?.copyWith(color: theme.colorScheme.error),
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color: theme.colorScheme.error,
+            ),
           ),
           const SizedBox(height: 16),
           FilledButton(

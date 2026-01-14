@@ -24,10 +24,8 @@ class PosTableRow extends ConsumerWidget {
   Future<void> _showStockDialog(BuildContext context, WidgetRef ref) async {
     await showDialog(
       context: context,
-      builder: (dialogContext) => PosStockDialog(
-        pointOfSale: pointOfSale,
-        enterpriseId: enterpriseId,
-      ),
+      builder: (dialogContext) =>
+          PosStockDialog(pointOfSale: pointOfSale, enterpriseId: enterpriseId),
     );
   }
 
@@ -72,9 +70,7 @@ class PosTableRow extends ConsumerWidget {
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            style: FilledButton.styleFrom(
-              backgroundColor: Colors.red,
-            ),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
             child: const Text('Supprimer'),
           ),
         ],
@@ -90,15 +86,19 @@ class PosTableRow extends ConsumerWidget {
       if (!context.mounted) return;
 
       ref.invalidate(
-        pointsOfSaleProvider(
-          (enterpriseId: enterpriseId, moduleId: moduleId),
-        ),
+        pointsOfSaleProvider((enterpriseId: enterpriseId, moduleId: moduleId)),
       );
 
-      NotificationService.showSuccess(context, 'Point de vente supprimé avec succès');
+      NotificationService.showSuccess(
+        context,
+        'Point de vente supprimé avec succès',
+      );
     } catch (e) {
       if (!context.mounted) return;
-      NotificationService.showError(context, 'Erreur lors de la suppression: ${e.toString()}');
+      NotificationService.showError(
+        context,
+        'Erreur lors de la suppression: ${e.toString()}',
+      );
     }
   }
 
@@ -107,10 +107,7 @@ class PosTableRow extends ConsumerWidget {
     final theme = Theme.of(context);
 
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 7.99,
-        vertical: 14.64,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 7.99, vertical: 14.64),
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(
@@ -125,11 +122,7 @@ class PosTableRow extends ConsumerWidget {
             width: 200,
             child: Row(
               children: [
-                const Icon(
-                  Icons.store,
-                  size: 16,
-                  color: Color(0xFF0A0A0A),
-                ),
+                const Icon(Icons.store, size: 16, color: Color(0xFF0A0A0A)),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -168,11 +161,7 @@ class PosTableRow extends ConsumerWidget {
             width: 260,
             child: Row(
               children: [
-                const Icon(
-                  Icons.phone,
-                  size: 12,
-                  color: Color(0xFF4A5565),
-                ),
+                const Icon(Icons.phone, size: 12, color: Color(0xFF4A5565)),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -190,10 +179,7 @@ class PosTableRow extends ConsumerWidget {
             width: 100,
             child: Center(
               child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 3,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: pointOfSale.isActive
                       ? const Color(0xFF030213)
@@ -228,10 +214,7 @@ class PosTableRow extends ConsumerWidget {
                     icon: const Icon(Icons.inventory_2, size: 14),
                     label: const Text(
                       'Stock',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Color(0xFF0A0A0A),
-                      ),
+                      style: TextStyle(fontSize: 11, color: Color(0xFF0A0A0A)),
                     ),
                   ),
                   const SizedBox(width: 3),
@@ -247,10 +230,7 @@ class PosTableRow extends ConsumerWidget {
                     icon: const Icon(Icons.settings, size: 14),
                     label: const Text(
                       'Types',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Color(0xFF0A0A0A),
-                      ),
+                      style: TextStyle(fontSize: 11, color: Color(0xFF0A0A0A)),
                     ),
                   ),
                   const SizedBox(width: 3),

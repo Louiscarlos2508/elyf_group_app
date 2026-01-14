@@ -23,4 +23,3 @@ abstract class PaymentRepository {
   /// Supprime un paiement.
   Future<void> deletePayment(String id);
 }
-

@@ -12,10 +12,7 @@ import 'production_period_formatter.dart';
 
 /// Widget displaying trends and comparisons with previous period.
 class TrendsReportContent extends ConsumerWidget {
-  const TrendsReportContent({
-    super.key,
-    required this.period,
-  });
+  const TrendsReportContent({super.key, required this.period});
 
   final ReportPeriod period;
 
@@ -35,12 +32,8 @@ class TrendsReportContent extends ConsumerWidget {
 
     return salesAsync.when(
       data: (salesState) => productionAsync.when(
-        data: (sessions) => _buildContent(
-          context,
-          theme,
-          salesState.sales,
-          sessions,
-        ),
+        data: (sessions) =>
+            _buildContent(context, theme, salesState.sales, sessions),
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (_, __) => const SizedBox.shrink(),
       ),
@@ -57,46 +50,64 @@ class TrendsReportContent extends ConsumerWidget {
   ) {
     // Filter current period
     final currentSales = allSales.where((s) {
-      return s.date.isAfter(period.startDate.subtract(const Duration(days: 1))) &&
+      return s.date.isAfter(
+            period.startDate.subtract(const Duration(days: 1)),
+          ) &&
           s.date.isBefore(period.endDate.add(const Duration(days: 1)));
     }).toList();
 
     final currentSessions = allSessions.where((s) {
-      return s.date.isAfter(period.startDate.subtract(const Duration(days: 1))) &&
+      return s.date.isAfter(
+            period.startDate.subtract(const Duration(days: 1)),
+          ) &&
           s.date.isBefore(period.endDate.add(const Duration(days: 1)));
     }).toList();
 
     // Filter previous period
     final previousSales = allSales.where((s) {
       return s.date.isAfter(
-              _previousPeriod.startDate.subtract(const Duration(days: 1))) &&
+            _previousPeriod.startDate.subtract(const Duration(days: 1)),
+          ) &&
           s.date.isBefore(_previousPeriod.endDate.add(const Duration(days: 1)));
     }).toList();
 
     final previousSessions = allSessions.where((s) {
       return s.date.isAfter(
-              _previousPeriod.startDate.subtract(const Duration(days: 1))) &&
+            _previousPeriod.startDate.subtract(const Duration(days: 1)),
+          ) &&
           s.date.isBefore(_previousPeriod.endDate.add(const Duration(days: 1)));
     }).toList();
 
     // Calculate metrics
-    final currentRevenue =
-        currentSales.fold<int>(0, (sum, s) => sum + s.totalPrice);
-    final previousRevenue =
-        previousSales.fold<int>(0, (sum, s) => sum + s.totalPrice);
+    final currentRevenue = currentSales.fold<int>(
+      0,
+      (sum, s) => sum + s.totalPrice,
+    );
+    final previousRevenue = previousSales.fold<int>(
+      0,
+      (sum, s) => sum + s.totalPrice,
+    );
     final revenueChange = _calculateChange(currentRevenue, previousRevenue);
 
-    final currentProduction =
-        currentSessions.fold<int>(0, (sum, s) => sum + s.quantiteProduite);
-    final previousProduction =
-        previousSessions.fold<int>(0, (sum, s) => sum + s.quantiteProduite);
-    final productionChange =
-        _calculateChange(currentProduction, previousProduction);
+    final currentProduction = currentSessions.fold<int>(
+      0,
+      (sum, s) => sum + s.quantiteProduite,
+    );
+    final previousProduction = previousSessions.fold<int>(
+      0,
+      (sum, s) => sum + s.quantiteProduite,
+    );
+    final productionChange = _calculateChange(
+      currentProduction,
+      previousProduction,
+    );
 
     final currentSalesCount = currentSales.length;
     final previousSalesCount = previousSales.length;
-    final salesCountChange =
-        _calculateChange(currentSalesCount, previousSalesCount);
+    final salesCountChange = _calculateChange(
+      currentSalesCount,
+      previousSalesCount,
+    );
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -198,21 +209,25 @@ class _ComparisonGrid extends StatelessWidget {
         if (isWide) {
           return Row(
             children: items
-                .map((item) => Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                        child: item,
-                      ),
-                    ))
+                .map(
+                  (item) => Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: item,
+                    ),
+                  ),
+                )
                 .toList(),
           );
         }
         return Column(
           children: items
-              .map((item) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: item,
-                  ))
+              .map(
+                (item) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: item,
+                ),
+              )
               .toList(),
         );
       },
@@ -325,11 +340,16 @@ class _ComparisonChart extends StatelessWidget {
 
     // Group by day index
     final currentByDay = _groupByDayIndex(currentSales, period.startDate, days);
-    final previousByDay =
-        _groupByDayIndex(previousSales, previousPeriod.startDate, days);
+    final previousByDay = _groupByDayIndex(
+      previousSales,
+      previousPeriod.startDate,
+      days,
+    );
 
-    final maxValue = [...currentByDay, ...previousByDay]
-        .fold<double>(0, (a, b) => a > b ? a : b);
+    final maxValue = [
+      ...currentByDay,
+      ...previousByDay,
+    ].fold<double>(0, (a, b) => a > b ? a : b);
 
     return SizedBox(
       height: 220,
@@ -402,7 +422,10 @@ class _ComparisonChart extends StatelessWidget {
   }
 
   List<double> _groupByDayIndex(
-      List<Sale> sales, DateTime startDate, int days) {
+    List<Sale> sales,
+    DateTime startDate,
+    int days,
+  ) {
     final result = List.filled(days, 0.0);
     for (final sale in sales) {
       final dayIndex = sale.date.difference(startDate).inDays;

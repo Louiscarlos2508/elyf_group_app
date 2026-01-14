@@ -16,7 +16,7 @@ class ProductionPayment {
   final List<ProductionPaymentPerson> persons;
   final String? notes;
 
-  int get totalAmount => persons.fold(0, (sum, p) => sum + p.effectiveTotalAmount);
+  int get totalAmount =>
+      persons.fold(0, (sum, p) => sum + p.effectiveTotalAmount);
   int get uniquePersonsCount => persons.length;
 }
-

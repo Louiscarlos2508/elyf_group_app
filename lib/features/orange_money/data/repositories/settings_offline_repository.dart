@@ -32,7 +32,8 @@ class SettingsOfflineRepository extends OfflineRepository<OrangeMoneySettings>
     return OrangeMoneySettings(
       enterpriseId: map['enterpriseId'] as String,
       notifications: NotificationSettings(
-        lowLiquidityAlert: notificationsMap['lowLiquidityAlert'] as bool? ?? true,
+        lowLiquidityAlert:
+            notificationsMap['lowLiquidityAlert'] as bool? ?? true,
         monthlyCommissionReminder:
             notificationsMap['monthlyCommissionReminder'] as bool? ?? true,
         paymentDueAlert: notificationsMap['paymentDueAlert'] as bool? ?? true,
@@ -40,7 +41,7 @@ class SettingsOfflineRepository extends OfflineRepository<OrangeMoneySettings>
       thresholds: ThresholdSettings(
         criticalLiquidityThreshold:
             (thresholdsMap['criticalLiquidityThreshold'] as num?)?.toInt() ??
-                50000,
+            50000,
         paymentDueDaysBefore:
             (thresholdsMap['paymentDueDaysBefore'] as num?)?.toInt() ?? 3,
       ),
@@ -128,7 +129,8 @@ class SettingsOfflineRepository extends OfflineRepository<OrangeMoneySettings>
 
   @override
   Future<List<OrangeMoneySettings>> getAllForEnterprise(
-      String enterpriseId) async {
+    String enterpriseId,
+  ) async {
     final rows = await driftService.records.listForEnterprise(
       collectionName: collectionName,
       enterpriseId: enterpriseId,

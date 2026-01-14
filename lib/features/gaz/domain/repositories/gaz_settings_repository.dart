@@ -17,4 +17,3 @@ abstract class GazSettingsRepository {
     required String moduleId,
   });
 }
-

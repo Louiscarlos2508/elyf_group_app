@@ -33,9 +33,7 @@ class CylinderSelectorWidget extends ConsumerWidget {
             ),
             child: Text(
               'Aucune bouteille disponible',
-              style: TextStyle(
-                color: theme.colorScheme.onErrorContainer,
-              ),
+              style: TextStyle(color: theme.colorScheme.onErrorContainer),
             ),
           );
         }
@@ -58,9 +56,7 @@ class CylinderSelectorWidget extends ConsumerWidget {
                   enabled: true,
                   child: Text(
                     '${cylinder.weight} kg - ${CurrencyFormatter.formatDouble(cylinder.sellPrice)}',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                 );
               }).toList(),
@@ -136,12 +132,9 @@ class CylinderSelectorWidget extends ConsumerWidget {
         ),
         child: Text(
           'Erreur: ${error.toString()}',
-          style: TextStyle(
-            color: theme.colorScheme.onErrorContainer,
-          ),
+          style: TextStyle(color: theme.colorScheme.onErrorContainer),
         ),
       ),
     );
   }
 }
-

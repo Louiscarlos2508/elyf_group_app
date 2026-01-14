@@ -8,7 +8,7 @@ import '../repositories/tour_repository.dart';
 import 'data_consistency_service.dart';
 
 /// Service de gestion des transactions atomiques pour opérations critiques.
-/// 
+///
 /// Assure que les opérations multi-étapes sont exécutées de manière atomique :
 /// - Vente : Débit stock + Création vente (tout ou rien)
 /// - Tour closure : Mise à jour tour + Mise à jour stocks (tout ou rien)
@@ -27,12 +27,12 @@ class TransactionService {
   final DataConsistencyService consistencyService;
 
   /// Exécute une vente de manière atomique.
-  /// 
+  ///
   /// Étapes :
   /// 1. Valide la cohérence (stock disponible)
   /// 2. Débite le stock
   /// 3. Crée la vente
-  /// 
+  ///
   /// En cas d'erreur, rollback automatique.
   Future<GasSale> executeSaleTransaction({
     required GasSale sale,
@@ -53,7 +53,11 @@ class TransactionService {
     }
 
     // 2. Débiter le stock
-    final stockUpdates = <String, ({int originalQuantity, int debitedQuantity})>{}; // stockId -> infos
+    final stockUpdates =
+        <
+          String,
+          ({int originalQuantity, int debitedQuantity})
+        >{}; // stockId -> infos
 
     try {
       // Récupérer les stocks disponibles
@@ -63,10 +67,9 @@ class TransactionService {
         siteId: siteId,
       );
 
-      final fullStocks = stocks
-          .where((s) => s.status == CylinderStatus.full)
-          .toList()
-        ..sort((a, b) => a.updatedAt.compareTo(b.updatedAt)); // FIFO
+      final fullStocks =
+          stocks.where((s) => s.status == CylinderStatus.full).toList()
+            ..sort((a, b) => a.updatedAt.compareTo(b.updatedAt)); // FIFO
 
       int remainingToDebit = sale.quantity;
 
@@ -116,15 +119,13 @@ class TransactionService {
   }
 
   /// Exécute la clôture d'un tour de manière atomique.
-  /// 
+  ///
   /// Étapes :
   /// 1. Valide la cohérence du tour
   /// 2. Vérifie que toutes les collections sont payées
   /// 3. Met à jour le statut du tour
   /// 4. Met à jour les stocks si nécessaire
-  Future<Tour> executeTourClosureTransaction({
-    required String tourId,
-  }) async {
+  Future<Tour> executeTourClosureTransaction({required String tourId}) async {
     final tour = await tourRepository.getTourById(tourId);
     if (tour == null) {
       throw Exception('Tour introuvable');
@@ -139,7 +140,9 @@ class TransactionService {
     }
 
     if (!tour.areAllCollectionsPaid) {
-      throw Exception('Toutes les collectes doivent être payées avant la clôture');
+      throw Exception(
+        'Toutes les collectes doivent être payées avant la clôture',
+      );
     }
 
     // 2. Mettre à jour le tour
@@ -158,7 +161,7 @@ class TransactionService {
   }
 
   /// Exécute le paiement d'une collection de manière atomique.
-  /// 
+  ///
   /// Étapes :
   /// 1. Valide la cohérence
   /// 2. Met à jour la collection
@@ -204,13 +207,10 @@ class TransactionService {
     updatedCollections[collectionIndex] = updatedCollection;
 
     // 3. Mettre à jour le tour
-    final updatedTour = tour.copyWith(
-      collections: updatedCollections,
-    );
+    final updatedTour = tour.copyWith(collections: updatedCollections);
 
     await tourRepository.updateTour(updatedTour);
 
     return updatedCollection;
   }
 }
-

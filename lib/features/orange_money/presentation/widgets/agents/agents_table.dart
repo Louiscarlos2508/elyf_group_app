@@ -52,8 +52,16 @@ class AgentsTable extends StatelessWidget {
                 AgentsTableCell.buildHeader('Téléphone', 122.274),
                 AgentsTableCell.buildHeader('N° SIM', 135.989),
                 AgentsTableCell.buildHeader('Opérateur', 84.741),
-                AgentsTableCell.buildHeader('Liquidité', 100.884, alignRight: false),
-                AgentsTableCell.buildHeader('%Commission', 110.178, alignRight: true),
+                AgentsTableCell.buildHeader(
+                  'Liquidité',
+                  100.884,
+                  alignRight: false,
+                ),
+                AgentsTableCell.buildHeader(
+                  '%Commission',
+                  110.178,
+                  alignRight: true,
+                ),
                 AgentsTableCell.buildHeader('Statut', 62.246),
                 AgentsTableCell.buildHeader('Actions', 185.92),
               ],
@@ -86,4 +94,3 @@ class AgentsTable extends StatelessWidget {
     );
   }
 }
-

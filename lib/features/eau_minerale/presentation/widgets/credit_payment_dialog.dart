@@ -73,13 +73,19 @@ class _CreditPaymentDialogState extends ConsumerState<CreditPaymentDialog>
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoadingSales = false);
-      NotificationService.showError(context, 'Erreur lors du chargement: ${e.toString()}');
+      NotificationService.showError(
+        context,
+        'Erreur lors du chargement: ${e.toString()}',
+      );
     }
   }
 
   Future<void> _submit() async {
     if (_selectedSale == null) {
-      NotificationService.showWarning(context, 'Veuillez sélectionner une vente');
+      NotificationService.showWarning(
+        context,
+        'Veuillez sélectionner une vente',
+      );
       return;
     }
 
@@ -166,7 +172,8 @@ class _CreditPaymentDialogState extends ConsumerState<CreditPaymentDialog>
                       CreditSalesList(
                         creditSales: _creditSales,
                         selectedSale: _selectedSale,
-                        onSaleSelected: (sale) => setState(() => _selectedSale = sale),
+                        onSaleSelected: (sale) =>
+                            setState(() => _selectedSale = sale),
                         isLoading: _isLoadingSales,
                       ),
                       const SizedBox(height: 24),
@@ -177,7 +184,9 @@ class _CreditPaymentDialogState extends ConsumerState<CreditPaymentDialog>
                         isLoadingSales: _isLoadingSales,
                         onFillFullAmount: () {
                           if (_selectedSale != null) {
-                            _amountController.text = _selectedSale!.remainingAmount.toString();
+                            _amountController.text = _selectedSale!
+                                .remainingAmount
+                                .toString();
                           }
                         },
                       ),
@@ -198,4 +207,3 @@ class _CreditPaymentDialogState extends ConsumerState<CreditPaymentDialog>
     );
   }
 }
-

@@ -16,22 +16,20 @@ class StockEntryForm extends ConsumerStatefulWidget {
   ConsumerState<StockEntryForm> createState() => _StockEntryFormState();
 }
 
-enum _StockEntryType {
-  bobine,
-  emballage,
-  produitFini,
-}
+enum _StockEntryType { bobine, emballage, produitFini }
 
 class _StockEntryFormState extends ConsumerState<StockEntryForm> {
   final _formKey = GlobalKey<FormState>();
   final _quantityController = TextEditingController();
-  final _typeController = TextEditingController(); // Type de bobine (ex: "Bobine standard")
+  final _typeController =
+      TextEditingController(); // Type de bobine (ex: "Bobine standard")
   final _supplierController = TextEditingController();
   final _priceController = TextEditingController();
   final _notesController = TextEditingController();
-  
+
   _StockEntryType _selectedType = _StockEntryType.bobine;
-  StockMovementType _movementType = StockMovementType.entry; // Pour produits finis uniquement
+  StockMovementType _movementType =
+      StockMovementType.entry; // Pour produits finis uniquement
   DateTime _selectedDate = DateTime.now();
 
   @override
@@ -40,6 +38,7 @@ class _StockEntryFormState extends ConsumerState<StockEntryForm> {
     // Initialiser la valeur par défaut du type de bobine
     _typeController.text = 'Bobine standard';
   }
+
   bool _isLoading = false;
 
   @override
@@ -66,15 +65,17 @@ class _StockEntryFormState extends ConsumerState<StockEntryForm> {
       switch (_selectedType) {
         case _StockEntryType.bobine:
           // Utiliser le nouveau système de stock par type/quantité
-          final bobineType = _typeController.text.isEmpty 
-              ? 'Bobine standard' 
+          final bobineType = _typeController.text.isEmpty
+              ? 'Bobine standard'
               : _typeController.text;
-          
+
           // Enregistrer l'entrée de bobines (ajoute à la quantité du type)
           await stockController.recordBobineEntry(
             bobineType: bobineType,
             quantite: quantite.toInt(),
-            fournisseur: _supplierController.text.isEmpty ? null : _supplierController.text,
+            fournisseur: _supplierController.text.isEmpty
+                ? null
+                : _supplierController.text,
             notes: _notesController.text.isEmpty ? null : _notesController.text,
           );
           break;
@@ -83,11 +84,15 @@ class _StockEntryFormState extends ConsumerState<StockEntryForm> {
           final prixUnitaire = _priceController.text.isEmpty
               ? null
               : int.tryParse(_priceController.text);
-          
+
           // Récupérer ou créer le stock d'emballages
-          final packagingController = ref.read(packagingStockControllerProvider);
-          var stockEmballage = await packagingController.fetchByType('Emballage');
-          
+          final packagingController = ref.read(
+            packagingStockControllerProvider,
+          );
+          var stockEmballage = await packagingController.fetchByType(
+            'Emballage',
+          );
+
           if (stockEmballage == null) {
             // Créer un nouveau stock d'emballages
             stockEmballage = PackagingStock(
@@ -95,20 +100,24 @@ class _StockEntryFormState extends ConsumerState<StockEntryForm> {
               type: 'Emballage',
               quantity: 0,
               unit: 'unité',
-              fournisseur: _supplierController.text.isEmpty ? null : _supplierController.text,
+              fournisseur: _supplierController.text.isEmpty
+                  ? null
+                  : _supplierController.text,
               prixUnitaire: prixUnitaire,
               createdAt: _selectedDate,
               updatedAt: _selectedDate,
             );
             stockEmballage = await packagingController.save(stockEmballage);
           }
-          
+
           // Enregistrer l'entrée
           await stockController.recordPackagingEntry(
             packagingId: stockEmballage.id,
             packagingType: 'Emballage',
             quantite: quantite.toInt(),
-            fournisseur: _supplierController.text.isEmpty ? null : _supplierController.text,
+            fournisseur: _supplierController.text.isEmpty
+                ? null
+                : _supplierController.text,
             notes: _notesController.text.isEmpty ? null : _notesController.text,
           );
           break;
@@ -117,12 +126,13 @@ class _StockEntryFormState extends ConsumerState<StockEntryForm> {
           // Récupérer le stock de produits finis
           final stockState = await stockController.fetchSnapshot();
           final stockItems = stockState.items;
-          
+
           // Chercher le stock de produits finis (Pack)
           StockItem packStock;
           try {
             packStock = stockItems.firstWhere(
-              (item) => item.type == StockType.finishedGoods &&
+              (item) =>
+                  item.type == StockType.finishedGoods &&
                   item.name.toLowerCase().contains('pack'),
             );
           } catch (_) {
@@ -149,7 +159,7 @@ class _StockEntryFormState extends ConsumerState<StockEntryForm> {
               }
             }
           }
-          
+
           // Ajuster le stock (entrée ou sortie) - packStock est toujours non-null ici
           final finalPackStock = packStock;
           await stockController.recordItemMovement(
@@ -158,8 +168,10 @@ class _StockEntryFormState extends ConsumerState<StockEntryForm> {
             type: _movementType,
             quantity: quantite,
             unit: finalPackStock.unit,
-            reason: _notesController.text.isEmpty 
-                ? (_movementType == StockMovementType.entry ? 'Ajustement entrée' : 'Ajustement sortie')
+            reason: _notesController.text.isEmpty
+                ? (_movementType == StockMovementType.entry
+                      ? 'Ajustement entrée'
+                      : 'Ajustement sortie')
                 : _notesController.text,
             notes: _notesController.text.isEmpty ? null : _notesController.text,
           );
@@ -172,10 +184,10 @@ class _StockEntryFormState extends ConsumerState<StockEntryForm> {
       final message = _selectedType == _StockEntryType.bobine
           ? '${quantite.toInt()} bobine(s) ajoutée(s)'
           : _selectedType == _StockEntryType.emballage
-              ? '${quantite.toInt()} emballage(s) ajouté(s)'
-              : _movementType == StockMovementType.entry
-                  ? '${quantite.toStringAsFixed(0)} pack(s) ajouté(s) au stock'
-                  : '${quantite.toStringAsFixed(0)} pack(s) retiré(s) du stock';
+          ? '${quantite.toInt()} emballage(s) ajouté(s)'
+          : _movementType == StockMovementType.entry
+          ? '${quantite.toStringAsFixed(0)} pack(s) ajouté(s) au stock'
+          : '${quantite.toStringAsFixed(0)} pack(s) retiré(s) du stock';
       NotificationService.showSuccess(context, message);
     } catch (e) {
       if (!mounted) return;
@@ -223,7 +235,7 @@ class _StockEntryFormState extends ConsumerState<StockEntryForm> {
               },
             ),
             const SizedBox(height: 24),
-            
+
             // Type de mouvement (uniquement pour produits finis)
             if (_selectedType == _StockEntryType.produitFini) ...[
               SegmentedButton<StockMovementType>(
@@ -248,7 +260,7 @@ class _StockEntryFormState extends ConsumerState<StockEntryForm> {
               ),
               const SizedBox(height: 24),
             ],
-            
+
             // Date de réception
             InkWell(
               onTap: () async {
@@ -273,7 +285,7 @@ class _StockEntryFormState extends ConsumerState<StockEntryForm> {
               ),
             ),
             const SizedBox(height: 16),
-            
+
             // Quantité
             TextFormField(
               controller: _quantityController,
@@ -284,12 +296,14 @@ class _StockEntryFormState extends ConsumerState<StockEntryForm> {
                 helperText: _selectedType == _StockEntryType.bobine
                     ? 'Nombre de bobines à ajouter'
                     : _selectedType == _StockEntryType.emballage
-                        ? 'Nombre d\'emballages à ajouter'
-                        : _movementType == StockMovementType.entry
-                            ? 'Quantité de packs à ajouter au stock'
-                            : 'Quantité de packs à retirer du stock',
+                    ? 'Nombre d\'emballages à ajouter'
+                    : _movementType == StockMovementType.entry
+                    ? 'Quantité de packs à ajouter au stock'
+                    : 'Quantité de packs à retirer du stock',
               ),
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               inputFormatters: [
                 FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
               ],
@@ -297,7 +311,8 @@ class _StockEntryFormState extends ConsumerState<StockEntryForm> {
                 if (v == null || v.isEmpty) return 'Requis';
                 final qty = double.tryParse(v);
                 if (qty == null || qty <= 0) return 'Quantité invalide';
-                if (_selectedType == _StockEntryType.produitFini && _movementType == StockMovementType.exit) {
+                if (_selectedType == _StockEntryType.produitFini &&
+                    _movementType == StockMovementType.exit) {
                   // Pour les retraits, vérifier que le stock est suffisant
                   // Cette validation sera faite côté serveur dans recordItemMovement
                 }
@@ -305,7 +320,7 @@ class _StockEntryFormState extends ConsumerState<StockEntryForm> {
               },
             ),
             const SizedBox(height: 16),
-            
+
             // Type de bobine (uniquement pour bobines)
             if (_selectedType == _StockEntryType.bobine) ...[
               TextFormField(
@@ -313,12 +328,13 @@ class _StockEntryFormState extends ConsumerState<StockEntryForm> {
                 decoration: const InputDecoration(
                   labelText: 'Type de bobine',
                   prefixIcon: Icon(Icons.category),
-                  helperText: 'Ex: "Bobine standard", "Bobine grande taille" (par défaut: "Bobine standard")',
+                  helperText:
+                      'Ex: "Bobine standard", "Bobine grande taille" (par défaut: "Bobine standard")',
                 ),
               ),
               const SizedBox(height: 16),
             ],
-            
+
             // Fournisseur
             TextFormField(
               controller: _supplierController,
@@ -328,7 +344,7 @@ class _StockEntryFormState extends ConsumerState<StockEntryForm> {
               ),
             ),
             const SizedBox(height: 16),
-            
+
             // Prix unitaire (pas pour produits finis)
             if (_selectedType != _StockEntryType.produitFini) ...[
               TextFormField(
@@ -349,7 +365,7 @@ class _StockEntryFormState extends ConsumerState<StockEntryForm> {
               ),
               const SizedBox(height: 16),
             ],
-            
+
             // Notes
             TextFormField(
               controller: _notesController,
@@ -360,7 +376,7 @@ class _StockEntryFormState extends ConsumerState<StockEntryForm> {
               maxLines: 2,
             ),
             const SizedBox(height: 24),
-            
+
             // Bouton de soumission
             FilledButton(
               onPressed: _isLoading ? null : _submit,

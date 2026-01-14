@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/administration/application/providers.dart';
+import 'package:elyf_groupe_app/core/auth/providers.dart'
+    show currentUserIdProvider;
 import 'widgets/user_section_header.dart';
 import 'widgets/user_filters_bar.dart';
 import 'widgets/user_list_item.dart';
@@ -27,13 +29,15 @@ class _AdminUsersSectionState extends ConsumerState<AdminUsersSection> {
     super.dispose();
   }
 
-  UserActionHandlers get _handlers => UserActionHandlers(ref: ref, context: context);
+  UserActionHandlers get _handlers =>
+      UserActionHandlers(ref: ref, context: context);
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final usersAsync = ref.watch(usersProvider);
     final enterpriseModuleUsersAsync = ref.watch(enterpriseModuleUsersProvider);
+    final currentUserId = ref.watch(currentUserIdProvider);
 
     return CustomScrollView(
       slivers: [
@@ -71,6 +75,7 @@ class _AdminUsersSectionState extends ConsumerState<AdminUsersSection> {
                   searchQuery: _searchController.text,
                   enterpriseId: _selectedEnterpriseFilter,
                   moduleId: _selectedModuleFilter,
+                  excludeUserId: currentUserId,
                 );
 
                 if (filteredUsers.isEmpty) {
@@ -80,24 +85,21 @@ class _AdminUsersSectionState extends ConsumerState<AdminUsersSection> {
                 }
 
                 return SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final user = filteredUsers[index];
-                      final userAssignments = assignments
-                          .where((a) => a.userId == user.id)
-                          .toList();
+                  delegate: SliverChildBuilderDelegate((context, index) {
+                    final user = filteredUsers[index];
+                    final userAssignments = assignments
+                        .where((a) => a.userId == user.id)
+                        .toList();
 
-                      return UserListItem(
-                        user: user,
-                        userAssignments: userAssignments,
-                        onEdit: () => _handlers.handleEditUser(user),
-                        onAssign: () => _handlers.handleAssignEnterprise(user),
-                        onToggle: () => _handlers.handleToggleStatus(user),
-                        onDelete: () => _handlers.handleDeleteUser(user),
-                      );
-                    },
-                    childCount: filteredUsers.length,
-                  ),
+                    return UserListItem(
+                      user: user,
+                      userAssignments: userAssignments,
+                      onEdit: () => _handlers.handleEditUser(user),
+                      onAssign: () => _handlers.handleAssignEnterprise(user),
+                      onToggle: () => _handlers.handleToggleStatus(user),
+                      onDelete: () => _handlers.handleDeleteUser(user),
+                    );
+                  }, childCount: filteredUsers.length),
                 );
               },
               loading: () => const SliverToBoxAdapter(
@@ -124,7 +126,10 @@ class _AdminUsersSectionState extends ConsumerState<AdminUsersSection> {
                       color: theme.colorScheme.error,
                     ),
                     const SizedBox(height: 16),
-                    Text('Erreur de chargement', style: theme.textTheme.titleLarge),
+                    Text(
+                      'Erreur de chargement',
+                      style: theme.textTheme.titleLarge,
+                    ),
                     const SizedBox(height: 8),
                     Text(
                       error.toString(),
@@ -144,4 +149,3 @@ class _AdminUsersSectionState extends ConsumerState<AdminUsersSection> {
     );
   }
 }
-

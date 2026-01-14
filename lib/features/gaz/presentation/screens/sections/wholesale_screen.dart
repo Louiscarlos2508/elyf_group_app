@@ -13,8 +13,7 @@ class GazWholesaleScreen extends ConsumerStatefulWidget {
   const GazWholesaleScreen({super.key});
 
   @override
-  ConsumerState<GazWholesaleScreen> createState() =>
-      _GazWholesaleScreenState();
+  ConsumerState<GazWholesaleScreen> createState() => _GazWholesaleScreenState();
 }
 
 class _GazWholesaleScreenState extends ConsumerState<GazWholesaleScreen> {
@@ -118,10 +117,7 @@ class _GazWholesaleScreenState extends ConsumerState<GazWholesaleScreen> {
                   return const WholesaleEmptyState();
                 }
 
-                return _WholesaleSalesList(
-                  sales: metrics.sales,
-                  theme: theme,
-                );
+                return _WholesaleSalesList(sales: metrics.sales, theme: theme);
               },
               loading: () => const SizedBox(
                 height: 163,
@@ -250,10 +246,7 @@ class _WholesaleKpiGrid extends StatelessWidget {
 
 /// Widget privé pour afficher la liste des ventes.
 class _WholesaleSalesList extends StatelessWidget {
-  const _WholesaleSalesList({
-    required this.sales,
-    required this.theme,
-  });
+  const _WholesaleSalesList({required this.sales, required this.theme});
 
   final List<dynamic> sales;
   final ThemeData theme;
@@ -272,12 +265,13 @@ class _WholesaleSalesList extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        ...sales.map((sale) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: WholesaleSaleCard(sale: sale),
-            )),
+        ...sales.map(
+          (sale) => Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: WholesaleSaleCard(sale: sale),
+          ),
+        ),
       ],
     );
   }
 }
-

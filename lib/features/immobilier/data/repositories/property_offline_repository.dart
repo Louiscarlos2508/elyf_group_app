@@ -198,9 +198,7 @@ class PropertyOfflineRepository extends OfflineRepository<Property>
   Future<List<Property>> getPropertiesByStatus(PropertyStatus status) async {
     try {
       final allProperties = await getAllForEnterprise(enterpriseId);
-      return allProperties
-          .where((p) => p.status == status)
-          .toList();
+      return allProperties.where((p) => p.status == status).toList();
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
@@ -217,9 +215,7 @@ class PropertyOfflineRepository extends OfflineRepository<Property>
   Future<List<Property>> getPropertiesByType(PropertyType type) async {
     try {
       final allProperties = await getAllForEnterprise(enterpriseId);
-      return allProperties
-          .where((p) => p.propertyType == type)
-          .toList();
+      return allProperties.where((p) => p.propertyType == type).toList();
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
@@ -333,4 +329,3 @@ class PropertyOfflineRepository extends OfflineRepository<Property>
     }
   }
 }
-

@@ -5,10 +5,7 @@ import 'agents_format_helpers.dart';
 
 /// Bannière d'alerte pour les agents avec liquidité faible.
 class AgentsLowLiquidityBanner extends StatelessWidget {
-  const AgentsLowLiquidityBanner({
-    super.key,
-    required this.agents,
-  });
+  const AgentsLowLiquidityBanner({super.key, required this.agents});
 
   final List<Agent> agents;
 
@@ -18,10 +15,7 @@ class AgentsLowLiquidityBanner extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(25.219, 17.219, 1.219, 1.219),
       decoration: BoxDecoration(
         color: const Color(0xFFFEFCE8),
-        border: Border.all(
-          color: const Color(0xFFFFF085),
-          width: 1.219,
-        ),
+        border: Border.all(color: const Color(0xFFFFF085), width: 1.219),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
@@ -81,4 +75,3 @@ class AgentsLowLiquidityBanner extends StatelessWidget {
     );
   }
 }
-

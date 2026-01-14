@@ -16,4 +16,3 @@ class SalaryHistoryItemData {
 }
 
 enum SalaryPaymentType { monthly, production }
-

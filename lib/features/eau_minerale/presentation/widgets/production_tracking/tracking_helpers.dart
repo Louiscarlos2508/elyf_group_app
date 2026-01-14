@@ -15,4 +15,3 @@ class TrackingHelpers {
     return '${formatDate(date)} à ${formatTime(date)}';
   }
 }
-

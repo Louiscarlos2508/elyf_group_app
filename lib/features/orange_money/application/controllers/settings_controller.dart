@@ -33,4 +33,3 @@ class SettingsController {
     return await _repository.updateSimNumber(enterpriseId, simNumber);
   }
 }
-

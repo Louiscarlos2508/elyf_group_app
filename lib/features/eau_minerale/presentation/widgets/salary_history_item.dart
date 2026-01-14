@@ -6,10 +6,7 @@ import 'salary_history_item_data.dart';
 
 /// Item widget for displaying a payment in history.
 class SalaryHistoryItem extends StatelessWidget {
-  const SalaryHistoryItem({
-    super.key,
-    required this.payment,
-  });
+  const SalaryHistoryItem({super.key, required this.payment});
 
   final SalaryHistoryItemData payment;
 
@@ -52,10 +49,7 @@ class SalaryHistoryItem extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (payment.period != null) ...[
-              Text(
-                payment.period!,
-                style: theme.textTheme.bodySmall,
-              ),
+              Text(payment.period!, style: theme.textTheme.bodySmall),
               const SizedBox(height: 4),
             ],
             Text(
@@ -77,4 +71,3 @@ class SalaryHistoryItem extends StatelessWidget {
     );
   }
 }
-

@@ -24,8 +24,8 @@ class PointOfSaleFormDialog extends ConsumerStatefulWidget {
       _PointOfSaleFormDialogState();
 }
 
-class _PointOfSaleFormDialogState
-    extends ConsumerState<PointOfSaleFormDialog> with FormHelperMixin {
+class _PointOfSaleFormDialogState extends ConsumerState<PointOfSaleFormDialog>
+    with FormHelperMixin {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _addressController = TextEditingController();
@@ -61,7 +61,10 @@ class _PointOfSaleFormDialogState
 
   Future<void> _savePointOfSale() async {
     if (_enterpriseId == null || _moduleId == null) {
-      NotificationService.showError(context, 'Veuillez remplir tous les champs requis');
+      NotificationService.showError(
+        context,
+        'Veuillez remplir tous les champs requis',
+      );
       return;
     }
 
@@ -72,7 +75,8 @@ class _PointOfSaleFormDialogState
       onSubmit: () async {
         final controller = ref.read(pointOfSaleControllerProvider);
         final pointOfSale = PointOfSale(
-          id: widget.pointOfSale?.id ??
+          id:
+              widget.pointOfSale?.id ??
               'pos-${DateTime.now().millisecondsSinceEpoch}',
           name: _nameController.text.trim(),
           address: _addressController.text.trim(),
@@ -93,9 +97,10 @@ class _PointOfSaleFormDialogState
         if (mounted) {
           // Invalider le provider pour rafraîchir la liste
           ref.invalidate(
-            pointsOfSaleProvider(
-              (enterpriseId: _enterpriseId!, moduleId: _moduleId!),
-            ),
+            pointsOfSaleProvider((
+              enterpriseId: _enterpriseId!,
+              moduleId: _moduleId!,
+            )),
           );
           Navigator.of(context).pop(true);
         }
@@ -112,9 +117,7 @@ class _PointOfSaleFormDialogState
     final theme = Theme.of(context);
 
     return Dialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(24),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 500),
         child: Form(
@@ -193,9 +196,7 @@ class _PointOfSaleFormDialogState
                       prefixIcon: const Icon(Icons.phone),
                     ),
                     keyboardType: TextInputType.phone,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                    ],
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Veuillez entrer un numéro de téléphone';
@@ -254,4 +255,3 @@ class _PointOfSaleFormDialogState
     );
   }
 }
-

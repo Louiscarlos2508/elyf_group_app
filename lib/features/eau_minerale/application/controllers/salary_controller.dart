@@ -11,7 +11,8 @@ class SalaryController {
   Future<SalaryState> fetchSalaries() async {
     final fixedEmployees = await _repository.fetchFixedEmployees();
     final productionPayments = await _repository.fetchProductionPayments();
-    final monthlySalaryPayments = await _repository.fetchMonthlySalaryPayments();
+    final monthlySalaryPayments = await _repository
+        .fetchMonthlySalaryPayments();
     return SalaryState(
       fixedEmployees: fixedEmployees,
       productionPayments: productionPayments,
@@ -66,15 +67,16 @@ class SalaryState {
   int get currentMonthTotal {
     final now = DateTime.now();
     final productionTotal = productionPayments
-        .where((p) =>
-            p.paymentDate.year == now.year && p.paymentDate.month == now.month)
+        .where(
+          (p) =>
+              p.paymentDate.year == now.year &&
+              p.paymentDate.month == now.month,
+        )
         .fold(0, (sum, p) => sum + p.totalAmount);
     final monthlyPaymentsList = monthlySalaryPayments;
     final monthlyTotal = monthlyPaymentsList
-        .where((p) =>
-            p.date.year == now.year && p.date.month == now.month)
+        .where((p) => p.date.year == now.year && p.date.month == now.month)
         .fold(0, (sum, p) => sum + p.amount);
     return productionTotal + monthlyTotal;
   }
 }
-

@@ -5,10 +5,7 @@ import 'production_report_helpers.dart';
 
 /// Section dépenses liées du rapport.
 class ProductionReportExpenses extends StatelessWidget {
-  const ProductionReportExpenses({
-    super.key,
-    required this.expenses,
-  });
+  const ProductionReportExpenses({super.key, required this.expenses});
 
   final List<ExpenseRecord> expenses;
 
@@ -30,20 +27,16 @@ class ProductionReportExpenses extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        ...expenses.map((expense) => _ExpenseCard(
-          theme: theme,
-          expense: expense,
-        )),
+        ...expenses.map(
+          (expense) => _ExpenseCard(theme: theme, expense: expense),
+        ),
       ],
     );
   }
 }
 
 class _ExpenseCard extends StatelessWidget {
-  const _ExpenseCard({
-    required this.theme,
-    required this.expense,
-  });
+  const _ExpenseCard({required this.theme, required this.expense});
 
   final ThemeData theme;
   final ExpenseRecord expense;
@@ -60,11 +53,7 @@ class _ExpenseCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(
-              Icons.receipt_long,
-              size: 20,
-              color: Colors.red.shade700,
-            ),
+            Icon(Icons.receipt_long, size: 20, color: Colors.red.shade700),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -98,4 +87,3 @@ class _ExpenseCard extends StatelessWidget {
     );
   }
 }
-

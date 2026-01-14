@@ -18,8 +18,7 @@ class GazExpensesScreen extends ConsumerStatefulWidget {
   const GazExpensesScreen({super.key});
 
   @override
-  ConsumerState<GazExpensesScreen> createState() =>
-      _GazExpensesScreenState();
+  ConsumerState<GazExpensesScreen> createState() => _GazExpensesScreenState();
 }
 
 class _GazExpensesScreenState extends ConsumerState<GazExpensesScreen>
@@ -80,12 +79,15 @@ class _GazExpensesScreenState extends ConsumerState<GazExpensesScreen>
       child: expensesAsync.when(
         data: (expenses) {
           // Utiliser le service pour les calculs
-          final todayExpenses =
-              GazCalculationService.calculateTodayExpenses(expenses);
-          final todayTotal =
-              GazCalculationService.calculateTodayExpensesTotal(expenses);
-          final totalExpenses =
-              GazCalculationService.calculateTotalExpenses(expenses);
+          final todayExpenses = GazCalculationService.calculateTodayExpenses(
+            expenses,
+          );
+          final todayTotal = GazCalculationService.calculateTodayExpensesTotal(
+            expenses,
+          );
+          final totalExpenses = GazCalculationService.calculateTotalExpenses(
+            expenses,
+          );
 
           return Column(
             children: [

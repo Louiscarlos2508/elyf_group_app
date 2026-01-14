@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-
 /// En-tête de la liste des agents avec boutons d'action.
 class AgentsListHeader extends StatelessWidget {
   const AgentsListHeader({
@@ -32,10 +31,7 @@ class AgentsListHeader extends StatelessWidget {
           child: ElevatedButton.icon(
             onPressed: onAddAgent,
             icon: const Icon(Icons.add, size: 16),
-            label: const Text(
-              'Nouvel agent',
-              style: TextStyle(fontSize: 14),
-            ),
+            label: const Text('Nouvel agent', style: TextStyle(fontSize: 14)),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFF54900),
               foregroundColor: Colors.white,
@@ -70,4 +66,3 @@ class AgentsListHeader extends StatelessWidget {
     );
   }
 }
-

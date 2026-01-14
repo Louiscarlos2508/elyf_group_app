@@ -32,4 +32,3 @@ class ProductController {
     return await _repository.deleteProduct(id);
   }
 }
-

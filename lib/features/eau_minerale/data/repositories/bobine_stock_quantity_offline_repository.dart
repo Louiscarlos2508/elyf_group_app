@@ -10,7 +10,8 @@ import '../../domain/repositories/bobine_stock_quantity_repository.dart';
 /// Offline-first repository for BobineStock entities (eau_minerale module).
 ///
 /// Gère les stocks de bobines et leurs mouvements.
-class BobineStockQuantityOfflineRepository extends OfflineRepository<BobineStock>
+class BobineStockQuantityOfflineRepository
+    extends OfflineRepository<BobineStock>
     implements BobineStockQuantityRepository {
   BobineStockQuantityOfflineRepository({
     required super.driftService,
@@ -282,7 +283,7 @@ class BobineStockQuantityOfflineRepository extends OfflineRepository<BobineStock
         createdAt: entity.createdAt ?? now,
       );
       await saveToLocal(updatedStock);
-      
+
       // Queue sync operation
       final localId = getLocalId(updatedStock);
       final remoteId = getRemoteId(updatedStock);
@@ -303,7 +304,7 @@ class BobineStockQuantityOfflineRepository extends OfflineRepository<BobineStock
           enterpriseId: enterpriseId,
         );
       }
-      
+
       return updatedStock;
     } catch (e, stackTrace) {
       developer.log(
@@ -323,8 +324,7 @@ class BobineStockQuantityOfflineRepository extends OfflineRepository<BobineStock
       final localId = movement.id.startsWith('local_')
           ? movement.id
           : LocalIdGenerator.generate();
-      final remoteId =
-          movement.id.startsWith('local_') ? null : movement.id;
+      final remoteId = movement.id.startsWith('local_') ? null : movement.id;
       final map = _movementToMap(movement)..['localId'] = localId;
       final now = DateTime.now();
 
@@ -376,7 +376,7 @@ class BobineStockQuantityOfflineRepository extends OfflineRepository<BobineStock
           updatedAt: now,
         );
         await saveToLocal(updatedStock);
-        
+
         // Queue sync operation for stock update
         final stockLocalId = getLocalId(updatedStock);
         final stockRemoteId = getRemoteId(updatedStock);
@@ -440,7 +440,10 @@ class BobineStockQuantityOfflineRepository extends OfflineRepository<BobineStock
       }
       if (startDate != null) {
         movements = movements
-            .where((m) => m.date.isAfter(startDate.subtract(const Duration(days: 1))))
+            .where(
+              (m) =>
+                  m.date.isAfter(startDate.subtract(const Duration(days: 1))),
+            )
             .toList();
       }
       if (endDate != null) {
@@ -482,4 +485,3 @@ class BobineStockQuantityOfflineRepository extends OfflineRepository<BobineStock
     }
   }
 }
-

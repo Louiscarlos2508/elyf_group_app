@@ -33,4 +33,3 @@ enum ExpenseCategory {
   marketing, // Marketing/Publicité
   other, // Autres
 }
-

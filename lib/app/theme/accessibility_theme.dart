@@ -7,9 +7,7 @@ extension AccessibilityThemeExtension on ThemeData {
   /// Vérifie si les couleurs du thème respectent les standards WCAG 2.1.
   ///
   /// Retourne une liste de problèmes d'accessibilité trouvés.
-  List<String> checkAccessibility({
-    ContrastLevel level = ContrastLevel.aa,
-  }) {
+  List<String> checkAccessibility({ContrastLevel level = ContrastLevel.aa}) {
     final issues = <String>[];
 
     // Vérifier le contraste texte principal / surface
@@ -64,7 +62,8 @@ extension AccessibilityThemeExtension on ThemeData {
     if (!ContrastChecker.meetsContrastRatio(
       foreground: colorScheme.onSurfaceVariant,
       background: colorScheme.surface,
-      isLargeText: true, // OnSurfaceVariant est souvent utilisé pour du texte secondaire
+      isLargeText:
+          true, // OnSurfaceVariant est souvent utilisé pour du texte secondaire
       level: level,
     )) {
       issues.add(
@@ -94,4 +93,3 @@ extension AccessibilityThemeExtension on ThemeData {
     );
   }
 }
-

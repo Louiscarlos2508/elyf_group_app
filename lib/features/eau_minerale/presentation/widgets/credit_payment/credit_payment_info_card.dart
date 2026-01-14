@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
+
 /// Customer info card for credit payment dialog.
 class CreditPaymentInfoCard extends StatelessWidget {
   const CreditPaymentInfoCard({
@@ -48,10 +49,7 @@ class CreditPaymentInfoCard extends StatelessWidget {
             ],
           ),
           Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 6,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
               color: theme.colorScheme.errorContainer,
               borderRadius: BorderRadius.circular(8),
@@ -69,4 +67,3 @@ class CreditPaymentInfoCard extends StatelessWidget {
     );
   }
 }
-

@@ -129,9 +129,7 @@ class MockLiquidityRepository implements LiquidityRepository {
     return {
       'totalCheckpoints': checkpoints.length,
       'completeCheckpoints': checkpoints.where((c) => c.isComplete).length,
-      'incompleteCheckpoints':
-          checkpoints.where((c) => !c.isComplete).length,
+      'incompleteCheckpoints': checkpoints.where((c) => !c.isComplete).length,
     };
   }
 }
-

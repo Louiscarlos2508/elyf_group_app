@@ -8,6 +8,7 @@ import '../../domain/entities/production_session_status.dart';
 import 'time_picker_field.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../../../shared/utils/notification_service.dart';
+
 /// Dialog pour finaliser une production.
 class ProductionFinalizationDialog extends ConsumerStatefulWidget {
   const ProductionFinalizationDialog({
@@ -38,8 +39,10 @@ class _ProductionFinalizationDialogState
     super.initState();
     // Initialiser avec les valeurs existantes si disponibles
     if (widget.session.indexCompteurFinalKwh != null) {
-      _indexCompteurFinalKwhController.text =
-          widget.session.indexCompteurFinalKwh!.toString();
+      _indexCompteurFinalKwhController.text = widget
+          .session
+          .indexCompteurFinalKwh!
+          .toString();
     }
     if (widget.session.heureFin != null) {
       _heureFin = widget.session.heureFin!;
@@ -50,10 +53,12 @@ class _ProductionFinalizationDialogState
     final totalPacks = widget.session.totalPacksProduitsJournalier;
     final totalEmb = widget.session.totalEmballagesUtilisesJournalier;
 
-    final quantiteEffective =
-        totalPacks > 0 ? totalPacks : widget.session.quantiteProduite;
-    final emballagesEffectifs =
-        totalEmb > 0 ? totalEmb : (widget.session.emballagesUtilises ?? 0);
+    final quantiteEffective = totalPacks > 0
+        ? totalPacks
+        : widget.session.quantiteProduite;
+    final emballagesEffectifs = totalEmb > 0
+        ? totalEmb
+        : (widget.session.emballagesUtilises ?? 0);
 
     if (quantiteEffective > 0) {
       _quantiteProduiteController.text = quantiteEffective.toString();
@@ -78,10 +83,15 @@ class _ProductionFinalizationDialogState
 
     try {
       // Accepter les nombres avec virgule ou point décimal et arrondir
-      final cleanedValue = _indexCompteurFinalKwhController.text.trim().replaceAll(',', '.');
+      final cleanedValue = _indexCompteurFinalKwhController.text
+          .trim()
+          .replaceAll(',', '.');
       final doubleValue = double.tryParse(cleanedValue);
       if (doubleValue == null) {
-        NotificationService.showError(context, 'L\'index compteur final est invalide');
+        NotificationService.showError(
+          context,
+          'L\'index compteur final est invalide',
+        );
         setState(() => _isLoading = false);
         return;
       }
@@ -92,9 +102,10 @@ class _ProductionFinalizationDialogState
       final totalEmb = widget.session.totalEmballagesUtilisesJournalier;
 
       if (totalPacks <= 0) {
-        NotificationService.showError(context, 
-              'Veuillez renseigner le nombre de packs produits pour au moins un jour de production.',
-            );
+        NotificationService.showError(
+          context,
+          'Veuillez renseigner le nombre de packs produits pour au moins un jour de production.',
+        );
         setState(() => _isLoading = false);
         return;
       }
@@ -112,9 +123,10 @@ class _ProductionFinalizationDialogState
 
       if (totalEmb <= 0) {
         if (!mounted) return;
-        NotificationService.showError(context, 
-              'Veuillez renseigner le nombre d\'emballages utilisés pour au moins un jour de production.',
-            );
+        NotificationService.showError(
+          context,
+          'Veuillez renseigner le nombre d\'emballages utilisés pour au moins un jour de production.',
+        );
         setState(() => _isLoading = false);
         return;
       }
@@ -130,10 +142,11 @@ class _ProductionFinalizationDialogState
       );
 
       final controller = ref.read(productionSessionControllerProvider);
-      
+
       // Vérifier si la session était déjà finalisée avant cette mise à jour
-      final etaitDejaFinalisee = widget.session.effectiveStatus == ProductionSessionStatus.completed;
-      
+      final etaitDejaFinalisee =
+          widget.session.effectiveStatus == ProductionSessionStatus.completed;
+
       final savedSession = await controller.updateSession(updatedSession);
 
       // Mise à jour automatique du stock
@@ -141,7 +154,7 @@ class _ProductionFinalizationDialogState
       // pour éviter les duplications lors d'une re-finalisation
       if (!etaitDejaFinalisee) {
         final stockController = ref.read(stockControllerProvider);
-        
+
         // Les bobines finies ne nécessitent plus de retrait car elles sont gérées par quantité
         // Le stock a déjà été décrémenté lors de l'installation
         // Pas besoin d'enregistrer un retrait supplémentaire
@@ -152,96 +165,121 @@ class _ProductionFinalizationDialogState
             await stockController.recordFinishedGoodsProduction(
               quantiteProduite: savedSession.quantiteProduite,
               productionId: savedSession.id,
-              notes: 'Production finalisée - ${savedSession.quantiteProduite} ${savedSession.quantiteProduiteUnite}(s) produits',
+              notes:
+                  'Production finalisée - ${savedSession.quantiteProduite} ${savedSession.quantiteProduiteUnite}(s) produits',
             );
           } catch (e) {
-            debugPrint('Erreur lors de la mise à jour du stock de produits finis: $e');
+            debugPrint(
+              'Erreur lors de la mise à jour du stock de produits finis: $e',
+            );
             if (mounted) {
-              NotificationService.showWarning(context, 'Attention: Erreur lors de la mise à jour du stock de produits finis: $e');
+              NotificationService.showWarning(
+                context,
+                'Attention: Erreur lors de la mise à jour du stock de produits finis: $e',
+              );
             }
           }
         }
 
         // Enregistrer l'utilisation d'emballages si défini
-        if (savedSession.emballagesUtilises != null && savedSession.emballagesUtilises! > 0) {
+        if (savedSession.emballagesUtilises != null &&
+            savedSession.emballagesUtilises! > 0) {
           try {
-          // Vérifier la disponibilité du stock d'emballages
-          final packagingController = ref.read(packagingStockControllerProvider);
-          final stocksEmballages = await packagingController.fetchAll();
-          
-          // Chercher le stock d'emballages (type "Emballage")
-          PackagingStock? stockEmballage;
-          try {
-            stockEmballage = await packagingController.fetchByType('Pack 12 sachets');
-          } catch (_) {
-            // Si pas trouvé par type, utiliser le premier disponible ou créer
-          }
-          
-          if (stockEmballage == null && stocksEmballages.isNotEmpty) {
-            stockEmballage = stocksEmballages.first;
-          }
-          
-          if (stockEmballage != null) {
-            // Vérifier que le stock est suffisant
-            if (!stockEmballage.peutSatisfaire(savedSession.emballagesUtilises!)) {
-              if (mounted) {
-                NotificationService.showWarning(
-                  context,
-                  'Stock d\'emballages insuffisant. Disponible: ${stockEmballage.quantity}, '
-                  'Demandé: ${savedSession.emballagesUtilises}',
-                );
-                setState(() => _isLoading = false);
-                return;
-              }
-            }
-            
-            // Enregistrer l'utilisation
-            await stockController.recordPackagingUsage(
-              packagingId: stockEmballage.id,
-              packagingType: stockEmballage.type,
-              quantite: savedSession.emballagesUtilises!,
-              productionId: savedSession.id,
-              notes: 'Emballages utilisés lors de la production',
+            // Vérifier la disponibilité du stock d'emballages
+            final packagingController = ref.read(
+              packagingStockControllerProvider,
             );
-          } else {
-            // Aucun stock d'emballages trouvé, avertir mais continuer
-            if (mounted) {
-              debugPrint('Aucun stock d\'emballages trouvé. Création d\'un nouveau stock.');
-              // Créer un stock par défaut
-              final nouveauStock = await packagingController.save(
-                PackagingStock(
-                  id: 'packaging-default',
-                  type: 'Emballage',
-                  quantity: 0, // Sera mis à jour lors de la réception
-                  unit: 'unité',
-                ),
+            final stocksEmballages = await packagingController.fetchAll();
+
+            // Chercher le stock d'emballages (type "Emballage")
+            PackagingStock? stockEmballage;
+            try {
+              stockEmballage = await packagingController.fetchByType(
+                'Pack 12 sachets',
               );
+            } catch (_) {
+              // Si pas trouvé par type, utiliser le premier disponible ou créer
+            }
+
+            if (stockEmballage == null && stocksEmballages.isNotEmpty) {
+              stockEmballage = stocksEmballages.first;
+            }
+
+            if (stockEmballage != null) {
+              // Vérifier que le stock est suffisant
+              if (!stockEmballage.peutSatisfaire(
+                savedSession.emballagesUtilises!,
+              )) {
+                if (mounted) {
+                  NotificationService.showWarning(
+                    context,
+                    'Stock d\'emballages insuffisant. Disponible: ${stockEmballage.quantity}, '
+                    'Demandé: ${savedSession.emballagesUtilises}',
+                  );
+                  setState(() => _isLoading = false);
+                  return;
+                }
+              }
+
+              // Enregistrer l'utilisation
               await stockController.recordPackagingUsage(
-                packagingId: nouveauStock.id,
-                packagingType: nouveauStock.type,
+                packagingId: stockEmballage.id,
+                packagingType: stockEmballage.type,
                 quantite: savedSession.emballagesUtilises!,
                 productionId: savedSession.id,
                 notes: 'Emballages utilisés lors de la production',
               );
+            } else {
+              // Aucun stock d'emballages trouvé, avertir mais continuer
+              if (mounted) {
+                debugPrint(
+                  'Aucun stock d\'emballages trouvé. Création d\'un nouveau stock.',
+                );
+                // Créer un stock par défaut
+                final nouveauStock = await packagingController.save(
+                  PackagingStock(
+                    id: 'packaging-default',
+                    type: 'Emballage',
+                    quantity: 0, // Sera mis à jour lors de la réception
+                    unit: 'unité',
+                  ),
+                );
+                await stockController.recordPackagingUsage(
+                  packagingId: nouveauStock.id,
+                  packagingType: nouveauStock.type,
+                  quantite: savedSession.emballagesUtilises!,
+                  productionId: savedSession.id,
+                  notes: 'Emballages utilisés lors de la production',
+                );
+              }
+            }
+          } catch (e) {
+            // Si le stock n'existe pas, on continue quand même (l'utilisateur pourra le créer plus tard)
+            debugPrint(
+              'Erreur lors de la mise à jour du stock d\'emballages: $e',
+            );
+            if (mounted) {
+              NotificationService.showWarning(
+                context,
+                'Attention: Erreur lors de la mise à jour du stock d\'emballages: $e',
+              );
             }
           }
-        } catch (e) {
-          // Si le stock n'existe pas, on continue quand même (l'utilisateur pourra le créer plus tard)
-          debugPrint('Erreur lors de la mise à jour du stock d\'emballages: $e');
-          if (mounted) {
-            NotificationService.showWarning(context, 'Attention: Erreur lors de la mise à jour du stock d\'emballages: $e');
-          }
-        }
         }
       } else {
         // La session était déjà finalisée, les mouvements de stock ont déjà été enregistrés
-        debugPrint('Session déjà finalisée - les mouvements de stock ne seront pas enregistrés à nouveau');
+        debugPrint(
+          'Session déjà finalisée - les mouvements de stock ne seront pas enregistrés à nouveau',
+        );
       }
 
       if (mounted) {
         widget.onFinalized(savedSession);
         Navigator.of(context).pop();
-        NotificationService.showSuccess(context, 'Production finalisée avec succès');
+        NotificationService.showSuccess(
+          context,
+          'Production finalisée avec succès',
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -345,7 +383,7 @@ class _ProductionFinalizationDialogState
 
   Widget _buildIndexCompteurFinalField() {
     final meterTypeAsync = ref.watch(electricityMeterTypeProvider);
-    
+
     return meterTypeAsync.when(
       data: (meterType) {
         return TextFormField(
@@ -400,33 +438,38 @@ class _ProductionFinalizationDialogState
   Widget _buildConsumptionPreview() {
     final theme = Theme.of(context);
     final meterTypeAsync = ref.watch(electricityMeterTypeProvider);
-    
+
     return meterTypeAsync.when(
       data: (meterType) {
         if (widget.session.indexCompteurInitialKwh == null ||
             _indexCompteurFinalKwhController.text.isEmpty) {
           return const SizedBox.shrink();
         }
-        
+
         // Accepter les nombres avec virgule ou point décimal
-        final cleanedValue = _indexCompteurFinalKwhController.text.replaceAll(',', '.');
+        final cleanedValue = _indexCompteurFinalKwhController.text.replaceAll(
+          ',',
+          '.',
+        );
         final finalValue = double.tryParse(cleanedValue);
         if (finalValue == null) {
           return const SizedBox.shrink();
         }
-        
+
         final consommation = meterType.calculateConsumption(
           widget.session.indexCompteurInitialKwh!.toDouble(),
           finalValue,
         );
-        
+
         return Column(
           children: [
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+                color: theme.colorScheme.primaryContainer.withValues(
+                  alpha: 0.3,
+                ),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(

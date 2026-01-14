@@ -17,7 +17,7 @@ class ProductionSessionCollection {
   DateTime? createdAt;
   DateTime? updatedAt;
   late DateTime localUpdatedAt;
-  
+
   // JSON fields for complex data
   String? bobinesUtiliseesJson;
   String? eventsJson;
@@ -60,16 +60,16 @@ class ProductionSessionCollection {
   }
 
   Map<String, dynamic> toMap() => {
-        'id': remoteId,
-        'enterpriseId': enterpriseId,
-        'sessionDate': sessionDate.toIso8601String(),
-        'period': period,
-        'startTime': startTime?.toIso8601String(),
-        'endTime': endTime?.toIso8601String(),
-        'electricityConsumption': electricityConsumption,
-        'quantityProduced': quantityProduced,
-        'quantityUnit': quantityUnit,
-        'status': status,
-        'notes': notes,
-      };
+    'id': remoteId,
+    'enterpriseId': enterpriseId,
+    'sessionDate': sessionDate.toIso8601String(),
+    'period': period,
+    'startTime': startTime?.toIso8601String(),
+    'endTime': endTime?.toIso8601String(),
+    'electricityConsumption': electricityConsumption,
+    'quantityProduced': quantityProduced,
+    'quantityUnit': quantityUnit,
+    'status': status,
+    'notes': notes,
+  };
 }

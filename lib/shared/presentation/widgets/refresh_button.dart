@@ -21,11 +21,6 @@ class RefreshButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return IconButton(
-      icon: Icon(icon),
-      onPressed: onRefresh,
-      tooltip: tooltip,
-    );
+    return IconButton(icon: Icon(icon), onPressed: onRefresh, tooltip: tooltip);
   }
 }
-

@@ -12,7 +12,7 @@ class ProductFilterService {
     required String query,
   }) {
     if (query.isEmpty) return products;
-    
+
     final lowerQuery = query.toLowerCase();
     return products.where((product) {
       return product.name.toLowerCase().contains(lowerQuery) ||
@@ -81,4 +81,3 @@ class ProductFilterService {
     return filtered;
   }
 }
-

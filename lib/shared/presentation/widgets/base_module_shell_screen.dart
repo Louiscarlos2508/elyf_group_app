@@ -3,18 +3,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'adaptive_navigation_scaffold.dart';
 import 'module_loading_animation.dart';
+import 'enterprise_selector_widget.dart';
+import '../../../core/tenant/tenant_provider.dart';
 
 // Re-export NavigationSection so subclasses can use it
 export 'adaptive_navigation_scaffold.dart' show NavigationSection;
 
 /// Classe de base pour les shell screens de modules.
-/// 
+///
 /// Gère la logique commune :
 /// - Gestion de l'index sélectionné
 /// - Gestion des erreurs de chargement
 /// - Affichage du loading
 /// - Gestion du cas "aucune section"
-/// 
+///
 /// Les classes enfants doivent implémenter :
 /// - `buildSections()` : retourne la liste des sections
 /// - `moduleName` : nom du module
@@ -43,6 +45,23 @@ abstract class BaseModuleShellScreenState<T extends BaseModuleShellScreen>
   /// Titre de l'application.
   String get appTitle => '$moduleName • Module';
 
+  /// Construit les actions de l'AppBar (sélecteur d'entreprise si plusieurs entreprises accessibles).
+  List<Widget> _buildAppBarActions() {
+    final accessibleEnterprisesAsync = ref.watch(userAccessibleEnterprisesProvider);
+    
+    return accessibleEnterprisesAsync.when(
+      data: (enterprises) {
+        // Afficher le sélecteur uniquement si l'utilisateur a accès à plus d'une entreprise
+        if (enterprises.length > 1) {
+          return const [EnterpriseSelectorWidget(compact: true)];
+        }
+        return const [];
+      },
+      loading: () => const [],
+      error: (_, __) => const [],
+    );
+  }
+
   /// Construit la liste des sections de navigation.
   List<NavigationSection> buildSections();
 
@@ -66,6 +85,7 @@ abstract class BaseModuleShellScreenState<T extends BaseModuleShellScreen>
     return Scaffold(
       appBar: AppBar(
         title: Text(appTitle),
+        actions: _buildAppBarActions(),
       ),
       body: Center(
         child: Padding(
@@ -77,9 +97,9 @@ abstract class BaseModuleShellScreenState<T extends BaseModuleShellScreen>
               const SizedBox(height: 16),
               Text(
                 'Erreur de chargement',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
               Text(
@@ -99,6 +119,7 @@ abstract class BaseModuleShellScreenState<T extends BaseModuleShellScreen>
     return Scaffold(
       appBar: AppBar(
         title: Text(appTitle),
+        actions: _buildAppBarActions(),
       ),
       body: const Center(
         child: Padding(
@@ -110,10 +131,7 @@ abstract class BaseModuleShellScreenState<T extends BaseModuleShellScreen>
               SizedBox(height: 16),
               Text(
                 'Aucun accès',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               SizedBox(height: 8),
               Text(
@@ -171,6 +189,7 @@ abstract class BaseModuleShellScreenState<T extends BaseModuleShellScreen>
       return Scaffold(
         appBar: AppBar(
           title: Text(appTitle),
+          actions: _buildAppBarActions(),
         ),
         body: IndexedStack(
           index: currentIndex,
@@ -192,7 +211,7 @@ abstract class BaseModuleShellScreenState<T extends BaseModuleShellScreen>
       isLoading: false,
       enterpriseId: widget.enterpriseId,
       moduleId: widget.moduleId,
+      appBarActions: _buildAppBarActions(),
     );
   }
 }
-

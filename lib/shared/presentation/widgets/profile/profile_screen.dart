@@ -8,19 +8,17 @@ import 'profile_security_note_card.dart';
 import 'edit_profile_dialog.dart';
 import 'change_password_dialog.dart';
 import '../../../../core/domain/entities/user_profile.dart';
-import '../../../../core/auth/providers.dart' show currentUserIdProvider, currentUserProfileProvider, currentUserProvider;
+import '../../../../core/auth/providers.dart'
+    show currentUserIdProvider, currentUserProfileProvider, currentUserProvider;
 import 'edit_profile_dialog.dart';
 
 /// Reusable profile screen for all modules.
-/// 
+///
 /// Utilise les providers d'authentification partagés pour récupérer les données utilisateur.
 /// Accepte un callback optionnel pour la mise à jour du profil si un module
 /// veut utiliser son propre système de mise à jour (ex: module administration).
 class ProfileScreen extends ConsumerWidget {
-  const ProfileScreen({
-    super.key,
-    this.onProfileUpdate,
-  });
+  const ProfileScreen({super.key, this.onProfileUpdate});
 
   /// Callback optionnel pour la mise à jour du profil.
   /// Si fourni, sera utilisé par EditProfileDialog au lieu de la mise à jour Firestore directe.
@@ -29,9 +27,7 @@ class ProfileScreen extends ConsumerWidget {
   void _showEditProfileDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => EditProfileDialog(
-        onProfileUpdate: onProfileUpdate,
-      ),
+      builder: (context) => EditProfileDialog(onProfileUpdate: onProfileUpdate),
     );
   }
 
@@ -48,21 +44,16 @@ class ProfileScreen extends ConsumerWidget {
     final currentUserId = ref.watch(currentUserIdProvider);
     final profileAsync = ref.watch(currentUserProfileProvider);
     final currentUserAsync = ref.watch(currentUserProvider);
-    
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final isWide = constraints.maxWidth > 600;
-        
+
         return CustomScrollView(
           slivers: [
             SliverToBoxAdapter(
               child: Padding(
-                padding: EdgeInsets.fromLTRB(
-                  24,
-                  24,
-                  24,
-                  isWide ? 24 : 16,
-                ),
+                padding: EdgeInsets.fromLTRB(24, 24, 24, isWide ? 24 : 16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -90,20 +81,33 @@ class ProfileScreen extends ConsumerWidget {
                   data: (userData) {
                     UserProfile profile;
                     if (userData != null && currentUserId != null) {
-                      final displayName = currentUserAsync.value?.displayName ?? '';
+                      final displayName =
+                          currentUserAsync.value?.displayName ?? '';
                       final nameParts = displayName.split(' ');
                       profile = UserProfile(
                         id: currentUserId,
-                        firstName: userData['firstName'] as String? ?? 
-                            (nameParts.isNotEmpty ? nameParts.first : 'Utilisateur'),
-                        lastName: userData['lastName'] as String? ?? 
-                            (nameParts.length > 1 ? nameParts.sublist(1).join(' ') : ''),
-                        username: userData['username'] as String? ?? 
-                            userData['email']?.toString().split('@').first ?? 'user',
-                        role: (userData['isAdmin'] as bool? ?? false) 
-                            ? 'Administrateur' 
-                            : (userData['isActive'] as bool? ?? true ? 'Actif' : 'Inactif'),
-                        email: userData['email'] as String? ?? currentUserAsync.value?.email,
+                        firstName:
+                            userData['firstName'] as String? ??
+                            (nameParts.isNotEmpty
+                                ? nameParts.first
+                                : 'Utilisateur'),
+                        lastName:
+                            userData['lastName'] as String? ??
+                            (nameParts.length > 1
+                                ? nameParts.sublist(1).join(' ')
+                                : ''),
+                        username:
+                            userData['username'] as String? ??
+                            userData['email']?.toString().split('@').first ??
+                            'user',
+                        role: (userData['isAdmin'] as bool? ?? false)
+                            ? 'Administrateur'
+                            : (userData['isActive'] as bool? ?? true
+                                  ? 'Actif'
+                                  : 'Inactif'),
+                        email:
+                            userData['email'] as String? ??
+                            currentUserAsync.value?.email,
                         phone: userData['phone'] as String?,
                       );
                     } else if (currentUserAsync.value != null) {
@@ -113,10 +117,16 @@ class ProfileScreen extends ConsumerWidget {
                       final nameParts = displayName?.split(' ') ?? [];
                       profile = UserProfile(
                         id: appUser.id,
-                        firstName: nameParts.isNotEmpty ? nameParts.first : 'Utilisateur',
-                        lastName: nameParts.length > 1 ? nameParts.sublist(1).join(' ') : '',
+                        firstName: nameParts.isNotEmpty
+                            ? nameParts.first
+                            : 'Utilisateur',
+                        lastName: nameParts.length > 1
+                            ? nameParts.sublist(1).join(' ')
+                            : '',
                         username: appUser.email.split('@').first,
-                        role: appUser.isAdmin ? 'Administrateur' : 'Utilisateur',
+                        role: appUser.isAdmin
+                            ? 'Administrateur'
+                            : 'Utilisateur',
                         email: appUser.email,
                       );
                     } else {
@@ -158,13 +168,10 @@ class ProfileScreen extends ConsumerWidget {
                 child: const ProfileLogoutCard(),
               ),
             ),
-            const SliverToBoxAdapter(
-              child: SizedBox(height: 24),
-            ),
+            const SliverToBoxAdapter(child: SizedBox(height: 24)),
           ],
         );
       },
     );
   }
 }
-

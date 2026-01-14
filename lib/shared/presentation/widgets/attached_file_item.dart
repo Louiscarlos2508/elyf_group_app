@@ -51,22 +51,16 @@ class AttachedFileItem extends StatelessWidget {
       child: InkWell(
         onTap: () {
           // Dans une vraie implémentation, ouvrir le fichier
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Ouverture de ${file.name}'),
-            ),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Ouverture de ${file.name}')));
         },
         child: Padding(
           padding: const EdgeInsets.all(8),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                _getFileIcon(),
-                color: fileColor,
-                size: 24,
-              ),
+              Icon(_getFileIcon(), color: fileColor, size: 24),
               const SizedBox(width: 8),
               Flexible(
                 child: Column(
@@ -106,4 +100,3 @@ class AttachedFileItem extends StatelessWidget {
     );
   }
 }
-

@@ -45,8 +45,10 @@ class ProductProfitCard extends StatelessWidget {
                   ),
                 ),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: isPositive
                         ? Colors.green.withValues(alpha: 0.1)
@@ -129,4 +131,3 @@ class _InfoColumn extends StatelessWidget {
     );
   }
 }
-

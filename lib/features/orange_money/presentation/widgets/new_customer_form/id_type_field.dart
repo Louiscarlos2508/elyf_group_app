@@ -2,11 +2,7 @@ import 'package:flutter/material.dart';
 
 /// Widget for ID type selection field.
 class IdTypeField extends StatelessWidget {
-  const IdTypeField({
-    super.key,
-    required this.idType,
-    this.onTap,
-  });
+  const IdTypeField({super.key, required this.idType, this.onTap});
 
   final String idType;
   final VoidCallback? onTap;
@@ -18,10 +14,7 @@ class IdTypeField extends StatelessWidget {
       children: [
         const Text(
           "Type de pièce d'identité *",
-          style: TextStyle(
-            fontSize: 14,
-            color: Color(0xFF0A0A0A),
-          ),
+          style: TextStyle(fontSize: 14, color: Color(0xFF0A0A0A)),
         ),
         const SizedBox(height: 8),
         InkWell(
@@ -55,4 +48,3 @@ class IdTypeField extends StatelessWidget {
     );
   }
 }
-

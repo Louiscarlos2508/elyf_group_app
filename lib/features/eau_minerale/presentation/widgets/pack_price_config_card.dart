@@ -30,21 +30,19 @@ class _PackPriceConfigCardState extends ConsumerState<PackPriceConfigCard> {
   Future<void> _loadPackProduct() async {
     final products = await ref.read(productsProvider.future);
     Product? pack;
-    
+
     try {
       pack = products.firstWhere(
         (p) => p.isFinishedGood && p.name.toLowerCase().contains('pack'),
       );
     } catch (_) {
       try {
-        pack = products.firstWhere(
-          (p) => p.isFinishedGood,
-        );
+        pack = products.firstWhere((p) => p.isFinishedGood);
       } catch (_) {
         // Aucun produit fini trouvé
       }
     }
-    
+
     if (mounted && pack != null) {
       setState(() {
         _packProduct = pack;
@@ -82,13 +80,13 @@ class _PackPriceConfigCardState extends ConsumerState<PackPriceConfigCard> {
 
       final productController = ref.read(productControllerProvider);
       await productController.updateProduct(updatedProduct);
-      
+
       // Invalider le provider pour recharger les produits
       ref.invalidate(productsProvider);
 
       if (!mounted) return;
       NotificationService.showSuccess(context, 'Prix du pack mis à jour');
-      
+
       setState(() {
         _packProduct = updatedProduct;
       });
@@ -113,13 +111,12 @@ class _PackPriceConfigCardState extends ConsumerState<PackPriceConfigCard> {
           : ref.read(productsProvider.future).then((products) {
               try {
                 return products.firstWhere(
-                  (p) => p.isFinishedGood && p.name.toLowerCase().contains('pack'),
+                  (p) =>
+                      p.isFinishedGood && p.name.toLowerCase().contains('pack'),
                 );
               } catch (_) {
                 try {
-                  return products.firstWhere(
-                    (p) => p.isFinishedGood,
-                  );
+                  return products.firstWhere((p) => p.isFinishedGood);
                 } catch (_) {
                   return null;
                 }
@@ -131,9 +128,7 @@ class _PackPriceConfigCardState extends ConsumerState<PackPriceConfigCard> {
             child: Padding(
               padding: const EdgeInsets.all(20),
               child: Center(
-                child: CircularProgressIndicator(
-                  color: colors.primary,
-                ),
+                child: CircularProgressIndicator(color: colors.primary),
               ),
             ),
           );
@@ -289,4 +284,3 @@ class _PackPriceConfigCardState extends ConsumerState<PackPriceConfigCard> {
     );
   }
 }
-

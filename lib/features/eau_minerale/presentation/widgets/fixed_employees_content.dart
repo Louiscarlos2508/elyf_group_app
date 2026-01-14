@@ -6,10 +6,7 @@ import 'employee_payment_card.dart';
 
 /// Content widget for fixed employees tab.
 class FixedEmployeesContent extends ConsumerWidget {
-  const FixedEmployeesContent({
-    super.key,
-    required this.onNewEmployee,
-  });
+  const FixedEmployeesContent({super.key, required this.onNewEmployee});
 
   final VoidCallback onNewEmployee;
 
@@ -37,7 +34,7 @@ class FixedEmployeesContent extends ConsumerWidget {
               LayoutBuilder(
                 builder: (context, constraints) {
                   final isWide = constraints.maxWidth > 600;
-                  
+
                   if (isWide) {
                     return Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -110,8 +107,9 @@ class FixedEmployeesContent extends ConsumerWidget {
                       Icon(
                         Icons.people_outline,
                         size: 64,
-                        color: theme.colorScheme.onSurfaceVariant
-                            .withValues(alpha: 0.5),
+                        color: theme.colorScheme.onSurfaceVariant.withValues(
+                          alpha: 0.5,
+                        ),
                       ),
                       const SizedBox(height: 16),
                       Text(
@@ -132,12 +130,14 @@ class FixedEmployeesContent extends ConsumerWidget {
                 ),
               ] else ...[
                 const SizedBox(height: 24),
-                ...employees.map((employee) => EmployeePaymentCard(
-                      employee: employee,
-                      monthlyPayments: (data.monthlySalaryPayments)
-                          .where((p) => p.employeeId == employee.id)
-                          .toList(),
-                    )),
+                ...employees.map(
+                  (employee) => EmployeePaymentCard(
+                    employee: employee,
+                    monthlyPayments: (data.monthlySalaryPayments)
+                        .where((p) => p.employeeId == employee.id)
+                        .toList(),
+                  ),
+                ),
               ],
             ],
           ),
@@ -148,4 +148,3 @@ class FixedEmployeesContent extends ConsumerWidget {
     );
   }
 }
-

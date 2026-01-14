@@ -1,12 +1,8 @@
 import 'package:flutter/material.dart';
 
-
 /// Daily detail card for reports screen.
 class ReportDailyDetailCard extends StatelessWidget {
-  const ReportDailyDetailCard({
-    super.key,
-    required this.onExportPdf,
-  });
+  const ReportDailyDetailCard({super.key, required this.onExportPdf});
 
   final VoidCallback onExportPdf;
 
@@ -47,7 +43,10 @@ class ReportDailyDetailCard extends StatelessWidget {
                       color: Colors.black.withValues(alpha: 0.1),
                       width: 1.219,
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     minimumSize: const Size(0, 32),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
@@ -87,4 +86,3 @@ class ReportDailyDetailCard extends StatelessWidget {
     );
   }
 }
-

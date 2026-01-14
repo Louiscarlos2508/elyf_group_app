@@ -161,7 +161,9 @@ class AgentOfflineRepository extends OfflineRepository<Agent>
         'Fetching agents for enterprise: ${enterpriseId ?? this.enterpriseId}',
         name: 'AgentOfflineRepository',
       );
-      final allAgents = await getAllForEnterprise(enterpriseId ?? this.enterpriseId);
+      final allAgents = await getAllForEnterprise(
+        enterpriseId ?? this.enterpriseId,
+      );
       var filtered = allAgents;
 
       if (status != null) {
@@ -279,13 +281,12 @@ class AgentOfflineRepository extends OfflineRepository<Agent>
   }) async {
     try {
       final targetDate = date ?? DateTime.now();
-      final agents = await fetchAgents(enterpriseId: enterpriseId ?? this.enterpriseId);
+      final agents = await fetchAgents(
+        enterpriseId: enterpriseId ?? this.enterpriseId,
+      );
 
       final activeAgents = agents.where((a) => a.isActive).length;
-      final totalLiquidity = agents.fold<int>(
-        0,
-        (sum, a) => sum + a.liquidity,
-      );
+      final totalLiquidity = agents.fold<int>(0, (sum, a) => sum + a.liquidity);
       final averageLiquidity = agents.isEmpty
           ? 0.0
           : totalLiquidity / agents.length;
@@ -337,4 +338,3 @@ class AgentOfflineRepository extends OfflineRepository<Agent>
     }
   }
 }
-

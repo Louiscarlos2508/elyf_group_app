@@ -76,4 +76,3 @@ class SaleDetailRow extends StatelessWidget {
     );
   }
 }
-

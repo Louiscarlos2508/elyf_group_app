@@ -55,7 +55,11 @@ class MockCustomerRepository implements CustomerRepository {
   }
 
   @override
-  Future<String> createCustomer(String name, String phone, {String? cnib}) async {
+  Future<String> createCustomer(
+    String name,
+    String phone, {
+    String? cnib,
+  }) async {
     return 'customer-${DateTime.now().millisecondsSinceEpoch}';
   }
 
@@ -135,14 +139,16 @@ void main() {
         expect(result, equals('customer123'));
       });
 
-      test('should generate ID when customerName provided but no customerId',
-          () async {
-        final result = await service.getOrCreateCustomerId(
-          customerName: 'Test Customer',
-        );
+      test(
+        'should generate ID when customerName provided but no customerId',
+        () async {
+          final result = await service.getOrCreateCustomerId(
+            customerName: 'Test Customer',
+          );
 
-        expect(result, startsWith('customer-'));
-      });
+          expect(result, startsWith('customer-'));
+        },
+      );
 
       test('should generate anonymous ID when no customer info', () async {
         final result = await service.getOrCreateCustomerId();
@@ -241,4 +247,3 @@ void main() {
     });
   });
 }
-

@@ -20,8 +20,7 @@ class MachineManagementCard extends ConsumerStatefulWidget {
       _MachineManagementCardState();
 }
 
-class _MachineManagementCardState
-    extends ConsumerState<MachineManagementCard> {
+class _MachineManagementCardState extends ConsumerState<MachineManagementCard> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);

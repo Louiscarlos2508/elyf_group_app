@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/providers.dart' show adminStatsProvider, AdminStats;
 
 /// Optimized stats grid that only rebuilds when stats change.
-/// 
+///
 /// Uses Riverpod's select to minimize rebuilds.
 class OptimizedStatsGrid extends ConsumerWidget {
   const OptimizedStatsGrid({super.key});
@@ -17,9 +17,7 @@ class OptimizedStatsGrid extends ConsumerWidget {
     return statsAsync.when(
       data: (stats) => _StatsGridContent(stats: stats),
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) => Center(
-        child: Text('Erreur: $error'),
-      ),
+      error: (error, stack) => Center(child: Text('Erreur: $error')),
     );
   }
 }
@@ -147,4 +145,3 @@ class _StatCard extends StatelessWidget {
     );
   }
 }
-

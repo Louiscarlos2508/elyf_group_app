@@ -72,10 +72,14 @@ class AppSpacing {
   static const EdgeInsets dialogPadding = EdgeInsets.all(large);
 
   /// Espacement horizontal standard
-  static const EdgeInsets horizontalMedium = EdgeInsets.symmetric(horizontal: medium);
+  static const EdgeInsets horizontalMedium = EdgeInsets.symmetric(
+    horizontal: medium,
+  );
 
   /// Espacement vertical standard
-  static const EdgeInsets verticalMedium = EdgeInsets.symmetric(vertical: medium);
+  static const EdgeInsets verticalMedium = EdgeInsets.symmetric(
+    vertical: medium,
+  );
 }
 
 /// Tokens de rayons de bordure pour une cohérence visuelle.
@@ -160,57 +164,57 @@ class AppShadows {
 
   /// Ombre très petite (élévation xs)
   static List<BoxShadow> xs(Color color) => [
-        BoxShadow(
-          color: color.withValues(alpha: 0.1),
-          blurRadius: 2,
-          offset: const Offset(0, 1),
-        ),
-      ];
+    BoxShadow(
+      color: color.withValues(alpha: 0.1),
+      blurRadius: 2,
+      offset: const Offset(0, 1),
+    ),
+  ];
 
   /// Ombre petite (élévation small)
   static List<BoxShadow> small(Color color) => [
-        BoxShadow(
-          color: color.withValues(alpha: 0.15),
-          blurRadius: 4,
-          offset: const Offset(0, 2),
-        ),
-      ];
+    BoxShadow(
+      color: color.withValues(alpha: 0.15),
+      blurRadius: 4,
+      offset: const Offset(0, 2),
+    ),
+  ];
 
   /// Ombre moyenne (élévation medium)
   static List<BoxShadow> medium(Color color) => [
-        BoxShadow(
-          color: color.withValues(alpha: 0.2),
-          blurRadius: 8,
-          offset: const Offset(0, 4),
-        ),
-      ];
+    BoxShadow(
+      color: color.withValues(alpha: 0.2),
+      blurRadius: 8,
+      offset: const Offset(0, 4),
+    ),
+  ];
 
   /// Ombre grande (élévation large)
   static List<BoxShadow> large(Color color) => [
-        BoxShadow(
-          color: color.withValues(alpha: 0.25),
-          blurRadius: 12,
-          offset: const Offset(0, 6),
-        ),
-      ];
+    BoxShadow(
+      color: color.withValues(alpha: 0.25),
+      blurRadius: 12,
+      offset: const Offset(0, 6),
+    ),
+  ];
 
   /// Ombre très grande (élévation xl)
   static List<BoxShadow> xl(Color color) => [
-        BoxShadow(
-          color: color.withValues(alpha: 0.3),
-          blurRadius: 16,
-          offset: const Offset(0, 8),
-        ),
-      ];
+    BoxShadow(
+      color: color.withValues(alpha: 0.3),
+      blurRadius: 16,
+      offset: const Offset(0, 8),
+    ),
+  ];
 
   /// Ombre avec couleur primaire pour les boutons
   static List<BoxShadow> primaryButton(Color primaryColor) => [
-        BoxShadow(
-          color: primaryColor.withValues(alpha: 0.4),
-          blurRadius: 12,
-          offset: const Offset(0, 6),
-        ),
-      ];
+    BoxShadow(
+      color: primaryColor.withValues(alpha: 0.4),
+      blurRadius: 12,
+      offset: const Offset(0, 6),
+    ),
+  ];
 }
 
 /// Tokens de durées d'animation.
@@ -421,4 +425,3 @@ class AppLayers {
   /// 1000 - Maximum (debug only)
   static const int maximum = 1000;
 }
-

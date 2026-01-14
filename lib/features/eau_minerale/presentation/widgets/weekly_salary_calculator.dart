@@ -10,10 +10,7 @@ import 'payment_signature_dialog.dart';
 
 /// Widget pour calculer et afficher les salaires hebdomadaires des ouvriers journaliers.
 class WeeklySalaryCalculator extends ConsumerStatefulWidget {
-  const WeeklySalaryCalculator({
-    super.key,
-    this.selectedWeek,
-  });
+  const WeeklySalaryCalculator({super.key, this.selectedWeek});
 
   final DateTime? selectedWeek;
 
@@ -43,12 +40,12 @@ class _WeeklySalaryCalculatorState
       final controller = ref.read(productionSessionControllerProvider);
       final debutSemaine = _getStartOfWeek(_selectedWeek);
       final finSemaine = debutSemaine.add(const Duration(days: 6));
-      
+
       final sessions = await controller.fetchSessions(
         startDate: debutSemaine,
         endDate: finSemaine,
       );
-      
+
       setState(() {
         _sessions = sessions;
         _isLoading = false;
@@ -66,7 +63,9 @@ class _WeeklySalaryCalculatorState
   }
 
   /// Calcule les salaires hebdomadaires à partir des ProductionDay
-  Map<String, WeeklySalaryInfo> _calculateWeeklySalaries(List<DailyWorker> workers) {
+  Map<String, WeeklySalaryInfo> _calculateWeeklySalaries(
+    List<DailyWorker> workers,
+  ) {
     final salaries = <String, WeeklySalaryInfo>{};
     final debutSemaine = _getStartOfWeek(_selectedWeek);
     final finSemaine = debutSemaine.add(const Duration(days: 6));
@@ -79,12 +78,11 @@ class _WeeklySalaryCalculatorState
         // Vérifier si le jour est dans la semaine sélectionnée
         if (day.date.isAfter(debutSemaine.subtract(const Duration(days: 1))) &&
             day.date.isBefore(finSemaine.add(const Duration(days: 1)))) {
-          
           // Pour chaque personne dans le jour de production
           for (final workerId in day.personnelIds) {
             final worker = workersMap[workerId];
             final workerName = worker?.name ?? 'Ouvrier $workerId';
-            
+
             if (!salaries.containsKey(workerId)) {
               salaries[workerId] = WeeklySalaryInfo(
                 workerId: workerId,
@@ -94,14 +92,15 @@ class _WeeklySalaryCalculatorState
                 totalSalary: 0,
               );
             }
-            
+
             final info = salaries[workerId]!;
             salaries[workerId] = WeeklySalaryInfo(
               workerId: workerId,
               workerName: workerName,
               daysWorked: info.daysWorked + 1,
               dailySalary: day.salaireJournalierParPersonne,
-              totalSalary: (info.daysWorked + 1) * day.salaireJournalierParPersonne,
+              totalSalary:
+                  (info.daysWorked + 1) * day.salaireJournalierParPersonne,
             );
           }
         }
@@ -116,15 +115,15 @@ class _WeeklySalaryCalculatorState
     final theme = Theme.of(context);
     // Utiliser ref.watch pour que le widget se reconstruise quand les ouvriers changent
     final workersAsync = ref.watch(allDailyWorkersProvider);
-    
+
     return workersAsync.when(
       data: (workers) {
         final salaries = _calculateWeeklySalaries(workers);
-    final total = salaries.values.fold<int>(
-      0,
-      (sum, info) => sum + info.totalSalary,
-    );
-        
+        final total = salaries.values.fold<int>(
+          0,
+          (sum, info) => sum + info.totalSalary,
+        );
+
         return _buildContent(context, theme, salaries, total);
       },
       loading: () => Card(
@@ -141,9 +140,13 @@ class _WeeklySalaryCalculatorState
       ),
     );
   }
-  
-  Widget _buildContent(BuildContext context, ThemeData theme, Map<String, WeeklySalaryInfo> salaries, int total) {
 
+  Widget _buildContent(
+    BuildContext context,
+    ThemeData theme,
+    Map<String, WeeklySalaryInfo> salaries,
+    int total,
+  ) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -187,8 +190,9 @@ class _WeeklySalaryCalculatorState
                     Icon(
                       Icons.work_outline,
                       size: 64,
-                      color: theme.colorScheme.onSurfaceVariant
-                          .withValues(alpha: 0.5),
+                      color: theme.colorScheme.onSurfaceVariant.withValues(
+                        alpha: 0.5,
+                      ),
                     ),
                     const SizedBox(height: 16),
                     Text(
@@ -201,15 +205,19 @@ class _WeeklySalaryCalculatorState
                 ),
               )
             else ...[
-              ...salaries.values.map((info) => _SalaryCard(
-                    info: info,
-                    onPay: () => _showPaymentDialog(context, info),
-                  )),
+              ...salaries.values.map(
+                (info) => _SalaryCard(
+                  info: info,
+                  onPay: () => _showPaymentDialog(context, info),
+                ),
+              ),
               const SizedBox(height: 16),
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+                  color: theme.colorScheme.primaryContainer.withValues(
+                    alpha: 0.3,
+                  ),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
@@ -233,7 +241,8 @@ class _WeeklySalaryCalculatorState
               ),
               const SizedBox(height: 16),
               FilledButton.icon(
-                onPressed: () => _showBulkPaymentDialog(context, salaries.values.toList()),
+                onPressed: () =>
+                    _showBulkPaymentDialog(context, salaries.values.toList()),
                 icon: const Icon(Icons.payment),
                 label: const Text('Payer tous les ouvriers'),
               ),
@@ -269,7 +278,10 @@ class _WeeklySalaryCalculatorState
         onPaid: (signature) {
           // TODO: Enregistrer le paiement avec la signature
           Navigator.of(context).pop();
-          NotificationService.showSuccess(context, 'Paiement enregistré avec signature');
+          NotificationService.showSuccess(
+            context,
+            'Paiement enregistré avec signature',
+          );
         },
       ),
     );
@@ -279,11 +291,8 @@ class _WeeklySalaryCalculatorState
     BuildContext context,
     List<WeeklySalaryInfo> salaries,
   ) {
-    final total = salaries.fold<int>(
-      0,
-      (sum, info) => sum + info.totalSalary,
-    );
-    
+    final total = salaries.fold<int>(0, (sum, info) => sum + info.totalSalary);
+
     showDialog(
       context: context,
       builder: (dialogContext) => PaymentSignatureDialog(
@@ -294,7 +303,10 @@ class _WeeklySalaryCalculatorState
         onPaid: (signature) {
           // TODO: Enregistrer tous les paiements avec la signature
           Navigator.of(context).pop();
-          NotificationService.showSuccess(context, 'Tous les paiements enregistrés avec signature');
+          NotificationService.showSuccess(
+            context,
+            'Tous les paiements enregistrés avec signature',
+          );
         },
       ),
     );
@@ -331,10 +343,7 @@ class WeeklySalaryInfo {
 }
 
 class _SalaryCard extends StatelessWidget {
-  const _SalaryCard({
-    required this.info,
-    required this.onPay,
-  });
+  const _SalaryCard({required this.info, required this.onPay});
 
   final WeeklySalaryInfo info;
   final VoidCallback onPay;
@@ -342,7 +351,7 @@ class _SalaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 0,
@@ -424,7 +433,10 @@ class _SalaryCard extends StatelessWidget {
                   icon: const Icon(Icons.payment, size: 18),
                   label: const Text('Payer'),
                   style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
                   ),
                 ),
               ],

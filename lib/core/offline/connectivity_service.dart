@@ -9,7 +9,7 @@ import 'package:flutter/foundation.dart';
 /// Provides real-time updates on network availability and type.
 class ConnectivityService {
   ConnectivityService({Connectivity? connectivity})
-      : _connectivity = connectivity ?? Connectivity();
+    : _connectivity = connectivity ?? Connectivity();
 
   final Connectivity _connectivity;
   final _controller = StreamController<ConnectivityStatus>.broadcast();

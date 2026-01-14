@@ -8,10 +8,10 @@ class SalesTableHelpers {
     final theme = Theme.of(context);
     final isPaid = sale.isFullyPaid;
     final isCredit = sale.isCredit;
-    
+
     String statusText;
     Color statusColor;
-    
+
     if (isPaid) {
       statusText = 'Payé';
       statusColor = Colors.green;
@@ -22,7 +22,7 @@ class SalesTableHelpers {
       statusText = 'En attente';
       statusColor = Colors.grey;
     }
-    
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
@@ -55,10 +55,7 @@ class SalesTableHelpers {
             onPressed: () => onActionTap?.call(sale, 'view'),
             tooltip: 'Voir',
             padding: const EdgeInsets.all(8),
-            constraints: const BoxConstraints(
-              minWidth: 32,
-              minHeight: 32,
-            ),
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
             color: theme.colorScheme.primary,
           ),
           const SizedBox(width: 4),
@@ -67,10 +64,7 @@ class SalesTableHelpers {
             onPressed: () => onActionTap?.call(sale, 'edit'),
             tooltip: 'Modifier',
             padding: const EdgeInsets.all(8),
-            constraints: const BoxConstraints(
-              minWidth: 32,
-              minHeight: 32,
-            ),
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
             color: theme.colorScheme.primary,
           ),
         ],
@@ -78,4 +72,3 @@ class SalesTableHelpers {
     );
   }
 }
-

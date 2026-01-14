@@ -6,10 +6,7 @@ import '../../widgets/production_session_form_steps.dart';
 
 /// Écran de formulaire de session de production avec progression.
 class ProductionSessionFormScreen extends ConsumerStatefulWidget {
-  const ProductionSessionFormScreen({
-    super.key,
-    this.session,
-  });
+  const ProductionSessionFormScreen({super.key, this.session});
 
   final ProductionSession? session;
 
@@ -63,14 +60,8 @@ class _ProductionSessionFormScreenState
     // Pour une session existante, on garde les 3 étapes pour l'édition
     final isEditing = widget.session != null;
     final steps = isEditing
-        ? [
-            'Démarrage',
-            'Production',
-            'Finalisation',
-          ]
-        : [
-            'Démarrage',
-          ];
+        ? ['Démarrage', 'Production', 'Finalisation']
+        : ['Démarrage'];
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
@@ -86,7 +77,7 @@ class _ProductionSessionFormScreenState
       child: LayoutBuilder(
         builder: (context, constraints) {
           final stepWidth = constraints.maxWidth / steps.length;
-          
+
           return Row(
             children: steps.asMap().entries.map((entry) {
               final index = entry.key;
@@ -148,7 +139,9 @@ class _ProductionSessionFormScreenState
                             color: isActive
                                 ? theme.colorScheme.primary
                                 : theme.colorScheme.onSurfaceVariant,
-                            fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+                            fontWeight: isActive
+                                ? FontWeight.w600
+                                : FontWeight.normal,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -159,12 +152,18 @@ class _ProductionSessionFormScreenState
                       Expanded(
                         child: Container(
                           height: 3,
-                          margin: const EdgeInsets.only(bottom: 20, left: 8, right: 8),
+                          margin: const EdgeInsets.only(
+                            bottom: 20,
+                            left: 8,
+                            right: 8,
+                          ),
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(2),
                             color: isCompleted
                                 ? theme.colorScheme.primary
-                                : theme.colorScheme.outline.withValues(alpha: 0.2),
+                                : theme.colorScheme.outline.withValues(
+                                    alpha: 0.2,
+                                  ),
                           ),
                         ),
                       ),
@@ -181,7 +180,7 @@ class _ProductionSessionFormScreenState
   Widget _buildBottomActions(BuildContext context, ThemeData theme) {
     final isEditing = widget.session != null;
     final maxStep = isEditing ? 2 : 0;
-    
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -237,7 +236,8 @@ class _ProductionSessionFormScreenState
                     if (_currentStep < maxStep) {
                       // Valider l'étape actuelle avant de passer à la suivante
                       final formState = _formStepsKey.currentState;
-                      if (formState != null && formState.validateCurrentStep()) {
+                      if (formState != null &&
+                          formState.validateCurrentStep()) {
                         // Sauvegarder automatiquement avant de passer à l'étape suivante
                         await formState.saveDraft();
                         setState(() => _currentStep++);
@@ -250,7 +250,9 @@ class _ProductionSessionFormScreenState
                       }
                     }
                   },
-                  child: Text(_currentStep < maxStep ? 'Suivant' : 'Créer la session'),
+                  child: Text(
+                    _currentStep < maxStep ? 'Suivant' : 'Créer la session',
+                  ),
                 ),
               ),
             ],
@@ -260,4 +262,3 @@ class _ProductionSessionFormScreenState
     );
   }
 }
-

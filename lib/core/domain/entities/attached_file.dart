@@ -50,4 +50,3 @@ enum AttachedFileType {
   pdf, // Document PDF
   document, // Autre document
 }
-

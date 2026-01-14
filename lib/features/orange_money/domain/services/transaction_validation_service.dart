@@ -110,4 +110,3 @@ class TransactionValidationService {
     return errors;
   }
 }
-

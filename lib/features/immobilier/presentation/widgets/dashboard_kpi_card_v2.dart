@@ -31,9 +31,7 @@ class DashboardKpiCardV2 extends StatelessWidget {
       decoration: BoxDecoration(
         color: backgroundColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: backgroundColor.withValues(alpha: 0.2),
-        ),
+        border: Border.all(color: backgroundColor.withValues(alpha: 0.2)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -79,11 +77,7 @@ class DashboardKpiCardV2 extends StatelessWidget {
             ),
           ),
           SizedBox(width: isMobile ? 8 : 12),
-          Icon(
-            icon,
-            color: iconColor,
-            size: isMobile ? 24 : 32,
-          ),
+          Icon(icon, color: iconColor, size: isMobile ? 24 : 32),
         ],
       ),
     );

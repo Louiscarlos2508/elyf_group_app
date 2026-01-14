@@ -1,28 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/auth/providers.dart' show currentUserIdProvider, currentUserProfileProvider, authControllerProvider;
+import '../../../../core/auth/providers.dart'
+    show
+        currentUserIdProvider,
+        currentUserProfileProvider,
+        authControllerProvider;
 import '../../../utils/notification_service.dart';
 
 /// Callback optionnel pour mettre à jour le profil utilisateur.
 /// Si fourni, sera utilisé au lieu de la mise à jour Firestore directe.
-typedef OnProfileUpdateCallback = Future<void> Function({
-  required String userId,
-  required String firstName,
-  required String lastName,
-  required String username,
-  String? email,
-  String? phone,
-});
+typedef OnProfileUpdateCallback =
+    Future<void> Function({
+      required String userId,
+      required String firstName,
+      required String lastName,
+      required String username,
+      String? email,
+      String? phone,
+    });
 
 /// Dialog pour modifier le profil de l'utilisateur actuel.
-/// 
+///
 /// Utilise Firestore directement ou un callback optionnel pour la mise à jour.
 class EditProfileDialog extends ConsumerStatefulWidget {
-  const EditProfileDialog({
-    super.key,
-    this.onProfileUpdate,
-  });
+  const EditProfileDialog({super.key, this.onProfileUpdate});
 
   /// Callback optionnel pour la mise à jour du profil.
   /// Si fourni, sera utilisé au lieu de la mise à jour Firestore directe.
@@ -129,7 +131,10 @@ class _EditProfileDialogState extends ConsumerState<EditProfileDialog> {
       if (mounted) {
         ref.invalidate(currentUserProfileProvider);
         Navigator.of(context).pop(true);
-        NotificationService.showSuccess(context, 'Profil mis à jour avec succès');
+        NotificationService.showSuccess(
+          context,
+          'Profil mis à jour avec succès',
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -146,7 +151,8 @@ class _EditProfileDialogState extends ConsumerState<EditProfileDialog> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final screenHeight = MediaQuery.of(context).size.height;
-    final availableHeight = screenHeight - 100; // Espace pour le padding et les marges
+    final availableHeight =
+        screenHeight - 100; // Espace pour le padding et les marges
     final maxWidth = 500.0;
 
     // Charger les données utilisateur de manière réactive
@@ -158,11 +164,16 @@ class _EditProfileDialogState extends ConsumerState<EditProfileDialog> {
         if (mounted) {
           setState(() {
             _currentUserData = profileAsync.value;
-            _firstNameController.text = profileAsync.value!['firstName'] as String? ?? '';
-            _lastNameController.text = profileAsync.value!['lastName'] as String? ?? '';
-            _usernameController.text = profileAsync.value!['username'] as String? ?? '';
-            _emailController.text = profileAsync.value!['email'] as String? ?? '';
-            _phoneController.text = profileAsync.value!['phone'] as String? ?? '';
+            _firstNameController.text =
+                profileAsync.value!['firstName'] as String? ?? '';
+            _lastNameController.text =
+                profileAsync.value!['lastName'] as String? ?? '';
+            _usernameController.text =
+                profileAsync.value!['username'] as String? ?? '';
+            _emailController.text =
+                profileAsync.value!['email'] as String? ?? '';
+            _phoneController.text =
+                profileAsync.value!['phone'] as String? ?? '';
           });
         }
       });
@@ -214,9 +225,7 @@ class _EditProfileDialogState extends ConsumerState<EditProfileDialog> {
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _lastNameController,
-                        decoration: const InputDecoration(
-                          labelText: 'Nom *',
-                        ),
+                        decoration: const InputDecoration(labelText: 'Nom *'),
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
                             return 'Le nom est requis';
@@ -240,9 +249,7 @@ class _EditProfileDialogState extends ConsumerState<EditProfileDialog> {
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _emailController,
-                        decoration: const InputDecoration(
-                          labelText: 'Email',
-                        ),
+                        decoration: const InputDecoration(labelText: 'Email'),
                         keyboardType: TextInputType.emailAddress,
                       ),
                       const SizedBox(height: 16),
@@ -264,7 +271,9 @@ class _EditProfileDialogState extends ConsumerState<EditProfileDialog> {
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     TextButton(
-                      onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
+                      onPressed: _isLoading
+                          ? null
+                          : () => Navigator.of(context).pop(),
                       child: const Text('Annuler'),
                     ),
                     const SizedBox(width: 16),
@@ -277,7 +286,9 @@ class _EditProfileDialogState extends ConsumerState<EditProfileDialog> {
                             ? const SizedBox(
                                 width: 20,
                                 height: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               )
                             : const Text('Enregistrer'),
                       ),
@@ -292,4 +303,3 @@ class _EditProfileDialogState extends ConsumerState<EditProfileDialog> {
     );
   }
 }
-

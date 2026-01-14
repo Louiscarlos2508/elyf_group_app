@@ -118,8 +118,9 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
                         Icon(
                           Icons.inventory_2_outlined,
                           size: 64,
-                          color: theme.colorScheme.onSurfaceVariant
-                              .withValues(alpha: 0.5),
+                          color: theme.colorScheme.onSurfaceVariant.withValues(
+                            alpha: 0.5,
+                          ),
                         ),
                         const SizedBox(height: 16),
                         Text(
@@ -141,65 +142,72 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
                   final crossAxisCount = width > 1200
                       ? 6
                       : width > 900
-                          ? 5
-                          : width > 600
-                              ? 4
-                              : width > 400
-                                  ? 3
-                                  : 2;
-              return SliverGrid(
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: crossAxisCount,
-                  childAspectRatio: 0.75,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                ),
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final product = filteredProducts[index];
-                    return ProductTile(
-                      product: product,
-                      showRestockButton: true,
-                      onTap: () {
-                        // Vérifier la permission d'édition
-                        final adapter = ref.read(boutiquePermissionAdapterProvider);
-                        adapter.hasPermission(BoutiquePermissions.editProduct.id).then((hasPermission) {
-                          if (hasPermission && context.mounted) {
-                            showDialog(
-                              context: context,
-                              builder: (_) => ProductFormDialog(product: product),
-                            );
-                          } else if (context.mounted) {
-                            NotificationService.showError(
-                              context,
-                              'Vous n\'avez pas la permission de modifier les produits.',
-                            );
-                          }
-                        });
-                      },
-                      onRestock: () {
-                        // Vérifier la permission d'édition du stock
-                        final adapter = ref.read(boutiquePermissionAdapterProvider);
-                        adapter.hasPermission(BoutiquePermissions.editStock.id).then((hasPermission) {
-                          if (hasPermission && context.mounted) {
-                            showDialog(
-                              context: context,
-                              builder: (_) => RestockDialog(product: product),
-                            );
-                          } else if (context.mounted) {
-                            NotificationService.showError(
-                              context,
-                              'Vous n\'avez pas la permission de modifier le stock.',
-                            );
-                          }
-                        });
-                      },
-                    );
-                  },
-                  childCount: filteredProducts.length,
-                ),
-                );
-              },
+                      ? 5
+                      : width > 600
+                      ? 4
+                      : width > 400
+                      ? 3
+                      : 2;
+                  return SliverGrid(
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: crossAxisCount,
+                      childAspectRatio: 0.75,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                    ),
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      final product = filteredProducts[index];
+                      return ProductTile(
+                        product: product,
+                        showRestockButton: true,
+                        onTap: () {
+                          // Vérifier la permission d'édition
+                          final adapter = ref.read(
+                            boutiquePermissionAdapterProvider,
+                          );
+                          adapter
+                              .hasPermission(BoutiquePermissions.editProduct.id)
+                              .then((hasPermission) {
+                                if (hasPermission && context.mounted) {
+                                  showDialog(
+                                    context: context,
+                                    builder: (_) =>
+                                        ProductFormDialog(product: product),
+                                  );
+                                } else if (context.mounted) {
+                                  NotificationService.showError(
+                                    context,
+                                    'Vous n\'avez pas la permission de modifier les produits.',
+                                  );
+                                }
+                              });
+                        },
+                        onRestock: () {
+                          // Vérifier la permission d'édition du stock
+                          final adapter = ref.read(
+                            boutiquePermissionAdapterProvider,
+                          );
+                          adapter
+                              .hasPermission(BoutiquePermissions.editStock.id)
+                              .then((hasPermission) {
+                                if (hasPermission && context.mounted) {
+                                  showDialog(
+                                    context: context,
+                                    builder: (_) =>
+                                        RestockDialog(product: product),
+                                  );
+                                } else if (context.mounted) {
+                                  NotificationService.showError(
+                                    context,
+                                    'Vous n\'avez pas la permission de modifier le stock.',
+                                  );
+                                }
+                              });
+                        },
+                      );
+                    }, childCount: filteredProducts.length),
+                  );
+                },
               );
             },
             loading: () => const SliverFillRemaining(
@@ -221,4 +229,3 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
     );
   }
 }
-

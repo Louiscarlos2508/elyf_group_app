@@ -34,4 +34,3 @@ enum ExpenseCategory {
   cleaning,
   other,
 }
-

@@ -3,7 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 export 'providers/permission_providers.dart';
 export 'providers/section_providers.dart';
 import 'providers/permission_providers.dart' show currentUserIdProvider;
-import '../../../../core/tenant/tenant_provider.dart' show activeEnterpriseProvider;
+import '../../../../core/tenant/tenant_provider.dart'
+    show activeEnterpriseProvider;
 
 import '../../../core/offline/drift_service.dart';
 import '../../../core/offline/providers.dart';
@@ -35,8 +36,8 @@ import 'controllers/store_controller.dart';
 /// Provider for BoutiqueDashboardCalculationService.
 final boutiqueDashboardCalculationServiceProvider =
     Provider<BoutiqueDashboardCalculationService>(
-  (ref) => BoutiqueDashboardCalculationService(),
-);
+      (ref) => BoutiqueDashboardCalculationService(),
+    );
 
 /// Provider for ProductCalculationService.
 final productCalculationServiceProvider = Provider<ProductCalculationService>(
@@ -46,8 +47,8 @@ final productCalculationServiceProvider = Provider<ProductCalculationService>(
 /// Provider for BoutiqueReportCalculationService.
 final boutiqueReportCalculationServiceProvider =
     Provider<BoutiqueReportCalculationService>(
-  (ref) => BoutiqueReportCalculationService(),
-);
+      (ref) => BoutiqueReportCalculationService(),
+    );
 
 /// Provider for CartCalculationService.
 final cartCalculationServiceProvider = Provider<CartCalculationService>(
@@ -60,9 +61,7 @@ final productValidationServiceProvider = Provider<ProductValidationService>(
 );
 
 /// Provider for CartService.
-final cartServiceProvider = Provider<CartService>(
-  (ref) => CartService(),
-);
+final cartServiceProvider = Provider<CartService>((ref) => CartService());
 
 /// Provider for ProductFilterService.
 final productFilterServiceProvider = Provider<ProductFilterService>(
@@ -70,44 +69,42 @@ final productFilterServiceProvider = Provider<ProductFilterService>(
 );
 
 /// Provider for ProductOfflineRepository.
-/// 
+///
 /// Requires active enterprise to be set.
-final productRepositoryProvider = Provider<ProductRepository>(
-  (ref) {
-    final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
-    final driftService = DriftService.instance;
-    final syncManager = ref.watch(syncManagerProvider);
-    final connectivityService = ref.watch(connectivityServiceProvider);
-    
-    return ProductOfflineRepository(
-      driftService: driftService,
-      syncManager: syncManager,
-      connectivityService: connectivityService,
-      enterpriseId: enterpriseId,
-      moduleType: 'boutique',
-    );
-  },
-);
+final productRepositoryProvider = Provider<ProductRepository>((ref) {
+  final enterpriseId =
+      ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+  final driftService = DriftService.instance;
+  final syncManager = ref.watch(syncManagerProvider);
+  final connectivityService = ref.watch(connectivityServiceProvider);
+
+  return ProductOfflineRepository(
+    driftService: driftService,
+    syncManager: syncManager,
+    connectivityService: connectivityService,
+    enterpriseId: enterpriseId,
+    moduleType: 'boutique',
+  );
+});
 
 /// Provider for SaleOfflineRepository.
-/// 
+///
 /// Requires active enterprise to be set.
-final saleRepositoryProvider = Provider<SaleRepository>(
-  (ref) {
-    final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
-    final driftService = DriftService.instance;
-    final syncManager = ref.watch(syncManagerProvider);
-    final connectivityService = ref.watch(connectivityServiceProvider);
-    
-    return SaleOfflineRepository(
-      driftService: driftService,
-      syncManager: syncManager,
-      connectivityService: connectivityService,
-      enterpriseId: enterpriseId,
-      moduleType: 'boutique',
-    );
-  },
-);
+final saleRepositoryProvider = Provider<SaleRepository>((ref) {
+  final enterpriseId =
+      ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+  final driftService = DriftService.instance;
+  final syncManager = ref.watch(syncManagerProvider);
+  final connectivityService = ref.watch(connectivityServiceProvider);
+
+  return SaleOfflineRepository(
+    driftService: driftService,
+    syncManager: syncManager,
+    connectivityService: connectivityService,
+    enterpriseId: enterpriseId,
+    moduleType: 'boutique',
+  );
+});
 
 final stockRepositoryProvider = Provider<StockRepository>(
   (ref) => StockOfflineRepository(
@@ -115,42 +112,40 @@ final stockRepositoryProvider = Provider<StockRepository>(
   ),
 );
 
-final purchaseRepositoryProvider = Provider<PurchaseRepository>(
-  (ref) {
-    final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
-    final driftService = DriftService.instance;
-    final syncManager = ref.watch(syncManagerProvider);
-    final connectivityService = ref.watch(connectivityServiceProvider);
-    
-    return PurchaseOfflineRepository(
-      driftService: driftService,
-      syncManager: syncManager,
-      connectivityService: connectivityService,
-      enterpriseId: enterpriseId,
-      moduleType: 'boutique',
-    );
-  },
-);
+final purchaseRepositoryProvider = Provider<PurchaseRepository>((ref) {
+  final enterpriseId =
+      ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+  final driftService = DriftService.instance;
+  final syncManager = ref.watch(syncManagerProvider);
+  final connectivityService = ref.watch(connectivityServiceProvider);
+
+  return PurchaseOfflineRepository(
+    driftService: driftService,
+    syncManager: syncManager,
+    connectivityService: connectivityService,
+    enterpriseId: enterpriseId,
+    moduleType: 'boutique',
+  );
+});
 
 /// Provider for ExpenseOfflineRepository.
-/// 
+///
 /// Requires active enterprise to be set.
-final expenseRepositoryProvider = Provider<ExpenseRepository>(
-  (ref) {
-    final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
-    final driftService = DriftService.instance;
-    final syncManager = ref.watch(syncManagerProvider);
-    final connectivityService = ref.watch(connectivityServiceProvider);
-    
-    return ExpenseOfflineRepository(
-      driftService: driftService,
-      syncManager: syncManager,
-      connectivityService: connectivityService,
-      enterpriseId: enterpriseId,
-      moduleType: 'boutique',
-    );
-  },
-);
+final expenseRepositoryProvider = Provider<ExpenseRepository>((ref) {
+  final enterpriseId =
+      ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+  final driftService = DriftService.instance;
+  final syncManager = ref.watch(syncManagerProvider);
+  final connectivityService = ref.watch(connectivityServiceProvider);
+
+  return ExpenseOfflineRepository(
+    driftService: driftService,
+    syncManager: syncManager,
+    connectivityService: connectivityService,
+    enterpriseId: enterpriseId,
+    moduleType: 'boutique',
+  );
+});
 
 final reportRepositoryProvider = Provider<ReportRepository>(
   (ref) => MockReportRepository(
@@ -195,71 +190,78 @@ final expensesProvider = FutureProvider.autoDispose(
 
 /// Provider pour le bilan des dépenses Boutique.
 final boutiqueExpenseBalanceProvider =
-    FutureProvider.autoDispose<List<ExpenseBalanceData>>(
-  (ref) async {
-    final expenses = await ref.watch(storeControllerProvider).fetchExpenses();
-    final adapter = BoutiqueExpenseBalanceAdapter();
-    return adapter.convertToBalanceData(expenses);
-  },
-);
+    FutureProvider.autoDispose<List<ExpenseBalanceData>>((ref) async {
+      final expenses = await ref.watch(storeControllerProvider).fetchExpenses();
+      final adapter = BoutiqueExpenseBalanceAdapter();
+      return adapter.convertToBalanceData(expenses);
+    });
 
-final reportDataProvider = FutureProvider.family.autoDispose<ReportData, ({
-  ReportPeriod period,
-  DateTime? startDate,
-  DateTime? endDate,
-})>((ref, params) async {
-  return ref.watch(storeControllerProvider).getReportData(
-        params.period,
-        startDate: params.startDate,
-        endDate: params.endDate,
-      );
-});
+final reportDataProvider = FutureProvider.family
+    .autoDispose<
+      ReportData,
+      ({ReportPeriod period, DateTime? startDate, DateTime? endDate})
+    >((ref, params) async {
+      return ref
+          .watch(storeControllerProvider)
+          .getReportData(
+            params.period,
+            startDate: params.startDate,
+            endDate: params.endDate,
+          );
+    });
 
-final salesReportProvider = FutureProvider.family.autoDispose<SalesReportData, ({
-  ReportPeriod period,
-  DateTime? startDate,
-  DateTime? endDate,
-})>((ref, params) async {
-  return ref.watch(storeControllerProvider).getSalesReport(
-        params.period,
-        startDate: params.startDate,
-        endDate: params.endDate,
-      );
-});
+final salesReportProvider = FutureProvider.family
+    .autoDispose<
+      SalesReportData,
+      ({ReportPeriod period, DateTime? startDate, DateTime? endDate})
+    >((ref, params) async {
+      return ref
+          .watch(storeControllerProvider)
+          .getSalesReport(
+            params.period,
+            startDate: params.startDate,
+            endDate: params.endDate,
+          );
+    });
 
-final purchasesReportProvider = FutureProvider.family.autoDispose<PurchasesReportData, ({
-  ReportPeriod period,
-  DateTime? startDate,
-  DateTime? endDate,
-})>((ref, params) async {
-  return ref.watch(storeControllerProvider).getPurchasesReport(
-        params.period,
-        startDate: params.startDate,
-        endDate: params.endDate,
-      );
-});
+final purchasesReportProvider = FutureProvider.family
+    .autoDispose<
+      PurchasesReportData,
+      ({ReportPeriod period, DateTime? startDate, DateTime? endDate})
+    >((ref, params) async {
+      return ref
+          .watch(storeControllerProvider)
+          .getPurchasesReport(
+            params.period,
+            startDate: params.startDate,
+            endDate: params.endDate,
+          );
+    });
 
-final expensesReportProvider = FutureProvider.family.autoDispose<ExpensesReportData, ({
-  ReportPeriod period,
-  DateTime? startDate,
-  DateTime? endDate,
-})>((ref, params) async {
-  return ref.watch(storeControllerProvider).getExpensesReport(
-        params.period,
-        startDate: params.startDate,
-        endDate: params.endDate,
-      );
-});
+final expensesReportProvider = FutureProvider.family
+    .autoDispose<
+      ExpensesReportData,
+      ({ReportPeriod period, DateTime? startDate, DateTime? endDate})
+    >((ref, params) async {
+      return ref
+          .watch(storeControllerProvider)
+          .getExpensesReport(
+            params.period,
+            startDate: params.startDate,
+            endDate: params.endDate,
+          );
+    });
 
-final profitReportProvider = FutureProvider.family.autoDispose<ProfitReportData, ({
-  ReportPeriod period,
-  DateTime? startDate,
-  DateTime? endDate,
-})>((ref, params) async {
-  return ref.watch(storeControllerProvider).getProfitReport(
-        params.period,
-        startDate: params.startDate,
-        endDate: params.endDate,
-      );
-});
-
+final profitReportProvider = FutureProvider.family
+    .autoDispose<
+      ProfitReportData,
+      ({ReportPeriod period, DateTime? startDate, DateTime? endDate})
+    >((ref, params) async {
+      return ref
+          .watch(storeControllerProvider)
+          .getProfitReport(
+            params.period,
+            startDate: params.startDate,
+            endDate: params.endDate,
+          );
+    });

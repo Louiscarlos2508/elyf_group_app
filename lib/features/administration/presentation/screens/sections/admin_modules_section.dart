@@ -36,36 +36,41 @@ String? _getEnterpriseTypeForModule(String moduleId) {
 }
 
 /// Provider pour récupérer les statistiques par module
-final moduleStatsProvider = FutureProvider.family<ModuleStats, String>(
-  (ref, moduleId) async {
-    final enterpriseModuleUsers =
-        await ref.watch(enterpriseModuleUsersProvider.future);
-    final enterprises = await ref.watch(enterprisesProvider.future);
+final moduleStatsProvider = FutureProvider.family<ModuleStats, String>((
+  ref,
+  moduleId,
+) async {
+  final enterpriseModuleUsers = await ref.watch(
+    enterpriseModuleUsersProvider.future,
+  );
+  final enterprises = await ref.watch(enterprisesProvider.future);
 
-    final moduleAssignments =
-        enterpriseModuleUsers.where((u) => u.moduleId == moduleId).toList();
+  final moduleAssignments = enterpriseModuleUsers
+      .where((u) => u.moduleId == moduleId)
+      .toList();
 
-    final uniqueUsers = moduleAssignments.map((a) => a.userId).toSet();
-    final uniqueEnterprisesWithUsers =
-        moduleAssignments.map((a) => a.enterpriseId).toSet();
-    final activeAssignments =
-        moduleAssignments.where((a) => a.isActive).length;
+  final uniqueUsers = moduleAssignments.map((a) => a.userId).toSet();
+  final uniqueEnterprisesWithUsers = moduleAssignments
+      .map((a) => a.enterpriseId)
+      .toSet();
+  final activeAssignments = moduleAssignments.where((a) => a.isActive).length;
 
-    // Récupérer toutes les entreprises qui correspondent au type du module
-    final enterpriseType = _getEnterpriseTypeForModule(moduleId);
-    final moduleEnterprises = enterpriseType != null
-        ? enterprises.where((e) => e.type == enterpriseType).toList()
-        : enterprises.where((e) => uniqueEnterprisesWithUsers.contains(e.id)).toList();
+  // Récupérer toutes les entreprises qui correspondent au type du module
+  final enterpriseType = _getEnterpriseTypeForModule(moduleId);
+  final moduleEnterprises = enterpriseType != null
+      ? enterprises.where((e) => e.type == enterpriseType).toList()
+      : enterprises
+            .where((e) => uniqueEnterprisesWithUsers.contains(e.id))
+            .toList();
 
-    return ModuleStats(
-      moduleId: moduleId,
-      totalUsers: uniqueUsers.length,
-      totalEnterprises: moduleEnterprises.length,
-      activeAssignments: activeAssignments,
-      enterprises: moduleEnterprises,
-    );
-  },
-);
+  return ModuleStats(
+    moduleId: moduleId,
+    totalUsers: uniqueUsers.length,
+    totalEnterprises: moduleEnterprises.length,
+    activeAssignments: activeAssignments,
+    enterprises: moduleEnterprises,
+  );
+});
 
 /// Section pour gérer les modules
 class AdminModulesSection extends ConsumerWidget {
@@ -73,30 +78,47 @@ class AdminModulesSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
     final modules = AdminModules.all;
 
     return CustomScrollView(
       slivers: [
-        SliverAppBar(
-          title: const Text('Modules'),
-          floating: true,
-          snap: true,
-        ),
-        SliverPadding(
-          padding: const EdgeInsets.all(24),
-          sliver: SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                final module = modules[index];
-                return _ModuleCard(
-                  module: module,
-                  onTap: () => _showModuleDetails(context, ref, module),
-                );
-              },
-              childCount: modules.length,
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Modules',
+                  style: theme.textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Gérez les modules et leurs configurations',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
             ),
           ),
         ),
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          sliver: SliverList(
+            delegate: SliverChildBuilderDelegate((context, index) {
+              final module = modules[index];
+              return _ModuleCard(
+                module: module,
+                onTap: () => _showModuleDetails(context, ref, module),
+              );
+            }, childCount: modules.length),
+          ),
+        ),
+        const SliverToBoxAdapter(child: SizedBox(height: 24)),
       ],
     );
   }
@@ -115,10 +137,7 @@ class AdminModulesSection extends ConsumerWidget {
 
 /// Carte pour afficher un module avec ses statistiques
 class _ModuleCard extends ConsumerWidget {
-  const _ModuleCard({
-    required this.module,
-    required this.onTap,
-  });
+  const _ModuleCard({required this.module, required this.onTap});
 
   final AdminModule module;
   final VoidCallback onTap;
@@ -305,4 +324,3 @@ class _StatItem extends StatelessWidget {
     );
   }
 }
-

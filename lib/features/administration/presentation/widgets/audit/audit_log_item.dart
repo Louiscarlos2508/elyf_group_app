@@ -20,9 +20,10 @@ class AuditLogItem extends StatelessWidget {
       child: Card(
         child: ExpansionTile(
           leading: CircleAvatar(
-            backgroundColor:
-                AuditLogHelpers.getActionColor(log.action, context)
-                    .withValues(alpha: 0.2),
+            backgroundColor: AuditLogHelpers.getActionColor(
+              log.action,
+              context,
+            ).withValues(alpha: 0.2),
             child: Icon(
               AuditLogHelpers.getActionIcon(log.action),
               color: AuditLogHelpers.getActionColor(log.action, context),
@@ -59,11 +60,17 @@ class AuditLogItem extends StatelessWidget {
                     value: log.userDisplayName ?? log.userId,
                   ),
                   if (log.description != null)
-                    _AuditInfoRow(label: 'Description', value: log.description!),
+                    _AuditInfoRow(
+                      label: 'Description',
+                      value: log.description!,
+                    ),
                   if (log.moduleId != null)
                     _AuditInfoRow(label: 'Module', value: log.moduleId!),
                   if (log.enterpriseId != null)
-                    _AuditInfoRow(label: 'Entreprise', value: log.enterpriseId!),
+                    _AuditInfoRow(
+                      label: 'Entreprise',
+                      value: log.enterpriseId!,
+                    ),
                   if (log.oldValue != null || log.newValue != null) ...[
                     const SizedBox(height: 8),
                     const Divider(),
@@ -93,10 +100,7 @@ class AuditLogItem extends StatelessWidget {
 
 /// Widget for displaying an info row in audit log details.
 class _AuditInfoRow extends StatelessWidget {
-  const _AuditInfoRow({
-    required this.label,
-    required this.value,
-  });
+  const _AuditInfoRow({required this.label, required this.value});
 
   final String label;
   final String value;
@@ -119,12 +123,7 @@ class _AuditInfoRow extends StatelessWidget {
               ),
             ),
           ),
-          Expanded(
-            child: Text(
-              value,
-              style: theme.textTheme.bodyMedium,
-            ),
-          ),
+          Expanded(child: Text(value, style: theme.textTheme.bodyMedium)),
         ],
       ),
     );

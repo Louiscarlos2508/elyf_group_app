@@ -23,10 +23,7 @@ abstract class BasePaymentPdfService {
             pw.SizedBox(height: 4),
             pw.Text(
               'Immobilier',
-              style: pw.TextStyle(
-                fontSize: 14,
-                color: PdfColors.blueGrey600,
-              ),
+              style: pw.TextStyle(fontSize: 14, color: PdfColors.blueGrey600),
             ),
           ],
         ),
@@ -57,18 +54,12 @@ abstract class BasePaymentPdfService {
         children: [
           pw.SizedBox(
             width: 120,
-            child: pw.Text(
-              label,
-              style: const pw.TextStyle(fontSize: 12),
-            ),
+            child: pw.Text(label, style: const pw.TextStyle(fontSize: 12)),
           ),
           pw.Expanded(
             child: pw.Text(
               value,
-              style: pw.TextStyle(
-                fontSize: 12,
-                fontWeight: pw.FontWeight.bold,
-              ),
+              style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
             ),
           ),
         ],
@@ -84,11 +75,7 @@ abstract class BasePaymentPdfService {
         pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
-            pw.Container(
-              width: 150,
-              height: 1,
-              color: PdfColors.grey700,
-            ),
+            pw.Container(width: 150, height: 1, color: PdfColors.grey700),
             pw.SizedBox(height: 5),
             pw.Text(
               'Signature du Locataire',
@@ -99,11 +86,7 @@ abstract class BasePaymentPdfService {
         pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.end,
           children: [
-            pw.Container(
-              width: 150,
-              height: 1,
-              color: PdfColors.grey700,
-            ),
+            pw.Container(width: 150, height: 1, color: PdfColors.grey700),
             pw.SizedBox(height: 5),
             pw.Text(
               'Signature de l\'Agent',
@@ -132,9 +115,9 @@ abstract class BasePaymentPdfService {
   /// Formate un montant en devise.
   String formatCurrency(int amount) {
     return amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        );
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (Match m) => '${m[1]} ',
+    );
   }
 
   /// Retourne le nom du mois.
@@ -162,4 +145,3 @@ abstract class BasePaymentPdfService {
     return method.label;
   }
 }
-

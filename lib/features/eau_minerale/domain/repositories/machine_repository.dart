@@ -3,9 +3,7 @@ import '../entities/machine.dart';
 /// Repository pour gérer les machines.
 abstract class MachineRepository {
   /// Récupère toutes les machines.
-  Future<List<Machine>> fetchMachines({
-    bool? estActive,
-  });
+  Future<List<Machine>> fetchMachines({bool? estActive});
 
   /// Récupère une machine par son ID.
   Future<Machine?> fetchMachineById(String id);
@@ -19,4 +17,3 @@ abstract class MachineRepository {
   /// Supprime une machine.
   Future<void> deleteMachine(String id);
 }
-

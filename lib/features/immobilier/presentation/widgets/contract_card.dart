@@ -5,11 +5,7 @@ import 'contract_card_helpers.dart';
 
 /// Carte réutilisable pour afficher un contrat.
 class ContractCard extends StatelessWidget {
-  const ContractCard({
-    super.key,
-    required this.contract,
-    this.onTap,
-  });
+  const ContractCard({super.key, required this.contract, this.onTap});
 
   final Contract contract;
   final VoidCallback? onTap;
@@ -21,9 +17,7 @@ class ContractCard extends StatelessWidget {
     return Card(
       elevation: 2,
       margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
@@ -37,13 +31,16 @@ class ContractCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: ContractCardHelpers.getStatusColor(contract.status)
-                          .withValues(alpha: 0.1),
+                      color: ContractCardHelpers.getStatusColor(
+                        contract.status,
+                      ).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
                       Icons.description,
-                      color: ContractCardHelpers.getStatusColor(contract.status),
+                      color: ContractCardHelpers.getStatusColor(
+                        contract.status,
+                      ),
                       size: 24,
                     ),
                   ),
@@ -74,12 +71,14 @@ class ContractCard extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
-                        color: ContractCardHelpers.getStatusColor(contract.status),
+                        color: ContractCardHelpers.getStatusColor(
+                          contract.status,
+                        ),
                       ),
                     ),
-                    backgroundColor: ContractCardHelpers
-                        .getStatusColor(contract.status)
-                        .withValues(alpha: 0.1),
+                    backgroundColor: ContractCardHelpers.getStatusColor(
+                      contract.status,
+                    ).withValues(alpha: 0.1),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 8,
                       vertical: 2,
@@ -95,7 +94,9 @@ class ContractCard extends StatelessWidget {
                     child: _InfoItem(
                       icon: Icons.attach_money,
                       label: 'Loyer mensuel',
-                      value: ContractCardHelpers.formatCurrency(contract.monthlyRent),
+                      value: ContractCardHelpers.formatCurrency(
+                        contract.monthlyRent,
+                      ),
                       valueColor: theme.colorScheme.primary,
                     ),
                   ),
@@ -104,7 +105,9 @@ class ContractCard extends StatelessWidget {
                     child: _InfoItem(
                       icon: Icons.security,
                       label: 'Caution',
-                      value: ContractCardHelpers.formatCurrency(contract.deposit),
+                      value: ContractCardHelpers.formatCurrency(
+                        contract.deposit,
+                      ),
                     ),
                   ),
                 ],
@@ -143,7 +146,8 @@ class ContractCard extends StatelessWidget {
                   _LinkedEntityRow(
                     icon: Icons.home,
                     label: contract.property!.address,
-                    subtitle: '${contract.property!.city} - ${contract.property!.rooms} pièces',
+                    subtitle:
+                        '${contract.property!.city} - ${contract.property!.rooms} pièces',
                   ),
               ],
             ],
@@ -212,17 +216,15 @@ class _LinkedEntityRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Row(
       children: [
         CircleAvatar(
           radius: 14,
-          backgroundColor: theme.colorScheme.primaryContainer.withValues(alpha: 0.5),
-          child: Icon(
-            icon,
-            size: 14,
-            color: theme.colorScheme.primary,
+          backgroundColor: theme.colorScheme.primaryContainer.withValues(
+            alpha: 0.5,
           ),
+          child: Icon(icon, size: 14, color: theme.colorScheme.primary),
         ),
         const SizedBox(width: 8),
         Expanded(
@@ -259,4 +261,3 @@ class _LinkedEntityRow extends StatelessWidget {
     );
   }
 }
-

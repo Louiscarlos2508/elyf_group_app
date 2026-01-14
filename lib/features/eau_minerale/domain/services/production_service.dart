@@ -44,9 +44,7 @@ class ProductionService {
     }
 
     // Create machines map for quick lookup
-    final machinesMap = <String, Machine>{
-      for (var m in machines) m.id: m
-    };
+    final machinesMap = <String, Machine>{for (var m in machines) m.id: m};
 
     // Sort sessions from most recent to oldest
     final sessionsTriees = sessionsPrecedentes.toList()
@@ -75,7 +73,9 @@ class ProductionService {
 
     // Identify machines that already have a bobine in the current list
     final bobinesExistantes = bobinesExistantesParam ?? [];
-    final machinesAvecBobine = bobinesExistantes.map((b) => b.machineId).toSet();
+    final machinesAvecBobine = bobinesExistantes
+        .map((b) => b.machineId)
+        .toSet();
 
     // Build new list of bobbins used
     final nouvellesBobines = <BobineUsage>[];
@@ -102,10 +102,12 @@ class ProductionService {
         // Machine with unfinished bobine: reuse (no decrement)
         final bobineNonFinie = bobinesNonFiniesParMachine[machineId]!;
         final maintenant = DateTime.now();
-        nouvellesBobines.add(bobineNonFinie.copyWith(
-          dateInstallation: maintenant,
-          heureInstallation: maintenant,
-        ));
+        nouvellesBobines.add(
+          bobineNonFinie.copyWith(
+            dateInstallation: maintenant,
+            heureInstallation: maintenant,
+          ),
+        );
       } else if (bobineStocksDisponibles.isNotEmpty) {
         // Machine without unfinished bobine: install new bobine (decrement needed)
         final bobineStock = bobineStocksDisponibles.first;

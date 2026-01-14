@@ -67,14 +67,10 @@ class SectionPlaceholder extends StatelessWidget {
                 ? Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: SingleChildScrollView(child: content),
-                      ),
+                      Expanded(child: SingleChildScrollView(child: content)),
                       if (child != null) ...[
                         const SizedBox(width: 32),
-                        Expanded(
-                          child: SingleChildScrollView(child: child!),
-                        ),
+                        Expanded(child: SingleChildScrollView(child: child!)),
                       ],
                     ],
                   )

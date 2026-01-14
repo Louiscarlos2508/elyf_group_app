@@ -48,39 +48,48 @@ void main() {
         customPermissions: {},
       );
 
-      test('should assign user and log audit trail when permissions valid', () async {
-        // Arrange
-        when(mockPermissionValidator.canManageUsers(userId: 'current-user'))
-            .thenAnswer((_) async => true);
+      test(
+        'should assign user and log audit trail when permissions valid',
+        () async {
+          // Arrange
+          when(
+            mockPermissionValidator.canManageUsers(userId: 'current-user'),
+          ).thenAnswer((_) async => true);
 
-        // Act
-        await controller.assignUserToEnterprise(
-          testUser,
-          currentUserId: 'current-user',
-        );
+          // Act
+          await controller.assignUserToEnterprise(
+            testUser,
+            currentUserId: 'current-user',
+          );
 
-        // Assert
-        verify(mockPermissionValidator.canManageUsers(userId: 'current-user'))
-            .called(1);
-        verify(mockRepository.assignUserToEnterprise(testUser)).called(1);
-        verify(mockFirestoreSync.syncEnterpriseModuleUserToFirestore(testUser))
-            .called(1);
-        verify(mockAuditService.logAction(
-          action: anyNamed('action'),
-          entityType: anyNamed('entityType'),
-          entityId: anyNamed('entityId'),
-          userId: anyNamed('userId'),
-          description: anyNamed('description'),
-          newValue: anyNamed('newValue'),
-          moduleId: anyNamed('moduleId'),
-          enterpriseId: anyNamed('enterpriseId'),
-        )).called(1);
-      });
+          // Assert
+          verify(
+            mockPermissionValidator.canManageUsers(userId: 'current-user'),
+          ).called(1);
+          verify(mockRepository.assignUserToEnterprise(testUser)).called(1);
+          verify(
+            mockFirestoreSync.syncEnterpriseModuleUserToFirestore(testUser),
+          ).called(1);
+          verify(
+            mockAuditService.logAction(
+              action: anyNamed('action'),
+              entityType: anyNamed('entityType'),
+              entityId: anyNamed('entityId'),
+              userId: anyNamed('userId'),
+              description: anyNamed('description'),
+              newValue: anyNamed('newValue'),
+              moduleId: anyNamed('moduleId'),
+              enterpriseId: anyNamed('enterpriseId'),
+            ),
+          ).called(1);
+        },
+      );
 
       test('should throw exception when permission denied', () async {
         // Arrange
-        when(mockPermissionValidator.canManageUsers(userId: 'current-user'))
-            .thenAnswer((_) async => false);
+        when(
+          mockPermissionValidator.canManageUsers(userId: 'current-user'),
+        ).thenAnswer((_) async => false);
 
         // Act & Assert
         expect(
@@ -88,38 +97,49 @@ void main() {
             testUser,
             currentUserId: 'current-user',
           ),
-          throwsA(isA<Exception>().having(
-            (e) => e.toString(),
-            'message',
-            contains('Permission denied'),
-          )),
+          throwsA(
+            isA<Exception>().having(
+              (e) => e.toString(),
+              'message',
+              contains('Permission denied'),
+            ),
+          ),
         );
 
-        verify(mockPermissionValidator.canManageUsers(userId: 'current-user'))
-            .called(1);
+        verify(
+          mockPermissionValidator.canManageUsers(userId: 'current-user'),
+        ).called(1);
         verifyNever(mockRepository.assignUserToEnterprise(any));
       });
 
-      test('should assign user without permission check when currentUserId is null', () async {
-        // Act
-        await controller.assignUserToEnterprise(testUser);
+      test(
+        'should assign user without permission check when currentUserId is null',
+        () async {
+          // Act
+          await controller.assignUserToEnterprise(testUser);
 
-        // Assert
-        verifyNever(mockPermissionValidator.canManageUsers(userId: anyNamed('userId')));
-        verify(mockRepository.assignUserToEnterprise(testUser)).called(1);
-        verify(mockFirestoreSync.syncEnterpriseModuleUserToFirestore(testUser))
-            .called(1);
-        verify(mockAuditService.logAction(
-          action: anyNamed('action'),
-          entityType: anyNamed('entityType'),
-          entityId: anyNamed('entityId'),
-          userId: anyNamed('userId'),
-          description: anyNamed('description'),
-          newValue: anyNamed('newValue'),
-          moduleId: anyNamed('moduleId'),
-          enterpriseId: anyNamed('enterpriseId'),
-        )).called(1);
-      });
+          // Assert
+          verifyNever(
+            mockPermissionValidator.canManageUsers(userId: anyNamed('userId')),
+          );
+          verify(mockRepository.assignUserToEnterprise(testUser)).called(1);
+          verify(
+            mockFirestoreSync.syncEnterpriseModuleUserToFirestore(testUser),
+          ).called(1);
+          verify(
+            mockAuditService.logAction(
+              action: anyNamed('action'),
+              entityType: anyNamed('entityType'),
+              entityId: anyNamed('entityId'),
+              userId: anyNamed('userId'),
+              description: anyNamed('description'),
+              newValue: anyNamed('newValue'),
+              moduleId: anyNamed('moduleId'),
+              enterpriseId: anyNamed('enterpriseId'),
+            ),
+          ).called(1);
+        },
+      );
     });
 
     group('createRole', () {
@@ -131,46 +151,57 @@ void main() {
         isSystemRole: false,
       );
 
-      test('should create role and log audit trail when permissions valid', () async {
-        // Arrange
-        when(mockPermissionValidator.canManageRoles(userId: 'current-user'))
-            .thenAnswer((_) async => true);
+      test(
+        'should create role and log audit trail when permissions valid',
+        () async {
+          // Arrange
+          when(
+            mockPermissionValidator.canManageRoles(userId: 'current-user'),
+          ).thenAnswer((_) async => true);
 
-        // Act
-        await controller.createRole(testRole, currentUserId: 'current-user');
+          // Act
+          await controller.createRole(testRole, currentUserId: 'current-user');
 
-        // Assert
-        verify(mockPermissionValidator.canManageRoles(userId: 'current-user'))
-            .called(1);
-        verify(mockRepository.createRole(testRole)).called(1);
-        verify(mockFirestoreSync.syncRoleToFirestore(testRole)).called(1);
-        verify(mockAuditService.logAction(
-          action: anyNamed('action'),
-          entityType: anyNamed('entityType'),
-          entityId: anyNamed('entityId'),
-          userId: anyNamed('userId'),
-          description: anyNamed('description'),
-          newValue: anyNamed('newValue'),
-        )).called(1);
-      });
+          // Assert
+          verify(
+            mockPermissionValidator.canManageRoles(userId: 'current-user'),
+          ).called(1);
+          verify(mockRepository.createRole(testRole)).called(1);
+          verify(mockFirestoreSync.syncRoleToFirestore(testRole)).called(1);
+          verify(
+            mockAuditService.logAction(
+              action: anyNamed('action'),
+              entityType: anyNamed('entityType'),
+              entityId: anyNamed('entityId'),
+              userId: anyNamed('userId'),
+              description: anyNamed('description'),
+              newValue: anyNamed('newValue'),
+            ),
+          ).called(1);
+        },
+      );
 
       test('should throw exception when permission denied', () async {
         // Arrange
-        when(mockPermissionValidator.canManageRoles(userId: 'current-user'))
-            .thenAnswer((_) async => false);
+        when(
+          mockPermissionValidator.canManageRoles(userId: 'current-user'),
+        ).thenAnswer((_) async => false);
 
         // Act & Assert
         expect(
           () => controller.createRole(testRole, currentUserId: 'current-user'),
-          throwsA(isA<Exception>().having(
-            (e) => e.toString(),
-            'message',
-            contains('Permission denied'),
-          )),
+          throwsA(
+            isA<Exception>().having(
+              (e) => e.toString(),
+              'message',
+              contains('Permission denied'),
+            ),
+          ),
         );
 
-        verify(mockPermissionValidator.canManageRoles(userId: 'current-user'))
-            .called(1);
+        verify(
+          mockPermissionValidator.canManageRoles(userId: 'current-user'),
+        ).called(1);
         verifyNever(mockRepository.createRole(any));
       });
     });
@@ -192,57 +223,68 @@ void main() {
         isSystemRole: false,
       );
 
-      test('should update role and log audit trail when permissions valid', () async {
-        // Arrange
-        when(mockPermissionValidator.canManageRoles(userId: 'current-user'))
-            .thenAnswer((_) async => true);
-        when(mockRepository.getModuleRoles(updatedRole.id))
-            .thenAnswer((_) async => [oldRole]);
+      test(
+        'should update role and log audit trail when permissions valid',
+        () async {
+          // Arrange
+          when(
+            mockPermissionValidator.canManageRoles(userId: 'current-user'),
+          ).thenAnswer((_) async => true);
+          when(
+            mockRepository.getModuleRoles(updatedRole.id),
+          ).thenAnswer((_) async => [oldRole]);
 
-        // Act
-        await controller.updateRole(
-          updatedRole,
-          currentUserId: 'current-user',
-        );
+          // Act
+          await controller.updateRole(
+            updatedRole,
+            currentUserId: 'current-user',
+          );
 
-        // Assert
-        verify(mockPermissionValidator.canManageRoles(userId: 'current-user'))
-            .called(1);
-        verify(mockRepository.getModuleRoles(updatedRole.id)).called(1);
-        verify(mockRepository.updateRole(updatedRole)).called(1);
-        verify(mockFirestoreSync.syncRoleToFirestore(updatedRole, isUpdate: true))
-            .called(1);
-        verify(mockAuditService.logAction(
-          action: anyNamed('action'),
-          entityType: anyNamed('entityType'),
-          entityId: anyNamed('entityId'),
-          userId: anyNamed('userId'),
-          description: anyNamed('description'),
-          oldValue: anyNamed('oldValue'),
-          newValue: anyNamed('newValue'),
-        )).called(1);
-      });
+          // Assert
+          verify(
+            mockPermissionValidator.canManageRoles(userId: 'current-user'),
+          ).called(1);
+          verify(mockRepository.getModuleRoles(updatedRole.id)).called(1);
+          verify(mockRepository.updateRole(updatedRole)).called(1);
+          verify(
+            mockFirestoreSync.syncRoleToFirestore(updatedRole, isUpdate: true),
+          ).called(1);
+          verify(
+            mockAuditService.logAction(
+              action: anyNamed('action'),
+              entityType: anyNamed('entityType'),
+              entityId: anyNamed('entityId'),
+              userId: anyNamed('userId'),
+              description: anyNamed('description'),
+              oldValue: anyNamed('oldValue'),
+              newValue: anyNamed('newValue'),
+            ),
+          ).called(1);
+        },
+      );
 
       test('should throw exception when permission denied', () async {
         // Arrange
-        when(mockPermissionValidator.canManageRoles(userId: 'current-user'))
-            .thenAnswer((_) async => false);
+        when(
+          mockPermissionValidator.canManageRoles(userId: 'current-user'),
+        ).thenAnswer((_) async => false);
 
         // Act & Assert
         expect(
-          () => controller.updateRole(
-            updatedRole,
-            currentUserId: 'current-user',
+          () =>
+              controller.updateRole(updatedRole, currentUserId: 'current-user'),
+          throwsA(
+            isA<Exception>().having(
+              (e) => e.toString(),
+              'message',
+              contains('Permission denied'),
+            ),
           ),
-          throwsA(isA<Exception>().having(
-            (e) => e.toString(),
-            'message',
-            contains('Permission denied'),
-          )),
         );
 
-        verify(mockPermissionValidator.canManageRoles(userId: 'current-user'))
-            .called(1);
+        verify(
+          mockPermissionValidator.canManageRoles(userId: 'current-user'),
+        ).called(1);
         verifyNever(mockRepository.updateRole(any));
       });
     });
@@ -256,51 +298,65 @@ void main() {
         isSystemRole: false,
       );
 
-      test('should delete role and log audit trail when permissions valid', () async {
-        // Arrange
-        when(mockPermissionValidator.canManageRoles(userId: 'current-user'))
-            .thenAnswer((_) async => true);
-        when(mockRepository.getAllRoles())
-            .thenAnswer((_) async => [testRole]);
+      test(
+        'should delete role and log audit trail when permissions valid',
+        () async {
+          // Arrange
+          when(
+            mockPermissionValidator.canManageRoles(userId: 'current-user'),
+          ).thenAnswer((_) async => true);
+          when(
+            mockRepository.getAllRoles(),
+          ).thenAnswer((_) async => [testRole]);
 
-        // Act
-        await controller.deleteRole('role-1', currentUserId: 'current-user');
+          // Act
+          await controller.deleteRole('role-1', currentUserId: 'current-user');
 
-        // Assert
-        verify(mockPermissionValidator.canManageRoles(userId: 'current-user'))
-            .called(1);
-        verify(mockRepository.deleteRole('role-1')).called(1);
-        verify(mockFirestoreSync.deleteFromFirestore(
-          collection: 'roles',
-          documentId: 'role-1',
-        )).called(1);
-        verify(mockAuditService.logAction(
-          action: anyNamed('action'),
-          entityType: anyNamed('entityType'),
-          entityId: anyNamed('entityId'),
-          userId: anyNamed('userId'),
-          description: anyNamed('description'),
-          oldValue: anyNamed('oldValue'),
-        )).called(1);
-      });
+          // Assert
+          verify(
+            mockPermissionValidator.canManageRoles(userId: 'current-user'),
+          ).called(1);
+          verify(mockRepository.deleteRole('role-1')).called(1);
+          verify(
+            mockFirestoreSync.deleteFromFirestore(
+              collection: 'roles',
+              documentId: 'role-1',
+            ),
+          ).called(1);
+          verify(
+            mockAuditService.logAction(
+              action: anyNamed('action'),
+              entityType: anyNamed('entityType'),
+              entityId: anyNamed('entityId'),
+              userId: anyNamed('userId'),
+              description: anyNamed('description'),
+              oldValue: anyNamed('oldValue'),
+            ),
+          ).called(1);
+        },
+      );
 
       test('should throw exception when permission denied', () async {
         // Arrange
-        when(mockPermissionValidator.canManageRoles(userId: 'current-user'))
-            .thenAnswer((_) async => false);
+        when(
+          mockPermissionValidator.canManageRoles(userId: 'current-user'),
+        ).thenAnswer((_) async => false);
 
         // Act & Assert
         expect(
           () => controller.deleteRole('role-1', currentUserId: 'current-user'),
-          throwsA(isA<Exception>().having(
-            (e) => e.toString(),
-            'message',
-            contains('Permission denied'),
-          )),
+          throwsA(
+            isA<Exception>().having(
+              (e) => e.toString(),
+              'message',
+              contains('Permission denied'),
+            ),
+          ),
         );
 
-        verify(mockPermissionValidator.canManageRoles(userId: 'current-user'))
-            .called(1);
+        verify(
+          mockPermissionValidator.canManageRoles(userId: 'current-user'),
+        ).called(1);
         verifyNever(mockRepository.deleteRole(any));
       });
     });
@@ -317,8 +373,9 @@ void main() {
             customPermissions: {},
           ),
         ];
-        when(mockRepository.getEnterpriseModuleUsers())
-            .thenAnswer((_) async => expectedUsers);
+        when(
+          mockRepository.getEnterpriseModuleUsers(),
+        ).thenAnswer((_) async => expectedUsers);
 
         // Act
         final result = await controller.getEnterpriseModuleUsers();

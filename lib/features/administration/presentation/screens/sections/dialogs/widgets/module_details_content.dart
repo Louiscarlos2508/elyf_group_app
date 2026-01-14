@@ -37,7 +37,10 @@ class ModuleDetailsContent extends StatelessWidget {
             tabs: [
               const Tab(text: 'Sections', icon: Icon(Icons.apps_outlined)),
               const Tab(text: 'Utilisateurs', icon: Icon(Icons.people_outline)),
-              const Tab(text: 'Entreprises', icon: Icon(Icons.business_outlined)),
+              const Tab(
+                text: 'Entreprises',
+                icon: Icon(Icons.business_outlined),
+              ),
             ],
           ),
           Expanded(
@@ -49,9 +52,7 @@ class ModuleDetailsContent extends StatelessWidget {
                   users: users,
                   enterprises: enterprises,
                 ),
-                ModuleEnterprisesTab(
-                  enterprises: stats.enterprises,
-                ),
+                ModuleEnterprisesTab(enterprises: stats.enterprises),
               ],
             ),
           ),
@@ -60,4 +61,3 @@ class ModuleDetailsContent extends StatelessWidget {
     );
   }
 }
-

@@ -39,4 +39,3 @@ class LeakEmptyState extends StatelessWidget {
     );
   }
 }
-

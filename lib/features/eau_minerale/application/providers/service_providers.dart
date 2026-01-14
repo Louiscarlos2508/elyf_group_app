@@ -21,44 +21,38 @@ import '../../domain/services/validation/production_validation_service.dart';
 import 'repository_providers.dart';
 
 // Service Providers
-final saleServiceProvider = Provider<SaleService>(
-  (ref) {
-    final stockRepo = ref.watch(stockRepositoryProvider);
-    final customerRepo = ref.watch(customerRepositoryProvider);
-    
-    return SaleService(
-      stockRepository: stockRepo,
-      customerRepository: customerRepo,
-    );
-  },
-);
+final saleServiceProvider = Provider<SaleService>((ref) {
+  final stockRepo = ref.watch(stockRepositoryProvider);
+  final customerRepo = ref.watch(customerRepositoryProvider);
+
+  return SaleService(
+    stockRepository: stockRepo,
+    customerRepository: customerRepo,
+  );
+});
 
 /// Provider for SaleCalculationService.
 final saleCalculationServiceProvider = Provider<SaleCalculationService>(
   (ref) => SaleCalculationService(),
 );
 
-final creditServiceProvider = Provider<CreditService>(
-  (ref) {
-    final creditRepo = ref.watch(creditRepositoryProvider);
-    final saleRepo = ref.watch(saleRepositoryProvider);
-    
-    return CreditService(
-      creditRepository: creditRepo,
-      saleRepository: saleRepo,
-    );
-  },
-);
+final creditServiceProvider = Provider<CreditService>((ref) {
+  final creditRepo = ref.watch(creditRepositoryProvider);
+  final saleRepo = ref.watch(saleRepositoryProvider);
 
-final dashboardCalculationServiceProvider = Provider<DashboardCalculationService>(
-  (ref) => DashboardCalculationService(),
-);
+  return CreditService(creditRepository: creditRepo, saleRepository: saleRepo);
+});
+
+final dashboardCalculationServiceProvider =
+    Provider<DashboardCalculationService>(
+      (ref) => DashboardCalculationService(),
+    );
 
 /// Provider for ProductionValidationService.
 final productionValidationServiceProvider =
     Provider<ProductionValidationService>(
-  (ref) => ProductionValidationService(),
-);
+      (ref) => ProductionValidationService(),
+    );
 
 /// Provider alias for product validation (uses ProductionValidationService).
 /// This is used by product form widgets for validation.
@@ -68,14 +62,14 @@ final productValidationServiceProvider = Provider<ProductionValidationService>(
 
 final productionPaymentCalculationServiceProvider =
     Provider<ProductionPaymentCalculationService>(
-  (ref) => ProductionPaymentCalculationService(),
-);
+      (ref) => ProductionPaymentCalculationService(),
+    );
 
 /// Provider for ProductionPaymentValidationService.
 final productionPaymentValidationServiceProvider =
     Provider<ProductionPaymentValidationService>(
-  (ref) => ProductionPaymentValidationService(),
-);
+      (ref) => ProductionPaymentValidationService(),
+    );
 
 final reportCalculationServiceProvider = Provider<ReportCalculationService>(
   (ref) => ReportCalculationService(),
@@ -87,8 +81,8 @@ final productionServiceProvider = Provider<ProductionService>(
 
 final profitabilityCalculationServiceProvider =
     Provider<ProfitabilityCalculationService>(
-  (ref) => ProfitabilityCalculationService(),
-);
+      (ref) => ProfitabilityCalculationService(),
+    );
 
 final productionPeriodServiceProvider = Provider<ProductionPeriodService>(
   (ref) => ProductionPeriodService(),
@@ -96,8 +90,8 @@ final productionPeriodServiceProvider = Provider<ProductionPeriodService>(
 
 final electricityMeterConfigServiceProvider =
     Provider<ElectricityMeterConfigService>(
-  (ref) => ElectricityMeterConfigService.instance,
-);
+      (ref) => ElectricityMeterConfigService.instance,
+    );
 
 /// Provider for PaymentSplitterService.
 final paymentSplitterServiceProvider = Provider<PaymentSplitterService>(
@@ -107,8 +101,8 @@ final paymentSplitterServiceProvider = Provider<PaymentSplitterService>(
 /// Provider for ProductionSessionValidationService.
 final productionSessionValidationServiceProvider =
     Provider<ProductionSessionValidationService>(
-  (ref) => ProductionSessionValidationService(),
-);
+      (ref) => ProductionSessionValidationService(),
+    );
 
 /// Provider for ProductionSessionBuilder.
 final productionSessionBuilderProvider = Provider<ProductionSessionBuilder>(
@@ -118,8 +112,8 @@ final productionSessionBuilderProvider = Provider<ProductionSessionBuilder>(
 /// Provider for ProductionSessionStatusCalculator.
 final productionSessionStatusCalculatorProvider =
     Provider<ProductionSessionStatusCalculator>(
-  (ref) => ProductionSessionStatusCalculator(),
-);
+      (ref) => ProductionSessionStatusCalculator(),
+    );
 
 /// Provider for CreditCalculationService.
 final creditCalculationServiceProvider = Provider<CreditCalculationService>(
@@ -130,4 +124,3 @@ final creditCalculationServiceProvider = Provider<CreditCalculationService>(
 final salaryCalculationServiceProvider = Provider<SalaryCalculationService>(
   (ref) => SalaryCalculationService(),
 );
-

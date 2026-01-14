@@ -30,20 +30,17 @@ class GazSalesReportContentV2 extends ConsumerWidget {
     final salesAsync = ref.watch(gasSalesProvider);
     final cylindersAsync = ref.watch(cylindersProvider);
     final pointsOfSaleAsync = ref.watch(
-      pointsOfSaleProvider(
-        (enterpriseId: 'gaz_1', moduleId: 'gaz'),
-      ),
+      pointsOfSaleProvider((enterpriseId: 'gaz_1', moduleId: 'gaz')),
     );
     final reportDataAsync = ref.watch(
-      gazReportDataProvider((
-        period: GazReportPeriod.custom,
-        startDate: startDate,
-        endDate: endDate,
-      ) as ({
-          GazReportPeriod period,
-          DateTime? startDate,
-          DateTime? endDate,
-        })),
+      gazReportDataProvider(
+        (period: GazReportPeriod.custom, startDate: startDate, endDate: endDate)
+            as ({
+              GazReportPeriod period,
+              DateTime? startDate,
+              DateTime? endDate,
+            }),
+      ),
     );
 
     final isWide = MediaQuery.of(context).size.width > 600;
@@ -75,7 +72,8 @@ class GazSalesReportContentV2 extends ConsumerWidget {
                         isWide,
                       );
                     },
-                    loading: () => const Center(child: CircularProgressIndicator()),
+                    loading: () =>
+                        const Center(child: CircularProgressIndicator()),
                     error: (_, __) => _buildContent(
                       ref,
                       theme,
@@ -98,7 +96,8 @@ class GazSalesReportContentV2 extends ConsumerWidget {
                     reportData,
                     isWide,
                   ),
-                  loading: () => const Center(child: CircularProgressIndicator()),
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator()),
                   error: (_, __) => const SizedBox.shrink(),
                 ),
               );
@@ -149,10 +148,7 @@ class GazSalesReportContentV2 extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: 16),
-        SalesReportCylinderStats(
-          sales: filteredSales,
-          cylinders: cylinders,
-        ),
+        SalesReportCylinderStats(sales: filteredSales, cylinders: cylinders),
         const SizedBox(height: 24),
         if (groupedSales.retailSales.isNotEmpty) ...[
           Text(
@@ -173,12 +169,13 @@ class GazSalesReportContentV2 extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 16),
-          SalesReportWholesaleStats(wholesaleSales: groupedSales.wholesaleSales),
+          SalesReportWholesaleStats(
+            wholesaleSales: groupedSales.wholesaleSales,
+          ),
           const SizedBox(height: 24),
         ],
         SalesReportRecentSales(sales: filteredSales),
       ],
     );
   }
-
 }

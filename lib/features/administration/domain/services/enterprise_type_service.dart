@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 /// Service for enterprise type mappings.
-/// 
+///
 /// Extracts business logic from UI widgets to make it testable and reusable.
 class EnterpriseTypeService {
   EnterpriseTypeService();
@@ -42,4 +42,3 @@ class EnterpriseTypeService {
     }
   }
 }
-

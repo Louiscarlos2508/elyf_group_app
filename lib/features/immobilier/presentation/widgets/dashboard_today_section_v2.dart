@@ -7,17 +7,15 @@ import 'dashboard_kpi_card_v2.dart';
 
 /// Section displaying today's KPIs for immobilier.
 class DashboardTodaySectionV2 extends StatelessWidget {
-  const DashboardTodaySectionV2({
-    super.key,
-    required this.todayPayments,
-  });
+  const DashboardTodaySectionV2({super.key, required this.todayPayments});
 
   final List<Payment> todayPayments;
 
   @override
   Widget build(BuildContext context) {
-    final paidPayments =
-        todayPayments.where((p) => p.status == PaymentStatus.paid).toList();
+    final paidPayments = todayPayments
+        .where((p) => p.status == PaymentStatus.paid)
+        .toList();
     final todayRevenue = paidPayments.fold(0, (sum, p) => sum + p.amount);
     final todayCount = paidPayments.length;
 

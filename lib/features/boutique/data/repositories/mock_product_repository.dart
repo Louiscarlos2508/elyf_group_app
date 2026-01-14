@@ -86,8 +86,7 @@ class MockProductRepository implements ProductRepository {
   @override
   Future<List<Product>> fetchProducts() async {
     await Future<void>.delayed(const Duration(milliseconds: 200));
-    return _products.values.toList()
-      ..sort((a, b) => a.name.compareTo(b.name));
+    return _products.values.toList()..sort((a, b) => a.name.compareTo(b.name));
   }
 
   @override
@@ -135,21 +134,17 @@ class MockProductRepository implements ProductRepository {
     await Future<void>.delayed(const Duration(milliseconds: 300));
     final product = _products[id];
     if (product != null && product.isDeleted) {
-      _products[id] = product.copyWith(
-        deletedAt: null,
-        deletedBy: null,
-      );
+      _products[id] = product.copyWith(deletedAt: null, deletedBy: null);
     }
   }
 
   @override
   Future<List<Product>> getDeletedProducts() async {
     await Future<void>.delayed(const Duration(milliseconds: 200));
-    return _products.values
-        .where((p) => p.isDeleted)
-        .toList()
-      ..sort((a, b) => (b.deletedAt ?? DateTime(1970))
-          .compareTo(a.deletedAt ?? DateTime(1970)));
+    return _products.values.where((p) => p.isDeleted).toList()..sort(
+      (a, b) => (b.deletedAt ?? DateTime(1970)).compareTo(
+        a.deletedAt ?? DateTime(1970),
+      ),
+    );
   }
 }
-

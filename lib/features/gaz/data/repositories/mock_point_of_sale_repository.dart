@@ -13,8 +13,9 @@ class MockPointOfSaleRepository implements PointOfSaleRepository {
     required String moduleId,
   }) async {
     return _pointsOfSale
-        .where((pos) =>
-            pos.enterpriseId == enterpriseId && pos.moduleId == moduleId)
+        .where(
+          (pos) => pos.enterpriseId == enterpriseId && pos.moduleId == moduleId,
+        )
         .toList();
   }
 
@@ -41,4 +42,3 @@ class MockPointOfSaleRepository implements PointOfSaleRepository {
     _pointsOfSale.removeWhere((pos) => pos.id == id);
   }
 }
-

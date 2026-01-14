@@ -20,4 +20,3 @@ abstract class TenantRepository {
   /// Supprime un locataire.
   Future<void> deleteTenant(String id);
 }
-

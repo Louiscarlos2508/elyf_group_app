@@ -2,10 +2,7 @@ import 'package:flutter/material.dart';
 
 /// Reusable notes field for payment forms.
 class PaymentNotesField extends StatelessWidget {
-  const PaymentNotesField({
-    super.key,
-    required this.controller,
-  });
+  const PaymentNotesField({super.key, required this.controller});
 
   final TextEditingController controller;
 
@@ -22,4 +19,3 @@ class PaymentNotesField extends StatelessWidget {
     );
   }
 }
-

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/administration/application/providers.dart';
+import 'package:elyf_groupe_app/core/auth/providers.dart'
+    show currentUserIdProvider;
 import '../../../domain/entities/user.dart';
 import 'package:elyf_groupe_app/core.dart';
 import 'dialogs/create_user_dialog.dart';
@@ -45,7 +47,10 @@ class _AdminUsersSectionState extends ConsumerState<AdminUsersSection> {
         await ref.read(userControllerProvider).createUser(result);
         ref.invalidate(usersProvider);
         if (mounted) {
-          NotificationService.showSuccess(context, 'Utilisateur créé avec succès');
+          NotificationService.showSuccess(
+            context,
+            'Utilisateur créé avec succès',
+          );
         }
       } catch (e) {
         if (mounted) {
@@ -66,7 +71,10 @@ class _AdminUsersSectionState extends ConsumerState<AdminUsersSection> {
         await ref.read(userControllerProvider).updateUser(result);
         ref.invalidate(usersProvider);
         if (mounted) {
-          NotificationService.showSuccess(context, 'Utilisateur modifié avec succès');
+          NotificationService.showSuccess(
+            context,
+            'Utilisateur modifié avec succès',
+          );
         }
       } catch (e) {
         if (mounted) {
@@ -77,14 +85,20 @@ class _AdminUsersSectionState extends ConsumerState<AdminUsersSection> {
   }
 
   Future<void> _handleAssignEnterprise(User user) async {
-    final result = await showDialog<EnterpriseModuleUser>(
+    final result = await showDialog<dynamic>(
       context: context,
       builder: (context) => AssignEnterpriseDialog(user: user),
     );
 
     if (result != null && mounted) {
       ref.invalidate(enterpriseModuleUsersProvider);
-      ref.invalidate(userEnterpriseModuleUsersProvider(result.userId));
+      // Si c'est un EnterpriseModuleUser (mode classique), invalider pour cet utilisateur
+      if (result is EnterpriseModuleUser) {
+        ref.invalidate(userEnterpriseModuleUsersProvider(result.userId));
+      } else {
+        // Mode batch : invalider pour l'utilisateur concerné
+        ref.invalidate(userEnterpriseModuleUsersProvider(user.id));
+      }
     }
   }
 
@@ -111,7 +125,7 @@ class _AdminUsersSectionState extends ConsumerState<AdminUsersSection> {
     if (confirmed == true && mounted) {
       try {
         await ref.read(userControllerProvider).deleteUser(user.id);
-        ref.invalidate(usersProvider);
+        ref.refresh(usersProvider);
         if (mounted) {
           NotificationService.showSuccess(context, 'Utilisateur supprimé');
         }
@@ -125,7 +139,9 @@ class _AdminUsersSectionState extends ConsumerState<AdminUsersSection> {
 
   Future<void> _handleToggleStatus(User user) async {
     try {
-      await ref.read(userControllerProvider).toggleUserStatus(user.id, !user.isActive);
+      await ref
+          .read(userControllerProvider)
+          .toggleUserStatus(user.id, !user.isActive);
       ref.invalidate(usersProvider);
       if (mounted) {
         NotificationService.showInfo(
@@ -176,12 +192,14 @@ class _AdminUsersSectionState extends ConsumerState<AdminUsersSection> {
             return enterpriseModuleUsersAsync.when(
               data: (assignments) {
                 final filterService = ref.read(userFilterServiceProvider);
+                final currentUserId = ref.watch(currentUserIdProvider);
                 final filteredUsers = filterService.filterAndSort(
                   users: users,
                   assignments: assignments,
                   searchQuery: _searchController.text,
                   enterpriseId: _selectedEnterpriseFilter,
                   moduleId: _selectedModuleFilter,
+                  excludeUserId: currentUserId,
                 );
 
                 if (filteredUsers.isEmpty) {
@@ -191,24 +209,21 @@ class _AdminUsersSectionState extends ConsumerState<AdminUsersSection> {
                 }
 
                 return SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final user = filteredUsers[index];
-                      final userAssignments = assignments
-                          .where((a) => a.userId == user.id)
-                          .toList();
+                  delegate: SliverChildBuilderDelegate((context, index) {
+                    final user = filteredUsers[index];
+                    final userAssignments = assignments
+                        .where((a) => a.userId == user.id)
+                        .toList();
 
-                      return UserListItem(
-                        user: user,
-                        userAssignments: userAssignments,
-                        onEdit: () => _handleEditUser(user),
-                        onAssign: () => _handleAssignEnterprise(user),
-                        onToggle: () => _handleToggleStatus(user),
-                        onDelete: () => _handleDeleteUser(user),
-                      );
-                    },
-                    childCount: filteredUsers.length,
-                  ),
+                    return UserListItem(
+                      user: user,
+                      userAssignments: userAssignments,
+                      onEdit: () => _handleEditUser(user),
+                      onAssign: () => _handleAssignEnterprise(user),
+                      onToggle: () => _handleToggleStatus(user),
+                      onDelete: () => _handleDeleteUser(user),
+                    );
+                  }, childCount: filteredUsers.length),
                 );
               },
               loading: () => const SliverToBoxAdapter(
@@ -235,7 +250,10 @@ class _AdminUsersSectionState extends ConsumerState<AdminUsersSection> {
                       color: theme.colorScheme.error,
                     ),
                     const SizedBox(height: 16),
-                    Text('Erreur de chargement', style: theme.textTheme.titleLarge),
+                    Text(
+                      'Erreur de chargement',
+                      style: theme.textTheme.titleLarge,
+                    ),
                     const SizedBox(height: 8),
                     Text(
                       error.toString(),
@@ -255,4 +273,3 @@ class _AdminUsersSectionState extends ConsumerState<AdminUsersSection> {
     );
   }
 }
-

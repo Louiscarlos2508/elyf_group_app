@@ -5,10 +5,7 @@ import '../../../domain/entities/tour.dart';
 
 /// En-tête du détail du tour avec carte de statut.
 class TourDetailHeader extends StatelessWidget {
-  const TourDetailHeader({
-    super.key,
-    required this.tour,
-  });
+  const TourDetailHeader({super.key, required this.tour});
 
   final Tour tour;
 
@@ -18,27 +15,24 @@ class TourDetailHeader extends StatelessWidget {
     final statusLabel = tour.status == TourStatus.closure
         ? 'Terminé'
         : tour.status == TourStatus.collection
-            ? 'Préparation'
-            : 'En cours';
+        ? 'Préparation'
+        : 'En cours';
     final statusBgColor = tour.status == TourStatus.closure
         ? const Color(0xFFECEEF2)
         : tour.status == TourStatus.collection
-            ? const Color(0xFFECEEF2)
-            : const Color(0xFF030213);
+        ? const Color(0xFFECEEF2)
+        : const Color(0xFF030213);
     final statusTextColor = tour.status == TourStatus.closure
         ? const Color(0xFF030213)
         : tour.status == TourStatus.collection
-            ? const Color(0xFF030213)
-            : Colors.white;
+        ? const Color(0xFF030213)
+        : Colors.white;
 
     return Container(
       padding: const EdgeInsets.all(25.285),
       decoration: BoxDecoration(
         color: const Color(0xFFEFF6FF).withValues(alpha: 0.5),
-        border: Border.all(
-          color: const Color(0xFFBEDBFF),
-          width: 1.305,
-        ),
+        border: Border.all(color: const Color(0xFFBEDBFF), width: 1.305),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
@@ -111,4 +105,3 @@ class TourDetailHeader extends StatelessWidget {
     );
   }
 }
-

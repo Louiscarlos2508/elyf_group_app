@@ -13,4 +13,3 @@ class ProductionSessionsHelpers {
         '${date.minute.toString().padLeft(2, '0')}';
   }
 }
-

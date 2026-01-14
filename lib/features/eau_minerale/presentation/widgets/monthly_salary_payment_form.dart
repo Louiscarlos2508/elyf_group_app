@@ -87,9 +87,11 @@ class MonthlySalaryPaymentFormState
     }
 
     // Check for duplicate payment for the same month/year
-    final hasDuplicate = widget.existingPayments.any((p) =>
-        p.date.month == _paymentDate.month &&
-        p.date.year == _paymentDate.year);
+    final hasDuplicate = widget.existingPayments.any(
+      (p) =>
+          p.date.month == _paymentDate.month &&
+          p.date.year == _paymentDate.year,
+    );
 
     if (hasDuplicate) {
       throw DuplicatePaymentException(
@@ -154,12 +156,17 @@ class MonthlySalaryPaymentFormState
         signature: signature,
       );
 
-      await ref.read(salaryControllerProvider).createMonthlySalaryPayment(payment);
+      await ref
+          .read(salaryControllerProvider)
+          .createMonthlySalaryPayment(payment);
 
       if (!mounted) return;
       Navigator.of(context).pop();
       ref.invalidate(salaryStateProvider);
-      NotificationService.showSuccess(context, 'Paiement de salaire enregistré avec signature');
+      NotificationService.showSuccess(
+        context,
+        'Paiement de salaire enregistré avec signature',
+      );
     } catch (e) {
       if (!mounted) return;
       String message;
@@ -212,4 +219,3 @@ class MonthlySalaryPaymentFormState
     );
   }
 }
-

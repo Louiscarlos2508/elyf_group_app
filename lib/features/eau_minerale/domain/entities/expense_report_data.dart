@@ -9,7 +9,7 @@ class ExpenseReportData {
   });
 
   final int totalAmount; // Total expenses
-  final Map<ExpenseCategory, int> expensesByCategory; // Expenses grouped by category
+  final Map<ExpenseCategory, int>
+  expensesByCategory; // Expenses grouped by category
   final List<ExpenseRecord> expenses; // List of expenses in period
 }
-

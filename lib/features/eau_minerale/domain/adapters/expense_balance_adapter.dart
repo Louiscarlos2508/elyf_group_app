@@ -3,8 +3,7 @@ import '../../../../shared/domain/adapters/expense_balance_adapter.dart';
 import '../entities/expense_record.dart';
 
 /// Adaptateur pour convertir les ExpenseRecord en ExpenseBalanceData.
-class EauMineraleExpenseBalanceAdapter
-    implements ExpenseBalanceAdapter {
+class EauMineraleExpenseBalanceAdapter implements ExpenseBalanceAdapter {
   @override
   List<ExpenseBalanceData> convertToBalanceData(List<dynamic> expenses) {
     return (expenses as List<ExpenseRecord>).map((expense) {
@@ -39,4 +38,3 @@ class EauMineraleExpenseBalanceAdapter
     }
   }
 }
-

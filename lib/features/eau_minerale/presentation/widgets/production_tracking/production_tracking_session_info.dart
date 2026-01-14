@@ -4,10 +4,7 @@ import '../../../domain/entities/production_session.dart';
 
 /// Widget affichant les informations de base de la session de production.
 class ProductionTrackingSessionInfo extends StatelessWidget {
-  const ProductionTrackingSessionInfo({
-    super.key,
-    required this.session,
-  });
+  const ProductionTrackingSessionInfo({super.key, required this.session});
 
   final ProductionSession session;
 
@@ -37,15 +34,15 @@ class ProductionTrackingSessionInfo extends StatelessWidget {
             child: Text(
               label,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
           Text(
             value,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
           ),
         ],
       ),
@@ -64,10 +61,7 @@ class ProductionTrackingSessionInfo extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(
-                  Icons.info_outline,
-                  color: theme.colorScheme.primary,
-                ),
+                Icon(Icons.info_outline, color: theme.colorScheme.primary),
                 const SizedBox(width: 12),
                 Text(
                   'Informations de session',
@@ -133,10 +127,7 @@ class ProductionTrackingSessionInfo extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              Text(
-                session.notes!,
-                style: theme.textTheme.bodyMedium,
-              ),
+              Text(session.notes!, style: theme.textTheme.bodyMedium),
             ],
           ],
         ),
@@ -144,4 +135,3 @@ class ProductionTrackingSessionInfo extends StatelessWidget {
     );
   }
 }
-

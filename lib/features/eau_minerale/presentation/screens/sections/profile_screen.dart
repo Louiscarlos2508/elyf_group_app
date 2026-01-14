@@ -12,4 +12,3 @@ class ProfileScreen extends ConsumerWidget {
     return const shared.ProfileScreen();
   }
 }
-

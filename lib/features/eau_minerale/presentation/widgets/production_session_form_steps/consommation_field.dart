@@ -5,10 +5,7 @@ import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart
 
 /// Champ pour la consommation électrique.
 class ConsommationField extends ConsumerWidget {
-  const ConsommationField({
-    super.key,
-    required this.controller,
-  });
+  const ConsommationField({super.key, required this.controller});
 
   final TextEditingController controller;
 
@@ -60,4 +57,3 @@ class ConsommationField extends ConsumerWidget {
     );
   }
 }
-

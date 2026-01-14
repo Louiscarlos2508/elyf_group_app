@@ -15,29 +15,40 @@ class SalaryCalculationService {
   /// Calculates total salary from a map of salary info.
   ///
   /// The map values should have a `totalSalary` property.
-  static int calculateTotalFromMap<T>(Map<String, T> salaries, int Function(T) getSalary) {
+  static int calculateTotalFromMap<T>(
+    Map<String, T> salaries,
+    int Function(T) getSalary,
+  ) {
     return salaries.values.fold(0, (sum, info) => sum + getSalary(info));
   }
 
   /// Calculates total days from a map of salary info.
   ///
   /// The map values should have a `daysWorked` property.
-  static int calculateTotalDaysFromMap<T>(Map<String, T> salaries, int Function(T) getDays) {
+  static int calculateTotalDaysFromMap<T>(
+    Map<String, T> salaries,
+    int Function(T) getDays,
+  ) {
     return salaries.values.fold(0, (sum, info) => sum + getDays(info));
   }
 
   /// Calculates total salary from a list of salary info objects.
   ///
   /// The list items should have a `totalSalary` property.
-  static int calculateTotalFromList<T>(List<T> salaries, int Function(T) getSalary) {
+  static int calculateTotalFromList<T>(
+    List<T> salaries,
+    int Function(T) getSalary,
+  ) {
     return salaries.fold(0, (sum, info) => sum + getSalary(info));
   }
 
   /// Calculates total days from a list of salary info objects.
   ///
   /// The list items should have a `daysWorked` property.
-  static int calculateTotalDaysFromList<T>(List<T> salaries, int Function(T) getDays) {
+  static int calculateTotalDaysFromList<T>(
+    List<T> salaries,
+    int Function(T) getDays,
+  ) {
     return salaries.fold(0, (sum, info) => sum + getDays(info));
   }
 }
-

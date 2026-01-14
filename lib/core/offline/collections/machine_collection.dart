@@ -38,11 +38,11 @@ class MachineCollection {
   }
 
   Map<String, dynamic> toMap() => {
-        'id': remoteId,
-        'enterpriseId': enterpriseId,
-        'name': name,
-        'reference': reference,
-        'description': description,
-        'isActive': isActive,
-      };
+    'id': remoteId,
+    'enterpriseId': enterpriseId,
+    'name': name,
+    'reference': reference,
+    'description': description,
+    'isActive': isActive,
+  };
 }

@@ -24,8 +24,7 @@ class LiquidityCheckpointDialog extends StatefulWidget {
       _LiquidityCheckpointDialogState();
 }
 
-class _LiquidityCheckpointDialogState
-    extends State<LiquidityCheckpointDialog> {
+class _LiquidityCheckpointDialogState extends State<LiquidityCheckpointDialog> {
   LiquidityCheckpointType _selectedPeriod = LiquidityCheckpointType.morning;
   DateTime _selectedDate = DateTime.now();
   final _cashController = TextEditingController();
@@ -41,11 +40,15 @@ class _LiquidityCheckpointDialogState
       _selectedDate = widget.checkpoint!.date;
       // Charger les valeurs selon la période demandée
       if (widget.period == LiquidityCheckpointType.morning) {
-        _cashController.text = widget.checkpoint!.morningCashAmount?.toString() ?? '';
-        _simController.text = widget.checkpoint!.morningSimAmount?.toString() ?? '';
+        _cashController.text =
+            widget.checkpoint!.morningCashAmount?.toString() ?? '';
+        _simController.text =
+            widget.checkpoint!.morningSimAmount?.toString() ?? '';
       } else if (widget.period == LiquidityCheckpointType.evening) {
-        _cashController.text = widget.checkpoint!.eveningCashAmount?.toString() ?? '';
-        _simController.text = widget.checkpoint!.eveningSimAmount?.toString() ?? '';
+        _cashController.text =
+            widget.checkpoint!.eveningCashAmount?.toString() ?? '';
+        _simController.text =
+            widget.checkpoint!.eveningSimAmount?.toString() ?? '';
       } else {
         // Fallback pour compatibilité
         _cashController.text = widget.checkpoint!.cashAmount?.toString() ?? '';
@@ -101,7 +104,8 @@ class _LiquidityCheckpointDialogState
     // Création du checkpoint via le service
     final checkpoint = LiquidityCheckpointService.createCheckpointFromInput(
       existingId: widget.checkpoint?.id,
-      enterpriseId: widget.enterpriseId ?? widget.checkpoint?.enterpriseId ?? '',
+      enterpriseId:
+          widget.enterpriseId ?? widget.checkpoint?.enterpriseId ?? '',
       date: _selectedDate,
       period: _selectedPeriod,
       cashAmount: cashAmount,
@@ -118,9 +122,7 @@ class _LiquidityCheckpointDialogState
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       child: Container(
         width: 509,
         constraints: BoxConstraints(
@@ -134,181 +136,170 @@ class _LiquidityCheckpointDialogState
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-              // Header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Pointage de liquidité',
+                // Header
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Pointage de liquidité',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF0A0A0A),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Enregistrez les montants disponibles en cash et sur la SIM',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Color(0xFF717182),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      icon: const Icon(Icons.close, size: 16),
+                      onPressed: () => Navigator.of(context).pop(),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                // Période et Date
+                Row(
+                  children: [
+                    Expanded(child: _buildPeriodSelector()),
+                    const SizedBox(width: 16),
+                    Expanded(child: _buildDateField()),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                // Cash disponible
+                FormFieldWithLabel(
+                  label: '💵 Cash disponible (FCFA) *',
+                  controller: _cashController,
+                  hintText: 'Argent liquide comptabilisé',
+                  keyboardType: TextInputType.number,
+                  validator: LiquidityCheckpointService.validateAmount,
+                ),
+                const SizedBox(height: 4),
+                const Padding(
+                  padding: EdgeInsets.only(left: 0),
+                  child: Text(
+                    'Montant en espèces physiques que vous avez',
+                    style: TextStyle(fontSize: 12, color: Color(0xFF4A5565)),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // Solde sur la SIM
+                FormFieldWithLabel(
+                  label: '📱 Solde sur la SIM (FCFA) *',
+                  controller: _simController,
+                  hintText: 'Solde Orange Money / MTN / Moov',
+                  keyboardType: TextInputType.number,
+                  validator: LiquidityCheckpointService.validateAmount,
+                ),
+                const SizedBox(height: 4),
+                const Padding(
+                  padding: EdgeInsets.only(left: 0),
+                  child: Text(
+                    'Vérifiez votre solde : *144# (Orange), *126# (MTN)',
+                    style: TextStyle(fontSize: 12, color: Color(0xFF4A5565)),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // Notes
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Notes (optionnel)',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.normal,
+                        color: Color(0xFF0A0A0A),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: _notesController,
+                      maxLines: 3,
+                      decoration: InputDecoration(
+                        hintText:
+                            'Ex: Grosse activité ce matin, stock faible...',
+                        hintStyle: const TextStyle(
+                          fontSize: 14,
+                          color: Color(0xFF717182),
+                        ),
+                        filled: true,
+                        fillColor: const Color(0xFFF3F3F5),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide.none,
+                        ),
+                        contentPadding: const EdgeInsets.all(12),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                // Liquidité totale
+                _buildTotalLiquiditySection(),
+                const SizedBox(height: 16),
+                // Boutons
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(
+                            color: Color(0xFFE5E5E5),
+                            width: 1.219,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                        ),
+                        child: const Text(
+                          'Annuler',
                           style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
                             color: Color(0xFF0A0A0A),
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Enregistrez les montants disponibles en cash et sur la SIM',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Color(0xFF717182),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: _handleSave,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF155DFC),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
                           ),
+                          padding: const EdgeInsets.symmetric(vertical: 10),
                         ),
-                      ],
+                        child: const Text(
+                          'Enregistrer',
+                          style: TextStyle(fontSize: 14),
+                        ),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  IconButton(
-                    icon: const Icon(Icons.close, size: 16),
-                    onPressed: () => Navigator.of(context).pop(),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              // Période et Date
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildPeriodSelector(),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _buildDateField(),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              // Cash disponible
-              FormFieldWithLabel(
-                label: '💵 Cash disponible (FCFA) *',
-                controller: _cashController,
-                hintText: 'Argent liquide comptabilisé',
-                keyboardType: TextInputType.number,
-                validator: LiquidityCheckpointService.validateAmount,
-              ),
-              const SizedBox(height: 4),
-              const Padding(
-                padding: EdgeInsets.only(left: 0),
-                child: Text(
-                  'Montant en espèces physiques que vous avez',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF4A5565),
-                  ),
+                  ],
                 ),
-              ),
-              const SizedBox(height: 16),
-              // Solde sur la SIM
-              FormFieldWithLabel(
-                label: '📱 Solde sur la SIM (FCFA) *',
-                controller: _simController,
-                hintText: 'Solde Orange Money / MTN / Moov',
-                keyboardType: TextInputType.number,
-                validator: LiquidityCheckpointService.validateAmount,
-              ),
-              const SizedBox(height: 4),
-              const Padding(
-                padding: EdgeInsets.only(left: 0),
-                child: Text(
-                  'Vérifiez votre solde : *144# (Orange), *126# (MTN)',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF4A5565),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              // Notes
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Notes (optionnel)',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.normal,
-                      color: Color(0xFF0A0A0A),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    controller: _notesController,
-                    maxLines: 3,
-                    decoration: InputDecoration(
-                      hintText: 'Ex: Grosse activité ce matin, stock faible...',
-                      hintStyle: const TextStyle(
-                        fontSize: 14,
-                        color: Color(0xFF717182),
-                      ),
-                      filled: true,
-                      fillColor: const Color(0xFFF3F3F5),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.all(12),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              // Liquidité totale
-              _buildTotalLiquiditySection(),
-              const SizedBox(height: 16),
-              // Boutons
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(
-                          color: Color(0xFFE5E5E5),
-                          width: 1.219,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                      ),
-                      child: const Text(
-                        'Annuler',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Color(0xFF0A0A0A),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: _handleSave,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF155DFC),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                      ),
-                      child: const Text(
-                        'Enregistrer',
-                        style: TextStyle(
-                          fontSize: 14,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+              ],
             ),
           ),
         ),
@@ -377,9 +368,7 @@ class _LiquidityCheckpointDialogState
       child: Container(
         height: 36,
         decoration: BoxDecoration(
-          color: isSelected
-              ? const Color(0xFFF54900)
-              : Colors.white,
+          color: isSelected ? const Color(0xFFF54900) : Colors.white,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: isSelected
@@ -431,10 +420,7 @@ class _LiquidityCheckpointDialogState
             decoration: BoxDecoration(
               color: const Color(0xFFF3F3F5),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: Colors.transparent,
-                width: 1.219,
-              ),
+              border: Border.all(color: Colors.transparent, width: 1.219),
             ),
             child: Row(
               children: [
@@ -469,10 +455,7 @@ class _LiquidityCheckpointDialogState
       decoration: BoxDecoration(
         color: const Color(0xFFF0FDF4),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: const Color(0xFFB9F8CF),
-          width: 1.219,
-        ),
+        border: Border.all(color: const Color(0xFFB9F8CF), width: 1.219),
       ),
       padding: const EdgeInsets.all(13),
       child: Column(
@@ -480,10 +463,7 @@ class _LiquidityCheckpointDialogState
         children: [
           const Text(
             '💰 Liquidité totale',
-            style: TextStyle(
-              fontSize: 14,
-              color: Color(0xFF0D542B),
-            ),
+            style: TextStyle(fontSize: 14, color: Color(0xFF0D542B)),
           ),
           const SizedBox(height: 4),
           Text(
@@ -497,14 +477,10 @@ class _LiquidityCheckpointDialogState
           const SizedBox(height: 4),
           Text(
             'Cash: ${CurrencyFormatter.formatShort(cashAmount)} + SIM: ${CurrencyFormatter.formatShort(simAmount)}',
-            style: const TextStyle(
-              fontSize: 12,
-              color: Color(0xFF00A63E),
-            ),
+            style: const TextStyle(fontSize: 12, color: Color(0xFF00A63E)),
           ),
         ],
       ),
     );
   }
 }
-

@@ -8,10 +8,7 @@ import '../../domain/services/property_validation_service.dart';
 import 'package:elyf_groupe_app/shared.dart';
 
 class PropertyFormDialog extends ConsumerStatefulWidget {
-  const PropertyFormDialog({
-    super.key,
-    this.property,
-  });
+  const PropertyFormDialog({super.key, this.property});
 
   final Property? property;
 
@@ -28,7 +25,7 @@ class _PropertyFormDialogState extends ConsumerState<PropertyFormDialog>
   final _roomsController = TextEditingController();
   final _priceController = TextEditingController();
   final _descriptionController = TextEditingController();
-  
+
   PropertyType _selectedType = PropertyType.house;
   PropertyStatus _selectedStatus = PropertyStatus.available;
 
@@ -63,7 +60,8 @@ class _PropertyFormDialogState extends ConsumerState<PropertyFormDialog>
     await handleFormSubmit(
       context: context,
       formKey: _formKey,
-      onLoadingChanged: (_) {}, // Pas besoin de gestion d'état de chargement séparée
+      onLoadingChanged:
+          (_) {}, // Pas besoin de gestion d'état de chargement séparée
       onSubmit: () async {
         final property = Property(
           id: widget.property?.id ?? IdGenerator.generate(),
@@ -103,7 +101,9 @@ class _PropertyFormDialogState extends ConsumerState<PropertyFormDialog>
   @override
   Widget build(BuildContext context) {
     return FormDialog(
-      title: widget.property == null ? 'Nouvelle propriété' : 'Modifier la propriété',
+      title: widget.property == null
+          ? 'Nouvelle propriété'
+          : 'Modifier la propriété',
       saveLabel: widget.property == null ? 'Créer' : 'Enregistrer',
       onSave: _save,
       child: Form(
@@ -112,138 +112,132 @@ class _PropertyFormDialogState extends ConsumerState<PropertyFormDialog>
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,
           children: [
-                      TextFormField(
-                        controller: _addressController,
-                        decoration: const InputDecoration(
-                          labelText: 'Adresse *',
-                          hintText: '123 Rue de la Paix',
-                          prefixIcon: Icon(Icons.location_on),
-                        ),
-                        textCapitalization: TextCapitalization.words,
-                        validator: PropertyValidationService.validateAddress,
-                      ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _cityController,
-                        decoration: const InputDecoration(
-                          labelText: 'Ville *',
-                          hintText: 'Ouagadougou',
-                          prefixIcon: Icon(Icons.location_city),
-                        ),
-                        textCapitalization: TextCapitalization.words,
-                        validator: PropertyValidationService.validateCity,
-                      ),
-                      const SizedBox(height: 16),
-                      DropdownButtonFormField<PropertyType>(
-                        initialValue: _selectedType,
-                        decoration: const InputDecoration(
-                          labelText: 'Type de propriété *',
-                          prefixIcon: Icon(Icons.category),
-                        ),
-                        items: PropertyType.values.map((type) {
-                          return DropdownMenuItem(
-                            value: type,
-                            child: Text(_getTypeLabel(type)),
-                          );
-                        }).toList(),
-                        onChanged: (value) {
-                          if (value != null) {
-                            setState(() => _selectedType = value);
-                          }
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextFormField(
-                              controller: _roomsController,
-                              decoration: const InputDecoration(
-                                labelText: 'Nombre de pièces *',
-                                prefixIcon: Icon(Icons.bed),
-                              ),
-                              keyboardType: TextInputType.number,
-                              inputFormatters: [
-                                FilteringTextInputFormatter.digitsOnly,
-                              ],
-                              validator: (value) {
-                                final rooms = value != null && value.isNotEmpty
-                                    ? int.tryParse(value)
-                                    : null;
-                                return PropertyValidationService.validateRooms(rooms);
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: TextFormField(
-                              controller: _areaController,
-                              decoration: const InputDecoration(
-                                labelText: 'Surface (m²) *',
-                                prefixIcon: Icon(Icons.square_foot),
-                              ),
-                              keyboardType: TextInputType.number,
-                              inputFormatters: [
-                                FilteringTextInputFormatter.digitsOnly,
-                              ],
-                              validator: (value) {
-                                final area = value != null && value.isNotEmpty
-                                    ? int.tryParse(value)
-                                    : null;
-                                return PropertyValidationService.validateArea(area);
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _priceController,
-                        decoration: const InputDecoration(
-                          labelText: 'Loyer mensuel (FCFA) *',
-                          prefixIcon: Icon(Icons.attach_money),
-                        ),
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                        ],
-                        validator: (value) {
-                          final price = value != null && value.isNotEmpty
-                              ? int.tryParse(value)
-                              : null;
-                          return PropertyValidationService.validatePrice(price);
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      DropdownButtonFormField<PropertyStatus>(
-                        initialValue: _selectedStatus,
-                        decoration: const InputDecoration(
-                          labelText: 'Statut *',
-                          prefixIcon: Icon(Icons.info_outline),
-                        ),
-                        items: PropertyStatus.values.map((status) {
-                          return DropdownMenuItem(
-                            value: status,
-                            child: Text(_getStatusLabel(status)),
-                          );
-                        }).toList(),
-                        onChanged: (value) {
-                          if (value != null) {
-                            setState(() => _selectedStatus = value);
-                          }
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _descriptionController,
-                        decoration: const InputDecoration(
-                          labelText: 'Description',
-                          hintText: 'Description de la propriété...',
-                          prefixIcon: Icon(Icons.description),
-                        ),
-                        maxLines: 3,
-                        textCapitalization: TextCapitalization.sentences,
-                      ),
+            TextFormField(
+              controller: _addressController,
+              decoration: const InputDecoration(
+                labelText: 'Adresse *',
+                hintText: '123 Rue de la Paix',
+                prefixIcon: Icon(Icons.location_on),
+              ),
+              textCapitalization: TextCapitalization.words,
+              validator: PropertyValidationService.validateAddress,
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _cityController,
+              decoration: const InputDecoration(
+                labelText: 'Ville *',
+                hintText: 'Ouagadougou',
+                prefixIcon: Icon(Icons.location_city),
+              ),
+              textCapitalization: TextCapitalization.words,
+              validator: PropertyValidationService.validateCity,
+            ),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<PropertyType>(
+              initialValue: _selectedType,
+              decoration: const InputDecoration(
+                labelText: 'Type de propriété *',
+                prefixIcon: Icon(Icons.category),
+              ),
+              items: PropertyType.values.map((type) {
+                return DropdownMenuItem(
+                  value: type,
+                  child: Text(_getTypeLabel(type)),
+                );
+              }).toList(),
+              onChanged: (value) {
+                if (value != null) {
+                  setState(() => _selectedType = value);
+                }
+              },
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _roomsController,
+                    decoration: const InputDecoration(
+                      labelText: 'Nombre de pièces *',
+                      prefixIcon: Icon(Icons.bed),
+                    ),
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    validator: (value) {
+                      final rooms = value != null && value.isNotEmpty
+                          ? int.tryParse(value)
+                          : null;
+                      return PropertyValidationService.validateRooms(rooms);
+                    },
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: TextFormField(
+                    controller: _areaController,
+                    decoration: const InputDecoration(
+                      labelText: 'Surface (m²) *',
+                      prefixIcon: Icon(Icons.square_foot),
+                    ),
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    validator: (value) {
+                      final area = value != null && value.isNotEmpty
+                          ? int.tryParse(value)
+                          : null;
+                      return PropertyValidationService.validateArea(area);
+                    },
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _priceController,
+              decoration: const InputDecoration(
+                labelText: 'Loyer mensuel (FCFA) *',
+                prefixIcon: Icon(Icons.attach_money),
+              ),
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              validator: (value) {
+                final price = value != null && value.isNotEmpty
+                    ? int.tryParse(value)
+                    : null;
+                return PropertyValidationService.validatePrice(price);
+              },
+            ),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<PropertyStatus>(
+              initialValue: _selectedStatus,
+              decoration: const InputDecoration(
+                labelText: 'Statut *',
+                prefixIcon: Icon(Icons.info_outline),
+              ),
+              items: PropertyStatus.values.map((status) {
+                return DropdownMenuItem(
+                  value: status,
+                  child: Text(_getStatusLabel(status)),
+                );
+              }).toList(),
+              onChanged: (value) {
+                if (value != null) {
+                  setState(() => _selectedStatus = value);
+                }
+              },
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _descriptionController,
+              decoration: const InputDecoration(
+                labelText: 'Description',
+                hintText: 'Description de la propriété...',
+                prefixIcon: Icon(Icons.description),
+              ),
+              maxLines: 3,
+              textCapitalization: TextCapitalization.sentences,
+            ),
             const SizedBox(height: 24),
           ],
         ),
@@ -279,4 +273,3 @@ class _PropertyFormDialogState extends ConsumerState<PropertyFormDialog>
     }
   }
 }
-

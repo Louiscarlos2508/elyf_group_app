@@ -13,10 +13,7 @@ import 'production_session_form_screen.dart';
 
 /// Écran de détail d'une session de production.
 class ProductionSessionDetailScreen extends ConsumerStatefulWidget {
-  const ProductionSessionDetailScreen({
-    super.key,
-    required this.sessionId,
-  });
+  const ProductionSessionDetailScreen({super.key, required this.sessionId});
 
   final String sessionId;
 
@@ -85,7 +82,9 @@ class _ProductionSessionDetailScreenState
               title: 'Erreur de chargement',
               subtitle: 'Impossible de charger les détails de la session.',
               primaryActionLabel: 'Réessayer',
-              onPrimaryAction: () => ref.invalidate(productionSessionDetailProvider((widget.sessionId))),
+              onPrimaryAction: () => ref.invalidate(
+                productionSessionDetailProvider((widget.sessionId)),
+              ),
             ),
           ),
           // Onglet Rapport
@@ -119,8 +118,10 @@ class _ProductionSessionDetailContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final sessionAsync = ref.watch(productionSessionDetailProvider((sessionId)));
-    
+    final sessionAsync = ref.watch(
+      productionSessionDetailProvider((sessionId)),
+    );
+
     return sessionAsync.when(
       data: (session) => SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -153,7 +154,8 @@ class _ProductionSessionDetailContent extends ConsumerWidget {
         title: 'Erreur de chargement',
         subtitle: 'Impossible de charger les détails de la session.',
         primaryActionLabel: 'Réessayer',
-        onPrimaryAction: () => ref.invalidate(productionSessionDetailProvider((sessionId))),
+        onPrimaryAction: () =>
+            ref.invalidate(productionSessionDetailProvider((sessionId))),
       ),
     );
   }
@@ -175,10 +177,18 @@ class _ProductionSessionDetailContent extends ConsumerWidget {
             const SizedBox(height: 20),
             _buildInfoRow(context, 'Date', _formatDate(session.date)),
             const SizedBox(height: 12),
-            _buildInfoRow(context, 'Heure début', _formatTime(session.heureDebut)),
+            _buildInfoRow(
+              context,
+              'Heure début',
+              _formatTime(session.heureDebut),
+            ),
             const SizedBox(height: 12),
             if (session.heureFin != null)
-              _buildInfoRow(context, 'Heure fin', _formatTime(session.heureFin!)),
+              _buildInfoRow(
+                context,
+                'Heure fin',
+                _formatTime(session.heureFin!),
+              ),
             const SizedBox(height: 12),
             _buildInfoRow(
               context,
@@ -214,9 +224,7 @@ class _ProductionSessionDetailContent extends ConsumerWidget {
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildConsumptionInfoRow(context, session),
-          ],
+          children: [_buildConsumptionInfoRow(context, session)],
         ),
       ),
     );
@@ -278,9 +286,7 @@ class _ProductionSessionDetailContent extends ConsumerWidget {
                     : theme.colorScheme.primaryContainer.withValues(alpha: 0.1),
                 child: ListTile(
                   leading: Icon(
-                    bobine.estFinie
-                        ? Icons.check_circle
-                        : Icons.rotate_right,
+                    bobine.estFinie ? Icons.check_circle : Icons.rotate_right,
                     color: bobine.estFinie
                         ? Colors.green
                         : theme.colorScheme.primary,
@@ -322,15 +328,14 @@ class _ProductionSessionDetailContent extends ConsumerWidget {
     );
 
     final statusColors = Theme.of(context).extension<StatusColors>()!;
-    final marginColor = marge.estRentable ? statusColors.success : statusColors.danger;
+    final marginColor = marge.estRentable
+        ? statusColors.success
+        : statusColors.danger;
     return Card(
       color: marginColor.withValues(alpha: 0.08),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(28),
-        side: BorderSide(
-          color: marginColor.withValues(alpha: 0.2),
-          width: 1.5,
-        ),
+        side: BorderSide(color: marginColor.withValues(alpha: 0.2), width: 1.5),
       ),
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -362,7 +367,11 @@ class _ProductionSessionDetailContent extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 20),
-            _buildInfoRow(context, 'Revenus totaux', '${marge.revenusTotaux} CFA'),
+            _buildInfoRow(
+              context,
+              'Revenus totaux',
+              '${marge.revenusTotaux} CFA',
+            ),
             const SizedBox(height: 8),
             _buildInfoRow(context, 'Coût bobines', '${marge.coutBobines} CFA'),
             const SizedBox(height: 8),
@@ -395,7 +404,11 @@ class _ProductionSessionDetailContent extends ConsumerWidget {
               valueColor: marginColor,
             ),
             const SizedBox(height: 8),
-            _buildInfoRow(context, 'Nombre ventes', marge.nombreVentes.toString()),
+            _buildInfoRow(
+              context,
+              'Nombre ventes',
+              marge.nombreVentes.toString(),
+            ),
           ],
         ),
       ),
@@ -463,11 +476,14 @@ class _ProductionSessionDetailContent extends ConsumerWidget {
         '${time.minute.toString().padLeft(2, '0')}';
   }
 
-  Widget _buildConsumptionInfoRow(BuildContext context, ProductionSession session) {
+  Widget _buildConsumptionInfoRow(
+    BuildContext context,
+    ProductionSession session,
+  ) {
     return Consumer(
       builder: (context, ref, child) {
         final meterTypeAsync = ref.watch(electricityMeterTypeProvider);
-        
+
         return meterTypeAsync.when(
           data: (meterType) {
             return _buildInfoRow(
@@ -493,16 +509,16 @@ class _ProductionSessionDetailContent extends ConsumerWidget {
 }
 
 class _ProductionSessionReportContent extends ConsumerWidget {
-  const _ProductionSessionReportContent({
-    required this.sessionId,
-  });
+  const _ProductionSessionReportContent({required this.sessionId});
 
   final String sessionId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final sessionAsync = ref.watch(productionSessionDetailProvider((sessionId)));
-    
+    final sessionAsync = ref.watch(
+      productionSessionDetailProvider((sessionId)),
+    );
+
     return sessionAsync.when(
       data: (session) => SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -514,9 +530,9 @@ class _ProductionSessionReportContent extends ConsumerWidget {
         title: 'Erreur de chargement',
         subtitle: 'Impossible de charger les détails de la session.',
         primaryActionLabel: 'Réessayer',
-        onPrimaryAction: () => ref.invalidate(productionSessionDetailProvider((sessionId))),
+        onPrimaryAction: () =>
+            ref.invalidate(productionSessionDetailProvider((sessionId))),
       ),
     );
   }
 }
-

@@ -1,12 +1,13 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 /// Service wrapper pour flutter_secure_storage.
-/// 
+///
 /// Fournit une interface simplifiée pour stocker et récupérer des données
 /// sensibles de manière sécurisée. Utilise le Keychain sur iOS et
 /// EncryptedSharedPreferences sur Android.
 class SecureStorageService {
-  static const SecureStorageService _instance = SecureStorageService._internal();
+  static const SecureStorageService _instance =
+      SecureStorageService._internal();
   factory SecureStorageService() => _instance;
   const SecureStorageService._internal();
 
@@ -26,7 +27,7 @@ class SecureStorageService {
   );
 
   /// Sauvegarde une valeur de manière sécurisée.
-  /// 
+  ///
   /// [key] : Clé unique pour identifier la valeur
   /// [value] : Valeur à sauvegarder (sera stockée de manière chiffrée)
   Future<void> write(String key, String? value) async {
@@ -38,7 +39,7 @@ class SecureStorageService {
   }
 
   /// Récupère une valeur de manière sécurisée.
-  /// 
+  ///
   /// [key] : Clé unique de la valeur à récupérer
   /// Retourne la valeur ou `null` si la clé n'existe pas
   Future<String?> read(String key) async {
@@ -46,7 +47,7 @@ class SecureStorageService {
   }
 
   /// Supprime une valeur.
-  /// 
+  ///
   /// [key] : Clé unique de la valeur à supprimer
   Future<void> delete(String key) async {
     await _storage.delete(key: key);
@@ -58,7 +59,7 @@ class SecureStorageService {
   }
 
   /// Vérifie si une clé existe.
-  /// 
+  ///
   /// [key] : Clé à vérifier
   /// Retourne `true` si la clé existe, `false` sinon
   Future<bool> containsKey(String key) async {
@@ -66,10 +67,9 @@ class SecureStorageService {
   }
 
   /// Récupère toutes les clés stockées.
-  /// 
+  ///
   /// Retourne une map de toutes les clés/valeurs stockées
   Future<Map<String, String>> readAll() async {
     return await _storage.readAll();
   }
 }
-

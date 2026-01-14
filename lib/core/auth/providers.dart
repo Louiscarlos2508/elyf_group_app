@@ -2,19 +2,18 @@
 library;
 
 // Providers du service d'authentification
-export 'services/auth_service.dart' show
-    authServiceProvider,
-    firestoreUserServiceProvider,
-    currentUserIdProvider,
-    isAuthenticatedProvider,
-    currentUserProvider,
-    isAdminProvider;
+export 'services/auth_service.dart'
+    show
+        authServiceProvider,
+        firestoreUserServiceProvider,
+        currentUserIdProvider,
+        isAuthenticatedProvider,
+        currentUserProvider,
+        isAdminProvider;
 
 // Providers pour le profil utilisateur
 export 'providers/user_profile_provider.dart' show currentUserProfileProvider;
 
 // Controller d'authentification
-export 'controllers/auth_controller.dart' show
-    authControllerProvider,
-    AuthController;
-
+export 'controllers/auth_controller.dart'
+    show authControllerProvider, AuthController;

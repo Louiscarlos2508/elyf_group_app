@@ -26,10 +26,7 @@ class CollectionListSection extends StatelessWidget {
       children: [
         Text(
           title,
-          style: const TextStyle(
-            fontSize: 14,
-            color: Color(0xFF364153),
-          ),
+          style: const TextStyle(fontSize: 14, color: Color(0xFF364153)),
         ),
         const SizedBox(height: 8),
         ...collections.map((collection) {
@@ -49,4 +46,3 @@ class CollectionListSection extends StatelessWidget {
     );
   }
 }
-

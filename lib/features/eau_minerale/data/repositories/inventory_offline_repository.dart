@@ -143,10 +143,12 @@ class InventoryOfflineRepository extends OfflineRepository<StockItem>
       return await getAllForEnterprise(enterpriseId);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log('Error fetching stock items',
-          name: 'InventoryOfflineRepository',
-          error: error,
-          stackTrace: stackTrace);
+      developer.log(
+        'Error fetching stock items',
+        name: 'InventoryOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
       throw appException;
     }
   }
@@ -165,10 +167,12 @@ class InventoryOfflineRepository extends OfflineRepository<StockItem>
       await save(updated);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log('Error updating stock item: ${item.id}',
-          name: 'InventoryOfflineRepository',
-          error: error,
-          stackTrace: stackTrace);
+      developer.log(
+        'Error updating stock item: ${item.id}',
+        name: 'InventoryOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
       throw appException;
     }
   }
@@ -179,10 +183,12 @@ class InventoryOfflineRepository extends OfflineRepository<StockItem>
       return await getByLocalId(id);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log('Error fetching stock item: $id',
-          name: 'InventoryOfflineRepository',
-          error: error,
-          stackTrace: stackTrace);
+      developer.log(
+        'Error fetching stock item: $id',
+        name: 'InventoryOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
       throw appException;
     }
   }

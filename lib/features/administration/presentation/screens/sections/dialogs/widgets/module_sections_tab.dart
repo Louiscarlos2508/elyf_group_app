@@ -4,10 +4,7 @@ import 'package:elyf_groupe_app/features/administration/domain/entities/module_s
 
 /// Tab widget displaying module sections
 class ModuleSectionsTab extends StatelessWidget {
-  const ModuleSectionsTab({
-    super.key,
-    required this.sections,
-  });
+  const ModuleSectionsTab({super.key, required this.sections});
 
   final List<ModuleSection> sections;
 
@@ -27,8 +24,8 @@ class ModuleSectionsTab extends StatelessWidget {
             Text(
               'Aucune section développée',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),
@@ -72,4 +69,3 @@ class ModuleSectionsTab extends StatelessWidget {
     );
   }
 }
-

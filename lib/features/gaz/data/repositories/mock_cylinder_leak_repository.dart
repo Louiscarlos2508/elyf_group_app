@@ -27,9 +27,7 @@ class MockCylinderLeakRepository implements CylinderLeakRepository {
 
   @override
   Future<String> reportLeak(CylinderLeak leak) async {
-    final id = leak.id.isEmpty
-        ? 'leak_${_random.nextInt(1000000)}'
-        : leak.id;
+    final id = leak.id.isEmpty ? 'leak_${_random.nextInt(1000000)}' : leak.id;
     final newLeak = leak.copyWith(id: id);
     _leaks.add(newLeak);
     return id;
@@ -54,10 +52,7 @@ class MockCylinderLeakRepository implements CylinderLeakRepository {
   }
 
   @override
-  Future<void> markAsExchanged(
-    String leakId,
-    DateTime exchangeDate,
-  ) async {
+  Future<void> markAsExchanged(String leakId, DateTime exchangeDate) async {
     final index = _leaks.indexWhere((l) => l.id == leakId);
     if (index != -1) {
       _leaks[index] = _leaks[index].copyWith(

@@ -13,23 +13,29 @@ class ProfitabilityCalculationService {
     required List<Sale> sales,
     required int totalExpenses,
   }) {
-    final totalProduction =
-        sessions.fold<int>(0, (sum, s) => sum + s.quantiteProduite);
-    final totalProductionCost =
-        sessions.fold<int>(0, (sum, s) => sum + s.coutTotal);
+    final totalProduction = sessions.fold<int>(
+      0,
+      (sum, s) => sum + s.quantiteProduite,
+    );
+    final totalProductionCost = sessions.fold<int>(
+      0,
+      (sum, s) => sum + s.coutTotal,
+    );
     final totalRevenue = sales.fold<int>(0, (sum, s) => sum + s.totalPrice);
-    final totalSalesQuantity =
-        sales.fold<int>(0, (sum, s) => sum + s.quantity);
+    final totalSalesQuantity = sales.fold<int>(0, (sum, s) => sum + s.quantity);
 
-    final costPerUnit =
-        totalProduction > 0 ? totalProductionCost / totalProduction : 0.0;
-    final avgSalePrice =
-        totalSalesQuantity > 0 ? totalRevenue / totalSalesQuantity : 0.0;
+    final costPerUnit = totalProduction > 0
+        ? totalProductionCost / totalProduction
+        : 0.0;
+    final avgSalePrice = totalSalesQuantity > 0
+        ? totalRevenue / totalSalesQuantity
+        : 0.0;
     final marginPerUnit = avgSalePrice - costPerUnit;
     final totalCosts = totalProductionCost + totalExpenses;
     final grossProfit = totalRevenue - totalCosts;
-    final grossMarginPercent =
-        totalRevenue > 0 ? (grossProfit / totalRevenue) * 100 : 0.0;
+    final grossMarginPercent = totalRevenue > 0
+        ? (grossProfit / totalRevenue) * 100
+        : 0.0;
 
     return ProfitabilityMetrics(
       totalProduction: totalProduction,
@@ -52,11 +58,7 @@ class ProfitabilityCalculationService {
     for (final sale in sales) {
       final name = sale.productName;
       if (!byProduct.containsKey(name)) {
-        byProduct[name] = {
-          'name': name,
-          'quantity': 0,
-          'revenue': 0,
-        };
+        byProduct[name] = {'name': name, 'quantity': 0, 'revenue': 0};
       }
       byProduct[name]!['quantity'] =
           (byProduct[name]!['quantity'] as int) + sale.quantity;

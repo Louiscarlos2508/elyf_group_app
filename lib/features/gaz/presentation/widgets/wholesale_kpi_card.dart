@@ -82,4 +82,3 @@ class WholesaleKpiCard extends StatelessWidget {
     );
   }
 }
-

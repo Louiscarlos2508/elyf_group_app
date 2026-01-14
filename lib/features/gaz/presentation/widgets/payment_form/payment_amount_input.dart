@@ -181,10 +181,7 @@ class PaymentAmountInput extends StatelessWidget {
         ),
         const SizedBox(height: 11.99),
         // Divider
-        Container(
-          height: 0.999,
-          color: Colors.black.withValues(alpha: 0.1),
-        ),
+        Container(height: 0.999, color: Colors.black.withValues(alpha: 0.1)),
         const SizedBox(height: 11.99),
         // Champ montant reçu
         Column(
@@ -206,9 +203,7 @@ class PaymentAmountInput extends StatelessWidget {
                     keyboardType: const TextInputType.numberWithOptions(
                       decimal: false,
                     ),
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                    ],
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     decoration: InputDecoration(
                       filled: true,
                       fillColor: const Color(0xFFF3F3F5),
@@ -234,8 +229,7 @@ class PaymentAmountInput extends StatelessWidget {
                       if (value == null || value.isEmpty) {
                         return 'Veuillez entrer un montant';
                       }
-                      final amount =
-                          double.tryParse(value.replaceAll(' ', ''));
+                      final amount = double.tryParse(value.replaceAll(' ', ''));
                       if (amount == null || amount <= 0) {
                         return 'Le montant doit être supérieur à 0';
                       }
@@ -265,4 +259,3 @@ class PaymentAmountInput extends StatelessWidget {
     );
   }
 }
-

@@ -4,10 +4,7 @@ import 'transactions_table_cells.dart';
 
 /// Widget pour afficher le tableau des transactions.
 class TransactionsHistoryTable extends StatelessWidget {
-  const TransactionsHistoryTable({
-    super.key,
-    required this.transactions,
-  });
+  const TransactionsHistoryTable({super.key, required this.transactions});
 
   final List<Transaction> transactions;
 
@@ -17,10 +14,7 @@ class TransactionsHistoryTable extends StatelessWidget {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(14),
-        side: const BorderSide(
-          color: Color(0xFFE5E5E5),
-          width: 1.219,
-        ),
+        side: const BorderSide(color: Color(0xFFE5E5E5), width: 1.219),
       ),
       child: Column(
         children: [
@@ -43,10 +37,7 @@ class _TransactionsTableHeader extends StatelessWidget {
     return Container(
       decoration: const BoxDecoration(
         border: Border(
-          bottom: BorderSide(
-            color: Color(0xFFE5E5E5),
-            width: 1.219,
-          ),
+          bottom: BorderSide(color: Color(0xFFE5E5E5), width: 1.219),
         ),
       ),
       child: Row(
@@ -56,9 +47,7 @@ class _TransactionsTableHeader extends StatelessWidget {
           _TableHeaderCell('Client', width: 259.976),
           _TableHeaderCell('Téléphone', width: 100.541),
           _TableHeaderCell("Pièce d'identité", width: 175.474),
-          Expanded(
-            child: _TableHeaderCell('Montant', isRightAligned: true),
-          ),
+          Expanded(child: _TableHeaderCell('Montant', isRightAligned: true)),
         ],
       ),
     );
@@ -67,11 +56,7 @@ class _TransactionsTableHeader extends StatelessWidget {
 
 /// Cellule d'en-tête du tableau.
 class _TableHeaderCell extends StatelessWidget {
-  const _TableHeaderCell(
-    this.text, {
-    this.width,
-    this.isRightAligned = false,
-  });
+  const _TableHeaderCell(this.text, {this.width, this.isRightAligned = false});
 
   final String text;
   final double? width;
@@ -114,10 +99,7 @@ class _TransactionRow extends StatelessWidget {
     return Container(
       decoration: const BoxDecoration(
         border: Border(
-          bottom: BorderSide(
-            color: Color(0xFFE5E5E5),
-            width: 1.219,
-          ),
+          bottom: BorderSide(color: Color(0xFFE5E5E5), width: 1.219),
         ),
       ),
       child: Row(
@@ -133,4 +115,3 @@ class _TransactionRow extends StatelessWidget {
     );
   }
 }
-

@@ -45,17 +45,11 @@ class TourDatePicker extends StatelessWidget {
           child: Container(
             width: double.infinity,
             height: 36,
-            padding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 4,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             decoration: BoxDecoration(
               color: const Color(0xFFF3F3F5),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: Colors.transparent,
-                width: 1.305,
-              ),
+              border: Border.all(color: Colors.transparent, width: 1.305),
             ),
             child: Row(
               children: [
@@ -81,4 +75,3 @@ class TourDatePicker extends StatelessWidget {
     );
   }
 }
-

@@ -20,7 +20,8 @@ class ExpenseBalanceScreen extends ConsumerStatefulWidget {
   });
 
   final String moduleName;
-  final dynamic expensesProvider; // Provider that returns AsyncValue<List<ExpenseBalanceData>>
+  final dynamic
+  expensesProvider; // Provider that returns AsyncValue<List<ExpenseBalanceData>>
   final ExpenseBalanceAdapter adapter;
 
   @override
@@ -28,8 +29,7 @@ class ExpenseBalanceScreen extends ConsumerStatefulWidget {
       _ExpenseBalanceScreenState();
 }
 
-class _ExpenseBalanceScreenState
-    extends ConsumerState<ExpenseBalanceScreen> {
+class _ExpenseBalanceScreenState extends ConsumerState<ExpenseBalanceScreen> {
   DateTime _startDate = DateTime.now().subtract(const Duration(days: 30));
   DateTime _endDate = DateTime.now();
   Set<String> _selectedCategories = {};
@@ -42,11 +42,11 @@ class _ExpenseBalanceScreenState
 
   List<ExpenseBalanceData> _filterExpenses(List<ExpenseBalanceData> expenses) {
     return expenses.where((expense) {
-      final dateOk = expense.date.isAfter(_startDate.subtract(
-            const Duration(days: 1),
-          )) &&
+      final dateOk =
+          expense.date.isAfter(_startDate.subtract(const Duration(days: 1))) &&
           expense.date.isBefore(_endDate.add(const Duration(days: 1)));
-      final categoryOk = _selectedCategories.isEmpty ||
+      final categoryOk =
+          _selectedCategories.isEmpty ||
           _selectedCategories.contains(expense.category);
       return dateOk && categoryOk;
     }).toList();
@@ -54,7 +54,9 @@ class _ExpenseBalanceScreenState
 
   @override
   Widget build(BuildContext context) {
-    final expensesAsync = ref.watch(widget.expensesProvider) as AsyncValue<List<ExpenseBalanceData>>;
+    final expensesAsync =
+        ref.watch(widget.expensesProvider)
+            as AsyncValue<List<ExpenseBalanceData>>;
 
     return Scaffold(
       appBar: AppBar(
@@ -143,9 +145,8 @@ class _ExpenseBalanceScreenState
         showDialog(
           context: context,
           barrierDismissible: false,
-          builder: (context) => const Center(
-            child: CircularProgressIndicator(),
-          ),
+          builder: (context) =>
+              const Center(child: CircularProgressIndicator()),
         );
 
         final filteredExpenses = _filterExpenses(allExpenses);
@@ -162,11 +163,9 @@ class _ExpenseBalanceScreenState
           Navigator.of(context).pop();
           final result = await OpenFile.open(file.path);
           if (result.type != ResultType.done && context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('PDF généré: ${file.path}'),
-              ),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text('PDF généré: ${file.path}')));
           }
         }
       } catch (e) {
@@ -183,4 +182,3 @@ class _ExpenseBalanceScreenState
     });
   }
 }
-

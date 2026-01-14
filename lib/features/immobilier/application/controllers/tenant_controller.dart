@@ -3,10 +3,7 @@ import '../../domain/repositories/tenant_repository.dart';
 import '../../domain/services/immobilier_validation_service.dart';
 
 class TenantController {
-  TenantController(
-    this._tenantRepository,
-    this._validationService,
-  );
+  TenantController(this._tenantRepository, this._validationService);
 
   final TenantRepository _tenantRepository;
   final ImmobilierValidationService _validationService;
@@ -45,4 +42,3 @@ class TenantController {
     await _tenantRepository.deleteTenant(id);
   }
 }
-

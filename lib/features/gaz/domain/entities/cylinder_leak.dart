@@ -26,7 +26,8 @@ class CylinderLeak {
   final int weight; // 3, 6, 10, 12
   final DateTime reportedDate;
   final LeakStatus status;
-  final String? tourId; // ID du tour d'approvisionnement où la fuite a été signalée
+  final String?
+  tourId; // ID du tour d'approvisionnement où la fuite a été signalée
   final DateTime? exchangeDate;
   final String? notes;
 

@@ -51,10 +51,7 @@ class MockCylinderStockRepository implements CylinderStockRepository {
   }
 
   @override
-  Future<void> changeStockStatus(
-    String id,
-    CylinderStatus newStatus,
-  ) async {
+  Future<void> changeStockStatus(String id, CylinderStatus newStatus) async {
     final index = _stocks.indexWhere((s) => s.id == id);
     if (index != -1) {
       _stocks[index] = _stocks[index].copyWith(

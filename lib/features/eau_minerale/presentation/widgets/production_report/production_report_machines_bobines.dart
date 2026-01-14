@@ -9,10 +9,7 @@ import 'production_report_helpers.dart';
 
 /// Section machines et bobines du rapport.
 class ProductionReportMachinesBobines extends ConsumerWidget {
-  const ProductionReportMachinesBobines({
-    super.key,
-    required this.session,
-  });
+  const ProductionReportMachinesBobines({super.key, required this.session});
 
   final ProductionSession session;
 
@@ -37,11 +34,7 @@ class ProductionReportMachinesBobines extends ConsumerWidget {
         ),
         const SizedBox(height: 12),
         allSessionsAsync.when(
-          data: (allSessions) => _buildBobinesList(
-            theme,
-            session,
-            allSessions,
-          ),
+          data: (allSessions) => _buildBobinesList(theme, session, allSessions),
           loading: () => const CircularProgressIndicator(),
           error: (_, __) => _buildBobinesListFallback(theme, session),
         ),
@@ -57,7 +50,8 @@ class ProductionReportMachinesBobines extends ConsumerWidget {
     return Column(
       children: session.bobinesUtilisees.map((bobine) {
         final reuseInfo = _findBobineReuseInfo(bobine, session, allSessions);
-        final statutCloture = session.effectiveStatus == ProductionSessionStatus.completed
+        final statutCloture =
+            session.effectiveStatus == ProductionSessionStatus.completed
             ? (bobine.estFinie ? 'Finie' : 'Reste en machine')
             : null;
 
@@ -72,13 +66,11 @@ class ProductionReportMachinesBobines extends ConsumerWidget {
     );
   }
 
-  Widget _buildBobinesListFallback(
-    ThemeData theme,
-    ProductionSession session,
-  ) {
+  Widget _buildBobinesListFallback(ThemeData theme, ProductionSession session) {
     return Column(
       children: session.bobinesUtilisees.map((bobine) {
-        final statutCloture = session.effectiveStatus == ProductionSessionStatus.completed
+        final statutCloture =
+            session.effectiveStatus == ProductionSessionStatus.completed
             ? (bobine.estFinie ? 'Finie' : 'Reste en machine')
             : null;
 
@@ -98,14 +90,16 @@ class ProductionReportMachinesBobines extends ConsumerWidget {
     ProductionSession currentSession,
     List<ProductionSession> allSessions,
   ) {
-    final sessionsPrecedentes = allSessions
-        .where(
-          (s) =>
-              s.date.isBefore(currentSession.date) ||
-              (s.date.isAtSameMomentAs(currentSession.date) && s.id != currentSession.id),
-        )
-        .toList()
-      ..sort((a, b) => b.date.compareTo(a.date));
+    final sessionsPrecedentes =
+        allSessions
+            .where(
+              (s) =>
+                  s.date.isBefore(currentSession.date) ||
+                  (s.date.isAtSameMomentAs(currentSession.date) &&
+                      s.id != currentSession.id),
+            )
+            .toList()
+          ..sort((a, b) => b.date.compareTo(a.date));
 
     for (final s in sessionsPrecedentes) {
       try {
@@ -263,4 +257,3 @@ class _BobineCard extends StatelessWidget {
     );
   }
 }
-

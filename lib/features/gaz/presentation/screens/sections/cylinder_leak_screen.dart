@@ -10,6 +10,7 @@ import 'cylinder_leak/leak_header.dart';
 import 'cylinder_leak/leak_list_item.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
+
 /// Écran de gestion des bouteilles avec fuites.
 class CylinderLeakScreen extends ConsumerStatefulWidget {
   const CylinderLeakScreen({
@@ -22,8 +23,7 @@ class CylinderLeakScreen extends ConsumerStatefulWidget {
   final String moduleId;
 
   @override
-  ConsumerState<CylinderLeakScreen> createState() =>
-      _CylinderLeakScreenState();
+  ConsumerState<CylinderLeakScreen> createState() => _CylinderLeakScreenState();
 }
 
 class _CylinderLeakScreenState extends ConsumerState<CylinderLeakScreen> {
@@ -40,9 +40,10 @@ class _CylinderLeakScreenState extends ConsumerState<CylinderLeakScreen> {
       ).then((result) {
         if (result == true && mounted) {
           ref.invalidate(
-            cylinderLeaksProvider(
-              (enterpriseId: widget.enterpriseId, status: null),
-            ),
+            cylinderLeaksProvider((
+              enterpriseId: widget.enterpriseId,
+              status: null,
+            )),
           );
         }
       });
@@ -59,19 +60,17 @@ class _CylinderLeakScreenState extends ConsumerState<CylinderLeakScreen> {
     final isMobile = MediaQuery.of(context).size.width < 600;
 
     final leaksAsync = ref.watch(
-      cylinderLeaksProvider(
-        (enterpriseId: widget.enterpriseId, status: _filterStatus),
-      ),
+      cylinderLeaksProvider((
+        enterpriseId: widget.enterpriseId,
+        status: _filterStatus,
+      )),
     );
 
     return CustomScrollView(
       slivers: [
         // Header
         SliverToBoxAdapter(
-          child: LeakHeader(
-            isMobile: isMobile,
-            onReportLeak: _showLeakDialog,
-          ),
+          child: LeakHeader(isMobile: isMobile, onReportLeak: _showLeakDialog),
         ),
         // Filters
         SliverToBoxAdapter(
@@ -83,9 +82,7 @@ class _CylinderLeakScreenState extends ConsumerState<CylinderLeakScreen> {
         leaksAsync.when(
           data: (leaks) {
             if (leaks.isEmpty) {
-              return const SliverFillRemaining(
-                child: LeakEmptyState(),
-              );
+              return const SliverFillRemaining(child: LeakEmptyState());
             }
 
             return SliverPadding(
@@ -93,16 +90,16 @@ class _CylinderLeakScreenState extends ConsumerState<CylinderLeakScreen> {
               sliver: SliverList.separated(
                 itemCount: leaks.length,
                 separatorBuilder: (_, __) => const SizedBox(height: 12),
-                itemBuilder: (context, index) => LeakListItem(leak: leaks[index]),
+                itemBuilder: (context, index) =>
+                    LeakListItem(leak: leaks[index]),
               ),
             );
           },
           loading: () => const SliverFillRemaining(
             child: Center(child: CircularProgressIndicator()),
           ),
-          error: (e, _) => SliverFillRemaining(
-            child: Center(child: Text('Erreur: $e')),
-          ),
+          error: (e, _) =>
+              SliverFillRemaining(child: Center(child: Text('Erreur: $e'))),
         ),
         const SliverToBoxAdapter(child: SizedBox(height: 24)),
       ],

@@ -18,7 +18,9 @@ class SaleCustomerSelector extends ConsumerWidget {
   final ValueChanged<CustomerSummary?> onCustomerSelected;
 
   Future<void> _selectCustomer(BuildContext context, WidgetRef ref) async {
-    final customers = await ref.read(customerRepositoryProvider).fetchCustomers();
+    final customers = await ref
+        .read(customerRepositoryProvider)
+        .fetchCustomers();
 
     if (customers.isEmpty) {
       if (!context.mounted) return;
@@ -76,10 +78,7 @@ class SaleCustomerSelector extends ConsumerWidget {
         ),
         child: Row(
           children: [
-            Icon(
-              Icons.person_outline,
-              color: theme.colorScheme.primary,
-            ),
+            Icon(Icons.person_outline, color: theme.colorScheme.primary),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -116,4 +115,3 @@ class SaleCustomerSelector extends ConsumerWidget {
     );
   }
 }
-

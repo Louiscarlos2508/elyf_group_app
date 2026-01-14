@@ -30,7 +30,6 @@ class ProductFormFields extends StatefulWidget {
 }
 
 class _ProductFormFieldsState extends State<ProductFormFields> {
-
   int _calculateUnitPrice() {
     final qty = int.tryParse(widget.stockController.text) ?? 0;
     final totalPrice = int.tryParse(widget.purchasePriceController.text) ?? 0;
@@ -80,36 +79,36 @@ class _ProductFormFieldsState extends State<ProductFormFields> {
         // Prix de vente
         TextFormField(
           controller: widget.priceController,
-                decoration: const InputDecoration(
-                  labelText: 'Prix de vente (FCFA) *',
-                  prefixIcon: Icon(Icons.attach_money),
-                ),
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                validator: (v) {
-                  if (v == null || v.isEmpty) return 'Requis';
-                  if (int.tryParse(v) == null || int.parse(v) <= 0) {
-                    return 'Prix invalide';
-                  }
-                  return null;
-                },
-              ),
+          decoration: const InputDecoration(
+            labelText: 'Prix de vente (FCFA) *',
+            prefixIcon: Icon(Icons.attach_money),
+          ),
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          validator: (v) {
+            if (v == null || v.isEmpty) return 'Requis';
+            if (int.tryParse(v) == null || int.parse(v) <= 0) {
+              return 'Prix invalide';
+            }
+            return null;
+          },
+        ),
         const SizedBox(height: 16),
 
         // Stock initial (optionnel sauf en édition)
         TextFormField(
           controller: widget.stockController,
-                decoration: InputDecoration(
+          decoration: InputDecoration(
             labelText: widget.isEditing
-                      ? 'Stock actuel (lecture seule)'
+                ? 'Stock actuel (lecture seule)'
                 : 'Stock initial (optionnel)',
-                  prefixIcon: const Icon(Icons.inventory_2),
+            prefixIcon: const Icon(Icons.inventory_2),
             helperText: widget.isEditing
                 ? 'Modifiable via réapprovisionnement'
                 : 'Laisser vide pour approvisionner plus tard',
-                ),
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          ),
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           enabled: !widget.isEditing,
         ),
         const SizedBox(height: 16),
@@ -118,13 +117,15 @@ class _ProductFormFieldsState extends State<ProductFormFields> {
         TextFormField(
           controller: widget.purchasePriceController,
           decoration: InputDecoration(
-            labelText: hasStock ? 'Prix total d\'achat (FCFA)' : 'Prix d\'achat',
+            labelText: hasStock
+                ? 'Prix total d\'achat (FCFA)'
+                : 'Prix d\'achat',
             prefixIcon: const Icon(Icons.payments),
             helperText: widget.isEditing
                 ? 'Modifiable via réapprovisionnement'
                 : hasStock
-                    ? 'Montant total payé au fournisseur'
-                    : 'Définir le stock d\'abord',
+                ? 'Montant total payé au fournisseur'
+                : 'Définir le stock d\'abord',
           ),
           keyboardType: TextInputType.number,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],

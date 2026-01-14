@@ -14,4 +14,3 @@ class AgentsFormatHelpers {
     return '$amount F';
   }
 }
-

@@ -2,50 +2,50 @@
 enum ModulePermission {
   // Dashboard
   viewDashboard,
-  
+
   // Production
   viewProduction,
   createProduction,
   editProduction,
   deleteProduction,
-  
+
   // Sales
   viewSales,
   createSale,
   editSale,
   deleteSale,
-  
+
   // Stock
   viewStock,
   editStock,
-  
+
   // Credits
   viewCredits,
   collectPayment,
   viewCreditHistory,
-  
+
   // Finances
   viewFinances,
   createExpense,
   editExpense,
   deleteExpense,
-  
+
   // Salaries
   viewSalaries,
   createSalary,
   editSalary,
   deleteSalary,
-  
+
   // Reports
   viewReports,
   downloadReports,
-  
+
   // Settings
   viewSettings,
   editSettings,
   manageProducts,
   configureProduction,
-  
+
   // Profile
   viewProfile,
   editProfile,
@@ -56,29 +56,26 @@ enum ModulePermission {
 enum EauMineraleRole {
   /// Full access to all features
   responsable,
-  
+
   /// Access to most features except settings
   gestionnaire,
-  
+
   /// Access to sales only
   vendeur,
-  
+
   /// Access to production only
   producteur,
-  
+
   /// Access to finances and reports
   comptable,
-  
+
   /// Read-only access to dashboard and reports
   lecteur,
 }
 
 /// Permission configuration for each role.
 class RolePermissions {
-  const RolePermissions({
-    required this.role,
-    required this.permissions,
-  });
+  const RolePermissions({required this.role, required this.permissions});
 
   final EauMineraleRole role;
   final Set<ModulePermission> permissions;
@@ -168,4 +165,3 @@ class RolePermissions {
     };
   }
 }
-

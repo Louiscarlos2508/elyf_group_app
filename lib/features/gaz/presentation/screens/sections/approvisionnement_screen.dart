@@ -9,6 +9,7 @@ import 'approvisionnement/approvisionnement_tab_bar.dart';
 import 'approvisionnement/tours_list_tab.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
+
 /// Écran de gestion des tours d'approvisionnement.
 class ApprovisionnementScreen extends ConsumerStatefulWidget {
   const ApprovisionnementScreen({super.key});
@@ -54,9 +55,7 @@ class _ApprovisionnementScreenState
       );
       if (result == true && mounted) {
         ref.invalidate(
-          toursProvider(
-            (enterpriseId: _enterpriseId!, status: null),
-          ),
+          toursProvider((enterpriseId: _enterpriseId!, status: null)),
         );
       }
     } catch (e) {

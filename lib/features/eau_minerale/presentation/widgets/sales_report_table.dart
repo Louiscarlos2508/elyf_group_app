@@ -6,10 +6,7 @@ import '../../domain/entities/sale.dart';
 
 /// Sales report table widget.
 class SalesReportTable extends StatelessWidget {
-  const SalesReportTable({
-    super.key,
-    required this.sales,
-  });
+  const SalesReportTable({super.key, required this.sales});
 
   final List<Sale> sales;
 
@@ -21,7 +18,7 @@ class SalesReportTable extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isWide = MediaQuery.of(context).size.width > 600;
-    
+
     if (sales.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(24),
@@ -64,63 +61,66 @@ class SalesReportTable extends StatelessWidget {
                 0: FixedColumnWidth(100), // Date
                 1: FixedColumnWidth(150), // Client
                 2: FixedColumnWidth(120), // Produit
-                3: FixedColumnWidth(60),  // Qté
+                3: FixedColumnWidth(60), // Qté
                 4: FixedColumnWidth(120), // Total
                 5: FixedColumnWidth(120), // Payé
                 6: FixedColumnWidth(120), // Reste
               },
-            children: [
-              TableRow(
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerHighest,
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(12),
-                    topRight: Radius.circular(12),
+              children: [
+                TableRow(
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(12),
+                      topRight: Radius.circular(12),
+                    ),
                   ),
-                ),
-                children: [
-                  _buildHeaderCell(context, 'Date'),
-                  _buildHeaderCell(context, 'Client'),
-                  _buildHeaderCell(context, 'Produit'),
-                  _buildHeaderCell(context, 'Qté'),
-                  _buildHeaderCell(context, 'Total'),
-                  _buildHeaderCell(context, 'Payé'),
-                  _buildHeaderCell(context, 'Reste'),
-                ],
-              ),
-              ...sales.map((sale) {
-                final remaining = sale.remainingAmount;
-                return TableRow(
                   children: [
-                    _buildDataCellText(context, _formatDate(sale.date)),
-                    _buildDataCellText(context, sale.customerName),
-                    _buildDataCellText(context, sale.productName),
-                    _buildDataCellText(context, sale.quantity.toString()),
-                    _buildDataCellText(context, CurrencyFormatter.formatFCFA(sale.totalPrice)),
-                    _buildDataCellWidget(
-                      context,
-                      Text(
-                        CurrencyFormatter.formatFCFA(sale.amountPaid),
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: Colors.green,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    _buildDataCellWidget(
-                      context,
-                      Text(
-                        CurrencyFormatter.formatFCFA(remaining),
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: remaining > 0 ? Colors.red : Colors.green,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
+                    _buildHeaderCell(context, 'Date'),
+                    _buildHeaderCell(context, 'Client'),
+                    _buildHeaderCell(context, 'Produit'),
+                    _buildHeaderCell(context, 'Qté'),
+                    _buildHeaderCell(context, 'Total'),
+                    _buildHeaderCell(context, 'Payé'),
+                    _buildHeaderCell(context, 'Reste'),
                   ],
-                );
-              }),
-            ],
+                ),
+                ...sales.map((sale) {
+                  final remaining = sale.remainingAmount;
+                  return TableRow(
+                    children: [
+                      _buildDataCellText(context, _formatDate(sale.date)),
+                      _buildDataCellText(context, sale.customerName),
+                      _buildDataCellText(context, sale.productName),
+                      _buildDataCellText(context, sale.quantity.toString()),
+                      _buildDataCellText(
+                        context,
+                        CurrencyFormatter.formatFCFA(sale.totalPrice),
+                      ),
+                      _buildDataCellWidget(
+                        context,
+                        Text(
+                          CurrencyFormatter.formatFCFA(sale.amountPaid),
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: Colors.green,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      _buildDataCellWidget(
+                        context,
+                        Text(
+                          CurrencyFormatter.formatFCFA(remaining),
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: remaining > 0 ? Colors.red : Colors.green,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                }),
+              ],
             ),
           ),
         ),
@@ -263,10 +263,7 @@ class SalesReportTable extends StatelessWidget {
     final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Text(
-        text,
-        style: theme.textTheme.bodyMedium,
-      ),
+      child: Text(text, style: theme.textTheme.bodyMedium),
     );
   }
 
@@ -326,9 +323,7 @@ class SalesReportTable extends StatelessWidget {
               Expanded(
                 child: Text(
                   label,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: statColor,
-                  ),
+                  style: theme.textTheme.labelSmall?.copyWith(color: statColor),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -350,4 +345,3 @@ class SalesReportTable extends StatelessWidget {
     );
   }
 }
-

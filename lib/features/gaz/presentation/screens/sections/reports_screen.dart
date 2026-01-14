@@ -142,9 +142,7 @@ class _GazReportsScreenState extends ConsumerState<GazReportsScreen> {
               ),
             ),
 
-            const SliverToBoxAdapter(
-              child: SizedBox(height: 24),
-            ),
+            const SliverToBoxAdapter(child: SizedBox(height: 24)),
           ],
         );
       },
@@ -153,15 +151,18 @@ class _GazReportsScreenState extends ConsumerState<GazReportsScreen> {
 
   Widget _buildTabContent() {
     final reportDataAsync = ref.watch(
-      gazReportDataProvider((
-        period: GazReportPeriod.custom,
-        startDate: _startDate,
-        endDate: _endDate,
-      ) as ({
-          GazReportPeriod period,
-          DateTime? startDate,
-          DateTime? endDate,
-        })),
+      gazReportDataProvider(
+        (
+              period: GazReportPeriod.custom,
+              startDate: _startDate,
+              endDate: _endDate,
+            )
+            as ({
+              GazReportPeriod period,
+              DateTime? startDate,
+              DateTime? endDate,
+            }),
+      ),
     );
 
     switch (_selectedTab) {
@@ -195,4 +196,3 @@ class _GazReportsScreenState extends ConsumerState<GazReportsScreen> {
     }
   }
 }
-

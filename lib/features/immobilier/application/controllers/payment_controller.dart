@@ -3,10 +3,7 @@ import '../../domain/repositories/payment_repository.dart';
 import '../../domain/services/immobilier_validation_service.dart';
 
 class PaymentController {
-  PaymentController(
-    this._paymentRepository,
-    this._validationService,
-  );
+  PaymentController(this._paymentRepository, this._validationService);
 
   final PaymentRepository _paymentRepository;
   final ImmobilierValidationService _validationService;
@@ -33,7 +30,9 @@ class PaymentController {
   /// Crée un paiement après validation.
   Future<Payment> createPayment(Payment payment) async {
     // Valider le paiement
-    final validationError = await _validationService.validatePaymentCreation(payment);
+    final validationError = await _validationService.validatePaymentCreation(
+      payment,
+    );
     if (validationError != null) {
       throw Exception(validationError);
     }
@@ -44,7 +43,9 @@ class PaymentController {
   /// Met à jour un paiement après validation.
   Future<Payment> updatePayment(Payment payment) async {
     // Valider le paiement
-    final validationError = await _validationService.validatePaymentCreation(payment);
+    final validationError = await _validationService.validatePaymentCreation(
+      payment,
+    );
     if (validationError != null) {
       throw Exception(validationError);
     }
@@ -56,4 +57,3 @@ class PaymentController {
     await _paymentRepository.deletePayment(id);
   }
 }
-

@@ -61,9 +61,11 @@ class BoutiqueDashboardCalculationService {
     DateTime? referenceDate,
   ]) {
     final monthStart = getMonthStart(referenceDate);
-    return expenses.where(
-      (e) => e.date.isAfter(monthStart.subtract(const Duration(days: 1))),
-    ).toList();
+    return expenses
+        .where(
+          (e) => e.date.isAfter(monthStart.subtract(const Duration(days: 1))),
+        )
+        .toList();
   }
 
   /// Calculates monthly expenses total.
@@ -106,9 +108,11 @@ class BoutiqueDashboardCalculationService {
   /// Filters sales for current month.
   List<Sale> filterMonthSales(List<Sale> sales, [DateTime? referenceDate]) {
     final monthStart = getMonthStart(referenceDate);
-    return sales.where(
-      (s) => s.date.isAfter(monthStart.subtract(const Duration(days: 1))),
-    ).toList();
+    return sales
+        .where(
+          (s) => s.date.isAfter(monthStart.subtract(const Duration(days: 1))),
+        )
+        .toList();
   }
 
   /// Calculates monthly revenue from sales.
@@ -123,9 +127,11 @@ class BoutiqueDashboardCalculationService {
     DateTime? referenceDate,
   ]) {
     final monthStart = getMonthStart(referenceDate);
-    return purchases.where(
-      (p) => p.date.isAfter(monthStart.subtract(const Duration(days: 1))),
-    ).toList();
+    return purchases
+        .where(
+          (p) => p.date.isAfter(monthStart.subtract(const Duration(days: 1))),
+        )
+        .toList();
   }
 
   /// Calculates monthly purchases amount.
@@ -155,7 +161,10 @@ class BoutiqueDashboardCalculationService {
   }) {
     final monthSales = filterMonthSales(sales, referenceDate);
     final revenue = monthSales.fold(0, (sum, s) => sum + s.totalAmount);
-    final monthExpenses = calculateMonthlyExpensesTotal(expenses, referenceDate);
+    final monthExpenses = calculateMonthlyExpensesTotal(
+      expenses,
+      referenceDate,
+    );
     final profit = calculateMonthlyProfit(
       revenue: revenue,
       expenses: monthExpenses,
@@ -178,7 +187,10 @@ class BoutiqueDashboardCalculationService {
     required List<Purchase> purchases,
     DateTime? referenceDate,
   }) {
-    final purchasesAmount = calculateMonthlyPurchasesAmount(purchases, referenceDate);
+    final purchasesAmount = calculateMonthlyPurchasesAmount(
+      purchases,
+      referenceDate,
+    );
     return calculateMonthlyMetrics(
       sales: sales,
       expenses: expenses,
@@ -248,4 +260,3 @@ class MonthlyExpenseMetrics {
   final int totalAmount;
   final Map<ExpenseCategory, int> byCategory;
 }
-

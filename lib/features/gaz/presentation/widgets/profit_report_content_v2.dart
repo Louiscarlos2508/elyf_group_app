@@ -23,15 +23,14 @@ class GazProfitReportContentV2 extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final reportDataAsync = ref.watch(
-      gazReportDataProvider((
-        period: GazReportPeriod.custom,
-        startDate: startDate,
-        endDate: endDate,
-      ) as ({
-          GazReportPeriod period,
-          DateTime? startDate,
-          DateTime? endDate,
-        })),
+      gazReportDataProvider(
+        (period: GazReportPeriod.custom, startDate: startDate, endDate: endDate)
+            as ({
+              GazReportPeriod period,
+              DateTime? startDate,
+              DateTime? endDate,
+            }),
+      ),
     );
 
     final isWide = MediaQuery.of(context).size.width > 600;

@@ -13,7 +13,6 @@ class ProductionPaymentDateSelector extends StatelessWidget {
   final DateTime selectedDate;
   final ValueChanged<DateTime> onDateSelected;
 
-
   Future<void> _selectDate(BuildContext context) async {
     final picked = await showDatePicker(
       context: context,
@@ -77,4 +76,3 @@ class ProductionPaymentDateSelector extends StatelessWidget {
     );
   }
 }
-

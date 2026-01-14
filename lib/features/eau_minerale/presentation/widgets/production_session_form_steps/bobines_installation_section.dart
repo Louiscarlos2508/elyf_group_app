@@ -32,8 +32,8 @@ class BobinesInstallationSection extends StatelessWidget {
         child: Text(
           'Sélectionnez d\'abord les machines dans l\'étape 1',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
       );
     }
@@ -68,25 +68,26 @@ class BobinesInstallationSection extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.1),
+              color: Theme.of(
+                context,
+              ).colorScheme.errorContainer.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: Theme.of(context).colorScheme.error.withValues(alpha: 0.3),
+                color: Theme.of(
+                  context,
+                ).colorScheme.error.withValues(alpha: 0.3),
               ),
             ),
             child: Row(
               children: [
-                Icon(
-                  Icons.warning,
-                  color: Theme.of(context).colorScheme.error,
-                ),
+                Icon(Icons.warning, color: Theme.of(context).colorScheme.error),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     'Ajoutez ${machinesSelectionnees.length} bobine(s) (une par machine). Les bobines seront créées automatiquement.',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.error,
-                        ),
+                      color: Theme.of(context).colorScheme.error,
+                    ),
                   ),
                 ),
               ],
@@ -100,7 +101,9 @@ class BobinesInstallationSection extends StatelessWidget {
               margin: const EdgeInsets.only(bottom: 8),
               child: ListTile(
                 leading: CircleAvatar(
-                  backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                  backgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.primaryContainer,
                   child: Text('${index + 1}'),
                 ),
                 title: Text(bobine.bobineType),
@@ -155,4 +158,3 @@ class BobinesInstallationSection extends StatelessWidget {
     );
   }
 }
-

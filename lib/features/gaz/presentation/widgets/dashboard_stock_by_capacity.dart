@@ -47,4 +47,3 @@ class DashboardStockByCapacity extends StatelessWidget {
     );
   }
 }
-

@@ -31,7 +31,9 @@ class DashboardKpiGrid extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Utiliser le service de calcul pour extraire la logique métier
-    final calculationService = ref.read(immobilierDashboardCalculationServiceProvider);
+    final calculationService = ref.read(
+      immobilierDashboardCalculationServiceProvider,
+    );
     final metrics = calculationService.calculateMonthlyMetrics(
       properties: properties,
       tenants: tenants,
@@ -189,9 +191,7 @@ class DashboardKpiGrid extends ConsumerWidget {
             const SizedBox(height: 12),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(child: cards[8]),
-              ],
+              children: [Expanded(child: cards[8])],
             ),
           ],
         );
@@ -199,4 +199,3 @@ class DashboardKpiGrid extends ConsumerWidget {
     );
   }
 }
-

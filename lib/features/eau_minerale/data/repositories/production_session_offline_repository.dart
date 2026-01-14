@@ -32,8 +32,8 @@ class ProductionSessionOfflineRepository
     List<BobineUsage> bobinesUtilisees = [];
     if (map['bobinesUtiliseesJson'] != null) {
       try {
-        final bobinesList = jsonDecode(map['bobinesUtiliseesJson'] as String)
-            as List<dynamic>;
+        final bobinesList =
+            jsonDecode(map['bobinesUtiliseesJson'] as String) as List<dynamic>;
         bobinesUtilisees = bobinesList
             .map((b) => _bobineUsageFromJson(b as Map<String, dynamic>))
             .toList();
@@ -89,7 +89,8 @@ class ProductionSessionOfflineRepository
           : null,
       indexCompteurInitialKwh: map['indexCompteurInitialKwh'] as int?,
       indexCompteurFinalKwh: map['indexCompteurFinalKwh'] as int?,
-      consommationCourant: (map['consommationCourant'] as num?)?.toDouble() ?? 0,
+      consommationCourant:
+          (map['consommationCourant'] as num?)?.toDouble() ?? 0,
       machinesUtilisees: map['machinesUtilisees'] != null
           ? (map['machinesUtilisees'] as List).cast<String>()
           : [],
@@ -253,15 +254,20 @@ class ProductionSessionOfflineRepository
 
       if (startDate != null) {
         allSessions = allSessions
-            .where((s) =>
-                s.date.isAfter(startDate) || s.date.isAtSameMomentAs(startDate))
+            .where(
+              (s) =>
+                  s.date.isAfter(startDate) ||
+                  s.date.isAtSameMomentAs(startDate),
+            )
             .toList();
       }
 
       if (endDate != null) {
         allSessions = allSessions
-            .where((s) =>
-                s.date.isBefore(endDate) || s.date.isAtSameMomentAs(endDate))
+            .where(
+              (s) =>
+                  s.date.isBefore(endDate) || s.date.isAtSameMomentAs(endDate),
+            )
             .toList();
       }
 
@@ -457,8 +463,7 @@ class ProductionSessionOfflineRepository
       date: DateTime.parse(json['date'] as String),
       personnelIds: (json['personnelIds'] as List).cast<String>(),
       nombrePersonnes: json['nombrePersonnes'] as int,
-      salaireJournalierParPersonne:
-          json['salaireJournalierParPersonne'] as int,
+      salaireJournalierParPersonne: json['salaireJournalierParPersonne'] as int,
       packsProduits: json['packsProduits'] as int? ?? 0,
       emballagesUtilises: json['emballagesUtilises'] as int? ?? 0,
       notes: json['notes'] as String?,
@@ -484,4 +489,3 @@ class ProductionSessionOfflineRepository
     }
   }
 }
-

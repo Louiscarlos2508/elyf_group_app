@@ -6,10 +6,7 @@ import 'production_period_formatter.dart';
 
 /// Displays the automatically determined production period.
 class ProductionPeriodDisplay extends ConsumerWidget {
-  const ProductionPeriodDisplay({
-    super.key,
-    required this.date,
-  });
+  const ProductionPeriodDisplay({super.key, required this.date});
 
   final DateTime date;
 
@@ -59,4 +56,3 @@ class ProductionPeriodDisplay extends ConsumerWidget {
     );
   }
 }
-

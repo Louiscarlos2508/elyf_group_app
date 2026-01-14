@@ -26,11 +26,7 @@ class AppErrorWidget extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: Row(
           children: [
-            Icon(
-              _getIcon(),
-              color: _getColor(theme),
-              size: 20,
-            ),
+            Icon(_getIcon(), color: _getColor(theme), size: 20),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
@@ -57,11 +53,7 @@ class AppErrorWidget extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              _getIcon(),
-              size: 64,
-              color: _getColor(theme),
-            ),
+            Icon(_getIcon(), size: 64, color: _getColor(theme)),
             const SizedBox(height: 16),
             Text(
               title,
@@ -146,4 +138,3 @@ class AsyncErrorWidget extends StatelessWidget {
     );
   }
 }
-

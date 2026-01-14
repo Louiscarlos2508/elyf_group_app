@@ -28,21 +28,21 @@ class GazDashboardKpiGrid extends ConsumerWidget {
     String? enterpriseId = cylinders.isNotEmpty
         ? cylinders.first.enterpriseId
         : 'default_enterprise';
-    
+
     final stocksAsync = ref.watch(
-      cylinderStocksProvider(
-        (
-          enterpriseId: enterpriseId,
-          status: CylinderStatus.full,
-          siteId: null,
-        ),
-      ),
+      cylinderStocksProvider((
+        enterpriseId: enterpriseId,
+        status: CylinderStatus.full,
+        siteId: null,
+      )),
     );
 
     return stocksAsync.when(
       data: (stocks) {
         // Utiliser le service de calcul pour extraire la logique métier
-        final calculationService = ref.read(gazDashboardCalculationServiceProvider);
+        final calculationService = ref.read(
+          gazDashboardCalculationServiceProvider,
+        );
         final metrics = calculationService.calculateMetrics(
           stocks: stocks,
           sales: sales,
@@ -60,35 +60,45 @@ class GazDashboardKpiGrid extends ConsumerWidget {
           ),
           GazEnhancedKpiCard(
             label: 'Ventes du jour',
-            value: CurrencyFormatter.formatDouble(metrics.todayRevenue).replaceAll(' FCFA', ' F'),
+            value: CurrencyFormatter.formatDouble(
+              metrics.todayRevenue,
+            ).replaceAll(' FCFA', ' F'),
             subtitle: '${metrics.todaySalesCount} ventes',
             icon: Icons.today,
             color: Colors.green,
           ),
           GazEnhancedKpiCard(
             label: 'Ventes semaine',
-            value: CurrencyFormatter.formatDouble(metrics.weekRevenue).replaceAll(' FCFA', ' F'),
+            value: CurrencyFormatter.formatDouble(
+              metrics.weekRevenue,
+            ).replaceAll(' FCFA', ' F'),
             subtitle: '${metrics.weekSalesCount} ventes',
             icon: Icons.date_range,
             color: Colors.teal,
           ),
           GazEnhancedKpiCard(
             label: 'Revenus du mois',
-            value: CurrencyFormatter.formatDouble(metrics.monthRevenue).replaceAll(' FCFA', ' F'),
+            value: CurrencyFormatter.formatDouble(
+              metrics.monthRevenue,
+            ).replaceAll(' FCFA', ' F'),
             subtitle: '${metrics.monthSalesCount} ventes',
             icon: Icons.trending_up,
             color: Colors.indigo,
           ),
           GazEnhancedKpiCard(
             label: 'Dépenses du mois',
-            value: CurrencyFormatter.formatDouble(metrics.monthExpensesTotal).replaceAll(' FCFA', ' F'),
+            value: CurrencyFormatter.formatDouble(
+              metrics.monthExpensesTotal,
+            ).replaceAll(' FCFA', ' F'),
             subtitle: '${metrics.monthExpensesCount} dépenses',
             icon: Icons.trending_down,
             color: Colors.red,
           ),
           GazEnhancedKpiCard(
             label: 'Bénéfice net',
-            value: CurrencyFormatter.formatDouble(metrics.monthProfit).replaceAll(' FCFA', ' F'),
+            value: CurrencyFormatter.formatDouble(
+              metrics.monthProfit,
+            ).replaceAll(' FCFA', ' F'),
             icon: Icons.account_balance_wallet,
             color: metrics.isProfit ? Colors.green : Colors.red,
           ),
@@ -157,8 +167,7 @@ class GazDashboardKpiGrid extends ConsumerWidget {
                     children: [
                       Expanded(child: cards[i]),
                       const SizedBox(width: 12),
-                      if (i + 1 < cards.length)
-                        Expanded(child: cards[i + 1]),
+                      if (i + 1 < cards.length) Expanded(child: cards[i + 1]),
                       if (i + 1 >= cards.length)
                         const Expanded(child: SizedBox()),
                     ],

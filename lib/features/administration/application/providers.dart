@@ -1,9 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/offline/providers.dart';
-import '../../../core/permissions/services/permission_service.dart' show PermissionService;
+import '../../../core/permissions/services/permission_service.dart'
+    show PermissionService;
 import '../../../core/permissions/services/permission_registry.dart';
-import '../../../core/tenant/tenant_provider.dart' show activeEnterpriseIdProvider;
+import '../../../core/tenant/tenant_provider.dart'
+    show activeEnterpriseIdProvider;
 import '../data/repositories/admin_offline_repository.dart';
 import '../data/repositories/enterprise_offline_repository.dart';
 import '../data/repositories/user_offline_repository.dart';
@@ -51,46 +53,45 @@ final userRepositoryProvider = Provider<UserRepository>(
 );
 
 /// Provider for permission service
-/// 
+///
 /// Utilise RealPermissionService qui récupère les permissions via AdminController
 /// (qui lit depuis Drift offline-first, synchronisé avec Firestore).
-/// 
+///
 /// Prent en compte l'entreprise active pour le multi-tenant.
-/// 
+///
 /// Respecte l'architecture Clean Architecture en utilisant le controller.
-/// 
+///
 /// Note: Crée un AdminController sans PermissionValidatorService pour éviter
 /// une dépendance circulaire (permissionServiceProvider -> adminControllerProvider
 /// -> permissionValidatorServiceProvider -> permissionServiceProvider).
-final permissionServiceProvider = Provider<PermissionService>(
-  (ref) {
-    // Créer un AdminController sans PermissionValidatorService pour éviter le cycle
-    // Ce controller est utilisé uniquement pour lire les données, pas pour les modifier
-    final adminRepo = ref.watch(adminRepositoryProvider);
-    final adminController = AdminController(
-      adminRepo,
-      // Pas besoin d'auditService, firestoreSync, permissionValidator pour la lecture
-      auditService: null,
-      firestoreSync: null,
-      permissionValidator: null,
-      userRepository: null,
-    );
-    
-    return RealPermissionService(
-      adminController: adminController,
-      getActiveEnterpriseId: () {
-        // Récupérer l'entreprise active de manière synchrone
-        // Utiliser pattern matching pour gérer les états async correctement
-        final activeEnterpriseAsync = ref.read(activeEnterpriseIdProvider);
-        return activeEnterpriseAsync.when(
-          data: (id) => id,
-          loading: () => null,
-          error: (_, __) => null,
-        );
-      },
-    );
-  },
-);
+final permissionServiceProvider = Provider<PermissionService>((ref) {
+  // Créer un AdminController sans PermissionValidatorService pour éviter le cycle
+  // Ce controller est utilisé uniquement pour lire les données, pas pour les modifier
+  final adminRepo = ref.watch(adminRepositoryProvider);
+  final adminController = AdminController(
+    adminRepo,
+    // Pas besoin d'auditService, firestoreSync, permissionValidator pour la lecture
+    auditService: null,
+    firestoreSync: null,
+    permissionValidator: null,
+    userRepository: null,
+    enterpriseRepository: null,
+  );
+
+  return RealPermissionService(
+    adminController: adminController,
+    getActiveEnterpriseId: () {
+      // Récupérer l'entreprise active de manière synchrone
+      // Utiliser pattern matching pour gérer les états async correctement
+      final activeEnterpriseAsync = ref.read(activeEnterpriseIdProvider);
+      return activeEnterpriseAsync.when(
+        data: (id) => id,
+        loading: () => null,
+        error: (_, __) => null,
+      );
+    },
+  );
+});
 
 /// Provider for permission registry
 final permissionRegistryProvider = Provider<PermissionRegistry>(
@@ -138,11 +139,12 @@ final permissionValidatorServiceProvider = Provider<PermissionValidatorService>(
 );
 
 /// Provider for Firebase Auth integration service
-final firebaseAuthIntegrationServiceProvider = Provider<FirebaseAuthIntegrationService>(
-  (ref) => FirebaseAuthIntegrationService(
-    authService: ref.watch(authServiceProvider),
-  ),
-);
+final firebaseAuthIntegrationServiceProvider =
+    Provider<FirebaseAuthIntegrationService>(
+      (ref) => FirebaseAuthIntegrationService(
+        authService: ref.watch(authServiceProvider),
+      ),
+    );
 
 /// Provider for Firestore sync service
 final firestoreSyncServiceProvider = Provider<FirestoreSyncService>(
@@ -162,7 +164,7 @@ final realtimeSyncServiceProvider = Provider<RealtimeSyncService>(
 );
 
 /// Provider for admin controller
-/// 
+///
 /// Includes audit trail, Firestore sync and permission validation for roles and assignments.
 final adminControllerProvider = Provider<AdminController>(
   (ref) => AdminController(
@@ -171,11 +173,12 @@ final adminControllerProvider = Provider<AdminController>(
     firestoreSync: ref.watch(firestoreSyncServiceProvider),
     permissionValidator: ref.watch(permissionValidatorServiceProvider),
     userRepository: ref.watch(userRepositoryProvider),
+    enterpriseRepository: ref.watch(enterpriseRepositoryProvider),
   ),
 );
 
 /// Provider for user controller
-/// 
+///
 /// Includes Firebase Auth integration, Firestore sync, audit trail and permission validation.
 final userControllerProvider = Provider<UserController>(
   (ref) => UserController(
@@ -188,7 +191,7 @@ final userControllerProvider = Provider<UserController>(
 );
 
 /// Provider for enterprise controller
-/// 
+///
 /// Includes audit trail, Firestore sync and permission validation for enterprises.
 final enterpriseControllerProvider = Provider<EnterpriseController>(
   (ref) => EnterpriseController(
@@ -206,7 +209,7 @@ final auditControllerProvider = Provider<AuditController>(
 );
 
 /// Provider pour récupérer toutes les entreprises
-/// 
+///
 /// Utilise le controller pour respecter l'architecture.
 /// AutoDispose pour libérer la mémoire automatiquement.
 final enterprisesProvider = FutureProvider.autoDispose<List<Enterprise>>(
@@ -214,28 +217,30 @@ final enterprisesProvider = FutureProvider.autoDispose<List<Enterprise>>(
 );
 
 /// Provider pour récupérer les entreprises par type
-/// 
+///
 /// Utilise le controller pour respecter l'architecture.
 /// AutoDispose pour libérer la mémoire automatiquement.
-final enterprisesByTypeProvider =
-    FutureProvider.autoDispose.family<List<Enterprise>, String>(
-  (ref, type) =>
-      ref.watch(enterpriseControllerProvider).getEnterprisesByType(type),
-);
+final enterprisesByTypeProvider = FutureProvider.autoDispose
+    .family<List<Enterprise>, String>(
+      (ref, type) =>
+          ref.watch(enterpriseControllerProvider).getEnterprisesByType(type),
+    );
 
 /// Provider pour récupérer une entreprise par ID
-/// 
+///
 /// Utilise le controller pour respecter l'architecture.
 /// AutoDispose pour libérer la mémoire automatiquement.
-final enterpriseByIdProvider = FutureProvider.autoDispose.family<Enterprise?, String>(
-  (ref, enterpriseId) =>
-      ref.watch(enterpriseControllerProvider).getEnterpriseById(enterpriseId),
-);
+final enterpriseByIdProvider = FutureProvider.autoDispose
+    .family<Enterprise?, String>(
+      (ref, enterpriseId) => ref
+          .watch(enterpriseControllerProvider)
+          .getEnterpriseById(enterpriseId),
+    );
 
 /// Provider pour récupérer tous les utilisateurs
-/// 
+///
 /// Utilise le controller pour respecter l'architecture.
-/// 
+///
 /// ⚠️ Note: Pour de meilleures performances, utilisez paginatedUsersProvider
 /// pour les grandes listes.
 final usersProvider = FutureProvider.autoDispose<List<User>>(
@@ -243,36 +248,37 @@ final usersProvider = FutureProvider.autoDispose<List<User>>(
 );
 
 /// Provider pour rechercher des utilisateurs
-/// 
+///
 /// Utilise le controller pour respecter l'architecture.
 /// AutoDispose pour libérer la mémoire automatiquement.
 /// Limite les résultats à 100 pour améliorer les performances.
-final searchUsersProvider =
-    FutureProvider.autoDispose.family<List<User>, String>(
-  (ref, query) => ref.watch(userControllerProvider).searchUsers(query),
-);
+final searchUsersProvider = FutureProvider.autoDispose
+    .family<List<User>, String>(
+      (ref, query) => ref.watch(userControllerProvider).searchUsers(query),
+    );
 
 /// Provider pour récupérer les accès EnterpriseModuleUser
-/// 
+///
 /// Utilise le controller pour respecter l'architecture.
 /// AutoDispose pour libérer la mémoire automatiquement.
 final enterpriseModuleUsersProvider =
     FutureProvider.autoDispose<List<EnterpriseModuleUser>>(
-  (ref) => ref.watch(adminControllerProvider).getEnterpriseModuleUsers(),
-);
+      (ref) => ref.watch(adminControllerProvider).getEnterpriseModuleUsers(),
+    );
 
 /// Provider pour récupérer les accès d'un utilisateur
-/// 
+///
 /// Utilise le controller pour respecter l'architecture.
 /// AutoDispose pour libérer la mémoire automatiquement.
-final userEnterpriseModuleUsersProvider =
-    FutureProvider.autoDispose.family<List<EnterpriseModuleUser>, String>(
-  (ref, userId) =>
-      ref.watch(adminControllerProvider).getUserEnterpriseModuleUsers(userId),
-);
+final userEnterpriseModuleUsersProvider = FutureProvider.autoDispose
+    .family<List<EnterpriseModuleUser>, String>(
+      (ref, userId) => ref
+          .watch(adminControllerProvider)
+          .getUserEnterpriseModuleUsers(userId),
+    );
 
 /// Provider pour récupérer tous les rôles
-/// 
+///
 /// Utilise le controller pour respecter l'architecture.
 /// AutoDispose pour libérer la mémoire automatiquement.
 final rolesProvider = FutureProvider.autoDispose<List<UserRole>>(
@@ -280,45 +286,49 @@ final rolesProvider = FutureProvider.autoDispose<List<UserRole>>(
 );
 
 /// Provider pour les statistiques d'administration
-/// 
+///
 /// Utilise les controllers pour respecter l'architecture.
 /// AutoDispose pour libérer la mémoire automatiquement.
 /// Optimisé avec Future.wait pour charger en parallèle.
-final adminStatsProvider = FutureProvider.autoDispose<AdminStats>(
-  (ref) async {
-    // Load in parallel for better performance
-    final results = await Future.wait<List<dynamic>>([
-      ref.watch(enterprisesProvider.future),
-      ref.watch(usersProvider.future),
-      ref.watch(adminControllerProvider).getAllRoles(),
-      ref.watch(enterpriseModuleUsersProvider.future),
-    ]);
+final adminStatsProvider = FutureProvider.autoDispose<AdminStats>((ref) async {
+  // Load in parallel for better performance
+  final results = await Future.wait<List<dynamic>>([
+    ref.watch(enterprisesProvider.future),
+    ref.watch(usersProvider.future),
+    ref.watch(adminControllerProvider).getAllRoles(),
+    ref.watch(enterpriseModuleUsersProvider.future),
+  ]);
 
-    final enterprises = results[0] as List<Enterprise>;
-    final users = results[1] as List<User>;
-    final roles = results[2] as List<UserRole>;
-    final enterpriseModuleUsers = results[3] as List<EnterpriseModuleUser>;
+  final enterprises = results[0] as List<Enterprise>;
+  final users = results[1] as List<User>;
+  final roles = results[2] as List<UserRole>;
+  final enterpriseModuleUsers = results[3] as List<EnterpriseModuleUser>;
 
-    // Memoize calculations
-    final activeEnterprises = enterprises.where((e) => e.isActive).length;
-    final activeUsers = users.where((u) => u.isActive).length;
-    
-    final enterprisesByType = <String, int>{};
-    for (final type in ['eau_minerale', 'gaz', 'orange_money', 'immobilier', 'boutique']) {
-      enterprisesByType[type] = enterprises.where((e) => e.type == type).length;
-    }
+  // Memoize calculations
+  final activeEnterprises = enterprises.where((e) => e.isActive).length;
+  final activeUsers = users.where((u) => u.isActive).length;
 
-    return AdminStats(
-      totalEnterprises: enterprises.length,
-      activeEnterprises: activeEnterprises,
-      enterprisesByType: enterprisesByType,
-      totalRoles: roles.length,
-      totalUsers: users.length,
-      activeUsers: activeUsers,
-      totalAssignments: enterpriseModuleUsers.length,
-    );
-  },
-);
+  final enterprisesByType = <String, int>{};
+  for (final type in [
+    'eau_minerale',
+    'gaz',
+    'orange_money',
+    'immobilier',
+    'boutique',
+  ]) {
+    enterprisesByType[type] = enterprises.where((e) => e.type == type).length;
+  }
+
+  return AdminStats(
+    totalEnterprises: enterprises.length,
+    activeEnterprises: activeEnterprises,
+    enterprisesByType: enterprisesByType,
+    totalRoles: roles.length,
+    totalUsers: users.length,
+    activeUsers: activeUsers,
+    totalAssignments: enterpriseModuleUsers.length,
+  );
+});
 
 /// Statistiques d'administration
 class AdminStats {
@@ -340,4 +350,3 @@ class AdminStats {
   final int activeUsers;
   final int totalAssignments;
 }
-

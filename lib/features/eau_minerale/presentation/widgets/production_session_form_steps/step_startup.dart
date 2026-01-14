@@ -10,7 +10,7 @@ import 'index_compteur_initial_field.dart';
 import 'production_session_form_helpers.dart';
 
 /// Étape 1 : Démarrage de production.
-/// 
+///
 /// Permet de configurer :
 /// - Date et heure de début
 /// - Machines utilisées
@@ -70,9 +70,7 @@ class StepStartup extends ConsumerWidget {
           labelText: 'Date',
           prefixIcon: Icon(Icons.calendar_today),
         ),
-        child: Text(
-          ProductionSessionFormHelpers.formatDate(selectedDate),
-        ),
+        child: Text(ProductionSessionFormHelpers.formatDate(selectedDate)),
       ),
     );
   }
@@ -108,9 +106,9 @@ class StepStartup extends ConsumerWidget {
       children: [
         Text(
           isEditing ? 'Modifier le démarrage' : 'Démarrage de production',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         Text(
@@ -118,8 +116,8 @@ class StepStartup extends ConsumerWidget {
               ? 'Modifiez les informations de démarrage de la session.'
               : 'Configurez la session de production : date, machines, bobines et index initial.',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
         const SizedBox(height: 24),
         _buildDateField(context),
@@ -128,9 +126,9 @@ class StepStartup extends ConsumerWidget {
         const SizedBox(height: 24),
         Text(
           'Machines utilisées',
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 8),
         MachineSelectorField(
@@ -148,16 +146,16 @@ class StepStartup extends ConsumerWidget {
           Text(
             '⚠️ Au moins une machine est obligatoire',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.error,
-                ),
+              color: Theme.of(context).colorScheme.error,
+            ),
           ),
         ],
         const SizedBox(height: 24),
         Text(
           'Installation des bobines',
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 8),
         BobinesInstallationSection(
@@ -170,16 +168,13 @@ class StepStartup extends ConsumerWidget {
         const SizedBox(height: 24),
         Text(
           'Index compteur électrique au démarrage',
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 8),
-        IndexCompteurInitialField(
-          controller: indexCompteurInitialController,
-        ),
+        IndexCompteurInitialField(controller: indexCompteurInitialController),
       ],
     );
   }
 }
-

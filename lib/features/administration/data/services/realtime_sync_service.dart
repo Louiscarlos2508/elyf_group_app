@@ -40,6 +40,8 @@ class RealtimeSyncService {
   StreamSubscription<QuerySnapshot>? _enterpriseModuleUsersSubscription;
 
   bool _isListening = false;
+  bool _initialPullCompleted = false;
+  final Completer<void> _initialPullCompleter = Completer<void>();
 
   /// Démarre l'écoute en temps réel de toutes les collections.
   ///
@@ -85,7 +87,7 @@ class RealtimeSyncService {
   }
 
   /// Fait un pull initial de toutes les données depuis Firestore vers Drift.
-  /// 
+  ///
   /// Cette méthode garantit que Drift contient toutes les données avant
   /// de démarrer l'écoute en temps réel (offline-first).
   Future<void> _pullInitialDataFromFirestore() async {
@@ -98,7 +100,8 @@ class RealtimeSyncService {
           id: data['id'] as String,
           name: data['name'] as String,
           description: data['description'] as String,
-          permissions: (data['permissions'] as List<dynamic>?)
+          permissions:
+              (data['permissions'] as List<dynamic>?)
                   ?.map((e) => e as String)
                   .toSet() ??
               {},
@@ -140,8 +143,9 @@ class RealtimeSyncService {
       );
 
       // Pull des entreprises
-      final enterprisesSnapshot =
-          await firestore.collection(_enterprisesCollection).get();
+      final enterprisesSnapshot = await firestore
+          .collection(_enterprisesCollection)
+          .get();
       for (final doc in enterprisesSnapshot.docs) {
         final data = doc.data();
         final enterprise = Enterprise.fromMap(Map<String, dynamic>.from(data));
@@ -156,6 +160,11 @@ class RealtimeSyncService {
         'Initial pull from Firestore to Drift completed successfully',
         name: 'admin.realtime.sync',
       );
+
+      _initialPullCompleted = true;
+      if (!_initialPullCompleter.isCompleted) {
+        _initialPullCompleter.complete();
+      }
     } catch (e, stackTrace) {
       developer.log(
         'Error during initial pull from Firestore',
@@ -165,10 +174,45 @@ class RealtimeSyncService {
       );
       // Ne pas rethrow - on continue même si le pull initial échoue
       // L'écoute en temps réel chargera les données progressivement
+
+      // Marquer quand même comme complété pour ne pas bloquer indéfiniment
+      _initialPullCompleted = true;
+      if (!_initialPullCompleter.isCompleted) {
+        _initialPullCompleter.completeError(e);
+      }
+    }
+  }
+
+  /// Vérifie si le pull initial est terminé.
+  bool get isInitialPullCompleted => _initialPullCompleted;
+
+  /// Attend que le pull initial soit terminé.
+  ///
+  /// Retourne un Future qui se complète quand le pull initial est terminé
+  /// ou après un timeout de 10 secondes maximum.
+  Future<void> waitForInitialPull({
+    Duration timeout = const Duration(seconds: 10),
+  }) async {
+    if (_initialPullCompleted) {
+      return;
+    }
+
+    try {
+      await _initialPullCompleter.future.timeout(timeout);
+    } catch (e) {
+      developer.log(
+        'Timeout or error waiting for initial pull: $e',
+        name: 'admin.realtime.sync',
+      );
+      // Ne pas rethrow - permettre à l'app de continuer même si le pull prend trop de temps
     }
   }
 
   /// Arrête l'écoute en temps réel.
+  ///
+  /// Note: Ne réinitialise PAS le flag _initialPullCompleted car les données
+  /// (roles, entreprises, enterprise_module_users) sont partagées entre tous
+  /// les utilisateurs et restent valides même après déconnexion.
   Future<void> stopRealtimeSync() async {
     await _usersSubscription?.cancel();
     await _enterprisesSubscription?.cancel();
@@ -183,6 +227,9 @@ class RealtimeSyncService {
     _isListening = false;
     developer.log('RealtimeSyncService stopped', name: 'admin.realtime.sync');
   }
+
+  /// Vérifie si la synchronisation est en cours d'écoute.
+  bool get isListening => _isListening;
 
   /// Écoute les changements dans la collection users.
   Future<void> _listenToUsers() async {
@@ -513,9 +560,10 @@ class RealtimeSyncService {
   /// Supprime une entreprise localement.
   Future<void> _deleteEnterpriseFromLocal(String enterpriseId) async {
     try {
-      await driftService.records.deleteByLocalId(
+      // Utiliser deleteByRemoteId car enterpriseId est le remoteId
+      await driftService.records.deleteByRemoteId(
         collectionName: _enterprisesCollection,
-        localId: enterpriseId,
+        remoteId: enterpriseId,
         enterpriseId: 'global',
         moduleType: 'administration',
       );
@@ -561,9 +609,10 @@ class RealtimeSyncService {
   /// Supprime un rôle localement.
   Future<void> _deleteRoleFromLocal(String roleId) async {
     try {
-      await driftService.records.deleteByLocalId(
+      // Utiliser deleteByRemoteId car roleId est utilisé comme remoteId dans upsert
+      await driftService.records.deleteByRemoteId(
         collectionName: _rolesCollection,
-        localId: roleId,
+        remoteId: roleId,
         enterpriseId: 'global',
         moduleType: 'administration',
       );
@@ -587,8 +636,10 @@ class RealtimeSyncService {
         collectionName: _enterpriseModuleUsersCollection,
         localId: assignment.documentId,
         remoteId: assignment.documentId,
-        enterpriseId: assignment.enterpriseId,
-        moduleType: assignment.moduleId,
+        enterpriseId:
+            'global', // EnterpriseModuleUsers sont globaux (pas liés à une entreprise spécifique dans le stockage)
+        moduleType:
+            'administration', // Tous les EnterpriseModuleUsers sont stockés avec moduleType='administration'
         dataJson: jsonEncode(map),
         localUpdatedAt: DateTime.now(),
       );
@@ -605,24 +656,14 @@ class RealtimeSyncService {
   /// Supprime une assignation localement.
   Future<void> _deleteEnterpriseModuleUserFromLocal(String documentId) async {
     try {
-      // Note: On ne peut pas supprimer par documentId seul car on a besoin de enterpriseId et moduleType
-      // On va chercher d'abord l'enregistrement
-      final record = await driftService.records.findByLocalId(
+      // EnterpriseModuleUsers sont stockés avec enterpriseId='global' et moduleType='administration'
+      // Le documentId est utilisé comme remoteId dans Drift
+      await driftService.records.deleteByRemoteId(
         collectionName: _enterpriseModuleUsersCollection,
-        localId: documentId,
-        enterpriseId:
-            'global', // Peut être n'importe lequel, on cherche juste par localId
+        remoteId: documentId,
+        enterpriseId: 'global',
         moduleType: 'administration',
       );
-
-      if (record != null) {
-        await driftService.records.deleteByLocalId(
-          collectionName: _enterpriseModuleUsersCollection,
-          localId: documentId,
-          enterpriseId: record.enterpriseId,
-          moduleType: record.moduleType,
-        );
-      }
     } catch (e, stackTrace) {
       developer.log(
         'Error deleting EnterpriseModuleUser from local in realtime sync',

@@ -62,9 +62,10 @@ class ForecastReportHelpers {
   /// Calcule la variance.
   static double calculateVariance(List<double> data, double mean) {
     if (data.isEmpty) return 0;
-    final sumSquaredDiff =
-        data.fold<double>(0, (sum, x) => sum + (x - mean) * (x - mean));
+    final sumSquaredDiff = data.fold<double>(
+      0,
+      (sum, x) => sum + (x - mean) * (x - mean),
+    );
     return sumSquaredDiff / data.length;
   }
 }
-

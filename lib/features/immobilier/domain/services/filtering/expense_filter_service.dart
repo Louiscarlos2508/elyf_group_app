@@ -24,7 +24,10 @@ class ExpenseFilterService {
   }
 
   /// Calculates total for today's expenses.
-  int calculateTodayTotal(List<PropertyExpense> expenses, [DateTime? referenceDate]) {
+  int calculateTodayTotal(
+    List<PropertyExpense> expenses, [
+    DateTime? referenceDate,
+  ]) {
     final todayExpenses = filterTodayExpenses(expenses, referenceDate);
     return todayExpenses.fold(0, (sum, e) => sum + e.amount);
   }
@@ -42,4 +45,3 @@ class ExpenseFilterService {
     }).toList();
   }
 }
-

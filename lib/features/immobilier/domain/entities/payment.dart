@@ -35,7 +35,8 @@ class Payment {
   final String? notes;
   final PaymentType? paymentType; // Type de paiement (loyer, caution, etc.)
   final int? cashAmount; // Montant payé en espèces (si paymentMethod == both)
-  final int? mobileMoneyAmount; // Montant payé en mobile money (si paymentMethod == both)
+  final int?
+  mobileMoneyAmount; // Montant payé en mobile money (si paymentMethod == both)
   final DateTime? createdAt;
   final DateTime? updatedAt;
 }
@@ -45,10 +46,4 @@ enum PaymentType {
   deposit, // Paiement de caution
 }
 
-enum PaymentStatus {
-  paid,
-  pending,
-  overdue,
-  cancelled,
-}
-
+enum PaymentStatus { paid, pending, overdue, cancelled }

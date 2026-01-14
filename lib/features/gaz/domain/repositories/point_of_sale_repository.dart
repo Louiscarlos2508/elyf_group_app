@@ -20,4 +20,3 @@ abstract class PointOfSaleRepository {
   /// Supprime un point de vente.
   Future<void> deletePointOfSale(String id);
 }
-

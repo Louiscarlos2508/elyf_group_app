@@ -8,11 +8,13 @@ abstract class SaleRepository {
     SaleStatus? status,
     String? customerId,
   });
+
   /// Fetches recent sales (last N sales, sorted by date descending).
   Future<List<Sale>> fetchRecentSales({int limit = 50});
   Future<Sale?> getSale(String id);
   Future<String> createSale(Sale sale);
   Future<void> deleteSale(String saleId);
+
   /// Updates the amount paid for a sale (used when recording credit payments).
   Future<void> updateSaleAmountPaid(String saleId, int newAmountPaid);
 }

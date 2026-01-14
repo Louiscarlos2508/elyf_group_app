@@ -15,10 +15,7 @@ import 'collection_form/collection_type_selector.dart';
 
 /// Formulaire d'ajout d'une collecte.
 class CollectionFormDialog extends ConsumerStatefulWidget {
-  const CollectionFormDialog({
-    super.key,
-    required this.tour,
-  });
+  const CollectionFormDialog({super.key, required this.tour});
 
   final Tour tour;
 
@@ -27,13 +24,12 @@ class CollectionFormDialog extends ConsumerStatefulWidget {
       _CollectionFormDialogState();
 }
 
-class _CollectionFormDialogState
-    extends ConsumerState<CollectionFormDialog> {
+class _CollectionFormDialogState extends ConsumerState<CollectionFormDialog> {
   final _formKey = GlobalKey<FormState>();
   CollectionType _collectionType = CollectionType.wholesaler;
   Client? _selectedClient;
   final Map<int, int> _bottles = {}; // poids -> quantité
-  
+
   // Pour le formulaire d'ajout de bouteille
   int? _selectedWeight;
   final _quantityController = TextEditingController(text: '0');
@@ -106,11 +102,12 @@ class _CollectionFormDialogState
 
   Future<void> _submit() async {
     if (_selectedClient == null) {
-      NotificationService.showInfo(context, 
-            _collectionType == CollectionType.wholesaler
-                ? 'Sélectionnez un grossiste'
-                : 'Sélectionnez un point de vente',
-          );
+      NotificationService.showInfo(
+        context,
+        _collectionType == CollectionType.wholesaler
+            ? 'Sélectionnez un grossiste'
+            : 'Sélectionnez un point de vente',
+      );
       return;
     }
 

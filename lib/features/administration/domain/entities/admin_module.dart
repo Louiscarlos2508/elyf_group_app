@@ -50,12 +50,5 @@ class AdminModules {
     icon: 'storefront',
   );
 
-  static const all = [
-    eauMinerale,
-    gaz,
-    orangeMoney,
-    immobilier,
-    boutique,
-  ];
+  static const all = [eauMinerale, gaz, orangeMoney, immobilier, boutique];
 }
-

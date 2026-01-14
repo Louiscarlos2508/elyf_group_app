@@ -75,12 +75,7 @@ class GazExpenseCard extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          border: Border(
-            left: BorderSide(
-              color: categoryColor,
-              width: 4,
-            ),
-          ),
+          border: Border(left: BorderSide(color: categoryColor, width: 4)),
         ),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -92,11 +87,7 @@ class GazExpenseCard extends StatelessWidget {
                   color: categoryColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(
-                  _getCategoryIcon(),
-                  color: categoryColor,
-                  size: 24,
-                ),
+                child: Icon(_getCategoryIcon(), color: categoryColor, size: 24),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -153,8 +144,9 @@ class GazExpenseCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    CurrencyFormatter.formatDouble(expense.amount)
-                        .replaceAll(' FCFA', ' F'),
+                    CurrencyFormatter.formatDouble(
+                      expense.amount,
+                    ).replaceAll(' FCFA', ' F'),
                     style: theme.textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: Colors.red,

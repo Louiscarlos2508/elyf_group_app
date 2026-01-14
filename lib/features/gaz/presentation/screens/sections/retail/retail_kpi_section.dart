@@ -25,10 +25,15 @@ class RetailKpiSection extends ConsumerWidget {
                 .where((s) => s.saleType == SaleType.retail)
                 .toList();
             // Utiliser le service pour les calculs
-            final todaySales = GazCalculationService
-                .calculateTodaySalesByType(retailSales, SaleType.retail);
-            final totalToday = GazCalculationService
-                .calculateTodayRevenueByType(retailSales, SaleType.retail);
+            final todaySales = GazCalculationService.calculateTodaySalesByType(
+              retailSales,
+              SaleType.retail,
+            );
+            final totalToday =
+                GazCalculationService.calculateTodayRevenueByType(
+                  retailSales,
+                  SaleType.retail,
+                );
 
             return LayoutBuilder(
               builder: (context, constraints) {
@@ -86,4 +91,3 @@ class RetailKpiSection extends ConsumerWidget {
     );
   }
 }
-

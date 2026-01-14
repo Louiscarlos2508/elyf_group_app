@@ -12,9 +12,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 /// - La suppression de fichiers
 /// - La gestion des métadonnées
 class StorageService {
-  StorageService({
-    required this.storage,
-  });
+  StorageService({required this.storage});
 
   final FirebaseStorage storage;
 
@@ -86,10 +84,7 @@ class StorageService {
         uploadTask = ref.putFile(file, uploadMetadata);
       } else if (file is List<int>) {
         // Upload depuis des bytes
-        uploadTask = ref.putData(
-          Uint8List.fromList(file),
-          uploadMetadata,
-        );
+        uploadTask = ref.putData(Uint8List.fromList(file), uploadMetadata);
       } else {
         throw ArgumentError('File must be File or List<int>');
       }
@@ -151,11 +146,11 @@ class StorageService {
       } else {
         data = await ref.getData();
       }
-      
+
       if (data == null) {
         throw Exception('Failed to download file: data is null');
       }
-      
+
       return data;
     } catch (e, stackTrace) {
       developer.log(
@@ -250,10 +245,7 @@ class StorageService {
       final ref = storage.ref(storagePath);
       await ref.delete();
 
-      developer.log(
-        'File deleted: $storagePath',
-        name: 'storage.service',
-      );
+      developer.log('File deleted: $storagePath', name: 'storage.service');
     } catch (e, stackTrace) {
       developer.log(
         'Error deleting file from Storage',
@@ -375,4 +367,3 @@ class StorageService {
     }
   }
 }
-

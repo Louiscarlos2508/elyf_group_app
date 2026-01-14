@@ -43,15 +43,11 @@ class QuantityAndTotalWidget extends StatelessWidget {
           controller: quantityController,
           decoration: InputDecoration(
             labelText: 'Quantité *',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             prefixIcon: const Icon(Icons.numbers),
           ),
           keyboardType: TextInputType.number,
-          inputFormatters: [
-            FilteringTextInputFormatter.digitsOnly,
-          ],
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           validator: (value) {
             return GasCalculationService.validateQuantityText(
               quantityText: value,
@@ -92,4 +88,3 @@ class QuantityAndTotalWidget extends StatelessWidget {
     );
   }
 }
-

@@ -153,10 +153,12 @@ class PackagingStockOfflineRepository extends OfflineRepository<PackagingStock>
       return await getAllForEnterprise(enterpriseId);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log('Error fetching packaging stocks',
-          name: 'PackagingStockOfflineRepository',
-          error: error,
-          stackTrace: stackTrace);
+      developer.log(
+        'Error fetching packaging stocks',
+        name: 'PackagingStockOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
       throw appException;
     }
   }
@@ -167,10 +169,12 @@ class PackagingStockOfflineRepository extends OfflineRepository<PackagingStock>
       return await getByLocalId(id);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log('Error fetching packaging stock: $id',
-          name: 'PackagingStockOfflineRepository',
-          error: error,
-          stackTrace: stackTrace);
+      developer.log(
+        'Error fetching packaging stock: $id',
+        name: 'PackagingStockOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
       throw appException;
     }
   }
@@ -186,10 +190,12 @@ class PackagingStockOfflineRepository extends OfflineRepository<PackagingStock>
       }
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log('Error fetching packaging stock by type: $type',
-          name: 'PackagingStockOfflineRepository',
-          error: error,
-          stackTrace: stackTrace);
+      developer.log(
+        'Error fetching packaging stock by type: $type',
+        name: 'PackagingStockOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
       throw appException;
     }
   }
@@ -207,10 +213,12 @@ class PackagingStockOfflineRepository extends OfflineRepository<PackagingStock>
       return stockWithLocalId;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log('Error saving packaging stock',
-          name: 'PackagingStockOfflineRepository',
-          error: error,
-          stackTrace: stackTrace);
+      developer.log(
+        'Error saving packaging stock',
+        name: 'PackagingStockOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
       throw appException;
     }
   }
@@ -247,10 +255,12 @@ class PackagingStockOfflineRepository extends OfflineRepository<PackagingStock>
       );
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log('Error recording packaging movement',
-          name: 'PackagingStockOfflineRepository',
-          error: error,
-          stackTrace: stackTrace);
+      developer.log(
+        'Error recording packaging movement',
+        name: 'PackagingStockOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
       throw appException;
     }
   }
@@ -277,13 +287,18 @@ class PackagingStockOfflineRepository extends OfflineRepository<PackagingStock>
             (e) => e.name == map['type'],
             orElse: () => PackagingMovementType.ajustement,
           ),
-          quantite: (map['quantite'] as num?)?.toInt() ?? (map['quantity'] as num?)?.toInt() ?? 0,
+          quantite:
+              (map['quantite'] as num?)?.toInt() ??
+              (map['quantity'] as num?)?.toInt() ??
+              0,
           date: DateTime.parse(map['date'] as String),
           raison: map['raison'] as String? ?? map['reason'] as String? ?? '',
           productionId: map['productionId'] as String?,
           fournisseur: map['fournisseur'] as String?,
           notes: map['notes'] as String?,
-          createdAt: map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : null,
+          createdAt: map['createdAt'] != null
+              ? DateTime.parse(map['createdAt'] as String)
+              : null,
         );
       }).toList();
 
@@ -295,10 +310,12 @@ class PackagingStockOfflineRepository extends OfflineRepository<PackagingStock>
       }).toList();
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log('Error fetching packaging movements',
-          name: 'PackagingStockOfflineRepository',
-          error: error,
-          stackTrace: stackTrace);
+      developer.log(
+        'Error fetching packaging movements',
+        name: 'PackagingStockOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
       throw appException;
     }
   }
@@ -310,10 +327,12 @@ class PackagingStockOfflineRepository extends OfflineRepository<PackagingStock>
       return stocks.where((s) => s.estStockFaible).toList();
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log('Error fetching low stock alerts',
-          name: 'PackagingStockOfflineRepository',
-          error: error,
-          stackTrace: stackTrace);
+      developer.log(
+        'Error fetching low stock alerts',
+        name: 'PackagingStockOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
       throw appException;
     }
   }

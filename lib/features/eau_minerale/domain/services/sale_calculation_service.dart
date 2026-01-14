@@ -7,10 +7,7 @@ class SaleCalculationService {
   /// Calculates the total price for a sale.
   ///
   /// Returns null if unitPrice or quantity is null.
-  static int? calculateTotalPrice({
-    int? unitPrice,
-    int? quantity,
-  }) {
+  static int? calculateTotalPrice({int? unitPrice, int? quantity}) {
     if (unitPrice == null || quantity == null) {
       return null;
     }
@@ -45,18 +42,12 @@ class SaleCalculationService {
   }
 
   /// Checks if a sale is fully paid.
-  static bool isFullyPaid({
-    required int totalPrice,
-    required int amountPaid,
-  }) {
+  static bool isFullyPaid({required int totalPrice, required int amountPaid}) {
     return amountPaid >= totalPrice;
   }
 
   /// Checks if a sale has credit (partial payment).
-  static bool hasCredit({
-    required int totalPrice,
-    required int amountPaid,
-  }) {
+  static bool hasCredit({required int totalPrice, required int amountPaid}) {
     return amountPaid < totalPrice;
   }
 
@@ -84,4 +75,3 @@ class SaleCalculationService {
     return product?.unitPrice;
   }
 }
-

@@ -12,10 +12,7 @@ import 'forecast_report/forecast_report_weekly_breakdown.dart';
 
 /// Widget displaying forecasts and projections.
 class ForecastReportContent extends ConsumerWidget {
-  const ForecastReportContent({
-    super.key,
-    required this.period,
-  });
+  const ForecastReportContent({super.key, required this.period});
 
   final ReportPeriod period;
 
@@ -50,7 +47,10 @@ class ForecastReportContent extends ConsumerWidget {
     }).toList();
 
     // Group by week
-    final weeklyData = ForecastReportHelpers.groupByWeek(recentSales, fourWeeksAgo);
+    final weeklyData = ForecastReportHelpers.groupByWeek(
+      recentSales,
+      fourWeeksAgo,
+    );
 
     // Calculate average
     final weeklyAverage = weeklyData.isEmpty
@@ -61,7 +61,11 @@ class ForecastReportContent extends ConsumerWidget {
     final trend = ForecastReportHelpers.calculateTrend(weeklyData);
 
     // Project next 4 weeks
-    final projections = ForecastReportHelpers.projectWeeks(weeklyAverage, trend, 4);
+    final projections = ForecastReportHelpers.projectWeeks(
+      weeklyAverage,
+      trend,
+      4,
+    );
 
     // Alerts
     final alerts = generateForecastAlerts(weeklyData, trend, weeklyAverage);

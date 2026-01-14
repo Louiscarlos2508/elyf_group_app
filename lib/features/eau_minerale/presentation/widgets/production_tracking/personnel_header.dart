@@ -2,10 +2,7 @@ import 'package:flutter/material.dart';
 
 /// En-tête de la section personnel avec bouton d'ajout.
 class PersonnelHeader extends StatelessWidget {
-  const PersonnelHeader({
-    super.key,
-    required this.onAddDay,
-  });
+  const PersonnelHeader({super.key, required this.onAddDay});
 
   final VoidCallback onAddDay;
 
@@ -46,4 +43,3 @@ class PersonnelHeader extends StatelessWidget {
     );
   }
 }
-

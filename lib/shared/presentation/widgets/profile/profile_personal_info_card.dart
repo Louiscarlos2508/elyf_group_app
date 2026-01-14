@@ -30,11 +30,7 @@ class ProfilePersonalInfoCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(
-                Icons.person_outline,
-                color: Colors.blue.shade300,
-                size: 24,
-              ),
+              Icon(Icons.person_outline, color: Colors.blue.shade300, size: 24),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -124,10 +120,7 @@ class ProfilePersonalInfoCard extends StatelessWidget {
                           value: profile.username,
                         ),
                         const SizedBox(height: 16),
-                        _ProfileTextField(
-                          label: 'Rôle',
-                          value: profile.role,
-                        ),
+                        _ProfileTextField(label: 'Rôle', value: profile.role),
                       ],
                     );
             },
@@ -147,10 +140,7 @@ class ProfilePersonalInfoCard extends StatelessWidget {
 }
 
 class _ProfileTextField extends StatelessWidget {
-  const _ProfileTextField({
-    required this.label,
-    required this.value,
-  });
+  const _ProfileTextField({required this.label, required this.value});
 
   final String label;
   final String value;
@@ -163,13 +153,10 @@ class _ProfileTextField extends StatelessWidget {
       enabled: false,
       decoration: InputDecoration(
         labelText: label,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         filled: true,
         fillColor: theme.colorScheme.surfaceContainerHighest,
       ),
     );
   }
 }
-

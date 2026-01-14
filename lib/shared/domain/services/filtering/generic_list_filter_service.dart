@@ -52,7 +52,9 @@ class GenericListFilterService<T> {
     var result = items;
 
     // Apply search filter
-    if (searchQuery != null && searchQuery.isNotEmpty && getSearchableFields != null) {
+    if (searchQuery != null &&
+        searchQuery.isNotEmpty &&
+        getSearchableFields != null) {
       result = filterBySearch(
         items: result,
         searchQuery: searchQuery,
@@ -73,4 +75,3 @@ class GenericListFilterService<T> {
     return result;
   }
 }
-

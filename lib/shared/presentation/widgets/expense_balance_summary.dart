@@ -109,9 +109,9 @@ class ExpenseBalanceSummary extends StatelessWidget {
           Text(
             value,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                ),
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
             overflow: TextOverflow.ellipsis,
           ),
         ],
@@ -119,4 +119,3 @@ class ExpenseBalanceSummary extends StatelessWidget {
     );
   }
 }
-

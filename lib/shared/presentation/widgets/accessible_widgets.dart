@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-
 /// Bouton accessible avec semantics complètes.
 ///
 /// Utilise les semantics pour être compatible avec les lecteurs d'écran.
@@ -44,10 +43,7 @@ class AccessibleButton extends StatelessWidget {
     );
 
     if (tooltip != null) {
-      button = Tooltip(
-        message: tooltip!,
-        child: button,
-      );
+      button = Tooltip(message: tooltip!, child: button);
     }
 
     return button;
@@ -104,10 +100,7 @@ class AccessibleTextField extends StatelessWidget {
     );
 
     if (error != null) {
-      field = Semantics(
-        label: '$semanticsLabel. Erreur: $error',
-        child: field,
-      );
+      field = Semantics(label: '$semanticsLabel. Erreur: $error', child: field);
     }
 
     return field;
@@ -142,11 +135,7 @@ class AccessibleImage extends StatelessWidget {
       return ExcludeSemantics(child: image);
     }
 
-    return Semantics(
-      label: label ?? 'Image',
-      image: true,
-      child: image,
-    );
+    return Semantics(label: label ?? 'Image', image: true, child: image);
   }
 }
 
@@ -172,11 +161,7 @@ class AccessibleScrollable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Semantics(
-      label: label,
-      explicitChildNodes: true,
-      child: child,
-    );
+    return Semantics(label: label, explicitChildNodes: true, child: child);
   }
 }
 
@@ -184,11 +169,7 @@ class AccessibleScrollable extends StatelessWidget {
 ///
 /// Utilise les semantics de niveau d'en-tête (1-6) pour la navigation au clavier.
 class AccessibleHeader extends StatelessWidget {
-  const AccessibleHeader({
-    super.key,
-    required this.level,
-    required this.child,
-  });
+  const AccessibleHeader({super.key, required this.level, required this.child});
 
   /// Niveau d'en-tête (1-6, comme HTML h1-h6).
   final int level;
@@ -199,12 +180,8 @@ class AccessibleHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     assert(level >= 1 && level <= 6, 'Header level must be between 1 and 6');
-    
-    return Semantics(
-      header: true,
-      headingLevel: level,
-      child: child,
-    );
+
+    return Semantics(header: true, headingLevel: level, child: child);
   }
 }
 
@@ -212,11 +189,7 @@ class AccessibleHeader extends StatelessWidget {
 ///
 /// Utilisé pour créer des groupes logiques pour les lecteurs d'écran.
 class AccessibleGroup extends StatelessWidget {
-  const AccessibleGroup({
-    super.key,
-    required this.label,
-    required this.child,
-  });
+  const AccessibleGroup({super.key, required this.label, required this.child});
 
   /// Label du groupe.
   final String label;
@@ -226,11 +199,7 @@ class AccessibleGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Semantics(
-      label: label,
-      container: true,
-      child: child,
-    );
+    return Semantics(label: label, container: true, child: child);
   }
 }
 
@@ -252,11 +221,7 @@ class AccessibleLoading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Semantics(
-      label: label,
-      liveRegion: true,
-      child: child,
-    );
+    return Semantics(label: label, liveRegion: true, child: child);
   }
 }
 
@@ -283,11 +248,7 @@ class AccessibleLiveRegion extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Semantics(
-      label: label,
-      liveRegion: true,
-      child: child,
-    );
+    return Semantics(label: label, liveRegion: true, child: child);
   }
 }
 
@@ -328,12 +289,8 @@ class AccessibleCard extends StatelessWidget {
       button: onTap != null,
       onTap: onTap,
       child: Card(
-        child: InkWell(
-          onTap: onTap,
-          child: child,
-        ),
+        child: InkWell(onTap: onTap, child: child),
       ),
     );
   }
 }
-

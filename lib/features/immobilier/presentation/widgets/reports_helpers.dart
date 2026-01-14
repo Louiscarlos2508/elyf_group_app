@@ -21,7 +21,9 @@ class ReportsHelpers {
   ) {
     if (period == ReportPeriod.custom && startDate != null && endDate != null) {
       return payments.where((p) {
-        return p.paymentDate.isAfter(startDate.subtract(const Duration(days: 1))) &&
+        return p.paymentDate.isAfter(
+              startDate.subtract(const Duration(days: 1)),
+            ) &&
             p.paymentDate.isBefore(endDate.add(const Duration(days: 1)));
       }).toList();
     }
@@ -48,7 +50,9 @@ class ReportsHelpers {
     }
 
     return payments.where((p) {
-      return p.paymentDate.isAfter(periodStart.subtract(const Duration(days: 1)));
+      return p.paymentDate.isAfter(
+        periodStart.subtract(const Duration(days: 1)),
+      );
     }).toList();
   }
 
@@ -60,7 +64,9 @@ class ReportsHelpers {
   ) {
     if (period == ReportPeriod.custom && startDate != null && endDate != null) {
       return expenses.where((e) {
-        return e.expenseDate.isAfter(startDate.subtract(const Duration(days: 1))) &&
+        return e.expenseDate.isAfter(
+              startDate.subtract(const Duration(days: 1)),
+            ) &&
             e.expenseDate.isBefore(endDate.add(const Duration(days: 1)));
       }).toList();
     }
@@ -87,8 +93,9 @@ class ReportsHelpers {
     }
 
     return expenses.where((e) {
-      return e.expenseDate.isAfter(periodStart.subtract(const Duration(days: 1)));
+      return e.expenseDate.isAfter(
+        periodStart.subtract(const Duration(days: 1)),
+      );
     }).toList();
   }
 }
-

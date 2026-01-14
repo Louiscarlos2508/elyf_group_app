@@ -2,14 +2,14 @@ import '../entities/enterprise_module_user.dart';
 import '../../permissions/entities/user_role.dart';
 
 /// Service de permissions amélioré avec support multi-tenant (entreprise).
-/// 
+///
 /// Différence avec PermissionService de base:
 /// - Inclut enterpriseId dans toutes les vérifications
 /// - Permet à un utilisateur d'avoir des rôles différents selon l'entreprise
 /// - Isolé les données par entreprise
 abstract class ImprovedPermissionService {
   /// Vérifie si un utilisateur a une permission dans une entreprise et un module spécifiques.
-  /// 
+  ///
   /// Exemple:
   /// ```dart
   /// final canCreate = await service.hasPermission(
@@ -21,7 +21,7 @@ abstract class ImprovedPermissionService {
   /// ```
   Future<bool> hasPermission(
     String userId,
-    String enterpriseId,  // ← NOUVEAU: Entreprise spécifique
+    String enterpriseId, // ← NOUVEAU: Entreprise spécifique
     String moduleId,
     String permissionId,
   );
@@ -37,12 +37,12 @@ abstract class ImprovedPermissionService {
   Future<List<EnterpriseModuleUser>> getUserAccesses(String userId);
 
   /// Récupère les entreprises accessibles par un utilisateur.
-  /// 
+  ///
   /// Retourne la liste des entreprises où l'utilisateur a au moins un accès actif.
   Future<List<String>> getUserEnterprises(String userId);
 
   /// Récupère les modules accessibles par un utilisateur dans une entreprise.
-  /// 
+  ///
   /// Retourne la liste des modules où l'utilisateur a un accès actif dans l'entreprise.
   Future<List<String>> getUserModules(String userId, String enterpriseId);
 
@@ -58,7 +58,7 @@ abstract class ImprovedPermissionService {
 }
 
 /// Implémentation mock pour le développement.
-/// 
+///
 /// TODO: Remplacer par FirestorePermissionService en production.
 class MockImprovedPermissionService implements ImprovedPermissionService {
   final Map<String, EnterpriseModuleUser> _accesses = {};
@@ -136,7 +136,11 @@ class MockImprovedPermissionService implements ImprovedPermissionService {
     String moduleId,
     String permissionId,
   ) async {
-    final access = await getEnterpriseModuleUser(userId, enterpriseId, moduleId);
+    final access = await getEnterpriseModuleUser(
+      userId,
+      enterpriseId,
+      moduleId,
+    );
     if (access == null || !access.isActive) {
       return false;
     }
@@ -184,7 +188,10 @@ class MockImprovedPermissionService implements ImprovedPermissionService {
   }
 
   @override
-  Future<List<String>> getUserModules(String userId, String enterpriseId) async {
+  Future<List<String>> getUserModules(
+    String userId,
+    String enterpriseId,
+  ) async {
     final accesses = await getUserAccesses(userId);
     return accesses
         .where((a) => a.enterpriseId == enterpriseId)
@@ -204,7 +211,11 @@ class MockImprovedPermissionService implements ImprovedPermissionService {
     String enterpriseId,
     String moduleId,
   ) async {
-    final access = await getEnterpriseModuleUser(userId, enterpriseId, moduleId);
+    final access = await getEnterpriseModuleUser(
+      userId,
+      enterpriseId,
+      moduleId,
+    );
     return access != null && access.isActive;
   }
 
@@ -212,4 +223,3 @@ class MockImprovedPermissionService implements ImprovedPermissionService {
   // car elles ne supportent pas enterpriseId. Utilisez les méthodes
   // avec enterpriseId ci-dessus.
 }
-

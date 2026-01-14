@@ -8,10 +8,7 @@ import '../../domain/entities/property.dart';
 import 'expense_form_fields.dart';
 
 class ExpenseFormDialog extends ConsumerStatefulWidget {
-  const ExpenseFormDialog({
-    super.key,
-    this.expense,
-  });
+  const ExpenseFormDialog({super.key, this.expense});
 
   final PropertyExpense? expense;
 
@@ -64,14 +61,18 @@ class _ExpenseFormDialogState extends ConsumerState<ExpenseFormDialog>
 
   Future<void> _save() async {
     if (_selectedProperty == null) {
-      NotificationService.showWarning(context, 'Veuillez sélectionner une propriété');
+      NotificationService.showWarning(
+        context,
+        'Veuillez sélectionner une propriété',
+      );
       return;
     }
 
     await handleFormSubmit(
       context: context,
       formKey: _formKey,
-      onLoadingChanged: (_) {}, // Pas besoin de gestion d'état de chargement séparée
+      onLoadingChanged:
+          (_) {}, // Pas besoin de gestion d'état de chargement séparée
       onSubmit: () async {
         final expense = PropertyExpense(
           id: widget.expense?.id ?? IdGenerator.generate(),
@@ -112,7 +113,9 @@ class _ExpenseFormDialogState extends ConsumerState<ExpenseFormDialog>
     final propertiesAsync = ref.watch(propertiesProvider);
 
     return FormDialog(
-      title: widget.expense == null ? 'Nouvelle dépense' : 'Modifier la dépense',
+      title: widget.expense == null
+          ? 'Nouvelle dépense'
+          : 'Modifier la dépense',
       saveLabel: widget.expense == null ? 'Enregistrer' : 'Enregistrer',
       onSave: _save,
       child: Form(
@@ -156,9 +159,7 @@ class _ExpenseFormDialogState extends ConsumerState<ExpenseFormDialog>
               },
             ),
             const SizedBox(height: 16),
-            ExpenseFormFields.receiptField(
-              controller: _receiptController,
-            ),
+            ExpenseFormFields.receiptField(controller: _receiptController),
             const SizedBox(height: 24),
           ],
         ),
@@ -166,4 +167,3 @@ class _ExpenseFormDialogState extends ConsumerState<ExpenseFormDialog>
     );
   }
 }
-

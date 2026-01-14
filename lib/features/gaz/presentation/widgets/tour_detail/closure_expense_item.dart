@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
+
 /// Item de dépense pour l'étape de clôture.
 class ClosureExpenseItem extends StatelessWidget {
   const ClosureExpenseItem({
@@ -21,19 +22,11 @@ class ClosureExpenseItem extends StatelessWidget {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      padding: EdgeInsets.fromLTRB(
-        7.993,
-        7.993,
-        7.993,
-        isTotal ? 1.305 : 0,
-      ),
+      padding: EdgeInsets.fromLTRB(7.993, 7.993, 7.993, isTotal ? 1.305 : 0),
       decoration: BoxDecoration(
         color: isTotal ? const Color(0xFFFEF2F2) : const Color(0xFFF9FAFB),
         border: isTotal
-            ? Border.all(
-                color: const Color(0xFFFFC9C9),
-                width: 1.305,
-              )
+            ? Border.all(color: const Color(0xFFFFC9C9), width: 1.305)
             : null,
         borderRadius: BorderRadius.circular(4),
       ),
@@ -61,4 +54,3 @@ class ClosureExpenseItem extends StatelessWidget {
     );
   }
 }
-

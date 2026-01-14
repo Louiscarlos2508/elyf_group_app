@@ -6,4 +6,3 @@ abstract class StockRepository {
   Future<int> getStock(String productId);
   Future<List<Product>> getLowStockProducts({int threshold = 10});
 }
-

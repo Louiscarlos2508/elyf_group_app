@@ -8,6 +8,7 @@ import 'production_payment_person_row.dart';
 import 'production_period_formatter.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../../../shared/utils/notification_service.dart';
+
 /// Section for managing persons to pay in production payment.
 class ProductionPaymentPersonsSection extends ConsumerWidget {
   const ProductionPaymentPersonsSection({
@@ -31,52 +32,63 @@ class ProductionPaymentPersonsSection extends ConsumerWidget {
     try {
       // Récupérer les sessions de production
       final sessions = await ref.read(productionSessionsStateProvider.future);
-      
+
       // Récupérer la période pour déterminer les dates
       final config = await ref.read(productionPeriodConfigProvider.future);
       final formatter = ProductionPeriodFormatter(config);
       final periodDates = formatter.parsePeriod(period);
-      
+
       if (periodDates == null) {
         if (context.mounted) {
-          NotificationService.showWarning(context, 'Impossible de parser la période. Veuillez sélectionner une période valide.');
+          NotificationService.showWarning(
+            context,
+            'Impossible de parser la période. Veuillez sélectionner une période valide.',
+          );
         }
         return;
       }
-      
+
       // Filtrer les sessions de la période
       final sessionsInPeriod = sessions.where((session) {
-        return session.date.isAfter(periodDates.start.subtract(const Duration(days: 1))) &&
-               session.date.isBefore(periodDates.end.add(const Duration(days: 1)));
+        return session.date.isAfter(
+              periodDates.start.subtract(const Duration(days: 1)),
+            ) &&
+            session.date.isBefore(periodDates.end.add(const Duration(days: 1)));
       }).toList();
-      
+
       if (sessionsInPeriod.isEmpty) {
         if (context.mounted) {
-          NotificationService.showWarning(context, 'Aucune session de production trouvée pour cette période.');
+          NotificationService.showWarning(
+            context,
+            'Aucune session de production trouvée pour cette période.',
+          );
         }
         return;
       }
-      
+
       // Extraire tous les ProductionDay
       final productionDays = <ProductionDay>[];
       for (final session in sessionsInPeriod) {
         productionDays.addAll(session.productionDays);
       }
-      
+
       if (productionDays.isEmpty) {
         if (context.mounted) {
-          NotificationService.showWarning(context, 'Aucun personnel journalier enregistré pour cette période.');
+          NotificationService.showWarning(
+            context,
+            'Aucun personnel journalier enregistré pour cette période.',
+          );
         }
         return;
       }
-      
+
       // Récupérer tous les ouvriers
       final workers = await ref.read(allDailyWorkersProvider.future);
       final workerMap = {for (var w in workers) w.id: w};
-      
+
       // Grouper par ouvrier et compter les jours travaillés
       final Map<String, ({int daysWorked, int pricePerDay})> workerStats = {};
-      
+
       for (final day in productionDays) {
         for (final workerId in day.personnelIds) {
           if (workerStats.containsKey(workerId)) {
@@ -93,35 +105,43 @@ class ProductionPaymentPersonsSection extends ConsumerWidget {
           }
         }
       }
-      
+
       // Créer la liste des personnes à payer
       final personsToPay = <ProductionPaymentPerson>[];
       for (final entry in workerStats.entries) {
         final worker = workerMap[entry.key];
         if (worker != null) {
-          personsToPay.add(ProductionPaymentPerson(
-            name: worker.name,
-            pricePerDay: entry.value.pricePerDay,
-            daysWorked: entry.value.daysWorked,
-          ));
+          personsToPay.add(
+            ProductionPaymentPerson(
+              name: worker.name,
+              pricePerDay: entry.value.pricePerDay,
+              daysWorked: entry.value.daysWorked,
+            ),
+          );
         }
       }
-      
+
       if (personsToPay.isEmpty) {
         if (context.mounted) {
-          NotificationService.showWarning(context, 'Aucun ouvrier trouvé pour cette période.');
+          NotificationService.showWarning(
+            context,
+            'Aucun ouvrier trouvé pour cette période.',
+          );
         }
         return;
       }
-      
+
       // Trier par nom
       personsToPay.sort((a, b) => a.name.compareTo(b.name));
-      
+
       // Appeler le callback pour mettre à jour la liste
       onLoadFromProduction(personsToPay);
-      
+
       if (context.mounted) {
-        NotificationService.showSuccess(context, '${personsToPay.length} personne(s) chargée(s) depuis les sessions de production.');
+        NotificationService.showSuccess(
+          context,
+          '${personsToPay.length} personne(s) chargée(s) depuis les sessions de production.',
+        );
       }
     } catch (e) {
       if (context.mounted) {
@@ -139,7 +159,7 @@ class ProductionPaymentPersonsSection extends ConsumerWidget {
         LayoutBuilder(
           builder: (context, constraints) {
             final isWide = constraints.maxWidth > 600;
-            
+
             if (isWide) {
               // Disposition horizontale pour les grands écrans
               return Row(
@@ -158,7 +178,8 @@ class ProductionPaymentPersonsSection extends ConsumerWidget {
                     icon: const Icon(Icons.download, size: 18),
                     label: const Text('Charger depuis production'),
                     style: OutlinedButton.styleFrom(
-                      backgroundColor: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+                      backgroundColor: theme.colorScheme.primaryContainer
+                          .withValues(alpha: 0.3),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -186,7 +207,8 @@ class ProductionPaymentPersonsSection extends ConsumerWidget {
                     icon: const Icon(Icons.download, size: 18),
                     label: const Text('Charger depuis production'),
                     style: OutlinedButton.styleFrom(
-                      backgroundColor: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+                      backgroundColor: theme.colorScheme.primaryContainer
+                          .withValues(alpha: 0.3),
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -248,4 +270,3 @@ class ProductionPaymentPersonsSection extends ConsumerWidget {
     );
   }
 }
-

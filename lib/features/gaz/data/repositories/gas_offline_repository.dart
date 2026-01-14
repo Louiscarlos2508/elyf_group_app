@@ -121,8 +121,7 @@ class GasOfflineRepository implements GasRepository {
           .whereType<Cylinder>()
           .toList();
     } catch (error, stackTrace) {
-      final appException =
-          ErrorHandler.instance.handleError(error, stackTrace);
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
         'Error fetching cylinders',
         name: 'GasOfflineRepository',
@@ -154,8 +153,7 @@ class GasOfflineRepository implements GasRepository {
       }
       return null;
     } catch (error, stackTrace) {
-      final appException =
-          ErrorHandler.instance.handleError(error, stackTrace);
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
         'Error getting cylinder',
         name: 'GasOfflineRepository',
@@ -193,8 +191,7 @@ class GasOfflineRepository implements GasRepository {
         enterpriseId: enterpriseId,
       );
     } catch (error, stackTrace) {
-      final appException =
-          ErrorHandler.instance.handleError(error, stackTrace);
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
         'Error adding cylinder',
         name: 'GasOfflineRepository',
@@ -233,8 +230,7 @@ class GasOfflineRepository implements GasRepository {
         enterpriseId: enterpriseId,
       );
     } catch (error, stackTrace) {
-      final appException =
-          ErrorHandler.instance.handleError(error, stackTrace);
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
         'Error updating cylinder',
         name: 'GasOfflineRepository',
@@ -279,8 +275,7 @@ class GasOfflineRepository implements GasRepository {
         enterpriseId: enterpriseId,
       );
     } catch (error, stackTrace) {
-      final appException =
-          ErrorHandler.instance.handleError(error, stackTrace);
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
         'Error deleting cylinder',
         name: 'GasOfflineRepository',
@@ -320,21 +315,25 @@ class GasOfflineRepository implements GasRepository {
       // Filtrer par date
       if (from != null) {
         sales = sales
-            .where((s) => s.saleDate.isAfter(from) || s.saleDate.isAtSameMomentAs(from))
+            .where(
+              (s) =>
+                  s.saleDate.isAfter(from) || s.saleDate.isAtSameMomentAs(from),
+            )
             .toList();
       }
 
       if (to != null) {
         sales = sales
-            .where((s) => s.saleDate.isBefore(to) || s.saleDate.isAtSameMomentAs(to))
+            .where(
+              (s) => s.saleDate.isBefore(to) || s.saleDate.isAtSameMomentAs(to),
+            )
             .toList();
       }
 
       sales.sort((a, b) => b.saleDate.compareTo(a.saleDate));
       return sales;
     } catch (error, stackTrace) {
-      final appException =
-          ErrorHandler.instance.handleError(error, stackTrace);
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
         'Error fetching sales',
         name: 'GasOfflineRepository',
@@ -366,8 +365,7 @@ class GasOfflineRepository implements GasRepository {
       }
       return null;
     } catch (error, stackTrace) {
-      final appException =
-          ErrorHandler.instance.handleError(error, stackTrace);
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
         'Error getting sale',
         name: 'GasOfflineRepository',
@@ -405,8 +403,7 @@ class GasOfflineRepository implements GasRepository {
         enterpriseId: enterpriseId,
       );
     } catch (error, stackTrace) {
-      final appException =
-          ErrorHandler.instance.handleError(error, stackTrace);
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
         'Error adding sale',
         name: 'GasOfflineRepository',
@@ -445,8 +442,7 @@ class GasOfflineRepository implements GasRepository {
         enterpriseId: enterpriseId,
       );
     } catch (error, stackTrace) {
-      final appException =
-          ErrorHandler.instance.handleError(error, stackTrace);
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
         'Error updating sale',
         name: 'GasOfflineRepository',
@@ -491,8 +487,7 @@ class GasOfflineRepository implements GasRepository {
         enterpriseId: enterpriseId,
       );
     } catch (error, stackTrace) {
-      final appException =
-          ErrorHandler.instance.handleError(error, stackTrace);
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
         'Error deleting sale',
         name: 'GasOfflineRepository',
@@ -515,4 +510,3 @@ class GasOfflineRepository implements GasRepository {
     }
   }
 }
-

@@ -23,8 +23,7 @@ class DashboardAlertsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final hasAlerts =
-        unpaidPayments.isNotEmpty || expiringContracts.isNotEmpty;
+    final hasAlerts = unpaidPayments.isNotEmpty || expiringContracts.isNotEmpty;
 
     if (!hasAlerts) {
       return Container(
@@ -95,8 +94,18 @@ class DashboardAlertsSection extends StatelessWidget {
 
   String _formatMonthYear(DateTime date) {
     const months = [
-      'Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin',
-      'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc',
+      'Jan',
+      'Fév',
+      'Mar',
+      'Avr',
+      'Mai',
+      'Juin',
+      'Juil',
+      'Août',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Déc',
     ];
     return '${months[date.month - 1]} ${date.year}';
   }
@@ -146,8 +155,10 @@ class _AlertCard extends StatelessWidget {
                   ),
                 ),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: color,
                     borderRadius: BorderRadius.circular(12),
@@ -172,11 +183,7 @@ class _AlertCard extends StatelessWidget {
 }
 
 class _AlertItem extends StatelessWidget {
-  const _AlertItem({
-    required this.title,
-    required this.subtitle,
-    this.onTap,
-  });
+  const _AlertItem({required this.title, required this.subtitle, this.onTap});
 
   final String title;
   final String subtitle;

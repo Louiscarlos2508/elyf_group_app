@@ -29,16 +29,19 @@ class Contract {
   final DateTime startDate;
   final DateTime endDate;
   final int monthlyRent;
-  final int deposit; // Montant de la caution (calculé si depositInMonths est défini)
+  final int
+  deposit; // Montant de la caution (calculé si depositInMonths est défini)
   final ContractStatus status;
   final Property? property;
   final Tenant? tenant;
   final int? paymentDay; // Jour du mois pour le paiement
   final String? notes;
-  final int? depositInMonths; // Nombre de mois pour la caution (si null, deposit est un montant fixe)
+  final int?
+  depositInMonths; // Nombre de mois pour la caution (si null, deposit est un montant fixe)
   final DateTime? createdAt;
   final DateTime? updatedAt;
-  final List<AttachedFile>? attachedFiles; // Fichiers joints (contrat signé, photos, etc.)
+  final List<AttachedFile>?
+  attachedFiles; // Fichiers joints (contrat signé, photos, etc.)
 
   /// Calcule le montant de la caution en fonction du nombre de mois ou retourne le montant fixe.
   int get calculatedDeposit {
@@ -62,10 +65,4 @@ class Contract {
   }
 }
 
-enum ContractStatus {
-  active,
-  expired,
-  terminated,
-  pending,
-}
-
+enum ContractStatus { active, expired, terminated, pending }

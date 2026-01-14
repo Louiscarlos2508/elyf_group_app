@@ -16,6 +16,7 @@ import 'production_session_form_steps/step_production.dart';
 import 'production_session_form_steps/step_finalization.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../../../shared/utils/notification_service.dart';
+
 /// Formulaire de session de production divisé en étapes.
 class ProductionSessionFormSteps extends ConsumerStatefulWidget {
   const ProductionSessionFormSteps({
@@ -37,7 +38,8 @@ class ProductionSessionFormSteps extends ConsumerStatefulWidget {
 class ProductionSessionFormStepsState
     extends ConsumerState<ProductionSessionFormSteps> {
   final _formKey = GlobalKey<FormState>();
-  final _indexCompteurInitialController = TextEditingController(); // kWh au démarrage
+  final _indexCompteurInitialController =
+      TextEditingController(); // kWh au démarrage
   final _indexCompteurFinalController = TextEditingController(); // kWh à la fin
   final _consommationController = TextEditingController();
   final _quantiteController = TextEditingController();
@@ -50,9 +52,12 @@ class ProductionSessionFormStepsState
   List<BobineUsage> _bobinesUtilisees = [];
   List<ProductionDay> _productionDays = [];
   bool _isLoading = false;
-  bool _isSavingDraft = false; // Flag pour éviter les appels multiples simultanés
-  String? _createdSessionId; // ID de la session créée pour éviter les créations multiples
-  Map<String, BobineUsage> _machinesAvecBobineNonFinie = {}; // Machines avec bobines non finies
+  bool _isSavingDraft =
+      false; // Flag pour éviter les appels multiples simultanés
+  String?
+  _createdSessionId; // ID de la session créée pour éviter les créations multiples
+  Map<String, BobineUsage> _machinesAvecBobineNonFinie =
+      {}; // Machines avec bobines non finies
 
   @override
   void initState() {
@@ -65,8 +70,10 @@ class ProductionSessionFormStepsState
   void _initialiserAvecSession(ProductionSession session) {
     _selectedDate = session.date;
     _heureDebut = session.heureDebut;
-    _indexCompteurInitialController.text = session.indexCompteurInitialKwh?.toString() ?? '';
-    _indexCompteurFinalController.text = session.indexCompteurFinalKwh?.toString() ?? '';
+    _indexCompteurInitialController.text =
+        session.indexCompteurInitialKwh?.toString() ?? '';
+    _indexCompteurFinalController.text =
+        session.indexCompteurFinalKwh?.toString() ?? '';
     _consommationController.text = session.consommationCourant.toString();
     _quantiteController.text = session.quantiteProduite.toString();
     _emballagesController.text = session.emballagesUtilises?.toString() ?? '';
@@ -81,8 +88,10 @@ class ProductionSessionFormStepsState
     await ProductionSessionFormActions.chargerBobinesNonFinies(
       ref: ref,
       machinesSelectionnees: _machinesSelectionnees,
-      onBobinesChanged: (bobines) => setState(() => _bobinesUtilisees = bobines),
-      onMachinesAvecBobineChanged: (machines) => setState(() => _machinesAvecBobineNonFinie = machines),
+      onBobinesChanged: (bobines) =>
+          setState(() => _bobinesUtilisees = bobines),
+      onMachinesAvecBobineChanged: (machines) =>
+          setState(() => _machinesAvecBobineNonFinie = machines),
     );
   }
 
@@ -108,24 +117,26 @@ class ProductionSessionFormStepsState
 
   Future<void> submit() async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     // Validation : machines et bobines
-    final machinesBobinesError = ProductionSessionValidationService.validateMachinesAndBobines(
-      machines: _machinesSelectionnees,
-      bobines: _bobinesUtilisees,
-    );
+    final machinesBobinesError =
+        ProductionSessionValidationService.validateMachinesAndBobines(
+          machines: _machinesSelectionnees,
+          bobines: _bobinesUtilisees,
+        );
     if (machinesBobinesError != null) {
       NotificationService.showWarning(context, machinesBobinesError);
       return;
     }
-    
+
     // Validation : index compteur initial requis
     final meterType = await ref.read(electricityMeterTypeProvider.future);
     if (!mounted) return;
-    final meterIndexError = ProductionSessionValidationService.validateMeterIndex(
-      indexText: _indexCompteurInitialController.text,
-      meterLabel: meterType.initialLabel,
-    );
+    final meterIndexError =
+        ProductionSessionValidationService.validateMeterIndex(
+          indexText: _indexCompteurInitialController.text,
+          meterLabel: meterType.initialLabel,
+        );
     if (meterIndexError != null) {
       NotificationService.showWarning(context, meterIndexError);
       return;
@@ -134,7 +145,7 @@ class ProductionSessionFormStepsState
     setState(() => _isLoading = true);
     try {
       final config = await ref.read(productionPeriodConfigProvider.future);
-      
+
       // Calculer le statut basé sur les données disponibles
       final status = ProductionSessionStatusCalculator.calculateStatus(
         quantiteProduite: int.tryParse(_quantiteController.text) ?? 0,
@@ -143,23 +154,24 @@ class ProductionSessionFormStepsState
         machinesUtilisees: _machinesSelectionnees,
         bobinesUtilisees: _bobinesUtilisees,
       );
-      
+
       // Récupérer l'index compteur initial si disponible
       final indexInitialKwh = _indexCompteurInitialKwh;
       final indexFinalKwh = _indexCompteurFinalKwh;
-      
+
       // Déterminer l'ID de la session à utiliser
       String? sessionId = widget.session?.id ?? _createdSessionId;
       if (sessionId == null || sessionId.isEmpty) {
-        sessionId = await ProductionSessionFormActions.findExistingUnfinishedSessionId(
-          ref: ref,
-          currentSessionId: sessionId,
-        );
+        sessionId =
+            await ProductionSessionFormActions.findExistingUnfinishedSessionId(
+              ref: ref,
+              currentSessionId: sessionId,
+            );
         if (sessionId != null) {
           _createdSessionId = sessionId;
         }
       }
-      
+
       final session = ProductionSessionBuilder.buildFromForm(
         sessionId: sessionId,
         selectedDate: _selectedDate,
@@ -167,7 +179,11 @@ class ProductionSessionFormStepsState
         heureFin: null,
         indexCompteurInitialKwh: indexInitialKwh,
         indexCompteurFinalKwh: indexFinalKwh,
-        consommationCourant: double.tryParse(_consommationController.text.replaceAll(',', '.')) ?? 0.0,
+        consommationCourant:
+            double.tryParse(
+              _consommationController.text.replaceAll(',', '.'),
+            ) ??
+            0.0,
         machinesUtilisees: _machinesSelectionnees,
         bobinesUtilisees: _bobinesUtilisees,
         quantiteProduite: int.tryParse(_quantiteController.text) ?? 0,
@@ -182,12 +198,12 @@ class ProductionSessionFormStepsState
 
       final controller = ref.read(productionSessionControllerProvider);
       ProductionSession savedSession;
-      
+
       if (sessionId == null || sessionId.isEmpty) {
         // Créer une nouvelle session seulement si aucune session n'existe
         savedSession = await controller.createSession(session);
         _createdSessionId = savedSession.id; // Stocker l'ID créé
-        
+
         // Le stock a déjà été décrémenté lors de l'assignation des bobines dans _chargerBobinesNonFinies()
         // Pas besoin de décrémenter à nouveau ici
       } else {
@@ -198,9 +214,12 @@ class ProductionSessionFormStepsState
       if (!mounted) return;
       Navigator.of(context).pop();
       ref.invalidate(productionSessionsStateProvider);
-      NotificationService.showInfo(context, widget.session == null
-              ? 'Session créée avec succès'
-              : 'Session mise à jour');
+      NotificationService.showInfo(
+        context,
+        widget.session == null
+            ? 'Session créée avec succès'
+            : 'Session mise à jour',
+      );
     } catch (e) {
       if (!mounted) return;
       NotificationService.showError(context, e.toString());
@@ -213,7 +232,8 @@ class ProductionSessionFormStepsState
   Future<void> saveDraft() async {
     // Éviter les appels multiples simultanés
     if (_isSavingDraft) return;
-    if (_machinesSelectionnees.isEmpty) return; // Pas de sauvegarde si pas de machines
+    if (_machinesSelectionnees.isEmpty)
+      return; // Pas de sauvegarde si pas de machines
 
     _isSavingDraft = true;
     try {
@@ -226,19 +246,20 @@ class ProductionSessionFormStepsState
         machinesUtilisees: _machinesSelectionnees,
         bobinesUtilisees: _bobinesUtilisees,
       );
-      
+
       final indexInitialKwh = _indexCompteurInitialKwh;
       String? existingSessionId = widget.session?.id ?? _createdSessionId ?? '';
       if (existingSessionId.isEmpty) {
-        existingSessionId = await ProductionSessionFormActions.findExistingUnfinishedSessionId(
-          ref: ref,
-          currentSessionId: existingSessionId,
-        );
+        existingSessionId =
+            await ProductionSessionFormActions.findExistingUnfinishedSessionId(
+              ref: ref,
+              currentSessionId: existingSessionId,
+            );
         if (existingSessionId != null) {
           _createdSessionId = existingSessionId;
         }
       }
-      
+
       final session = ProductionSessionFormActions.buildSession(
         sessionId: existingSessionId,
         selectedDate: _selectedDate,
@@ -246,7 +267,8 @@ class ProductionSessionFormStepsState
         heureFin: widget.session?.heureFin,
         indexCompteurInitialKwh: indexInitialKwh,
         indexCompteurFinalKwh: _indexCompteurFinalKwh,
-        consommationCourant: double.tryParse(_consommationController.text) ?? 0.0,
+        consommationCourant:
+            double.tryParse(_consommationController.text) ?? 0.0,
         machinesUtilisees: _machinesSelectionnees,
         bobinesUtilisees: _bobinesUtilisees,
         quantiteProduite: int.tryParse(_quantiteController.text) ?? 0,
@@ -260,11 +282,12 @@ class ProductionSessionFormStepsState
       );
 
       final controller = ref.read(productionSessionControllerProvider);
-      
+
       if (existingSessionId == null || existingSessionId.isEmpty) {
         // Créer une nouvelle session comme brouillon seulement si aucune session n'existe
         final createdSession = await controller.createSession(session);
-        _createdSessionId = createdSession.id; // Stocker l'ID pour les prochaines sauvegardes
+        _createdSessionId =
+            createdSession.id; // Stocker l'ID pour les prochaines sauvegardes
         if (mounted) {
           NotificationService.showInfo(context, 'État sauvegardé');
         }
@@ -301,10 +324,7 @@ class ProductionSessionFormStepsState
 
   @override
   Widget build(BuildContext context) {
-    return Form(
-      key: _formKey,
-      child: _buildCurrentStep(),
-    );
+    return Form(key: _formKey, child: _buildCurrentStep());
   }
 
   Widget _buildCurrentStep() {
@@ -331,26 +351,31 @@ class ProductionSessionFormStepsState
             setState(() => _machinesSelectionnees = machines);
             await _chargerBobinesNonFinies();
           },
-          onBobinesChanged: (bobines) => setState(() => _bobinesUtilisees = bobines),
-          onInstallerBobine: () => ProductionSessionFormDialogs.showBobineInstallation(
-            context: context,
-            ref: ref,
-            machinesSelectionnees: _machinesSelectionnees,
-            bobinesUtilisees: _bobinesUtilisees,
-            onBobinesChanged: (bobines) => setState(() => _bobinesUtilisees = bobines),
-          ),
-          onSignalerPanne: (context, bobine, index) => ProductionSessionFormDialogs.showMachineBreakdown(
-            context: context,
-            ref: ref,
-            session: widget.session,
-            selectedDate: _selectedDate,
-            heureDebut: _heureDebut,
-            machinesUtilisees: _machinesSelectionnees,
-            bobinesUtilisees: _bobinesUtilisees,
-            bobine: bobine,
-            bobineIndex: index,
-            onBobineRemoved: () => setState(() => _bobinesUtilisees.removeAt(index)),
-          ),
+          onBobinesChanged: (bobines) =>
+              setState(() => _bobinesUtilisees = bobines),
+          onInstallerBobine: () =>
+              ProductionSessionFormDialogs.showBobineInstallation(
+                context: context,
+                ref: ref,
+                machinesSelectionnees: _machinesSelectionnees,
+                bobinesUtilisees: _bobinesUtilisees,
+                onBobinesChanged: (bobines) =>
+                    setState(() => _bobinesUtilisees = bobines),
+              ),
+          onSignalerPanne: (context, bobine, index) =>
+              ProductionSessionFormDialogs.showMachineBreakdown(
+                context: context,
+                ref: ref,
+                session: widget.session,
+                selectedDate: _selectedDate,
+                heureDebut: _heureDebut,
+                machinesUtilisees: _machinesSelectionnees,
+                bobinesUtilisees: _bobinesUtilisees,
+                bobine: bobine,
+                bobineIndex: index,
+                onBobineRemoved: () =>
+                    setState(() => _bobinesUtilisees.removeAt(index)),
+              ),
           onRetirerBobine: (index) {
             setState(() => _bobinesUtilisees.removeAt(index));
           },
@@ -368,7 +393,9 @@ class ProductionSessionFormStepsState
                 bobinesUtilisees: _bobinesUtilisees,
                 onProductionDayAdded: (day) {
                   setState(() {
-                    final existingIndex = _productionDays.indexWhere((d) => d.id == day.id);
+                    final existingIndex = _productionDays.indexWhere(
+                      (d) => d.id == day.id,
+                    );
                     if (existingIndex != -1) {
                       _productionDays[existingIndex] = day;
                     } else {
@@ -377,7 +404,9 @@ class ProductionSessionFormStepsState
                   });
                 },
                 onProductionDayRemoved: (day) {
-                  setState(() => _productionDays.removeWhere((d) => d.id == day.id));
+                  setState(
+                    () => _productionDays.removeWhere((d) => d.id == day.id),
+                  );
                 },
               )
             : const SizedBox.shrink();
@@ -399,6 +428,4 @@ class ProductionSessionFormStepsState
         return const SizedBox.shrink();
     }
   }
-
 }
-

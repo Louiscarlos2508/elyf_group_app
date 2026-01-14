@@ -29,9 +29,10 @@ class _AgentsScreenState extends ConsumerState<AgentsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final agentsKey = '${widget.enterpriseId ?? ''}|${_statusFilter?.name ?? ''}|$_searchQuery';
+    final agentsKey =
+        '${widget.enterpriseId ?? ''}|${_statusFilter?.name ?? ''}|$_searchQuery';
     final statsKey = widget.enterpriseId ?? '';
-    
+
     final agentsAsync = ref.watch(agentsProvider((agentsKey)));
     final statsAsync = ref.watch(agentsDailyStatisticsProvider((statsKey)));
 
@@ -60,13 +61,17 @@ class _AgentsScreenState extends ConsumerState<AgentsScreen> {
                           ? Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                AgentsLowLiquidityBanner(agents: lowLiquidityAgents),
+                                AgentsLowLiquidityBanner(
+                                  agents: lowLiquidityAgents,
+                                ),
                                 const SizedBox(height: 24),
                                 statsAsync.when(
                                   data: (stats) => AgentsKpiCards(stats: stats),
                                   loading: () => const SizedBox(
                                     height: 140,
-                                    child: Center(child: CircularProgressIndicator()),
+                                    child: Center(
+                                      child: CircularProgressIndicator(),
+                                    ),
                                   ),
                                   error: (_, __) => const SizedBox(),
                                 ),
@@ -76,7 +81,9 @@ class _AgentsScreenState extends ConsumerState<AgentsScreen> {
                               data: (stats) => AgentsKpiCards(stats: stats),
                               loading: () => const SizedBox(
                                 height: 140,
-                                child: Center(child: CircularProgressIndicator()),
+                                child: Center(
+                                  child: CircularProgressIndicator(),
+                                ),
                               ),
                               error: (_, __) => const SizedBox(),
                             );
@@ -107,9 +114,8 @@ class _AgentsScreenState extends ConsumerState<AgentsScreen> {
                         child: CircularProgressIndicator(),
                       ),
                     ),
-                    error: (error, stack) => Center(
-                      child: Text('Erreur: $error'),
-                    ),
+                    error: (error, stack) =>
+                        Center(child: Text('Erreur: $error')),
                   ),
                 ],
               ),
@@ -202,7 +208,8 @@ class _AgentsScreenState extends ConsumerState<AgentsScreen> {
       _statusFilter,
       () {
         if (mounted) {
-          final agentsKey = '${widget.enterpriseId ?? ''}|${_statusFilter?.name ?? ''}|$_searchQuery';
+          final agentsKey =
+              '${widget.enterpriseId ?? ''}|${_statusFilter?.name ?? ''}|$_searchQuery';
           ref.invalidate(agentsProvider((agentsKey)));
         }
       },
@@ -218,7 +225,8 @@ class _AgentsScreenState extends ConsumerState<AgentsScreen> {
       _statusFilter,
       () {
         if (mounted) {
-          final agentsKey = '${widget.enterpriseId ?? ''}|${_statusFilter?.name ?? ''}|$_searchQuery';
+          final agentsKey =
+              '${widget.enterpriseId ?? ''}|${_statusFilter?.name ?? ''}|$_searchQuery';
           ref.invalidate(agentsProvider((agentsKey)));
         }
       },
@@ -232,7 +240,8 @@ class _AgentsScreenState extends ConsumerState<AgentsScreen> {
       final controller = ref.read(agentsControllerProvider);
       await controller.deleteAgent(agent.id);
       if (mounted) {
-        final agentsKey = '${widget.enterpriseId ?? ''}|${_statusFilter?.name ?? ''}|$_searchQuery';
+        final agentsKey =
+            '${widget.enterpriseId ?? ''}|${_statusFilter?.name ?? ''}|$_searchQuery';
         ref.invalidate(agentsProvider((agentsKey)));
       }
     }

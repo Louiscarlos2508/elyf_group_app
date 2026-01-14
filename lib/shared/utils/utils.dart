@@ -6,4 +6,3 @@ export 'id_generator.dart';
 export 'notification_service.dart';
 export 'responsive_helper.dart';
 export 'validators.dart';
-

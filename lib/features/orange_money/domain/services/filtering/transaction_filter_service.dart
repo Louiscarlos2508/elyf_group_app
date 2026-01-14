@@ -16,7 +16,8 @@ class TransactionFilterService {
     return genericFilter.filterBySearch(
       items: transactions,
       searchQuery: searchQuery,
-      getSearchableFields: getSearchableFields as List<String> Function(dynamic),
+      getSearchableFields:
+          getSearchableFields as List<String> Function(dynamic),
     );
   }
 
@@ -35,4 +36,3 @@ class TransactionFilterService {
     }).toList();
   }
 }
-

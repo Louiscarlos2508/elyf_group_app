@@ -71,4 +71,3 @@ class SettingsToggleItem extends StatelessWidget {
     );
   }
 }
-

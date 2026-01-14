@@ -55,9 +55,7 @@ class MockPaymentRepository implements PaymentRepository {
 
   @override
   Future<List<Payment>> getPaymentsByContract(String contractId) async {
-    return _payments.values
-        .where((p) => p.contractId == contractId)
-        .toList()
+    return _payments.values.where((p) => p.contractId == contractId).toList()
       ..sort((a, b) => b.paymentDate.compareTo(a.paymentDate));
   }
 
@@ -69,8 +67,7 @@ class MockPaymentRepository implements PaymentRepository {
     return _payments.values.where((p) {
       return p.paymentDate.isAfter(start.subtract(const Duration(days: 1))) &&
           p.paymentDate.isBefore(end.add(const Duration(days: 1)));
-    }).toList()
-      ..sort((a, b) => b.paymentDate.compareTo(a.paymentDate));
+    }).toList()..sort((a, b) => b.paymentDate.compareTo(a.paymentDate));
   }
 
   @override
@@ -125,4 +122,3 @@ class MockPaymentRepository implements PaymentRepository {
     _payments.remove(id);
   }
 }
-

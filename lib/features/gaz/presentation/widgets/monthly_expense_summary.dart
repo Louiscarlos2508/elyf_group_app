@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../application/providers.dart' show gazReportCalculationServiceProvider;
+import '../../application/providers.dart'
+    show gazReportCalculationServiceProvider;
 import '../../domain/entities/expense.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../../../shared/utils/currency_formatter.dart';
+
 /// Résumé mensuel des dépenses avec graphique par catégorie.
 class GazMonthlyExpenseSummary extends ConsumerWidget {
   const GazMonthlyExpenseSummary({super.key, required this.expenses});
@@ -24,7 +26,7 @@ class GazMonthlyExpenseSummary extends ConsumerWidget {
       'septembre',
       'octobre',
       'novembre',
-      'décembre'
+      'décembre',
     ];
     return '${months[date.month - 1]} ${date.year}';
   }
@@ -199,8 +201,9 @@ class GazMonthlyExpenseSummary extends ConsumerWidget {
                           borderRadius: BorderRadius.circular(4),
                           child: LinearProgressIndicator(
                             value: percentage,
-                            backgroundColor: _getCategoryColor(entry.key)
-                                .withValues(alpha: 0.1),
+                            backgroundColor: _getCategoryColor(
+                              entry.key,
+                            ).withValues(alpha: 0.1),
                             valueColor: AlwaysStoppedAnimation(
                               _getCategoryColor(entry.key),
                             ),

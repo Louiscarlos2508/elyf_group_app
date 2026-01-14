@@ -166,20 +166,25 @@ class TransactionOfflineRepository extends OfflineRepository<Transaction>
 
       if (startDate != null) {
         allTransactions = allTransactions
-            .where((t) => t.date.isAfter(startDate) || t.date.isAtSameMomentAs(startDate))
+            .where(
+              (t) =>
+                  t.date.isAfter(startDate) ||
+                  t.date.isAtSameMomentAs(startDate),
+            )
             .toList();
       }
 
       if (endDate != null) {
         allTransactions = allTransactions
-            .where((t) => t.date.isBefore(endDate) || t.date.isAtSameMomentAs(endDate))
+            .where(
+              (t) =>
+                  t.date.isBefore(endDate) || t.date.isAtSameMomentAs(endDate),
+            )
             .toList();
       }
 
       if (type != null) {
-        allTransactions = allTransactions
-            .where((t) => t.type == type)
-            .toList();
+        allTransactions = allTransactions.where((t) => t.type == type).toList();
       }
 
       if (status != null) {
@@ -316,20 +321,16 @@ class TransactionOfflineRepository extends OfflineRepository<Transaction>
       );
       final totalCommission = transactions
           .where((t) => t.commission != null)
-          .fold<int>(
-            0,
-            (sum, t) => sum + (t.commission ?? 0),
-          );
+          .fold<int>(0, (sum, t) => sum + (t.commission ?? 0));
       final totalFees = transactions
           .where((t) => t.fees != null)
-          .fold<int>(
-            0,
-            (sum, t) => sum + (t.fees ?? 0),
-          );
+          .fold<int>(0, (sum, t) => sum + (t.fees ?? 0));
 
       return {
         'totalTransactions': transactions.length,
-        'completedTransactions': transactions.where((t) => t.isCompleted).length,
+        'completedTransactions': transactions
+            .where((t) => t.isCompleted)
+            .length,
         'pendingTransactions': transactions.where((t) => t.isPending).length,
         'failedTransactions': transactions.where((t) => t.isFailed).length,
         'totalCashIn': totalCashIn,
@@ -376,4 +377,3 @@ class TransactionOfflineRepository extends OfflineRepository<Transaction>
     }
   }
 }
-

@@ -10,16 +10,12 @@ import 'cylinder_form/cylinder_submit_handler.dart';
 
 /// Dialogue pour créer ou modifier une bouteille de gaz.
 class CylinderFormDialog extends ConsumerStatefulWidget {
-  const CylinderFormDialog({
-    super.key,
-    this.cylinder,
-  });
+  const CylinderFormDialog({super.key, this.cylinder});
 
   final Cylinder? cylinder;
 
   @override
-  ConsumerState<CylinderFormDialog> createState() =>
-      _CylinderFormDialogState();
+  ConsumerState<CylinderFormDialog> createState() => _CylinderFormDialogState();
 }
 
 class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
@@ -45,7 +41,7 @@ class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
       _sellPriceController.text = widget.cylinder!.sellPrice.toStringAsFixed(0);
       _enterpriseId = widget.cylinder!.enterpriseId;
       _moduleId = widget.cylinder!.moduleId;
-      
+
       // Charger le prix en gros depuis les settings
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _loadWholesalePrice();
@@ -107,9 +103,7 @@ class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(24),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 500),
         child: Form(
@@ -136,9 +130,7 @@ class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
                       helperText: 'Entrez le poids de la bouteille en kg',
                     ),
                     keyboardType: TextInputType.number,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                    ],
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     onChanged: (value) {
                       final weight = int.tryParse(value);
                       setState(() {
@@ -170,9 +162,7 @@ class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
                       helperText: 'Prix de vente au détail',
                     ),
                     keyboardType: TextInputType.number,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                    ],
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Veuillez entrer un prix détail';
@@ -198,9 +188,7 @@ class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
                       helperText: 'Prix de vente en gros (optionnel)',
                     ),
                     keyboardType: TextInputType.number,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                    ],
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     validator: (value) {
                       if (value != null && value.isNotEmpty) {
                         final price = double.tryParse(value);
@@ -249,7 +237,9 @@ class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
                                   ),
                                 )
                               : Text(
-                                  widget.cylinder == null ? 'Créer' : 'Enregistrer',
+                                  widget.cylinder == null
+                                      ? 'Créer'
+                                      : 'Enregistrer',
                                 ),
                         ),
                       ),

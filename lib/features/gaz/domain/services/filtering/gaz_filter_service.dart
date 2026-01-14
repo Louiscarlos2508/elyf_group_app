@@ -40,15 +40,16 @@ class GazFilterService {
     required String searchQuery,
   }) {
     return _genericFilter.filterBySearch(
-      items: sales,
-      searchQuery: searchQuery,
-      getSearchableFields: (sale) => [
-        sale.customerName ?? '',
-        sale.customerPhone ?? '',
-        sale.id,
-        sale.notes ?? '',
-      ],
-    ) as List<GasSale>;
+          items: sales,
+          searchQuery: searchQuery,
+          getSearchableFields: (sale) => [
+            sale.customerName ?? '',
+            sale.customerPhone ?? '',
+            sale.id,
+            sale.notes ?? '',
+          ],
+        )
+        as List<GasSale>;
   }
 
   /// Filters expenses by date range.
@@ -79,14 +80,15 @@ class GazFilterService {
     required String searchQuery,
   }) {
     return _genericFilter.filterBySearch(
-      items: expenses,
-      searchQuery: searchQuery,
-      getSearchableFields: (expense) => [
-        expense.description,
-        expense.id,
-        expense.notes ?? '',
-      ],
-    ) as List<GazExpense>;
+          items: expenses,
+          searchQuery: searchQuery,
+          getSearchableFields: (expense) => [
+            expense.description,
+            expense.id,
+            expense.notes ?? '',
+          ],
+        )
+        as List<GazExpense>;
   }
 
   /// Filters stock by status.
@@ -135,4 +137,3 @@ class GazFilterService {
     return sorted;
   }
 }
-

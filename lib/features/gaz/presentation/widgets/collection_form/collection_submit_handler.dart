@@ -7,6 +7,7 @@ import '../../../domain/entities/tour.dart';
 import 'client_selector.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
+
 /// Handler pour la soumission du formulaire de collecte.
 class CollectionSubmitHandler {
   CollectionSubmitHandler._();
@@ -22,7 +23,10 @@ class CollectionSubmitHandler {
   }) async {
     if (bottles.isEmpty) {
       if (!context.mounted) return false;
-      NotificationService.showWarning(context, 'Ajoutez au moins un type de bouteille');
+      NotificationService.showWarning(
+        context,
+        'Ajoutez au moins un type de bouteille',
+      );
       return false;
     }
 
@@ -37,7 +41,10 @@ class CollectionSubmitHandler {
       if (collectionType == CollectionType.wholesaler) {
         if (cylinders.isEmpty) {
           if (context.mounted) {
-            NotificationService.showError(context, 'Aucune bouteille configurée. Veuillez d\'abord configurer les bouteilles dans les paramètres.');
+            NotificationService.showError(
+              context,
+              'Aucune bouteille configurée. Veuillez d\'abord configurer les bouteilles dans les paramètres.',
+            );
           }
           return false;
         }
@@ -91,7 +98,9 @@ class CollectionSubmitHandler {
         clientAddress: selectedClient.address,
         emptyBottles: bottles,
         unitPrice: unitPrice,
-        unitPricesByWeight: unitPricesByWeight.isEmpty ? null : unitPricesByWeight,
+        unitPricesByWeight: unitPricesByWeight.isEmpty
+            ? null
+            : unitPricesByWeight,
       );
 
       final updatedCollections = [...tour.collections, collection];
@@ -111,4 +120,3 @@ class CollectionSubmitHandler {
     }
   }
 }
-

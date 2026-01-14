@@ -8,6 +8,7 @@ import '../../features/eau_minerale/presentation/screens/eau_minerale_shell_scre
 import '../../features/gaz/presentation/screens/gaz_shell_screen.dart';
 import '../../features/immobilier/presentation/screens/immobilier_shell_screen.dart';
 import '../../features/orange_money/presentation/screens/orange_money_shell_screen.dart';
+import 'module_sync_mixin.dart';
 
 /// Widget affiché quand aucune entreprise n'est sélectionnée
 class _NoEnterpriseSelectedWidget extends StatelessWidget {
@@ -16,9 +17,7 @@ class _NoEnterpriseSelectedWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Sélection d\'entreprise requise'),
-      ),
+      appBar: AppBar(title: const Text('Sélection d\'entreprise requise')),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
@@ -66,19 +65,30 @@ class _NoEnterpriseSelectedWidget extends StatelessWidget {
 }
 
 /// Wrapper pour le module Eau Minérale qui utilise l'entreprise active
-class EauMineraleRouteWrapper extends ConsumerWidget {
+class EauMineraleRouteWrapper extends ConsumerStatefulWidget {
   const EauMineraleRouteWrapper({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<EauMineraleRouteWrapper> createState() =>
+      _EauMineraleRouteWrapperState();
+}
+
+class _EauMineraleRouteWrapperState
+    extends ConsumerState<EauMineraleRouteWrapper>
+    with ModuleSyncMixin {
+  @override
+  Widget build(BuildContext context) {
     final activeEnterpriseAsync = ref.watch(activeEnterpriseProvider);
-    
+
     return activeEnterpriseAsync.when(
       data: (enterprise) {
         if (enterprise == null) {
           return const _NoEnterpriseSelectedWidget();
         }
-        
+
+        // Démarrer la synchronisation lors du premier accès
+        startModuleSync(enterprise.id, 'eau_minerale');
+
         return EauMineraleShellScreen(
           enterpriseId: enterprise.id,
           moduleId: 'eau_minerale',
@@ -113,23 +123,30 @@ class EauMineraleRouteWrapper extends ConsumerWidget {
 }
 
 /// Wrapper pour le module Gaz qui utilise l'entreprise active
-class GazRouteWrapper extends ConsumerWidget {
+class GazRouteWrapper extends ConsumerStatefulWidget {
   const GazRouteWrapper({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<GazRouteWrapper> createState() => _GazRouteWrapperState();
+}
+
+class _GazRouteWrapperState extends ConsumerState<GazRouteWrapper>
+    with ModuleSyncMixin {
+  @override
+  Widget build(BuildContext context) {
     final activeEnterpriseAsync = ref.watch(activeEnterpriseProvider);
-    
+
     return activeEnterpriseAsync.when(
       data: (enterprise) {
         if (enterprise == null) {
           return const _NoEnterpriseSelectedWidget();
         }
-        
-        return GazShellScreen(
-          enterpriseId: enterprise.id,
-          moduleId: 'gaz',
-        ) as Widget;
+
+        // Démarrer la synchronisation lors du premier accès
+        startModuleSync(enterprise.id, 'gaz');
+
+        return GazShellScreen(enterpriseId: enterprise.id, moduleId: 'gaz')
+            as Widget;
       },
       loading: () => const Scaffold(
         body: Center(
@@ -160,23 +177,35 @@ class GazRouteWrapper extends ConsumerWidget {
 }
 
 /// Wrapper pour le module Orange Money qui utilise l'entreprise active
-class OrangeMoneyRouteWrapper extends ConsumerWidget {
+class OrangeMoneyRouteWrapper extends ConsumerStatefulWidget {
   const OrangeMoneyRouteWrapper({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<OrangeMoneyRouteWrapper> createState() =>
+      _OrangeMoneyRouteWrapperState();
+}
+
+class _OrangeMoneyRouteWrapperState
+    extends ConsumerState<OrangeMoneyRouteWrapper>
+    with ModuleSyncMixin {
+  @override
+  Widget build(BuildContext context) {
     final activeEnterpriseAsync = ref.watch(activeEnterpriseProvider);
-    
+
     return activeEnterpriseAsync.when(
       data: (enterprise) {
         if (enterprise == null) {
           return const _NoEnterpriseSelectedWidget();
         }
-        
+
+        // Démarrer la synchronisation lors du premier accès
+        startModuleSync(enterprise.id, 'orange_money');
+
         return OrangeMoneyShellScreen(
-          enterpriseId: enterprise.id,
-          moduleId: 'orange_money',
-        ) as Widget;
+              enterpriseId: enterprise.id,
+              moduleId: 'orange_money',
+            )
+            as Widget;
       },
       loading: () => const Scaffold(
         body: Center(
@@ -207,23 +236,34 @@ class OrangeMoneyRouteWrapper extends ConsumerWidget {
 }
 
 /// Wrapper pour le module Immobilier qui utilise l'entreprise active
-class ImmobilierRouteWrapper extends ConsumerWidget {
+class ImmobilierRouteWrapper extends ConsumerStatefulWidget {
   const ImmobilierRouteWrapper({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ImmobilierRouteWrapper> createState() =>
+      _ImmobilierRouteWrapperState();
+}
+
+class _ImmobilierRouteWrapperState extends ConsumerState<ImmobilierRouteWrapper>
+    with ModuleSyncMixin {
+  @override
+  Widget build(BuildContext context) {
     final activeEnterpriseAsync = ref.watch(activeEnterpriseProvider);
-    
+
     return activeEnterpriseAsync.when(
       data: (enterprise) {
         if (enterprise == null) {
           return const _NoEnterpriseSelectedWidget();
         }
-        
+
+        // Démarrer la synchronisation lors du premier accès
+        startModuleSync(enterprise.id, 'immobilier');
+
         return ImmobilierShellScreen(
-          enterpriseId: enterprise.id,
-          moduleId: 'immobilier',
-        ) as Widget;
+              enterpriseId: enterprise.id,
+              moduleId: 'immobilier',
+            )
+            as Widget;
       },
       loading: () => const Scaffold(
         body: Center(
@@ -254,23 +294,34 @@ class ImmobilierRouteWrapper extends ConsumerWidget {
 }
 
 /// Wrapper pour le module Boutique qui utilise l'entreprise active
-class BoutiqueRouteWrapper extends ConsumerWidget {
+class BoutiqueRouteWrapper extends ConsumerStatefulWidget {
   const BoutiqueRouteWrapper({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<BoutiqueRouteWrapper> createState() =>
+      _BoutiqueRouteWrapperState();
+}
+
+class _BoutiqueRouteWrapperState extends ConsumerState<BoutiqueRouteWrapper>
+    with ModuleSyncMixin {
+  @override
+  Widget build(BuildContext context) {
     final activeEnterpriseAsync = ref.watch(activeEnterpriseProvider);
-    
+
     return activeEnterpriseAsync.when(
       data: (enterprise) {
         if (enterprise == null) {
           return const _NoEnterpriseSelectedWidget();
         }
-        
+
+        // Démarrer la synchronisation lors du premier accès
+        startModuleSync(enterprise.id, 'boutique');
+
         return BoutiqueShellScreen(
-          enterpriseId: enterprise.id,
-          moduleId: 'boutique',
-        ) as Widget;
+              enterpriseId: enterprise.id,
+              moduleId: 'boutique',
+            )
+            as Widget;
       },
       loading: () => const Scaffold(
         body: Center(
@@ -299,4 +350,3 @@ class BoutiqueRouteWrapper extends ConsumerWidget {
     );
   }
 }
-

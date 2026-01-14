@@ -18,11 +18,10 @@ final recentAuditLogsProvider = FutureProvider.autoDispose<List<AuditLog>>(
 /// Utilise le controller pour respecter l'architecture.
 final auditLogsForEntityProvider = FutureProvider.autoDispose
     .family<List<AuditLog>, ({String type, String id})>(
-  (ref, params) => ref.watch(auditControllerProvider).getLogsForEntity(
-        entityType: params.type,
-        entityId: params.id,
-      ),
-);
+      (ref, params) => ref
+          .watch(auditControllerProvider)
+          .getLogsForEntity(entityType: params.type, entityId: params.id),
+    );
 
 /// Section pour visualiser l'audit trail.
 class AdminAuditTrailSection extends ConsumerWidget {
@@ -115,10 +114,7 @@ class AdminAuditTrailSection extends ConsumerWidget {
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
                 const SizedBox(height: 16),
-                Text(
-                  'Aucun log d\'audit',
-                  style: theme.textTheme.titleLarge,
-                ),
+                Text('Aucun log d\'audit', style: theme.textTheme.titleLarge),
                 const SizedBox(height: 8),
                 Text(
                   'Les actions administratives seront enregistrées ici',
@@ -134,13 +130,10 @@ class AdminAuditTrailSection extends ConsumerWidget {
     }
 
     return SliverList(
-      delegate: SliverChildBuilderDelegate(
-        (context, index) {
-          final log = logs[index];
-          return AuditLogItem(log: log);
-        },
-        childCount: logs.length,
-      ),
+      delegate: SliverChildBuilderDelegate((context, index) {
+        final log = logs[index];
+        return AuditLogItem(log: log);
+      }, childCount: logs.length),
     );
   }
 
@@ -160,10 +153,7 @@ class AdminAuditTrailSection extends ConsumerWidget {
                 color: theme.colorScheme.error,
               ),
               const SizedBox(height: 16),
-              Text(
-                'Erreur de chargement',
-                style: theme.textTheme.titleLarge,
-              ),
+              Text('Erreur de chargement', style: theme.textTheme.titleLarge),
               const SizedBox(height: 8),
               Text(
                 error.toString(),

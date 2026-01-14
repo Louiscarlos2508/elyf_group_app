@@ -162,4 +162,3 @@ enum GazKpiCardLayout {
   /// Horizontal layout: title/value on left, icon on right.
   horizontal,
 }
-

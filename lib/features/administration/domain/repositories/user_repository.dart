@@ -6,7 +6,7 @@ abstract class UserRepository {
   Future<List<User>> getAllUsers();
 
   /// Récupère les utilisateurs avec pagination (LIMIT/OFFSET au niveau Drift).
-  /// 
+  ///
   /// Returns a paginated list of users and the total count.
   Future<({List<User> users, int totalCount})> getUsersPaginated({
     int page = 0,
@@ -35,10 +35,10 @@ abstract class UserRepository {
   Future<void> toggleUserStatus(String userId, bool isActive);
 
   /// Vérifie et crée le premier utilisateur admin par défaut si aucun utilisateur n'existe.
-  /// 
+  ///
   /// Cette méthode est appelée lors de la première connexion pour s'assurer
   /// qu'un utilisateur admin existe dans le système.
-  /// 
+  ///
   /// Retourne l'utilisateur admin (créé ou existant).
   Future<User> ensureDefaultAdminExists({
     required String adminId,
@@ -46,4 +46,3 @@ abstract class UserRepository {
     String? adminPasswordHash,
   });
 }
-

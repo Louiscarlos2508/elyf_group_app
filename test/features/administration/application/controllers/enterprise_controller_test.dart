@@ -49,37 +49,50 @@ void main() {
         isActive: true,
       );
 
-      test('should create enterprise and log audit trail when permissions valid', () async {
-        // Arrange
-        when(mockPermissionValidator.canManageEnterprises(userId: 'current-user'))
-            .thenAnswer((_) async => true);
+      test(
+        'should create enterprise and log audit trail when permissions valid',
+        () async {
+          // Arrange
+          when(
+            mockPermissionValidator.canManageEnterprises(
+              userId: 'current-user',
+            ),
+          ).thenAnswer((_) async => true);
 
-        // Act
-        await controller.createEnterprise(
-          testEnterprise,
-          currentUserId: 'current-user',
-        );
+          // Act
+          await controller.createEnterprise(
+            testEnterprise,
+            currentUserId: 'current-user',
+          );
 
-        // Assert
-        verify(mockPermissionValidator.canManageEnterprises(userId: 'current-user'))
-            .called(1);
-        verify(mockRepository.createEnterprise(testEnterprise)).called(1);
-        verify(mockFirestoreSync.syncEnterpriseToFirestore(testEnterprise))
-            .called(1);
-        verify(mockAuditService.logAction(
-          action: anyNamed('action'),
-          entityType: anyNamed('entityType'),
-          entityId: anyNamed('entityId'),
-          userId: anyNamed('userId'),
-          description: anyNamed('description'),
-          newValue: anyNamed('newValue'),
-        )).called(1);
-      });
+          // Assert
+          verify(
+            mockPermissionValidator.canManageEnterprises(
+              userId: 'current-user',
+            ),
+          ).called(1);
+          verify(mockRepository.createEnterprise(testEnterprise)).called(1);
+          verify(
+            mockFirestoreSync.syncEnterpriseToFirestore(testEnterprise),
+          ).called(1);
+          verify(
+            mockAuditService.logAction(
+              action: anyNamed('action'),
+              entityType: anyNamed('entityType'),
+              entityId: anyNamed('entityId'),
+              userId: anyNamed('userId'),
+              description: anyNamed('description'),
+              newValue: anyNamed('newValue'),
+            ),
+          ).called(1);
+        },
+      );
 
       test('should throw exception when permission denied', () async {
         // Arrange
-        when(mockPermissionValidator.canManageEnterprises(userId: 'current-user'))
-            .thenAnswer((_) async => false);
+        when(
+          mockPermissionValidator.canManageEnterprises(userId: 'current-user'),
+        ).thenAnswer((_) async => false);
 
         // Act & Assert
         expect(
@@ -87,36 +100,49 @@ void main() {
             testEnterprise,
             currentUserId: 'current-user',
           ),
-          throwsA(isA<Exception>().having(
-            (e) => e.toString(),
-            'message',
-            contains('Permission denied'),
-          )),
+          throwsA(
+            isA<Exception>().having(
+              (e) => e.toString(),
+              'message',
+              contains('Permission denied'),
+            ),
+          ),
         );
 
-        verify(mockPermissionValidator.canManageEnterprises(userId: 'current-user'))
-            .called(1);
+        verify(
+          mockPermissionValidator.canManageEnterprises(userId: 'current-user'),
+        ).called(1);
         verifyNever(mockRepository.createEnterprise(any));
       });
 
-      test('should create enterprise without permission check when currentUserId is null', () async {
-        // Act
-        await controller.createEnterprise(testEnterprise);
+      test(
+        'should create enterprise without permission check when currentUserId is null',
+        () async {
+          // Act
+          await controller.createEnterprise(testEnterprise);
 
-        // Assert
-        verifyNever(mockPermissionValidator.canManageEnterprises(userId: anyNamed('userId')));
-        verify(mockRepository.createEnterprise(testEnterprise)).called(1);
-        verify(mockFirestoreSync.syncEnterpriseToFirestore(testEnterprise))
-            .called(1);
-        verify(mockAuditService.logAction(
-          action: anyNamed('action'),
-          entityType: anyNamed('entityType'),
-          entityId: anyNamed('entityId'),
-          userId: anyNamed('userId'),
-          description: anyNamed('description'),
-          newValue: anyNamed('newValue'),
-        )).called(1);
-      });
+          // Assert
+          verifyNever(
+            mockPermissionValidator.canManageEnterprises(
+              userId: anyNamed('userId'),
+            ),
+          );
+          verify(mockRepository.createEnterprise(testEnterprise)).called(1);
+          verify(
+            mockFirestoreSync.syncEnterpriseToFirestore(testEnterprise),
+          ).called(1);
+          verify(
+            mockAuditService.logAction(
+              action: anyNamed('action'),
+              entityType: anyNamed('entityType'),
+              entityId: anyNamed('entityId'),
+              userId: anyNamed('userId'),
+              description: anyNamed('description'),
+              newValue: anyNamed('newValue'),
+            ),
+          ).called(1);
+        },
+      );
     });
 
     group('updateEnterprise', () {
@@ -140,43 +166,58 @@ void main() {
         isActive: true,
       );
 
-      test('should update enterprise and log audit trail when permissions valid', () async {
-        // Arrange
-        when(mockPermissionValidator.canManageEnterprises(userId: 'current-user'))
-            .thenAnswer((_) async => true);
-        when(mockRepository.getEnterpriseById('enterprise-1'))
-            .thenAnswer((_) async => oldEnterprise);
+      test(
+        'should update enterprise and log audit trail when permissions valid',
+        () async {
+          // Arrange
+          when(
+            mockPermissionValidator.canManageEnterprises(
+              userId: 'current-user',
+            ),
+          ).thenAnswer((_) async => true);
+          when(
+            mockRepository.getEnterpriseById('enterprise-1'),
+          ).thenAnswer((_) async => oldEnterprise);
 
-        // Act
-        await controller.updateEnterprise(
-          updatedEnterprise,
-          currentUserId: 'current-user',
-        );
+          // Act
+          await controller.updateEnterprise(
+            updatedEnterprise,
+            currentUserId: 'current-user',
+          );
 
-        // Assert
-        verify(mockPermissionValidator.canManageEnterprises(userId: 'current-user'))
-            .called(1);
-        verify(mockRepository.getEnterpriseById('enterprise-1')).called(1);
-        verify(mockRepository.updateEnterprise(updatedEnterprise)).called(1);
-        verify(mockFirestoreSync.syncEnterpriseToFirestore(
-          updatedEnterprise,
-          isUpdate: true,
-        )).called(1);
-        verify(mockAuditService.logAction(
-          action: anyNamed('action'),
-          entityType: anyNamed('entityType'),
-          entityId: anyNamed('entityId'),
-          userId: anyNamed('userId'),
-          description: anyNamed('description'),
-          oldValue: anyNamed('oldValue'),
-          newValue: anyNamed('newValue'),
-        )).called(1);
-      });
+          // Assert
+          verify(
+            mockPermissionValidator.canManageEnterprises(
+              userId: 'current-user',
+            ),
+          ).called(1);
+          verify(mockRepository.getEnterpriseById('enterprise-1')).called(1);
+          verify(mockRepository.updateEnterprise(updatedEnterprise)).called(1);
+          verify(
+            mockFirestoreSync.syncEnterpriseToFirestore(
+              updatedEnterprise,
+              isUpdate: true,
+            ),
+          ).called(1);
+          verify(
+            mockAuditService.logAction(
+              action: anyNamed('action'),
+              entityType: anyNamed('entityType'),
+              entityId: anyNamed('entityId'),
+              userId: anyNamed('userId'),
+              description: anyNamed('description'),
+              oldValue: anyNamed('oldValue'),
+              newValue: anyNamed('newValue'),
+            ),
+          ).called(1);
+        },
+      );
 
       test('should throw exception when permission denied', () async {
         // Arrange
-        when(mockPermissionValidator.canManageEnterprises(userId: 'current-user'))
-            .thenAnswer((_) async => false);
+        when(
+          mockPermissionValidator.canManageEnterprises(userId: 'current-user'),
+        ).thenAnswer((_) async => false);
 
         // Act & Assert
         expect(
@@ -184,15 +225,18 @@ void main() {
             updatedEnterprise,
             currentUserId: 'current-user',
           ),
-          throwsA(isA<Exception>().having(
-            (e) => e.toString(),
-            'message',
-            contains('Permission denied'),
-          )),
+          throwsA(
+            isA<Exception>().having(
+              (e) => e.toString(),
+              'message',
+              contains('Permission denied'),
+            ),
+          ),
         );
 
-        verify(mockPermissionValidator.canManageEnterprises(userId: 'current-user'))
-            .called(1);
+        verify(
+          mockPermissionValidator.canManageEnterprises(userId: 'current-user'),
+        ).called(1);
         verifyNever(mockRepository.updateEnterprise(any));
       });
     });
@@ -208,42 +252,57 @@ void main() {
         isActive: true,
       );
 
-      test('should delete enterprise and log audit trail when permissions valid', () async {
-        // Arrange
-        when(mockPermissionValidator.canManageEnterprises(userId: 'current-user'))
-            .thenAnswer((_) async => true);
-        when(mockRepository.getEnterpriseById('enterprise-1'))
-            .thenAnswer((_) async => testEnterprise);
+      test(
+        'should delete enterprise and log audit trail when permissions valid',
+        () async {
+          // Arrange
+          when(
+            mockPermissionValidator.canManageEnterprises(
+              userId: 'current-user',
+            ),
+          ).thenAnswer((_) async => true);
+          when(
+            mockRepository.getEnterpriseById('enterprise-1'),
+          ).thenAnswer((_) async => testEnterprise);
 
-        // Act
-        await controller.deleteEnterprise(
-          'enterprise-1',
-          currentUserId: 'current-user',
-        );
+          // Act
+          await controller.deleteEnterprise(
+            'enterprise-1',
+            currentUserId: 'current-user',
+          );
 
-        // Assert
-        verify(mockPermissionValidator.canManageEnterprises(userId: 'current-user'))
-            .called(1);
-        verify(mockRepository.getEnterpriseById('enterprise-1')).called(1);
-        verify(mockRepository.deleteEnterprise('enterprise-1')).called(1);
-        verify(mockFirestoreSync.deleteFromFirestore(
-          collection: 'enterprises',
-          documentId: 'enterprise-1',
-        )).called(1);
-        verify(mockAuditService.logAction(
-          action: anyNamed('action'),
-          entityType: anyNamed('entityType'),
-          entityId: anyNamed('entityId'),
-          userId: anyNamed('userId'),
-          description: anyNamed('description'),
-          oldValue: anyNamed('oldValue'),
-        )).called(1);
-      });
+          // Assert
+          verify(
+            mockPermissionValidator.canManageEnterprises(
+              userId: 'current-user',
+            ),
+          ).called(1);
+          verify(mockRepository.getEnterpriseById('enterprise-1')).called(1);
+          verify(mockRepository.deleteEnterprise('enterprise-1')).called(1);
+          verify(
+            mockFirestoreSync.deleteFromFirestore(
+              collection: 'enterprises',
+              documentId: 'enterprise-1',
+            ),
+          ).called(1);
+          verify(
+            mockAuditService.logAction(
+              action: anyNamed('action'),
+              entityType: anyNamed('entityType'),
+              entityId: anyNamed('entityId'),
+              userId: anyNamed('userId'),
+              description: anyNamed('description'),
+              oldValue: anyNamed('oldValue'),
+            ),
+          ).called(1);
+        },
+      );
 
       test('should throw exception when permission denied', () async {
         // Arrange
-        when(mockPermissionValidator.canManageEnterprises(userId: 'current-user'))
-            .thenAnswer((_) async => false);
+        when(
+          mockPermissionValidator.canManageEnterprises(userId: 'current-user'),
+        ).thenAnswer((_) async => false);
 
         // Act & Assert
         expect(
@@ -251,15 +310,18 @@ void main() {
             'enterprise-1',
             currentUserId: 'current-user',
           ),
-          throwsA(isA<Exception>().having(
-            (e) => e.toString(),
-            'message',
-            contains('Permission denied'),
-          )),
+          throwsA(
+            isA<Exception>().having(
+              (e) => e.toString(),
+              'message',
+              contains('Permission denied'),
+            ),
+          ),
         );
 
-        verify(mockPermissionValidator.canManageEnterprises(userId: 'current-user'))
-            .called(1);
+        verify(
+          mockPermissionValidator.canManageEnterprises(userId: 'current-user'),
+        ).called(1);
         verifyNever(mockRepository.deleteEnterprise(any));
       });
     });
@@ -285,50 +347,64 @@ void main() {
         isActive: true,
       );
 
-      test('should toggle status and log audit trail when permissions valid', () async {
-        // Arrange
-        var callCount = 0;
-        when(mockPermissionValidator.canManageEnterprises(userId: 'current-user'))
-            .thenAnswer((_) async => true);
-        when(mockRepository.getEnterpriseById('enterprise-1'))
-            .thenAnswer((_) async {
-          callCount++;
-          return callCount == 1 ? inactiveEnterprise : activeEnterprise;
-        });
-        when(mockRepository.toggleEnterpriseStatus('enterprise-1', true))
-            .thenAnswer((_) async => Future.value());
+      test(
+        'should toggle status and log audit trail when permissions valid',
+        () async {
+          // Arrange
+          var callCount = 0;
+          when(
+            mockPermissionValidator.canManageEnterprises(
+              userId: 'current-user',
+            ),
+          ).thenAnswer((_) async => true);
+          when(mockRepository.getEnterpriseById('enterprise-1')).thenAnswer((
+            _,
+          ) async {
+            callCount++;
+            return callCount == 1 ? inactiveEnterprise : activeEnterprise;
+          });
+          when(
+            mockRepository.toggleEnterpriseStatus('enterprise-1', true),
+          ).thenAnswer((_) async => Future.value());
 
-        // Act
-        await controller.toggleEnterpriseStatus(
-          'enterprise-1',
-          true,
-          currentUserId: 'current-user',
-        );
+          // Act
+          await controller.toggleEnterpriseStatus(
+            'enterprise-1',
+            true,
+            currentUserId: 'current-user',
+          );
 
-        // Assert
-        verify(mockPermissionValidator.canManageEnterprises(userId: 'current-user'))
-            .called(1);
-        verify(mockRepository.toggleEnterpriseStatus('enterprise-1', true))
-            .called(1);
-        verify(mockFirestoreSync.syncEnterpriseToFirestore(
-          any,
-          isUpdate: true,
-        )).called(1);
-        verify(mockAuditService.logAction(
-          action: anyNamed('action'),
-          entityType: anyNamed('entityType'),
-          entityId: anyNamed('entityId'),
-          userId: anyNamed('userId'),
-          description: anyNamed('description'),
-          oldValue: anyNamed('oldValue'),
-          newValue: anyNamed('newValue'),
-        )).called(1);
-      });
+          // Assert
+          verify(
+            mockPermissionValidator.canManageEnterprises(
+              userId: 'current-user',
+            ),
+          ).called(1);
+          verify(
+            mockRepository.toggleEnterpriseStatus('enterprise-1', true),
+          ).called(1);
+          verify(
+            mockFirestoreSync.syncEnterpriseToFirestore(any, isUpdate: true),
+          ).called(1);
+          verify(
+            mockAuditService.logAction(
+              action: anyNamed('action'),
+              entityType: anyNamed('entityType'),
+              entityId: anyNamed('entityId'),
+              userId: anyNamed('userId'),
+              description: anyNamed('description'),
+              oldValue: anyNamed('oldValue'),
+              newValue: anyNamed('newValue'),
+            ),
+          ).called(1);
+        },
+      );
 
       test('should throw exception when permission denied', () async {
         // Arrange
-        when(mockPermissionValidator.canManageEnterprises(userId: 'current-user'))
-            .thenAnswer((_) async => false);
+        when(
+          mockPermissionValidator.canManageEnterprises(userId: 'current-user'),
+        ).thenAnswer((_) async => false);
 
         // Act & Assert
         expect(
@@ -337,15 +413,18 @@ void main() {
             true,
             currentUserId: 'current-user',
           ),
-          throwsA(isA<Exception>().having(
-            (e) => e.toString(),
-            'message',
-            contains('Permission denied'),
-          )),
+          throwsA(
+            isA<Exception>().having(
+              (e) => e.toString(),
+              'message',
+              contains('Permission denied'),
+            ),
+          ),
         );
 
-        verify(mockPermissionValidator.canManageEnterprises(userId: 'current-user'))
-            .called(1);
+        verify(
+          mockPermissionValidator.canManageEnterprises(userId: 'current-user'),
+        ).called(1);
         verifyNever(mockRepository.toggleEnterpriseStatus(any, any));
       });
     });
@@ -364,8 +443,9 @@ void main() {
             isActive: true,
           ),
         ];
-        when(mockRepository.getAllEnterprises())
-            .thenAnswer((_) async => expectedEnterprises);
+        when(
+          mockRepository.getAllEnterprises(),
+        ).thenAnswer((_) async => expectedEnterprises);
 
         // Act
         final result = await controller.getAllEnterprises();
@@ -388,8 +468,9 @@ void main() {
           email: 'test@example.com',
           isActive: true,
         );
-        when(mockRepository.getEnterpriseById('enterprise-1'))
-            .thenAnswer((_) async => expectedEnterprise);
+        when(
+          mockRepository.getEnterpriseById('enterprise-1'),
+        ).thenAnswer((_) async => expectedEnterprise);
 
         // Act
         final result = await controller.getEnterpriseById('enterprise-1');

@@ -7,9 +7,7 @@ import 'sync_manager.dart';
 ///
 /// Extracted from SyncManager to improve maintainability.
 class RetryHandler {
-  RetryHandler({
-    required this.config,
-  });
+  RetryHandler({required this.config});
 
   final SyncConfig config;
 
@@ -50,4 +48,3 @@ class RetryHandler {
     }
   }
 }
-

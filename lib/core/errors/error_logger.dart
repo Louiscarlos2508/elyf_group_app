@@ -8,11 +8,7 @@ class ErrorLogger {
   static final instance = ErrorLogger._();
 
   /// Log une erreur avec son stack trace.
-  void logError(
-    Object error, [
-    StackTrace? stackTrace,
-    String? context,
-  ]) {
+  void logError(Object error, [StackTrace? stackTrace, String? context]) {
     final contextStr = context != null ? '[$context] ' : '';
     developer.log(
       '$contextStr$error',
@@ -24,10 +20,7 @@ class ErrorLogger {
   }
 
   /// Log une exception AppException.
-  void logAppException(
-    AppException exception, [
-    String? context,
-  ]) {
+  void logAppException(AppException exception, [String? context]) {
     final contextStr = context != null ? '[$context] ' : '';
     developer.log(
       '$contextStr${exception.code ?? 'NO_CODE'}: ${exception.message}',
@@ -38,10 +31,7 @@ class ErrorLogger {
   }
 
   /// Log un warning.
-  void logWarning(
-    String message, [
-    String? context,
-  ]) {
+  void logWarning(String message, [String? context]) {
     final contextStr = context != null ? '[$context] ' : '';
     developer.log(
       '$contextStr$message',
@@ -51,10 +41,7 @@ class ErrorLogger {
   }
 
   /// Log une information.
-  void logInfo(
-    String message, [
-    String? context,
-  ]) {
+  void logInfo(String message, [String? context]) {
     final contextStr = context != null ? '[$context] ' : '';
     developer.log(
       '$contextStr$message',
@@ -63,4 +50,3 @@ class ErrorLogger {
     );
   }
 }
-

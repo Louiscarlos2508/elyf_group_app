@@ -36,17 +36,11 @@ class TransactionInfoCard extends StatelessWidget {
             children: [
               const Text(
                 'Téléphone',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Color(0xFF4A5565),
-                ),
+                style: TextStyle(fontSize: 16, color: Color(0xFF4A5565)),
               ),
               Text(
                 phoneNumber,
-                style: const TextStyle(
-                  fontSize: 16,
-                  color: Color(0xFF101828),
-                ),
+                style: const TextStyle(fontSize: 16, color: Color(0xFF101828)),
               ),
             ],
           ),
@@ -56,10 +50,7 @@ class TransactionInfoCard extends StatelessWidget {
             children: [
               const Text(
                 'Montant',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Color(0xFF4A5565),
-                ),
+                style: TextStyle(fontSize: 16, color: Color(0xFF4A5565)),
               ),
               Text(
                 CurrencyFormatter.formatFCFA(amount),
@@ -77,25 +68,16 @@ class TransactionInfoCard extends StatelessWidget {
             children: [
               const Text(
                 'Type',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Color(0xFF4A5565),
-                ),
+                style: TextStyle(fontSize: 16, color: Color(0xFF4A5565)),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 9,
-                  vertical: 3,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
                 decoration: BoxDecoration(
                   color: type == TransactionType.cashIn
                       ? const Color(0xFFDCFCE7)
                       : const Color(0xFFFEE2E2),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: Colors.transparent,
-                    width: 1.219,
-                  ),
+                  border: Border.all(color: Colors.transparent, width: 1.219),
                 ),
                 child: Text(
                   type == TransactionType.cashIn ? 'Dépôt' : 'Retrait',
@@ -114,4 +96,3 @@ class TransactionInfoCard extends StatelessWidget {
     );
   }
 }
-

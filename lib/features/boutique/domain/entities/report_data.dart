@@ -15,7 +15,8 @@ class ReportData {
   final int salesRevenue; // Chiffre d'affaires
   final int purchasesAmount; // Montant des achats
   final int expensesAmount; // Montant des dépenses
-  final int profit; // Bénéfice net (salesRevenue - purchasesAmount - expensesAmount)
+  final int
+  profit; // Bénéfice net (salesRevenue - purchasesAmount - expensesAmount)
   final int salesCount;
   final int purchasesCount;
   final int expensesCount;
@@ -28,13 +29,7 @@ class ReportData {
 }
 
 /// Period for reports.
-enum ReportPeriod {
-  today,
-  week,
-  month,
-  year,
-  custom,
-}
+enum ReportPeriod { today, week, month, year, custom }
 
 /// Represents sales report data.
 class SalesReportData {
@@ -133,4 +128,3 @@ class ProfitReportData {
   final double grossMarginPercentage;
   final double netMarginPercentage;
 }
-

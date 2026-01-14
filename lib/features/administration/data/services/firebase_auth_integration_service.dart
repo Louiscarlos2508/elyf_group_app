@@ -5,17 +5,15 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../../../core/auth/services/auth_service.dart';
 
 /// Service for integrating user creation with Firebase Auth.
-/// 
+///
 /// Creates Firebase Auth users when creating admin users.
 class FirebaseAuthIntegrationService {
-  FirebaseAuthIntegrationService({
-    required this.authService,
-  });
+  FirebaseAuthIntegrationService({required this.authService});
 
   final AuthService authService;
 
   /// Create a Firebase Auth user with email and password.
-  /// 
+  ///
   /// Returns the Firebase Auth UID to use as the user ID.
   Future<String> createFirebaseUser({
     required String email,
@@ -143,4 +141,3 @@ class FirebaseAuthIntegrationService {
     }
   }
 }
-

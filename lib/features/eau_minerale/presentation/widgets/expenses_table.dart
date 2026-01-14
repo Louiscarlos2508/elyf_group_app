@@ -20,7 +20,7 @@ class ExpensesTable extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     if (expenses.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(48),
@@ -37,7 +37,7 @@ class ExpensesTable extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final isWide = constraints.maxWidth > 900;
-        
+
         if (isWide) {
           return ExpensesTableDesktop(
             expenses: expenses,
@@ -55,4 +55,3 @@ class ExpensesTable extends StatelessWidget {
     );
   }
 }
-

@@ -31,18 +31,6 @@ class Property {
   final DateTime? updatedAt;
 }
 
-enum PropertyType {
-  house,
-  apartment,
-  studio,
-  villa,
-  commercial,
-}
+enum PropertyType { house, apartment, studio, villa, commercial }
 
-enum PropertyStatus {
-  available,
-  rented,
-  maintenance,
-  sold,
-}
-
+enum PropertyStatus { available, rented, maintenance, sold }

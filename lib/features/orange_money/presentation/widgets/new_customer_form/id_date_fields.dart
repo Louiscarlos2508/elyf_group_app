@@ -26,10 +26,7 @@ class IdDateFields extends StatelessWidget {
             children: [
               const Text(
                 "Date d'émission",
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFF0A0A0A),
-                ),
+                style: TextStyle(fontSize: 14, color: Color(0xFF0A0A0A)),
               ),
               const SizedBox(height: 8),
               InkWell(
@@ -77,10 +74,7 @@ class IdDateFields extends StatelessWidget {
             children: [
               const Text(
                 "Date d'expiration",
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFF0A0A0A),
-                ),
+                style: TextStyle(fontSize: 14, color: Color(0xFF0A0A0A)),
               ),
               const SizedBox(height: 8),
               InkWell(
@@ -125,4 +119,3 @@ class IdDateFields extends StatelessWidget {
     );
   }
 }
-

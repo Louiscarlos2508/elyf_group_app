@@ -10,9 +10,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 /// - La réception et le traitement des notifications
 /// - La gestion des permissions
 class MessagingService {
-  MessagingService({
-    required this.messaging,
-  });
+  MessagingService({required this.messaging});
 
   final FirebaseMessaging messaging;
 
@@ -76,10 +74,7 @@ class MessagingService {
   Future<void> deleteToken() async {
     try {
       await messaging.deleteToken();
-      developer.log(
-        'FCM token deleted',
-        name: 'messaging.service',
-      );
+      developer.log('FCM token deleted', name: 'messaging.service');
     } catch (e, stackTrace) {
       developer.log(
         'Error deleting FCM token',
@@ -211,4 +206,3 @@ class MessagingService {
     );
   }
 }
-

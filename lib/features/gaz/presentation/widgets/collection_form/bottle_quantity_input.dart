@@ -32,10 +32,7 @@ class BottleQuantityInput extends StatelessWidget {
         // Type dropdown
         Text(
           'Type',
-          style: TextStyle(
-            fontSize: 12,
-            color: const Color(0xFF0A0A0A),
-          ),
+          style: TextStyle(fontSize: 12, color: const Color(0xFF0A0A0A)),
         ),
         const SizedBox(height: 8),
         availableWeights.isEmpty
@@ -71,7 +68,10 @@ class BottleQuantityInput extends StatelessWidget {
                 onSelected: onWeightSelected,
                 child: Container(
                   height: 36,
-                  padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 1),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 13,
+                    vertical: 1,
+                  ),
                   decoration: BoxDecoration(
                     color: lightGray,
                     borderRadius: BorderRadius.circular(8),
@@ -80,9 +80,7 @@ class BottleQuantityInput extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        selectedWeight == null
-                            ? 'Type'
-                            : '${selectedWeight}kg',
+                        selectedWeight == null ? 'Type' : '${selectedWeight}kg',
                         style: TextStyle(
                           fontSize: 14,
                           color: selectedWeight == null
@@ -111,10 +109,7 @@ class BottleQuantityInput extends StatelessWidget {
         // Quantité
         Text(
           'Quantité',
-          style: TextStyle(
-            fontSize: 12,
-            color: const Color(0xFF0A0A0A),
-          ),
+          style: TextStyle(fontSize: 12, color: const Color(0xFF0A0A0A)),
         ),
         const SizedBox(height: 8),
         SizedBox(
@@ -133,10 +128,7 @@ class BottleQuantityInput extends StatelessWidget {
                 vertical: 4,
               ),
             ),
-            style: TextStyle(
-              fontSize: 14,
-              color: textGray,
-            ),
+            style: TextStyle(fontSize: 14, color: textGray),
             keyboardType: TextInputType.number,
           ),
         ),
@@ -155,4 +147,3 @@ class BottleQuantityInput extends StatelessWidget {
     );
   }
 }
-

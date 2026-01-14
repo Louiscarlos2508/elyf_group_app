@@ -16,6 +16,7 @@ class AccessibilityHelpers {
 enum ContrastLevel {
   /// Niveau AA (minimum requis) - 4.5:1 pour texte normal, 3:1 pour texte large
   aa,
+
   /// Niveau AAA (recommandé) - 7:1 pour texte normal, 4.5:1 pour texte large
   aaa,
 }
@@ -43,9 +44,15 @@ class ContrastChecker {
 
   /// Calcule la luminance relative d'une couleur selon WCAG 2.1.
   static double _calculateRelativeLuminance(Color color) {
-    final r = _linearizeColorComponent((color.r * 255.0).round().clamp(0, 255) / 255.0);
-    final g = _linearizeColorComponent((color.g * 255.0).round().clamp(0, 255) / 255.0);
-    final b = _linearizeColorComponent((color.b * 255.0).round().clamp(0, 255) / 255.0);
+    final r = _linearizeColorComponent(
+      (color.r * 255.0).round().clamp(0, 255) / 255.0,
+    );
+    final g = _linearizeColorComponent(
+      (color.g * 255.0).round().clamp(0, 255) / 255.0,
+    );
+    final b = _linearizeColorComponent(
+      (color.b * 255.0).round().clamp(0, 255) / 255.0,
+    );
 
     return 0.2126 * r + 0.7152 * g + 0.0722 * b;
   }
@@ -74,7 +81,7 @@ class ContrastChecker {
     ContrastLevel level = ContrastLevel.aa,
   }) {
     final ratio = calculateContrastRatio(foreground, background);
-    
+
     switch (level) {
       case ContrastLevel.aa:
         return isLargeText ? ratio >= 3.0 : ratio >= 4.5;
@@ -124,7 +131,7 @@ class ContrastChecker {
     final g = (color.g * 255.0).round().clamp(0, 255);
     final b = (color.b * 255.0).round().clamp(0, 255);
     final a = (color.a * 255.0).round().clamp(0, 255);
-    
+
     return Color.fromARGB(
       a,
       (r * factor).round(),
@@ -139,7 +146,7 @@ class ContrastChecker {
     final g = (color.g * 255.0).round().clamp(0, 255);
     final b = (color.b * 255.0).round().clamp(0, 255);
     final a = (color.a * 255.0).round().clamp(0, 255);
-    
+
     return Color.fromARGB(
       a,
       math.min(255, (r * factor).round()),
@@ -200,12 +207,7 @@ class AccessibleWidgets {
       value: value,
       textField: true,
       obscured: obscured,
-      child: error != null
-          ? Semantics(
-              label: error,
-              child: child,
-            )
-          : child,
+      child: error != null ? Semantics(label: error, child: child) : child,
     );
   }
 
@@ -223,43 +225,25 @@ class AccessibleWidgets {
       return ExcludeSemantics(child: image);
     }
 
-    return Semantics(
-      label: label ?? 'Image',
-      image: true,
-      child: image,
-    );
+    return Semantics(label: label ?? 'Image', image: true, child: image);
   }
 
   /// Crée un conteneur scrollable accessible.
   ///
   /// [child] : Widget scrollable
   /// [label] : Label pour identifier la zone de scroll
-  static Widget accessibleScrollable({
-    required Widget child,
-    String? label,
-  }) {
-    return Semantics(
-      label: label,
-      explicitChildNodes: true,
-      child: child,
-    );
+  static Widget accessibleScrollable({required Widget child, String? label}) {
+    return Semantics(label: label, explicitChildNodes: true, child: child);
   }
 
   /// Marque un widget comme en-tête pour la navigation.
   ///
   /// [level] : Niveau d'en-tête (1-6, comme HTML h1-h6)
   /// [child] : Widget texte/en-tête
-  static Widget accessibleHeader({
-    required int level,
-    required Widget child,
-  }) {
+  static Widget accessibleHeader({required int level, required Widget child}) {
     assert(level >= 1 && level <= 6, 'Header level must be between 1 and 6');
-    
-    return Semantics(
-      header: true,
-      headingLevel: level,
-      child: child,
-    );
+
+    return Semantics(header: true, headingLevel: level, child: child);
   }
 
   /// Crée un groupe sémantique pour regrouper des éléments liés.
@@ -270,11 +254,7 @@ class AccessibleWidgets {
     required String label,
     required Widget child,
   }) {
-    return Semantics(
-      label: label,
-      container: true,
-      child: child,
-    );
+    return Semantics(label: label, container: true, child: child);
   }
 
   /// Marque un widget comme étant en état de chargement.
@@ -285,11 +265,7 @@ class AccessibleWidgets {
     required String label,
     required Widget child,
   }) {
-    return Semantics(
-      label: label,
-      liveRegion: true,
-      child: child,
-    );
+    return Semantics(label: label, liveRegion: true, child: child);
   }
 
   /// Crée une région live pour annoncer des changements dynamiques.
@@ -304,11 +280,7 @@ class AccessibleWidgets {
     bool polite = true,
     required Widget child,
   }) {
-    return Semantics(
-      label: label,
-      liveRegion: true,
-      child: child,
-    );
+    return Semantics(label: label, liveRegion: true, child: child);
   }
 }
 
@@ -349,7 +321,10 @@ class FocusManager {
   ///
   /// Si le focus actuel est le dernier champ, enlève le focus.
   /// Sinon, déplace le focus vers le prochain champ.
-  static void handleFormSubmit(BuildContext context, {bool isLastField = false}) {
+  static void handleFormSubmit(
+    BuildContext context, {
+    bool isLastField = false,
+  }) {
     if (isLastField) {
       unfocusAndHideKeyboard(context);
     } else {

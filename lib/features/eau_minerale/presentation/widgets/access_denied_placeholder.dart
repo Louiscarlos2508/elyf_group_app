@@ -2,10 +2,7 @@ import 'package:flutter/material.dart';
 
 /// Placeholder widget shown when user doesn't have access to a section.
 class AccessDeniedPlaceholder extends StatelessWidget {
-  const AccessDeniedPlaceholder({
-    super.key,
-    this.message,
-  });
+  const AccessDeniedPlaceholder({super.key, this.message});
 
   final String? message;
 
@@ -46,4 +43,3 @@ class AccessDeniedPlaceholder extends StatelessWidget {
     );
   }
 }
-

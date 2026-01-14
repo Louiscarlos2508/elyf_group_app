@@ -65,9 +65,7 @@ class LeakReportSection extends StatelessWidget {
                   TextFormField(
                     controller: controller,
                     keyboardType: TextInputType.number,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                    ],
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     decoration: InputDecoration(
                       filled: true,
                       fillColor: const Color(0xFFF3F3F5),
@@ -104,4 +102,3 @@ class LeakReportSection extends StatelessWidget {
     );
   }
 }
-

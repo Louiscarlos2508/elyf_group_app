@@ -43,7 +43,6 @@ class _SettingsSimCardState extends State<SettingsSimCard> {
 
   @override
   Widget build(BuildContext context) {
-
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -60,11 +59,7 @@ class _SettingsSimCardState extends State<SettingsSimCard> {
           children: [
             Row(
               children: [
-                const Icon(
-                  Icons.sim_card,
-                  size: 20,
-                  color: Color(0xFF0A0A0A),
-                ),
+                const Icon(Icons.sim_card, size: 20, color: Color(0xFF0A0A0A)),
                 const SizedBox(width: 8),
                 const Text(
                   'Configuration SIM',
@@ -109,7 +104,10 @@ class _SettingsSimCardState extends State<SettingsSimCard> {
                         color: Color(0xFF717182),
                       ),
                       border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 4,
+                      ),
                     ),
                   ),
                 ),
@@ -145,15 +143,12 @@ class _SettingsSimCardState extends State<SettingsSimCard> {
 
   Widget _buildSimConfiguredBox(String simText) {
     final displaySim = simText.isEmpty ? 'sim_123456789' : simText;
-    
+
     return Container(
       padding: const EdgeInsets.fromLTRB(17, 17, 1, 1),
       decoration: BoxDecoration(
         color: const Color(0xFFF0FDF4),
-        border: Border.all(
-          color: const Color(0xFFB9F8CF),
-          width: 1.219,
-        ),
+        border: Border.all(color: const Color(0xFFB9F8CF), width: 1.219),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
@@ -214,4 +209,3 @@ class _SettingsSimCardState extends State<SettingsSimCard> {
     );
   }
 }
-

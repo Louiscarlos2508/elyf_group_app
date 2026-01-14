@@ -26,25 +26,28 @@ class ProfitReportContent extends ConsumerWidget {
     return paymentsAsync.when(
       data: (payments) {
         final periodPayments = payments.where((p) {
-          return p.paymentDate
-                  .isAfter(startDate.subtract(const Duration(days: 1))) &&
+          return p.paymentDate.isAfter(
+                startDate.subtract(const Duration(days: 1)),
+              ) &&
               p.paymentDate.isBefore(endDate.add(const Duration(days: 1))) &&
               p.status == PaymentStatus.paid;
         }).toList();
 
-        final totalRevenue =
-            periodPayments.fold(0, (sum, p) => sum + p.amount);
+        final totalRevenue = periodPayments.fold(0, (sum, p) => sum + p.amount);
 
         return expensesAsync.when(
           data: (expenses) {
             final periodExpenses = expenses.where((e) {
-              return e.expenseDate
-                      .isAfter(startDate.subtract(const Duration(days: 1))) &&
+              return e.expenseDate.isAfter(
+                    startDate.subtract(const Duration(days: 1)),
+                  ) &&
                   e.expenseDate.isBefore(endDate.add(const Duration(days: 1)));
             }).toList();
 
-            final totalExpenses =
-                periodExpenses.fold(0, (sum, e) => sum + e.amount);
+            final totalExpenses = periodExpenses.fold(
+              0,
+              (sum, e) => sum + e.amount,
+            );
             final profit = totalRevenue - totalExpenses;
 
             return Container(

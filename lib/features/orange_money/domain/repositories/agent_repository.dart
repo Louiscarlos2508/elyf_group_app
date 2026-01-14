@@ -22,4 +22,3 @@ abstract class AgentRepository {
     DateTime? date,
   });
 }
-

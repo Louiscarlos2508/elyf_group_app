@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:elyf_groupe_app/features/administration/application/providers.dart';
+import '../../../../../shared/utils/responsive_helper.dart';
 import '../../../domain/entities/enterprise.dart';
 import '../../widgets/enterprises/enterprise_actions.dart';
 import '../../widgets/enterprises/enterprise_list_item.dart';
@@ -19,37 +20,42 @@ class AdminEnterprisesSection extends ConsumerWidget {
 
     return CustomScrollView(
       slivers: [
-        _buildHeader(theme),
+        _buildHeader(context, theme),
         _buildCreateButton(context, ref),
-        const SliverToBoxAdapter(child: SizedBox(height: 24)),
+        SliverToBoxAdapter(
+          child: SizedBox(height: ResponsiveHelper.isMobile(context) ? 16 : 24),
+        ),
         enterprisesAsync.when(
-          data: (enterprises) => _buildEnterprisesList(
-            context,
-            ref,
-            enterprises,
-          ),
+          data: (enterprises) =>
+              _buildEnterprisesList(context, ref, enterprises),
           loading: () => const SliverToBoxAdapter(
             child: Center(child: CircularProgressIndicator()),
           ),
-          error: (error, stack) => _buildErrorState(theme, error),
+          error: (error, stack) => _buildErrorState(context, theme, error),
         ),
-        const SliverToBoxAdapter(child: SizedBox(height: 24)),
+        SliverToBoxAdapter(
+          child: SizedBox(height: ResponsiveHelper.isMobile(context) ? 16 : 24),
+        ),
       ],
     );
   }
 
-  Widget _buildHeader(ThemeData theme) {
+  Widget _buildHeader(BuildContext context, ThemeData theme) {
     return SliverToBoxAdapter(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: ResponsiveHelper.adaptivePadding(context),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'Gestion des Entreprises',
-              style: theme.textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: ResponsiveHelper.isMobile(context)
+                  ? theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    )
+                  : theme.textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
             ),
             const SizedBox(height: 8),
             Text(
@@ -65,13 +71,25 @@ class AdminEnterprisesSection extends ConsumerWidget {
   }
 
   Widget _buildCreateButton(BuildContext context, WidgetRef ref) {
+    final isMobile = ResponsiveHelper.isMobile(context);
     return SliverToBoxAdapter(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24),
-        child: FilledButton.icon(
-          onPressed: () => EnterpriseActions.create(context, ref),
-          icon: const Icon(Icons.add_business),
-          label: const Text('Nouvelle Entreprise'),
+        padding: ResponsiveHelper.adaptiveHorizontalPadding(context),
+        child: SizedBox(
+          width: double.infinity,
+          child: FilledButton.icon(
+            onPressed: () => EnterpriseActions.create(context, ref),
+            icon: const Icon(Icons.add_business),
+            label: Text(
+              isMobile ? 'Nouvelle Entreprise' : 'Nouvelle Entreprise',
+            ),
+            style: FilledButton.styleFrom(
+              padding: EdgeInsets.symmetric(
+                horizontal: isMobile ? 16 : 24,
+                vertical: isMobile ? 12 : 16,
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -87,43 +105,37 @@ class AdminEnterprisesSection extends ConsumerWidget {
     }
 
     return SliverList(
-      delegate: SliverChildBuilderDelegate(
-        (context, index) {
-          final enterprise = enterprises[index];
-          return EnterpriseListItem(
-            enterprise: enterprise,
-            onEdit: () => EnterpriseActions.edit(context, ref, enterprise),
-            onToggleStatus: () =>
-                EnterpriseActions.toggleStatus(context, ref, enterprise),
-            onDelete: () => EnterpriseActions.delete(context, ref, enterprise),
-            onNavigate: () {
-              context.go('/modules/${enterprise.type}/${enterprise.id}');
-            },
-          );
-        },
-        childCount: enterprises.length,
-      ),
+      delegate: SliverChildBuilderDelegate((context, index) {
+        final enterprise = enterprises[index];
+        return EnterpriseListItem(
+          enterprise: enterprise,
+          onEdit: () => EnterpriseActions.edit(context, ref, enterprise),
+          onToggleStatus: () =>
+              EnterpriseActions.toggleStatus(context, ref, enterprise),
+          onDelete: () => EnterpriseActions.delete(context, ref, enterprise),
+          onNavigate: () {
+            context.go('/modules/${enterprise.type}/${enterprise.id}');
+          },
+        );
+      }, childCount: enterprises.length),
     );
   }
 
-  Widget _buildErrorState(ThemeData theme, Object error) {
+  Widget _buildErrorState(BuildContext context, ThemeData theme, Object error) {
     return SliverToBoxAdapter(
       child: Center(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: ResponsiveHelper.adaptivePadding(context),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
                 Icons.error_outline,
-                size: 64,
+                size: ResponsiveHelper.isMobile(context) ? 48 : 64,
                 color: theme.colorScheme.error,
               ),
               const SizedBox(height: 16),
-              Text(
-                'Erreur de chargement',
-                style: theme.textTheme.titleLarge,
-              ),
+              Text('Erreur de chargement', style: theme.textTheme.titleLarge),
               const SizedBox(height: 8),
               Text(
                 error.toString(),

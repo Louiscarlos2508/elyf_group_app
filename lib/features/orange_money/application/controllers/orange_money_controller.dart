@@ -10,14 +10,11 @@ class OrangeMoneyController {
   Future<OrangeMoneyState> fetchState() async {
     final transactions = await _repository.fetchTransactions();
     final statistics = await _repository.getStatistics();
-    return OrangeMoneyState(
-      transactions: transactions,
-      statistics: statistics,
-    );
+    return OrangeMoneyState(transactions: transactions, statistics: statistics);
   }
 
   /// Crée une transaction avec validation.
-  /// 
+  ///
   /// Lance une [ArgumentError] si les données sont invalides.
   Future<String> createTransactionFromInput({
     required TransactionType type,
@@ -77,10 +74,11 @@ class OrangeMoneyController {
   /// Retourne le nom du client si une transaction avec ce numéro existe, null sinon.
   Future<String?> findCustomerByPhoneNumber(String phoneNumber) async {
     final transactions = await _repository.fetchTransactions();
-    
+
     try {
       final existingTransaction = transactions.firstWhere(
-        (t) => TransactionService.comparePhoneNumbers(t.phoneNumber, phoneNumber),
+        (t) =>
+            TransactionService.comparePhoneNumbers(t.phoneNumber, phoneNumber),
       );
       return existingTransaction.customerName;
     } catch (e) {
@@ -98,4 +96,3 @@ class OrangeMoneyState {
   final List<Transaction> transactions;
   final Map<String, dynamic> statistics;
 }
-

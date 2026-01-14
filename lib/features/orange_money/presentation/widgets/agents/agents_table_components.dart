@@ -129,23 +129,19 @@ class AgentsTableComponents {
     return SizedBox(
       width: width,
       child: Padding(
-        padding: const EdgeInsets.only(left: 8, top: 10.61, right: 8, bottom: 10.61),
+        padding: const EdgeInsets.only(
+          left: 8,
+          top: 10.61,
+          right: 8,
+          bottom: 10.61,
+        ),
         child: Row(
           children: [
-            _buildActionButton(
-              icon: Icons.visibility,
-              onPressed: onView,
-            ),
+            _buildActionButton(icon: Icons.visibility, onPressed: onView),
             const SizedBox(width: 4),
-            _buildActionButton(
-              icon: Icons.refresh,
-              onPressed: onRefresh,
-            ),
+            _buildActionButton(icon: Icons.refresh, onPressed: onRefresh),
             const SizedBox(width: 4),
-            _buildActionButton(
-              icon: Icons.edit,
-              onPressed: onEdit,
-            ),
+            _buildActionButton(icon: Icons.edit, onPressed: onEdit),
             const SizedBox(width: 4),
             _buildActionButton(
               icon: Icons.close,
@@ -191,4 +187,3 @@ class AgentsTableComponents {
     );
   }
 }
-

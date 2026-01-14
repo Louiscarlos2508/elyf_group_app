@@ -23,10 +23,7 @@ class ExpenseCategoryInput extends StatelessWidget {
         border: OutlineInputBorder(),
       ),
       items: ExpenseCategory.values.map((category) {
-        return DropdownMenuItem(
-          value: category,
-          child: Text(category.label),
-        );
+        return DropdownMenuItem(value: category, child: Text(category.label));
       }).toList(),
       onChanged: (value) {
         if (value != null) {
@@ -36,4 +33,3 @@ class ExpenseCategoryInput extends StatelessWidget {
     );
   }
 }
-

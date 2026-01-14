@@ -77,7 +77,9 @@ class StockAlertsWidget extends ConsumerWidget {
                               const SizedBox(height: 4),
                               LinearProgressIndicator(
                                 value: percentage / 100,
-                                backgroundColor: Colors.orange.withValues(alpha: 0.2),
+                                backgroundColor: Colors.orange.withValues(
+                                  alpha: 0.2,
+                                ),
                                 valueColor: AlwaysStoppedAnimation<Color>(
                                   Colors.orange.shade700,
                                 ),

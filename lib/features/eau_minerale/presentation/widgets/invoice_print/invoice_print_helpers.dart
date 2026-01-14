@@ -36,4 +36,3 @@ class InvoicePrintHelpers {
     return id.substring(0, 8).toUpperCase();
   }
 }
-

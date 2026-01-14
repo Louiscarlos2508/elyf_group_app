@@ -93,4 +93,3 @@ class StockHeader extends StatelessWidget {
     );
   }
 }
-

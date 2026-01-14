@@ -4,10 +4,7 @@ import '../../../domain/entities/report_data.dart';
 
 /// En-tête du rapport de profit.
 class ProfitReportHeader extends StatelessWidget {
-  const ProfitReportHeader({
-    super.key,
-    required this.data,
-  });
+  const ProfitReportHeader({super.key, required this.data});
 
   final GazReportData data;
 
@@ -39,4 +36,3 @@ class ProfitReportHeader extends StatelessWidget {
     );
   }
 }
-

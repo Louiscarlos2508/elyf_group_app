@@ -17,7 +17,7 @@ class MonthlyExpenseSummary extends StatelessWidget {
 
   /// Pre-calculated monthly expense metrics.
   final MonthlyExpenseMetrics metrics;
-  
+
   /// Service for getting category labels.
   final BoutiqueDashboardCalculationService calculationService;
 
@@ -58,10 +58,7 @@ class MonthlyExpenseSummary extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(
-                Icons.calendar_month,
-                color: theme.colorScheme.primary,
-              ),
+              Icon(Icons.calendar_month, color: theme.colorScheme.primary),
               const SizedBox(width: 8),
               Text(
                 'Résumé Mensuel',
@@ -81,10 +78,7 @@ class MonthlyExpenseSummary extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Total ce mois',
-                  style: theme.textTheme.titleMedium,
-                ),
+                Text('Total ce mois', style: theme.textTheme.titleMedium),
                 Text(
                   CurrencyFormatter.formatFCFA(monthlyTotal),
                   style: theme.textTheme.titleLarge?.copyWith(

@@ -42,22 +42,34 @@ class _ChangePasswordDialogState extends ConsumerState<ChangePasswordDialog> {
 
     // Validation supplémentaire
     if (currentPassword.isEmpty) {
-      NotificationService.showError(context, 'Veuillez saisir votre mot de passe actuel');
+      NotificationService.showError(
+        context,
+        'Veuillez saisir votre mot de passe actuel',
+      );
       return;
     }
 
     if (newPassword.length < 6) {
-      NotificationService.showError(context, 'Le nouveau mot de passe doit contenir au moins 6 caractères');
+      NotificationService.showError(
+        context,
+        'Le nouveau mot de passe doit contenir au moins 6 caractères',
+      );
       return;
     }
 
     if (newPassword != confirmPassword) {
-      NotificationService.showError(context, 'Les mots de passe ne correspondent pas');
+      NotificationService.showError(
+        context,
+        'Les mots de passe ne correspondent pas',
+      );
       return;
     }
 
     if (currentPassword == newPassword) {
-      NotificationService.showError(context, 'Le nouveau mot de passe doit être différent de l\'actuel');
+      NotificationService.showError(
+        context,
+        'Le nouveau mot de passe doit être différent de l\'actuel',
+      );
       return;
     }
 
@@ -154,7 +166,8 @@ class _ChangePasswordDialogState extends ConsumerState<ChangePasswordDialog> {
                 decoration: InputDecoration(
                   labelText: 'Nouveau mot de passe *',
                   hintText: 'Minimum 6 caractères',
-                  helperText: 'Le mot de passe doit contenir au moins 6 caractères',
+                  helperText:
+                      'Le mot de passe doit contenir au moins 6 caractères',
                   suffixIcon: IconButton(
                     icon: Icon(
                       _obscureNewPassword
@@ -216,7 +229,9 @@ class _ChangePasswordDialogState extends ConsumerState<ChangePasswordDialog> {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   TextButton(
-                    onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
+                    onPressed: _isLoading
+                        ? null
+                        : () => Navigator.of(context).pop(),
                     child: const Text('Annuler'),
                   ),
                   const SizedBox(width: 16),
@@ -241,4 +256,3 @@ class _ChangePasswordDialogState extends ConsumerState<ChangePasswordDialog> {
     );
   }
 }
-

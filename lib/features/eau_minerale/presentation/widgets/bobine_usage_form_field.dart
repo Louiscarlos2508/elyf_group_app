@@ -8,6 +8,7 @@ import 'bobine_usage_item_form.dart';
 import 'machine_selector_field.dart' show machinesProvider;
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../../../shared/utils/notification_service.dart';
+
 /// Champ pour gérer les bobines utilisées dans une session.
 class BobineUsageFormField extends ConsumerWidget {
   const BobineUsageFormField({
@@ -24,35 +25,41 @@ class BobineUsageFormField extends ConsumerWidget {
   final List<String> machinesDisponibles;
   final ValueChanged<List<BobineUsage>> onBobinesChanged;
 
-  Future<void> _ajouterBobine(
-    BuildContext context,
-    WidgetRef ref,
-  ) async {
+  Future<void> _ajouterBobine(BuildContext context, WidgetRef ref) async {
     if (bobinesUtilisees.length >= maxBobines) {
       if (!context.mounted) return;
-      NotificationService.showError(context, 'Maximum $maxBobines bobines autorisées');
+      NotificationService.showError(
+        context,
+        'Maximum $maxBobines bobines autorisées',
+      );
       return;
     }
 
     final bobineStocks = await ref.read(bobineStocksDisponiblesProvider.future);
     final machines = await ref.read(machinesProvider.future);
-    
+
     // Filtrer les machines qui ont déjà une bobine
     final machinesAvecBobine = bobinesUtilisees.map((u) => u.machineId).toSet();
     final machinesDisponiblesFiltrees = machines
         .where((m) => machinesDisponibles.contains(m.id))
         .where((m) => !machinesAvecBobine.contains(m.id))
         .toList();
-    
+
     if (machinesDisponiblesFiltrees.isEmpty) {
       if (!context.mounted) return;
-      NotificationService.showInfo(context, 'Toutes les machines ont déjà une bobine');
+      NotificationService.showInfo(
+        context,
+        'Toutes les machines ont déjà une bobine',
+      );
       return;
     }
 
     if (bobineStocks.isEmpty) {
       if (!context.mounted) return;
-      NotificationService.showInfo(context, 'Aucune bobine disponible en stock');
+      NotificationService.showInfo(
+        context,
+        'Aucune bobine disponible en stock',
+      );
       return;
     }
 
@@ -100,10 +107,7 @@ class BobineUsageFormField extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Bobines utilisées',
-                    style: theme.textTheme.titleSmall,
-                  ),
+                  Text('Bobines utilisées', style: theme.textTheme.titleSmall),
                   if (bobinesUtilisees.isNotEmpty)
                     Text(
                       '${bobinesUtilisees.length} bobine(s)',
@@ -156,14 +160,13 @@ class BobineUsageFormField extends ConsumerWidget {
                   ),
                   child: ListTile(
                     title: Text(bobine.bobineType),
-                    subtitle: Text(
-                      'Machine: ${bobine.machineName}',
-                    ),
+                    subtitle: Text('Machine: ${bobine.machineName}'),
                     trailing: IconButton(
                       icon: const Icon(Icons.delete, color: Colors.red),
                       onPressed: () {
-                        final nouvellesBobines =
-                            List<BobineUsage>.from(bobinesUtilisees);
+                        final nouvellesBobines = List<BobineUsage>.from(
+                          bobinesUtilisees,
+                        );
                         nouvellesBobines.removeAt(index);
                         onBobinesChanged(nouvellesBobines);
                       },
@@ -190,11 +193,11 @@ class BobineUsageFormField extends ConsumerWidget {
 }
 
 /// Provider pour récupérer les stocks de bobines disponibles (nouveau système par type/quantité).
-final bobineStocksDisponiblesProvider = FutureProvider.autoDispose<List<BobineStock>>(
-  (ref) async {
-    final stocks = await ref.read(bobineStockQuantityControllerProvider).fetchAll();
-    // Filtrer seulement les stocks avec quantité > 0
-    return stocks.where((stock) => stock.quantity > 0).toList();
-  },
-);
-
+final bobineStocksDisponiblesProvider =
+    FutureProvider.autoDispose<List<BobineStock>>((ref) async {
+      final stocks = await ref
+          .read(bobineStockQuantityControllerProvider)
+          .fetchAll();
+      // Filtrer seulement les stocks avec quantité > 0
+      return stocks.where((stock) => stock.quantity > 0).toList();
+    });

@@ -57,10 +57,11 @@ class ExpenseBalancePdfService {
     );
 
     final output = await getTemporaryDirectory();
-    final fileNameFinal = fileName ??
+    final fileNameFinal =
+        fileName ??
         'bilan_depenses_${moduleName.toLowerCase().replaceAll(' ', '_')}_'
-        '${DateFormat('yyyyMMdd').format(startDate)}_'
-        '${DateFormat('yyyyMMdd').format(endDate)}.pdf';
+            '${DateFormat('yyyyMMdd').format(startDate)}_'
+            '${DateFormat('yyyyMMdd').format(endDate)}.pdf';
     final file = File('${output.path}/$fileNameFinal');
     await file.writeAsBytes(await pdf.save());
 
@@ -76,10 +77,7 @@ class ExpenseBalancePdfService {
           children: [
             pw.Text(
               'ELYF GROUPE',
-              style: pw.TextStyle(
-                fontSize: 20,
-                fontWeight: pw.FontWeight.bold,
-              ),
+              style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold),
             ),
             pw.Text(
               moduleName,
@@ -98,10 +96,7 @@ class ExpenseBalancePdfService {
   pw.Widget _buildTitle(String title) {
     return pw.Text(
       title,
-      style: pw.TextStyle(
-        fontSize: 24,
-        fontWeight: pw.FontWeight.bold,
-      ),
+      style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold),
     );
   }
 
@@ -262,6 +257,4 @@ class ExpenseBalancePdfService {
       ],
     );
   }
-
 }
-

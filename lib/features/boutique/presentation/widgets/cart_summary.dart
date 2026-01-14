@@ -62,8 +62,9 @@ class CartSummary extends ConsumerWidget {
                         Icon(
                           Icons.shopping_cart_outlined,
                           size: 64,
-                          color: theme.colorScheme.onSurfaceVariant
-                              .withValues(alpha: 0.5),
+                          color: theme.colorScheme.onSurfaceVariant.withValues(
+                            alpha: 0.5,
+                          ),
                         ),
                         const SizedBox(height: 16),
                         Text(
@@ -84,16 +85,16 @@ class CartSummary extends ConsumerWidget {
                         margin: const EdgeInsets.only(bottom: 8),
                         child: ListTile(
                           title: Text(item.product.name),
-                          subtitle: Text(CurrencyFormatter.formatFCFA(item.product.price)),
+                          subtitle: Text(
+                            CurrencyFormatter.formatFCFA(item.product.price),
+                          ),
                           trailing: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               IconButton(
                                 icon: const Icon(Icons.remove_circle_outline),
-                                onPressed: () => onUpdateQuantity(
-                                  index,
-                                  item.quantity - 1,
-                                ),
+                                onPressed: () =>
+                                    onUpdateQuantity(index, item.quantity - 1),
                               ),
                               Text(
                                 '${item.quantity}',
@@ -101,10 +102,8 @@ class CartSummary extends ConsumerWidget {
                               ),
                               IconButton(
                                 icon: const Icon(Icons.add_circle_outline),
-                                onPressed: () => onUpdateQuantity(
-                                  index,
-                                  item.quantity + 1,
-                                ),
+                                onPressed: () =>
+                                    onUpdateQuantity(index, item.quantity + 1),
                               ),
                               IconButton(
                                 icon: const Icon(Icons.delete_outline),
@@ -163,4 +162,3 @@ class CartSummary extends ConsumerWidget {
     );
   }
 }
-

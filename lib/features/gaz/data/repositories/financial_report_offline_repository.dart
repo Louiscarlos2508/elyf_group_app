@@ -7,7 +7,8 @@ import '../../domain/entities/financial_report.dart';
 import '../../domain/repositories/financial_report_repository.dart';
 
 /// Offline-first repository for FinancialReport entities.
-class FinancialReportOfflineRepository extends OfflineRepository<FinancialReport>
+class FinancialReportOfflineRepository
+    extends OfflineRepository<FinancialReport>
     implements FinancialReportRepository {
   FinancialReportOfflineRepository({
     required super.driftService,

@@ -279,8 +279,11 @@ class GasSaleOfflineRepository extends OfflineRepository<GasSale>
         moduleType: moduleType,
       );
       return rows
-          .map((r) =>
-              _cylinderFromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+          .map(
+            (r) => _cylinderFromMap(
+              jsonDecode(r.dataJson) as Map<String, dynamic>,
+            ),
+          )
           .toList();
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
@@ -305,7 +308,8 @@ class GasSaleOfflineRepository extends OfflineRepository<GasSale>
       );
       if (byRemote != null) {
         return _cylinderFromMap(
-            jsonDecode(byRemote.dataJson) as Map<String, dynamic>);
+          jsonDecode(byRemote.dataJson) as Map<String, dynamic>,
+        );
       }
       final byLocal = await driftService.records.findByLocalId(
         collectionName: cylindersCollectionName,
@@ -315,7 +319,8 @@ class GasSaleOfflineRepository extends OfflineRepository<GasSale>
       );
       if (byLocal == null) return null;
       return _cylinderFromMap(
-          jsonDecode(byLocal.dataJson) as Map<String, dynamic>);
+        jsonDecode(byLocal.dataJson) as Map<String, dynamic>,
+      );
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(

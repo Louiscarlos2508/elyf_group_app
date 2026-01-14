@@ -14,13 +14,19 @@ class BottleManager {
     required VoidCallback onBottlesChanged,
   }) {
     if (selectedWeight == null) {
-      NotificationService.showWarning(context, 'Sélectionnez un type de bouteille');
+      NotificationService.showWarning(
+        context,
+        'Sélectionnez un type de bouteille',
+      );
       return;
     }
 
     final qty = int.tryParse(quantityText) ?? 0;
     if (qty <= 0) {
-      NotificationService.showWarning(context, 'La quantité doit être supérieure à 0');
+      NotificationService.showWarning(
+        context,
+        'La quantité doit être supérieure à 0',
+      );
       return;
     }
 
@@ -38,4 +44,3 @@ class BottleManager {
     onBottlesChanged();
   }
 }
-

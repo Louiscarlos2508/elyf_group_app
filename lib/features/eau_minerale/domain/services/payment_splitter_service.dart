@@ -1,9 +1,5 @@
 /// Payment method enum.
-enum PaymentMethod {
-  cash,
-  orangeMoney,
-  both,
-}
+enum PaymentMethod { cash, orangeMoney, both }
 
 /// Service for payment splitting logic.
 ///
@@ -43,10 +39,7 @@ class PaymentSplitterService {
     required PaymentMethod method,
     required int amountPaid,
   }) {
-    return splitPayment(
-      method: method,
-      totalAmount: amountPaid,
-    );
+    return splitPayment(method: method, totalAmount: amountPaid);
   }
 
   /// Validates that the split amounts are valid.
@@ -112,10 +105,7 @@ class PaymentSplitterService {
     required PaymentMethod method,
     required int totalAmount,
   }) {
-    return splitPayment(
-      method: method,
-      totalAmount: totalAmount,
-    );
+    return splitPayment(method: method, totalAmount: totalAmount);
   }
 }
 
@@ -134,4 +124,3 @@ class PaymentSplitResult {
 
 // PaymentMethod enum is defined in sale_form.dart
 // Import it from there or create a shared enum file
-

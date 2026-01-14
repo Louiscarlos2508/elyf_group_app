@@ -24,13 +24,16 @@ class MachineDialogs {
     await machinesAsync.when(
       data: (allMachines) async {
         final machinesUtiliseesIds = session.machinesUtilisees.toSet();
-        final machinesDisponibles = allMachines.where(
-          (m) => m.estActive && !machinesUtiliseesIds.contains(m.id),
-        ).toList();
+        final machinesDisponibles = allMachines
+            .where((m) => m.estActive && !machinesUtiliseesIds.contains(m.id))
+            .toList();
 
         if (machinesDisponibles.isEmpty) {
           if (context.mounted) {
-            NotificationService.showWarning(context, 'Toutes les machines actives sont déjà utilisées');
+            NotificationService.showWarning(
+              context,
+              'Toutes les machines actives sont déjà utilisées',
+            );
           }
           return;
         }
@@ -44,10 +47,11 @@ class MachineDialogs {
 
         if (machineSelectionnee == null || !context.mounted) return;
 
-        final bobineNonFinieExistante = await MachineAddHelpers.findUnfinishedBobine(
-          ref,
-          machineSelectionnee.id,
-        );
+        final bobineNonFinieExistante =
+            await MachineAddHelpers.findUnfinishedBobine(
+              ref,
+              machineSelectionnee.id,
+            );
 
         if (!context.mounted) return;
 
@@ -77,15 +81,17 @@ class MachineDialogs {
           showDialog(
             context: context,
             barrierDismissible: false,
-            builder: (context) => const Center(
-              child: CircularProgressIndicator(),
-            ),
+            builder: (context) =>
+                const Center(child: CircularProgressIndicator()),
           );
         }
       },
       error: (error, stack) {
         if (context.mounted) {
-          NotificationService.showInfo(context, 'Erreur lors du chargement des machines: $error');
+          NotificationService.showInfo(
+            context,
+            'Erreur lors du chargement des machines: $error',
+          );
         }
       },
     );
@@ -112,14 +118,9 @@ class MachineDialogs {
     await showDialog<BobineUsage>(
       context: context,
       builder: (dialogContext) => Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         child: ConstrainedBox(
-          constraints: const BoxConstraints(
-            maxWidth: 600,
-            maxHeight: 700,
-          ),
+          constraints: const BoxConstraints(maxWidth: 600, maxHeight: 700),
           child: BobineInstallationForm(
             machine: machine,
             onInstalled: (newBobine) async {
@@ -137,7 +138,9 @@ class MachineDialogs {
                 return;
               }
 
-              final updatedBobines = List<BobineUsage>.from(session.bobinesUtilisees);
+              final updatedBobines = List<BobineUsage>.from(
+                session.bobinesUtilisees,
+              );
 
               final existeDeja = updatedBobines.any(
                 (b) =>
@@ -160,7 +163,10 @@ class MachineDialogs {
               if (context.mounted) {
                 ref.invalidate(productionSessionDetailProvider((session.id)));
                 ref.invalidate(productionSessionsStateProvider);
-                NotificationService.showSuccess(context, 'Nouvelle bobine installée avec succès');
+                NotificationService.showSuccess(
+                  context,
+                  'Nouvelle bobine installée avec succès',
+                );
               }
             },
           ),
@@ -169,4 +175,3 @@ class MachineDialogs {
     );
   }
 }
-

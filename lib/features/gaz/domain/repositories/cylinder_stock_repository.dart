@@ -19,10 +19,7 @@ abstract class CylinderStockRepository {
 
   Future<void> updateStockQuantity(String id, int newQuantity);
 
-  Future<void> changeStockStatus(
-    String id,
-    CylinderStatus newStatus,
-  );
+  Future<void> changeStockStatus(String id, CylinderStatus newStatus);
 
   Future<List<CylinderStock>> getStockBySite(
     String enterpriseId,

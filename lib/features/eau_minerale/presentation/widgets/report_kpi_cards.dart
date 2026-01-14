@@ -9,10 +9,7 @@ import 'dashboard_kpi_card.dart';
 
 /// KPI cards for reports module.
 class ReportKpiCards extends ConsumerWidget {
-  const ReportKpiCards({
-    super.key,
-    required this.period,
-  });
+  const ReportKpiCards({super.key, required this.period});
 
   final ReportPeriod period;
 
@@ -25,7 +22,7 @@ class ReportKpiCards extends ConsumerWidget {
         return LayoutBuilder(
           builder: (context, constraints) {
             final isWide = constraints.maxWidth > 600;
-            
+
             return isWide
                 ? Row(
                     children: [
@@ -44,7 +41,8 @@ class ReportKpiCards extends ConsumerWidget {
                         child: DashboardKpiCard(
                           label: 'Encaissements',
                           value: CurrencyFormatter.formatFCFA(data.collections),
-                          subtitle: '${data.collectionRate.toStringAsFixed(0)}% du CA',
+                          subtitle:
+                              '${data.collectionRate.toStringAsFixed(0)}% du CA',
                           icon: Icons.attach_money,
                           iconColor: Colors.green,
                           valueColor: Colors.green.shade700,
@@ -55,7 +53,9 @@ class ReportKpiCards extends ConsumerWidget {
                       Expanded(
                         child: DashboardKpiCard(
                           label: 'Charges Totales',
-                          value: CurrencyFormatter.formatFCFA(data.totalExpenses),
+                          value: CurrencyFormatter.formatFCFA(
+                            data.totalExpenses,
+                          ),
                           subtitle: 'Dépenses + Salaires',
                           icon: Icons.receipt_long,
                           iconColor: Colors.red,
@@ -70,9 +70,15 @@ class ReportKpiCards extends ConsumerWidget {
                           value: CurrencyFormatter.formatFCFA(data.treasury),
                           subtitle: 'Entrées - Sorties',
                           icon: Icons.trending_up,
-                          iconColor: data.treasury >= 0 ? Colors.green : Colors.red,
-                          valueColor: data.treasury >= 0 ? Colors.green.shade700 : Colors.red.shade700,
-                          backgroundColor: data.treasury >= 0 ? Colors.green : Colors.red,
+                          iconColor: data.treasury >= 0
+                              ? Colors.green
+                              : Colors.red,
+                          valueColor: data.treasury >= 0
+                              ? Colors.green.shade700
+                              : Colors.red.shade700,
+                          backgroundColor: data.treasury >= 0
+                              ? Colors.green
+                              : Colors.red,
                         ),
                       ),
                     ],
@@ -91,7 +97,8 @@ class ReportKpiCards extends ConsumerWidget {
                       DashboardKpiCard(
                         label: 'Encaissements',
                         value: CurrencyFormatter.formatFCFA(data.collections),
-                        subtitle: '${data.collectionRate.toStringAsFixed(0)}% du CA',
+                        subtitle:
+                            '${data.collectionRate.toStringAsFixed(0)}% du CA',
                         icon: Icons.attach_money,
                         iconColor: Colors.green,
                         valueColor: Colors.green.shade700,
@@ -113,9 +120,15 @@ class ReportKpiCards extends ConsumerWidget {
                         value: CurrencyFormatter.formatFCFA(data.treasury),
                         subtitle: 'Entrées - Sorties',
                         icon: Icons.trending_up,
-                        iconColor: data.treasury >= 0 ? Colors.green : Colors.red,
-                        valueColor: data.treasury >= 0 ? Colors.green.shade700 : Colors.red.shade700,
-                        backgroundColor: data.treasury >= 0 ? Colors.green : Colors.red,
+                        iconColor: data.treasury >= 0
+                            ? Colors.green
+                            : Colors.red,
+                        valueColor: data.treasury >= 0
+                            ? Colors.green.shade700
+                            : Colors.red.shade700,
+                        backgroundColor: data.treasury >= 0
+                            ? Colors.green
+                            : Colors.red,
                       ),
                     ],
                   );
@@ -127,4 +140,3 @@ class ReportKpiCards extends ConsumerWidget {
     );
   }
 }
-

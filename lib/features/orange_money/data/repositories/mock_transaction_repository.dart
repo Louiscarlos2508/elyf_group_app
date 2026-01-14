@@ -123,17 +123,28 @@ class MockTransactionRepository implements TransactionRepository {
     DateTime? endDate,
   }) async {
     await Future<void>.delayed(const Duration(milliseconds: 200));
-    
+
     // Normalize dates to start/end of day for proper filtering
     DateTime? normalizedStartDate;
     DateTime? normalizedEndDate;
     if (startDate != null) {
-      normalizedStartDate = DateTime(startDate.year, startDate.month, startDate.day);
+      normalizedStartDate = DateTime(
+        startDate.year,
+        startDate.month,
+        startDate.day,
+      );
     }
     if (endDate != null) {
-      normalizedEndDate = DateTime(endDate.year, endDate.month, endDate.day, 23, 59, 59);
+      normalizedEndDate = DateTime(
+        endDate.year,
+        endDate.month,
+        endDate.day,
+        23,
+        59,
+        59,
+      );
     }
-    
+
     final transactions = await fetchTransactions(
       startDate: normalizedStartDate,
       endDate: normalizedEndDate,
@@ -160,4 +171,3 @@ class MockTransactionRepository implements TransactionRepository {
     };
   }
 }
-

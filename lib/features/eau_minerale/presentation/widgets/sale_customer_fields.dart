@@ -48,4 +48,3 @@ class SaleCustomerFields extends StatelessWidget {
     );
   }
 }
-

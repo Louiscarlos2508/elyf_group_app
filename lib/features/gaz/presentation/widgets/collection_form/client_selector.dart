@@ -45,9 +45,9 @@ class ClientSelector extends StatelessWidget {
               ? 'Grossiste'
               : 'Point de vente',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontSize: 14,
-                color: const Color(0xFF0A0A0A),
-              ),
+            fontSize: 14,
+            color: const Color(0xFF0A0A0A),
+          ),
         ),
         const SizedBox(height: 8),
         _ClientDropdownButton(
@@ -59,9 +59,7 @@ class ClientSelector extends StatelessWidget {
         // Stock info pour point de vente
         if (collectionType == CollectionType.pointOfSale &&
             selectedClient != null)
-          _StockInfoBox(
-            client: selectedClient!,
-          ),
+          _StockInfoBox(client: selectedClient!),
       ],
     );
   }
@@ -105,10 +103,7 @@ class _ClientDropdownButton extends StatelessWidget {
                         collectionType == CollectionType.wholesaler
                             ? 'Sélectionner un grossiste'
                             : 'Sélectionner un point de vente',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: textGray,
-                        ),
+                        style: TextStyle(fontSize: 14, color: textGray),
                       ),
                     )
                   : Column(
@@ -178,8 +173,10 @@ class _StockInfoBox extends StatelessWidget {
     final blueBg = const Color(0xFFEFF6FF);
     final blueBorder = const Color(0xFFBEDBFF);
     final blueText = const Color(0xFF1C398E);
-    final totalStock =
-        client.emptyStock.values.fold<int>(0, (sum, qty) => sum + qty);
+    final totalStock = client.emptyStock.values.fold<int>(
+      0,
+      (sum, qty) => sum + qty,
+    );
 
     return Container(
       margin: const EdgeInsets.only(top: 12),
@@ -194,10 +191,7 @@ class _StockInfoBox extends StatelessWidget {
         children: [
           Text(
             '📍 Stock de bouteilles vides disponibles',
-            style: TextStyle(
-              fontSize: 14,
-              color: blueText,
-            ),
+            style: TextStyle(fontSize: 14, color: blueText),
           ),
           const SizedBox(height: 8),
           Text(
@@ -214,4 +208,3 @@ class _StockInfoBox extends StatelessWidget {
     );
   }
 }
-

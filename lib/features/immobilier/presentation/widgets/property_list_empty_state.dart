@@ -26,9 +26,7 @@ class PropertyListEmptyState extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            isEmpty
-                ? 'Aucune propriété enregistrée'
-                : 'Aucun résultat trouvé',
+            isEmpty ? 'Aucune propriété enregistrée' : 'Aucun résultat trouvé',
             style: theme.textTheme.titleMedium?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -45,4 +43,3 @@ class PropertyListEmptyState extends StatelessWidget {
     );
   }
 }
-

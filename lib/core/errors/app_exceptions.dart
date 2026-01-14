@@ -48,4 +48,3 @@ class SyncException extends AppException {
 class UnknownException extends AppException {
   const UnknownException(super.message, [super.code]);
 }
-

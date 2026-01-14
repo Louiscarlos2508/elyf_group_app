@@ -16,4 +16,3 @@ class ReportData {
   final int salesCount; // Nombre de ventes
   final double collectionRate; // Taux d'encaissement (0-100)
 }
-

@@ -17,19 +17,17 @@ class MockCreditRepository implements CreditRepository {
     await Future<void>.delayed(const Duration(milliseconds: 200));
     final allSales = await _saleRepository.fetchSales();
     // Retourne les ventes avec crédit (amountPaid < totalPrice)
-    return allSales
-        .where((s) => s.isCredit)
-        .toList();
+    return allSales.where((s) => s.isCredit).toList();
   }
 
   @override
   Future<List<Sale>> fetchCustomerCredits(String customerId) async {
     await Future<void>.delayed(const Duration(milliseconds: 200));
-    final customerSales = await _saleRepository.fetchSales(customerId: customerId);
+    final customerSales = await _saleRepository.fetchSales(
+      customerId: customerId,
+    );
     // Retourne les ventes avec crédit pour ce client
-    return customerSales
-        .where((s) => s.isCredit)
-        .toList();
+    return customerSales.where((s) => s.isCredit).toList();
   }
 
   @override
@@ -53,13 +51,15 @@ class MockCreditRepository implements CreditRepository {
     }
 
     final id = 'payment-${_payments.length + 1}';
-    _payments.add(CreditPayment(
-      id: id,
-      saleId: payment.saleId,
-      amount: payment.amount,
-      date: payment.date,
-      notes: payment.notes,
-    ));
+    _payments.add(
+      CreditPayment(
+        id: id,
+        saleId: payment.saleId,
+        amount: payment.amount,
+        date: payment.date,
+        notes: payment.notes,
+      ),
+    );
 
     // Note: La mise à jour du montant payé de la vente est gérée par CreditService
     return id;
@@ -71,10 +71,7 @@ class MockCreditRepository implements CreditRepository {
     final creditSales = await fetchCreditSales();
     // sale.amountPaid est déjà mis à jour par CreditService via updateSaleAmountPaid
     // donc on utilise directement remainingAmount (totalPrice - amountPaid)
-    return creditSales.fold<int>(
-      0,
-      (sum, sale) => sum + sale.remainingAmount,
-    );
+    return creditSales.fold<int>(0, (sum, sale) => sum + sale.remainingAmount);
   }
 
   @override
@@ -85,4 +82,3 @@ class MockCreditRepository implements CreditRepository {
     return customerIds.length;
   }
 }
-

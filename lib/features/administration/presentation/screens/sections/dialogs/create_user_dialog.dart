@@ -8,7 +8,7 @@ import '../../../../application/providers.dart';
 import '../../../../../../core/auth/providers.dart' show currentUserIdProvider;
 
 /// Dialogue pour créer un nouvel utilisateur.
-/// 
+///
 /// Intègre Firebase Auth pour créer un compte utilisateur avec email/mot de passe.
 class CreateUserDialog extends ConsumerStatefulWidget {
   const CreateUserDialog({super.key});
@@ -50,7 +50,10 @@ class _CreateUserDialogState extends ConsumerState<CreateUserDialog>
     // Validate Firebase Auth fields if creating account
     if (_createFirebaseAccount) {
       if (_emailController.text.trim().isEmpty) {
-        NotificationService.showError(context, 'L\'email est requis pour créer un compte Firebase Auth');
+        NotificationService.showError(
+          context,
+          'L\'email est requis pour créer un compte Firebase Auth',
+        );
         return;
       }
       if (_passwordController.text.isEmpty) {
@@ -58,11 +61,17 @@ class _CreateUserDialogState extends ConsumerState<CreateUserDialog>
         return;
       }
       if (_passwordController.text != _confirmPasswordController.text) {
-        NotificationService.showError(context, 'Les mots de passe ne correspondent pas');
+        NotificationService.showError(
+          context,
+          'Les mots de passe ne correspondent pas',
+        );
         return;
       }
       if (_passwordController.text.length < 6) {
-        NotificationService.showError(context, 'Le mot de passe doit contenir au moins 6 caractères');
+        NotificationService.showError(
+          context,
+          'Le mot de passe doit contenir au moins 6 caractères',
+        );
         return;
       }
     }
@@ -278,7 +287,9 @@ class _CreateUserDialogState extends ConsumerState<CreateUserDialog>
                                     : Icons.visibility_off_outlined,
                               ),
                               onPressed: () {
-                                setState(() => _obscurePassword = !_obscurePassword);
+                                setState(
+                                  () => _obscurePassword = !_obscurePassword,
+                                );
                               },
                             ),
                           ),
@@ -306,7 +317,10 @@ class _CreateUserDialogState extends ConsumerState<CreateUserDialog>
                                     : Icons.visibility_off_outlined,
                               ),
                               onPressed: () {
-                                setState(() => _obscureConfirmPassword = !_obscureConfirmPassword);
+                                setState(
+                                  () => _obscureConfirmPassword =
+                                      !_obscureConfirmPassword,
+                                );
                               },
                             ),
                           ),
@@ -331,7 +345,9 @@ class _CreateUserDialogState extends ConsumerState<CreateUserDialog>
                         ),
                         keyboardType: TextInputType.phone,
                         inputFormatters: [
-                          FilteringTextInputFormatter.allow(RegExp(r'[\d\s\+]')),
+                          FilteringTextInputFormatter.allow(
+                            RegExp(r'[\d\s\+]'),
+                          ),
                         ],
                         validator: _validatePhone,
                       ),
@@ -370,7 +386,9 @@ class _CreateUserDialogState extends ConsumerState<CreateUserDialog>
                             ? const SizedBox(
                                 width: 20,
                                 height: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               )
                             : const Text('Créer'),
                       ),
@@ -385,4 +403,3 @@ class _CreateUserDialogState extends ConsumerState<CreateUserDialog>
     );
   }
 }
-

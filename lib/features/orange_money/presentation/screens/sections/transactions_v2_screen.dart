@@ -26,7 +26,7 @@ class _TransactionsV2ScreenState extends ConsumerState<TransactionsV2Screen>
   final _phoneController = TextEditingController();
   final _amountController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  
+
   // État pour le formulaire d'enregistrement
   bool _showCustomerForm = false;
   String? _existingCustomerName;
@@ -51,11 +51,13 @@ class _TransactionsV2ScreenState extends ConsumerState<TransactionsV2Screen>
     }
 
     final phoneNumber = _phoneController.text.trim();
-    
+
     // Rechercher si le client existe déjà (logique dans le controller)
     final controller = ref.read(orangeMoneyControllerProvider);
-    final existingCustomerName = await controller.findCustomerByPhoneNumber(phoneNumber);
-    
+    final existingCustomerName = await controller.findCustomerByPhoneNumber(
+      phoneNumber,
+    );
+
     setState(() {
       _existingCustomerName = existingCustomerName;
       _showCustomerForm = true;
@@ -103,11 +105,17 @@ class _TransactionsV2ScreenState extends ConsumerState<TransactionsV2Screen>
       }
     } on ArgumentError catch (e) {
       if (mounted) {
-        NotificationService.showWarning(context, e.message ?? 'Erreur de validation');
+        NotificationService.showWarning(
+          context,
+          e.message ?? 'Erreur de validation',
+        );
       }
     } catch (e) {
       if (mounted) {
-        NotificationService.showError(context, 'Erreur lors de la création: $e');
+        NotificationService.showError(
+          context,
+          'Erreur lors de la création: $e',
+        );
       }
     }
   }
@@ -212,11 +220,7 @@ class _TransactionsV2ScreenState extends ConsumerState<TransactionsV2Screen>
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              size: 16,
-              color: const Color(0xFF0A0A0A),
-            ),
+            Icon(icon, size: 16, color: const Color(0xFF0A0A0A)),
             const SizedBox(width: 8),
             Flexible(
               child: Text(
@@ -295,10 +299,7 @@ class _TransactionsV2ScreenState extends ConsumerState<TransactionsV2Screen>
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(14),
-        side: const BorderSide(
-          color: Color(0xFFE5E5E5),
-          width: 1.219,
-        ),
+        side: const BorderSide(color: Color(0xFFE5E5E5), width: 1.219),
       ),
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -309,11 +310,7 @@ class _TransactionsV2ScreenState extends ConsumerState<TransactionsV2Screen>
             children: [
               Row(
                 children: const [
-                  Icon(
-                    Icons.person_search,
-                    size: 20,
-                    color: Color(0xFF0A0A0A),
-                  ),
+                  Icon(Icons.person_search, size: 20, color: Color(0xFF0A0A0A)),
                   SizedBox(width: 8),
                   Text(
                     'Rechercher le client',
@@ -380,7 +377,7 @@ class _TransactionsV2ScreenState extends ConsumerState<TransactionsV2Screen>
 
   Widget _buildCustomerFormCard() {
     final amount = int.tryParse(_amountController.text.trim()) ?? 0;
-    
+
     return NewCustomerFormCard(
       phoneNumber: _phoneController.text.trim(),
       amount: amount,
@@ -390,6 +387,4 @@ class _TransactionsV2ScreenState extends ConsumerState<TransactionsV2Screen>
       onSave: _handleSaveCustomer,
     );
   }
-
 }
-

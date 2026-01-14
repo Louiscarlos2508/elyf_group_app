@@ -11,4 +11,3 @@ abstract class ProductRepository {
   Future<void> restoreProduct(String id);
   Future<List<Product>> getDeletedProducts();
 }
-

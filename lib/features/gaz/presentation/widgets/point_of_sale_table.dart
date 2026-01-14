@@ -20,9 +20,7 @@ class PointOfSaleTable extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final pointsOfSaleAsync = ref.watch(
-      pointsOfSaleProvider(
-        (enterpriseId: enterpriseId, moduleId: moduleId),
-      ),
+      pointsOfSaleProvider((enterpriseId: enterpriseId, moduleId: moduleId)),
     );
 
     return pointsOfSaleAsync.when(
@@ -68,63 +66,61 @@ class PointOfSaleTable extends ConsumerWidget {
         }
 
         return Container(
-      padding: const EdgeInsets.fromLTRB(25.285, 25.285, 1.305, 1.305),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(
-          color: Colors.black.withValues(alpha: 0.1),
-          width: 1.305,
-        ),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // En-tête de la carte
-          Row(
+          padding: const EdgeInsets.fromLTRB(25.285, 25.285, 1.305, 1.305),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border.all(
+              color: Colors.black.withValues(alpha: 0.1),
+              width: 1.305,
+            ),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(
-                Icons.store,
-                size: 20,
-                color: Color(0xFF0A0A0A),
+              // En-tête de la carte
+              Row(
+                children: [
+                  const Icon(Icons.store, size: 20, color: Color(0xFF0A0A0A)),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Points de vente',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontSize: 18,
+                      fontWeight: FontWeight.normal,
+                      color: const Color(0xFF0A0A0A),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 8),
-              Text(
-                'Points de vente',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontSize: 18,
-                  fontWeight: FontWeight.normal,
-                  color: const Color(0xFF0A0A0A),
+              const SizedBox(height: 42),
+              // Tableau
+              Container(
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    width: 1.305,
+                  ),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Column(
+                  children: [
+                    // En-tête du tableau
+                    const PosTableHeader(),
+                    // Corps du tableau
+                    ...pointsOfSale.map(
+                      (pos) => PosTableRow(
+                        pointOfSale: pos,
+                        enterpriseId: enterpriseId,
+                        moduleId: moduleId,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 42),
-          // Tableau
-          Container(
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: Colors.black.withValues(alpha: 0.1),
-                width: 1.305,
-              ),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Column(
-              children: [
-                // En-tête du tableau
-                const PosTableHeader(),
-                // Corps du tableau
-                ...pointsOfSale.map((pos) => PosTableRow(
-                      pointOfSale: pos,
-                      enterpriseId: enterpriseId,
-                      moduleId: moduleId,
-                    )),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+        );
       },
       loading: () => Container(
         padding: const EdgeInsets.all(25.285),
@@ -136,9 +132,7 @@ class PointOfSaleTable extends ConsumerWidget {
           ),
           borderRadius: BorderRadius.circular(14),
         ),
-        child: const Center(
-          child: CircularProgressIndicator(),
-        ),
+        child: const Center(child: CircularProgressIndicator()),
       ),
       error: (error, stack) => Container(
         padding: const EdgeInsets.all(25.285),

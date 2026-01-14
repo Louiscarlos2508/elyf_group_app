@@ -10,10 +10,7 @@ class SettingsTipsCard extends StatelessWidget {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: const Color(0xFFF0FDF4),
-        border: Border.all(
-          color: const Color(0xFFB9F8CF),
-          width: 1.219,
-        ),
+        border: Border.all(color: const Color(0xFFB9F8CF), width: 1.219),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
@@ -91,4 +88,3 @@ class SettingsTipsCard extends StatelessWidget {
     );
   }
 }
-

@@ -30,7 +30,7 @@ class ImmobilierReportPdfService extends BaseReportPdfService {
   }) async {
     // Utiliser le service de calcul pour extraire la logique métier
     final calculationService = ImmobilierDashboardCalculationService();
-    
+
     // Calculer les dates de période
     final periodDates = calculationService.calculatePeriodDates(
       period: period,
@@ -52,10 +52,7 @@ class ImmobilierReportPdfService extends BaseReportPdfService {
       buildKpiSection(
         title: 'Vue d\'ensemble',
         kpis: [
-          {
-            'label': 'Total Propriétés',
-            'value': '${metrics.totalProperties}',
-          },
+          {'label': 'Total Propriétés', 'value': '${metrics.totalProperties}'},
           {
             'label': 'Propriétés Disponibles',
             'value': '${metrics.availableProperties}',
@@ -107,4 +104,3 @@ class ImmobilierReportPdfService extends BaseReportPdfService {
     );
   }
 }
-

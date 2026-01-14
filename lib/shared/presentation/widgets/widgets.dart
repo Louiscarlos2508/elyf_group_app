@@ -2,9 +2,11 @@
 // This file exports commonly used shared widgets to reduce import depth
 
 // Core widgets
-export 'adaptive_navigation_scaffold.dart' show NavigationSection, AdaptiveNavigationScaffold;
+export 'adaptive_navigation_scaffold.dart'
+    show NavigationSection, AdaptiveNavigationScaffold;
 export 'auth_guard.dart';
-export 'base_module_shell_screen.dart' show BaseModuleShellScreen, BaseModuleShellScreenState;
+export 'base_module_shell_screen.dart'
+    show BaseModuleShellScreen, BaseModuleShellScreenState;
 export 'enterprise_selector_widget.dart';
 export 'form_dialog.dart';
 export 'form_dialog_actions.dart';
@@ -50,6 +52,6 @@ export 'profile/profile_personal_info_card.dart';
 export 'profile/profile_screen.dart';
 export 'profile/profile_security_card.dart';
 export 'profile/profile_security_note_card.dart';
-export 'profile/edit_profile_dialog.dart' show EditProfileDialog, OnProfileUpdateCallback;
+export 'profile/edit_profile_dialog.dart'
+    show EditProfileDialog, OnProfileUpdateCallback;
 export 'profile/change_password_dialog.dart';
-

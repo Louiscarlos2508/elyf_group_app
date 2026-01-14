@@ -11,7 +11,7 @@ import '../../domain/repositories/customer_repository.dart';
 import '../../domain/repositories/sale_repository.dart';
 
 /// Offline-first repository for Customer entities (eau_minerale module).
-/// 
+///
 /// Note: This repository stores basic customer data and calculates CustomerSummary
 /// from sales data. It requires a SaleRepository to compute summaries.
 class CustomerOfflineRepository implements CustomerRepository {
@@ -113,7 +113,7 @@ class CustomerOfflineRepository implements CustomerRepository {
       for (final customer in customers) {
         final customerId = customer['id'] as String;
         final sales = await saleRepository.fetchSales(customerId: customerId);
-        
+
         final totalCredit = sales
             .where((s) => s.isCredit)
             .fold<int>(0, (sum, s) => sum + s.remainingAmount);
@@ -122,15 +122,17 @@ class CustomerOfflineRepository implements CustomerRepository {
             ? sales.reduce((a, b) => a.date.isAfter(b.date) ? a : b).date
             : null;
 
-        summaries.add(CustomerSummary(
-          id: customerId,
-          name: customer['name'] as String,
-          phone: customer['phone'] as String,
-          totalCredit: totalCredit,
-          purchaseCount: purchaseCount,
-          lastPurchaseDate: lastPurchase,
-          cnib: customer['cnib'] as String?,
-        ));
+        summaries.add(
+          CustomerSummary(
+            id: customerId,
+            name: customer['name'] as String,
+            phone: customer['phone'] as String,
+            totalCredit: totalCredit,
+            purchaseCount: purchaseCount,
+            lastPurchaseDate: lastPurchase,
+            cnib: customer['cnib'] as String?,
+          ),
+        );
       }
 
       return summaries;
@@ -202,11 +204,7 @@ class CustomerOfflineRepository implements CustomerRepository {
       await syncManager.queueCreate(
         collectionName: collectionName,
         localId: localId,
-        data: {
-          'name': name,
-          'phoneNumber': phone,
-          'cnib': cnib,
-        },
+        data: {'name': name, 'phoneNumber': phone, 'cnib': cnib},
         enterpriseId: enterpriseId,
       );
 
@@ -239,4 +237,3 @@ class CustomerOfflineRepository implements CustomerRepository {
     }
   }
 }
-

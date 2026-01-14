@@ -10,7 +10,7 @@ class SalesReceiptTemplate {
   /// Génère le contenu formaté de la facture pour l'impression thermique.
   String generate() {
     final buffer = StringBuffer();
-    
+
     // En-tête avec nom d'entreprise agrandi et centré
     buffer.writeln(_centerText('══════════════════════'));
     buffer.writeln();
@@ -25,26 +25,26 @@ class SalesReceiptTemplate {
     buffer.writeln(_centerText('══════════════════════'));
     buffer.writeln();
     buffer.writeln();
-    
+
     // Informations de la vente (centrées)
     buffer.writeln(_centerText('Facture N°: ${sale.id}'));
     buffer.writeln(_centerText('Date: ${_formatDate(sale.date)}'));
     buffer.writeln(_centerText('Heure: ${_formatTime(sale.date)}'));
     buffer.writeln();
-    
+
     if (sale.customerName != null && sale.customerName!.isNotEmpty) {
       buffer.writeln(_centerText('Client: ${sale.customerName}'));
       buffer.writeln();
     }
-    
+
     buffer.writeln(_centerText('─' * 26));
     buffer.writeln();
-    
+
     // Articles (centrés)
     buffer.writeln(_centerText('Article    Qté  Prix  Total'));
     buffer.writeln(_centerText('─' * 26));
     buffer.writeln();
-    
+
     for (final item in sale.items) {
       // Tronquer le nom du produit pour tenir dans la largeur (14 caractères max)
       final name = item.productName.length > 14
@@ -63,34 +63,44 @@ class SalesReceiptTemplate {
       );
       buffer.writeln();
     }
-    
+
     buffer.writeln(_centerText('─' * 26));
     buffer.writeln();
-    
+
     // Totaux (centrés)
-    buffer.writeln(_centerText('Sous-total: ${CurrencyFormatter.formatFCFA(sale.totalAmount)}'));
+    buffer.writeln(
+      _centerText(
+        'Sous-total: ${CurrencyFormatter.formatFCFA(sale.totalAmount)}',
+      ),
+    );
     buffer.writeln();
-    
+
     if (sale.paymentMethod != null) {
       final method = _getPaymentMethodLabel(sale.paymentMethod!);
       buffer.writeln(_centerText('Paiement: $method'));
       buffer.writeln();
     }
-    
-    buffer.writeln(_centerText('Montant payé: ${CurrencyFormatter.formatFCFA(sale.amountPaid)}'));
+
+    buffer.writeln(
+      _centerText(
+        'Montant payé: ${CurrencyFormatter.formatFCFA(sale.amountPaid)}',
+      ),
+    );
     buffer.writeln();
-    
+
     if (sale.change > 0) {
-      buffer.writeln(_centerText('Monnaie: ${CurrencyFormatter.formatFCFA(sale.change)}'));
+      buffer.writeln(
+        _centerText('Monnaie: ${CurrencyFormatter.formatFCFA(sale.change)}'),
+      );
       buffer.writeln();
     }
-    
+
     buffer.writeln();
     buffer.writeln(_centerText('═' * 26));
     buffer.writeln();
     buffer.writeln(_centerText('MERCI DE VOTRE VISITE !'));
     buffer.writeln();
-    
+
     // Espace en bas pour éviter que le texte soit coupé
     buffer.writeln();
     buffer.writeln();
@@ -98,7 +108,7 @@ class SalesReceiptTemplate {
     buffer.writeln();
     buffer.writeln();
     buffer.writeln();
-    
+
     return buffer.toString().trimRight();
   }
 
@@ -117,14 +127,14 @@ class SalesReceiptTemplate {
     const col2Width = 3;
     const col3Width = 6;
     const col4Width = 7;
-    
-    final col1Formatted = col1.length > col1Width 
+
+    final col1Formatted = col1.length > col1Width
         ? col1.substring(0, col1Width)
         : col1.padRight(col1Width);
     final col2Formatted = col2.padLeft(col2Width);
     final col3Formatted = col3.padLeft(col3Width);
     final col4Formatted = col4.padLeft(col4Width);
-    
+
     return '$col1Formatted $col2Formatted $col3Formatted $col4Formatted';
   }
 
@@ -148,4 +158,3 @@ class SalesReceiptTemplate {
     }
   }
 }
-

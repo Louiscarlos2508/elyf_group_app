@@ -44,9 +44,10 @@ abstract class BaseStockReportPdfService {
     );
 
     final output = await getTemporaryDirectory();
-    final fileNameFinal = fileName ??
+    final fileNameFinal =
+        fileName ??
         'rapport_stock_${moduleName.toLowerCase().replaceAll(' ', '_')}_'
-        '${DateFormat('yyyyMMdd').format(reportDate)}.pdf';
+            '${DateFormat('yyyyMMdd').format(reportDate)}.pdf';
     final file = File('${output.path}/$fileNameFinal');
     await file.writeAsBytes(await pdf.save());
 
@@ -62,10 +63,7 @@ abstract class BaseStockReportPdfService {
           children: [
             pw.Text(
               'ELYF GROUPE',
-              style: pw.TextStyle(
-                fontSize: 20,
-                fontWeight: pw.FontWeight.bold,
-              ),
+              style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold),
             ),
             pw.Text(
               moduleName,
@@ -84,10 +82,7 @@ abstract class BaseStockReportPdfService {
   pw.Widget _buildTitle(String title) {
     return pw.Text(
       title,
-      style: pw.TextStyle(
-        fontSize: 24,
-        fontWeight: pw.FontWeight.bold,
-      ),
+      style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold),
     );
   }
 
@@ -163,10 +158,7 @@ abstract class BaseStockReportPdfService {
         children: [
           pw.Text(
             'Résumé',
-            style: pw.TextStyle(
-              fontSize: 16,
-              fontWeight: pw.FontWeight.bold,
-            ),
+            style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold),
           ),
           pw.SizedBox(height: 8),
           pw.Text(
@@ -212,4 +204,3 @@ class StockItemData {
   final String unit;
   final DateTime updatedAt;
 }
-

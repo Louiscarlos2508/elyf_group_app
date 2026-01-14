@@ -25,14 +25,17 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
 
   @override
   Sale fromMap(Map<String, dynamic> map) {
-    final items = (map['items'] as List<dynamic>?)
-            ?.map((item) => SaleItem(
-                  productId: item['productId'] as String,
-                  productName: item['productName'] as String,
-                  quantity: (item['quantity'] as num).toInt(),
-                  unitPrice: (item['unitPrice'] as num).toInt(),
-                  totalPrice: (item['totalPrice'] as num).toInt(),
-                ))
+    final items =
+        (map['items'] as List<dynamic>?)
+            ?.map(
+              (item) => SaleItem(
+                productId: item['productId'] as String,
+                productName: item['productName'] as String,
+                quantity: (item['quantity'] as num).toInt(),
+                unitPrice: (item['unitPrice'] as num).toInt(),
+                totalPrice: (item['totalPrice'] as num).toInt(),
+              ),
+            )
             .toList() ??
         [];
 
@@ -54,7 +57,7 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
           paymentMethod = PaymentMethod.cash;
       }
     }
-    
+
     return Sale(
       id: map['id'] as String? ?? map['localId'] as String,
       date: DateTime.parse(map['date'] as String? ?? map['saleDate'] as String),
@@ -75,13 +78,17 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
       'id': entity.id,
       'date': entity.date.toIso8601String(),
       'saleDate': entity.date.toIso8601String(),
-      'items': entity.items.map((item) => {
-            'productId': item.productId,
-            'productName': item.productName,
-            'quantity': item.quantity,
-            'unitPrice': item.unitPrice,
-            'totalPrice': item.totalPrice,
-          }).toList(),
+      'items': entity.items
+          .map(
+            (item) => {
+              'productId': item.productId,
+              'productName': item.productName,
+              'quantity': item.quantity,
+              'unitPrice': item.unitPrice,
+              'totalPrice': item.totalPrice,
+            },
+          )
+          .toList(),
       'totalAmount': entity.totalAmount.toDouble(),
       'paidAmount': entity.amountPaid.toDouble(),
       'amountPaid': entity.amountPaid.toDouble(),
@@ -255,4 +262,3 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
     }
   }
 }
-

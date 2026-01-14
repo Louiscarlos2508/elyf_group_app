@@ -2,10 +2,7 @@ import 'package:elyf_groupe_app/core/permissions/services/permission_service.dar
 
 /// Adapter to use centralized permission system for gaz module.
 class GazPermissionAdapter {
-  GazPermissionAdapter({
-    required this.permissionService,
-    required this.userId,
-  });
+  GazPermissionAdapter({required this.permissionService, required this.userId});
 
   final PermissionService permissionService;
   final String userId;
@@ -20,17 +17,28 @@ class GazPermissionAdapter {
 
   /// Check if user has a specific permission
   Future<bool> hasPermission(String permissionId) async {
-    return await permissionService.hasPermission(userId, moduleId, permissionId);
+    return await permissionService.hasPermission(
+      userId,
+      moduleId,
+      permissionId,
+    );
   }
 
   /// Check if user has any of the specified permissions
   Future<bool> hasAnyPermission(Set<String> permissionIds) async {
-    return await permissionService.hasAnyPermission(userId, moduleId, permissionIds);
+    return await permissionService.hasAnyPermission(
+      userId,
+      moduleId,
+      permissionIds,
+    );
   }
 
   /// Check if user has all specified permissions
   Future<bool> hasAllPermissions(Set<String> permissionIds) async {
-    return await permissionService.hasAllPermissions(userId, moduleId, permissionIds);
+    return await permissionService.hasAllPermissions(
+      userId,
+      moduleId,
+      permissionIds,
+    );
   }
 }
-

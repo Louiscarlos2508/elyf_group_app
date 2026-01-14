@@ -27,17 +27,21 @@ class AgentsNameFilter extends StatelessWidget {
           value: value,
           hint: const Text(
             'Nom',
-            style: TextStyle(
-              fontSize: 14,
-              color: Color(0xFF0A0A0A),
-            ),
+            style: TextStyle(fontSize: 14, color: Color(0xFF0A0A0A)),
           ),
           isExpanded: true,
-          icon: const Icon(Icons.keyboard_arrow_down, size: 16, color: Color(0xFF0A0A0A)),
+          icon: const Icon(
+            Icons.keyboard_arrow_down,
+            size: 16,
+            color: Color(0xFF0A0A0A),
+          ),
           items: const [
             DropdownMenuItem(
               value: null,
-              child: Text('Nom', style: TextStyle(fontSize: 14, color: Color(0xFF0A0A0A))),
+              child: Text(
+                'Nom',
+                style: TextStyle(fontSize: 14, color: Color(0xFF0A0A0A)),
+              ),
             ),
           ],
           onChanged: onChanged,
@@ -46,4 +50,3 @@ class AgentsNameFilter extends StatelessWidget {
     );
   }
 }
-

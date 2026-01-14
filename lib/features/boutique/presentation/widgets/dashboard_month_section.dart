@@ -58,8 +58,9 @@ class DashboardMonthSection extends StatelessWidget {
             subtitle: monthProfit >= 0 ? 'Profit' : 'Déficit',
             icon: Icons.account_balance_wallet,
             iconColor: monthProfit >= 0 ? Colors.green : Colors.red,
-            valueColor:
-                monthProfit >= 0 ? Colors.green.shade700 : Colors.red.shade700,
+            valueColor: monthProfit >= 0
+                ? Colors.green.shade700
+                : Colors.red.shade700,
             backgroundColor: monthProfit >= 0 ? Colors.green : Colors.red,
           ),
         ];

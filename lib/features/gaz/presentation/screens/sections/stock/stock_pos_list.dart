@@ -40,4 +40,3 @@ class StockPosList extends StatelessWidget {
     );
   }
 }
-

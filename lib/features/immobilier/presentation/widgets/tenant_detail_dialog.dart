@@ -77,7 +77,9 @@ class TenantDetailDialog extends ConsumerWidget {
             radius: 32,
             backgroundColor: theme.colorScheme.primaryContainer,
             child: Text(
-              tenant.fullName.isNotEmpty ? tenant.fullName[0].toUpperCase() : '?',
+              tenant.fullName.isNotEmpty
+                  ? tenant.fullName[0].toUpperCase()
+                  : '?',
               style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
@@ -140,16 +142,8 @@ class _InfoTab extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _InfoTile(
-            icon: Icons.phone,
-            label: 'Téléphone',
-            value: tenant.phone,
-          ),
-          _InfoTile(
-            icon: Icons.email,
-            label: 'Email',
-            value: tenant.email,
-          ),
+          _InfoTile(icon: Icons.phone, label: 'Téléphone', value: tenant.phone),
+          _InfoTile(icon: Icons.email, label: 'Email', value: tenant.email),
           if (tenant.address != null)
             _InfoTile(
               icon: Icons.location_on,
@@ -225,10 +219,7 @@ class _InfoTile extends StatelessWidget {
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
-                Text(
-                  value,
-                  style: theme.textTheme.bodyMedium,
-                ),
+                Text(value, style: theme.textTheme.bodyMedium),
               ],
             ),
           ),
@@ -239,10 +230,7 @@ class _InfoTile extends StatelessWidget {
 }
 
 class _ContractsTab extends ConsumerWidget {
-  const _ContractsTab({
-    required this.tenantId,
-    this.onContractTap,
-  });
+  const _ContractsTab({required this.tenantId, this.onContractTap});
 
   final String tenantId;
   final void Function(Contract)? onContractTap;
@@ -283,7 +271,9 @@ class _ContractsTab extends ConsumerWidget {
             final contract = contracts[index];
             return _ContractMiniCard(
               contract: contract,
-              onTap: onContractTap != null ? () => onContractTap!(contract) : null,
+              onTap: onContractTap != null
+                  ? () => onContractTap!(contract)
+                  : null,
             );
           },
         );
@@ -295,10 +285,7 @@ class _ContractsTab extends ConsumerWidget {
 }
 
 class _ContractMiniCard extends StatelessWidget {
-  const _ContractMiniCard({
-    required this.contract,
-    this.onTap,
-  });
+  const _ContractMiniCard({required this.contract, this.onTap});
 
   final Contract contract;
   final VoidCallback? onTap;
@@ -321,7 +308,8 @@ class _ContractMiniCard extends StatelessWidget {
           ),
         ),
         title: Text(
-          contract.property?.address ?? 'Propriété #${contract.propertyId.length > 8 ? contract.propertyId.substring(0, 8) : contract.propertyId}',
+          contract.property?.address ??
+              'Propriété #${contract.propertyId.length > 8 ? contract.propertyId.substring(0, 8) : contract.propertyId}',
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
@@ -351,10 +339,7 @@ class _ContractMiniCard extends StatelessWidget {
 }
 
 class _PaymentsTab extends ConsumerWidget {
-  const _PaymentsTab({
-    required this.tenantId,
-    this.onPaymentTap,
-  });
+  const _PaymentsTab({required this.tenantId, this.onPaymentTap});
 
   final String tenantId;
   final void Function(Payment)? onPaymentTap;
@@ -407,10 +392,7 @@ class _PaymentsTab extends ConsumerWidget {
 }
 
 class _PaymentMiniCard extends StatelessWidget {
-  const _PaymentMiniCard({
-    required this.payment,
-    this.onTap,
-  });
+  const _PaymentMiniCard({required this.payment, this.onTap});
 
   final Payment payment;
   final VoidCallback? onTap;
@@ -460,7 +442,9 @@ class _PaymentMiniCard extends StatelessWidget {
         ),
         title: Text(
           ContractCardHelpers.formatCurrency(payment.amount),
-          style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+          style: theme.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
         ),
         subtitle: Text(ContractCardHelpers.formatDate(payment.paymentDate)),
         trailing: Chip(

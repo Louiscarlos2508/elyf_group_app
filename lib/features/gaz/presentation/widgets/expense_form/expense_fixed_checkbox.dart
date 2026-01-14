@@ -24,4 +24,3 @@ class ExpenseFixedCheckbox extends StatelessWidget {
     );
   }
 }
-

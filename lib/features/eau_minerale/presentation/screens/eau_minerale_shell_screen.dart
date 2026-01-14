@@ -26,7 +26,8 @@ class _EauMineraleShellScreenState
   /// Convertit EauMineraleSectionConfig en NavigationSection
   /// et marque les sections principales
   List<NavigationSection> _convertToNavigationSections(
-      List<EauMineraleSectionConfig> configs) {
+    List<EauMineraleSectionConfig> configs,
+  ) {
     // Sections principales (les plus utilisées)
     final primarySectionIds = {
       EauMineraleSection.activity,
@@ -70,9 +71,7 @@ class _EauMineraleShellScreenState
         // Show message if no sections accessible
         if (accessibleSections.isEmpty) {
           return Scaffold(
-            appBar: AppBar(
-              title: const Text('Eau Minérale • Module'),
-            ),
+            appBar: AppBar(title: const Text('Eau Minérale • Module')),
             body: const Center(
               child: Padding(
                 padding: EdgeInsets.all(24),
@@ -102,15 +101,14 @@ class _EauMineraleShellScreenState
         }
 
         // Convertir en NavigationSection
-        final navigationSections =
-            _convertToNavigationSections(accessibleSections);
+        final navigationSections = _convertToNavigationSections(
+          accessibleSections,
+        );
 
         // Show navigation only if 2+ sections
         if (navigationSections.length < 2) {
           return Scaffold(
-            appBar: AppBar(
-              title: const Text('Eau Minérale • Module'),
-            ),
+            appBar: AppBar(title: const Text('Eau Minérale • Module')),
             body: IndexedStack(
               index: currentIndex,
               children: navigationSections.map((s) => s.builder()).toList(),
@@ -138,9 +136,7 @@ class _EauMineraleShellScreenState
         message: 'Chargement des modules...',
       ),
       error: (error, stack) => Scaffold(
-        appBar: AppBar(
-          title: const Text('Eau Minérale • Module'),
-        ),
+        appBar: AppBar(title: const Text('Eau Minérale • Module')),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
@@ -151,9 +147,9 @@ class _EauMineraleShellScreenState
                 const SizedBox(height: 16),
                 Text(
                   'Erreur de chargement',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
                 Text(

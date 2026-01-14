@@ -42,7 +42,8 @@ class LiquidityCheckpointService {
     final normalizedDate = DateTime(date.year, date.month, date.day);
 
     return LiquidityCheckpoint(
-      id: existingId ??
+      id:
+          existingId ??
           existingCheckpoint?.id ??
           'checkpoint-${DateTime.now().millisecondsSinceEpoch}',
       enterpriseId: enterpriseId,
@@ -75,4 +76,3 @@ class LiquidityCheckpointService {
     );
   }
 }
-

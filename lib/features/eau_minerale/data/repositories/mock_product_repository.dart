@@ -67,4 +67,3 @@ class MockProductRepository implements ProductRepository {
     _products.remove(id);
   }
 }
-

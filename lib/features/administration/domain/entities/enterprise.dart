@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart' show Timestamp;
+
 /// Représente une entreprise du groupe ELYF
 class Enterprise {
   const Enterprise({
@@ -97,13 +99,21 @@ class Enterprise {
       phone: map['phone'] as String?,
       email: map['email'] as String?,
       isActive: map['isActive'] as bool? ?? true,
-      createdAt: map['createdAt'] != null
-          ? DateTime.parse(map['createdAt'] as String)
-          : null,
-      updatedAt: map['updatedAt'] != null
-          ? DateTime.parse(map['updatedAt'] as String)
-          : null,
+      createdAt: _parseTimestamp(map['createdAt']),
+      updatedAt: _parseTimestamp(map['updatedAt']),
     );
+  }
+
+  /// Convertit un timestamp Firestore (Timestamp ou String) en DateTime
+  static DateTime? _parseTimestamp(dynamic timestamp) {
+    if (timestamp == null) return null;
+    if (timestamp is Timestamp) {
+      return timestamp.toDate();
+    }
+    if (timestamp is String) {
+      return DateTime.tryParse(timestamp);
+    }
+    return null;
   }
 }
 
@@ -120,4 +130,3 @@ enum EnterpriseType {
   final String id;
   final String label;
 }
-

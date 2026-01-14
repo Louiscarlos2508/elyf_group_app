@@ -4,10 +4,7 @@ import '../../domain/entities/stock_movement.dart';
 
 /// Table widget for displaying stock movement history.
 class StockMovementTable extends StatelessWidget {
-  const StockMovementTable({
-    super.key,
-    required this.movements,
-  });
+  const StockMovementTable({super.key, required this.movements});
 
   final List<StockMovement> movements;
 
@@ -22,7 +19,7 @@ class StockMovementTable extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     if (movements.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(48),
@@ -46,7 +43,9 @@ class StockMovementTable extends StatelessWidget {
             Text(
               'Les mouvements apparaîtront ici après les opérations de stock',
               style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                color: theme.colorScheme.onSurfaceVariant.withValues(
+                  alpha: 0.7,
+                ),
               ),
               textAlign: TextAlign.center,
             ),
@@ -54,7 +53,7 @@ class StockMovementTable extends StatelessWidget {
         ),
       );
     }
-    
+
     // Calculer les statistiques
     final totalEntries = movements
         .where((m) => m.type == StockMovementType.entry)
@@ -67,12 +66,18 @@ class StockMovementTable extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final isWide = constraints.maxWidth > 900;
-        
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Résumé des mouvements
-            _buildSummaryCard(context, totalEntries, totalExits, netMovement, movements.length),
+            _buildSummaryCard(
+              context,
+              totalEntries,
+              totalExits,
+              netMovement,
+              movements.length,
+            ),
             const SizedBox(height: 16),
             // Tableau ou liste des mouvements
             if (isWide)
@@ -93,7 +98,7 @@ class StockMovementTable extends StatelessWidget {
     int totalMovements,
   ) {
     final theme = Theme.of(context);
-    
+
     return Card(
       color: theme.colorScheme.surfaceContainerHighest,
       child: Padding(
@@ -165,7 +170,7 @@ class StockMovementTable extends StatelessWidget {
     IconData icon,
   ) {
     final theme = Theme.of(context);
-    
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -199,9 +204,12 @@ class StockMovementTable extends StatelessWidget {
     );
   }
 
-  Widget _buildDesktopTable(BuildContext context, List<StockMovement> movements) {
+  Widget _buildDesktopTable(
+    BuildContext context,
+    List<StockMovement> movements,
+  ) {
     final theme = Theme.of(context);
-    
+
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
@@ -245,8 +253,10 @@ class StockMovementTable extends StatelessWidget {
             String? machineName;
             if (movement.notes != null) {
               // Les notes peuvent contenir "Installation en production - {machineName}"
-              final match = RegExp(r'Installation.*- (.+)|machine[:\s]+(.+)', caseSensitive: false)
-                  .firstMatch(movement.notes!);
+              final match = RegExp(
+                r'Installation.*- (.+)|machine[:\s]+(.+)',
+                caseSensitive: false,
+              ).firstMatch(movement.notes!);
               if (match != null) {
                 machineName = match.group(1) ?? match.group(2);
               }
@@ -264,10 +274,7 @@ class StockMovementTable extends StatelessWidget {
                   context,
                   '${movement.quantity.toStringAsFixed(0)} ${movement.unit}',
                 ),
-                _buildDataCellText(
-                  context,
-                  machineName ?? '-',
-                ),
+                _buildDataCellText(context, machineName ?? '-'),
               ],
             );
           }),
@@ -278,7 +285,7 @@ class StockMovementTable extends StatelessWidget {
 
   Widget _buildMobileList(BuildContext context, List<StockMovement> movements) {
     final theme = Theme.of(context);
-    
+
     return ListView.separated(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -318,8 +325,8 @@ class StockMovementTable extends StatelessWidget {
                 Builder(
                   builder: (context) {
                     final prodId = movement.productionId!;
-                    final shortId = prodId.length > 8 
-                        ? '${prodId.substring(0, 8)}...' 
+                    final shortId = prodId.length > 8
+                        ? '${prodId.substring(0, 8)}...'
                         : prodId;
                     return Text(
                       'Production: $shortId',
@@ -346,8 +353,10 @@ class StockMovementTable extends StatelessWidget {
                 Builder(
                   builder: (context) {
                     // Extraire le nom de la machine depuis les notes
-                    final match = RegExp(r'Installation.*- (.+)|machine[:\s]+(.+)', caseSensitive: false)
-                        .firstMatch(movement.notes!);
+                    final match = RegExp(
+                      r'Installation.*- (.+)|machine[:\s]+(.+)',
+                      caseSensitive: false,
+                    ).firstMatch(movement.notes!);
                     if (match != null) {
                       final machineName = match.group(1) ?? match.group(2);
                       return Text(
@@ -387,10 +396,7 @@ class StockMovementTable extends StatelessWidget {
     final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Text(
-        text,
-        style: theme.textTheme.bodyMedium,
-      ),
+      child: Text(text, style: theme.textTheme.bodyMedium),
     );
   }
 
@@ -404,7 +410,7 @@ class StockMovementTable extends StatelessWidget {
   Widget _buildTypeChip(BuildContext context, StockMovementType type) {
     final theme = Theme.of(context);
     final isEntry = type == StockMovementType.entry;
-    
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
@@ -421,4 +427,3 @@ class StockMovementTable extends StatelessWidget {
     );
   }
 }
-

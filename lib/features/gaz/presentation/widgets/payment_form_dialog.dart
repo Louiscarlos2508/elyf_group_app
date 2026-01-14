@@ -21,8 +21,7 @@ class PaymentFormDialog extends ConsumerStatefulWidget {
   final Collection collection;
 
   @override
-  ConsumerState<PaymentFormDialog> createState() =>
-      _PaymentFormDialogState();
+  ConsumerState<PaymentFormDialog> createState() => _PaymentFormDialogState();
 }
 
 class _PaymentFormDialogState extends ConsumerState<PaymentFormDialog> {
@@ -119,9 +118,7 @@ class _PaymentFormDialogState extends ConsumerState<PaymentFormDialog> {
     final amountToPayNow = newAmountDue;
 
     return Dialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       child: Container(
         constraints: const BoxConstraints(maxWidth: 600, maxHeight: 800),
         padding: const EdgeInsets.all(24),

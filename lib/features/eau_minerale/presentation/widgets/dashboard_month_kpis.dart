@@ -25,14 +25,8 @@ class DashboardMonthKpis extends ConsumerWidget {
       data: (sales) => clientsState.when(
         data: (clients) => financesState.when(
           data: (finances) => productionState.when(
-            data: (sessions) => _buildKpis(
-              context,
-              sales,
-              clients,
-              finances,
-              sessions,
-              ref,
-            ),
+            data: (sessions) =>
+                _buildKpis(context, sales, clients, finances, sessions, ref),
             loading: () => _buildLoadingState(),
             error: (_, __) => const SizedBox.shrink(),
           ),
@@ -68,8 +62,14 @@ class DashboardMonthKpis extends ConsumerWidget {
     final monthStart = calculationService.getMonthStart(now);
 
     // Ventes du mois
-    final monthRevenue = calculationService.calculateMonthlyRevenue(sales.sales, monthStart);
-    final monthCollections = calculationService.calculateMonthlyCollections(sales.sales, monthStart);
+    final monthRevenue = calculationService.calculateMonthlyRevenue(
+      sales.sales,
+      monthStart,
+    );
+    final monthCollections = calculationService.calculateMonthlyCollections(
+      sales.sales,
+      monthStart,
+    );
 
     // Production du mois
     final monthSessions = sessions
@@ -81,14 +81,17 @@ class DashboardMonthKpis extends ConsumerWidget {
     );
 
     // Dépenses du mois
-    final monthExpenses = calculationService.calculateMonthlyExpensesFromRecords(
-      finances.expenses,
-      monthStart,
-    );
+    final monthExpenses = calculationService
+        .calculateMonthlyExpensesFromRecords(finances.expenses, monthStart);
 
     // Résultat net
-    final monthResult = calculationService.calculateMonthlyResult(monthCollections, monthExpenses);
-    final monthSales = sales.sales.where((s) => s.date.isAfter(monthStart)).toList();
+    final monthResult = calculationService.calculateMonthlyResult(
+      monthCollections,
+      monthExpenses,
+    );
+    final monthSales = sales.sales
+        .where((s) => s.date.isAfter(monthStart))
+        .toList();
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -126,8 +129,9 @@ class DashboardMonthKpis extends ConsumerWidget {
             subtitle: monthResult >= 0 ? 'Bénéfice' : 'Déficit',
             icon: Icons.account_balance_wallet,
             iconColor: monthResult >= 0 ? Colors.green : Colors.red,
-            valueColor:
-                monthResult >= 0 ? Colors.green.shade700 : Colors.red.shade700,
+            valueColor: monthResult >= 0
+                ? Colors.green.shade700
+                : Colors.red.shade700,
             backgroundColor: monthResult >= 0 ? Colors.green : Colors.red,
           ),
         ];

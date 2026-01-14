@@ -13,10 +13,7 @@ import 'time_picker_field.dart';
 
 /// Formulaire pour créer/éditer une session de production.
 class ProductionSessionForm extends ConsumerStatefulWidget {
-  const ProductionSessionForm({
-    super.key,
-    this.session,
-  });
+  const ProductionSessionForm({super.key, this.session});
 
   final ProductionSession? session;
 
@@ -25,8 +22,7 @@ class ProductionSessionForm extends ConsumerStatefulWidget {
       ProductionSessionFormState();
 }
 
-class ProductionSessionFormState
-    extends ConsumerState<ProductionSessionForm> {
+class ProductionSessionFormState extends ConsumerState<ProductionSessionForm> {
   final _formKey = GlobalKey<FormState>();
   final _consommationController = TextEditingController();
   final _quantiteController = TextEditingController();
@@ -71,12 +67,13 @@ class ProductionSessionFormState
 
   Future<void> submit() async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     // Validation : machines et bobines
-    final machinesBobinesError = ProductionSessionValidationService.validateMachinesAndBobines(
-      machines: _machinesSelectionnees,
-      bobines: _bobinesUtilisees,
-    );
+    final machinesBobinesError =
+        ProductionSessionValidationService.validateMachinesAndBobines(
+          machines: _machinesSelectionnees,
+          bobines: _bobinesUtilisees,
+        );
     if (machinesBobinesError != null) {
       NotificationService.showWarning(context, machinesBobinesError);
       return;
@@ -84,8 +81,7 @@ class ProductionSessionFormState
 
     setState(() => _isLoading = true);
     try {
-      final config = await ref
-          .read(productionPeriodConfigProvider.future);
+      final config = await ref.read(productionPeriodConfigProvider.future);
       final session = ProductionSessionBuilder.buildFromForm(
         sessionId: widget.session?.id,
         selectedDate: _selectedDate,
@@ -116,9 +112,12 @@ class ProductionSessionFormState
       if (!mounted) return;
       Navigator.of(context).pop();
       ref.invalidate(productionSessionsStateProvider);
-      NotificationService.showInfo(context, widget.session == null
-              ? 'Session créée avec succès'
-              : 'Session mise à jour');
+      NotificationService.showInfo(
+        context,
+        widget.session == null
+            ? 'Session créée avec succès'
+            : 'Session mise à jour',
+      );
     } catch (e) {
       if (!mounted) return;
       NotificationService.showError(context, e.toString());
@@ -282,4 +281,3 @@ class ProductionSessionFormState
     return DateFormatter.formatDate(date);
   }
 }
-

@@ -21,7 +21,8 @@ class Employee {
   final int monthlySalary; // Salaire mensuel fixe en CFA
   final String? position;
   final DateTime? hireDate;
-  final List<SalaryPayment> paiementsMensuels; // Historique des paiements mensuels
+  final List<SalaryPayment>
+  paiementsMensuels; // Historique des paiements mensuels
 
   /// Vérifie si l'employé est permanent (fixe).
   bool get estPermanent => type == EmployeeType.fixed;
@@ -66,4 +67,3 @@ enum EmployeeType {
   @Deprecated('Utiliser DailyWorker pour les ouvriers journaliers')
   production,
 }
-

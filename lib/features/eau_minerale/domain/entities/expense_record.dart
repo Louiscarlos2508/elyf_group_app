@@ -23,7 +23,8 @@ class ExpenseRecord {
   final DateTime? updatedAt;
 
   /// Vérifie si la dépense est liée à une production
-  bool get estLieeAProduction => productionId != null && productionId!.isNotEmpty;
+  bool get estLieeAProduction =>
+      productionId != null && productionId!.isNotEmpty;
 
   ExpenseRecord copyWith({
     String? id,
@@ -63,10 +64,13 @@ class ExpenseRecord {
 enum ExpenseCategory {
   /// Carburant (essence, diesel, etc.)
   carburant,
+
   /// Réparations et maintenance
   reparations,
+
   /// Achats divers
   achatsDivers,
+
   /// Autres dépenses
   autres,
 }

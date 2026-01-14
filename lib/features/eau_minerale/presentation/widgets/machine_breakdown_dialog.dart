@@ -7,6 +7,7 @@ import '../../domain/entities/machine.dart';
 import '../../domain/entities/production_event.dart';
 import '../../domain/entities/production_session.dart';
 import 'package:elyf_groupe_app/shared.dart';
+
 /// Dialog pour signaler une panne de machine et retirer la bobine.
 class MachineBreakdownDialog extends ConsumerStatefulWidget {
   const MachineBreakdownDialog({
@@ -35,7 +36,7 @@ class _MachineBreakdownDialogState
   DateTime _selectedDate = DateTime.now();
   TimeOfDay _selectedTime = TimeOfDay.now();
   late bool _retirerBobine;
-  
+
   bool get _hasBobine => widget.bobine != null;
   bool get _hasSession => widget.session != null;
 
@@ -66,7 +67,9 @@ class _MachineBreakdownDialogState
     // Créer l'événement de panne
     final event = ProductionEvent(
       id: 'event-${DateTime.now().millisecondsSinceEpoch}',
-      productionId: widget.session?.id ?? 'standalone-${DateTime.now().millisecondsSinceEpoch}',
+      productionId:
+          widget.session?.id ??
+          'standalone-${DateTime.now().millisecondsSinceEpoch}',
       type: ProductionEventType.panne,
       date: _selectedDate,
       heure: dateHeure,
@@ -80,10 +83,7 @@ class _MachineBreakdownDialogState
       final bobinesMisesAJour = widget.session!.bobinesUtilisees.map((b) {
         if (b.bobineType == widget.bobine!.bobineType &&
             b.machineId == widget.bobine!.machineId) {
-          return b.copyWith(
-            estFinie: true,
-            dateUtilisation: dateHeure,
-          );
+          return b.copyWith(estFinie: true, dateUtilisation: dateHeure);
         }
         return b;
       }).toList();
@@ -120,10 +120,13 @@ class _MachineBreakdownDialogState
     if (!mounted) return;
     widget.onPanneSignaled(event);
     Navigator.of(context).pop();
-    
-    NotificationService.showInfo(context, _retirerBobine && _hasBobine
-            ? 'Panne signalée et bobine retirée'
-            : 'Panne signalée');
+
+    NotificationService.showInfo(
+      context,
+      _retirerBobine && _hasBobine
+          ? 'Panne signalée et bobine retirée'
+          : 'Panne signalée',
+    );
   }
 
   @override
@@ -142,11 +145,7 @@ class _MachineBreakdownDialogState
             children: [
               Row(
                 children: [
-                  Icon(
-                    Icons.build,
-                    color: theme.colorScheme.error,
-                    size: 32,
-                  ),
+                  Icon(Icons.build, color: theme.colorScheme.error, size: 32),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
@@ -274,7 +273,6 @@ class _MachineBreakdownDialogState
       setState(() => _selectedTime = picked);
     }
   }
-
 
   String _formatTime(TimeOfDay time) {
     return '${time.hour.toString().padLeft(2, '0')}:'

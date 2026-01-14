@@ -7,7 +7,8 @@ import '../../../../../shared/utils/notification_service.dart';
 import '../../screens/sections/dialogs/create_enterprise_dialog.dart';
 import '../../screens/sections/dialogs/edit_enterprise_dialog.dart';
 import '../../../../../../core/auth/providers.dart' show currentUserIdProvider;
-import '../../screens/sections/admin_audit_trail_section.dart' show recentAuditLogsProvider;
+import '../../screens/sections/admin_audit_trail_section.dart'
+    show recentAuditLogsProvider;
 
 /// Utility class for enterprise-related actions.
 class EnterpriseActions {
@@ -23,10 +24,9 @@ class EnterpriseActions {
     if (result != null) {
       try {
         final currentUserId = ref.read(currentUserIdProvider);
-        await ref.read(enterpriseControllerProvider).createEnterprise(
-          result,
-          currentUserId: currentUserId,
-        );
+        await ref
+            .read(enterpriseControllerProvider)
+            .createEnterprise(result, currentUserId: currentUserId);
         ref.invalidate(enterprisesProvider);
         // Invalider aussi l'audit trail pour afficher le nouveau log
         ref.invalidate(recentAuditLogsProvider);
@@ -55,10 +55,9 @@ class EnterpriseActions {
     if (result != null) {
       try {
         final currentUserId = ref.read(currentUserIdProvider);
-        await ref.read(enterpriseControllerProvider).updateEnterprise(
-          result,
-          currentUserId: currentUserId,
-        );
+        await ref
+            .read(enterpriseControllerProvider)
+            .updateEnterprise(result, currentUserId: currentUserId);
         ref.invalidate(enterprisesProvider);
         ref.invalidate(recentAuditLogsProvider);
         if (context.mounted) {
@@ -139,8 +138,8 @@ class EnterpriseActions {
               currentUserId: currentUserId,
               enterpriseData: enterprise,
             );
-        ref.invalidate(enterprisesProvider);
-        ref.invalidate(recentAuditLogsProvider);
+        ref.refresh(enterprisesProvider);
+        ref.refresh(recentAuditLogsProvider);
         if (context.mounted) {
           NotificationService.showSuccess(context, 'Entreprise supprimée');
         }

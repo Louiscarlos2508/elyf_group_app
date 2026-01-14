@@ -52,14 +52,13 @@ class _TransactionsHistoryScreenState
         : '';
     final endDateStr = _selectedDate != null
         ? DateTime(
-                _selectedDate!.year,
-                _selectedDate!.month,
-                _selectedDate!.day,
-                23,
-                59,
-                59)
-            .millisecondsSinceEpoch
-            .toString()
+            _selectedDate!.year,
+            _selectedDate!.month,
+            _selectedDate!.day,
+            23,
+            59,
+            59,
+          ).millisecondsSinceEpoch.toString()
         : '';
     return TransactionsHistoryHelpers.buildProviderKey(
       searchQuery: searchQuery,

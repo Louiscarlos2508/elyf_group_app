@@ -18,9 +18,7 @@ class DailyExpenseSummaryCardV2 extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFFFFF0F0),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Colors.red.withValues(alpha: 0.2),
-        ),
+        border: Border.all(color: Colors.red.withValues(alpha: 0.2)),
       ),
       padding: const EdgeInsets.all(20),
       child: Row(
@@ -31,11 +29,7 @@ class DailyExpenseSummaryCardV2 extends StatelessWidget {
               color: Colors.red.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Icon(
-              Icons.trending_down,
-              size: 24,
-              color: Colors.red,
-            ),
+            child: const Icon(Icons.trending_down, size: 24, color: Colors.red),
           ),
           const SizedBox(width: 16),
           Expanded(

@@ -11,4 +11,3 @@ enum EauMineraleSection {
   profile,
   settings,
 }
-

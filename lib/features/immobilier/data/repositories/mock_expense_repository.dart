@@ -48,12 +48,8 @@ class MockPropertyExpenseRepository implements PropertyExpenseRepository {
   }
 
   @override
-  Future<List<PropertyExpense>> getExpensesByProperty(
-    String propertyId,
-  ) async {
-    return _expenses.values
-        .where((e) => e.propertyId == propertyId)
-        .toList()
+  Future<List<PropertyExpense>> getExpensesByProperty(String propertyId) async {
+    return _expenses.values.where((e) => e.propertyId == propertyId).toList()
       ..sort((a, b) => b.expenseDate.compareTo(a.expenseDate));
   }
 
@@ -61,9 +57,7 @@ class MockPropertyExpenseRepository implements PropertyExpenseRepository {
   Future<List<PropertyExpense>> getExpensesByCategory(
     ExpenseCategory category,
   ) async {
-    return _expenses.values
-        .where((e) => e.category == category)
-        .toList()
+    return _expenses.values.where((e) => e.category == category).toList()
       ..sort((a, b) => b.expenseDate.compareTo(a.expenseDate));
   }
 
@@ -75,8 +69,7 @@ class MockPropertyExpenseRepository implements PropertyExpenseRepository {
     return _expenses.values.where((e) {
       return e.expenseDate.isAfter(start.subtract(const Duration(days: 1))) &&
           e.expenseDate.isBefore(end.add(const Duration(days: 1)));
-    }).toList()
-      ..sort((a, b) => b.expenseDate.compareTo(a.expenseDate));
+    }).toList()..sort((a, b) => b.expenseDate.compareTo(a.expenseDate));
   }
 
   @override
@@ -125,4 +118,3 @@ class MockPropertyExpenseRepository implements PropertyExpenseRepository {
     _expenses.remove(id);
   }
 }
-

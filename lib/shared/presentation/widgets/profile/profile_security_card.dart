@@ -2,10 +2,7 @@ import 'package:flutter/material.dart';
 
 /// Security card for profile screen.
 class ProfileSecurityCard extends StatelessWidget {
-  const ProfileSecurityCard({
-    super.key,
-    required this.onChangePassword,
-  });
+  const ProfileSecurityCard({super.key, required this.onChangePassword});
 
   final VoidCallback onChangePassword;
 
@@ -26,11 +23,7 @@ class ProfileSecurityCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(
-                Icons.lock_outline,
-                color: Colors.blue.shade300,
-                size: 24,
-              ),
+              Icon(Icons.lock_outline, color: Colors.blue.shade300, size: 24),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -67,4 +60,3 @@ class ProfileSecurityCard extends StatelessWidget {
     );
   }
 }
-

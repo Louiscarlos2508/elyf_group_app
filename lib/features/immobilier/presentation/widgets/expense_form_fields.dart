@@ -93,9 +93,7 @@ class ExpenseFormFields {
     );
   }
 
-  static Widget descriptionField({
-    required TextEditingController controller,
-  }) {
+  static Widget descriptionField({required TextEditingController controller}) {
     return TextFormField(
       controller: controller,
       decoration: const InputDecoration(
@@ -114,9 +112,7 @@ class ExpenseFormFields {
     );
   }
 
-  static Widget receiptField({
-    required TextEditingController controller,
-  }) {
+  static Widget receiptField({required TextEditingController controller}) {
     return TextFormField(
       controller: controller,
       decoration: const InputDecoration(
@@ -165,4 +161,3 @@ class ExpenseFormFields {
     }
   }
 }
-

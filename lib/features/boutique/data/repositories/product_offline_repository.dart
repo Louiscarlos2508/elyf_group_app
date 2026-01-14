@@ -34,7 +34,10 @@ class ProductOfflineRepository extends OfflineRepository<Product>
     return Product(
       id: map['id'] as String? ?? map['localId'] as String,
       name: map['name'] as String,
-      price: (map['price'] as num?)?.toInt() ?? (map['sellingPrice'] as num?)?.toInt() ?? 0,
+      price:
+          (map['price'] as num?)?.toInt() ??
+          (map['sellingPrice'] as num?)?.toInt() ??
+          0,
       stock: (map['stock'] as num?)?.toInt() ?? 0,
       description: map['description'] as String?,
       category: map['category'] as String?,
@@ -71,8 +74,11 @@ class ProductOfflineRepository extends OfflineRepository<Product>
     if (entity.id.startsWith('local_')) {
       return entity.id;
     }
-    // Otherwise, generate a new local ID
-    return LocalIdGenerator.generate();
+    // Si l'ID ne commence pas par 'local_', c'est soit un remoteId, soit un ID généré
+    // On utilise l'ID tel quel comme localId pour éviter les duplications
+    // Le système upsert se chargera de mettre à jour l'enregistrement existant
+    // si il existe déjà (par remoteId ou localId)
+    return entity.id;
   }
 
   @override
@@ -316,8 +322,11 @@ class ProductOfflineRepository extends OfflineRepository<Product>
           .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
           .where((product) => product.isDeleted)
           .toList();
-      products.sort((a, b) => (b.deletedAt ?? DateTime(1970))
-          .compareTo(a.deletedAt ?? DateTime(1970)));
+      products.sort(
+        (a, b) => (b.deletedAt ?? DateTime(1970)).compareTo(
+          a.deletedAt ?? DateTime(1970),
+        ),
+      );
       return products;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
@@ -331,4 +340,3 @@ class ProductOfflineRepository extends OfflineRepository<Product>
     }
   }
 }
-

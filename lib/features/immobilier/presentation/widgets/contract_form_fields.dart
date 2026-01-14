@@ -46,10 +46,7 @@ class ContractFormFields {
         prefixIcon: Icon(Icons.person),
       ),
       items: tenants.map((tenant) {
-        return DropdownMenuItem(
-          value: tenant,
-          child: Text(tenant.fullName),
-        );
+        return DropdownMenuItem(value: tenant, child: Text(tenant.fullName));
       }).toList(),
       onChanged: onChanged,
       validator: validator,
@@ -149,9 +146,7 @@ class ContractFormFields {
     );
   }
 
-  static Widget notesField({
-    required TextEditingController controller,
-  }) {
+  static Widget notesField({required TextEditingController controller}) {
     return TextFormField(
       controller: controller,
       decoration: const InputDecoration(
@@ -177,4 +172,3 @@ class ContractFormFields {
     }
   }
 }
-

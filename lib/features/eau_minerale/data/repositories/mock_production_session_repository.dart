@@ -14,13 +14,20 @@ class MockProductionSessionRepository implements ProductionSessionRepository {
     var sessions = List<ProductionSession>.from(_sessions);
 
     if (startDate != null) {
-      sessions = sessions.where((s) => s.date.isAfter(startDate) || 
-          s.date.isAtSameMomentAs(startDate)).toList();
+      sessions = sessions
+          .where(
+            (s) =>
+                s.date.isAfter(startDate) || s.date.isAtSameMomentAs(startDate),
+          )
+          .toList();
     }
 
     if (endDate != null) {
-      sessions = sessions.where((s) => s.date.isBefore(endDate) || 
-          s.date.isAtSameMomentAs(endDate)).toList();
+      sessions = sessions
+          .where(
+            (s) => s.date.isBefore(endDate) || s.date.isAtSameMomentAs(endDate),
+          )
+          .toList();
     }
 
     return sessions..sort((a, b) => b.date.compareTo(a.date));
@@ -66,4 +73,3 @@ class MockProductionSessionRepository implements ProductionSessionRepository {
     _sessions.removeWhere((s) => s.id == id);
   }
 }
-

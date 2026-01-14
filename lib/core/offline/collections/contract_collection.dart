@@ -43,15 +43,15 @@ class ContractCollection {
   }
 
   Map<String, dynamic> toMap() => {
-        'id': remoteId ?? localId,
-        'localId': localId,
-        'enterpriseId': enterpriseId,
-        'propertyId': propertyId,
-        'tenantId': tenantId,
-        'startDate': startDate.toIso8601String(),
-        'endDate': endDate?.toIso8601String(),
-        'monthlyRent': monthlyRent,
-        'deposit': deposit,
-        'status': status,
-      };
+    'id': remoteId ?? localId,
+    'localId': localId,
+    'enterpriseId': enterpriseId,
+    'propertyId': propertyId,
+    'tenantId': tenantId,
+    'startDate': startDate.toIso8601String(),
+    'endDate': endDate?.toIso8601String(),
+    'monthlyRent': monthlyRent,
+    'deposit': deposit,
+    'status': status,
+  };
 }

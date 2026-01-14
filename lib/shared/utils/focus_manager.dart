@@ -157,11 +157,7 @@ mixin FocusMixin<T extends StatefulWidget> on State<T> {
 ///
 /// Empêche le focus de sortir du dialog et gère la navigation au clavier.
 class FocusTrap extends StatelessWidget {
-  const FocusTrap({
-    super.key,
-    required this.child,
-    this.autofocus = false,
-  });
+  const FocusTrap({super.key, required this.child, this.autofocus = false});
 
   /// Widget enfant.
   final Widget child;
@@ -171,10 +167,7 @@ class FocusTrap extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FocusScope(
-      autofocus: autofocus,
-      child: child,
-    );
+    return FocusScope(autofocus: autofocus, child: child);
   }
 }
 
@@ -182,11 +175,7 @@ class FocusTrap extends StatelessWidget {
 ///
 /// Place automatiquement le focus sur le premier champ éditable.
 class DialogFocusHandler extends StatefulWidget {
-  const DialogFocusHandler({
-    super.key,
-    required this.child,
-    this.initialFocus,
-  });
+  const DialogFocusHandler({super.key, required this.child, this.initialFocus});
 
   /// Widget enfant.
   final Widget child;
@@ -215,4 +204,3 @@ class _DialogFocusHandlerState extends State<DialogFocusHandler> {
     return widget.child;
   }
 }
-

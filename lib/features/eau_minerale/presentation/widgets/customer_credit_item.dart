@@ -18,10 +18,10 @@ class CustomerCreditItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final progress = credit.amount > 0 
+    final progress = credit.amount > 0
         ? (credit.amountPaid / credit.amount).clamp(0.0, 1.0)
         : 0.0;
-    
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -139,9 +139,7 @@ class CustomerCreditItem extends StatelessWidget {
                   minHeight: 6,
                   backgroundColor: theme.colorScheme.surfaceContainerHighest,
                   valueColor: AlwaysStoppedAnimation<Color>(
-                    progress >= 1.0
-                        ? Colors.green
-                        : theme.colorScheme.primary,
+                    progress >= 1.0 ? Colors.green : theme.colorScheme.primary,
                   ),
                 ),
               ),
@@ -152,4 +150,3 @@ class CustomerCreditItem extends StatelessWidget {
     );
   }
 }
-

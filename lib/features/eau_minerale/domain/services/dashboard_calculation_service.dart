@@ -19,12 +19,10 @@ class DashboardCalculationService {
   int calculateTodayCollections(List<Sale> sales) {
     final today = DateTime.now();
     final todayStart = DateTime(today.year, today.month, today.day);
-    final todaySales = sales
-        .where((s) {
-          final saleDate = DateTime(s.date.year, s.date.month, s.date.day);
-          return saleDate.isAtSameMomentAs(todayStart) && s.isFullyPaid;
-        })
-        .toList();
+    final todaySales = sales.where((s) {
+      final saleDate = DateTime(s.date.year, s.date.month, s.date.day);
+      return saleDate.isAtSameMomentAs(todayStart) && s.isFullyPaid;
+    }).toList();
     return todaySales.fold(0, (sum, s) => sum + s.amountPaid);
   }
 
@@ -65,7 +63,10 @@ class DashboardCalculationService {
   }
 
   /// Calculates monthly expenses from ExpenseRecord list.
-  int calculateMonthlyExpensesFromRecords(List<ExpenseRecord> expenses, DateTime monthStart) {
+  int calculateMonthlyExpensesFromRecords(
+    List<ExpenseRecord> expenses,
+    DateTime monthStart,
+  ) {
     return expenses
         .where((e) => e.date.isAfter(monthStart))
         .fold(0, (sum, e) => sum + e.amountCfa);
@@ -77,7 +78,10 @@ class DashboardCalculationService {
   }
 
   /// Counts monthly expenses from ExpenseRecord list.
-  int countMonthlyExpensesFromRecords(List<ExpenseRecord> expenses, DateTime monthStart) {
+  int countMonthlyExpensesFromRecords(
+    List<ExpenseRecord> expenses,
+    DateTime monthStart,
+  ) {
     return expenses.where((e) => e.date.isAfter(monthStart)).length;
   }
 
@@ -105,7 +109,9 @@ class DashboardCalculationService {
     final monthResult = calculateMonthlyResult(collections, monthExpenses);
 
     final monthSales = sales.where((s) => s.date.isAfter(monthStart)).toList();
-    final monthExpensesList = expenses.where((e) => e.date.isAfter(monthStart)).toList();
+    final monthExpensesList = expenses
+        .where((e) => e.date.isAfter(monthStart))
+        .toList();
 
     return DashboardMonthlyMetrics(
       revenue: revenue,
@@ -135,11 +141,16 @@ class DashboardCalculationService {
     final collectionRate = calculateCollectionRate(revenue, collections);
     final totalCredits = calculateTotalCredits(customers);
     final creditCustomersCount = countCreditCustomers(customers);
-    final monthExpenses = calculateMonthlyExpensesFromRecords(expenses, monthStart);
+    final monthExpenses = calculateMonthlyExpensesFromRecords(
+      expenses,
+      monthStart,
+    );
     final monthResult = calculateMonthlyResult(collections, monthExpenses);
 
     final monthSales = sales.where((s) => s.date.isAfter(monthStart)).toList();
-    final monthExpensesList = expenses.where((e) => e.date.isAfter(monthStart)).toList();
+    final monthExpensesList = expenses
+        .where((e) => e.date.isAfter(monthStart))
+        .toList();
 
     return DashboardMonthlyMetrics(
       revenue: revenue,
@@ -181,4 +192,3 @@ class DashboardMonthlyMetrics {
 
   bool get isProfit => result >= 0;
 }
-

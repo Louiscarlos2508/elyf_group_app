@@ -48,7 +48,8 @@ class CreditPaymentFormFields extends StatelessWidget {
             if (v == null || v.isEmpty) return 'Requis';
             final amount = int.tryParse(v);
             if (amount == null || amount <= 0) return 'Montant invalide';
-            if (selectedSale != null && amount > selectedSale!.remainingAmount) {
+            if (selectedSale != null &&
+                amount > selectedSale!.remainingAmount) {
               return 'Ne peut pas dépasser le reste à payer';
             }
             return null;
@@ -69,4 +70,3 @@ class CreditPaymentFormFields extends StatelessWidget {
     );
   }
 }
-

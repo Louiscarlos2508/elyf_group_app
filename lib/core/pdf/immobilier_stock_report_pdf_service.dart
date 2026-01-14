@@ -25,9 +25,9 @@ class ImmobilierStockReportPdfService extends BaseStockReportPdfService {
       moduleName: 'Immobilier',
       reportDate: date,
       stockItems: stockData,
-      fileName: 'rapport_stock_immobilier_'
+      fileName:
+          'rapport_stock_immobilier_'
           '${DateFormat('yyyyMMdd').format(date)}.pdf',
     );
   }
 }
-

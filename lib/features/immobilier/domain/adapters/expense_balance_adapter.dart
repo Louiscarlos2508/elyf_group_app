@@ -3,8 +3,7 @@ import '../../../../shared/domain/adapters/expense_balance_adapter.dart';
 import '../entities/expense.dart';
 
 /// Adaptateur pour convertir les PropertyExpense en ExpenseBalanceData.
-class ImmobilierExpenseBalanceAdapter
-    implements ExpenseBalanceAdapter {
+class ImmobilierExpenseBalanceAdapter implements ExpenseBalanceAdapter {
   @override
   List<ExpenseBalanceData> convertToBalanceData(List<dynamic> expenses) {
     return (expenses as List<PropertyExpense>).map((expense) {
@@ -45,4 +44,3 @@ class ImmobilierExpenseBalanceAdapter
     }
   }
 }
-

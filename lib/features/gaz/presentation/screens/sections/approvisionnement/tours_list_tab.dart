@@ -28,12 +28,7 @@ class ToursListTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final toursAsync = ref.watch(
-      toursProvider(
-        (
-          enterpriseId: enterpriseId,
-          status: tourStatus,
-        ),
-      ),
+      toursProvider((enterpriseId: enterpriseId, status: tourStatus)),
     );
 
     return toursAsync.when(
@@ -69,29 +64,31 @@ class ToursListTab extends ConsumerWidget {
               Expanded(
                 child: filteredTours.isEmpty
                     ? (tourStatus == null
-                        ? ToursEmptyState(onNewTourPressed: onNewTour)
-                        : Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.history,
-                                  size: 48,
-                                  color: const Color(0xFF6A7282)
-                                      .withValues(alpha: 0.5),
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  emptyStateMessage ??
-                                      'Aucun tour dans l\'historique',
-                                  style: theme.textTheme.titleMedium?.copyWith(
-                                    fontSize: 16,
-                                    color: const Color(0xFF6A7282),
+                          ? ToursEmptyState(onNewTourPressed: onNewTour)
+                          : Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.history,
+                                    size: 48,
+                                    color: const Color(
+                                      0xFF6A7282,
+                                    ).withValues(alpha: 0.5),
                                   ),
-                                ),
-                              ],
-                            ),
-                          ))
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    emptyStateMessage ??
+                                        'Aucun tour dans l\'historique',
+                                    style: theme.textTheme.titleMedium
+                                        ?.copyWith(
+                                          fontSize: 16,
+                                          color: const Color(0xFF6A7282),
+                                        ),
+                                  ),
+                                ],
+                              ),
+                            ))
                     : ListView.builder(
                         itemCount: filteredTours.length,
                         itemBuilder: (context, index) {
@@ -148,4 +145,3 @@ class ToursListTab extends ConsumerWidget {
     );
   }
 }
-

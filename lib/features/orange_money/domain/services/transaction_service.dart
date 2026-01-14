@@ -73,4 +73,3 @@ class TransactionService {
     return normalized1 == normalized2;
   }
 }
-

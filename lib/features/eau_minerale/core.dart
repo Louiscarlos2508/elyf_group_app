@@ -8,4 +8,3 @@ export '../../../core/offline/offline.dart';
 export '../../../core/offline/providers.dart';
 export '../../../core/printing/sunmi_v3_service.dart';
 export '../../../core/pdf/eau_minerale_report_pdf_service.dart';
-

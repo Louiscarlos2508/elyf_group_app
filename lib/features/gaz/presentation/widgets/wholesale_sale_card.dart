@@ -7,10 +7,7 @@ import '../../domain/entities/gas_sale.dart';
 
 /// Carte d'affichage d'une vente en gros avec informations de tour et grossiste.
 class WholesaleSaleCard extends StatelessWidget {
-  const WholesaleSaleCard({
-    super.key,
-    required this.sale,
-  });
+  const WholesaleSaleCard({super.key, required this.sale});
 
   final GasSale sale;
 
@@ -92,7 +89,10 @@ class WholesaleSaleCard extends StatelessWidget {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFF10B981).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
@@ -150,11 +150,7 @@ class WholesaleSaleCard extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(
-                    Icons.note,
-                    size: 16,
-                    color: const Color(0xFF0EA5E9),
-                  ),
+                  Icon(Icons.note, size: 16, color: const Color(0xFF0EA5E9)),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -218,4 +214,3 @@ class _DetailItem extends StatelessWidget {
     );
   }
 }
-

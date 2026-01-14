@@ -41,4 +41,3 @@ class BoutiqueExpenseBalanceAdapter implements ExpenseBalanceAdapter {
     }
   }
 }
-

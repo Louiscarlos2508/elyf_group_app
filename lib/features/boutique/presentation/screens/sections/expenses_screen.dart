@@ -44,11 +44,11 @@ class ExpensesScreen extends ConsumerWidget {
             builder: (context, constraints) {
               final isWide = constraints.maxWidth > 600;
 
-    return CustomScrollView(
-      slivers: [
+              return CustomScrollView(
+                slivers: [
                   // Header
-        SliverToBoxAdapter(
-          child: Padding(
+                  SliverToBoxAdapter(
+                    child: Padding(
                       padding: EdgeInsets.fromLTRB(
                         24,
                         24,
@@ -57,42 +57,40 @@ class ExpensesScreen extends ConsumerWidget {
                       ),
                       child: isWide
                           ? Row(
-              children: [
+                              children: [
                                 Text(
-                    'Dépenses',
-                                  style:
-                                      theme.textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                                  'Dépenses',
+                                  style: theme.textTheme.headlineMedium
+                                      ?.copyWith(fontWeight: FontWeight.bold),
+                                ),
                                 const Spacer(),
                                 RefreshButton(
                                   onRefresh: () =>
                                       ref.invalidate(expensesProvider),
                                   tooltip: 'Actualiser les dépenses',
-                ),
-                IconButton(
-                  icon: const Icon(Icons.analytics),
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            ExpenseBalanceScreen(
-                          moduleName: 'Boutique',
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.analytics),
+                                  onPressed: () {
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (context) => ExpenseBalanceScreen(
+                                          moduleName: 'Boutique',
                                           expensesProvider:
                                               boutiqueExpenseBalanceProvider,
                                           adapter:
                                               BoutiqueExpenseBalanceAdapter(),
-                        ),
-                      ),
-                    );
-                  },
-                  tooltip: 'Bilan des dépenses',
-                ),
-                const SizedBox(width: 8),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  tooltip: 'Bilan des dépenses',
+                                ),
+                                const SizedBox(width: 8),
                                 Flexible(
                                   child: BoutiquePermissionGuard(
-                                    permission: BoutiquePermissions.createExpense,
+                                    permission:
+                                        BoutiquePermissions.createExpense,
                                     child: FilledButton.icon(
                                       onPressed: () {
                                         showDialog(
@@ -118,8 +116,8 @@ class ExpensesScreen extends ConsumerWidget {
                                         'Dépenses',
                                         style: theme.textTheme.titleLarge
                                             ?.copyWith(
-                                          fontWeight: FontWeight.bold,
-                                        ),
+                                              fontWeight: FontWeight.bold,
+                                            ),
                                       ),
                                     ),
                                     RefreshButton(
@@ -132,8 +130,7 @@ class ExpensesScreen extends ConsumerWidget {
                                       onPressed: () {
                                         Navigator.of(context).push(
                                           MaterialPageRoute(
-                                            builder: (context) =>
-                                                ExpenseBalanceScreen(
+                                            builder: (context) => ExpenseBalanceScreen(
                                               moduleName: 'Boutique',
                                               expensesProvider:
                                                   boutiqueExpenseBalanceProvider,
@@ -150,25 +147,26 @@ class ExpensesScreen extends ConsumerWidget {
                                 const SizedBox(height: 12),
                                 SizedBox(
                                   width: double.infinity,
-                  child: BoutiquePermissionGuard(
-                    permission: BoutiquePermissions.createExpense,
-                    child: FilledButton.icon(
-                      onPressed: () {
-                        showDialog(
-                          context: context,
-                                        builder: (_) =>
-                                            const boutique.ExpenseFormDialog(),
-                        );
-                      },
-                      icon: const Icon(Icons.add),
-                      label: const Text('Nouvelle Dépense'),
+                                  child: BoutiquePermissionGuard(
+                                    permission:
+                                        BoutiquePermissions.createExpense,
+                                    child: FilledButton.icon(
+                                      onPressed: () {
+                                        showDialog(
+                                          context: context,
+                                          builder: (_) =>
+                                              const boutique.ExpenseFormDialog(),
+                                        );
+                                      },
+                                      icon: const Icon(Icons.add),
+                                      label: const Text('Nouvelle Dépense'),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                     ),
                   ),
-                ),
-              ],
-            ),
-          ),
-        ),
 
                   // Daily summary card
                   SliverToBoxAdapter(
@@ -187,21 +185,22 @@ class ExpensesScreen extends ConsumerWidget {
                       padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
+                        children: [
                           Text(
                             'Dépenses du Jour',
                             style: theme.textTheme.titleLarge?.copyWith(
                               fontWeight: FontWeight.bold,
                             ),
-                        ),
-                        const SizedBox(height: 16),
+                          ),
+                          const SizedBox(height: 16),
                           Container(
                             decoration: BoxDecoration(
                               color: theme.colorScheme.surface,
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                color: theme.colorScheme.outline
-                                    .withValues(alpha: 0.2),
+                                color: theme.colorScheme.outline.withValues(
+                                  alpha: 0.2,
+                                ),
                               ),
                             ),
                             padding: const EdgeInsets.all(20),
@@ -216,9 +215,9 @@ class ExpensesScreen extends ConsumerWidget {
                                 }
                               },
                             ),
-                              ),
-                          ],
-                        ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
 
@@ -242,14 +241,12 @@ class ExpensesScreen extends ConsumerWidget {
                     ),
                   ),
 
-                  const SliverToBoxAdapter(
-                    child: SizedBox(height: 24),
-                ),
+                  const SliverToBoxAdapter(child: SizedBox(height: 24)),
                 ],
               );
             },
-              );
-            },
+          );
+        },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (_, __) => Center(
           child: Column(
@@ -262,11 +259,11 @@ class ExpensesScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 16),
               Text(
-                  'Erreur de chargement',
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    color: theme.colorScheme.error,
-                  ),
+                'Erreur de chargement',
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: theme.colorScheme.error,
                 ),
+              ),
               const SizedBox(height: 16),
               FilledButton(
                 onPressed: () => ref.invalidate(expensesProvider),
@@ -289,8 +286,16 @@ class ExpensesScreen extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildDetailRow(theme, 'Montant', CurrencyFormatter.formatFCFA(expense.amountCfa)),
-            _buildDetailRow(theme, 'Catégorie', _getCategoryLabel(expense.category)),
+            _buildDetailRow(
+              theme,
+              'Montant',
+              CurrencyFormatter.formatFCFA(expense.amountCfa),
+            ),
+            _buildDetailRow(
+              theme,
+              'Catégorie',
+              _getCategoryLabel(expense.category),
+            ),
             _buildDetailRow(
               theme,
               'Date',
@@ -334,7 +339,7 @@ class ExpensesScreen extends ConsumerWidget {
             ),
           ),
         ],
-        ),
+      ),
     );
   }
 
@@ -355,11 +360,17 @@ class ExpensesScreen extends ConsumerWidget {
     }
   }
 
-  void _confirmDelete(BuildContext context, WidgetRef ref, Expense expense) async {
+  void _confirmDelete(
+    BuildContext context,
+    WidgetRef ref,
+    Expense expense,
+  ) async {
     // Vérifier la permission avant d'afficher le dialogue
     final adapter = ref.read(boutiquePermissionAdapterProvider);
-    final hasPermission = await adapter.hasPermission(BoutiquePermissions.deleteExpense.id);
-    
+    final hasPermission = await adapter.hasPermission(
+      BoutiquePermissions.deleteExpense.id,
+    );
+
     if (!hasPermission) {
       NotificationService.showError(
         context,
@@ -367,7 +378,7 @@ class ExpensesScreen extends ConsumerWidget {
       );
       return;
     }
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -387,9 +398,7 @@ class ExpensesScreen extends ConsumerWidget {
                 NotificationService.showSuccess(context, 'Dépense supprimée');
               }
             },
-            style: FilledButton.styleFrom(
-              backgroundColor: Colors.red,
-            ),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
             child: const Text('Supprimer'),
           ),
         ],

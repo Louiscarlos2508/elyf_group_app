@@ -34,19 +34,22 @@ class ProductionSessionsCardComponents {
         icon = Icons.play_circle_outline;
         break;
       case ProductionSessionStatus.inProgress:
-        backgroundColor = statusColors?.success.withValues(alpha: 0.2) ??
+        backgroundColor =
+            statusColors?.success.withValues(alpha: 0.2) ??
             Colors.blue.withValues(alpha: 0.2);
         textColor = statusColors?.success ?? Colors.blue;
         icon = Icons.settings;
         break;
       case ProductionSessionStatus.suspended:
-        backgroundColor = statusColors?.danger.withValues(alpha: 0.2) ??
+        backgroundColor =
+            statusColors?.danger.withValues(alpha: 0.2) ??
             Colors.orange.withValues(alpha: 0.2);
         textColor = statusColors?.danger ?? Colors.orange;
         icon = Icons.pause_circle_outline;
         break;
       case ProductionSessionStatus.completed:
-        backgroundColor = statusColors?.success.withValues(alpha: 0.2) ??
+        backgroundColor =
+            statusColors?.success.withValues(alpha: 0.2) ??
             Colors.green.withValues(alpha: 0.2);
         textColor = statusColors?.success ?? Colors.green;
         icon = Icons.check_circle;
@@ -74,10 +77,7 @@ class ProductionSessionsCardComponents {
   }
 
   /// Construit la ligne d'informations (production, machines, bobines).
-  static Widget buildInfoRow(
-    BuildContext context,
-    ProductionSession session,
-  ) {
+  static Widget buildInfoRow(BuildContext context, ProductionSession session) {
     final theme = Theme.of(context);
 
     return Container(
@@ -135,7 +135,8 @@ class ProductionSessionsCardComponents {
     BuildContext context,
     ProductionSession session,
   ) {
-    final canEdit = session.effectiveStatus == ProductionSessionStatus.draft ||
+    final canEdit =
+        session.effectiveStatus == ProductionSessionStatus.draft ||
         session.effectiveStatus == ProductionSessionStatus.started ||
         session.effectiveStatus == ProductionSessionStatus.inProgress;
 
@@ -147,9 +148,8 @@ class ProductionSessionsCardComponents {
               onPressed: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (context) => ProductionSessionFormScreen(
-                      session: session,
-                    ),
+                    builder: (context) =>
+                        ProductionSessionFormScreen(session: session),
                   ),
                 );
               },
@@ -166,9 +166,8 @@ class ProductionSessionsCardComponents {
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (context) => ProductionTrackingScreen(
-                    sessionId: session.id,
-                  ),
+                  builder: (context) =>
+                      ProductionTrackingScreen(sessionId: session.id),
                 ),
               );
             },
@@ -195,17 +194,16 @@ class ProductionSessionsCardComponents {
       ventesLiees: ventes,
     );
     final statusColors = Theme.of(context).extension<StatusColors>()!;
-    final marginColor = marge.estRentable ? statusColors.success : statusColors.danger;
+    final marginColor = marge.estRentable
+        ? statusColors.success
+        : statusColors.danger;
 
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: marginColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: marginColor.withValues(alpha: 0.3),
-          width: 1,
-        ),
+        border: Border.all(color: marginColor.withValues(alpha: 0.3), width: 1),
       ),
       child: Row(
         children: [
@@ -257,4 +255,3 @@ class ProductionSessionsCardComponents {
     );
   }
 }
-

@@ -54,10 +54,7 @@ class ModuleDetailsHeader extends StatelessWidget {
               ],
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: onClose,
-          ),
+          IconButton(icon: const Icon(Icons.close), onPressed: onClose),
         ],
       ),
     );
@@ -80,4 +77,3 @@ class ModuleDetailsHeader extends StatelessWidget {
     }
   }
 }
-

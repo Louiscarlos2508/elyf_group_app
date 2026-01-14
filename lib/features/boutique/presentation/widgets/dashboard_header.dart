@@ -14,8 +14,18 @@ class DashboardHeader extends StatelessWidget {
   String _formatDate(DateTime date) {
     const days = ['dim', 'lun', 'mar', 'mer', 'jeu', 'ven', 'sam'];
     const months = [
-      'janv', 'févr', 'mars', 'avr', 'mai', 'juin',
-      'juil', 'août', 'sept', 'oct', 'nov', 'déc'
+      'janv',
+      'févr',
+      'mars',
+      'avr',
+      'mai',
+      'juin',
+      'juil',
+      'août',
+      'sept',
+      'oct',
+      'nov',
+      'déc',
     ];
     final dayName = days[date.weekday % 7];
     return '$dayName ${date.day} ${months[date.month - 1]} ${date.year}';

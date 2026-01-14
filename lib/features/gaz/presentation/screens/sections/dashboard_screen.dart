@@ -34,18 +34,18 @@ class GazDashboardScreen extends ConsumerWidget {
                       Text(
                         "Vue d'ensemble",
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontSize: 16,
-                              fontWeight: FontWeight.normal,
-                              color: const Color(0xFF101828),
-                            ),
+                          fontSize: 16,
+                          fontWeight: FontWeight.normal,
+                          color: const Color(0xFF101828),
+                        ),
                       ),
                       const SizedBox(height: 8),
                       Text(
                         'Tableau de bord de gestion du gaz',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              fontSize: 14,
-                              color: const Color(0xFF4A5565),
-                            ),
+                          fontSize: 14,
+                          color: const Color(0xFF4A5565),
+                        ),
                       ),
                     ],
                   ),
@@ -99,9 +99,7 @@ class GazDashboardScreen extends ConsumerWidget {
         // Stock par capacité section
         SliverPadding(
           padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-          sliver: SliverToBoxAdapter(
-            child: const DashboardStockByCapacity(),
-          ),
+          sliver: SliverToBoxAdapter(child: const DashboardStockByCapacity()),
         ),
 
         // Performance chart (7 derniers jours)

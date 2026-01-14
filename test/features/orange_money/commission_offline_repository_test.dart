@@ -18,8 +18,7 @@ class MockConnectivityService implements ConnectivityService {
       isOnline ? ConnectivityStatus.wifi : ConnectivityStatus.offline;
 
   @override
-  Stream<ConnectivityStatus> get statusStream =>
-      Stream.value(currentStatus);
+  Stream<ConnectivityStatus> get statusStream => Stream.value(currentStatus);
 
   @override
   Future<void> initialize() async {
@@ -55,7 +54,7 @@ void main() {
         syncHandler: MockSyncHandler(),
       );
       await syncManager.initialize();
-      
+
       repository = CommissionOfflineRepository(
         driftService: driftService,
         syncManager: syncManager,
@@ -91,7 +90,8 @@ void main() {
     test('should filter commissions by status', () async {
       final now = DateTime.now();
       final period1 = '${now.year}-${now.month.toString().padLeft(2, '0')}';
-      final period2 = '${now.year}-${(now.month - 1).toString().padLeft(2, '0')}';
+      final period2 =
+          '${now.year}-${(now.month - 1).toString().padLeft(2, '0')}';
 
       final commission1 = Commission(
         id: '',
@@ -121,7 +121,10 @@ void main() {
         status: CommissionStatus.pending,
       );
 
-      expect(pending.every((c) => c.status == CommissionStatus.pending), isTrue);
+      expect(
+        pending.every((c) => c.status == CommissionStatus.pending),
+        isTrue,
+      );
     });
 
     test('should get statistics', () async {
@@ -161,4 +164,3 @@ void main() {
     });
   });
 }
-

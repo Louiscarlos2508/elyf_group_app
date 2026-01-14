@@ -19,7 +19,7 @@ class ExpensesTableDesktop extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
@@ -56,7 +56,10 @@ class ExpensesTableDesktop extends StatelessWidget {
               children: [
                 _buildDataCellWidget(
                   context,
-                  ExpensesTableHelpers.buildCategoryChip(context, expense.category),
+                  ExpensesTableHelpers.buildCategoryChip(
+                    context,
+                    expense.category,
+                  ),
                 ),
                 _buildDataCellWidget(
                   context,
@@ -109,10 +112,7 @@ class ExpensesTableDesktop extends StatelessWidget {
     final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Text(
-        text,
-        style: theme.textTheme.bodyMedium,
-      ),
+      child: Text(text, style: theme.textTheme.bodyMedium),
     );
   }
 
@@ -123,4 +123,3 @@ class ExpensesTableDesktop extends StatelessWidget {
     );
   }
 }
-

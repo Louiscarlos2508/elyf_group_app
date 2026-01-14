@@ -39,10 +39,7 @@ class ContractDetailDialog extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            ContractDetailHeader(
-              contract: contract,
-              statusColor: statusColor,
-            ),
+            ContractDetailHeader(contract: contract, statusColor: statusColor),
             Flexible(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(16),
@@ -68,7 +65,8 @@ class ContractDetailDialog extends ConsumerWidget {
                       contractId: contract.id,
                       onPaymentTap: onPaymentTap,
                     ),
-                    if (contract.notes != null && contract.notes!.isNotEmpty) ...[
+                    if (contract.notes != null &&
+                        contract.notes!.isNotEmpty) ...[
                       const SizedBox(height: 16),
                       ContractNotesSection(notes: contract.notes!),
                     ],
@@ -76,10 +74,7 @@ class ContractDetailDialog extends ConsumerWidget {
                 ),
               ),
             ),
-            ContractDetailActions(
-              contract: contract,
-              onDelete: onDelete,
-            ),
+            ContractDetailActions(contract: contract, onDelete: onDelete),
           ],
         ),
       ),

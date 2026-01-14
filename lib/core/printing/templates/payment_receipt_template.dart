@@ -105,4 +105,3 @@ class PaymentReceiptTemplate {
     return lines.join('\n');
   }
 }
-

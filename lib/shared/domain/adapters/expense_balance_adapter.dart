@@ -11,4 +11,3 @@ abstract class ExpenseBalanceAdapter {
   /// Retourne le libellé d'une catégorie.
   String getCategoryLabel(String category);
 }
-

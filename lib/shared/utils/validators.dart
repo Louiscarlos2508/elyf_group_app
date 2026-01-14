@@ -1,5 +1,5 @@
 /// Validateurs réutilisables pour les formulaires.
-/// 
+///
 /// Tous les validateurs retournent `String?` :
 /// - `null` = valide
 /// - `String` = message d'erreur à afficher
@@ -7,7 +7,7 @@ class Validators {
   Validators._();
 
   /// Valide qu'un champ n'est pas vide.
-  /// 
+  ///
   /// [message] : Message d'erreur personnalisé (par défaut: 'Requis').
   static String? required(String? value, {String message = 'Requis'}) {
     if (value == null || value.trim().isEmpty) {
@@ -17,7 +17,7 @@ class Validators {
   }
 
   /// Valide un numéro de téléphone.
-  /// 
+  ///
   /// Accepte les formats avec ou sans indicatif (+), minimum 8 chiffres.
   /// Exemples valides : +237 6XX XXX XXX, 6XX XXX XXX, 0123456789
   static String? phone(String? value, {String? customMessage}) {
@@ -27,7 +27,7 @@ class Validators {
 
     // Nettoie les espaces et tirets
     final cleaned = value.replaceAll(RegExp(r'[\s\-]'), '');
-    
+
     // Valide : commence par + ou un chiffre, minimum 8 chiffres
     if (!RegExp(r'^(\+?[0-9]{8,})$').hasMatch(cleaned)) {
       return customMessage ?? 'Format de téléphone invalide';
@@ -37,11 +37,12 @@ class Validators {
   }
 
   /// Valide un montant entier positif.
-  /// 
+  ///
   /// [value] : La valeur à valider (peut être vide si non requis).
   /// [allowZero] : Autorise 0 (par défaut: false).
   /// [customMessage] : Message d'erreur personnalisé.
-  static String? amount(String? value, {
+  static String? amount(
+    String? value, {
     bool allowZero = false,
     String? customMessage,
   }) {
@@ -66,11 +67,12 @@ class Validators {
   }
 
   /// Valide un montant décimal positif.
-  /// 
+  ///
   /// [value] : La valeur à valider (peut être vide si non requis).
   /// [allowZero] : Autorise 0.0 (par défaut: false).
   /// [customMessage] : Message d'erreur personnalisé.
-  static String? amountDouble(String? value, {
+  static String? amountDouble(
+    String? value, {
     bool allowZero = false,
     String? customMessage,
   }) {
@@ -95,7 +97,7 @@ class Validators {
   }
 
   /// Valide une adresse email.
-  /// 
+  ///
   /// Utilise une regex simple pour valider le format email.
   static String? email(String? value, {String? customMessage}) {
     if (value == null || value.trim().isEmpty) {
@@ -114,7 +116,7 @@ class Validators {
   }
 
   /// Valide la longueur minimale d'un texte.
-  /// 
+  ///
   /// [minLength] : Longueur minimale requise.
   /// [customMessage] : Message d'erreur personnalisé.
   static String? minLength(
@@ -127,7 +129,7 @@ class Validators {
     }
 
     if (value.trim().length < minLength) {
-      return customMessage ?? 
+      return customMessage ??
           'Ce champ doit contenir au moins $minLength caractères';
     }
 
@@ -135,7 +137,7 @@ class Validators {
   }
 
   /// Valide la longueur maximale d'un texte.
-  /// 
+  ///
   /// [maxLength] : Longueur maximale autorisée.
   /// [customMessage] : Message d'erreur personnalisé.
   static String? maxLength(
@@ -148,7 +150,7 @@ class Validators {
     }
 
     if (value.length > maxLength) {
-      return customMessage ?? 
+      return customMessage ??
           'Ce champ doit contenir au maximum $maxLength caractères';
     }
 
@@ -156,11 +158,12 @@ class Validators {
   }
 
   /// Valide qu'un nombre entier est positif.
-  /// 
+  ///
   /// [value] : La valeur à valider.
   /// [allowZero] : Autorise 0 (par défaut: false).
   /// [customMessage] : Message d'erreur personnalisé.
-  static String? positiveInt(String? value, {
+  static String? positiveInt(
+    String? value, {
     bool allowZero = false,
     String? customMessage,
   }) {
@@ -185,9 +188,9 @@ class Validators {
   }
 
   /// Combine plusieurs validateurs.
-  /// 
+  ///
   /// Exécute les validateurs dans l'ordre et retourne la première erreur.
-  /// 
+  ///
   /// Exemple:
   /// ```dart
   /// validator: (v) => Validators.combine([
@@ -205,4 +208,3 @@ class Validators {
     return null;
   }
 }
-

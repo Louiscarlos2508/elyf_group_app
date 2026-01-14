@@ -29,22 +29,32 @@ class AgentsStatusFilter extends StatelessWidget {
           value: value,
           hint: const Text(
             'Tous les statuts',
-            style: TextStyle(
-              fontSize: 14,
-              color: Color(0xFF0A0A0A),
-            ),
+            style: TextStyle(fontSize: 14, color: Color(0xFF0A0A0A)),
           ),
           isExpanded: true,
-          icon: const Icon(Icons.keyboard_arrow_down, size: 16, color: Color(0xFF0A0A0A)),
+          icon: const Icon(
+            Icons.keyboard_arrow_down,
+            size: 16,
+            color: Color(0xFF0A0A0A),
+          ),
           items: [
             const DropdownMenuItem(
               value: null,
-              child: Text('Tous les statuts', style: TextStyle(fontSize: 14, color: Color(0xFF0A0A0A))),
+              child: Text(
+                'Tous les statuts',
+                style: TextStyle(fontSize: 14, color: Color(0xFF0A0A0A)),
+              ),
             ),
             ...AgentStatus.values.map((status) {
               return DropdownMenuItem(
                 value: status,
-                child: Text(status.label, style: const TextStyle(fontSize: 14, color: Color(0xFF0A0A0A))),
+                child: Text(
+                  status.label,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF0A0A0A),
+                  ),
+                ),
               );
             }),
           ],
@@ -54,4 +64,3 @@ class AgentsStatusFilter extends StatelessWidget {
     );
   }
 }
-

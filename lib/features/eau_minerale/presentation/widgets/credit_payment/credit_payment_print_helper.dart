@@ -4,7 +4,8 @@ import 'package:open_file/open_file.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
 import '../../../domain/entities/sale.dart';
-import '../invoice_print/invoice_print_service.dart' show EauMineraleInvoiceService;
+import '../invoice_print/invoice_print_service.dart'
+    show EauMineraleInvoiceService;
 
 /// Helper class for credit payment print operations.
 /// Extracted from CreditPaymentDialog to reduce file size.
@@ -24,7 +25,9 @@ class CreditPaymentPrintHelper {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Imprimer le reçu ?'),
-        content: const Text('Voulez-vous imprimer ou générer un PDF du reçu de paiement ?'),
+        content: const Text(
+          'Voulez-vous imprimer ou générer un PDF du reçu de paiement ?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, 'skip'),
@@ -54,13 +57,14 @@ class CreditPaymentPrintHelper {
 
     try {
       if (result == 'pdf') {
-        final file = await EauMineraleInvoiceService.instance.generateCreditPaymentPdf(
-          customerName: customerName,
-          sale: sale,
-          paymentAmount: paymentAmount,
-          remainingAfterPayment: remainingAfterPayment,
-          notes: notes,
-        );
+        final file = await EauMineraleInvoiceService.instance
+            .generateCreditPaymentPdf(
+              customerName: customerName,
+              sale: sale,
+              paymentAmount: paymentAmount,
+              remainingAfterPayment: remainingAfterPayment,
+              notes: notes,
+            );
         if (!context.mounted) return;
         await OpenFile.open(file.path);
       } else if (result == 'sunmi') {
@@ -78,4 +82,3 @@ class CreditPaymentPrintHelper {
     }
   }
 }
-

@@ -26,11 +26,7 @@ class CollectionStepHeader extends ConsumerWidget {
       children: [
         Row(
           children: [
-            const Icon(
-              Icons.inventory_2,
-              size: 20,
-              color: Color(0xFF0A0A0A),
-            ),
+            const Icon(Icons.inventory_2, size: 20, color: Color(0xFF0A0A0A)),
             const SizedBox(width: 8),
             Text(
               'Collecte des bouteilles vides',
@@ -52,9 +48,7 @@ class CollectionStepHeader extends ConsumerWidget {
               );
               if (result == true) {
                 ref.invalidate(
-                  toursProvider(
-                    (enterpriseId: enterpriseId, status: null),
-                  ),
+                  toursProvider((enterpriseId: enterpriseId, status: null)),
                 );
               }
             } catch (e) {
@@ -65,13 +59,9 @@ class CollectionStepHeader extends ConsumerWidget {
             }
           },
           icon: const Icon(Icons.add, size: 16),
-          label: const Text(
-            'Ajouter',
-            style: TextStyle(fontSize: 14),
-          ),
+          label: const Text('Ajouter', style: TextStyle(fontSize: 14)),
         ),
       ],
     );
   }
 }
-

@@ -4,7 +4,8 @@ import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/entities/customer_credit.dart';
-import '../../domain/repositories/customer_repository.dart' show CustomerSummary;
+import '../../domain/repositories/customer_repository.dart'
+    show CustomerSummary;
 import 'credit_action_buttons.dart';
 import 'customer_credit_header.dart';
 import 'customer_credit_item.dart';
@@ -36,12 +37,12 @@ class CustomerCreditCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final totalCredit = _calculateTotalCredit(credits);
-    
+
     // Ne pas afficher si aucun crédit réel avec montant restant > 0
     if (totalCredit <= 0) {
       return const SizedBox.shrink();
     }
-    
+
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
@@ -156,4 +157,3 @@ class CustomerCreditCard extends ConsumerWidget {
     );
   }
 }
-

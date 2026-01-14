@@ -5,6 +5,7 @@ import '../../application/providers.dart';
 import '../../domain/services/gaz_report_calculation_service.dart';
 import 'financial_summary_card.dart';
 import 'package:elyf_groupe_app/shared.dart';
+
 /// Contenu de rapport financier avec charges fixes/variables et reliquat siège.
 class GazFinancialReportContentV2 extends ConsumerWidget {
   const GazFinancialReportContentV2({
@@ -98,12 +99,15 @@ class GazFinancialReportContentV2 extends ConsumerWidget {
                   salesAsync.when(
                     data: (sales) {
                       // Utiliser le service de calcul pour extraire la logique métier
-                      final reportService = ref.read(gazReportCalculationServiceProvider);
-                      final salesAnalysis = reportService.calculateSalesAnalysis(
-                        sales: sales,
-                        startDate: startDate,
-                        endDate: endDate,
+                      final reportService = ref.read(
+                        gazReportCalculationServiceProvider,
                       );
+                      final salesAnalysis = reportService
+                          .calculateSalesAnalysis(
+                            sales: sales,
+                            startDate: startDate,
+                            endDate: endDate,
+                          );
                       return _buildSalesAnalysis(theme, salesAnalysis);
                     },
                     loading: () => const SizedBox.shrink(),
@@ -130,7 +134,8 @@ class GazFinancialReportContentV2 extends ConsumerWidget {
       double salaries,
       double loadingEventExpenses,
       double totalExpenses,
-    }) charges,
+    })
+    charges,
   ) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -140,15 +145,36 @@ class GazFinancialReportContentV2 extends ConsumerWidget {
       ),
       child: Column(
         children: [
-          _buildChargeRow(theme, 'Charges fixes', charges.fixedCharges, Colors.blue),
+          _buildChargeRow(
+            theme,
+            'Charges fixes',
+            charges.fixedCharges,
+            Colors.blue,
+          ),
           const Divider(),
-          _buildChargeRow(theme, 'Charges variables', charges.variableCharges, Colors.orange),
+          _buildChargeRow(
+            theme,
+            'Charges variables',
+            charges.variableCharges,
+            Colors.orange,
+          ),
           const Divider(),
           _buildChargeRow(theme, 'Salaires', charges.salaries, Colors.purple),
           const Divider(),
-          _buildChargeRow(theme, 'Frais de chargement', charges.loadingEventExpenses, Colors.amber),
+          _buildChargeRow(
+            theme,
+            'Frais de chargement',
+            charges.loadingEventExpenses,
+            Colors.amber,
+          ),
           const Divider(),
-          _buildChargeRow(theme, 'Total charges', charges.totalExpenses, Colors.red, isBold: true),
+          _buildChargeRow(
+            theme,
+            'Total charges',
+            charges.totalExpenses,
+            Colors.red,
+            isBold: true,
+          ),
         ],
       ),
     );
@@ -244,7 +270,10 @@ class GazFinancialReportContentV2 extends ConsumerWidget {
               child: FilledButton.icon(
                 onPressed: () {
                   // TODO: Implémenter action de versement
-                  NotificationService.showInfo(context, 'Fonctionnalité de versement à implémenter');
+                  NotificationService.showInfo(
+                    context,
+                    'Fonctionnalité de versement à implémenter',
+                  );
                 },
                 icon: const Icon(Icons.account_balance_wallet),
                 label: const Text('Préparer versement siège'),
@@ -257,7 +286,6 @@ class GazFinancialReportContentV2 extends ConsumerWidget {
   }
 
   Widget _buildSalesAnalysis(ThemeData theme, SalesAnalysis analysis) {
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -329,7 +357,9 @@ class GazFinancialReportContentV2 extends ConsumerWidget {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        entry.key == 'Sans tour' ? 'Sans tour associé' : 'Tour ${entry.key.substring(0, 8)}...',
+                        entry.key == 'Sans tour'
+                            ? 'Sans tour associé'
+                            : 'Tour ${entry.key.substring(0, 8)}...',
                         style: theme.textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.w500,
                         ),
@@ -379,10 +409,7 @@ class GazFinancialReportContentV2 extends ConsumerWidget {
               Container(
                 width: 12,
                 height: 12,
-                decoration: BoxDecoration(
-                  color: color,
-                  shape: BoxShape.circle,
-                ),
+                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
               ),
               const SizedBox(width: 8),
               Text(

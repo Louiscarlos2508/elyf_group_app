@@ -14,11 +14,7 @@ import '../../../core/offline/sync_status.dart';
 /// - Offline (grey cloud off icon)
 /// - Error (red warning icon)
 class SyncStatusIndicator extends ConsumerWidget {
-  const SyncStatusIndicator({
-    super.key,
-    this.showLabel = false,
-    this.onTap,
-  });
+  const SyncStatusIndicator({super.key, this.showLabel = false, this.onTap});
 
   /// Whether to show a text label next to the icon.
   final bool showLabel;
@@ -88,33 +84,21 @@ class SyncStatusIndicator extends ConsumerWidget {
     }
 
     if (hasError) {
-      return const Icon(
-        Icons.cloud_off,
-        color: Colors.red,
-      );
+      return const Icon(Icons.cloud_off, color: Colors.red);
     }
 
     if (!isOnline) {
-      return const Icon(
-        Icons.cloud_off,
-        color: Colors.grey,
-      );
+      return const Icon(Icons.cloud_off, color: Colors.grey);
     }
 
     if (pendingCount > 0) {
       return Badge(
         label: Text('$pendingCount'),
-        child: const Icon(
-          Icons.cloud_upload,
-          color: Colors.blue,
-        ),
+        child: const Icon(Icons.cloud_upload, color: Colors.blue),
       );
     }
 
-    return const Icon(
-      Icons.cloud_done,
-      color: Colors.green,
-    );
+    return const Icon(Icons.cloud_done, color: Colors.green);
   }
 
   Widget _buildLabel({
@@ -182,10 +166,7 @@ class _AnimatedSyncIconState extends State<_AnimatedSyncIcon>
   Widget build(BuildContext context) {
     return RotationTransition(
       turns: _controller,
-      child: const Icon(
-        Icons.sync,
-        color: Colors.blue,
-      ),
+      child: const Icon(Icons.sync, color: Colors.blue),
     );
   }
 }
@@ -284,10 +265,9 @@ class SyncStatusCard extends ConsumerWidget {
             Expanded(
               child: Text(
                 progress.error ?? 'Erreur inconnue',
-                style: Theme.of(context)
-                    .textTheme
-                    .bodySmall
-                    ?.copyWith(color: Colors.red),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: Colors.red),
               ),
             ),
           ],

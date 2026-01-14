@@ -9,6 +9,7 @@ import '../bobine_finish_dialog.dart';
 import '../machine_breakdown_dialog.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
+
 /// Dialogs pour la gestion des bobines.
 class BobineDialogs {
   /// Affiche le dialog pour signaler une panne de machine.
@@ -57,4 +58,3 @@ class BobineDialogs {
     );
   }
 }
-

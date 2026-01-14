@@ -14,9 +14,7 @@ class MockStockRepository implements StockRepository {
     await Future<void>.delayed(const Duration(milliseconds: 200));
     final product = await _productRepository.getProduct(productId);
     if (product != null) {
-      await _productRepository.updateProduct(
-        product.copyWith(stock: quantity),
-      );
+      await _productRepository.updateProduct(product.copyWith(stock: quantity));
     }
   }
 
@@ -34,4 +32,3 @@ class MockStockRepository implements StockRepository {
     return products.where((p) => p.stock <= threshold).toList();
   }
 }
-

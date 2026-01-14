@@ -4,10 +4,7 @@ import 'package:flutter/material.dart';
 import '../../domain/entities/agent.dart';
 
 /// Type de transaction pour la recharge/retrait d'un agent.
-enum AgentTransactionType {
-  recharge,
-  retrait,
-}
+enum AgentTransactionType { recharge, retrait }
 
 /// Dialog for recharging or withdrawing from an agent's liquidity.
 class AgentRechargeDialog extends StatefulWidget {
@@ -18,7 +15,13 @@ class AgentRechargeDialog extends StatefulWidget {
   });
 
   final List<Agent> agents;
-  final Function(Agent agent, AgentTransactionType type, int amount, String? notes) onConfirm;
+  final Function(
+    Agent agent,
+    AgentTransactionType type,
+    int amount,
+    String? notes,
+  )
+  onConfirm;
 
   @override
   State<AgentRechargeDialog> createState() => _AgentRechargeDialogState();
@@ -45,13 +48,19 @@ class _AgentRechargeDialogState extends State<AgentRechargeDialog> {
     }
 
     if (_selectedAgent == null) {
-      NotificationService.showWarning(context, 'Veuillez sélectionner un agent');
+      NotificationService.showWarning(
+        context,
+        'Veuillez sélectionner un agent',
+      );
       return;
     }
 
     final amount = int.tryParse(_amountController.text.trim()) ?? 0;
     if (amount <= 0) {
-      NotificationService.showWarning(context, 'Le montant doit être supérieur à 0');
+      NotificationService.showWarning(
+        context,
+        'Le montant doit être supérieur à 0',
+      );
       return;
     }
 
@@ -59,7 +68,9 @@ class _AgentRechargeDialogState extends State<AgentRechargeDialog> {
       _selectedAgent!,
       _selectedType,
       amount,
-      _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+      _notesController.text.trim().isEmpty
+          ? null
+          : _notesController.text.trim(),
     );
     Navigator.of(context).pop();
   }
@@ -175,11 +186,17 @@ class _AgentRechargeDialogState extends State<AgentRechargeDialog> {
                   const SizedBox(height: 8),
                   Container(
                     height: 36,
-                    padding: const EdgeInsets.symmetric(horizontal: 13.219, vertical: 1.219),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 13.219,
+                      vertical: 1.219,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFFF3F3F5),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.transparent, width: 1.219),
+                      border: Border.all(
+                        color: Colors.transparent,
+                        width: 1.219,
+                      ),
                     ),
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<Agent?>(
@@ -317,7 +334,10 @@ class _AgentRechargeDialogState extends State<AgentRechargeDialog> {
                           color: Colors.black.withValues(alpha: 0.1),
                           width: 1.219,
                         ),
-                        padding: const EdgeInsets.symmetric(horizontal: 17, vertical: 9),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 17,
+                          vertical: 9,
+                        ),
                         minimumSize: const Size(0, 36),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
@@ -339,7 +359,10 @@ class _AgentRechargeDialogState extends State<AgentRechargeDialog> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF00A63E),
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
                         minimumSize: const Size(0, 36),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
@@ -347,9 +370,7 @@ class _AgentRechargeDialogState extends State<AgentRechargeDialog> {
                       ),
                       child: const Text(
                         'Valider',
-                        style: TextStyle(
-                          fontSize: 14,
-                        ),
+                        style: TextStyle(fontSize: 14),
                       ),
                     ),
                   ),
@@ -385,10 +406,7 @@ class _AgentRechargeDialogState extends State<AgentRechargeDialog> {
         height: 36,
         decoration: BoxDecoration(
           color: backgroundColor,
-          border: Border.all(
-            color: borderColor,
-            width: 1.219,
-          ),
+          border: Border.all(color: borderColor, width: 1.219),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Row(
@@ -410,4 +428,3 @@ class _AgentRechargeDialogState extends State<AgentRechargeDialog> {
     );
   }
 }
-

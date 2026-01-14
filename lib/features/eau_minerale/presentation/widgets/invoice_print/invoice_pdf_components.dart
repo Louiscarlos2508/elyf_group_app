@@ -8,20 +8,14 @@ pw.Widget buildPdfHeader(String title) {
       children: [
         pw.Text(
           'EAU MINERALE ELYF',
-          style: pw.TextStyle(
-            fontSize: 24,
-            fontWeight: pw.FontWeight.bold,
-          ),
+          style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold),
         ),
         pw.SizedBox(height: 4),
         pw.Text('GROUPE APP', style: const pw.TextStyle(fontSize: 14)),
         pw.SizedBox(height: 20),
         pw.Text(
           title,
-          style: pw.TextStyle(
-            fontSize: 18,
-            fontWeight: pw.FontWeight.bold,
-          ),
+          style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold),
         ),
       ],
     ),
@@ -42,10 +36,7 @@ pw.Widget buildPdfClientSection({
     child: pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
-        pw.Text(
-          'CLIENT',
-          style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-        ),
+        pw.Text('CLIENT', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
         pw.SizedBox(height: 5),
         pw.Text('Nom: $customerName'),
         if (customerPhone != null && customerPhone.isNotEmpty)
@@ -58,10 +49,6 @@ pw.Widget buildPdfClientSection({
 /// Footer commun pour les PDFs.
 pw.Widget buildPdfFooter(String message) {
   return pw.Center(
-    child: pw.Text(
-      message,
-      style: const pw.TextStyle(fontSize: 12),
-    ),
+    child: pw.Text(message, style: const pw.TextStyle(fontSize: 12)),
   );
 }
-

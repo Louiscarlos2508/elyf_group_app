@@ -62,4 +62,3 @@ class ContractDetailHeader extends StatelessWidget {
     );
   }
 }
-

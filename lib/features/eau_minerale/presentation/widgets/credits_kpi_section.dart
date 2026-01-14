@@ -18,7 +18,7 @@ class CreditsKpiSection extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final isWide = constraints.maxWidth > 600;
-        
+
         return isWide
             ? Row(
                 children: [
@@ -68,4 +68,3 @@ class CreditsKpiSection extends StatelessWidget {
     );
   }
 }
-

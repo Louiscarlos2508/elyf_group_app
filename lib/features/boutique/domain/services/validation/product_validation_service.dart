@@ -32,4 +32,3 @@ class ProductValidationService {
     return null;
   }
 }
-

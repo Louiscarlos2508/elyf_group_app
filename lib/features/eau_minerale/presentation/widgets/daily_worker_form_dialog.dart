@@ -9,10 +9,7 @@ import '../../domain/entities/daily_worker.dart';
 
 /// Dialog pour ajouter ou modifier un ouvrier journalier.
 class DailyWorkerFormDialog extends ConsumerStatefulWidget {
-  const DailyWorkerFormDialog({
-    super.key,
-    this.worker,
-  });
+  const DailyWorkerFormDialog({super.key, this.worker});
 
   final DailyWorker? worker;
 
@@ -21,8 +18,7 @@ class DailyWorkerFormDialog extends ConsumerStatefulWidget {
       _DailyWorkerFormDialogState();
 }
 
-class _DailyWorkerFormDialogState
-    extends ConsumerState<DailyWorkerFormDialog> {
+class _DailyWorkerFormDialogState extends ConsumerState<DailyWorkerFormDialog> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
@@ -66,9 +62,11 @@ class _DailyWorkerFormDialogState
 
     try {
       final repository = ref.read(dailyWorkerRepositoryProvider);
-      
+
       final worker = DailyWorker(
-        id: widget.worker?.id ?? 'worker-${DateTime.now().millisecondsSinceEpoch}',
+        id:
+            widget.worker?.id ??
+            'worker-${DateTime.now().millisecondsSinceEpoch}',
         name: name,
         phone: phone,
         salaireJournalier: salaire,
@@ -80,12 +78,18 @@ class _DailyWorkerFormDialogState
       if (widget.worker == null) {
         await repository.createWorker(worker);
         if (mounted) {
-          NotificationService.showSuccess(context, 'Ouvrier ajouté avec succès');
+          NotificationService.showSuccess(
+            context,
+            'Ouvrier ajouté avec succès',
+          );
         }
       } else {
         await repository.updateWorker(worker);
         if (mounted) {
-          NotificationService.showSuccess(context, 'Ouvrier mis à jour avec succès');
+          NotificationService.showSuccess(
+            context,
+            'Ouvrier mis à jour avec succès',
+          );
         }
       }
 
@@ -140,7 +144,7 @@ class _DailyWorkerFormDialogState
                   ],
                 ),
               ),
-              
+
               // Formulaire
               Flexible(
                 child: SingleChildScrollView(
@@ -166,7 +170,7 @@ class _DailyWorkerFormDialogState
                         },
                       ),
                       const SizedBox(height: 16),
-                      
+
                       // Téléphone
                       TextFormField(
                         controller: _phoneController,
@@ -184,7 +188,7 @@ class _DailyWorkerFormDialogState
                         },
                       ),
                       const SizedBox(height: 16),
-                      
+
                       // Salaire journalier
                       TextFormField(
                         controller: _salaireController,
@@ -214,7 +218,7 @@ class _DailyWorkerFormDialogState
                   ),
                 ),
               ),
-              
+
               // Boutons
               Padding(
                 padding: const EdgeInsets.all(24),
@@ -236,7 +240,9 @@ class _DailyWorkerFormDialogState
                             ? const SizedBox(
                                 width: 20,
                                 height: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               )
                             : Text(isEditing ? 'Modifier' : 'Ajouter'),
                       ),

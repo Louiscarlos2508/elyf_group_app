@@ -59,12 +59,10 @@ class _SplashScreenState extends State<SplashScreen>
       vsync: this,
       duration: const Duration(milliseconds: 2500),
     );
-    _textFade = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _textController,
-        curve: Curves.easeOut,
-      ),
-    );
+    _textFade = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _textController, curve: Curves.easeOut));
 
     // Glow/pulse animation (continuous)
     _glowController = AnimationController(
@@ -72,10 +70,7 @@ class _SplashScreenState extends State<SplashScreen>
       duration: const Duration(milliseconds: 2000),
     )..repeat(reverse: true);
     _glowAnimation = Tween<double>(begin: 0.4, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _glowController,
-        curve: Curves.easeInOut,
-      ),
+      CurvedAnimation(parent: _glowController, curve: Curves.easeInOut),
     );
 
     // Wave animation for background effect
@@ -83,12 +78,10 @@ class _SplashScreenState extends State<SplashScreen>
       vsync: this,
       duration: const Duration(milliseconds: 3000),
     )..repeat();
-    _waveAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _waveController,
-        curve: Curves.linear,
-      ),
-    );
+    _waveAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _waveController, curve: Curves.linear));
 
     // Start animations in sequence
     _logoController.forward().then((_) {
@@ -127,10 +120,7 @@ class _SplashScreenState extends State<SplashScreen>
       body: Stack(
         children: [
           // Animated background waves
-          _AnimatedBackground(
-            waveAnimation: _waveAnimation,
-            colors: colors,
-          ),
+          _AnimatedBackground(waveAnimation: _waveAnimation, colors: colors),
           // Main content
           Center(
             child: AnimatedBuilder(
@@ -239,10 +229,7 @@ class _AnimatedBackground extends StatelessWidget {
 }
 
 class _WavePainter extends CustomPainter {
-  _WavePainter({
-    required this.progress,
-    required this.color,
-  });
+  _WavePainter({required this.progress, required this.color});
 
   final double progress;
   final Color color;
@@ -260,7 +247,8 @@ class _WavePainter extends CustomPainter {
     path.moveTo(0, size.height * 0.7);
 
     for (double x = 0; x <= size.width; x++) {
-      final y = size.height * 0.7 +
+      final y =
+          size.height * 0.7 +
           waveHeight *
               math.sin((x / waveLength + progress * 2 * math.pi) * 2 * math.pi);
       path.lineTo(x, y);
@@ -302,11 +290,8 @@ class _AnimatedElyfText extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: List.generate(letters.length, (index) {
         final delay = delays[index];
-        
-        final letterFade = Tween<double>(
-          begin: 0.0,
-          end: 1.0,
-        ).animate(
+
+        final letterFade = Tween<double>(begin: 0.0, end: 1.0).animate(
           CurvedAnimation(
             parent: fadeAnimation,
             curve: Interval(
@@ -317,10 +302,7 @@ class _AnimatedElyfText extends StatelessWidget {
           ),
         );
 
-        final letterScale = Tween<double>(
-          begin: 0.3,
-          end: 1.0,
-        ).animate(
+        final letterScale = Tween<double>(begin: 0.3, end: 1.0).animate(
           CurvedAnimation(
             parent: fadeAnimation,
             curve: Interval(
@@ -331,10 +313,7 @@ class _AnimatedElyfText extends StatelessWidget {
           ),
         );
 
-        final letterSlide = Tween<double>(
-          begin: 50.0,
-          end: 0.0,
-        ).animate(
+        final letterSlide = Tween<double>(begin: 50.0, end: 0.0).animate(
           CurvedAnimation(
             parent: fadeAnimation,
             curve: Interval(
@@ -345,10 +324,7 @@ class _AnimatedElyfText extends StatelessWidget {
           ),
         );
 
-        final letterRotation = Tween<double>(
-          begin: 0.3,
-          end: 0.0,
-        ).animate(
+        final letterRotation = Tween<double>(begin: 0.3, end: 0.0).animate(
           CurvedAnimation(
             parent: fadeAnimation,
             curve: Interval(

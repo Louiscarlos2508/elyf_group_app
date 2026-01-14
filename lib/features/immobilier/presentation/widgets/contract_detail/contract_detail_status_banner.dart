@@ -41,4 +41,3 @@ class ContractStatusBanner extends StatelessWidget {
     );
   }
 }
-

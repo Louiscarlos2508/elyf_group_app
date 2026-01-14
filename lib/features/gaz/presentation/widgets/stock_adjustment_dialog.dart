@@ -27,12 +27,11 @@ class StockAdjustmentDialog extends ConsumerStatefulWidget {
       _StockAdjustmentDialogState();
 }
 
-class _StockAdjustmentDialogState
-    extends ConsumerState<StockAdjustmentDialog> {
+class _StockAdjustmentDialogState extends ConsumerState<StockAdjustmentDialog> {
   bool _isLoading = false;
   final _formKey = GlobalKey<FormState>();
   final _quantityController = TextEditingController();
-  
+
   PointOfSale? _selectedPointOfSale;
   Cylinder? _selectedCylinder;
   CylinderStatus? _selectedStatus;
@@ -57,13 +56,11 @@ class _StockAdjustmentDialogState
 
     try {
       final stocks = await ref.read(
-        cylinderStocksProvider(
-          (
-            enterpriseId: widget.enterpriseId,
-            status: _selectedStatus,
-            siteId: _selectedPointOfSale?.id,
-          ),
-        ).future,
+        cylinderStocksProvider((
+          enterpriseId: widget.enterpriseId,
+          status: _selectedStatus,
+          siteId: _selectedPointOfSale?.id,
+        )).future,
       );
       final stock = stocks.firstWhere(
         (s) =>
@@ -92,7 +89,10 @@ class _StockAdjustmentDialogState
 
     if (_selectedCylinder == null || _selectedStatus == null) {
       if (!mounted) return;
-      NotificationService.showError(context, 'Veuillez sélectionner un type de bouteille et un statut');
+      NotificationService.showError(
+        context,
+        'Veuillez sélectionner un type de bouteille et un statut',
+      );
       return;
     }
 
@@ -134,13 +134,11 @@ class _StockAdjustmentDialogState
 
       // Invalider les providers pour rafraîchir les données
       ref.invalidate(
-        cylinderStocksProvider(
-          (
-            enterpriseId: widget.enterpriseId,
-            status: null,
-            siteId: null,
-          ),
-        ),
+        cylinderStocksProvider((
+          enterpriseId: widget.enterpriseId,
+          status: null,
+          siteId: null,
+        )),
       );
 
       Navigator.of(context).pop();
@@ -157,12 +155,10 @@ class _StockAdjustmentDialogState
   @override
   Widget build(BuildContext context) {
     final pointsOfSaleAsync = ref.watch(
-      pointsOfSaleProvider(
-        (
-          enterpriseId: widget.enterpriseId,
-          moduleId: widget.moduleId,
-        ),
-      ),
+      pointsOfSaleProvider((
+        enterpriseId: widget.enterpriseId,
+        moduleId: widget.moduleId,
+      )),
     );
 
     return Dialog(
@@ -185,8 +181,9 @@ class _StockAdjustmentDialogState
                   // Point de vente (optionnel)
                   pointsOfSaleAsync.when(
                     data: (pointsOfSale) {
-                      final activePointsOfSale =
-                          pointsOfSale.where((pos) => pos.isActive).toList();
+                      final activePointsOfSale = pointsOfSale
+                          .where((pos) => pos.isActive)
+                          .toList();
                       return DropdownButtonFormField<PointOfSale?>(
                         initialValue: _selectedPointOfSale,
                         decoration: const InputDecoration(
@@ -211,7 +208,8 @@ class _StockAdjustmentDialogState
                         onChanged: (value) {
                           setState(() {
                             _selectedPointOfSale = value;
-                            _selectedCylinder = null; // Réinitialiser le cylinder sélectionné
+                            _selectedCylinder =
+                                null; // Réinitialiser le cylinder sélectionné
                             _existingStock = null;
                             _quantityController.text = '';
                           });
@@ -297,9 +295,7 @@ class _StockAdjustmentDialogState
                       helperText: 'Entrez la nouvelle quantité en stock',
                     ),
                     keyboardType: TextInputType.number,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                    ],
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Veuillez entrer une quantité';
@@ -334,8 +330,9 @@ class _StockAdjustmentDialogState
                                   height: 16,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
-                                    valueColor:
-                                        AlwaysStoppedAnimation<Color>(Colors.white),
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white,
+                                    ),
                                   ),
                                 )
                               : const Icon(Icons.check),
@@ -353,4 +350,3 @@ class _StockAdjustmentDialogState
     );
   }
 }
-

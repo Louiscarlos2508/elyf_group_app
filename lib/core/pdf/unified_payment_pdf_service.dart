@@ -12,8 +12,7 @@ import 'payment_pdf_helpers.dart';
 /// Service unifié pour générer des PDF de paiement (factures et reçus).
 class UnifiedPaymentPdfService extends BasePaymentPdfService {
   UnifiedPaymentPdfService._();
-  static final UnifiedPaymentPdfService instance =
-      UnifiedPaymentPdfService._();
+  static final UnifiedPaymentPdfService instance = UnifiedPaymentPdfService._();
 
   /// Génère un PDF de facture ou reçu selon le type de paiement.
   Future<File> generateDocument({
@@ -106,7 +105,10 @@ class UnifiedPaymentPdfService extends BasePaymentPdfService {
             '${getMonthName(payment.month!)} ${payment.year}',
           ),
         buildInfoRow('Montant:', '${formatCurrency(payment.amount)} FCFA'),
-        buildInfoRow('Méthode de paiement:', getMethodLabel(payment.paymentMethod)),
+        buildInfoRow(
+          'Méthode de paiement:',
+          getMethodLabel(payment.paymentMethod),
+        ),
         if (!asInvoice)
           buildInfoRow('Statut:', _getStatusLabel(payment.status)),
       ],
@@ -178,10 +180,7 @@ class UnifiedPaymentPdfService extends BasePaymentPdfService {
         pw.SizedBox(height: 12),
         pw.Text(
           'Notes:',
-          style: pw.TextStyle(
-            fontSize: 12,
-            fontWeight: pw.FontWeight.bold,
-          ),
+          style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
         ),
         pw.SizedBox(height: 4),
         pw.Text(notes, style: const pw.TextStyle(fontSize: 12)),
@@ -202,4 +201,3 @@ class UnifiedPaymentPdfService extends BasePaymentPdfService {
     }
   }
 }
-

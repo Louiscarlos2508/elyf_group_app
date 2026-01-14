@@ -10,13 +10,10 @@ import '../../../../application/providers.dart';
 import '../../../../../../shared/utils/notification_service.dart';
 
 /// Action handlers for user section.
-/// 
+///
 /// Extracted for better code organization and file size compliance.
 class UserActionHandlers {
-  UserActionHandlers({
-    required this.ref,
-    required this.context,
-  });
+  UserActionHandlers({required this.ref, required this.context});
 
   final WidgetRef ref;
   final BuildContext context;
@@ -35,8 +32,8 @@ class UserActionHandlers {
         ref.invalidate(usersProvider);
         if (context.mounted) {
           NotificationService.showSuccess(
-            context, 
-            'Utilisateur créé avec succès. Si l\'utilisateur n\'apparaît pas immédiatement, rechargez la liste.'
+            context,
+            'Utilisateur créé avec succès. Si l\'utilisateur n\'apparaît pas immédiatement, rechargez la liste.',
           );
         }
       } catch (e) {
@@ -47,16 +44,19 @@ class UserActionHandlers {
           final errorMessage = e.toString();
           // Si c'est une erreur SQLite mais que l'utilisateur existe dans Firestore,
           // afficher un message informatif plutôt qu'une erreur
-          if (errorMessage.toLowerCase().contains('sqlite') || 
+          if (errorMessage.toLowerCase().contains('sqlite') ||
               errorMessage.toLowerCase().contains('drift') ||
               errorMessage.toLowerCase().contains('database')) {
             NotificationService.showInfo(
               context,
               'Utilisateur créé dans Firebase. Une erreur est survenue lors de la sauvegarde locale. '
-              'L\'utilisateur sera disponible après rechargement de la liste.'
+              'L\'utilisateur sera disponible après rechargement de la liste.',
             );
           } else {
-            NotificationService.showError(context, 'Erreur lors de la création: $errorMessage');
+            NotificationService.showError(
+              context,
+              'Erreur lors de la création: $errorMessage',
+            );
           }
         }
       }
@@ -74,7 +74,10 @@ class UserActionHandlers {
         await ref.read(userControllerProvider).updateUser(result);
         ref.invalidate(usersProvider);
         if (context.mounted) {
-          NotificationService.showSuccess(context, 'Utilisateur modifié avec succès');
+          NotificationService.showSuccess(
+            context,
+            'Utilisateur modifié avec succès',
+          );
         }
       } catch (e) {
         if (context.mounted) {
@@ -85,14 +88,20 @@ class UserActionHandlers {
   }
 
   Future<void> handleAssignEnterprise(User user) async {
-    final result = await showDialog<EnterpriseModuleUser>(
+    final result = await showDialog<dynamic>(
       context: context,
       builder: (context) => AssignEnterpriseDialog(user: user),
     );
 
     if (result != null && context.mounted) {
       ref.invalidate(enterpriseModuleUsersProvider);
-      ref.invalidate(userEnterpriseModuleUsersProvider(result.userId));
+      // Si c'est un EnterpriseModuleUser (mode classique), invalider pour cet utilisateur
+      if (result is EnterpriseModuleUser) {
+        ref.invalidate(userEnterpriseModuleUsersProvider(result.userId));
+      } else {
+        // Mode batch : invalider pour l'utilisateur concerné
+        ref.invalidate(userEnterpriseModuleUsersProvider(user.id));
+      }
     }
   }
 
@@ -119,7 +128,7 @@ class UserActionHandlers {
     if (confirmed == true && context.mounted) {
       try {
         await ref.read(userControllerProvider).deleteUser(user.id);
-        ref.invalidate(usersProvider);
+        ref.refresh(usersProvider);
         if (context.mounted) {
           NotificationService.showSuccess(context, 'Utilisateur supprimé');
         }
@@ -133,7 +142,9 @@ class UserActionHandlers {
 
   Future<void> handleToggleStatus(User user) async {
     try {
-      await ref.read(userControllerProvider).toggleUserStatus(user.id, !user.isActive);
+      await ref
+          .read(userControllerProvider)
+          .toggleUserStatus(user.id, !user.isActive);
       ref.invalidate(usersProvider);
       if (context.mounted) {
         NotificationService.showInfo(
@@ -147,5 +158,53 @@ class UserActionHandlers {
       }
     }
   }
-}
 
+  Future<void> handleRemoveAssignment(EnterpriseModuleUser assignment) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Retirer l\'assignation'),
+        content: Text(
+          'Êtes-vous sûr de vouloir retirer cette assignation?\n\n'
+          'Entreprise: ${assignment.enterpriseId}\n'
+          'Module: ${assignment.moduleId}',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Annuler'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Retirer'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      try {
+        await ref
+            .read(adminControllerProvider)
+            .removeUserFromEnterprise(
+              assignment.userId,
+              assignment.enterpriseId,
+              assignment.moduleId,
+            );
+        ref.refresh(enterpriseModuleUsersProvider);
+        ref.refresh(userEnterpriseModuleUsersProvider(assignment.userId));
+        if (context.mounted) {
+          NotificationService.showSuccess(
+            context,
+            'Assignation retirée avec succès',
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          NotificationService.showError(context, e.toString());
+        }
+      }
+    }
+  }
+}

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Generic paginated list view with virtual scrolling.
-/// 
+///
 /// Uses Drift-level pagination (LIMIT/OFFSET) for efficient loading of large datasets.
 /// Automatically loads more items as user scrolls.
 class PaginatedListView<T> extends ConsumerStatefulWidget {
@@ -26,7 +26,8 @@ class PaginatedListView<T> extends ConsumerStatefulWidget {
   final Future<({List<T> items, int totalCount, bool hasMore})> Function(
     int page,
     int limit,
-  ) dataLoader;
+  )
+  dataLoader;
 
   /// Builder for empty state
   final Widget Function(BuildContext context)? emptyStateBuilder;
@@ -181,8 +182,8 @@ class _PaginatedListViewState<T> extends ConsumerState<PaginatedListView<T>> {
                 Text(
                   'Aucun élément',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ],
             ),
@@ -211,4 +212,3 @@ class _PaginatedListViewState<T> extends ConsumerState<PaginatedListView<T>> {
     );
   }
 }
-

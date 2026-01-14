@@ -43,9 +43,7 @@ class CartService {
     required Product product,
   }) {
     try {
-      return cartItems.firstWhere(
-        (item) => item.product.id == product.id,
-      );
+      return cartItems.firstWhere((item) => item.product.id == product.id);
     } catch (_) {
       return null;
     }
@@ -59,10 +57,7 @@ class CartService {
     required Product product,
     int quantity = 1,
   }) {
-    final existingItem = findCartItem(
-      cartItems: cartItems,
-      product: product,
-    );
+    final existingItem = findCartItem(cartItems: cartItems, product: product);
 
     if (existingItem != null) {
       // Update existing item
@@ -134,4 +129,3 @@ class CartService {
     return null;
   }
 }
-

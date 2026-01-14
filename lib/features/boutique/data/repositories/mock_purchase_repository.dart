@@ -61,8 +61,7 @@ class MockPurchaseRepository implements PurchaseRepository {
   @override
   Future<List<Purchase>> fetchPurchases({int limit = 50}) async {
     await Future<void>.delayed(const Duration(milliseconds: 200));
-    return _purchases.values.toList()
-      ..sort((a, b) => b.date.compareTo(a.date));
+    return _purchases.values.toList()..sort((a, b) => b.date.compareTo(a.date));
   }
 
   @override
@@ -78,4 +77,3 @@ class MockPurchaseRepository implements PurchaseRepository {
     return purchase.id;
   }
 }
-

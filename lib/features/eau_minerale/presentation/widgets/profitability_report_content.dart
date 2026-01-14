@@ -16,10 +16,7 @@ import 'profitability/product_profit_card.dart';
 
 /// Widget displaying profitability analysis report.
 class ProfitabilityReportContent extends ConsumerWidget {
-  const ProfitabilityReportContent({
-    super.key,
-    required this.period,
-  });
+  const ProfitabilityReportContent({super.key, required this.period});
 
   final ReportPeriod period;
 
@@ -33,8 +30,9 @@ class ProfitabilityReportContent extends ConsumerWidget {
     return sessionsAsync.when(
       data: (allSessions) {
         final sessions = allSessions.where((s) {
-          return s.date
-                  .isAfter(period.startDate.subtract(const Duration(days: 1))) &&
+          return s.date.isAfter(
+                period.startDate.subtract(const Duration(days: 1)),
+              ) &&
               s.date.isBefore(period.endDate.add(const Duration(days: 1)));
         }).toList();
 
@@ -44,9 +42,11 @@ class ProfitabilityReportContent extends ConsumerWidget {
               data: (finances) {
                 final expenses = finances.expenses.where((e) {
                   return e.date.isAfter(
-                          period.startDate.subtract(const Duration(days: 1))) &&
-                      e.date
-                          .isBefore(period.endDate.add(const Duration(days: 1)));
+                        period.startDate.subtract(const Duration(days: 1)),
+                      ) &&
+                      e.date.isBefore(
+                        period.endDate.add(const Duration(days: 1)),
+                      );
                 }).toList();
 
                 return _buildContent(
@@ -80,7 +80,9 @@ class ProfitabilityReportContent extends ConsumerWidget {
     int totalExpenses,
   ) {
     // Use profitability calculation service
-    final calculationService = ref.read(profitabilityCalculationServiceProvider);
+    final calculationService = ref.read(
+      profitabilityCalculationServiceProvider,
+    );
     final metrics = calculationService.calculateMetrics(
       sessions: sessions,
       sales: sales,
@@ -171,7 +173,9 @@ class ProfitabilityReportContent extends ConsumerWidget {
           label: 'Taux de marge',
           value: '${metrics.grossMarginPercent.toStringAsFixed(1)}%',
           icon: Icons.percent,
-          color: metrics.grossMarginPercent >= 20 ? Colors.green : Colors.orange,
+          color: metrics.grossMarginPercent >= 20
+              ? Colors.green
+              : Colors.orange,
         ),
         KpiItem(
           label: 'Coûts totaux',
@@ -207,17 +211,18 @@ class ProfitabilityReportContent extends ConsumerWidget {
             ),
           )
         else
-          ...productAnalysis.map((product) => ProductProfitCard(
-                productName: product.productName,
-                quantity: product.quantity,
-                revenue: product.revenue,
-                estimatedCost: product.estimatedCost,
-                margin: product.margin,
-                marginPercent: product.marginPercent,
-                formatCurrency: CurrencyFormatter.formatFCFA,
-              )),
+          ...productAnalysis.map(
+            (product) => ProductProfitCard(
+              productName: product.productName,
+              quantity: product.quantity,
+              revenue: product.revenue,
+              estimatedCost: product.estimatedCost,
+              margin: product.margin,
+              marginPercent: product.marginPercent,
+              formatCurrency: CurrencyFormatter.formatFCFA,
+            ),
+          ),
       ],
     );
   }
-
 }

@@ -149,4 +149,3 @@ class ReportsKpiGrid extends ConsumerWidget {
     );
   }
 }
-

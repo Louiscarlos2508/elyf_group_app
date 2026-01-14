@@ -20,7 +20,8 @@ class BobineStockMovement {
   final BobineMovementType type;
   final DateTime date;
   final double quantite; // En unités
-  final String raison; // Ex: "Livraison", "Installation en production", "Retrait après fin"
+  final String
+  raison; // Ex: "Livraison", "Installation en production", "Retrait après fin"
   final String? productionId; // ID de la production si lié à une production
   final String? machineId; // ID de la machine si lié à une installation
   final String? notes;
@@ -58,8 +59,10 @@ class BobineStockMovement {
 enum BobineMovementType {
   /// Entrée en stock (livraison)
   entree,
+
   /// Sortie du stock (installation en production)
   sortie,
+
   /// Retrait après utilisation complète
   retrait,
 }

@@ -13,4 +13,3 @@ class InvalidPaymentAmountException implements Exception {
     return 'Montant invalide: attendu $expectedAmount FCFA, reçu $actualAmount FCFA';
   }
 }
-

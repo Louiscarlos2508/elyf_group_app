@@ -12,7 +12,11 @@ class ClientsController {
     return ClientsState(customers: customers.take(4).toList());
   }
 
-  Future<String> createCustomer(String name, String phone, {String? cnib}) async {
+  Future<String> createCustomer(
+    String name,
+    String phone, {
+    String? cnib,
+  }) async {
     return await _repository.createCustomer(name, phone, cnib: cnib);
   }
 }

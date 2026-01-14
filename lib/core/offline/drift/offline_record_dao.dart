@@ -18,7 +18,9 @@ class OfflineRecordDao {
     DateTime? localUpdatedAt,
   }) async {
     final now = DateTime.now();
-    await _db.into(_db.offlineRecords).insert(
+    await _db
+        .into(_db.offlineRecords)
+        .insert(
           OfflineRecordsCompanion.insert(
             collectionName: collectionName,
             localId: localId,
@@ -38,14 +40,13 @@ class OfflineRecordDao {
     required String enterpriseId,
     required String moduleType,
   }) {
-    return (_db.select(_db.offlineRecords)
-          ..where(
-            (t) =>
-                t.collectionName.equals(collectionName) &
-                t.enterpriseId.equals(enterpriseId) &
-                t.moduleType.equals(moduleType) &
-                t.localId.equals(localId),
-          ))
+    return (_db.select(_db.offlineRecords)..where(
+          (t) =>
+              t.collectionName.equals(collectionName) &
+              t.enterpriseId.equals(enterpriseId) &
+              t.moduleType.equals(moduleType) &
+              t.localId.equals(localId),
+        ))
         .getSingleOrNull();
   }
 
@@ -55,14 +56,13 @@ class OfflineRecordDao {
     required String enterpriseId,
     required String moduleType,
   }) {
-    return (_db.select(_db.offlineRecords)
-          ..where(
-            (t) =>
-                t.collectionName.equals(collectionName) &
-                t.enterpriseId.equals(enterpriseId) &
-                t.moduleType.equals(moduleType) &
-                t.remoteId.equals(remoteId),
-          ))
+    return (_db.select(_db.offlineRecords)..where(
+          (t) =>
+              t.collectionName.equals(collectionName) &
+              t.enterpriseId.equals(enterpriseId) &
+              t.moduleType.equals(moduleType) &
+              t.remoteId.equals(remoteId),
+        ))
         .getSingleOrNull();
   }
 
@@ -83,7 +83,7 @@ class OfflineRecordDao {
   }
 
   /// List records for an enterprise with pagination support (LIMIT/OFFSET).
-  /// 
+  ///
   /// Returns a paginated list of records ordered by localUpdatedAt descending.
   Future<List<OfflineRecord>> listForEnterprisePaginated({
     required String collectionName,
@@ -105,7 +105,7 @@ class OfflineRecordDao {
   }
 
   /// Count records for an enterprise.
-  /// 
+  ///
   /// Useful for pagination to know total number of records.
   Future<int> countForEnterprise({
     required String collectionName,
@@ -127,14 +127,13 @@ class OfflineRecordDao {
     required String enterpriseId,
     required String moduleType,
   }) async {
-    await (_db.delete(_db.offlineRecords)
-          ..where(
-            (t) =>
-                t.collectionName.equals(collectionName) &
-                t.enterpriseId.equals(enterpriseId) &
-                t.moduleType.equals(moduleType) &
-                t.localId.equals(localId),
-          ))
+    await (_db.delete(_db.offlineRecords)..where(
+          (t) =>
+              t.collectionName.equals(collectionName) &
+              t.enterpriseId.equals(enterpriseId) &
+              t.moduleType.equals(moduleType) &
+              t.localId.equals(localId),
+        ))
         .go();
   }
 
@@ -144,14 +143,13 @@ class OfflineRecordDao {
     required String enterpriseId,
     required String moduleType,
   }) async {
-    await (_db.delete(_db.offlineRecords)
-          ..where(
-            (t) =>
-                t.collectionName.equals(collectionName) &
-                t.enterpriseId.equals(enterpriseId) &
-                t.moduleType.equals(moduleType) &
-                t.remoteId.equals(remoteId),
-          ))
+    await (_db.delete(_db.offlineRecords)..where(
+          (t) =>
+              t.collectionName.equals(collectionName) &
+              t.enterpriseId.equals(enterpriseId) &
+              t.moduleType.equals(moduleType) &
+              t.remoteId.equals(remoteId),
+        ))
         .go();
   }
 
@@ -160,9 +158,9 @@ class OfflineRecordDao {
   }
 
   Future<void> clearEnterprise(String enterpriseId) async {
-    await (_db.delete(_db.offlineRecords)
-          ..where((t) => t.enterpriseId.equals(enterpriseId)))
-        .go();
+    await (_db.delete(
+      _db.offlineRecords,
+    )..where((t) => t.enterpriseId.equals(enterpriseId))).go();
   }
 
   /// Updates the remote ID for a record after successful sync.
@@ -172,18 +170,16 @@ class OfflineRecordDao {
     required String remoteId,
     DateTime? serverUpdatedAt,
   }) async {
-    await (_db.update(_db.offlineRecords)
-          ..where(
-            (t) =>
-                t.collectionName.equals(collectionName) &
-                t.localId.equals(localId),
-          ))
+    await (_db.update(_db.offlineRecords)..where(
+          (t) =>
+              t.collectionName.equals(collectionName) &
+              t.localId.equals(localId),
+        ))
         .write(
-      OfflineRecordsCompanion(
-        remoteId: Value(remoteId),
-        localUpdatedAt: Value(serverUpdatedAt ?? DateTime.now()),
-      ),
-    );
+          OfflineRecordsCompanion(
+            remoteId: Value(remoteId),
+            localUpdatedAt: Value(serverUpdatedAt ?? DateTime.now()),
+          ),
+        );
   }
 }
-

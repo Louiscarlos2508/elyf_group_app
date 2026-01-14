@@ -62,27 +62,33 @@ void main() {
     });
 
     group('validateAllPersonAmountsAndDays', () {
-      test('should return true when all persons have valid amounts and days', () {
-        final persons = [
-          const ProductionPaymentPerson(
-            name: 'John Doe',
-            pricePerDay: 5000,
-            daysWorked: 5,
-          ),
-        ];
-        expect(service.validateAllPersonAmountsAndDays(persons), true);
-      });
+      test(
+        'should return true when all persons have valid amounts and days',
+        () {
+          final persons = [
+            const ProductionPaymentPerson(
+              name: 'John Doe',
+              pricePerDay: 5000,
+              daysWorked: 5,
+            ),
+          ];
+          expect(service.validateAllPersonAmountsAndDays(persons), true);
+        },
+      );
 
-      test('should return false when any person has invalid amount or days', () {
-        final persons = [
-          const ProductionPaymentPerson(
-            name: 'John Doe',
-            pricePerDay: 0,
-            daysWorked: 5,
-          ),
-        ];
-        expect(service.validateAllPersonAmountsAndDays(persons), false);
-      });
+      test(
+        'should return false when any person has invalid amount or days',
+        () {
+          final persons = [
+            const ProductionPaymentPerson(
+              name: 'John Doe',
+              pricePerDay: 0,
+              daysWorked: 5,
+            ),
+          ];
+          expect(service.validateAllPersonAmountsAndDays(persons), false);
+        },
+      );
     });
 
     group('getPersonsValidationError', () {
@@ -129,4 +135,3 @@ void main() {
     });
   });
 }
-

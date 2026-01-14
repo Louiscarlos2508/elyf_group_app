@@ -20,9 +20,7 @@ class WholesaleEmptyState extends StatelessWidget {
       ),
       child: Container(
         height: 160,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(14),
-        ),
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(14)),
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -48,4 +46,3 @@ class WholesaleEmptyState extends StatelessWidget {
     );
   }
 }
-

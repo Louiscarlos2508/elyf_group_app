@@ -6,11 +6,7 @@ import '../../domain/entities/expense.dart';
 
 /// Carte réutilisable pour afficher une dépense.
 class ExpenseCard extends StatelessWidget {
-  const ExpenseCard({
-    super.key,
-    required this.expense,
-    this.onTap,
-  });
+  const ExpenseCard({super.key, required this.expense, this.onTap});
 
   final PropertyExpense expense;
   final VoidCallback? onTap;
@@ -66,9 +62,7 @@ class ExpenseCard extends StatelessWidget {
     return Card(
       elevation: 2,
       margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
@@ -166,4 +160,3 @@ class ExpenseCard extends StatelessWidget {
     );
   }
 }
-

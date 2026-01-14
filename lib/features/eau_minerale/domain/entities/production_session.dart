@@ -27,16 +27,19 @@ class ProductionSession {
     this.status = ProductionSessionStatus.draft,
     this.events = const [],
     this.productionDays = const [],
-  }  );
+  });
 
   final String id;
   final DateTime date;
   final int period; // Période de production (pour compatibilité)
   final DateTime heureDebut;
   final DateTime? heureFin; // null jusqu'à la finalisation de la production
-  final int? indexCompteurInitialKwh; // Index compteur électrique initial (kWh) au démarrage
-  final int? indexCompteurFinalKwh; // Index compteur électrique final (kWh) à la fin
-  final double consommationCourant; // kWh (calculé si indexCompteurInitialKwh et indexCompteurFinalKwh sont définis)
+  final int?
+  indexCompteurInitialKwh; // Index compteur électrique initial (kWh) au démarrage
+  final int?
+  indexCompteurFinalKwh; // Index compteur électrique final (kWh) à la fin
+  final double
+  consommationCourant; // kWh (calculé si indexCompteurInitialKwh et indexCompteurFinalKwh sont définis)
   final List<String> machinesUtilisees; // IDs des machines
   final List<BobineUsage> bobinesUtilisees;
   final int quantiteProduite; // Quantité produite
@@ -49,7 +52,8 @@ class ProductionSession {
   final DateTime? updatedAt;
   final ProductionSessionStatus status;
   final List<ProductionEvent> events; // Événements (pannes, coupures, arrêts)
-  final List<ProductionDay> productionDays; // Jours de production avec personnel
+  final List<ProductionDay>
+  productionDays; // Jours de production avec personnel
 
   /// Calcule la durée de production en heures
   double get dureeHeures {
@@ -79,7 +83,9 @@ class ProductionSession {
 
   /// Calcule le statut de progression basé sur les données disponibles
   ProductionSessionStatus get calculatedStatus {
-    if (quantiteProduite > 0 && heureFin != null && heureFin!.isAfter(heureDebut)) {
+    if (quantiteProduite > 0 &&
+        heureFin != null &&
+        heureFin!.isAfter(heureDebut)) {
       return ProductionSessionStatus.completed;
     }
     if (machinesUtilisees.isNotEmpty || bobinesUtilisees.isNotEmpty) {
@@ -92,7 +98,7 @@ class ProductionSession {
   }
 
   /// Retourne le statut effectif (toujours utiliser le statut enregistré, sauf s'il est draft)
-  /// 
+  ///
   /// Le statut enregistré doit toujours être utilisé pour éviter les conflits.
   /// Si le statut est draft, on peut calculer le statut à partir des données.
   ProductionSessionStatus get effectiveStatus {
@@ -122,10 +128,7 @@ class ProductionSession {
 
   /// Total des packs produits sur l'ensemble des jours de production.
   int get totalPacksProduitsJournalier {
-    return productionDays.fold<int>(
-      0,
-      (sum, day) => sum + day.packsProduits,
-    );
+    return productionDays.fold<int>(0, (sum, day) => sum + day.packsProduits);
   }
 
   /// Total des emballages utilisés sur l'ensemble des jours de production.
@@ -183,13 +186,16 @@ class ProductionSession {
       period: period ?? this.period,
       heureDebut: heureDebut ?? this.heureDebut,
       heureFin: heureFin ?? this.heureFin,
-      indexCompteurInitialKwh: indexCompteurInitialKwh ?? this.indexCompteurInitialKwh,
-      indexCompteurFinalKwh: indexCompteurFinalKwh ?? this.indexCompteurFinalKwh,
+      indexCompteurInitialKwh:
+          indexCompteurInitialKwh ?? this.indexCompteurInitialKwh,
+      indexCompteurFinalKwh:
+          indexCompteurFinalKwh ?? this.indexCompteurFinalKwh,
       consommationCourant: consommationCourant ?? this.consommationCourant,
       machinesUtilisees: machinesUtilisees ?? this.machinesUtilisees,
       bobinesUtilisees: bobinesUtilisees ?? this.bobinesUtilisees,
       quantiteProduite: quantiteProduite ?? this.quantiteProduite,
-      quantiteProduiteUnite: quantiteProduiteUnite ?? this.quantiteProduiteUnite,
+      quantiteProduiteUnite:
+          quantiteProduiteUnite ?? this.quantiteProduiteUnite,
       emballagesUtilises: emballagesUtilises ?? this.emballagesUtilises,
       coutBobines: coutBobines ?? this.coutBobines,
       coutElectricite: coutElectricite ?? this.coutElectricite,
@@ -202,4 +208,3 @@ class ProductionSession {
     );
   }
 }
-

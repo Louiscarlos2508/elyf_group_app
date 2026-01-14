@@ -6,10 +6,7 @@ import 'production_report_helpers.dart';
 
 /// En-tête du rapport de production.
 class ProductionReportHeader extends StatelessWidget {
-  const ProductionReportHeader({
-    super.key,
-    required this.session,
-  });
+  const ProductionReportHeader({super.key, required this.session});
 
   final ProductionSession session;
 
@@ -47,4 +44,3 @@ class ProductionReportHeader extends StatelessWidget {
     );
   }
 }
-

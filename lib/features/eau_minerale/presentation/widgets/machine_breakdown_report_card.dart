@@ -9,6 +9,7 @@ import '../../domain/entities/production_session_status.dart';
 import 'machine_breakdown_dialog.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../../../shared/utils/notification_service.dart';
+
 /// Carte pour signaler une panne de machine dans les paramètres.
 class MachineBreakdownReportCard extends ConsumerWidget {
   const MachineBreakdownReportCard({super.key});
@@ -35,11 +36,7 @@ class MachineBreakdownReportCard extends ConsumerWidget {
           children: [
             Row(
               children: [
-                Icon(
-                  Icons.build,
-                  color: theme.colorScheme.error,
-                  size: 24,
-                ),
+                Icon(Icons.build, color: theme.colorScheme.error, size: 24),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -86,13 +83,17 @@ class MachineBreakdownReportCard extends ConsumerWidget {
                         // Trouver la bobine non finie pour cette machine (optionnel)
                         BobineUsage? bobineNonFinie;
                         ProductionSession? sessionActive;
-                        
+
                         for (final session in sessions) {
-                          if (session.status == ProductionSessionStatus.inProgress ||
-                              session.status == ProductionSessionStatus.started) {
-                            final bobinesFiltrees = session.bobinesUtilisees.where(
-                              (b) => b.machineId == machine.id && !b.estFinie,
-                            );
+                          if (session.status ==
+                                  ProductionSessionStatus.inProgress ||
+                              session.status ==
+                                  ProductionSessionStatus.started) {
+                            final bobinesFiltrees = session.bobinesUtilisees
+                                .where(
+                                  (b) =>
+                                      b.machineId == machine.id && !b.estFinie,
+                                );
                             if (bobinesFiltrees.isNotEmpty) {
                               bobineNonFinie = bobinesFiltrees.first;
                               sessionActive = session;
@@ -111,24 +112,29 @@ class MachineBreakdownReportCard extends ConsumerWidget {
                                 Row(
                                   children: [
                                     CircleAvatar(
-                                      backgroundColor: theme.colorScheme.primaryContainer,
+                                      backgroundColor:
+                                          theme.colorScheme.primaryContainer,
                                       radius: 20,
                                       child: Icon(
                                         Icons.precision_manufacturing,
-                                        color: theme.colorScheme.onPrimaryContainer,
+                                        color: theme
+                                            .colorScheme
+                                            .onPrimaryContainer,
                                         size: 20,
                                       ),
                                     ),
                                     const SizedBox(width: 12),
                                     Expanded(
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Text(
                                             machine.nom,
-                                            style: theme.textTheme.titleSmall?.copyWith(
-                                              fontWeight: FontWeight.w600,
-                                            ),
+                                            style: theme.textTheme.titleSmall
+                                                ?.copyWith(
+                                                  fontWeight: FontWeight.w600,
+                                                ),
                                             overflow: TextOverflow.ellipsis,
                                           ),
                                           const SizedBox(height: 2),
@@ -136,9 +142,12 @@ class MachineBreakdownReportCard extends ConsumerWidget {
                                             bobineNonFinie != null
                                                 ? 'Bobine ${bobineNonFinie.bobineType} en cours'
                                                 : 'Aucune bobine en cours',
-                                            style: theme.textTheme.bodySmall?.copyWith(
-                                              color: theme.colorScheme.onSurfaceVariant,
-                                            ),
+                                            style: theme.textTheme.bodySmall
+                                                ?.copyWith(
+                                                  color: theme
+                                                      .colorScheme
+                                                      .onSurfaceVariant,
+                                                ),
                                           ),
                                         ],
                                       ),

@@ -91,4 +91,3 @@ class MockSettingsRepository implements SettingsRepository {
     }
   }
 }
-

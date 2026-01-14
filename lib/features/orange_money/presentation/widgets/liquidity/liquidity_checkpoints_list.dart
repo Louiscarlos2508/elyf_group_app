@@ -6,10 +6,7 @@ import '../../../domain/entities/liquidity_checkpoint.dart';
 
 /// Widget affichant la liste des pointages de liquidité.
 class LiquidityCheckpointsList extends StatelessWidget {
-  const LiquidityCheckpointsList({
-    super.key,
-    required this.checkpoints,
-  });
+  const LiquidityCheckpointsList({super.key, required this.checkpoints});
 
   final List<LiquidityCheckpoint> checkpoints;
 
@@ -162,10 +159,7 @@ class LiquidityCheckpointsList extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFFF0F9FF),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: const Color(0xFFBFDBFE),
-          width: 1.219,
-        ),
+        border: Border.all(color: const Color(0xFFBFDBFE), width: 1.219),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -184,10 +178,7 @@ class LiquidityCheckpointsList extends StatelessWidget {
             children: [
               const Text(
                 'Cash:',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFF4A5565),
-                ),
+                style: TextStyle(fontSize: 14, color: Color(0xFF4A5565)),
               ),
               Builder(
                 builder: (context) {
@@ -215,10 +206,7 @@ class LiquidityCheckpointsList extends StatelessWidget {
             children: [
               const Text(
                 'SIM:',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFF4A5565),
-                ),
+                style: TextStyle(fontSize: 14, color: Color(0xFF4A5565)),
               ),
               Builder(
                 builder: (context) {
@@ -240,11 +228,7 @@ class LiquidityCheckpointsList extends StatelessWidget {
               ),
             ],
           ),
-          const Divider(
-            height: 20,
-            thickness: 1.219,
-            color: Color(0xFFE5E5E5),
-          ),
+          const Divider(height: 20, thickness: 1.219, color: Color(0xFFE5E5E5)),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -258,9 +242,11 @@ class LiquidityCheckpointsList extends StatelessWidget {
               ),
               Builder(
                 builder: (context) {
-                  final morningTotal = (checkpoint.morningCashAmount ?? 0) +
+                  final morningTotal =
+                      (checkpoint.morningCashAmount ?? 0) +
                       (checkpoint.morningSimAmount ?? 0);
-                  final eveningTotal = (checkpoint.eveningCashAmount ?? 0) +
+                  final eveningTotal =
+                      (checkpoint.eveningCashAmount ?? 0) +
                       (checkpoint.eveningSimAmount ?? 0);
                   final diff = eveningTotal - morningTotal;
                   final isPositive = diff >= 0;
@@ -379,4 +365,3 @@ class _PeriodCard extends StatelessWidget {
     );
   }
 }
-

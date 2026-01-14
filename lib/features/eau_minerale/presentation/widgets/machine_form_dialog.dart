@@ -15,8 +15,7 @@ class MachineFormDialog extends ConsumerStatefulWidget {
   final Machine? machine;
 
   @override
-  ConsumerState<MachineFormDialog> createState() =>
-      _MachineFormDialogState();
+  ConsumerState<MachineFormDialog> createState() => _MachineFormDialogState();
 }
 
 class _MachineFormDialogState extends ConsumerState<MachineFormDialog>
@@ -37,8 +36,7 @@ class _MachineFormDialogState extends ConsumerState<MachineFormDialog>
       _nomController.text = widget.machine!.nom;
       _referenceController.text = widget.machine!.reference;
       _descriptionController.text = widget.machine!.description ?? '';
-      _puissanceController.text =
-          widget.machine!.puissanceKw?.toString() ?? '';
+      _puissanceController.text = widget.machine!.puissanceKw?.toString() ?? '';
       _estActive = widget.machine!.estActive;
       _dateInstallation = widget.machine!.dateInstallation;
     }
@@ -190,8 +188,9 @@ class _MachineFormDialogState extends ConsumerState<MachineFormDialog>
                           labelText: 'Puissance (kW)',
                           hintText: 'Ex: 5.5',
                         ),
-                        keyboardType:
-                            const TextInputType.numberWithOptions(decimal: true),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
                         inputFormatters: [
                           FilteringTextInputFormatter.allow(
                             RegExp(r'^\d+\.?\d{0,2}'),
@@ -261,7 +260,9 @@ class _MachineFormDialogState extends ConsumerState<MachineFormDialog>
                               ? const SizedBox(
                                   width: 20,
                                   height: 20,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
                                 )
                               : const Text('Enregistrer'),
                         ),

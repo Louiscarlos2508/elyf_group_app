@@ -4,10 +4,7 @@ import '../../domain/entities/packaging_stock.dart';
 
 /// Card displaying packaging stock summary.
 class PackagingStockCard extends StatelessWidget {
-  const PackagingStockCard({
-    super.key,
-    required this.packagingStocks,
-  });
+  const PackagingStockCard({super.key, required this.packagingStocks});
 
   final List<PackagingStock> packagingStocks;
 
@@ -94,7 +91,7 @@ class PackagingStockCard extends StatelessWidget {
   ) {
     final theme = Theme.of(context);
     final color = isLowStock ? Colors.red : Colors.purple.shade800;
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

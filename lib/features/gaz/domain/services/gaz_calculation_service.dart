@@ -102,26 +102,22 @@ class GazCalculationService {
   /// Filtre les stocks par statut vide.
   static List<CylinderStock> filterEmptyStocks(List<CylinderStock> stocks) {
     return stocks
-        .where((s) =>
-            s.status == CylinderStatus.emptyAtStore ||
-            s.status == CylinderStatus.emptyInTransit)
+        .where(
+          (s) =>
+              s.status == CylinderStatus.emptyAtStore ||
+              s.status == CylinderStatus.emptyInTransit,
+        )
         .toList();
   }
 
   /// Calcule le total des bouteilles pleines.
   static int calculateTotalFullCylinders(List<CylinderStock> stocks) {
-    return filterFullStocks(stocks).fold<int>(
-      0,
-      (sum, s) => sum + s.quantity,
-    );
+    return filterFullStocks(stocks).fold<int>(0, (sum, s) => sum + s.quantity);
   }
 
   /// Calcule le total des bouteilles vides.
   static int calculateTotalEmptyCylinders(List<CylinderStock> stocks) {
-    return filterEmptyStocks(stocks).fold<int>(
-      0,
-      (sum, s) => sum + s.quantity,
-    );
+    return filterEmptyStocks(stocks).fold<int>(0, (sum, s) => sum + s.quantity);
   }
 
   /// Groupe les stocks par poids.
@@ -148,8 +144,7 @@ class GazCalculationService {
     final fullByWeight = groupStocksByWeight(fullStocks);
     final emptyByWeight = groupStocksByWeight(emptyStocks);
 
-    final activePointsOfSale =
-        pointsOfSale.where((p) => p.isActive).toList();
+    final activePointsOfSale = pointsOfSale.where((p) => p.isActive).toList();
 
     // Extraire les poids uniques des bouteilles existantes
     final weightsToShow = cylinders.map((c) => c.weight).toSet().toList()
@@ -189,7 +184,7 @@ class GazCalculationService {
   }) {
     final now = referenceDate ?? DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    
+
     final retailSales = filterRetailSales(allSales);
     final todaySales = retailSales.where((s) {
       final saleDate = DateTime(
@@ -301,7 +296,8 @@ class GazCalculationService {
     List<double> profitData,
     List<double> expensesData,
     List<double> salesData,
-  }) calculateLast7DaysPerformance(
+  })
+  calculateLast7DaysPerformance(
     List<GasSale> sales,
     List<GazExpense> expenses,
   ) {
@@ -318,11 +314,15 @@ class GazCalculationService {
 
       // Sales for this day
       final daySales = sales.where((s) {
-        return s.saleDate.isAfter(dayStart.subtract(const Duration(seconds: 1))) &&
+        return s.saleDate.isAfter(
+              dayStart.subtract(const Duration(seconds: 1)),
+            ) &&
             s.saleDate.isBefore(dayEnd);
       }).toList();
-      final dayRevenue =
-          daySales.fold<double>(0, (sum, s) => sum + s.totalAmount);
+      final dayRevenue = daySales.fold<double>(
+        0,
+        (sum, s) => sum + s.totalAmount,
+      );
       salesData.add(dayRevenue);
 
       // Expenses for this day
@@ -330,8 +330,10 @@ class GazCalculationService {
         return e.date.isAfter(dayStart.subtract(const Duration(seconds: 1))) &&
             e.date.isBefore(dayEnd);
       }).toList();
-      final dayExpensesAmount =
-          dayExpenses.fold<double>(0, (sum, e) => sum + e.amount);
+      final dayExpensesAmount = dayExpenses.fold<double>(
+        0,
+        (sum, e) => sum + e.amount,
+      );
       expensesData.add(dayExpensesAmount);
 
       // Profit for this day
@@ -484,14 +486,14 @@ class StockMetrics {
   final List<int> availableWeights;
 
   String get fullSummary => GazCalculationService.formatStockByWeightSummary(
-        fullByWeight,
-        availableWeights,
-      );
+    fullByWeight,
+    availableWeights,
+  );
 
   String get emptySummary => GazCalculationService.formatStockByWeightSummary(
-        emptyByWeight,
-        availableWeights,
-      );
+    emptyByWeight,
+    availableWeights,
+  );
 }
 
 /// Métriques des ventes au détail.
@@ -539,9 +541,11 @@ extension GazStockCalculationExtension on GazCalculationService {
         .where((s) => s.status == CylinderStatus.full)
         .toList();
     final emptyStocks = posStocks
-        .where((s) =>
-            s.status == CylinderStatus.emptyAtStore ||
-            s.status == CylinderStatus.emptyInTransit)
+        .where(
+          (s) =>
+              s.status == CylinderStatus.emptyAtStore ||
+              s.status == CylinderStatus.emptyInTransit,
+        )
         .toList();
 
     final totalFull = fullStocks.fold<int>(0, (sum, s) => sum + s.quantity);
@@ -557,10 +561,12 @@ extension GazStockCalculationExtension on GazCalculationService {
           .where((s) => s.weight == weight && s.status == CylinderStatus.full)
           .fold<int>(0, (sum, s) => sum + s.quantity);
       final empty = posStocks
-          .where((s) =>
-              s.weight == weight &&
-              (s.status == CylinderStatus.emptyAtStore ||
-                  s.status == CylinderStatus.emptyInTransit))
+          .where(
+            (s) =>
+                s.weight == weight &&
+                (s.status == CylinderStatus.emptyAtStore ||
+                    s.status == CylinderStatus.emptyInTransit),
+          )
           .fold<int>(0, (sum, s) => sum + s.quantity);
       if (full > 0 || empty > 0) {
         stockByCapacity[weight] = (full: full, empty: empty);
@@ -575,4 +581,3 @@ extension GazStockCalculationExtension on GazCalculationService {
     );
   }
 }
-

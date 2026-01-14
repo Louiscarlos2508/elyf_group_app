@@ -7,6 +7,7 @@ import '../../../domain/entities/commission.dart';
 import '../../widgets/commission_form_dialog.dart';
 import '../../widgets/kpi_card.dart';
 import 'package:elyf_groupe_app/shared.dart';
+
 /// Screen for managing commissions.
 class CommissionsScreen extends ConsumerWidget {
   const CommissionsScreen({super.key, this.enterpriseId});
@@ -16,10 +17,12 @@ class CommissionsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final enterpriseKey = enterpriseId ?? '';
-    
+
     final statsAsync = ref.watch(commissionsStatisticsProvider(enterpriseKey));
     final commissionsAsync = ref.watch(commissionsProvider(enterpriseKey));
-    final currentMonthAsync = ref.watch(currentMonthCommissionProvider((enterpriseKey)));
+    final currentMonthAsync = ref.watch(
+      currentMonthCommissionProvider((enterpriseKey)),
+    );
 
     return CustomScrollView(
       slivers: [
@@ -39,23 +42,28 @@ class CommissionsScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 16),
                 currentMonthAsync.when(
-                  data: (commission) => _buildCurrentMonthCard(context, commission),
-                  loading: () => const Center(child: CircularProgressIndicator()),
+                  data: (commission) =>
+                      _buildCurrentMonthCard(context, commission),
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator()),
                   error: (_, __) => const SizedBox(),
                 ),
                 const SizedBox(height: 16),
                 commissionsAsync.when(
-                  data: (commissions) =>
-                      _buildCommissionsHistory(context, ref, enterpriseKey, commissions),
+                  data: (commissions) => _buildCommissionsHistory(
+                    context,
+                    ref,
+                    enterpriseKey,
+                    commissions,
+                  ),
                   loading: () => const Center(
                     child: Padding(
                       padding: EdgeInsets.all(24),
                       child: CircularProgressIndicator(),
                     ),
                   ),
-                  error: (error, stack) => Center(
-                    child: Text('Erreur: $error'),
-                  ),
+                  error: (error, stack) =>
+                      Center(child: Text('Erreur: $error')),
                 ),
                 const SizedBox(height: 16),
                 _buildInfoCard(context),
@@ -81,7 +89,9 @@ class CommissionsScreen extends ConsumerWidget {
         Expanded(
           child: KpiCard(
             label: 'En attente',
-            value: CurrencyFormatter.formatFCFA(stats['pendingAmount'] as int? ?? 0),
+            value: CurrencyFormatter.formatFCFA(
+              stats['pendingAmount'] as int? ?? 0,
+            ),
             icon: Icons.pending,
             valueColor: const Color(0xFFF54900),
             valueStyle: const TextStyle(
@@ -95,7 +105,9 @@ class CommissionsScreen extends ConsumerWidget {
         Expanded(
           child: KpiCard(
             label: 'Payées',
-            value: CurrencyFormatter.formatFCFA(stats['paidAmount'] as int? ?? 0),
+            value: CurrencyFormatter.formatFCFA(
+              stats['paidAmount'] as int? ?? 0,
+            ),
             icon: Icons.check_circle,
             valueColor: const Color(0xFF00A63E),
             valueStyle: const TextStyle(
@@ -109,7 +121,9 @@ class CommissionsScreen extends ConsumerWidget {
         Expanded(
           child: KpiCard(
             label: 'Estimé mois',
-            value: CurrencyFormatter.formatFCFA(stats['estimatedAmount'] as int? ?? 0),
+            value: CurrencyFormatter.formatFCFA(
+              stats['estimatedAmount'] as int? ?? 0,
+            ),
             icon: Icons.trending_up,
             valueColor: const Color(0xFF9810FA),
             valueStyle: const TextStyle(
@@ -131,10 +145,7 @@ class CommissionsScreen extends ConsumerWidget {
       padding: const EdgeInsets.all(25),
       decoration: BoxDecoration(
         color: const Color(0xFFFAF5FF),
-        border: Border.all(
-          color: const Color(0xFFE9D4FF),
-          width: 1.22,
-        ),
+        border: Border.all(color: const Color(0xFFE9D4FF), width: 1.22),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
@@ -142,7 +153,11 @@ class CommissionsScreen extends ConsumerWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.calendar_month, size: 20, color: Color(0xFF59168B)),
+              const Icon(
+                Icons.calendar_month,
+                size: 20,
+                color: Color(0xFF59168B),
+              ),
               const SizedBox(width: 8),
               Text(
                 'Mois en cours - $periodLabel',
@@ -167,7 +182,9 @@ class CommissionsScreen extends ConsumerWidget {
               Expanded(
                 child: _buildStatBox(
                   'Commissions estimées',
-                  CurrencyFormatter.formatFCFA(commission?.estimatedAmount ?? 0),
+                  CurrencyFormatter.formatFCFA(
+                    commission?.estimatedAmount ?? 0,
+                  ),
                   subtitle: 'Basé sur les transactions validées',
                   valueColor: const Color(0xFF9810FA),
                 ),
@@ -237,7 +254,12 @@ class CommissionsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildCommissionsHistory(BuildContext context, WidgetRef ref, String enterpriseId, List<Commission> commissions) {
+  Widget _buildCommissionsHistory(
+    BuildContext context,
+    WidgetRef ref,
+    String enterpriseId,
+    List<Commission> commissions,
+  ) {
     final theme = Theme.of(context);
 
     return Card(
@@ -258,7 +280,8 @@ class CommissionsScreen extends ConsumerWidget {
                 ),
                 const Spacer(),
                 ElevatedButton.icon(
-                  onPressed: () => _showAddCommissionDialog(context, ref, enterpriseId),
+                  onPressed: () =>
+                      _showAddCommissionDialog(context, ref, enterpriseId),
                   icon: const Icon(Icons.add, size: 16),
                   label: const Text('Ajouter commission'),
                   style: ElevatedButton.styleFrom(
@@ -278,7 +301,9 @@ class CommissionsScreen extends ConsumerWidget {
                       Icon(
                         Icons.attach_money,
                         size: 48,
-                        color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                        color: theme.colorScheme.onSurfaceVariant.withValues(
+                          alpha: 0.5,
+                        ),
                       ),
                       const SizedBox(height: 16),
                       Text(
@@ -344,10 +369,7 @@ class CommissionsScreen extends ConsumerWidget {
       padding: const EdgeInsets.fromLTRB(25, 25, 1, 1),
       decoration: BoxDecoration(
         color: const Color(0xFFEFF6FF),
-        border: Border.all(
-          color: const Color(0xFFBEDBFF),
-          width: 1.22,
-        ),
+        border: Border.all(color: const Color(0xFFBEDBFF), width: 1.22),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
@@ -360,11 +382,7 @@ class CommissionsScreen extends ConsumerWidget {
               color: const Color(0xFFDBEAFE),
               borderRadius: BorderRadius.circular(20),
             ),
-            child: const Icon(
-              Icons.info,
-              color: Color(0xFF1C398E),
-              size: 20,
-            ),
+            child: const Icon(Icons.info, color: Color(0xFF1C398E), size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -407,10 +425,10 @@ class CommissionsScreen extends ConsumerWidget {
         onSave: (period, amount, photoFile, notes) async {
           try {
             final controller = ref.read(commissionsControllerProvider);
-            
+
             // TODO: Upload photo file if provided (to Firebase Storage or similar)
             // For now, we'll just create the commission without the photo
-            
+
             final commission = Commission(
               id: 'commission_${DateTime.now().millisecondsSinceEpoch}',
               period: period,
@@ -432,11 +450,17 @@ class CommissionsScreen extends ConsumerWidget {
             ref.invalidate(currentMonthCommissionProvider((enterpriseId)));
 
             if (context.mounted) {
-              NotificationService.showSuccess(context, 'Commission enregistrée avec succès');
+              NotificationService.showSuccess(
+                context,
+                'Commission enregistrée avec succès',
+              );
             }
           } catch (e) {
             if (context.mounted) {
-              NotificationService.showError(context, 'Erreur lors de l\'enregistrement: $e');
+              NotificationService.showError(
+                context,
+                'Erreur lors de l\'enregistrement: $e',
+              );
             }
           }
         },
@@ -444,4 +468,3 @@ class CommissionsScreen extends ConsumerWidget {
     );
   }
 }
-

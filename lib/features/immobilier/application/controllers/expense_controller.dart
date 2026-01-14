@@ -14,9 +14,7 @@ class PropertyExpenseController {
     return await _expenseRepository.getExpenseById(id);
   }
 
-  Future<List<PropertyExpense>> getExpensesByProperty(
-    String propertyId,
-  ) async {
+  Future<List<PropertyExpense>> getExpensesByProperty(String propertyId) async {
     return await _expenseRepository.getExpensesByProperty(propertyId);
   }
 
@@ -45,4 +43,3 @@ class PropertyExpenseController {
     await _expenseRepository.deleteExpense(id);
   }
 }
-

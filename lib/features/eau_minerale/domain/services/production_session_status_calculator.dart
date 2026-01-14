@@ -64,4 +64,3 @@ class ProductionSessionStatusCalculator {
     return heureDebut.isBefore(DateTime.now());
   }
 }
-

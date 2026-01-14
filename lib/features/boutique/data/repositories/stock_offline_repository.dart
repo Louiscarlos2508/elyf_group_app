@@ -6,13 +6,11 @@ import '../../domain/repositories/product_repository.dart';
 import '../../domain/repositories/stock_repository.dart';
 
 /// Offline-first repository for Stock management.
-/// 
+///
 /// This repository wraps the ProductRepository to manage stock operations
 /// since stock is stored as part of the Product entity.
 class StockOfflineRepository implements StockRepository {
-  StockOfflineRepository({
-    required this.productRepository,
-  });
+  StockOfflineRepository({required this.productRepository});
 
   final ProductRepository productRepository;
 

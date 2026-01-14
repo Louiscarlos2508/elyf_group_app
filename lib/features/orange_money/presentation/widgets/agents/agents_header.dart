@@ -2,10 +2,7 @@ import 'package:flutter/material.dart';
 
 /// En-tête de l'écran des agents.
 class AgentsHeader extends StatelessWidget {
-  const AgentsHeader({
-    super.key,
-    this.onHistoryPressed,
-  });
+  const AgentsHeader({super.key, this.onHistoryPressed});
 
   final VoidCallback? onHistoryPressed;
 
@@ -48,10 +45,7 @@ class AgentsHeader extends StatelessWidget {
           icon: const Icon(Icons.history, size: 16),
           label: const Text(
             'Historique global',
-            style: TextStyle(
-              fontSize: 14,
-              color: Color(0xFF0A0A0A),
-            ),
+            style: TextStyle(fontSize: 14, color: Color(0xFF0A0A0A)),
           ),
           style: OutlinedButton.styleFrom(
             backgroundColor: Colors.white,
@@ -70,4 +64,3 @@ class AgentsHeader extends StatelessWidget {
     );
   }
 }
-

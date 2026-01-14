@@ -7,7 +7,8 @@ import '../../domain/entities/expense.dart';
 import '../../domain/repositories/expense_repository.dart';
 
 /// Offline-first repository for PropertyExpense entities (immobilier module).
-class PropertyExpenseOfflineRepository extends OfflineRepository<PropertyExpense>
+class PropertyExpenseOfflineRepository
+    extends OfflineRepository<PropertyExpense>
     implements PropertyExpenseRepository {
   PropertyExpenseOfflineRepository({
     required super.driftService,
@@ -25,15 +26,19 @@ class PropertyExpenseOfflineRepository extends OfflineRepository<PropertyExpense
   PropertyExpense fromMap(Map<String, dynamic> map) {
     return PropertyExpense(
       id: map['id'] as String? ?? map['localId'] as String,
-      propertyId: map['propertyId'] as String? ?? 
-                  map['relatedEntityId'] as String? ?? '',
-      amount: (map['amount'] as num?)?.toInt() ?? 
-              (map['amountCfa'] as num?)?.toInt() ?? 0,
+      propertyId:
+          map['propertyId'] as String? ??
+          map['relatedEntityId'] as String? ??
+          '',
+      amount:
+          (map['amount'] as num?)?.toInt() ??
+          (map['amountCfa'] as num?)?.toInt() ??
+          0,
       expenseDate: map['expenseDate'] != null
           ? DateTime.parse(map['expenseDate'] as String)
           : (map['date'] != null
-              ? DateTime.parse(map['date'] as String)
-              : DateTime.now()),
+                ? DateTime.parse(map['date'] as String)
+                : DateTime.now()),
       category: _parseCategory(map['category'] as String?),
       description: map['description'] as String? ?? '',
       property: map['property'] as String?,
@@ -154,10 +159,11 @@ class PropertyExpenseOfflineRepository extends OfflineRepository<PropertyExpense
       enterpriseId: enterpriseId,
       moduleType: 'immobilier',
     );
-    final expenses = rows
-        .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
-        .toList()
-      ..sort((a, b) => b.expenseDate.compareTo(a.expenseDate));
+    final expenses =
+        rows
+            .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+            .toList()
+          ..sort((a, b) => b.expenseDate.compareTo(a.expenseDate));
     return expenses;
   }
 
@@ -249,9 +255,9 @@ class PropertyExpenseOfflineRepository extends OfflineRepository<PropertyExpense
       final filtered = all.where((e) {
         return (e.expenseDate.isAfter(start) ||
                 e.expenseDate.isAtSameMomentAs(start)) &&
-            (e.expenseDate.isBefore(end) || e.expenseDate.isAtSameMomentAs(end));
-      }).toList()
-        ..sort((a, b) => b.expenseDate.compareTo(a.expenseDate));
+            (e.expenseDate.isBefore(end) ||
+                e.expenseDate.isAtSameMomentAs(end));
+      }).toList()..sort((a, b) => b.expenseDate.compareTo(a.expenseDate));
       return filtered;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
@@ -356,4 +362,3 @@ class PropertyExpenseOfflineRepository extends OfflineRepository<PropertyExpense
     }
   }
 }
-

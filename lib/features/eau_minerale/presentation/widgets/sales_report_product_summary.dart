@@ -6,10 +6,7 @@ import '../../domain/entities/product_sales_summary.dart';
 
 /// Product summary widget for sales report.
 class SalesReportProductSummary extends StatelessWidget {
-  const SalesReportProductSummary({
-    super.key,
-    required this.summary,
-  });
+  const SalesReportProductSummary({super.key, required this.summary});
 
   final ProductSalesSummary summary;
 
@@ -60,4 +57,3 @@ class SalesReportProductSummary extends StatelessWidget {
     );
   }
 }
-

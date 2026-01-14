@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
+
 /// Card widget displaying a single liquidity checkpoint (morning or evening).
 class LiquidityCheckpointCard extends StatelessWidget {
   const LiquidityCheckpointCard({
@@ -37,11 +38,7 @@ class LiquidityCheckpointCard extends StatelessWidget {
       padding: const EdgeInsets.all(17),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildHeader(),
-          const SizedBox(height: 12),
-          _buildContent(),
-        ],
+        children: [_buildHeader(), const SizedBox(height: 12), _buildContent()],
       ),
     );
   }
@@ -66,17 +63,11 @@ class LiquidityCheckpointCard extends StatelessWidget {
             decoration: BoxDecoration(
               color: const Color(0xFFDCFCE7),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: Colors.transparent,
-                width: 1.219,
-              ),
+              border: Border.all(color: Colors.transparent, width: 1.219),
             ),
             child: const Text(
               '✓ Fait',
-              style: TextStyle(
-                fontSize: 12,
-                color: Color(0xFF016630),
-              ),
+              style: TextStyle(fontSize: 12, color: Color(0xFF016630)),
             ),
           ),
         ],
@@ -98,10 +89,7 @@ class LiquidityCheckpointCard extends StatelessWidget {
         if (cashAmount != null) ...[
           const Text(
             '💵 Cash disponible',
-            style: TextStyle(
-              fontSize: 14,
-              color: Color(0xFF4A5565),
-            ),
+            style: TextStyle(fontSize: 14, color: Color(0xFF4A5565)),
           ),
           const SizedBox(height: 4),
           Text(
@@ -117,10 +105,7 @@ class LiquidityCheckpointCard extends StatelessWidget {
         if (simAmount != null) ...[
           const Text(
             '📱 Solde SIM',
-            style: TextStyle(
-              fontSize: 14,
-              color: Color(0xFF4A5565),
-            ),
+            style: TextStyle(fontSize: 14, color: Color(0xFF4A5565)),
           ),
           const SizedBox(height: 4),
           Text(
@@ -141,10 +126,7 @@ class LiquidityCheckpointCard extends StatelessWidget {
       children: [
         const Text(
           'Aucun pointage effectué',
-          style: TextStyle(
-            fontSize: 14,
-            color: Color(0xFF6A7282),
-          ),
+          style: TextStyle(fontSize: 14, color: Color(0xFF6A7282)),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 12),
@@ -167,10 +149,7 @@ class LiquidityCheckpointCard extends StatelessWidget {
               children: [
                 Icon(Icons.add, size: 16),
                 SizedBox(width: 4),
-                Text(
-                  'Faire le pointage',
-                  style: TextStyle(fontSize: 14),
-                ),
+                Text('Faire le pointage', style: TextStyle(fontSize: 14)),
               ],
             ),
           ),
@@ -179,4 +158,3 @@ class LiquidityCheckpointCard extends StatelessWidget {
     );
   }
 }
-

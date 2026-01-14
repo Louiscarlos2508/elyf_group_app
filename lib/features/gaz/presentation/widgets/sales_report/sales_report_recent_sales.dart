@@ -7,10 +7,7 @@ import 'sales_report_helpers.dart';
 
 /// Liste des ventes récentes.
 class SalesReportRecentSales extends StatelessWidget {
-  const SalesReportRecentSales({
-    super.key,
-    required this.sales,
-  });
+  const SalesReportRecentSales({super.key, required this.sales});
 
   final List<GasSale> sales;
 
@@ -52,10 +49,7 @@ class SalesReportRecentSales extends StatelessWidget {
 }
 
 class _SaleRow extends StatelessWidget {
-  const _SaleRow({
-    required this.theme,
-    required this.sale,
-  });
+  const _SaleRow({required this.theme, required this.sale});
 
   final ThemeData theme;
   final GasSale sale;
@@ -113,7 +107,8 @@ class _SaleRow extends StatelessWidget {
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
-                  if (sale.saleType == SaleType.wholesale && sale.tourId != null) ...[
+                  if (sale.saleType == SaleType.wholesale &&
+                      sale.tourId != null) ...[
                     const SizedBox(height: 4),
                     Row(
                       children: [
@@ -174,4 +169,3 @@ class _SaleRow extends StatelessWidget {
     );
   }
 }
-

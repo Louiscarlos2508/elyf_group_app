@@ -10,7 +10,10 @@ class CommissionCalculationService {
   }
 
   /// Formats a period for display (e.g., "Janvier 2024").
-  static String formatPeriodForDisplay(DateTime month, [String locale = 'fr_FR']) {
+  static String formatPeriodForDisplay(
+    DateTime month, [
+    String locale = 'fr_FR',
+  ]) {
     return DateFormat('MMMM yyyy', locale).format(month);
   }
 
@@ -55,4 +58,3 @@ class CommissionCalculationService {
     return calculateTotal(amounts) / amounts.length;
   }
 }
-

@@ -4,10 +4,7 @@ import '../../../domain/entities/production_session.dart';
 
 /// Widget pour l'étape "Draft" (brouillon) de la session de production.
 class DraftStep extends StatelessWidget {
-  const DraftStep({
-    super.key,
-    required this.session,
-  });
+  const DraftStep({super.key, required this.session});
 
   final ProductionSession session;
 
@@ -23,10 +20,7 @@ class DraftStep extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(
-                  Icons.info_outline,
-                  color: theme.colorScheme.primary,
-                ),
+                Icon(Icons.info_outline, color: theme.colorScheme.primary),
                 const SizedBox(width: 12),
                 Text(
                   'Session créée',
@@ -56,4 +50,3 @@ class DraftStep extends StatelessWidget {
     );
   }
 }
-

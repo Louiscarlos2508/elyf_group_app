@@ -52,8 +52,9 @@ class MockFinancialReportRepository implements FinancialReportRepository {
   Future<void> finalizeReport(String reportId) async {
     final index = _reports.indexWhere((r) => r.id == reportId);
     if (index != -1) {
-      _reports[index] =
-          _reports[index].copyWith(status: ReportStatus.finalized);
+      _reports[index] = _reports[index].copyWith(
+        status: ReportStatus.finalized,
+      );
     }
   }
 

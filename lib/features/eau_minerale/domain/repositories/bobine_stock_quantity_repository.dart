@@ -28,4 +28,3 @@ abstract class BobineStockQuantityRepository {
   /// Récupère les stocks avec alerte (stock faible).
   Future<List<BobineStock>> fetchLowStockAlerts();
 }
-

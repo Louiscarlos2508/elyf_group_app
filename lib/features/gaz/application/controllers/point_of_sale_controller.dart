@@ -38,4 +38,3 @@ class PointOfSaleController {
     await _repository.deletePointOfSale(id);
   }
 }
-

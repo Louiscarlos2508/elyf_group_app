@@ -37,12 +37,14 @@ class LiquidityCheckpoint {
   final DateTime? updatedAt;
 
   /// Vérifie si le pointage du matin est effectué.
-  bool get hasMorningCheckpoint => (morningCashAmount != null && morningCashAmount! > 0) || 
-                                    (morningSimAmount != null && morningSimAmount! > 0);
+  bool get hasMorningCheckpoint =>
+      (morningCashAmount != null && morningCashAmount! > 0) ||
+      (morningSimAmount != null && morningSimAmount! > 0);
 
   /// Vérifie si le pointage du soir est effectué.
-  bool get hasEveningCheckpoint => (eveningCashAmount != null && eveningCashAmount! > 0) || 
-                                    (eveningSimAmount != null && eveningSimAmount! > 0);
+  bool get hasEveningCheckpoint =>
+      (eveningCashAmount != null && eveningCashAmount! > 0) ||
+      (eveningSimAmount != null && eveningSimAmount! > 0);
 
   /// Vérifie si les deux pointages sont effectués.
   bool get isComplete => hasMorningCheckpoint && hasEveningCheckpoint;
@@ -57,4 +59,3 @@ enum LiquidityCheckpointType {
   const LiquidityCheckpointType(this.label);
   final String label;
 }
-

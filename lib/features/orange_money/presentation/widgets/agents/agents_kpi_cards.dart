@@ -5,10 +5,7 @@ import 'agents_format_helpers.dart';
 
 /// Widget pour afficher les cartes KPI des agents.
 class AgentsKpiCards extends StatelessWidget {
-  const AgentsKpiCards({
-    super.key,
-    required this.stats,
-  });
+  const AgentsKpiCards({super.key, required this.stats});
 
   final Map<String, dynamic> stats;
 
@@ -65,4 +62,3 @@ class AgentsKpiCards extends StatelessWidget {
     );
   }
 }
-

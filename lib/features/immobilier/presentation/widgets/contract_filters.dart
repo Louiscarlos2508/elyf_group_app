@@ -116,4 +116,3 @@ class ContractFilters extends StatelessWidget {
     );
   }
 }
-

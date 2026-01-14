@@ -38,99 +38,96 @@ import '../domain/services/property_validation_service.dart';
 import '../domain/services/validation/contract_validation_service.dart';
 
 // Report Calculation Service
-final immobilierReportCalculationServiceProvider = Provider<ImmobilierReportCalculationService>(
-  (ref) => ImmobilierReportCalculationService(),
-);
+final immobilierReportCalculationServiceProvider =
+    Provider<ImmobilierReportCalculationService>(
+      (ref) => ImmobilierReportCalculationService(),
+    );
 
 // Repositories
-final propertyRepositoryProvider = Provider<PropertyRepository>(
-  (ref) {
-    final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
-    final driftService = DriftService.instance;
-    final syncManager = ref.watch(syncManagerProvider);
-    final connectivityService = ref.watch(connectivityServiceProvider);
-    
-    return PropertyOfflineRepository(
-      driftService: driftService,
-      syncManager: syncManager,
-      connectivityService: connectivityService,
-      enterpriseId: enterpriseId,
-    );
-  },
-);
+final propertyRepositoryProvider = Provider<PropertyRepository>((ref) {
+  final enterpriseId =
+      ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+  final driftService = DriftService.instance;
+  final syncManager = ref.watch(syncManagerProvider);
+  final connectivityService = ref.watch(connectivityServiceProvider);
 
-final tenantRepositoryProvider = Provider<TenantRepository>(
-  (ref) {
-    final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
-    final driftService = DriftService.instance;
-    final syncManager = ref.watch(syncManagerProvider);
-    final connectivityService = ref.watch(connectivityServiceProvider);
-    
-    return TenantOfflineRepository(
-      driftService: driftService,
-      syncManager: syncManager,
-      connectivityService: connectivityService,
-      enterpriseId: enterpriseId,
-    );
-  },
-);
+  return PropertyOfflineRepository(
+    driftService: driftService,
+    syncManager: syncManager,
+    connectivityService: connectivityService,
+    enterpriseId: enterpriseId,
+  );
+});
 
-final contractRepositoryProvider = Provider<ContractRepository>(
-  (ref) {
-    final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
-    final driftService = DriftService.instance;
-    final syncManager = ref.watch(syncManagerProvider);
-    final connectivityService = ref.watch(connectivityServiceProvider);
-    
-    return ContractOfflineRepository(
-      driftService: driftService,
-      syncManager: syncManager,
-      connectivityService: connectivityService,
-      enterpriseId: enterpriseId,
-    );
-  },
-);
+final tenantRepositoryProvider = Provider<TenantRepository>((ref) {
+  final enterpriseId =
+      ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+  final driftService = DriftService.instance;
+  final syncManager = ref.watch(syncManagerProvider);
+  final connectivityService = ref.watch(connectivityServiceProvider);
 
-final paymentRepositoryProvider = Provider<PaymentRepository>(
-  (ref) {
-    final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
-    final driftService = DriftService.instance;
-    final syncManager = ref.watch(syncManagerProvider);
-    final connectivityService = ref.watch(connectivityServiceProvider);
-    
-    return PaymentOfflineRepository(
-      driftService: driftService,
-      syncManager: syncManager,
-      connectivityService: connectivityService,
-      enterpriseId: enterpriseId,
-    );
-  },
-);
+  return TenantOfflineRepository(
+    driftService: driftService,
+    syncManager: syncManager,
+    connectivityService: connectivityService,
+    enterpriseId: enterpriseId,
+  );
+});
 
-final expenseRepositoryProvider = Provider<PropertyExpenseRepository>(
-  (ref) {
-    final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
-    final driftService = DriftService.instance;
-    final syncManager = ref.watch(syncManagerProvider);
-    final connectivityService = ref.watch(connectivityServiceProvider);
-    
-    return PropertyExpenseOfflineRepository(
-      driftService: driftService,
-      syncManager: syncManager,
-      connectivityService: connectivityService,
-      enterpriseId: enterpriseId,
-    );
-  },
-);
+final contractRepositoryProvider = Provider<ContractRepository>((ref) {
+  final enterpriseId =
+      ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+  final driftService = DriftService.instance;
+  final syncManager = ref.watch(syncManagerProvider);
+  final connectivityService = ref.watch(connectivityServiceProvider);
+
+  return ContractOfflineRepository(
+    driftService: driftService,
+    syncManager: syncManager,
+    connectivityService: connectivityService,
+    enterpriseId: enterpriseId,
+  );
+});
+
+final paymentRepositoryProvider = Provider<PaymentRepository>((ref) {
+  final enterpriseId =
+      ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+  final driftService = DriftService.instance;
+  final syncManager = ref.watch(syncManagerProvider);
+  final connectivityService = ref.watch(connectivityServiceProvider);
+
+  return PaymentOfflineRepository(
+    driftService: driftService,
+    syncManager: syncManager,
+    connectivityService: connectivityService,
+    enterpriseId: enterpriseId,
+  );
+});
+
+final expenseRepositoryProvider = Provider<PropertyExpenseRepository>((ref) {
+  final enterpriseId =
+      ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+  final driftService = DriftService.instance;
+  final syncManager = ref.watch(syncManagerProvider);
+  final connectivityService = ref.watch(connectivityServiceProvider);
+
+  return PropertyExpenseOfflineRepository(
+    driftService: driftService,
+    syncManager: syncManager,
+    connectivityService: connectivityService,
+    enterpriseId: enterpriseId,
+  );
+});
 
 // Validation Service
-final immobilierValidationServiceProvider = Provider<ImmobilierValidationService>(
-  (ref) => ImmobilierValidationService(
-    ref.watch(propertyRepositoryProvider),
-    ref.watch(contractRepositoryProvider),
-    ref.watch(paymentRepositoryProvider),
-  ),
-);
+final immobilierValidationServiceProvider =
+    Provider<ImmobilierValidationService>(
+      (ref) => ImmobilierValidationService(
+        ref.watch(propertyRepositoryProvider),
+        ref.watch(contractRepositoryProvider),
+        ref.watch(paymentRepositoryProvider),
+      ),
+    );
 
 final contractValidationServiceProvider = Provider<ContractValidationService>(
   (ref) => ContractValidationService(),
@@ -149,8 +146,8 @@ final propertyValidationServiceProvider = Provider<PropertyValidationService>(
 // Dashboard Calculation Service
 final immobilierDashboardCalculationServiceProvider =
     Provider<ImmobilierDashboardCalculationService>(
-  (ref) => ImmobilierDashboardCalculationService(),
-);
+      (ref) => ImmobilierDashboardCalculationService(),
+    );
 
 // Controllers
 final propertyControllerProvider = Provider<PropertyController>(
@@ -187,94 +184,86 @@ final expenseControllerProvider = Provider<PropertyExpenseController>(
 );
 
 // Data Providers
-final propertiesProvider = FutureProvider.autoDispose<List<Property>>(
-  (ref) async {
-    final controller = ref.watch(propertyControllerProvider);
-    return await controller.fetchProperties();
-  },
-);
+final propertiesProvider = FutureProvider.autoDispose<List<Property>>((
+  ref,
+) async {
+  final controller = ref.watch(propertyControllerProvider);
+  return await controller.fetchProperties();
+});
 
-final tenantsProvider = FutureProvider.autoDispose<List<Tenant>>(
-  (ref) async {
-    final controller = ref.watch(tenantControllerProvider);
-    return await controller.fetchTenants();
-  },
-);
+final tenantsProvider = FutureProvider.autoDispose<List<Tenant>>((ref) async {
+  final controller = ref.watch(tenantControllerProvider);
+  return await controller.fetchTenants();
+});
 
-final contractsProvider = FutureProvider.autoDispose<List<Contract>>(
-  (ref) async {
-    final controller = ref.watch(contractControllerProvider);
-    return await controller.fetchContracts();
-  },
-);
+final contractsProvider = FutureProvider.autoDispose<List<Contract>>((
+  ref,
+) async {
+  final controller = ref.watch(contractControllerProvider);
+  return await controller.fetchContracts();
+});
 
-final paymentsProvider = FutureProvider.autoDispose<List<Payment>>(
-  (ref) async {
-    final controller = ref.watch(paymentControllerProvider);
-    return await controller.fetchPayments();
-  },
-);
+final paymentsProvider = FutureProvider.autoDispose<List<Payment>>((ref) async {
+  final controller = ref.watch(paymentControllerProvider);
+  return await controller.fetchPayments();
+});
 
-final expensesProvider = FutureProvider.autoDispose<List<PropertyExpense>>(
-  (ref) async {
-    final controller = ref.watch(expenseControllerProvider);
-    return await controller.fetchExpenses();
-  },
-);
+final expensesProvider = FutureProvider.autoDispose<List<PropertyExpense>>((
+  ref,
+) async {
+  final controller = ref.watch(expenseControllerProvider);
+  return await controller.fetchExpenses();
+});
 
 /// Provider pour le bilan des dépenses Immobilier.
 final immobilierExpenseBalanceProvider =
-    FutureProvider.autoDispose<List<ExpenseBalanceData>>(
-  (ref) async {
-    final expenses = await ref.watch(expenseControllerProvider).fetchExpenses();
-    final adapter = ImmobilierExpenseBalanceAdapter();
-    return adapter.convertToBalanceData(expenses);
-  },
-);
+    FutureProvider.autoDispose<List<ExpenseBalanceData>>((ref) async {
+      final expenses = await ref
+          .watch(expenseControllerProvider)
+          .fetchExpenses();
+      final adapter = ImmobilierExpenseBalanceAdapter();
+      return adapter.convertToBalanceData(expenses);
+    });
 
 /// Provider pour les contrats d'un locataire spécifique.
-final contractsByTenantProvider =
-    FutureProvider.autoDispose.family<List<Contract>, String>(
-  (ref, tenantId) async {
-    final repository = ref.watch(contractRepositoryProvider);
-    return await repository.getContractsByTenant(tenantId);
-  },
-);
+final contractsByTenantProvider = FutureProvider.autoDispose
+    .family<List<Contract>, String>((ref, tenantId) async {
+      final repository = ref.watch(contractRepositoryProvider);
+      return await repository.getContractsByTenant(tenantId);
+    });
 
 /// Provider pour les paiements d'un contrat spécifique.
-final paymentsByContractProvider =
-    FutureProvider.autoDispose.family<List<Payment>, String>(
-  (ref, contractId) async {
-    final repository = ref.watch(paymentRepositoryProvider);
-    return await repository.getPaymentsByContract(contractId);
-  },
-);
+final paymentsByContractProvider = FutureProvider.autoDispose
+    .family<List<Payment>, String>((ref, contractId) async {
+      final repository = ref.watch(paymentRepositoryProvider);
+      return await repository.getPaymentsByContract(contractId);
+    });
 
 /// Provider pour les contrats d'une propriété spécifique.
-final contractsByPropertyProvider =
-    FutureProvider.autoDispose.family<List<Contract>, String>(
-  (ref, propertyId) async {
-    final repository = ref.watch(contractRepositoryProvider);
-    return await repository.getContractsByProperty(propertyId);
-  },
-);
+final contractsByPropertyProvider = FutureProvider.autoDispose
+    .family<List<Contract>, String>((ref, propertyId) async {
+      final repository = ref.watch(contractRepositoryProvider);
+      return await repository.getContractsByProperty(propertyId);
+    });
 
 /// Provider pour tous les paiements d'un locataire (via ses contrats).
-final paymentsByTenantProvider =
-    FutureProvider.autoDispose.family<List<Payment>, String>(
-  (ref, tenantId) async {
-    final contracts = await ref.watch(contractsByTenantProvider((tenantId)).future);
-    final paymentRepository = ref.watch(paymentRepositoryProvider);
-    final allPayments = <Payment>[];
-    for (final contract in contracts) {
-      final payments = await paymentRepository.getPaymentsByContract(contract.id);
-      allPayments.addAll(payments);
-    }
-    // Trier par date décroissante
-    allPayments.sort((a, b) => b.paymentDate.compareTo(a.paymentDate));
-    return allPayments;
-  },
-);
+final paymentsByTenantProvider = FutureProvider.autoDispose
+    .family<List<Payment>, String>((ref, tenantId) async {
+      final contracts = await ref.watch(
+        contractsByTenantProvider((tenantId)).future,
+      );
+      final paymentRepository = ref.watch(paymentRepositoryProvider);
+      final allPayments = <Payment>[];
+      for (final contract in contracts) {
+        final payments = await paymentRepository.getPaymentsByContract(
+          contract.id,
+        );
+        allPayments.addAll(payments);
+      }
+      // Trier par date décroissante
+      allPayments.sort((a, b) => b.paymentDate.compareTo(a.paymentDate));
+      return allPayments;
+    });
 
 // Filter Services
 final paymentFilterServiceProvider = Provider<PaymentFilterService>(
@@ -284,4 +273,3 @@ final paymentFilterServiceProvider = Provider<PaymentFilterService>(
 final expenseFilterServiceProvider = Provider<ExpenseFilterService>(
   (ref) => ExpenseFilterService(),
 );
-

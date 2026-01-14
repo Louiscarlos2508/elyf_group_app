@@ -40,7 +40,8 @@ class ReportKpiCardsV2 extends ConsumerWidget {
                       Expanded(
                         child: DashboardKpiCard(
                           label: "Chiffre d'Affaires",
-                          value: '${CurrencyFormatter.formatFCFA(data.salesRevenue)} FCFA',
+                          value:
+                              '${CurrencyFormatter.formatFCFA(data.salesRevenue)} FCFA',
                           subtitle: '${data.salesCount} ventes',
                           icon: Icons.trending_up,
                           iconColor: Colors.blue,
@@ -51,7 +52,8 @@ class ReportKpiCardsV2 extends ConsumerWidget {
                       Expanded(
                         child: DashboardKpiCard(
                           label: 'Achats',
-                          value: '${CurrencyFormatter.formatFCFA(data.purchasesAmount)} FCFA',
+                          value:
+                              '${CurrencyFormatter.formatFCFA(data.purchasesAmount)} FCFA',
                           subtitle: '${data.purchasesCount} appros',
                           icon: Icons.shopping_bag,
                           iconColor: Colors.orange,
@@ -62,7 +64,8 @@ class ReportKpiCardsV2 extends ConsumerWidget {
                       Expanded(
                         child: DashboardKpiCard(
                           label: 'Dépenses',
-                          value: '${CurrencyFormatter.formatFCFA(data.expensesAmount)} FCFA',
+                          value:
+                              '${CurrencyFormatter.formatFCFA(data.expensesAmount)} FCFA',
                           subtitle: '${data.expensesCount} charges',
                           icon: Icons.receipt_long,
                           iconColor: Colors.red,
@@ -74,16 +77,19 @@ class ReportKpiCardsV2 extends ConsumerWidget {
                       Expanded(
                         child: DashboardKpiCard(
                           label: 'Bénéfice Net',
-                          value: '${CurrencyFormatter.formatFCFA(data.profit)} FCFA',
+                          value:
+                              '${CurrencyFormatter.formatFCFA(data.profit)} FCFA',
                           subtitle: data.profit >= 0 ? 'Profit' : 'Déficit',
                           icon: Icons.account_balance_wallet,
-                          iconColor:
-                              data.profit >= 0 ? Colors.green : Colors.red,
+                          iconColor: data.profit >= 0
+                              ? Colors.green
+                              : Colors.red,
                           valueColor: data.profit >= 0
                               ? Colors.green.shade700
                               : Colors.red.shade700,
-                          backgroundColor:
-                              data.profit >= 0 ? Colors.green : Colors.red,
+                          backgroundColor: data.profit >= 0
+                              ? Colors.green
+                              : Colors.red,
                         ),
                       ),
                     ],
@@ -95,7 +101,8 @@ class ReportKpiCardsV2 extends ConsumerWidget {
                           Expanded(
                             child: DashboardKpiCard(
                               label: "Chiffre d'Affaires",
-                              value: '${CurrencyFormatter.formatFCFA(data.salesRevenue)} FCFA',
+                              value:
+                                  '${CurrencyFormatter.formatFCFA(data.salesRevenue)} FCFA',
                               subtitle: '${data.salesCount} ventes',
                               icon: Icons.trending_up,
                               iconColor: Colors.blue,
@@ -135,16 +142,19 @@ class ReportKpiCardsV2 extends ConsumerWidget {
                           Expanded(
                             child: DashboardKpiCard(
                               label: 'Bénéfice Net',
-                              value: '${CurrencyFormatter.formatFCFA(data.profit)} FCFA',
+                              value:
+                                  '${CurrencyFormatter.formatFCFA(data.profit)} FCFA',
                               subtitle: data.profit >= 0 ? 'Profit' : 'Déficit',
                               icon: Icons.account_balance_wallet,
-                              iconColor:
-                                  data.profit >= 0 ? Colors.green : Colors.red,
+                              iconColor: data.profit >= 0
+                                  ? Colors.green
+                                  : Colors.red,
                               valueColor: data.profit >= 0
                                   ? Colors.green.shade700
                                   : Colors.red.shade700,
-                              backgroundColor:
-                                  data.profit >= 0 ? Colors.green : Colors.red,
+                              backgroundColor: data.profit >= 0
+                                  ? Colors.green
+                                  : Colors.red,
                             ),
                           ),
                         ],

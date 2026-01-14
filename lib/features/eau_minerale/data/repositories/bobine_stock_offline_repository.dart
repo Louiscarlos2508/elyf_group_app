@@ -153,10 +153,12 @@ class BobineStockOfflineRepository extends OfflineRepository<BobineStock>
       return await getAllForEnterprise(enterpriseId);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log('Error fetching bobine stocks',
-          name: 'BobineStockOfflineRepository',
-          error: error,
-          stackTrace: stackTrace);
+      developer.log(
+        'Error fetching bobine stocks',
+        name: 'BobineStockOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
       throw appException;
     }
   }
@@ -167,10 +169,12 @@ class BobineStockOfflineRepository extends OfflineRepository<BobineStock>
       return await getByLocalId(id);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log('Error fetching bobine stock: $id',
-          name: 'BobineStockOfflineRepository',
-          error: error,
-          stackTrace: stackTrace);
+      developer.log(
+        'Error fetching bobine stock: $id',
+        name: 'BobineStockOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
       throw appException;
     }
   }
@@ -186,10 +190,12 @@ class BobineStockOfflineRepository extends OfflineRepository<BobineStock>
       }
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log('Error fetching bobine stock by type: $type',
-          name: 'BobineStockOfflineRepository',
-          error: error,
-          stackTrace: stackTrace);
+      developer.log(
+        'Error fetching bobine stock by type: $type',
+        name: 'BobineStockOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
       throw appException;
     }
   }
@@ -207,10 +213,12 @@ class BobineStockOfflineRepository extends OfflineRepository<BobineStock>
       return stockWithLocalId;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log('Error saving bobine stock',
-          name: 'BobineStockOfflineRepository',
-          error: error,
-          stackTrace: stackTrace);
+      developer.log(
+        'Error saving bobine stock',
+        name: 'BobineStockOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
       throw appException;
     }
   }
@@ -247,10 +255,12 @@ class BobineStockOfflineRepository extends OfflineRepository<BobineStock>
       );
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log('Error recording bobine movement',
-          name: 'BobineStockOfflineRepository',
-          error: error,
-          stackTrace: stackTrace);
+      developer.log(
+        'Error recording bobine movement',
+        name: 'BobineStockOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
       throw appException;
     }
   }
@@ -271,19 +281,27 @@ class BobineStockOfflineRepository extends OfflineRepository<BobineStock>
         final map = jsonDecode(r.dataJson) as Map<String, dynamic>;
         return BobineStockMovement(
           id: map['id'] as String,
-          bobineId: map['bobineId'] as String? ?? map['bobineStockId'] as String? ?? '',
+          bobineId:
+              map['bobineId'] as String? ??
+              map['bobineStockId'] as String? ??
+              '',
           bobineReference: map['bobineReference'] as String? ?? '',
           type: BobineMovementType.values.firstWhere(
             (e) => e.name == map['type'],
             orElse: () => BobineMovementType.entree,
           ),
-          quantite: (map['quantite'] as num?)?.toDouble() ?? (map['quantity'] as num?)?.toDouble() ?? 0.0,
+          quantite:
+              (map['quantite'] as num?)?.toDouble() ??
+              (map['quantity'] as num?)?.toDouble() ??
+              0.0,
           date: DateTime.parse(map['date'] as String),
           raison: map['raison'] as String? ?? map['reason'] as String? ?? '',
           productionId: map['productionId'] as String?,
           machineId: map['machineId'] as String?,
           notes: map['notes'] as String?,
-          createdAt: map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : null,
+          createdAt: map['createdAt'] != null
+              ? DateTime.parse(map['createdAt'] as String)
+              : null,
         );
       }).toList();
 
@@ -297,10 +315,12 @@ class BobineStockOfflineRepository extends OfflineRepository<BobineStock>
       }).toList();
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log('Error fetching bobine movements',
-          name: 'BobineStockOfflineRepository',
-          error: error,
-          stackTrace: stackTrace);
+      developer.log(
+        'Error fetching bobine movements',
+        name: 'BobineStockOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
       throw appException;
     }
   }
@@ -312,10 +332,12 @@ class BobineStockOfflineRepository extends OfflineRepository<BobineStock>
       return stocks.where((s) => s.estStockFaible).toList();
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log('Error fetching low stock alerts',
-          name: 'BobineStockOfflineRepository',
-          error: error,
-          stackTrace: stackTrace);
+      developer.log(
+        'Error fetching low stock alerts',
+        name: 'BobineStockOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
       throw appException;
     }
   }

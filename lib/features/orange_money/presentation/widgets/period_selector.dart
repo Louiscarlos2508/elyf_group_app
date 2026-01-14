@@ -109,9 +109,7 @@ class PeriodSelector extends StatelessWidget {
               ),
               if (onTodayPressed != null || onSevenDaysPressed != null) ...[
                 const SizedBox(width: 16),
-                Expanded(
-                  child: _buildQuickActions(context),
-                ),
+                Expanded(child: _buildQuickActions(context)),
               ],
             ],
           ),
@@ -214,4 +212,3 @@ class PeriodSelector extends StatelessWidget {
     );
   }
 }
-

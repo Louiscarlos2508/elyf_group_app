@@ -37,7 +37,10 @@ class _ProductionEventDialogState extends State<ProductionEventDialog> {
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedType == null) {
-      NotificationService.showWarning(context, 'Sélectionnez un type d\'événement');
+      NotificationService.showWarning(
+        context,
+        'Sélectionnez un type d\'événement',
+      );
       return;
     }
 
@@ -66,7 +69,7 @@ class _ProductionEventDialogState extends State<ProductionEventDialog> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Form(
       key: _formKey,
       child: Padding(
@@ -207,7 +210,6 @@ class _ProductionEventDialogState extends State<ProductionEventDialog> {
       setState(() => _selectedTime = picked);
     }
   }
-
 
   String _formatTime(TimeOfDay time) {
     return '${time.hour.toString().padLeft(2, '0')}:'

@@ -51,4 +51,3 @@ class BobineStockQuantityController {
     return await _repository.fetchLowStockAlerts();
   }
 }
-

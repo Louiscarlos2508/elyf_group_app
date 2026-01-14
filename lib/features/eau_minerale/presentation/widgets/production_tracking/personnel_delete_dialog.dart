@@ -6,10 +6,7 @@ import '../../../domain/entities/production_day.dart';
 /// Dialog de confirmation pour supprimer un jour de production.
 class PersonnelDeleteDialog {
   /// Affiche le dialog de confirmation de suppression.
-  static Future<bool?> show(
-    BuildContext context,
-    ProductionDay day,
-  ) {
+  static Future<bool?> show(BuildContext context, ProductionDay day) {
     return showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -31,4 +28,3 @@ class PersonnelDeleteDialog {
     );
   }
 }
-

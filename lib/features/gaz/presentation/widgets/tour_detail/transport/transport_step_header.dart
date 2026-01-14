@@ -49,14 +49,11 @@ class TransportStepHeader extends ConsumerWidget {
             try {
               final result = await showDialog<bool>(
                 context: context,
-                builder: (context) =>
-                    TransportExpenseFormDialog(tour: tour),
+                builder: (context) => TransportExpenseFormDialog(tour: tour),
               );
               if (result == true) {
                 ref.invalidate(
-                  toursProvider(
-                    (enterpriseId: enterpriseId, status: null),
-                  ),
+                  toursProvider((enterpriseId: enterpriseId, status: null)),
                 );
               }
             } catch (e) {
@@ -64,13 +61,9 @@ class TransportStepHeader extends ConsumerWidget {
             }
           },
           icon: const Icon(Icons.add, size: 16),
-          label: const Text(
-            'Ajouter dépense',
-            style: TextStyle(fontSize: 14),
-          ),
+          label: const Text('Ajouter dépense', style: TextStyle(fontSize: 14)),
         ),
       ],
     );
   }
 }
-

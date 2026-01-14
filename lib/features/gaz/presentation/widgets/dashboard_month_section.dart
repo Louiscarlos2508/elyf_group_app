@@ -28,7 +28,9 @@ class GazDashboardMonthSection extends StatelessWidget {
         final cards = [
           GazDashboardKpiCard(
             label: "Chiffre d'Affaires",
-            value: CurrencyFormatter.formatDouble(monthRevenue).replaceAll(' FCFA', ' F'),
+            value: CurrencyFormatter.formatDouble(
+              monthRevenue,
+            ).replaceAll(' FCFA', ' F'),
             subtitle: '$monthSalesCount ventes',
             icon: Icons.trending_up,
             iconColor: Colors.blue,
@@ -36,7 +38,9 @@ class GazDashboardMonthSection extends StatelessWidget {
           ),
           GazDashboardKpiCard(
             label: 'Dépenses',
-            value: CurrencyFormatter.formatDouble(monthExpensesAmount).replaceAll(' FCFA', ' F'),
+            value: CurrencyFormatter.formatDouble(
+              monthExpensesAmount,
+            ).replaceAll(' FCFA', ' F'),
             subtitle: 'Charges du mois',
             icon: Icons.receipt_long,
             iconColor: Colors.red,
@@ -44,7 +48,9 @@ class GazDashboardMonthSection extends StatelessWidget {
           ),
           GazDashboardKpiCard(
             label: 'Bénéfice Net',
-            value: CurrencyFormatter.formatDouble(monthProfit).replaceAll(' FCFA', ' F'),
+            value: CurrencyFormatter.formatDouble(
+              monthProfit,
+            ).replaceAll(' FCFA', ' F'),
             subtitle: monthProfit >= 0 ? 'Profit' : 'Déficit',
             icon: Icons.account_balance_wallet,
             iconColor: monthProfit >= 0 ? Colors.green : Colors.red,

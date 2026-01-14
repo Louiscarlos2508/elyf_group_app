@@ -4,22 +4,19 @@ import '../../domain/entities/stock_item.dart';
 
 /// Card displaying finished products stock summary.
 class FinishedProductsCard extends StatelessWidget {
-  const FinishedProductsCard({
-    super.key,
-    required this.items,
-  });
+  const FinishedProductsCard({super.key, required this.items});
 
   final List<StockItem> items;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     // Filter finished goods
     final finishedGoods = items
         .where((item) => item.type == StockType.finishedGoods)
         .toList();
-    
+
     // Find pack item
     StockItem pack;
     if (finishedGoods.isEmpty) {
@@ -33,7 +30,8 @@ class FinishedProductsCard extends StatelessWidget {
       );
     } else {
       pack = finishedGoods.firstWhere(
-        (item) => item.name.toLowerCase().contains('pack') ||
+        (item) =>
+            item.name.toLowerCase().contains('pack') ||
             item.name.toLowerCase().contains('sachet'),
         orElse: () => finishedGoods.first,
       );
@@ -129,4 +127,3 @@ class FinishedProductsCard extends StatelessWidget {
     );
   }
 }
-

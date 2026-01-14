@@ -46,25 +46,25 @@ class AdminDashboardSection extends ConsumerWidget {
               child: Column(
                 children: [
                   Row(
-                children: [
-                  Expanded(
-                    child: _StatCard(
-                      title: 'Entreprises',
-                      value: stats.totalEnterprises.toString(),
-                      subtitle: '${stats.activeEnterprises} actives',
-                      icon: Icons.business,
-                      color: theme.colorScheme.primary,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _StatCard(
-                      title: 'Rôles',
-                      value: stats.totalRoles.toString(),
-                      subtitle: 'Rôles définis',
-                      icon: Icons.shield,
-                      color: theme.colorScheme.secondary,
-                    ),
+                    children: [
+                      Expanded(
+                        child: _StatCard(
+                          title: 'Entreprises',
+                          value: stats.totalEnterprises.toString(),
+                          subtitle: '${stats.activeEnterprises} actives',
+                          icon: Icons.business,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _StatCard(
+                          title: 'Rôles',
+                          value: stats.totalRoles.toString(),
+                          subtitle: 'Rôles définis',
+                          icon: Icons.shield,
+                          color: theme.colorScheme.secondary,
+                        ),
                       ),
                     ],
                   ),
@@ -99,11 +99,8 @@ class AdminDashboardSection extends ConsumerWidget {
           loading: () => const SliverToBoxAdapter(
             child: Center(child: CircularProgressIndicator()),
           ),
-          error: (error, stack) => SliverToBoxAdapter(
-            child: Center(
-              child: Text('Erreur: $error'),
-            ),
-          ),
+          error: (error, stack) =>
+              SliverToBoxAdapter(child: Center(child: Text('Erreur: $error'))),
         ),
         const SliverToBoxAdapter(child: SizedBox(height: 24)),
         SliverToBoxAdapter(
@@ -126,60 +123,58 @@ class AdminDashboardSection extends ConsumerWidget {
             }
 
             return SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  final type = byType.keys.elementAt(index);
-                  final typeEnterprises = byType[type]!;
-                  return Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
-                    child: Card(
-                      child: ExpansionTile(
-                        leading: Icon(
-                          ref.read(enterpriseTypeServiceProvider).getTypeIcon(type),
-                          color: theme.colorScheme.primary,
-                        ),
-                        title: Text(
-                          ref.read(enterpriseTypeServiceProvider).getTypeLabel(type),
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        subtitle: Text(
-                          '${typeEnterprises.length} entreprise${typeEnterprises.length > 1 ? 's' : ''}',
-                        ),
-                        children: typeEnterprises.map((enterprise) {
-                          return ListTile(
-                            title: Text(enterprise.name),
-                            subtitle: Text(enterprise.description ?? ''),
-                            trailing: enterprise.isActive
-                                ? Chip(
-                                    label: const Text('Active'),
-                                    visualDensity: VisualDensity.compact,
-                                    backgroundColor:
-                                        theme.colorScheme.primaryContainer,
-                                  )
-                                : Chip(
-                                    label: const Text('Inactive'),
-                                    visualDensity: VisualDensity.compact,
-                                  ),
-                          );
-                        }).toList(),
+              delegate: SliverChildBuilderDelegate((context, index) {
+                final type = byType.keys.elementAt(index);
+                final typeEnterprises = byType[type]!;
+                return Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+                  child: Card(
+                    child: ExpansionTile(
+                      leading: Icon(
+                        ref
+                            .read(enterpriseTypeServiceProvider)
+                            .getTypeIcon(type),
+                        color: theme.colorScheme.primary,
                       ),
+                      title: Text(
+                        ref
+                            .read(enterpriseTypeServiceProvider)
+                            .getTypeLabel(type),
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      subtitle: Text(
+                        '${typeEnterprises.length} entreprise${typeEnterprises.length > 1 ? 's' : ''}',
+                      ),
+                      children: typeEnterprises.map((enterprise) {
+                        return ListTile(
+                          title: Text(enterprise.name),
+                          subtitle: Text(enterprise.description ?? ''),
+                          trailing: enterprise.isActive
+                              ? Chip(
+                                  label: const Text('Active'),
+                                  visualDensity: VisualDensity.compact,
+                                  backgroundColor:
+                                      theme.colorScheme.primaryContainer,
+                                )
+                              : Chip(
+                                  label: const Text('Inactive'),
+                                  visualDensity: VisualDensity.compact,
+                                ),
+                        );
+                      }).toList(),
                     ),
-                  );
-                },
-                childCount: byType.length,
-              ),
+                  ),
+                );
+              }, childCount: byType.length),
             );
           },
           loading: () => const SliverToBoxAdapter(
             child: Center(child: CircularProgressIndicator()),
           ),
-          error: (error, stack) => SliverToBoxAdapter(
-            child: Center(
-              child: Text('Erreur: $error'),
-            ),
-          ),
+          error: (error, stack) =>
+              SliverToBoxAdapter(child: Center(child: Text('Erreur: $error'))),
         ),
         const SliverToBoxAdapter(child: SizedBox(height: 24)),
       ],
@@ -244,4 +239,3 @@ class _StatCard extends StatelessWidget {
     );
   }
 }
-

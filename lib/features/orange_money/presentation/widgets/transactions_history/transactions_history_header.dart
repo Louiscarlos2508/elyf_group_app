@@ -32,4 +32,3 @@ class TransactionsHistoryHeader extends StatelessWidget {
     );
   }
 }
-

@@ -19,18 +19,14 @@ class PropertyListSliver extends StatelessWidget {
     return SliverPadding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       sliver: SliverList(
-        delegate: SliverChildBuilderDelegate(
-          (context, index) {
-            final property = properties[index];
-            return PropertyCard(
-              property: property,
-              onTap: () => onPropertyTap(property),
-            );
-          },
-          childCount: properties.length,
-        ),
+        delegate: SliverChildBuilderDelegate((context, index) {
+          final property = properties[index];
+          return PropertyCard(
+            property: property,
+            onTap: () => onPropertyTap(property),
+          );
+        }, childCount: properties.length),
       ),
     );
   }
 }
-

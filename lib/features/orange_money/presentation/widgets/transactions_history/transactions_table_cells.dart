@@ -5,10 +5,7 @@ import 'transactions_history_helpers.dart';
 
 /// Cellule de date et heure.
 class TransactionDateCell extends StatelessWidget {
-  const TransactionDateCell({
-    super.key,
-    required this.date,
-  });
+  const TransactionDateCell({super.key, required this.date});
 
   final DateTime date;
 
@@ -23,11 +20,7 @@ class TransactionDateCell extends StatelessWidget {
         padding: const EdgeInsets.all(8),
         child: Row(
           children: [
-            const Icon(
-              Icons.access_time,
-              size: 16,
-              color: Color(0xFF4A5565),
-            ),
+            const Icon(Icons.access_time, size: 16, color: Color(0xFF4A5565)),
             const SizedBox(width: 8),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -59,10 +52,7 @@ class TransactionDateCell extends StatelessWidget {
 
 /// Cellule de type de transaction.
 class TransactionTypeCell extends StatelessWidget {
-  const TransactionTypeCell({
-    super.key,
-    required this.transaction,
-  });
+  const TransactionTypeCell({super.key, required this.transaction});
 
   final Transaction transaction;
 
@@ -79,10 +69,7 @@ class TransactionTypeCell extends StatelessWidget {
                 ? const Color(0xFFDCFCE7)
                 : const Color(0xFFFEE2E2),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: Colors.transparent,
-              width: 1.219,
-            ),
+            border: Border.all(color: Colors.transparent, width: 1.219),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -118,10 +105,7 @@ class TransactionTypeCell extends StatelessWidget {
 
 /// Cellule de client.
 class TransactionClientCell extends StatelessWidget {
-  const TransactionClientCell({
-    super.key,
-    required this.transaction,
-  });
+  const TransactionClientCell({super.key, required this.transaction});
 
   final Transaction transaction;
 
@@ -147,10 +131,7 @@ class TransactionClientCell extends StatelessWidget {
 
 /// Cellule de téléphone.
 class TransactionPhoneCell extends StatelessWidget {
-  const TransactionPhoneCell({
-    super.key,
-    required this.transaction,
-  });
+  const TransactionPhoneCell({super.key, required this.transaction});
 
   final Transaction transaction;
 
@@ -185,11 +166,7 @@ class TransactionIdCardCell extends StatelessWidget {
         padding: const EdgeInsets.all(8),
         child: Row(
           children: [
-            const Icon(
-              Icons.credit_card,
-              size: 16,
-              color: Color(0xFF4A5565),
-            ),
+            const Icon(Icons.credit_card, size: 16, color: Color(0xFF4A5565)),
             const SizedBox(width: 8),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -221,10 +198,7 @@ class TransactionIdCardCell extends StatelessWidget {
 
 /// Cellule de montant.
 class TransactionAmountCell extends StatelessWidget {
-  const TransactionAmountCell({
-    super.key,
-    required this.transaction,
-  });
+  const TransactionAmountCell({super.key, required this.transaction});
 
   final Transaction transaction;
 
@@ -251,4 +225,3 @@ class TransactionAmountCell extends StatelessWidget {
     );
   }
 }
-

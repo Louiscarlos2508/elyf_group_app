@@ -9,6 +9,18 @@ import '../../../../../shared/utils/notification_service.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:elyf_groupe_app/core/auth/providers.dart';
+import '../../../../features/administration/application/providers.dart'
+    show
+        adminRepositoryProvider,
+        permissionServiceProvider,
+        enterpriseRepositoryProvider;
+import '../../../../features/administration/domain/repositories/enterprise_repository.dart';
+import '../../../../features/administration/domain/entities/enterprise.dart';
+import '../../../../core/tenant/tenant_provider.dart'
+    show activeEnterpriseIdProvider, userAccessibleEnterprisesProvider;
+import '../../../../core/auth/entities/enterprise_module_user.dart';
+import '../../../../features/modules/presentation/screens/module_menu_screen.dart'
+    show ModuleMenuScreen;
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -24,14 +36,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   final _passwordController = TextEditingController();
   final _emailFocusNode = FocusNode();
   final _passwordFocusNode = FocusNode();
-  
+
   bool _isLoading = false;
   bool _obscurePassword = true;
-  
+
   late AnimationController _entryController;
   late AnimationController _backgroundController;
   late AnimationController _buttonController;
-  
+
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
   late Animation<double> _backgroundAnimation;
@@ -52,15 +64,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         curve: const Interval(0.0, 0.8, curve: Curves.easeOut),
       ),
     );
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.3),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _entryController,
-        curve: const Interval(0.0, 0.8, curve: Curves.easeOutCubic),
-      ),
-    );
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _entryController,
+            curve: const Interval(0.0, 0.8, curve: Curves.easeOutCubic),
+          ),
+        );
 
     // Background animation
     _backgroundController = AnimationController(
@@ -68,10 +78,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       duration: const Duration(seconds: 20),
     )..repeat();
     _backgroundAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _backgroundController,
-        curve: Curves.linear,
-      ),
+      CurvedAnimation(parent: _backgroundController, curve: Curves.linear),
     );
 
     // Button animation
@@ -80,10 +87,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       duration: const Duration(milliseconds: 200),
     );
     _buttonScale = Tween<double>(begin: 1.0, end: 0.95).animate(
-      CurvedAnimation(
-        parent: _buttonController,
-        curve: Curves.easeInOut,
-      ),
+      CurvedAnimation(parent: _buttonController, curve: Curves.easeInOut),
     );
 
     // Start entry animation
@@ -104,16 +108,33 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     _buttonController.forward().then((_) {
       _buttonController.reverse();
     });
-    
+
     setState(() => _isLoading = true);
 
     try {
+      // Nettoyer la session précédente (entreprise active) avant la connexion
+      // pour éviter les problèmes de chargement infini avec une entreprise invalide
+      try {
+        final tenantNotifier = ref.read(activeEnterpriseIdProvider.notifier);
+        await tenantNotifier.clearActiveEnterprise();
+        developer.log(
+          'Previous session cleaned: active enterprise cleared',
+          name: 'login',
+        );
+      } catch (e) {
+        developer.log(
+          'Warning: Failed to clear active enterprise (continuing anyway): $e',
+          name: 'login',
+        );
+        // Continuer même si le nettoyage échoue
+      }
+
       final authController = ref.read(authControllerProvider);
-      
+
       final email = _emailController.text.trim();
       final password = _passwordController.text.trim();
 
@@ -133,6 +154,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       try {
         ref.invalidate(currentUserProvider);
         ref.invalidate(currentUserIdProvider);
+        // Invalider les providers tenant pour forcer le recalcul des entreprises accessibles
+        ref.invalidate(userAccessibleEnterprisesProvider);
         // Ne pas invalider usersProvider ici pour éviter les erreurs d'initialisation
         // Il sera rafraîchi automatiquement quand l'utilisateur accède à la page admin
       } catch (e) {
@@ -140,18 +163,36 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         // Ne pas bloquer la redirection même en cas d'erreur d'invalidation
       }
 
-      // Rediriger selon le rôle de l'utilisateur
-      // Admin → /admin, Autre → /modules
-      if (user.isAdmin) {
-        context.go('/admin');
-      } else {
-        context.go('/modules');
+      // Déterminer la route de redirection basée sur les permissions réelles
+      // Si isAdmin → /admin
+      // Sinon → chercher les rôles/permissions (EnterpriseModuleUser) et rediriger selon :
+      //   - 1 seule entreprise + 1 seul module → redirection directe vers ce module
+      //   - 1 seule entreprise + plusieurs modules → /modules (sélection)
+      //   - plusieurs entreprises → /modules (sélection d'entreprise)
+      developer.log(
+        'Login: Determining redirect route for user ${user.id}, isAdmin: ${user.isAdmin}',
+        name: 'login',
+      );
+
+      final redirectRoute = await _determineRedirectRoute(
+        ref: ref,
+        userId: user.id,
+        isAdmin: user.isAdmin,
+      );
+
+      developer.log(
+        'Login: Redirect route determined: $redirectRoute',
+        name: 'login',
+      );
+
+      if (mounted) {
+        context.go(redirectRoute);
       }
     } catch (e, stackTrace) {
       if (!mounted) return;
-      
+
       setState(() => _isLoading = false);
-      
+
       // Logger l'erreur complète pour le debugging
       developer.log(
         'Login error',
@@ -159,10 +200,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         error: e,
         stackTrace: stackTrace,
       );
-      
+
       // Afficher un message d'erreur plus clair
       String errorMessage = e.toString().replaceAll('Exception: ', '');
-      
+
       // Améliorer les messages d'erreur spécifiques
       if (errorMessage.contains('Problème de connexion réseau') ||
           errorMessage.contains('mode hors ligne') ||
@@ -170,31 +211,184 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         // Message déjà amélioré par le contrôleur
         // Ne rien changer
       } else if (errorMessage.contains('unavailable') ||
-                 errorMessage.contains('unable to resolve') ||
-                 errorMessage.contains('no address associated')) {
-        errorMessage = 'Problème de connexion réseau. L\'application fonctionnera en mode hors ligne. '
-                       'Assurez-vous que votre appareil a accès à Internet pour synchroniser les données.';
-      } else if ((errorMessage.contains('not initialized') || 
-                  errorMessage.contains('notinitialized')) &&
-                 (errorMessage.contains('FirebaseApp') ||
-                  errorMessage.contains('Firebase') ||
-                  errorMessage.contains('firebase core'))) {
-        errorMessage = 'Firebase n\'est pas initialisé. Veuillez redémarrer l\'application complètement (pas juste hot reload).';
-      } else if (errorMessage.contains('network') || 
-                 errorMessage.contains('internet') ||
-                 errorMessage.contains('connection')) {
-        errorMessage = 'Problème de connexion réseau. L\'application fonctionnera en mode hors ligne. '
-                       'Vérifiez votre connexion internet pour la synchronisation.';
+          errorMessage.contains('unable to resolve') ||
+          errorMessage.contains('no address associated')) {
+        errorMessage =
+            'Problème de connexion réseau. L\'application fonctionnera en mode hors ligne. '
+            'Assurez-vous que votre appareil a accès à Internet pour synchroniser les données.';
+      } else if ((errorMessage.contains('not initialized') ||
+              errorMessage.contains('notinitialized')) &&
+          (errorMessage.contains('FirebaseApp') ||
+              errorMessage.contains('Firebase') ||
+              errorMessage.contains('firebase core'))) {
+        errorMessage =
+            'Firebase n\'est pas initialisé. Veuillez redémarrer l\'application complètement (pas juste hot reload).';
+      } else if (errorMessage.contains('network') ||
+          errorMessage.contains('internet') ||
+          errorMessage.contains('connection')) {
+        errorMessage =
+            'Problème de connexion réseau. L\'application fonctionnera en mode hors ligne. '
+            'Vérifiez votre connexion internet pour la synchronisation.';
       } else if (errorMessage.contains('user-not-found')) {
-        errorMessage = 'Aucun compte trouvé avec cet email. Vérifiez que l\'utilisateur existe dans Firebase Console.';
+        errorMessage =
+            'Aucun compte trouvé avec cet email. Vérifiez que l\'utilisateur existe dans Firebase Console.';
       } else if (errorMessage.contains('wrong-password') ||
-                 errorMessage.contains('invalid-credential')) {
+          errorMessage.contains('invalid-credential')) {
         errorMessage = 'Mot de passe incorrect.';
       } else if (errorMessage.contains('invalid-email')) {
         errorMessage = 'Format d\'email invalide.';
       }
-      
-      NotificationService.showError(context, 'Erreur de connexion: $errorMessage');
+
+      NotificationService.showError(
+        context,
+        'Erreur de connexion: $errorMessage',
+      );
+    }
+  }
+
+  /// Détermine la route de redirection basée sur les permissions réelles de l'utilisateur.
+  ///
+  /// Logique de redirection :
+  /// 1. Si isAdmin == true → rediriger vers /admin
+  /// 2. Sinon (isAdmin == false) → chercher les rôles/permissions (EnterpriseModuleUser) :
+  ///    - Si 1 seule entreprise + 1 seul module → redirection directe vers ce module
+  ///    - Si 1 seule entreprise + plusieurs modules → /modules (page de sélection)
+  ///    - Si plusieurs entreprises → /modules (page de sélection d'entreprise)
+  ///    - Si aucun accès → /modules (affichera un message d'erreur)
+  Future<String> _determineRedirectRoute({
+    required WidgetRef ref,
+    required String userId,
+    required bool isAdmin,
+  }) async {
+    // Étape 1 : Si admin, rediriger directement vers /admin (pas de vérification des rôles)
+    if (isAdmin) {
+      return '/admin';
+    }
+
+    // Étape 2 : Si pas admin, chercher les rôles/permissions (EnterpriseModuleUser)
+    developer.log(
+      'Redirect: Starting route determination',
+      name: 'login.redirect',
+    );
+
+    try {
+      // Récupérer les repositories
+      final adminRepo = ref.read(adminRepositoryProvider);
+      final enterpriseRepo = ref.read(enterpriseRepositoryProvider);
+
+      // Récupérer tous les accès de l'utilisateur
+      final userAccesses = await adminRepo.getUserEnterpriseModuleUsers(userId);
+      developer.log(
+        'Redirect: Found ${userAccesses.length} total access(es) for user: ${userAccesses.map((a) => '${a.enterpriseId}/${a.moduleId}(isActive:${a.isActive})').join(", ")}',
+        name: 'login.redirect',
+      );
+
+      final activeAccesses = userAccesses
+          .where((access) => access.isActive)
+          .toList();
+
+      developer.log(
+        'Redirect: Found ${activeAccesses.length} active access(es)',
+        name: 'login.redirect',
+      );
+
+      if (activeAccesses.isEmpty) {
+        developer.log(
+          'Redirect: No active accesses, redirecting to /modules',
+          name: 'login.redirect',
+        );
+        // Aucun accès → rediriger vers /modules (qui affichera un message d'erreur)
+        return '/modules';
+      }
+
+      // Récupérer les entreprises uniques accessibles
+      final enterpriseIds = activeAccesses
+          .map((access) => access.enterpriseId)
+          .toSet()
+          .toList();
+      developer.log(
+        'Redirect: Found ${enterpriseIds.length} unique enterprise ID(s): $enterpriseIds',
+        name: 'login.redirect',
+      );
+
+      final allEnterprises = await enterpriseRepo.getAllEnterprises();
+      final accessibleEnterprises = allEnterprises
+          .where(
+            (enterprise) =>
+                enterpriseIds.contains(enterprise.id) && enterprise.isActive,
+          )
+          .toList();
+
+      developer.log(
+        'Redirect: Found ${accessibleEnterprises.length} accessible enterprise(s)',
+        name: 'login.redirect',
+      );
+
+      if (accessibleEnterprises.isEmpty) {
+        developer.log(
+          'Redirect: No accessible enterprises, redirecting to /modules',
+          name: 'login.redirect',
+        );
+        return '/modules';
+      }
+
+      // Si plusieurs entreprises → /modules (pour sélectionner)
+      if (accessibleEnterprises.length > 1) {
+        developer.log(
+          'Redirect: Multiple enterprises (${accessibleEnterprises.length}), redirecting to /modules',
+          name: 'login.redirect',
+        );
+        return '/modules';
+      }
+
+      // Une seule entreprise → sélectionner automatiquement
+      final singleEnterprise = accessibleEnterprises.first;
+      // Utiliser le notifier du provider pour mettre à jour à la fois SharedPreferences ET le state
+      final notifier = ref.read(activeEnterpriseIdProvider.notifier);
+      await notifier.setActiveEnterpriseId(singleEnterprise.id);
+
+      // Récupérer les modules accessibles pour cette entreprise (sans vérification détaillée des permissions)
+      final enterpriseModules = activeAccesses
+          .where((access) => access.enterpriseId == singleEnterprise.id)
+          .map((access) => access.moduleId)
+          .toSet()
+          .toList();
+
+      developer.log(
+        'Redirect: Found ${enterpriseModules.length} module(s) for enterprise ${singleEnterprise.id}: $enterpriseModules',
+        name: 'login.redirect',
+      );
+
+      if (enterpriseModules.isEmpty) {
+        return '/modules';
+      }
+
+      // Si 1 seul module → rediriger directement vers ce module
+      if (enterpriseModules.length == 1) {
+        final moduleId = enterpriseModules.first;
+        // Mapping des IDs de modules vers les routes
+        const moduleRoutes = {
+          'eau_minerale': '/modules/eau_sachet',
+          'gaz': '/modules/gaz',
+          'orange_money': '/modules/orange_money',
+          'immobilier': '/modules/immobilier',
+          'boutique': '/modules/boutique',
+        };
+        final route = moduleRoutes[moduleId];
+        return route ?? '/modules';
+      }
+
+      // Plusieurs modules → /modules (pour sélectionner)
+      return '/modules';
+    } catch (e, stackTrace) {
+      developer.log(
+        'Error determining redirect route: $e',
+        name: 'login.redirect',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      // En cas d'erreur, rediriger vers /modules par défaut
+      return '/modules';
     }
   }
 
@@ -391,33 +585,20 @@ class _AnimatedFormField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fieldFade = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(
+    final fieldFade = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: animation,
-        curve: Interval(
-          delay,
-          delay + 0.3,
-          curve: Curves.easeOut,
-        ),
+        curve: Interval(delay, delay + 0.3, curve: Curves.easeOut),
       ),
     );
 
-    final fieldSlide = Tween<Offset>(
-      begin: const Offset(0, 0.2),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: animation,
-        curve: Interval(
-          delay,
-          delay + 0.3,
-          curve: Curves.easeOutCubic,
-        ),
-      ),
-    );
+    final fieldSlide =
+        Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: animation,
+            curve: Interval(delay, delay + 0.3, curve: Curves.easeOutCubic),
+          ),
+        );
 
     return FadeTransition(
       opacity: fieldFade,
@@ -513,10 +694,7 @@ class _AnimatedLoginBackground extends StatelessWidget {
 }
 
 class _LoginBackgroundPainter extends CustomPainter {
-  _LoginBackgroundPainter({
-    required this.progress,
-    required this.colors,
-  });
+  _LoginBackgroundPainter({required this.progress, required this.colors});
 
   final double progress;
   final ColorScheme colors;
@@ -544,9 +722,11 @@ class _LoginBackgroundPainter extends CustomPainter {
 
     for (int i = 0; i < 3; i++) {
       final radius = 100.0 + (i * 80.0);
-      final x = size.width * (0.2 + i * 0.3) +
+      final x =
+          size.width * (0.2 + i * 0.3) +
           math.sin(progress * 2 * math.pi + i) * 30;
-      final y = size.height * (0.3 + i * 0.2) +
+      final y =
+          size.height * (0.3 + i * 0.2) +
           math.cos(progress * 2 * math.pi + i) * 30;
 
       canvas.drawCircle(

@@ -69,15 +69,10 @@ class RetailKpiCard extends StatelessWidget {
           SizedBox(
             width: 32,
             height: 32,
-            child: Icon(
-              icon,
-              size: 32,
-              color: const Color(0xFF3B82F6),
-            ),
+            child: Icon(icon, size: 32, color: const Color(0xFF3B82F6)),
           ),
         ],
       ),
     );
   }
 }
-

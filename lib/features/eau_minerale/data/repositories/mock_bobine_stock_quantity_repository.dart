@@ -2,7 +2,8 @@ import '../../domain/entities/bobine_stock.dart';
 import '../../domain/entities/bobine_stock_movement.dart';
 import '../../domain/repositories/bobine_stock_quantity_repository.dart';
 
-class MockBobineStockQuantityRepository implements BobineStockQuantityRepository {
+class MockBobineStockQuantityRepository
+    implements BobineStockQuantityRepository {
   final List<BobineStock> _stocks = [
     BobineStock(
       id: 'bobine-stock-1',
@@ -75,11 +76,20 @@ class MockBobineStockQuantityRepository implements BobineStockQuantityRepository
     }
 
     if (startDate != null) {
-      filtered = filtered.where((m) => m.date.isAfter(startDate) || m.date.isAtSameMomentAs(startDate)).toList();
+      filtered = filtered
+          .where(
+            (m) =>
+                m.date.isAfter(startDate) || m.date.isAtSameMomentAs(startDate),
+          )
+          .toList();
     }
 
     if (endDate != null) {
-      filtered = filtered.where((m) => m.date.isBefore(endDate) || m.date.isAtSameMomentAs(endDate)).toList();
+      filtered = filtered
+          .where(
+            (m) => m.date.isBefore(endDate) || m.date.isAtSameMomentAs(endDate),
+          )
+          .toList();
     }
 
     return filtered..sort((a, b) => b.date.compareTo(a.date));
@@ -91,4 +101,3 @@ class MockBobineStockQuantityRepository implements BobineStockQuantityRepository
     return _stocks.where((s) => s.estStockFaible).toList();
   }
 }
-

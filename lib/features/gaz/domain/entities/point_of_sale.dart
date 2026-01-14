@@ -20,7 +20,8 @@ class PointOfSale {
   final String enterpriseId;
   final String moduleId;
   final bool isActive;
-  final List<String> cylinderIds; // IDs des types de bouteilles associés à ce point de vente
+  final List<String>
+  cylinderIds; // IDs des types de bouteilles associés à ce point de vente
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -68,4 +69,3 @@ class PointOfSale {
     );
   }
 }
-

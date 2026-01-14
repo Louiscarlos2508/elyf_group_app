@@ -85,7 +85,9 @@ class _TenantsScreenState extends ConsumerState<TenantsScreen> {
 
   int _countActiveContracts(String tenantId, List<Contract> allContracts) {
     return allContracts
-        .where((c) => c.tenantId == tenantId && c.status == ContractStatus.active)
+        .where(
+          (c) => c.tenantId == tenantId && c.status == ContractStatus.active,
+        )
         .length;
   }
 
@@ -100,9 +102,14 @@ class _TenantsScreenState extends ConsumerState<TenantsScreen> {
         data: (tenants) {
           final filtered = _filterTenants(tenants);
           final contracts = contractsAsync.value ?? [];
-          final activeTenantsCount = tenants.where((t) => 
-            contracts.any((c) => c.tenantId == t.id && c.status == ContractStatus.active)
-          ).length;
+          final activeTenantsCount = tenants
+              .where(
+                (t) => contracts.any(
+                  (c) =>
+                      c.tenantId == t.id && c.status == ContractStatus.active,
+                ),
+              )
+              .length;
 
           return LayoutBuilder(
             builder: (context, constraints) {
@@ -113,15 +120,19 @@ class _TenantsScreenState extends ConsumerState<TenantsScreen> {
                   // Header
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: EdgeInsets.fromLTRB(24, 24, 24, isWide ? 24 : 16),
+                      padding: EdgeInsets.fromLTRB(
+                        24,
+                        24,
+                        24,
+                        isWide ? 24 : 16,
+                      ),
                       child: isWide
                           ? Row(
                               children: [
                                 Text(
                                   'Locataires',
-                                  style: theme.textTheme.headlineMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                  style: theme.textTheme.headlineMedium
+                                      ?.copyWith(fontWeight: FontWeight.bold),
                                 ),
                                 const Spacer(),
                                 RefreshButton(
@@ -149,9 +160,10 @@ class _TenantsScreenState extends ConsumerState<TenantsScreen> {
                                     Expanded(
                                       child: Text(
                                         'Locataires',
-                                        style: theme.textTheme.titleLarge?.copyWith(
-                                          fontWeight: FontWeight.bold,
-                                        ),
+                                        style: theme.textTheme.titleLarge
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.bold,
+                                            ),
                                       ),
                                     ),
                                     RefreshButton(
@@ -238,20 +250,23 @@ class _TenantsScreenState extends ConsumerState<TenantsScreen> {
                     )
                   else
                     SliverPadding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 8,
+                      ),
                       sliver: SliverList(
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) {
-                            final tenant = filtered[index];
-                            final activeCount = _countActiveContracts(tenant.id, contracts);
-                            return TenantCard(
-                              tenant: tenant,
-                              activeContractsCount: activeCount,
-                              onTap: () => _showTenantDetails(tenant),
-                            );
-                          },
-                          childCount: filtered.length,
-                        ),
+                        delegate: SliverChildBuilderDelegate((context, index) {
+                          final tenant = filtered[index];
+                          final activeCount = _countActiveContracts(
+                            tenant.id,
+                            contracts,
+                          );
+                          return TenantCard(
+                            tenant: tenant,
+                            activeContractsCount: activeCount,
+                            onTap: () => _showTenantDetails(tenant),
+                          );
+                        }, childCount: filtered.length),
                       ),
                     ),
 
@@ -308,7 +323,9 @@ class _TenantsScreenState extends ConsumerState<TenantsScreen> {
           const SizedBox(height: 16),
           Text(
             'Erreur de chargement',
-            style: theme.textTheme.bodyLarge?.copyWith(color: theme.colorScheme.error),
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color: theme.colorScheme.error,
+            ),
           ),
           const SizedBox(height: 16),
           FilledButton(

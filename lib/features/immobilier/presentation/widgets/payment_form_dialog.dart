@@ -11,10 +11,7 @@ import '../../domain/entities/payment.dart';
 import 'payment_form_fields.dart';
 
 class PaymentFormDialog extends ConsumerStatefulWidget {
-  const PaymentFormDialog({
-    super.key,
-    this.payment,
-  });
+  const PaymentFormDialog({super.key, this.payment});
 
   final Payment? payment;
 
@@ -86,7 +83,10 @@ class _PaymentFormDialogState extends ConsumerState<PaymentFormDialog>
 
   Future<void> _save() async {
     if (_selectedContract == null) {
-      NotificationService.showWarning(context, 'Veuillez sélectionner un contrat');
+      NotificationService.showWarning(
+        context,
+        'Veuillez sélectionner un contrat',
+      );
       return;
     }
 
@@ -169,14 +169,14 @@ class _PaymentFormDialogState extends ConsumerState<PaymentFormDialog>
 
     if (shouldGenerate == true && mounted) {
       await _generateInvoice(payment);
-    } else       if (mounted) {
-        NotificationService.showSuccess(
-          context,
-          widget.payment == null
-              ? 'Paiement enregistré avec succès'
-              : 'Paiement mis à jour avec succès',
-        );
-      }
+    } else if (mounted) {
+      NotificationService.showSuccess(
+        context,
+        widget.payment == null
+            ? 'Paiement enregistré avec succès'
+            : 'Paiement mis à jour avec succès',
+      );
+    }
   }
 
   Future<void> _generateInvoice(Payment payment) async {
@@ -184,9 +184,7 @@ class _PaymentFormDialogState extends ConsumerState<PaymentFormDialog>
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (context) => const Center(
-          child: CircularProgressIndicator(),
-        ),
+        builder: (context) => const Center(child: CircularProgressIndicator()),
       );
 
       final pdfService = UnifiedPaymentPdfService.instance;
@@ -202,13 +200,19 @@ class _PaymentFormDialogState extends ConsumerState<PaymentFormDialog>
       if (mounted) {
         final result = await OpenFile.open(file.path);
         if (result.type != ResultType.done && mounted) {
-          NotificationService.showInfo(context, 'Facture générée: ${file.path}');
+          NotificationService.showInfo(
+            context,
+            'Facture générée: ${file.path}',
+          );
         }
       }
     } catch (e) {
       if (mounted) {
         Navigator.of(context).pop(); // Fermer le dialog de chargement
-        NotificationService.showError(context, 'Erreur lors de la génération de la facture: $e');
+        NotificationService.showError(
+          context,
+          'Erreur lors de la génération de la facture: $e',
+        );
       }
     }
   }
@@ -218,7 +222,9 @@ class _PaymentFormDialogState extends ConsumerState<PaymentFormDialog>
     final contractsAsync = ref.watch(contractsProvider);
 
     return FormDialog(
-      title: widget.payment == null ? 'Nouveau paiement' : 'Modifier le paiement',
+      title: widget.payment == null
+          ? 'Nouveau paiement'
+          : 'Modifier le paiement',
       saveLabel: widget.payment == null ? 'Enregistrer' : 'Enregistrer',
       onSave: _isSaving ? null : _save,
       isLoading: _isSaving,
@@ -240,7 +246,8 @@ class _PaymentFormDialogState extends ConsumerState<PaymentFormDialog>
                       if (_paymentType == PaymentType.rent) {
                         _amountController.text = value.monthlyRent.toString();
                       } else if (_paymentType == PaymentType.deposit) {
-                        _amountController.text = value.calculatedDeposit.toString();
+                        _amountController.text = value.calculatedDeposit
+                            .toString();
                       }
                     }
                   });
@@ -263,9 +270,12 @@ class _PaymentFormDialogState extends ConsumerState<PaymentFormDialog>
                     // Mettre à jour le montant selon le type
                     if (_selectedContract != null) {
                       if (value == PaymentType.rent) {
-                        _amountController.text = _selectedContract!.monthlyRent.toString();
+                        _amountController.text = _selectedContract!.monthlyRent
+                            .toString();
                       } else if (value == PaymentType.deposit) {
-                        _amountController.text = _selectedContract!.calculatedDeposit.toString();
+                        _amountController.text = _selectedContract!
+                            .calculatedDeposit
+                            .toString();
                       }
                     }
                   });
@@ -308,9 +318,7 @@ class _PaymentFormDialogState extends ConsumerState<PaymentFormDialog>
               controller: _receiptNumberController,
             ),
             const SizedBox(height: 16),
-            PaymentFormFields.notesField(
-              controller: _notesController,
-            ),
+            PaymentFormFields.notesField(controller: _notesController),
             const SizedBox(height: 24),
           ],
         ),
@@ -318,4 +326,3 @@ class _PaymentFormDialogState extends ConsumerState<PaymentFormDialog>
     );
   }
 }
-

@@ -102,7 +102,7 @@ class FirebaseSyncHandler implements SyncOperationHandler {
   ) async {
     final docRef = collection.doc(operation.documentId);
     final docSnapshot = await docRef.get();
-    
+
     if (!docSnapshot.exists) {
       developer.log(
         'Document ${operation.documentId} already deleted',

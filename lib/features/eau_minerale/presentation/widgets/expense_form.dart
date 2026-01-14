@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../domain/entities/expense_record.dart';
 import 'package:elyf_groupe_app/shared.dart';
+
 /// Form for creating/editing an expense record.
 class ExpenseForm extends ConsumerStatefulWidget {
   const ExpenseForm({super.key, this.expense});
@@ -81,15 +82,15 @@ class ExpenseFormState extends ConsumerState<ExpenseForm> {
       if (!mounted) return;
       Navigator.of(context).pop();
       ref.invalidate(financesStateProvider);
-      NotificationService.showSuccess(context, widget.expense == null
-              ? 'Dépense enregistrée'
-              : 'Dépense modifiée');
+      NotificationService.showSuccess(
+        context,
+        widget.expense == null ? 'Dépense enregistrée' : 'Dépense modifiée',
+      );
     } catch (e) {
       if (!mounted) return;
       NotificationService.showError(context, e.toString());
     }
   }
-
 
   IconData _getCategoryIcon(ExpenseCategory category) {
     switch (category) {
@@ -123,7 +124,8 @@ class ExpenseFormState extends ConsumerState<ExpenseForm> {
                 helperText: 'Description détaillée de la dépense',
                 hintText: 'Ex: Carburant pour livraison, Réparation pompe...',
               ),
-              validator: (v) => v?.isEmpty ?? true ? 'Le motif est requis' : null,
+              validator: (v) =>
+                  v?.isEmpty ?? true ? 'Le motif est requis' : null,
               maxLines: 2,
             ),
             const SizedBox(height: 16),

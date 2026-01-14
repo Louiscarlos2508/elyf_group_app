@@ -2,10 +2,7 @@ import 'package:flutter/material.dart';
 
 /// Input pour les notes de la dépense.
 class ExpenseNotesInput extends StatelessWidget {
-  const ExpenseNotesInput({
-    super.key,
-    required this.controller,
-  });
+  const ExpenseNotesInput({super.key, required this.controller});
 
   final TextEditingController controller;
 
@@ -22,4 +19,3 @@ class ExpenseNotesInput extends StatelessWidget {
     );
   }
 }
-

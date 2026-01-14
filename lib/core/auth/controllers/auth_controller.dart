@@ -22,6 +22,9 @@ class AuthController {
   /// Se connecter avec email et mot de passe.
   ///
   /// Retourne l'utilisateur connecté ou lance une exception en cas d'erreur.
+  ///
+  /// Attend également que la synchronisation initiale des données
+  /// (rôles, permissions, entreprises) soit terminée avant de retourner.
   Future<AppUser> signIn({
     required String email,
     required String password,
@@ -39,6 +42,52 @@ class AuthController {
         email: email,
         password: password,
       );
+
+      // S'assurer que la synchronisation est démarrée et attendre qu'elle soit terminée
+      if (globalRealtimeSyncService != null) {
+        // Si la synchronisation n'est pas en cours, la redémarrer
+        if (!globalRealtimeSyncService!.isListening) {
+          developer.log(
+            'Realtime sync not running, starting it...',
+            name: 'auth.controller',
+          );
+          try {
+            await globalRealtimeSyncService!.startRealtimeSync();
+            developer.log(
+              'Realtime sync started after login',
+              name: 'auth.controller',
+            );
+          } catch (e) {
+            developer.log(
+              'Warning: Failed to start realtime sync after login (will continue anyway): $e',
+              name: 'auth.controller',
+            );
+            // Continuer même si le démarrage échoue - les données peuvent déjà être en cache
+          }
+        }
+
+        // Attendre que la synchronisation initiale soit terminée pour que
+        // les données de rôles/permissions soient disponibles
+        developer.log(
+          'Waiting for initial sync to complete after login...',
+          name: 'auth.controller',
+        );
+        try {
+          await globalRealtimeSyncService!.waitForInitialPull(
+            timeout: const Duration(seconds: 15),
+          );
+          developer.log(
+            'Initial sync completed after login',
+            name: 'auth.controller',
+          );
+        } catch (e) {
+          developer.log(
+            'Warning: Initial sync timeout or error after login (continuing anyway): $e',
+            name: 'auth.controller',
+          );
+          // Continuer même si le timeout est atteint - les données se chargeront progressivement
+        }
+      }
 
       return user;
     } catch (e) {
@@ -83,24 +132,15 @@ class AuthController {
 
   /// Se déconnecter.
   ///
-  /// Nettoie complètement l'état de l'application et arrête tous les services.
+  /// Nettoie l'état d'authentification de l'utilisateur.
+  ///
+  /// Note: La synchronisation en temps réel des données administratives
+  /// (roles, entreprises, enterprise_module_users) continue de fonctionner
+  /// car ces données sont partagées entre tous les utilisateurs.
   Future<void> signOut() async {
-    // Arrêter la synchronisation en temps réel avant de déconnecter
-    try {
-      if (globalRealtimeSyncService != null) {
-        await globalRealtimeSyncService!.stopRealtimeSync();
-        developer.log(
-          'Realtime sync stopped on logout',
-          name: 'auth.controller',
-        );
-      }
-    } catch (e) {
-      // Si le service n'existe pas ou l'arrêt échoue, continuer
-      developer.log(
-        'Could not stop realtime sync (may not be initialized): $e',
-        name: 'auth.controller',
-      );
-    }
+    // Note: On ne stop PAS la synchronisation en temps réel car les données
+    // (roles, entreprises, enterprise_module_users) sont globales et partagées.
+    // La synchronisation reste active pour le prochain utilisateur qui se connectera.
 
     // Déconnecter de l'auth service
     await authService.signOut();

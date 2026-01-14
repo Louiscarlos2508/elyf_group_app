@@ -60,21 +60,16 @@ class _SalariesScreenState extends ConsumerState<SalariesScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final isWide = constraints.maxWidth > 600;
-        
+
         return CustomScrollView(
           slivers: [
             SliverToBoxAdapter(
               child: Padding(
-                padding: EdgeInsets.fromLTRB(
-                  24,
-                  24,
-                  24,
-                  isWide ? 24 : 16,
-                ),
+                padding: EdgeInsets.fromLTRB(24, 24, 24, isWide ? 24 : 16),
                 child: Row(
                   children: [
                     Icon(
@@ -125,19 +120,16 @@ class _SalariesScreenState extends ConsumerState<SalariesScreen> {
                         onNewEmployee: () => _showEmployeeForm(context),
                       )
                     : _selectedTab == 1
-                        ? ProductionPaymentsContent(
-                            onNewPayment: () => _showProductionPaymentForm(context),
-                          )
-                        : const SalaryHistoryContent(),
+                    ? ProductionPaymentsContent(
+                        onNewPayment: () => _showProductionPaymentForm(context),
+                      )
+                    : const SalaryHistoryContent(),
               ),
             ),
-            const SliverToBoxAdapter(
-              child: SizedBox(height: 24),
-            ),
+            const SliverToBoxAdapter(child: SizedBox(height: 24)),
           ],
         );
       },
     );
   }
 }
-

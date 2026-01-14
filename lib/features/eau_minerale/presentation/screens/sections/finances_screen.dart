@@ -129,21 +129,16 @@ class _ExpensesContent extends StatelessWidget {
     final theme = Theme.of(context);
     final todayExpenses = _getTodayExpenses();
     final todayTotal = _getTodayTotal();
-    
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final isWide = constraints.maxWidth > 600;
-        
+
         return CustomScrollView(
           slivers: [
             SliverToBoxAdapter(
               child: Padding(
-                padding: EdgeInsets.fromLTRB(
-                  24,
-                  24,
-                  24,
-                  isWide ? 24 : 16,
-                ),
+                padding: EdgeInsets.fromLTRB(24, 24, 24, isWide ? 24 : 16),
                 child: isWide
                     ? Row(
                         children: [
@@ -155,7 +150,8 @@ class _ExpensesContent extends StatelessWidget {
                           ),
                           const Spacer(),
                           RefreshButton(
-                            onRefresh: () => ref.invalidate(financesStateProvider),
+                            onRefresh: () =>
+                                ref.invalidate(financesStateProvider),
                             tooltip: 'Actualiser les dépenses',
                           ),
                           IconButton(
@@ -189,10 +185,11 @@ class _ExpensesContent extends StatelessWidget {
                                   ),
                                 ),
                               ),
-                          RefreshButton(
-                            onRefresh: () => ref.invalidate(financesStateProvider),
-                            tooltip: 'Actualiser les dépenses',
-                          ),
+                              RefreshButton(
+                                onRefresh: () =>
+                                    ref.invalidate(financesStateProvider),
+                                tooltip: 'Actualiser les dépenses',
+                              ),
                               IconButton(
                                 icon: const Icon(Icons.analytics),
                                 onPressed: onBalanceTap,
@@ -243,7 +240,9 @@ class _ExpensesContent extends StatelessWidget {
                         color: theme.colorScheme.surface,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: theme.colorScheme.outline.withValues(alpha: 0.2),
+                          color: theme.colorScheme.outline.withValues(
+                            alpha: 0.2,
+                          ),
                         ),
                       ),
                       padding: const EdgeInsets.all(20),
@@ -263,9 +262,7 @@ class _ExpensesContent extends StatelessWidget {
                 child: MonthlyExpenseSummary(expenses: state.expenses),
               ),
             ),
-            const SliverToBoxAdapter(
-              child: SizedBox(height: 24),
-            ),
+            const SliverToBoxAdapter(child: SizedBox(height: 24)),
           ],
         );
       },

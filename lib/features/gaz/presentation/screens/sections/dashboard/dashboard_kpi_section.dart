@@ -28,11 +28,15 @@ class DashboardKpiSection extends ConsumerWidget {
     // Utiliser le service pour les calculs
     final todaySales = GazCalculationService.calculateTodaySales(sales);
     final todayRevenue = GazCalculationService.calculateTodayRevenue(sales);
-    final todayExpenses = GazCalculationService.calculateTodayExpenses(expenses);
+    final todayExpenses = GazCalculationService.calculateTodayExpenses(
+      expenses,
+    );
     final todayExpensesAmount =
         GazCalculationService.calculateTodayExpensesTotal(expenses);
-    final todayProfit =
-        GazCalculationService.calculateTodayProfit(sales, expenses);
+    final todayProfit = GazCalculationService.calculateTodayProfit(
+      sales,
+      expenses,
+    );
 
     // Full bottles count
     final enterpriseId = cylinders.isNotEmpty
@@ -40,13 +44,11 @@ class DashboardKpiSection extends ConsumerWidget {
         : 'default_enterprise';
 
     final stocksAsync = ref.watch(
-      cylinderStocksProvider(
-        (
-          enterpriseId: enterpriseId,
-          status: CylinderStatus.full,
-          siteId: null,
-        ),
-      ),
+      cylinderStocksProvider((
+        enterpriseId: enterpriseId,
+        status: CylinderStatus.full,
+        siteId: null,
+      )),
     );
 
     return stocksAsync.when(
@@ -72,7 +74,9 @@ class DashboardKpiSection extends ConsumerWidget {
                   Expanded(
                     child: DashboardOverviewKpiCard(
                       title: 'Dépenses du jour',
-                      value: CurrencyFormatter.formatDouble(todayExpensesAmount),
+                      value: CurrencyFormatter.formatDouble(
+                        todayExpensesAmount,
+                      ),
                       subtitle: '${todayExpenses.length} dépense(s)',
                       icon: Icons.trending_down,
                     ),
@@ -117,7 +121,9 @@ class DashboardKpiSection extends ConsumerWidget {
                     Expanded(
                       child: DashboardOverviewKpiCard(
                         title: 'Dépenses du jour',
-                        value: CurrencyFormatter.formatDouble(todayExpensesAmount),
+                        value: CurrencyFormatter.formatDouble(
+                          todayExpensesAmount,
+                        ),
                         subtitle: '${todayExpenses.length} dépense(s)',
                         icon: Icons.trending_down,
                       ),
@@ -160,4 +166,3 @@ class DashboardKpiSection extends ConsumerWidget {
     );
   }
 }
-

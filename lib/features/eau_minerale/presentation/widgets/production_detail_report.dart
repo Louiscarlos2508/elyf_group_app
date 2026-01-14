@@ -13,10 +13,7 @@ import 'production_report/production_report_personnel.dart';
 
 /// Widget pour afficher un rapport détaillé d'une production spécifique.
 class ProductionDetailReport extends ConsumerWidget {
-  const ProductionDetailReport({
-    super.key,
-    required this.session,
-  });
+  const ProductionDetailReport({super.key, required this.session});
 
   final ProductionSession session;
 
@@ -60,4 +57,3 @@ class ProductionDetailReport extends ConsumerWidget {
     );
   }
 }
-

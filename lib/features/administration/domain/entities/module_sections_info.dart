@@ -2,10 +2,7 @@ import 'package:flutter/material.dart';
 
 /// Informations sur les sections développées dans un module
 class ModuleSectionsInfo {
-  const ModuleSectionsInfo({
-    required this.moduleId,
-    required this.sections,
-  });
+  const ModuleSectionsInfo({required this.moduleId, required this.sections});
 
   final String moduleId;
   final List<ModuleSection> sections;
@@ -295,11 +292,10 @@ class ModuleSectionsRegistry {
   /// Récupère toutes les informations de sections pour tous les modules
   static List<ModuleSectionsInfo> getAllModulesSections() {
     return _sectionsByModule.entries
-        .map((entry) => ModuleSectionsInfo(
-              moduleId: entry.key,
-              sections: entry.value,
-            ))
+        .map(
+          (entry) =>
+              ModuleSectionsInfo(moduleId: entry.key, sections: entry.value),
+        )
         .toList();
   }
 }
-

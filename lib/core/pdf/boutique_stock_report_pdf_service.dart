@@ -24,9 +24,9 @@ class BoutiqueStockReportPdfService extends BaseStockReportPdfService {
       moduleName: 'Boutique',
       reportDate: date,
       stockItems: stockData,
-      fileName: 'rapport_stock_boutique_'
+      fileName:
+          'rapport_stock_boutique_'
           '${DateFormat('yyyyMMdd').format(date)}.pdf',
     );
   }
 }
-

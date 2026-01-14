@@ -6,10 +6,7 @@ import '../../../domain/entities/gas_sale.dart';
 
 /// Statistiques des ventes en gros.
 class SalesReportWholesaleStats extends StatelessWidget {
-  const SalesReportWholesaleStats({
-    super.key,
-    required this.wholesaleSales,
-  });
+  const SalesReportWholesaleStats({super.key, required this.wholesaleSales});
 
   final List<GasSale> wholesaleSales;
 
@@ -26,7 +23,8 @@ class SalesReportWholesaleStats extends StatelessWidget {
           _buildTourStats(theme, salesByTour),
           const SizedBox(height: 16),
         ],
-        if (salesByWholesaler.isNotEmpty) _buildWholesalerStats(theme, salesByWholesaler),
+        if (salesByWholesaler.isNotEmpty)
+          _buildWholesalerStats(theme, salesByWholesaler),
       ],
     );
   }
@@ -67,11 +65,7 @@ class SalesReportWholesaleStats extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Icon(
-                      Icons.local_shipping,
-                      size: 16,
-                      color: Colors.purple,
-                    ),
+                    Icon(Icons.local_shipping, size: 16, color: Colors.purple),
                     const SizedBox(width: 8),
                     Text(
                       'Tour ${entry.key.substring(0, 8)}...',
@@ -142,11 +136,7 @@ class SalesReportWholesaleStats extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Icon(
-                      Icons.business,
-                      size: 16,
-                      color: Colors.purple,
-                    ),
+                    Icon(Icons.business, size: 16, color: Colors.purple),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -212,4 +202,3 @@ class SalesReportWholesaleStats extends StatelessWidget {
     return result;
   }
 }
-

@@ -2,10 +2,7 @@ import 'package:flutter/material.dart';
 
 /// Tab widget displaying module enterprises
 class ModuleEnterprisesTab extends StatelessWidget {
-  const ModuleEnterprisesTab({
-    super.key,
-    required this.enterprises,
-  });
+  const ModuleEnterprisesTab({super.key, required this.enterprises});
 
   final List<dynamic> enterprises;
 
@@ -25,8 +22,8 @@ class ModuleEnterprisesTab extends StatelessWidget {
             Text(
               'Aucune entreprise',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),
@@ -62,4 +59,3 @@ class ModuleEnterprisesTab extends StatelessWidget {
     );
   }
 }
-

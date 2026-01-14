@@ -5,10 +5,7 @@ import '../../domain/services/stock_service.dart';
 
 /// Contrôleur pour la gestion des stocks de bouteilles.
 class CylinderStockController {
-  CylinderStockController(
-    this._repository,
-    this._stockService,
-  );
+  CylinderStockController(this._repository, this._stockService);
 
   final CylinderStockRepository _repository;
   final StockService _stockService;
@@ -19,11 +16,7 @@ class CylinderStockController {
     CylinderStatus status, {
     String? siteId,
   }) async {
-    return _repository.getStocksByStatus(
-      enterpriseId,
-      status,
-      siteId: siteId,
-    );
+    return _repository.getStocksByStatus(enterpriseId, status, siteId: siteId);
   }
 
   /// Récupère les stocks par poids.
@@ -32,11 +25,7 @@ class CylinderStockController {
     int weight, {
     String? siteId,
   }) async {
-    return _repository.getStocksByWeight(
-      enterpriseId,
-      weight,
-      siteId: siteId,
-    );
+    return _repository.getStocksByWeight(enterpriseId, weight, siteId: siteId);
   }
 
   /// Récupère un stock par ID.
@@ -53,10 +42,7 @@ class CylinderStockController {
   }
 
   /// Ajuste la quantité d'un stock.
-  Future<void> adjustStockQuantity(
-    String stockId,
-    int newQuantity,
-  ) async {
+  Future<void> adjustStockQuantity(String stockId, int newQuantity) async {
     await _stockService.adjustStockQuantity(stockId, newQuantity);
   }
 

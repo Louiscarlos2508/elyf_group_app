@@ -42,7 +42,7 @@ class _CheckoutDialogState extends ConsumerState<CheckoutDialog>
     _cashAmount = widget.total;
     _mobileMoneyAmount = 0;
   }
-  
+
   void _onPaymentMethodChanged(PaymentMethod method) {
     setState(() {
       _paymentMethod = method;
@@ -60,7 +60,7 @@ class _CheckoutDialogState extends ConsumerState<CheckoutDialog>
       }
     });
   }
-  
+
   void _onAmountPaidChanged(String value) {
     final amount = int.tryParse(value) ?? 0;
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -79,7 +79,7 @@ class _CheckoutDialogState extends ConsumerState<CheckoutDialog>
       }
     });
   }
-  
+
   void _onSplitChanged(int cashAmount, int mobileMoneyAmount) {
     setState(() {
       _cashAmount = cashAmount;
@@ -108,9 +108,13 @@ class _CheckoutDialogState extends ConsumerState<CheckoutDialog>
   Future<void> _processPayment() async {
     // Vérifier les permissions avant de traiter le paiement
     final adapter = ref.read(boutiquePermissionAdapterProvider);
-    final hasUsePos = await adapter.hasPermission(BoutiquePermissions.usePos.id);
-    final hasCreateSale = await adapter.hasPermission(BoutiquePermissions.createSale.id);
-    
+    final hasUsePos = await adapter.hasPermission(
+      BoutiquePermissions.usePos.id,
+    );
+    final hasCreateSale = await adapter.hasPermission(
+      BoutiquePermissions.createSale.id,
+    );
+
     if (!hasUsePos && !hasCreateSale) {
       if (!mounted) return;
       NotificationService.showError(
@@ -119,7 +123,7 @@ class _CheckoutDialogState extends ConsumerState<CheckoutDialog>
       );
       return;
     }
-    
+
     await handleFormSubmit(
       context: context,
       formKey: _formKey,
@@ -129,7 +133,7 @@ class _CheckoutDialogState extends ConsumerState<CheckoutDialog>
         final amountPaid = _paymentMethod == PaymentMethod.both
             ? (_cashAmount + _mobileMoneyAmount)
             : (_amountPaid ?? 0);
-            
+
         // Validation pour paiement mixte
         if (_paymentMethod == PaymentMethod.both) {
           if (_cashAmount + _mobileMoneyAmount != widget.total) {
@@ -138,7 +142,7 @@ class _CheckoutDialogState extends ConsumerState<CheckoutDialog>
             );
           }
         }
-        
+
         final sale = Sale(
           id: 'sale-${DateTime.now().millisecondsSinceEpoch}',
           date: DateTime.now(),
@@ -166,7 +170,7 @@ class _CheckoutDialogState extends ConsumerState<CheckoutDialog>
         if (mounted) {
           // Garder la vente pour l'impression
           setState(() => _completedSale = sale);
-          
+
           ref.invalidate(recentSalesProvider);
           ref.invalidate(productsProvider);
           ref.invalidate(lowStockProductsProvider);
@@ -214,7 +218,9 @@ class _CheckoutDialogState extends ConsumerState<CheckoutDialog>
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+                      color: theme.colorScheme.primaryContainer.withValues(
+                        alpha: 0.3,
+                      ),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
@@ -282,8 +288,10 @@ class _CheckoutDialogState extends ConsumerState<CheckoutDialog>
                       validator: (v) {
                         if (v == null || v.isEmpty) return 'Requis';
                         final amount = int.tryParse(v);
-                        if (amount == null || amount <= 0) return 'Montant invalide';
-                        if (amount < widget.total && _paymentMethod == PaymentMethod.cash) {
+                        if (amount == null || amount <= 0)
+                          return 'Montant invalide';
+                        if (amount < widget.total &&
+                            _paymentMethod == PaymentMethod.cash) {
                           return 'Montant insuffisant';
                         }
                         return null;
@@ -341,7 +349,9 @@ class _CheckoutDialogState extends ConsumerState<CheckoutDialog>
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+                        color: theme.colorScheme.primaryContainer.withValues(
+                          alpha: 0.3,
+                        ),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Column(
@@ -406,7 +416,9 @@ class _CheckoutDialogState extends ConsumerState<CheckoutDialog>
                                 ? const SizedBox(
                                     width: 20,
                                     height: 20,
-                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
                                   )
                                 : const Text('Valider le paiement'),
                           ),
@@ -423,4 +435,3 @@ class _CheckoutDialogState extends ConsumerState<CheckoutDialog>
     );
   }
 }
-

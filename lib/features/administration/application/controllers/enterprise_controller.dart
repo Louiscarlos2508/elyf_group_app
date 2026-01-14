@@ -28,86 +28,33 @@ class EnterpriseController {
 
   /// Récupère toutes les entreprises.
   ///
-  /// Si la base locale est vide, récupère automatiquement depuis Firestore
-  /// et sauvegarde localement pour la prochaine fois.
+  /// Lit UNIQUEMENT depuis la base locale (Drift) pour éviter la lecture simultanée.
+  /// La synchronisation avec Firestore est gérée par le RealtimeSyncService qui
+  /// fait un pull initial au démarrage et écoute les changements en temps réel.
   Future<List<Enterprise>> getAllEnterprises() async {
     try {
+      // Lire UNIQUEMENT depuis la base locale (Drift) pour éviter la lecture simultanée
+      // La synchronisation avec Firestore est gérée par le RealtimeSyncService
       final localEnterprises = await _repository.getAllEnterprises();
 
-      // Si la base locale contient des entreprises, les retourner
-      if (localEnterprises.isNotEmpty) {
-        return localEnterprises;
-      }
-
-      // Si la base locale est vide, essayer de récupérer depuis Firestore
-      // et sauvegarder localement pour la prochaine fois
-      if (firestoreSync != null) {
-        try {
-          final firestoreEnterprises = await firestoreSync!
-              .pullEnterprisesFromFirestore();
-
-          // Sauvegarder chaque entreprise dans la base locale SANS déclencher de sync
-          // (ces entités viennent déjà de Firestore, pas besoin de les re-synchroniser)
-          for (final enterprise in firestoreEnterprises) {
-            try {
-              // Utiliser directement saveToLocal pour éviter de mettre dans la queue de sync
-              // Les entités viennent déjà de Firestore, donc pas besoin de les re-sync
-              await (_repository as dynamic).saveToLocal(enterprise);
-            } catch (e) {
-              // Ignorer les erreurs de sauvegarde locale individuelle
-              // (peut-être que l'entreprise existe déjà)
-              developer.log(
-                'Error saving enterprise from Firestore to local database: ${enterprise.id}',
-                name: 'enterprise.controller',
-              );
-            }
-          }
-
-          // Retourner les entreprises depuis Firestore
-          if (firestoreEnterprises.isNotEmpty) {
-            developer.log(
-              'Loaded ${firestoreEnterprises.length} enterprises from Firestore (local database was empty)',
-              name: 'enterprise.controller',
-            );
-            return firestoreEnterprises;
-          }
-        } catch (e) {
-          developer.log(
-            'Error fetching enterprises from Firestore (will use empty local list): $e',
-            name: 'enterprise.controller',
-          );
-          // Continuer avec la liste locale (vide)
+      // Dédupliquer les entreprises par ID pour éviter les duplications
+      // (peut arriver si la synchronisation crée des doublons dans Drift)
+      final uniqueEnterprises = <String, Enterprise>{};
+      for (final enterprise in localEnterprises) {
+        // Garder la première entreprise trouvée avec chaque ID
+        if (!uniqueEnterprises.containsKey(enterprise.id)) {
+          uniqueEnterprises[enterprise.id] = enterprise;
         }
       }
 
-      return localEnterprises;
+      return uniqueEnterprises.values.toList();
     } catch (e, stackTrace) {
       developer.log(
-        'Error getting all enterprises from local database, trying Firestore: $e',
+        'Error getting all enterprises from local database: $e',
         name: 'enterprise.controller',
         error: e,
         stackTrace: stackTrace,
       );
-
-      // En cas d'erreur locale, essayer Firestore
-      if (firestoreSync != null) {
-        try {
-          final firestoreEnterprises = await firestoreSync!
-              .pullEnterprisesFromFirestore();
-          developer.log(
-            'Loaded ${firestoreEnterprises.length} enterprises from Firestore (local database error)',
-            name: 'enterprise.controller',
-          );
-          return firestoreEnterprises;
-        } catch (e) {
-          developer.log(
-            'Error fetching enterprises from Firestore: $e',
-            name: 'enterprise.controller',
-          );
-          return [];
-        }
-      }
-
       return [];
     }
   }
@@ -141,8 +88,8 @@ class EnterpriseController {
     }
     await _repository.createEnterprise(enterprise);
 
-    // Sync to Firestore
-    firestoreSync?.syncEnterpriseToFirestore(enterprise);
+    // Note: La synchronisation vers Firestore est gérée automatiquement par le repository
+    // via la queue de sync (SyncManager). Pas besoin d'appel manuel ici.
 
     // Récupérer le nom de l'utilisateur pour l'audit trail
     String? userDisplayName;
@@ -201,8 +148,8 @@ class EnterpriseController {
 
     await _repository.updateEnterprise(enterprise);
 
-    // Sync to Firestore
-    firestoreSync?.syncEnterpriseToFirestore(enterprise, isUpdate: true);
+    // Note: La synchronisation vers Firestore est gérée automatiquement par le repository
+    // via la queue de sync (SyncManager). Pas besoin d'appel manuel ici.
 
     // Récupérer le nom de l'utilisateur pour l'audit trail
     String? userDisplayName;
@@ -256,11 +203,8 @@ class EnterpriseController {
 
     await _repository.deleteEnterprise(enterpriseId);
 
-    // Delete from Firestore
-    firestoreSync?.deleteFromFirestore(
-      collection: 'enterprises',
-      documentId: enterpriseId,
-    );
+    // Note: La synchronisation vers Firestore est gérée automatiquement par le repository
+    // via la queue de sync (SyncManager). Pas besoin d'appel manuel ici.
 
     // Récupérer le nom de l'utilisateur pour l'audit trail
     String? userDisplayName;
@@ -313,11 +257,8 @@ class EnterpriseController {
 
     final updatedEnterprise = await _repository.getEnterpriseById(enterpriseId);
     if (updatedEnterprise != null) {
-      // Sync to Firestore
-      firestoreSync?.syncEnterpriseToFirestore(
-        updatedEnterprise,
-        isUpdate: true,
-      );
+      // Note: La synchronisation vers Firestore est gérée automatiquement par le repository
+      // via la queue de sync (SyncManager). Pas besoin d'appel manuel ici.
 
       // Récupérer le nom de l'utilisateur pour l'audit trail
       String? userDisplayName;

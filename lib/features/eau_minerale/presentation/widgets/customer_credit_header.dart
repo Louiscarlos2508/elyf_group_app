@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../domain/repositories/customer_repository.dart' show CustomerSummary;
+import '../../domain/repositories/customer_repository.dart'
+    show CustomerSummary;
 
 /// Customer credit card header.
 class CustomerCreditHeader extends StatelessWidget {
@@ -97,4 +98,3 @@ class CustomerCreditHeader extends StatelessWidget {
     );
   }
 }
-

@@ -17,10 +17,7 @@ class CartCalculationService {
   }
 
   /// Calculates change amount (amount paid - total).
-  int calculateChange({
-    required int amountPaid,
-    required int total,
-  }) {
+  int calculateChange({required int amountPaid, required int total}) {
     if (amountPaid > total) {
       return amountPaid - total;
     }
@@ -28,12 +25,8 @@ class CartCalculationService {
   }
 
   /// Calculates remaining amount (total - amount paid).
-  int calculateRemaining({
-    required int total,
-    required int amountPaid,
-  }) {
+  int calculateRemaining({required int total, required int amountPaid}) {
     final remaining = total - amountPaid;
     return remaining > 0 ? remaining : 0;
   }
 }
-

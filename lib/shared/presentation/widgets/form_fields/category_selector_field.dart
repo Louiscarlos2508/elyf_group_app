@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 /// Champ de sélection de catégorie générique.
-/// 
+///
 /// Utilise un enum ou une liste de valeurs avec des labels personnalisés.
 class CategorySelectorField<T> extends StatelessWidget {
   const CategorySelectorField({
@@ -17,22 +17,22 @@ class CategorySelectorField<T> extends StatelessWidget {
 
   /// Valeur actuellement sélectionnée.
   final T value;
-  
+
   /// Callback appelé lors du changement de valeur.
   final void Function(T?) onChanged;
-  
+
   /// Liste des éléments disponibles.
   final List<T> items;
-  
+
   /// Fonction pour générer le label d'un élément.
   final String Function(T) labelBuilder;
-  
+
   /// Label du champ.
   final String label;
-  
+
   /// Indique si le champ est activé.
   final bool enabled;
-  
+
   /// Validateur optionnel.
   final String? Function(T?)? validator;
 
@@ -55,4 +55,3 @@ class CategorySelectorField<T> extends StatelessWidget {
     );
   }
 }
-

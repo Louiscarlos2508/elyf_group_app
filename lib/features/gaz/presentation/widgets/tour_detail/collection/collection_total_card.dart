@@ -5,10 +5,7 @@ import '../../../../domain/entities/collection.dart';
 
 /// Carte du total général du chargement.
 class CollectionTotalCard extends StatelessWidget {
-  const CollectionTotalCard({
-    super.key,
-    required this.collections,
-  });
+  const CollectionTotalCard({super.key, required this.collections});
 
   final List<Collection> collections;
 
@@ -16,8 +13,9 @@ class CollectionTotalCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final totalBottlesByWeight =
         GazCalculationService.calculateTotalBottlesByWeight(collections);
-    final totalBottles =
-        GazCalculationService.calculateTotalBottles(collections);
+    final totalBottles = GazCalculationService.calculateTotalBottles(
+      collections,
+    );
 
     return Container(
       margin: const EdgeInsets.only(top: 24),
@@ -28,10 +26,7 @@ class CollectionTotalCard extends StatelessWidget {
           end: Alignment.bottomRight,
           colors: [Color(0xFFEFF6FF), Color(0xFFEEF2FF)],
         ),
-        border: Border.all(
-          color: const Color(0xFF51A2FF),
-          width: 1.305,
-        ),
+        border: Border.all(color: const Color(0xFF51A2FF), width: 1.305),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
@@ -39,11 +34,7 @@ class CollectionTotalCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(
-                Icons.analytics,
-                size: 20,
-                color: Color(0xFF1C398E),
-              ),
+              const Icon(Icons.analytics, size: 20, color: Color(0xFF1C398E)),
               const SizedBox(width: 8),
               const Text(
                 '📊 TOTAL GÉNÉRAL DU CHARGEMENT',
@@ -123,10 +114,7 @@ class CollectionTotalCard extends StatelessWidget {
             padding: const EdgeInsets.only(top: 17.292),
             decoration: const BoxDecoration(
               border: Border(
-                top: BorderSide(
-                  color: Color(0xFF51A2FF),
-                  width: 1.305,
-                ),
+                top: BorderSide(color: Color(0xFF51A2FF), width: 1.305),
               ),
             ),
             child: Column(
@@ -136,10 +124,7 @@ class CollectionTotalCard extends StatelessWidget {
                   children: [
                     const Text(
                       'Total vides :',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Color(0xFF1E2939),
-                      ),
+                      style: TextStyle(fontSize: 16, color: Color(0xFF1E2939)),
                     ),
                     Text(
                       '$totalBottles',
@@ -156,10 +141,7 @@ class CollectionTotalCard extends StatelessWidget {
                   padding: const EdgeInsets.only(top: 1.305),
                   decoration: const BoxDecoration(
                     border: Border(
-                      top: BorderSide(
-                        color: Color(0xFF8EC5FF),
-                        width: 1.305,
-                      ),
+                      top: BorderSide(color: Color(0xFF8EC5FF), width: 1.305),
                     ),
                   ),
                   child: Row(
@@ -193,10 +175,7 @@ class CollectionTotalCard extends StatelessWidget {
                   ),
                   child: const Row(
                     children: [
-                      Text(
-                        '💡 ',
-                        style: TextStyle(fontSize: 12),
-                      ),
+                      Text('💡 ', style: TextStyle(fontSize: 12)),
                       Expanded(
                         child: Text(
                           'Ce total sera utilisé pour calculer les frais de chargement/déchargement',
@@ -217,4 +196,3 @@ class CollectionTotalCard extends StatelessWidget {
     );
   }
 }
-

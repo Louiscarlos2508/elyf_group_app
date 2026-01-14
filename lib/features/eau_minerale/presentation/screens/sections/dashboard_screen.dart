@@ -31,17 +31,14 @@ class DashboardScreen extends ConsumerWidget {
               builder: (context, constraints) {
                 final isWide = constraints.maxWidth > 600;
                 return Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    24,
-                    24,
-                    24,
-                    isWide ? 24 : 16,
-                  ),
+                  padding: EdgeInsets.fromLTRB(24, 24, 24, isWide ? 24 : 16),
                   child: Row(
                     children: [
                       Expanded(
-                        child:
-                            DashboardHeader(date: DateTime.now(), role: 'Responsable'),
+                        child: DashboardHeader(
+                          date: DateTime.now(),
+                          role: 'Responsable',
+                        ),
                       ),
                       RefreshButton(
                         onRefresh: () {
@@ -104,18 +101,14 @@ class DashboardScreen extends ConsumerWidget {
           _buildSectionHeader('CE MOIS', 0, 8),
           const SliverPadding(
             padding: EdgeInsets.fromLTRB(24, 8, 24, 24),
-            sliver: SliverToBoxAdapter(
-              child: DashboardMonthKpis(),
-            ),
+            sliver: SliverToBoxAdapter(child: DashboardMonthKpis()),
           ),
 
           // Trends chart section
           _buildSectionHeader('TENDANCES', 0, 8),
           const SliverPadding(
             padding: EdgeInsets.fromLTRB(24, 8, 24, 24),
-            sliver: SliverToBoxAdapter(
-              child: DashboardTrendsChart(),
-            ),
+            sliver: SliverToBoxAdapter(child: DashboardTrendsChart()),
           ),
 
           // Stock section

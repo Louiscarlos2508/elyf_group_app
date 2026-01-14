@@ -147,14 +147,17 @@ class ProfitReportContentV2 extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: (isProfitable ? Colors.green : Colors.red)
-                  .withValues(alpha: 0.2),
+              color: (isProfitable ? Colors.green : Colors.red).withValues(
+                alpha: 0.2,
+              ),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
               'Marge: ${data.netMarginPercentage.toStringAsFixed(1)}%',
               style: theme.textTheme.labelLarge?.copyWith(
-                color: isProfitable ? Colors.green.shade700 : Colors.red.shade700,
+                color: isProfitable
+                    ? Colors.green.shade700
+                    : Colors.red.shade700,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -231,13 +234,14 @@ class ProfitReportContentV2 extends ConsumerWidget {
           ),
           Text(
             '${isPositive ? '+' : '-'} ${CurrencyFormatter.formatFCFA(amount.abs())}',
-            style: (isTotal
-                    ? theme.textTheme.titleMedium
-                    : theme.textTheme.bodyMedium)
-                ?.copyWith(
-              fontWeight: isTotal ? FontWeight.bold : FontWeight.w500,
-              color: color,
-            ),
+            style:
+                (isTotal
+                        ? theme.textTheme.titleMedium
+                        : theme.textTheme.bodyMedium)
+                    ?.copyWith(
+                      fontWeight: isTotal ? FontWeight.bold : FontWeight.w500,
+                      color: color,
+                    ),
           ),
         ],
       ),
@@ -278,12 +282,6 @@ class ProfitReportContentV2 extends ConsumerWidget {
       );
     }
 
-    return Column(
-      children: [
-        cards[0],
-        const SizedBox(height: 16),
-        cards[1],
-      ],
-    );
+    return Column(children: [cards[0], const SizedBox(height: 16), cards[1]]);
   }
 }

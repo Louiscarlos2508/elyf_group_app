@@ -23,4 +23,3 @@ class TransactionsHistoryHelpers {
     return '$searchQuery|${typeStr ?? ''}|${startDateStr ?? ''}|${endDateStr ?? ''}';
   }
 }
-

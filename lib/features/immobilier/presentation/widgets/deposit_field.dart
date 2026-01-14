@@ -35,7 +35,8 @@ class _DepositFieldState extends State<DepositField> {
       widget.depositController.text = widget.initialDeposit.toString();
     }
     if (widget.initialDepositInMonths != null) {
-      widget.depositInMonthsController.text = widget.initialDepositInMonths.toString();
+      widget.depositInMonthsController.text = widget.initialDepositInMonths
+          .toString();
       _updateDepositFromMonths();
     }
   }
@@ -148,6 +149,4 @@ class _DepositFieldState extends State<DepositField> {
     if (months == null || months <= 0) return 0;
     return widget.monthlyRent! * months;
   }
-
 }
-

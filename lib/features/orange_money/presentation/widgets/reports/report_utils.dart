@@ -11,4 +11,3 @@ class ReportUtils {
     return CurrencyFormatter.formatShort(amount);
   }
 }
-

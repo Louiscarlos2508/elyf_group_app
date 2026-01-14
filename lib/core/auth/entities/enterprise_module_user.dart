@@ -1,7 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart' show Timestamp;
+
 /// Représente un utilisateur dans une entreprise spécifique avec un module et un rôle.
-/// 
+///
 /// Cette entité remplace ModuleUser pour supporter le multi-tenant (entreprise).
-/// 
+///
 /// Exemple:
 /// - userId: "user123" (Firebase Auth UID)
 /// - enterpriseId: "eau_sachet_1" (Entreprise spécifique)
@@ -87,23 +89,32 @@ class EnterpriseModuleUser {
       enterpriseId: map['enterpriseId'] as String,
       moduleId: map['moduleId'] as String,
       roleId: map['roleId'] as String,
-      customPermissions: (map['customPermissions'] as List<dynamic>?)
+      customPermissions:
+          (map['customPermissions'] as List<dynamic>?)
               ?.map((e) => e as String)
               .toSet() ??
           {},
       isActive: map['isActive'] as bool? ?? true,
-      createdAt: map['createdAt'] != null
-          ? DateTime.parse(map['createdAt'] as String)
-          : null,
-      updatedAt: map['updatedAt'] != null
-          ? DateTime.parse(map['updatedAt'] as String)
-          : null,
+      createdAt: _parseTimestamp(map['createdAt']),
+      updatedAt: _parseTimestamp(map['updatedAt']),
     );
   }
 
   /// Génère un ID unique pour Firestore
   /// Format: {userId}_{enterpriseId}_{moduleId}
   String get documentId => '${userId}_${enterpriseId}_$moduleId';
+
+  /// Convertit un timestamp Firestore (Timestamp ou String) en DateTime
+  static DateTime? _parseTimestamp(dynamic timestamp) {
+    if (timestamp == null) return null;
+    if (timestamp is Timestamp) {
+      return timestamp.toDate();
+    }
+    if (timestamp is String) {
+      return DateTime.tryParse(timestamp);
+    }
+    return null;
+  }
 
   @override
   String toString() {
@@ -123,4 +134,3 @@ class EnterpriseModuleUser {
   @override
   int get hashCode => Object.hash(userId, enterpriseId, moduleId);
 }
-

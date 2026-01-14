@@ -35,13 +35,13 @@ class AgentCollection {
   }
 
   Map<String, dynamic> toMap() => {
-        'id': remoteId ?? localId,
-        'localId': localId,
-        'enterpriseId': enterpriseId,
-        'name': name,
-        'phone': phone,
-        'balance': balance,
-        'commission': commission,
-        'isActive': isActive,
-      };
+    'id': remoteId ?? localId,
+    'localId': localId,
+    'enterpriseId': enterpriseId,
+    'name': name,
+    'phone': phone,
+    'balance': balance,
+    'commission': commission,
+    'isActive': isActive,
+  };
 }

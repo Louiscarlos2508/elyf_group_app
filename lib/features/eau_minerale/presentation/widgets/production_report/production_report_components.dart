@@ -8,9 +8,7 @@ class ProductionReportComponents {
   static Widget buildSectionTitle(String title, ThemeData theme) {
     return Text(
       title,
-      style: theme.textTheme.titleLarge?.copyWith(
-        fontWeight: FontWeight.bold,
-      ),
+      style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
     );
   }
 
@@ -64,12 +62,16 @@ class ProductionReportComponents {
     return Wrap(
       spacing: 16,
       runSpacing: 16,
-      children: items.map((item) => buildInfoItem(
-        label: item.label,
-        value: item.value,
-        icon: item.icon,
-        theme: theme,
-      )).toList(),
+      children: items
+          .map(
+            (item) => buildInfoItem(
+              label: item.label,
+              value: item.value,
+              icon: item.icon,
+              theme: theme,
+            ),
+          )
+          .toList(),
     );
   }
 
@@ -79,7 +81,7 @@ class ProductionReportComponents {
     required ThemeData theme,
   }) {
     final color = _getStatusColor(status);
-    
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
@@ -115,7 +117,7 @@ class ProductionReportComponents {
     double? percentage,
   }) {
     Color color = theme.colorScheme.onSurface;
-    
+
     if (isMargin) {
       color = amount >= 0 ? Colors.green.shade700 : Colors.red.shade700;
     } else if (isRevenue) {
@@ -141,7 +143,9 @@ class ProductionReportComponents {
               Text(
                 formatCurrency(amount),
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: isTotal || isMargin ? FontWeight.bold : FontWeight.normal,
+                  fontWeight: isTotal || isMargin
+                      ? FontWeight.bold
+                      : FontWeight.normal,
                   color: color,
                 ),
               ),
@@ -149,9 +153,7 @@ class ProductionReportComponents {
                 const SizedBox(width: 8),
                 Text(
                   '(${percentage.toStringAsFixed(1)}%)',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: color,
-                  ),
+                  style: theme.textTheme.bodySmall?.copyWith(color: color),
                 ),
               ],
             ],
@@ -191,4 +193,3 @@ class ProductionReportComponents {
     }
   }
 }
-

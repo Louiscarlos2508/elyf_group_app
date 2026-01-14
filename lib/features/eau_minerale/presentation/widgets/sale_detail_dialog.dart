@@ -6,10 +6,7 @@ import 'sale_detail_helpers.dart';
 
 /// Dialog showing sale details.
 class SaleDetailDialog extends StatelessWidget {
-  const SaleDetailDialog({
-    super.key,
-    required this.sale,
-  });
+  const SaleDetailDialog({super.key, required this.sale});
 
   final Sale sale;
 
@@ -88,7 +85,9 @@ class SaleDetailDialog extends StatelessWidget {
                     Expanded(
                       child: SaleDetailRow(
                         label: 'Total',
-                        value: SaleDetailHelpers.formatCurrency(sale.totalPrice),
+                        value: SaleDetailHelpers.formatCurrency(
+                          sale.totalPrice,
+                        ),
                         icon: Icons.receipt,
                       ),
                     ),
@@ -96,7 +95,9 @@ class SaleDetailDialog extends StatelessWidget {
                     Expanded(
                       child: SaleDetailRow(
                         label: 'Montant payé',
-                        value: SaleDetailHelpers.formatCurrency(sale.amountPaid),
+                        value: SaleDetailHelpers.formatCurrency(
+                          sale.amountPaid,
+                        ),
                         icon: Icons.payment,
                       ),
                     ),
@@ -108,7 +109,9 @@ class SaleDetailDialog extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+                      color: theme.colorScheme.primaryContainer.withValues(
+                        alpha: 0.3,
+                      ),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: theme.colorScheme.primary.withValues(alpha: 0.3),
@@ -154,11 +157,16 @@ class SaleDetailDialog extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: Colors.orange.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+                      border: Border.all(
+                        color: Colors.orange.withValues(alpha: 0.3),
+                      ),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.warning_amber_rounded, color: Colors.orange),
+                        const Icon(
+                          Icons.warning_amber_rounded,
+                          color: Colors.orange,
+                        ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
@@ -201,14 +209,19 @@ class SaleDetailDialog extends StatelessWidget {
                               vertical: 6,
                             ),
                             decoration: BoxDecoration(
-                              color: SaleDetailHelpers.getStatusColor(sale.status, context)
-                                  .withValues(alpha: 0.1),
+                              color: SaleDetailHelpers.getStatusColor(
+                                sale.status,
+                                context,
+                              ).withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
                               SaleDetailHelpers.getStatusLabel(sale.status),
                               style: theme.textTheme.bodyMedium?.copyWith(
-                                color: SaleDetailHelpers.getStatusColor(sale.status, context),
+                                color: SaleDetailHelpers.getStatusColor(
+                                  sale.status,
+                                  context,
+                                ),
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -248,10 +261,7 @@ class SaleDetailDialog extends StatelessWidget {
           children: [
             Icon(icon, size: 18, color: color),
             const SizedBox(width: 8),
-            Text(
-              label,
-              style: theme.textTheme.bodyMedium,
-            ),
+            Text(label, style: theme.textTheme.bodyMedium),
           ],
         ),
         Text(
@@ -265,4 +275,3 @@ class SaleDetailDialog extends StatelessWidget {
     );
   }
 }
-

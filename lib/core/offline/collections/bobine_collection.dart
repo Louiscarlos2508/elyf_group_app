@@ -15,11 +15,11 @@ class BobineCollection {
   BobineCollection();
 
   Map<String, dynamic> toMap() => {
-        'id': remoteId,
-        'enterpriseId': enterpriseId,
-        'type': type,
-        'machineId': machineId,
-        'quantity': quantity,
-        'isActive': isActive,
-      };
+    'id': remoteId,
+    'enterpriseId': enterpriseId,
+    'type': type,
+    'machineId': machineId,
+    'quantity': quantity,
+    'isActive': isActive,
+  };
 }

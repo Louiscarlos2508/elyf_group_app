@@ -8,4 +8,3 @@ export '../../../core/offline/providers.dart';
 export '../../../core/pdf/unified_payment_pdf_service.dart';
 export '../../../core/pdf/immobilier_report_pdf_service.dart';
 export '../../../core/pdf/immobilier_stock_report_pdf_service.dart';
-

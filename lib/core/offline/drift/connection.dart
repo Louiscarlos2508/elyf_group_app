@@ -14,4 +14,3 @@ LazyDatabase openDriftConnection({String filename = 'elyf_offline.sqlite'}) {
     return NativeDatabase.createInBackground(file);
   });
 }
-

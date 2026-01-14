@@ -3,9 +3,7 @@ import '../repositories/tour_repository.dart';
 
 /// Service de gestion des tours avec logique métier.
 class TourService {
-  const TourService({
-    required this.tourRepository,
-  });
+  const TourService({required this.tourRepository});
 
   final TourRepository tourRepository;
 
@@ -17,21 +15,10 @@ class TourService {
   ) {
     // Définir les transitions autorisées
     final allowedTransitions = <TourStatus, List<TourStatus>>{
-      TourStatus.collection: [
-        TourStatus.transport,
-        TourStatus.cancelled,
-      ],
-      TourStatus.transport: [
-        TourStatus.return_,
-        TourStatus.cancelled,
-      ],
-      TourStatus.return_: [
-        TourStatus.closure,
-        TourStatus.cancelled,
-      ],
-      TourStatus.closure: [
-        TourStatus.cancelled,
-      ],
+      TourStatus.collection: [TourStatus.transport, TourStatus.cancelled],
+      TourStatus.transport: [TourStatus.return_, TourStatus.cancelled],
+      TourStatus.return_: [TourStatus.closure, TourStatus.cancelled],
+      TourStatus.closure: [TourStatus.cancelled],
     };
 
     final allowed = allowedTransitions[currentStatus] ?? [];
@@ -118,4 +105,3 @@ class TourService {
     return tour.totalLoadingFees + tour.totalUnloadingFees;
   }
 }
-
