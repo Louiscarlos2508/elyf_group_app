@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import '../../../../core/errors/error_handler.dart';
+import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/offline_repository.dart';
 import '../../domain/entities/point_of_sale.dart';
 import '../../domain/repositories/point_of_sale_repository.dart';
@@ -21,16 +22,21 @@ class PointOfSaleOfflineRepository extends OfflineRepository<PointOfSale>
   final String moduleType;
 
   @override
-  String get collectionName => 'points_of_sale';
+  String get collectionName => 'pointOfSale';
 
   @override
   PointOfSale fromMap(Map<String, dynamic> map) {
+    // Support pour l'ancien format (enterpriseId) et le nouveau (parentEnterpriseId)
+    final parentEnterpriseId = map['parentEnterpriseId'] as String? ??
+        map['enterpriseId'] as String? ??
+        '';
+    
     return PointOfSale(
       id: map['id'] as String? ?? map['localId'] as String,
       name: map['name'] as String,
       address: map['address'] as String,
       contact: map['contact'] as String,
-      enterpriseId: map['enterpriseId'] as String,
+      parentEnterpriseId: parentEnterpriseId,
       moduleId: map['moduleId'] as String,
       isActive: map['isActive'] as bool? ?? true,
       cylinderIds:
@@ -54,7 +60,8 @@ class PointOfSaleOfflineRepository extends OfflineRepository<PointOfSale>
       'name': entity.name,
       'address': entity.address,
       'contact': entity.contact,
-      'enterpriseId': entity.enterpriseId,
+      'parentEnterpriseId': entity.parentEnterpriseId, // ⚠️ IMPORTANT : stocker explicitement
+      'enterpriseId': entity.enterpriseId, // Pour compatibilité avec l'ancien format
       'moduleId': entity.moduleId,
       'isActive': entity.isActive,
       'cylinderIds': entity.cylinderIds,
@@ -76,18 +83,36 @@ class PointOfSaleOfflineRepository extends OfflineRepository<PointOfSale>
   }
 
   @override
-  String? getEnterpriseId(PointOfSale entity) => entity.enterpriseId;
+  String? getEnterpriseId(PointOfSale entity) {
+    // Utiliser parentEnterpriseId pour le stockage dans Drift
+    // Cela permet de récupérer les points de vente depuis l'entreprise mère
+    // via getAllForEnterprise('gaz_1')
+    return entity.parentEnterpriseId;
+  }
 
   @override
   Future<void> saveToLocal(PointOfSale entity) async {
-    final localId = getLocalId(entity);
+    // Utiliser la méthode utilitaire pour trouver le localId existant
+    final existingLocalId = await findExistingLocalId(entity, moduleType: moduleType);
+    final localId = existingLocalId ?? getLocalId(entity);
     final remoteId = getRemoteId(entity);
-    final map = toMap(entity)..['localId'] = localId;
+    final map = toMap(entity)..['localId'] = localId..['id'] = localId;
+    
+    // ⚠️ IMPORTANT : Utiliser getEnterpriseId(entity) qui retourne parentEnterpriseId
+    // Cela permet de stocker le point de vente avec l'ID de l'entreprise mère
+    // pour qu'il soit récupérable via getAllForEnterprise('gaz_1')
+    final storageEnterpriseId = getEnterpriseId(entity) ?? enterpriseId;
+    
+    developer.log(
+      'Sauvegarde PointOfSale: id=${entity.id}, parentEnterpriseId=${entity.parentEnterpriseId}, storageEnterpriseId=$storageEnterpriseId',
+      name: 'PointOfSaleOfflineRepository.saveToLocal',
+    );
+    
     await driftService.records.upsert(
       collectionName: collectionName,
       localId: localId,
       remoteId: remoteId,
-      enterpriseId: enterpriseId,
+      enterpriseId: storageEnterpriseId,
       moduleType: moduleType,
       dataJson: jsonEncode(map),
       localUpdatedAt: DateTime.now(),
@@ -138,14 +163,96 @@ class PointOfSaleOfflineRepository extends OfflineRepository<PointOfSale>
 
   @override
   Future<List<PointOfSale>> getAllForEnterprise(String enterpriseId) async {
+    developer.log(
+      'Récupération des points de vente pour enterpriseId: $enterpriseId, moduleType: $moduleType',
+      name: 'PointOfSaleOfflineRepository.getAllForEnterprise',
+    );
+    
+    // Les points de vente sont stockés dans l'entreprise gaz (enterpriseId)
+    // et sont synchronisés avec cet ID dans Drift
+    // Note: Dans Firestore, les points de vente ont enterpriseId=parentEnterpriseId dans les données,
+    // mais ils sont stockés physiquement sous enterprises/{gaz_enterprise_id}/pointsOfSale/
     final rows = await driftService.records.listForEnterprise(
       collectionName: collectionName,
       enterpriseId: enterpriseId,
       moduleType: moduleType,
     );
-    return rows
-        .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+    
+    developer.log(
+      'Nombre de lignes trouvées dans Drift: ${rows.length} pour enterpriseId=$enterpriseId, moduleType=$moduleType',
+      name: 'PointOfSaleOfflineRepository.getAllForEnterprise',
+    );
+    
+    // Debug: Vérifier aussi toutes les collections pour voir s'il y a des points de vente ailleurs
+    try {
+      final allRows = await driftService.records.listForCollection(
+        collectionName: collectionName,
+        moduleType: moduleType,
+      );
+      developer.log(
+        '🔵 DEBUG: Total de points de vente dans Drift (toutes entreprises): ${allRows.length}',
+        name: 'PointOfSaleOfflineRepository.getAllForEnterprise',
+      );
+      
+      // Afficher les enterpriseId de tous les points de vente trouvés
+      for (final row in allRows.take(10)) { // Limiter à 10 pour ne pas surcharger les logs
+        try {
+          final map = jsonDecode(row.dataJson) as Map<String, dynamic>;
+          final posParentEnterpriseId = map['parentEnterpriseId'] as String? ?? 
+                                        map['enterpriseId'] as String? ?? 
+                                        'unknown';
+          final posEnterpriseId = map['enterpriseId'] as String?;
+          developer.log(
+            '🔵 DEBUG: Point de vente trouvé - id: ${row.localId}, enterpriseId dans Drift: ${row.enterpriseId}, parentEnterpriseId dans data: $posParentEnterpriseId, enterpriseId dans data: $posEnterpriseId',
+            name: 'PointOfSaleOfflineRepository.getAllForEnterprise',
+          );
+        } catch (e) {
+          // Ignorer les erreurs de parsing pour le debug
+        }
+      }
+    } catch (e, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.warning(
+        'Erreur lors de la vérification de toutes les collections: ${appException.message}',
+        name: 'PointOfSaleOfflineRepository.getAllForEnterprise',
+        error: e,
+        stackTrace: stackTrace,
+      );
+    }
+    
+    final entities = rows
+        .map((r) {
+          try {
+            final map = jsonDecode(r.dataJson) as Map<String, dynamic>;
+            final entity = fromMap(map);
+            developer.log(
+              'PointOfSale trouvé: id=${entity.id}, name=${entity.name}, parentEnterpriseId=${entity.parentEnterpriseId}',
+              name: 'PointOfSaleOfflineRepository.getAllForEnterprise',
+            );
+            return entity;
+          } catch (e, stackTrace) {
+            final appException = ErrorHandler.instance.handleError(e, stackTrace);
+            AppLogger.warning(
+              'Erreur lors du parsing: ${appException.message}',
+              name: 'PointOfSaleOfflineRepository.getAllForEnterprise',
+              error: e,
+              stackTrace: stackTrace,
+            );
+            return null;
+          }
+        })
+        .whereType<PointOfSale>()
         .toList();
+
+    // Dédupliquer par remoteId pour éviter les doublons
+    final deduplicated = deduplicateByRemoteId(entities);
+    
+    developer.log(
+      'Points de vente après déduplication: ${deduplicated.length}',
+      name: 'PointOfSaleOfflineRepository.getAllForEnterprise',
+    );
+    
+    return deduplicated;
   }
 
   // PointOfSaleRepository implementation
@@ -156,12 +263,25 @@ class PointOfSaleOfflineRepository extends OfflineRepository<PointOfSale>
     required String moduleId,
   }) async {
     try {
+      developer.log(
+        'PointOfSaleOfflineRepository.getPointsOfSale: enterpriseId=$enterpriseId, moduleId=$moduleId',
+        name: 'PointOfSaleOfflineRepository.getPointsOfSale',
+      );
       final all = await getAllForEnterprise(enterpriseId);
-      return all.where((pos) => pos.moduleId == moduleId).toList();
+      developer.log(
+        'PointOfSaleOfflineRepository.getPointsOfSale: ${all.length} points de vente trouvés avant filtrage par moduleId',
+        name: 'PointOfSaleOfflineRepository.getPointsOfSale',
+      );
+      final filtered = all.where((pos) => pos.moduleId == moduleId).toList();
+      developer.log(
+        'PointOfSaleOfflineRepository.getPointsOfSale: ${filtered.length} points de vente après filtrage par moduleId=$moduleId',
+        name: 'PointOfSaleOfflineRepository.getPointsOfSale',
+      );
+      return filtered;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error getting points of sale',
+      AppLogger.error(
+        'Error getting points of sale: ${appException.message}',
         name: 'PointOfSaleOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -176,8 +296,8 @@ class PointOfSaleOfflineRepository extends OfflineRepository<PointOfSale>
       return await getByLocalId(id);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error getting point of sale: $id',
+      AppLogger.error(
+        'Error getting point of sale: $id - ${appException.message}',
         name: 'PointOfSaleOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -198,8 +318,8 @@ class PointOfSaleOfflineRepository extends OfflineRepository<PointOfSale>
       await save(posWithLocalId);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error adding point of sale',
+      AppLogger.error(
+        'Error adding point of sale: ${appException.message}',
         name: 'PointOfSaleOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -215,8 +335,8 @@ class PointOfSaleOfflineRepository extends OfflineRepository<PointOfSale>
       await save(updated);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error updating point of sale: ${pointOfSale.id}',
+      AppLogger.error(
+        'Error updating point of sale: ${pointOfSale.id} - ${appException.message}',
         name: 'PointOfSaleOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -234,8 +354,8 @@ class PointOfSaleOfflineRepository extends OfflineRepository<PointOfSale>
       }
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error deleting point of sale: $id',
+      AppLogger.error(
+        'Error deleting point of sale: $id - ${appException.message}',
         name: 'PointOfSaleOfflineRepository',
         error: error,
         stackTrace: stackTrace,

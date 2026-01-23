@@ -3,6 +3,7 @@ import 'dart:developer' as developer;
 import 'dart:typed_data';
 
 import '../../../../core/errors/error_handler.dart';
+import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/offline_repository.dart';
 import '../../domain/entities/employee.dart';
 import '../../domain/entities/production_payment.dart';
@@ -178,9 +179,17 @@ class SalaryOfflineRepository extends OfflineRepository<Employee>
       enterpriseId: enterpriseId,
       moduleType: moduleType,
     );
-    return rows
+    final entities = rows
+
         .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+
         .toList();
+
+    
+
+    // Dédupliquer par remoteId pour éviter les doublons
+
+    return deduplicateByRemoteId(entities);
   }
 
   // SalaryRepository implementation
@@ -192,8 +201,8 @@ class SalaryOfflineRepository extends OfflineRepository<Employee>
       return employees.where((e) => e.type == EmployeeType.fixed).toList();
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error fetching fixed employees',
+      AppLogger.error(
+        'Error fetching fixed employees: ${appException.message}',
         name: 'SalaryOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -236,8 +245,8 @@ class SalaryOfflineRepository extends OfflineRepository<Employee>
       await save(employee);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error updating employee: ${employee.id}',
+      AppLogger.error(
+        'Error updating employee: ${employee.id} - ${appException.message}',
         name: 'SalaryOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -255,8 +264,8 @@ class SalaryOfflineRepository extends OfflineRepository<Employee>
       }
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error deleting employee: $employeeId',
+      AppLogger.error(
+        'Error deleting employee: $employeeId - ${appException.message}',
         name: 'SalaryOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -279,8 +288,8 @@ class SalaryOfflineRepository extends OfflineRepository<Employee>
       }).toList();
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error fetching production payments',
+      AppLogger.error(
+        'Error fetching production payments: ${appException.message}',
         name: 'SalaryOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -304,12 +313,23 @@ class SalaryOfflineRepository extends OfflineRepository<Employee>
       );
     }).toList();
 
+    final sourceIds = map['sourceProductionDayIds'] as List<dynamic>?;
+
     return ProductionPayment(
       id: map['id'] as String? ?? map['localId'] as String,
       period: map['period'] as String,
       paymentDate: DateTime.parse(map['paymentDate'] as String),
       persons: persons,
       notes: map['notes'] as String?,
+      sourceProductionDayIds: sourceIds?.cast<String>() ?? [],
+      isVerified: map['isVerified'] as bool? ?? false,
+      verifiedBy: map['verifiedBy'] as String?,
+      verifiedAt: map['verifiedAt'] != null
+          ? DateTime.parse(map['verifiedAt'] as String)
+          : null,
+      signature: map['signature'] != null
+          ? Uint8List.fromList((map['signature'] as List<dynamic>).cast<int>())
+          : null,
     );
   }
 
@@ -335,6 +355,11 @@ class SalaryOfflineRepository extends OfflineRepository<Employee>
             )
             .toList(),
         'notes': payment.notes,
+        'sourceProductionDayIds': payment.sourceProductionDayIds,
+        'isVerified': payment.isVerified,
+        'verifiedBy': payment.verifiedBy,
+        'verifiedAt': payment.verifiedAt?.toIso8601String(),
+        'signature': payment.signature?.toList(),
       };
 
       await driftService.records.upsert(
@@ -373,8 +398,8 @@ class SalaryOfflineRepository extends OfflineRepository<Employee>
       }).toList();
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error fetching monthly salary payments',
+      AppLogger.error(
+        'Error fetching monthly salary payments: ${appException.message}',
         name: 'SalaryOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -404,8 +429,8 @@ class SalaryOfflineRepository extends OfflineRepository<Employee>
       return localId;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error creating monthly salary payment',
+      AppLogger.error(
+        'Error creating monthly salary payment: ${appException.message}',
         name: 'SalaryOfflineRepository',
         error: error,
         stackTrace: stackTrace,

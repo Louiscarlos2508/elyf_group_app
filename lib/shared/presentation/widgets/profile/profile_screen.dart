@@ -10,7 +10,6 @@ import 'change_password_dialog.dart';
 import '../../../../core/domain/entities/user_profile.dart';
 import '../../../../core/auth/providers.dart'
     show currentUserIdProvider, currentUserProfileProvider, currentUserProvider;
-import 'edit_profile_dialog.dart';
 
 /// Reusable profile screen for all modules.
 ///
@@ -114,7 +113,7 @@ class ProfileScreen extends ConsumerWidget {
                       // Fallback vers AppUser si Firestore n'est pas disponible
                       final appUser = currentUserAsync.value!;
                       final displayName = appUser.displayName ?? appUser.email;
-                      final nameParts = displayName?.split(' ') ?? [];
+                      final nameParts = displayName.split(' ');
                       profile = UserProfile(
                         id: appUser.id,
                         firstName: nameParts.isNotEmpty

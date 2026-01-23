@@ -1,7 +1,12 @@
+import 'dart:developer' as developer;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
+import '../../../../../../core/errors/app_exceptions.dart';
+import '../../../../../../core/errors/error_handler.dart';
+import '../../../../../../core/logging/app_logger.dart';
 import '../../../domain/entities/collection.dart';
 import '../../../domain/entities/tour.dart';
 import '../../../domain/services/collection_calculation_service.dart';
@@ -63,6 +68,22 @@ class PaymentSubmitHandler {
         tour.copyWith(collections: updatedCollections),
       );
 
+      // Invalider les providers pour rafraîchir l'UI
+      if (context.mounted) {
+        developer.log(
+          'Paiement enregistré, rafraîchissement des providers',
+          name: 'PaymentSubmitHandler',
+        );
+        ref.invalidate(
+          toursProvider((
+            enterpriseId: tour.enterpriseId,
+            status: null,
+          )),
+        );
+        // Forcer le rechargement du tour en utilisant refresh
+        ref.refresh(tourProvider(tour.id));
+      }
+
       // Créer les enregistrements CylinderLeak pour chaque fuite signalée
       if (leaks.isNotEmpty) {
         try {
@@ -86,8 +107,9 @@ class PaymentSubmitHandler {
               (c) => c.weight == weight,
               orElse: () => enterpriseCylinders.isNotEmpty
                   ? enterpriseCylinders.first
-                  : throw Exception(
+                  : throw NotFoundException(
                       'Aucune bouteille trouvée pour le poids $weight kg',
+                      'CYLINDER_NOT_FOUND',
                     ),
             );
 
@@ -105,8 +127,10 @@ class PaymentSubmitHandler {
           }
         } catch (e) {
           // Logger l'erreur mais ne pas bloquer l'enregistrement du paiement
-          debugPrint(
+          AppLogger.error(
             'Erreur lors de la création des enregistrements de fuite: $e',
+            name: 'gaz.payment',
+            error: e,
           );
         }
       }
@@ -120,9 +144,19 @@ class PaymentSubmitHandler {
       );
 
       return true;
-    } catch (e) {
+    } catch (e, stackTrace) {
       if (!context.mounted) return false;
-      NotificationService.showError(context, 'Erreur: $e');
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Erreur lors de l\'enregistrement du paiement: ${appException.message}',
+        name: 'gaz.payment',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      NotificationService.showError(
+        context,
+        ErrorHandler.instance.getUserMessage(appException),
+      );
       return false;
     }
   }

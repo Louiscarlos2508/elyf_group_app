@@ -1,24 +1,72 @@
+import 'dart:developer' as developer;
+import '../../domain/adapters/pack_stock_adapter.dart';
 import '../../domain/entities/sale.dart';
+import '../../domain/pack_constants.dart';
+import '../../domain/repositories/product_repository.dart';
 import '../../domain/repositories/sale_repository.dart';
-import '../../domain/services/sale_service.dart';
 
 class SalesController {
-  SalesController(this._saleRepository, this._saleService);
+  SalesController(
+    this._saleRepository,
+    this._packStockAdapter,
+    this._productRepository,
+  );
 
   final SaleRepository _saleRepository;
-  final SaleService _saleService;
+  final PackStockAdapter _packStockAdapter;
+  final ProductRepository _productRepository;
 
   Future<SalesState> fetchRecentSales() async {
-    // Récupérer les ventes récentes (dernières 6 ventes)
     final sales = await _saleRepository.fetchSales();
     sales.sort((a, b) => b.date.compareTo(a.date));
-    return SalesState(sales: sales.take(6).toList());
+    return SalesState(sales: sales.take(50).toList());
   }
 
-  /// Creates a sale using the repository.
-  /// Note: Stock validation should be done before calling this method.
+  /// Crée une vente et décrémente le stock Pack si produit fini.
+  ///
+  /// Utilise [packProductId] pour le Pack (même que Stock, Dashboard, Paramètres).
+  /// Décrémente toujours le StockItem Pack lorsqu'une vente Pack est créée.
   Future<String> createSale(Sale sale, String userId) async {
-    return await _saleRepository.createSale(sale);
+    try {
+      final id = await _saleRepository.createSale(sale);
+      final isPack = sale.productId == packProductId;
+      
+      // Check if it's a finished good by fetching product details if not a Pack
+      bool isOtherFinishedGood = false;
+      if (!isPack) {
+        try {
+          final product = await _productRepository.getProduct(sale.productId);
+          isOtherFinishedGood = product?.isFinishedGood == true;
+        } catch (e) {
+          developer.log('Error checking finished good status: $e', name: 'elyf.sales');
+        }
+      }
+
+      if ((isPack || isOtherFinishedGood) && sale.quantity > 0) {
+        try {
+          await _packStockAdapter.recordPackExit(
+            sale.quantity,
+            productId: sale.productId,
+            reason: 'Vente',
+            notes: 'Vente ${sale.productName}',
+          );
+        } catch (e, st) {
+          // Log but don't fail the entire sale creation if stock update fails? 
+          // Usually better to fail if stock is critical, but here we want to avoid the crash.
+          developer.log(
+            'Failed to record pack exit for sale $id: $e',
+            name: 'elyf.sales',
+            error: e,
+            stackTrace: st,
+          );
+          // If we want to be strict, we'd rethrow, but here we aim for robustness.
+        }
+      }
+      return id;
+    } catch (e, st) {
+      developer.log('Error in createSale: $e', name: 'elyf.sales', error: e, stackTrace: st);
+      rethrow;
+    }
   }
 }
 

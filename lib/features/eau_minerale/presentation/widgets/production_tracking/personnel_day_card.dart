@@ -5,6 +5,7 @@ import '../../../domain/entities/production_day.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../daily_personnel_form.dart';
 import '../../../domain/entities/production_session.dart';
+import 'personnel_stock_helper.dart';
 import 'tracking_helpers.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
@@ -31,11 +32,11 @@ class PersonnelDayCard extends ConsumerWidget {
       margin: const EdgeInsets.only(bottom: 8),
       child: Column(
         children: [
-          ListTile(
+          ExpansionTile(
             leading: CircleAvatar(
               backgroundColor: theme.colorScheme.primaryContainer,
               child: Text(
-                '${day.nombrePersonnes}',
+                '${day.personnelIds.length}',
                 style: TextStyle(
                   color: theme.colorScheme.onPrimaryContainer,
                   fontWeight: FontWeight.bold,
@@ -79,39 +80,76 @@ class PersonnelDayCard extends ConsumerWidget {
                 ],
               ],
             ),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (!hasProduction)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: OutlinedButton.icon(
-                      onPressed: () =>
-                          _showPersonnelForm(context, ref, day.date, day),
-                      icon: const Icon(Icons.inventory_2, size: 18),
-                      label: const Text('Production'),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
+            children: [
+              Consumer(
+                builder: (context, ref, child) {
+                  final workersAsync = ref.watch(allDailyWorkersProvider);
+                  return workersAsync.when(
+                    data: (workers) {
+                      final dayWorkers = workers
+                          .where((w) => day.personnelIds.contains(w.id))
+                          .toList();
+                      if (dayWorkers.isEmpty) {
+                        return const Padding(
+                          padding: EdgeInsets.all(16.0),
+                          child: Text('Aucun détail ouvrier trouvé'),
+                        );
+                      }
+                      return Column(
+                        children: dayWorkers.map((worker) {
+                          return ListTile(
+                            dense: true,
+                            leading: const Icon(Icons.person_outline, size: 20),
+                            title: Text(worker.name),
+                            subtitle: Text(
+                              '${worker.salaireJournalier} CFA/jour',
+                            ),
+                          );
+                        }).toList(),
+                      );
+                    },
+                    loading: () => const LinearProgressIndicator(),
+                    error: (_, __) => const SizedBox.shrink(),
+                  );
+                },
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    if (!hasProduction)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: OutlinedButton.icon(
+                          onPressed: () =>
+                              _showPersonnelForm(context, ref, day.date, day),
+                          icon: const Icon(Icons.inventory_2, size: 18),
+                          label: const Text('Production'),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                          ),
                         ),
+                      )
+                    else
+                      IconButton(
+                        icon: const Icon(Icons.edit),
+                        tooltip: 'Modifier',
+                        onPressed: () =>
+                            _showPersonnelForm(context, ref, day.date, day),
                       ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline),
+                      tooltip: 'Supprimer',
+                      onPressed: onDelete,
                     ),
-                  )
-                else
-                  IconButton(
-                    icon: const Icon(Icons.edit),
-                    tooltip: 'Modifier le personnel et la production',
-                    onPressed: () =>
-                        _showPersonnelForm(context, ref, day.date, day),
-                  ),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline),
-                  tooltip: 'Supprimer ce jour',
-                  onPressed: onDelete,
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ],
       ),
@@ -135,6 +173,23 @@ class PersonnelDayCard extends ConsumerWidget {
             date: date,
             existingDay: existingDay,
             onSaved: (productionDay) async {
+              try {
+                await applyStockOnSave(
+                  ref,
+                  productionDay,
+                  existingDay,
+                  session.id,
+                );
+              } catch (e) {
+                if (context.mounted) {
+                  NotificationService.showError(
+                    context,
+                    'Erreur stock emballages: $e',
+                  );
+                }
+                return;
+              }
+
               final updatedDays = List<ProductionDay>.from(
                 session.productionDays,
               );

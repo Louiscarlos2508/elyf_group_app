@@ -11,6 +11,8 @@ import '../../widgets/production_payments_content.dart';
 import '../../widgets/salary_history_content.dart';
 import '../../widgets/salary_summary_cards.dart';
 import '../../widgets/salary_tabs.dart';
+import '../../widgets/salary_analysis_content.dart';
+import 'payment_reconciliation_screen.dart';
 
 class SalariesScreen extends ConsumerStatefulWidget {
   const SalariesScreen({super.key});
@@ -61,75 +63,99 @@ class _SalariesScreenState extends ConsumerState<SalariesScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isWide = constraints.maxWidth > 600;
-
-        return CustomScrollView(
-          slivers: [
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(24, 24, 24, isWide ? 24 : 16),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.people,
-                      color: theme.colorScheme.primary,
-                      size: 28,
+    return Scaffold(
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar.large(
+            title: Text(
+              'Gestion Salaires',
+              style: theme.textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                letterSpacing: -0.5,
+              ),
+            ),
+            centerTitle: false,
+            actions: [
+              IconButton(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const PaymentReconciliationScreen(),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'Salaires & Indemnités',
-                        style: theme.textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    RefreshButton(
-                      onRefresh: () => ref.invalidate(salaryStateProvider),
-                      tooltip: 'Actualiser les salaires',
-                    ),
-                  ],
-                ),
+                  );
+                },
+                icon: const Icon(Icons.account_balance_wallet_outlined),
+                tooltip: 'Réconciliation',
+              ),
+              IconButton(
+                onPressed: () => ref.invalidate(salaryStateProvider),
+                icon: const Icon(Icons.refresh),
+                tooltip: 'Actualiser',
+              ),
+              const SizedBox(width: 8),
+            ],
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+              child: SalarySummaryCards(
+                onNewPayment: () => _showProductionPaymentForm(context),
               ),
             ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: SalarySummaryCards(
-                  onNewPayment: () => _showProductionPaymentForm(context),
-                ),
+          ),
+          SliverPersistentHeader(
+            pinned: true,
+            delegate: _SliverSalaryTabsDelegate(
+              SalaryTabs(
+                selectedTab: _selectedTab,
+                onTabChanged: (index) => setState(() => _selectedTab = index),
               ),
             ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-                child: SalaryTabs(
-                  selectedTab: _selectedTab,
-                  onTabChanged: (index) => setState(() => _selectedTab = index),
-                ),
-              ),
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.all(16),
+            sliver: SliverToBoxAdapter(
+              child: _selectedTab == 0
+                  ? FixedEmployeesContent(
+                      onNewEmployee: () => _showEmployeeForm(context),
+                    )
+                  : _selectedTab == 1
+                      ? ProductionPaymentsContent(
+                          onNewPayment: () => _showProductionPaymentForm(context),
+                        )
+                      : _selectedTab == 2
+                          ? const SalaryHistoryContent()
+                          : const SalaryAnalysisContent(),
             ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: _selectedTab == 0
-                    ? FixedEmployeesContent(
-                        onNewEmployee: () => _showEmployeeForm(context),
-                      )
-                    : _selectedTab == 1
-                    ? ProductionPaymentsContent(
-                        onNewPayment: () => _showProductionPaymentForm(context),
-                      )
-                    : const SalaryHistoryContent(),
-              ),
-            ),
-            const SliverToBoxAdapter(child: SizedBox(height: 24)),
-          ],
-        );
-      },
+          ),
+          const SliverPadding(padding: EdgeInsets.only(bottom: 80)),
+        ],
+      ),
     );
+  }
+}
+
+class _SliverSalaryTabsDelegate extends SliverPersistentHeaderDelegate {
+  final Widget child;
+
+  _SliverSalaryTabsDelegate(this.child);
+
+  @override
+  double get minExtent => 60.0;
+  @override
+  double get maxExtent => 60.0;
+
+  @override
+  Widget build(
+      BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return Container(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      child: child,
+    );
+  }
+
+  @override
+  bool shouldRebuild(_SliverSalaryTabsDelegate oldDelegate) {
+    return oldDelegate.child != child;
   }
 }

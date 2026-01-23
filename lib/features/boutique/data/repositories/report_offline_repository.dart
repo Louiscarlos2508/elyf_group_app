@@ -1,6 +1,7 @@
 import 'dart:developer' as developer;
 
 import '../../../../core/errors/error_handler.dart';
+import '../../../../core/logging/app_logger.dart';
 import '../../domain/entities/report_data.dart';
 import '../../domain/repositories/expense_repository.dart';
 import '../../domain/repositories/purchase_repository.dart';
@@ -99,8 +100,8 @@ class ReportOfflineRepository implements ReportRepository {
       );
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error getting report data',
+      AppLogger.error(
+        'Error getting report data: ${appException.message}',
         name: 'ReportOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -236,8 +237,8 @@ class ReportOfflineRepository implements ReportRepository {
       );
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error getting purchases report',
+      AppLogger.error(
+        'Error getting purchases report: ${appException.message}',
         name: 'ReportOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -283,8 +284,8 @@ class ReportOfflineRepository implements ReportRepository {
       );
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error getting expenses report',
+      AppLogger.error(
+        'Error getting expenses report: ${appException.message}',
         name: 'ReportOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -351,8 +352,8 @@ class ReportOfflineRepository implements ReportRepository {
       );
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error getting profit report',
+      AppLogger.error(
+        'Error getting profit report: ${appException.message}',
         name: 'ReportOfflineRepository',
         error: error,
         stackTrace: stackTrace,

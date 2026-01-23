@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import '../../../../core/errors/error_handler.dart';
+import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/offline_repository.dart';
 import '../../domain/entities/agent.dart';
 import '../../domain/repositories/agent_repository.dart';
@@ -143,9 +144,17 @@ class AgentOfflineRepository extends OfflineRepository<Agent>
       enterpriseId: enterpriseId,
       moduleType: 'orange_money',
     );
-    return rows
+    final entities = rows
+
         .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+
         .toList();
+
+    
+
+    // Dédupliquer par remoteId pour éviter les doublons
+
+    return deduplicateByRemoteId(entities);
   }
 
   // AgentRepository interface implementation
@@ -157,7 +166,7 @@ class AgentOfflineRepository extends OfflineRepository<Agent>
     String? searchQuery,
   }) async {
     try {
-      developer.log(
+      AppLogger.debug(
         'Fetching agents for enterprise: ${enterpriseId ?? this.enterpriseId}',
         name: 'AgentOfflineRepository',
       );
@@ -198,8 +207,8 @@ class AgentOfflineRepository extends OfflineRepository<Agent>
       return await getByLocalId(agentId);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error getting agent: $agentId',
+      AppLogger.error(
+        'Error getting agent: $agentId - ${appException.message}',
         name: 'AgentOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -245,8 +254,8 @@ class AgentOfflineRepository extends OfflineRepository<Agent>
       await save(agent);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error updating agent: ${agent.id}',
+      AppLogger.error(
+        'Error updating agent: ${agent.id} - ${appException.message}',
         name: 'AgentOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -264,8 +273,8 @@ class AgentOfflineRepository extends OfflineRepository<Agent>
       }
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error deleting agent: $agentId',
+      AppLogger.error(
+        'Error deleting agent: $agentId - ${appException.message}',
         name: 'AgentOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -300,8 +309,8 @@ class AgentOfflineRepository extends OfflineRepository<Agent>
       };
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error getting daily statistics',
+      AppLogger.error(
+        'Error getting daily statistics: ${appException.message}',
         name: 'AgentOfflineRepository',
         error: error,
         stackTrace: stackTrace,

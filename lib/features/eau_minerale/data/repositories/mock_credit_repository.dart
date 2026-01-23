@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import '../../../../core/errors/app_exceptions.dart';
 import '../../domain/entities/credit_payment.dart';
 import '../../domain/entities/sale.dart';
 import '../../domain/repositories/credit_repository.dart';
@@ -41,13 +42,19 @@ class MockCreditRepository implements CreditRepository {
     await Future<void>.delayed(const Duration(milliseconds: 200));
     final sale = await _saleRepository.getSale(payment.saleId);
     if (sale == null) {
-      throw Exception('Vente introuvable');
+      throw NotFoundException(
+        'Vente introuvable',
+        'SALE_NOT_FOUND',
+      );
     }
 
     // Vérifier que le montant ne dépasse pas le reste à payer
     // Note: sale.amountPaid contient déjà tous les paiements précédents
     if (payment.amount > sale.remainingAmount) {
-      throw Exception('Montant supérieur au reste à payer');
+      throw ValidationException(
+        'Montant supérieur au reste à payer',
+        'PAYMENT_AMOUNT_EXCEEDS_REMAINING',
+      );
     }
 
     final id = 'payment-${_payments.length + 1}';

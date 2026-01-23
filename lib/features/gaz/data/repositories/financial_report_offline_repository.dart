@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import '../../../../core/errors/error_handler.dart';
+import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/offline_repository.dart';
 import '../../domain/entities/financial_report.dart';
 import '../../domain/repositories/financial_report_repository.dart';
@@ -83,9 +84,11 @@ class FinancialReportOfflineRepository
 
   @override
   Future<void> saveToLocal(FinancialReport entity) async {
-    final localId = getLocalId(entity);
+    // Utiliser la méthode utilitaire pour trouver le localId existant
+    final existingLocalId = await findExistingLocalId(entity, moduleType: moduleType);
+    final localId = existingLocalId ?? getLocalId(entity);
     final remoteId = getRemoteId(entity);
-    final map = toMap(entity)..['localId'] = localId;
+    final map = toMap(entity)..['localId'] = localId..['id'] = localId;
     await driftService.records.upsert(
       collectionName: collectionName,
       localId: localId,
@@ -146,9 +149,17 @@ class FinancialReportOfflineRepository
       enterpriseId: enterpriseId,
       moduleType: moduleType,
     );
-    return rows
+    final entities = rows
+
         .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+
         .toList();
+
+    
+
+    // Dédupliquer par remoteId pour éviter les doublons
+
+    return deduplicateByRemoteId(entities);
   }
 
   // FinancialReportRepository implementation
@@ -172,8 +183,8 @@ class FinancialReportOfflineRepository
       }).toList();
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error getting reports',
+      AppLogger.error(
+        'Error getting reports: ${appException.message}',
         name: 'FinancialReportOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -207,8 +218,8 @@ class FinancialReportOfflineRepository
       return localId;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error generating report',
+      AppLogger.error(
+        'Error generating report: ${appException.message}',
         name: 'FinancialReportOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -223,8 +234,8 @@ class FinancialReportOfflineRepository
       await save(report);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error updating report: ${report.id}',
+      AppLogger.error(
+        'Error updating report: ${report.id} - ${appException.message}',
         name: 'FinancialReportOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -243,8 +254,8 @@ class FinancialReportOfflineRepository
       }
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error finalizing report: $reportId',
+      AppLogger.error(
+        'Error finalizing report: $reportId - ${appException.message}',
         name: 'FinancialReportOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -269,8 +280,8 @@ class FinancialReportOfflineRepository
       return reports.fold<double>(0.0, (sum, r) => sum + r.netAmount);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error calculating net amount',
+      AppLogger.error(
+        'Error calculating net amount: ${appException.message}',
         name: 'FinancialReportOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -288,8 +299,8 @@ class FinancialReportOfflineRepository
       }
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error deleting report: $id',
+      AppLogger.error(
+        'Error deleting report: $id - ${appException.message}',
         name: 'FinancialReportOfflineRepository',
         error: error,
         stackTrace: stackTrace,

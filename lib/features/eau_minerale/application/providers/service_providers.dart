@@ -18,16 +18,17 @@ import '../../domain/services/salary_calculation_service.dart';
 import '../../domain/services/sale_calculation_service.dart';
 import '../../domain/services/sale_service.dart';
 import '../../domain/services/validation/production_validation_service.dart';
+import '../../domain/services/stock_integrity_service.dart';
+import 'controller_providers.dart';
 import 'repository_providers.dart';
 
 // Service Providers
 final saleServiceProvider = Provider<SaleService>((ref) {
-  final stockRepo = ref.watch(stockRepositoryProvider);
-  final customerRepo = ref.watch(customerRepositoryProvider);
-
   return SaleService(
-    stockRepository: stockRepo,
-    customerRepository: customerRepo,
+    stockRepository: ref.watch(stockRepositoryProvider),
+    customerRepository: ref.watch(customerRepositoryProvider),
+    packStockAdapter: ref.watch(packStockAdapterProvider),
+    productRepository: ref.watch(eauMineraleProductRepositoryProvider),
   );
 });
 
@@ -124,3 +125,14 @@ final creditCalculationServiceProvider = Provider<CreditCalculationService>(
 final salaryCalculationServiceProvider = Provider<SalaryCalculationService>(
   (ref) => SalaryCalculationService(),
 );
+
+/// Provider for StockIntegrityService.
+final stockIntegrityServiceProvider = Provider<StockIntegrityService>((ref) {
+  final bobineRepo = ref.watch(bobineStockQuantityRepositoryProvider);
+  final packagingRepo = ref.watch(packagingStockRepositoryProvider);
+
+  return StockIntegrityService(
+    bobineRepository: bobineRepo,
+    packagingRepository: packagingRepo,
+  );
+});

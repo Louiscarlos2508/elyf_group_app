@@ -3,8 +3,10 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:cloud_firestore/cloud_firestore.dart'
-    show FirebaseFirestore, QuerySnapshot, DocumentChangeType;
+    show FirebaseFirestore, QuerySnapshot, DocumentChangeType, Timestamp;
 
+import '../../../../core/errors/error_handler.dart';
+import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/drift_service.dart';
 import '../../domain/entities/user.dart';
 import '../../domain/entities/enterprise.dart';
@@ -38,6 +40,8 @@ class RealtimeSyncService {
   StreamSubscription<QuerySnapshot>? _enterprisesSubscription;
   StreamSubscription<QuerySnapshot>? _rolesSubscription;
   StreamSubscription<QuerySnapshot>? _enterpriseModuleUsersSubscription;
+  // Map pour stocker les subscriptions des points de vente par entreprise
+  final Map<String, StreamSubscription<QuerySnapshot>> _pointOfSaleSubscriptions = {};
 
   bool _isListening = false;
   bool _initialPullCompleted = false;
@@ -69,6 +73,7 @@ class RealtimeSyncService {
       await _listenToEnterprises();
       await _listenToRoles();
       await _listenToEnterpriseModuleUsers();
+      await _listenToPointsOfSale();
 
       _isListening = true;
       developer.log(
@@ -76,8 +81,9 @@ class RealtimeSyncService {
         name: 'admin.realtime.sync',
       );
     } catch (e, stackTrace) {
-      developer.log(
-        'Error starting realtime sync',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error starting realtime sync: ${appException.message}',
         name: 'admin.realtime.sync',
         error: e,
         stackTrace: stackTrace,
@@ -96,18 +102,20 @@ class RealtimeSyncService {
       final rolesSnapshot = await firestore.collection(_rolesCollection).get();
       for (final doc in rolesSnapshot.docs) {
         final data = doc.data();
+        final roleData = Map<String, dynamic>.from(data);
         final role = UserRole(
-          id: data['id'] as String,
-          name: data['name'] as String,
-          description: data['description'] as String,
+          id: roleData['id'] as String,
+          name: roleData['name'] as String,
+          description: roleData['description'] as String,
           permissions:
-              (data['permissions'] as List<dynamic>?)
+              (roleData['permissions'] as List<dynamic>?)
                   ?.map((e) => e as String)
                   .toSet() ??
               {},
-          isSystemRole: data['isSystemRole'] as bool? ?? false,
+          isSystemRole: roleData['isSystemRole'] as bool? ?? false,
         );
-        await _saveRoleToLocal(role);
+        final firestoreUpdatedAt = _getTimestampFromData(roleData);
+        await _saveRoleToLocal(role, firestoreUpdatedAt: firestoreUpdatedAt);
       }
       developer.log(
         'Pulled ${rolesSnapshot.docs.length} roles from Firestore',
@@ -156,6 +164,72 @@ class RealtimeSyncService {
         name: 'admin.realtime.sync',
       );
 
+      // Pull des points de vente pour toutes les entreprises
+      // Les points de vente sont dans enterprises/{enterpriseId}/pointsOfSale/
+      int totalPosCount = 0;
+      
+      // Helper to encode objects with Timestamps
+      Object? toEncodable(Object? nonEncodable) {
+        if (nonEncodable is Timestamp) {
+          return nonEncodable.toDate().toIso8601String();
+        }
+        return nonEncodable;
+      }
+
+      for (final enterpriseDoc in enterprisesSnapshot.docs) {
+        final enterpriseId = enterpriseDoc.id;
+        try {
+          final posCollection = firestore
+              .collection(_enterprisesCollection)
+              .doc(enterpriseId)
+              .collection('pointsOfSale');
+          
+          final posSnapshot = await posCollection.get();
+          
+          for (final posDoc in posSnapshot.docs) {
+            try {
+              final posData = posDoc.data();
+              final posDataWithId = Map<String, dynamic>.from(posData)
+                ..['id'] = posDoc.id
+                ..['parentEnterpriseId'] = enterpriseId;
+              
+              // Sauvegarder dans Drift avec moduleType='gaz' et enterpriseId=parentEnterpriseId
+              await driftService.records.upsert(
+                collectionName: 'pointOfSale',
+                localId: posDoc.id,
+                remoteId: posDoc.id,
+                enterpriseId: enterpriseId, // parentEnterpriseId
+                moduleType: 'gaz',
+                dataJson: jsonEncode(posDataWithId, toEncodable: toEncodable),
+                localUpdatedAt: DateTime.now(),
+              );
+              
+              totalPosCount++;
+            } catch (e, stackTrace) {
+              final appException = ErrorHandler.instance.handleError(e, stackTrace);
+              AppLogger.warning(
+                'Error saving point of sale ${posDoc.id} for enterprise $enterpriseId: ${appException.message}',
+                name: 'admin.realtime.sync',
+                error: e,
+                stackTrace: stackTrace,
+              );
+            }
+          }
+        } catch (e, stackTrace) {
+          final appException = ErrorHandler.instance.handleError(e, stackTrace);
+          AppLogger.warning(
+            'Error pulling points of sale for enterprise $enterpriseId: ${appException.message}',
+            name: 'admin.realtime.sync',
+            error: e,
+            stackTrace: stackTrace,
+          );
+        }
+      }
+      developer.log(
+        'Pulled $totalPosCount points of sale from Firestore',
+        name: 'admin.realtime.sync',
+      );
+
       developer.log(
         'Initial pull from Firestore to Drift completed successfully',
         name: 'admin.realtime.sync',
@@ -166,8 +240,9 @@ class RealtimeSyncService {
         _initialPullCompleter.complete();
       }
     } catch (e, stackTrace) {
-      developer.log(
-        'Error during initial pull from Firestore',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error during initial pull from Firestore: ${appException.message}',
         name: 'admin.realtime.sync',
         error: e,
         stackTrace: stackTrace,
@@ -199,10 +274,13 @@ class RealtimeSyncService {
 
     try {
       await _initialPullCompleter.future.timeout(timeout);
-    } catch (e) {
-      developer.log(
-        'Timeout or error waiting for initial pull: $e',
+    } catch (e, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.warning(
+        'Timeout or error waiting for initial pull: ${appException.message}',
         name: 'admin.realtime.sync',
+        error: e,
+        stackTrace: stackTrace,
       );
       // Ne pas rethrow - permettre à l'app de continuer même si le pull prend trop de temps
     }
@@ -266,8 +344,9 @@ class RealtimeSyncService {
                       break;
                   }
                 } catch (e, stackTrace) {
-                  developer.log(
-                    'Error processing user change in realtime sync',
+                  final appException = ErrorHandler.instance.handleError(e, stackTrace);
+                  AppLogger.warning(
+                    'Error processing user change in realtime sync: ${appException.message}',
                     name: 'admin.realtime.sync',
                     error: e,
                     stackTrace: stackTrace,
@@ -275,17 +354,20 @@ class RealtimeSyncService {
                 }
               }
             },
-            onError: (error) {
-              developer.log(
-                'Error in users realtime stream',
+            onError: (error, stackTrace) {
+              final appException = ErrorHandler.instance.handleError(error, stackTrace);
+              AppLogger.error(
+                'Error in users realtime stream: ${appException.message}',
                 name: 'admin.realtime.sync',
                 error: error,
+                stackTrace: stackTrace,
               );
             },
           );
     } catch (e, stackTrace) {
-      developer.log(
-        'Error setting up users realtime listener',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error setting up users realtime listener: ${appException.message}',
         name: 'admin.realtime.sync',
         error: e,
         stackTrace: stackTrace,
@@ -313,14 +395,27 @@ class RealtimeSyncService {
                   switch (docChange.type) {
                     case DocumentChangeType.added:
                     case DocumentChangeType.modified:
-                      await _saveEnterpriseToLocal(enterprise);
+                      final isPointOfSale = enterprise.id.startsWith('pos_');
                       developer.log(
-                        'Enterprise ${docChange.type.name} in realtime: ${enterprise.id}',
+                        'Enterprise ${docChange.type.name} in realtime: id=${enterprise.id}, name=${enterprise.name}, type=${enterprise.type}, isPointOfSale=$isPointOfSale',
                         name: 'admin.realtime.sync',
                       );
+                      await _saveEnterpriseToLocal(enterprise);
+                      developer.log(
+                        '✅ Enterprise sauvegardée localement: id=${enterprise.id}',
+                        name: 'admin.realtime.sync',
+                      );
+                      
+                      // Si c'est une nouvelle entreprise, démarrer l'écoute de ses points de vente
+                      if (docChange.type == DocumentChangeType.added) {
+                        await _listenToPointsOfSaleForEnterprise(enterprise.id);
+                      }
                       break;
                     case DocumentChangeType.removed:
                       await _deleteEnterpriseFromLocal(enterprise.id);
+                      // Arrêter l'écoute des points de vente de cette entreprise
+                      await _pointOfSaleSubscriptions[enterprise.id]?.cancel();
+                      _pointOfSaleSubscriptions.remove(enterprise.id);
                       developer.log(
                         'Enterprise removed in realtime: ${enterprise.id}',
                         name: 'admin.realtime.sync',
@@ -328,8 +423,9 @@ class RealtimeSyncService {
                       break;
                   }
                 } catch (e, stackTrace) {
-                  developer.log(
-                    'Error processing enterprise change in realtime sync',
+                  final appException = ErrorHandler.instance.handleError(e, stackTrace);
+                  AppLogger.warning(
+                    'Error processing enterprise change in realtime sync: ${appException.message}',
                     name: 'admin.realtime.sync',
                     error: e,
                     stackTrace: stackTrace,
@@ -337,17 +433,20 @@ class RealtimeSyncService {
                 }
               }
             },
-            onError: (error) {
-              developer.log(
-                'Error in enterprises realtime stream',
+            onError: (error, stackTrace) {
+              final appException = ErrorHandler.instance.handleError(error, stackTrace);
+              AppLogger.error(
+                'Error in enterprises realtime stream: ${appException.message}',
                 name: 'admin.realtime.sync',
                 error: error,
+                stackTrace: stackTrace,
               );
             },
           );
     } catch (e, stackTrace) {
-      developer.log(
-        'Error setting up enterprises realtime listener',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error setting up enterprises realtime listener: ${appException.message}',
         name: 'admin.realtime.sync',
         error: e,
         stackTrace: stackTrace,
@@ -383,12 +482,32 @@ class RealtimeSyncService {
 
                   switch (docChange.type) {
                     case DocumentChangeType.added:
-                    case DocumentChangeType.modified:
-                      await _saveRoleToLocal(role);
+                      final firestoreUpdatedAt = _getTimestampFromData(roleData);
+                      await _saveRoleToLocal(role, firestoreUpdatedAt: firestoreUpdatedAt);
                       developer.log(
-                        'Role ${docChange.type.name} in realtime: ${role.id}',
+                        'Role added in realtime: ${role.id}',
                         name: 'admin.realtime.sync',
                       );
+                      break;
+                    case DocumentChangeType.modified:
+                      // Vérifier si la version locale est plus récente avant d'écraser
+                      final firestoreUpdatedAt = _getTimestampFromData(roleData);
+                      final shouldUpdate = await _shouldUpdateRoleFromFirestore(
+                        roleId: role.id,
+                        firestoreUpdatedAt: firestoreUpdatedAt,
+                      );
+                      if (shouldUpdate) {
+                        await _saveRoleToLocal(role, firestoreUpdatedAt: firestoreUpdatedAt);
+                        developer.log(
+                          'Role modified in realtime: ${role.id}',
+                          name: 'admin.realtime.sync',
+                        );
+                      } else {
+                        developer.log(
+                          'Skipping role update from Firestore: local version is newer for ${role.id}',
+                          name: 'admin.realtime.sync',
+                        );
+                      }
                       break;
                     case DocumentChangeType.removed:
                       await _deleteRoleFromLocal(role.id);
@@ -399,8 +518,9 @@ class RealtimeSyncService {
                       break;
                   }
                 } catch (e, stackTrace) {
-                  developer.log(
-                    'Error processing role change in realtime sync',
+                  final appException = ErrorHandler.instance.handleError(e, stackTrace);
+                  AppLogger.warning(
+                    'Error processing role change in realtime sync: ${appException.message}',
                     name: 'admin.realtime.sync',
                     error: e,
                     stackTrace: stackTrace,
@@ -408,17 +528,20 @@ class RealtimeSyncService {
                 }
               }
             },
-            onError: (error) {
-              developer.log(
-                'Error in roles realtime stream',
+            onError: (error, stackTrace) {
+              final appException = ErrorHandler.instance.handleError(error, stackTrace);
+              AppLogger.error(
+                'Error in roles realtime stream: ${appException.message}',
                 name: 'admin.realtime.sync',
                 error: error,
+                stackTrace: stackTrace,
               );
             },
           );
     } catch (e, stackTrace) {
-      developer.log(
-        'Error setting up roles realtime listener',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error setting up roles realtime listener: ${appException.message}',
         name: 'admin.realtime.sync',
         error: e,
         stackTrace: stackTrace,
@@ -463,8 +586,9 @@ class RealtimeSyncService {
                       break;
                   }
                 } catch (e, stackTrace) {
-                  developer.log(
-                    'Error processing EnterpriseModuleUser change in realtime sync',
+                  final appException = ErrorHandler.instance.handleError(e, stackTrace);
+                  AppLogger.warning(
+                    'Error processing EnterpriseModuleUser change in realtime sync: ${appException.message}',
                     name: 'admin.realtime.sync',
                     error: e,
                     stackTrace: stackTrace,
@@ -472,17 +596,20 @@ class RealtimeSyncService {
                 }
               }
             },
-            onError: (error) {
-              developer.log(
-                'Error in enterprise_module_users realtime stream',
+            onError: (error, stackTrace) {
+              final appException = ErrorHandler.instance.handleError(error, stackTrace);
+              AppLogger.error(
+                'Error in enterprise_module_users realtime stream: ${appException.message}',
                 name: 'admin.realtime.sync',
                 error: error,
+                stackTrace: stackTrace,
               );
             },
           );
     } catch (e, stackTrace) {
-      developer.log(
-        'Error setting up enterprise_module_users realtime listener',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error setting up enterprise_module_users realtime listener: ${appException.message}',
         name: 'admin.realtime.sync',
         error: e,
         stackTrace: stackTrace,
@@ -506,8 +633,9 @@ class RealtimeSyncService {
         localUpdatedAt: DateTime.now(),
       );
     } catch (e, stackTrace) {
-      developer.log(
-        'Error saving user to local in realtime sync',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error saving user to local in realtime sync: ${appException.message}',
         name: 'admin.realtime.sync',
         error: e,
         stackTrace: stackTrace,
@@ -525,8 +653,9 @@ class RealtimeSyncService {
         moduleType: 'administration',
       );
     } catch (e, stackTrace) {
-      developer.log(
-        'Error deleting user from local in realtime sync',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error deleting user from local in realtime sync: ${appException.message}',
         name: 'admin.realtime.sync',
         error: e,
         stackTrace: stackTrace,
@@ -548,8 +677,9 @@ class RealtimeSyncService {
         localUpdatedAt: DateTime.now(),
       );
     } catch (e, stackTrace) {
-      developer.log(
-        'Error saving enterprise to local in realtime sync',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error saving enterprise to local in realtime sync: ${appException.message}',
         name: 'admin.realtime.sync',
         error: e,
         stackTrace: stackTrace,
@@ -568,8 +698,9 @@ class RealtimeSyncService {
         moduleType: 'administration',
       );
     } catch (e, stackTrace) {
-      developer.log(
-        'Error deleting enterprise from local in realtime sync',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error deleting enterprise from local in realtime sync: ${appException.message}',
         name: 'admin.realtime.sync',
         error: e,
         stackTrace: stackTrace,
@@ -577,8 +708,100 @@ class RealtimeSyncService {
     }
   }
 
+  /// Vérifie si on doit mettre à jour le rôle depuis Firestore.
+  ///
+  /// Retourne true si:
+  /// - Le rôle n'existe pas localement
+  /// - La version Firestore est plus récente que la version locale
+  Future<bool> _shouldUpdateRoleFromFirestore({
+    required String roleId,
+    DateTime? firestoreUpdatedAt,
+  }) async {
+    try {
+      // Récupérer l'enregistrement local existant
+      final existingRecord = await driftService.records.findByRemoteId(
+        collectionName: _rolesCollection,
+        remoteId: roleId,
+        enterpriseId: 'global',
+        moduleType: 'administration',
+      );
+
+      // Si le rôle n'existe pas localement, on doit le créer
+      if (existingRecord == null) {
+        return true;
+      }
+
+      // Si pas de timestamp Firestore, on accepte la mise à jour
+      // (pour éviter de bloquer les mises à jour si le timestamp est manquant)
+      if (firestoreUpdatedAt == null) {
+        developer.log(
+          'No Firestore updatedAt for role $roleId, accepting update',
+          name: 'admin.realtime.sync',
+        );
+        return true;
+      }
+
+      // Comparer les timestamps : si la version locale est plus récente, ne pas écraser
+      final localUpdatedAt = existingRecord.localUpdatedAt;
+      if (localUpdatedAt.isAfter(firestoreUpdatedAt)) {
+        developer.log(
+          'Local version is newer for role $roleId: local=$localUpdatedAt, firestore=$firestoreUpdatedAt',
+          name: 'admin.realtime.sync',
+        );
+        return false;
+      }
+
+      return true;
+    } catch (e, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.warning(
+        'Error checking if should update role from Firestore: ${appException.message}',
+        name: 'admin.realtime.sync',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      // En cas d'erreur, accepter la mise à jour pour éviter de bloquer la synchronisation
+      return true;
+    }
+  }
+
+  /// Extrait le timestamp updatedAt depuis les données Firestore.
+  DateTime? _getTimestampFromData(Map<String, dynamic> data) {
+    try {
+      final updatedAt = data['updatedAt'];
+      if (updatedAt == null) return null;
+
+      // Si c'est un Timestamp Firestore, le convertir
+      if (updatedAt is Timestamp) {
+        return updatedAt.toDate();
+      }
+
+      // Si c'est une chaîne ISO, la parser
+      if (updatedAt is String) {
+        return DateTime.parse(updatedAt);
+      }
+
+      return null;
+    } catch (e, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.warning(
+        'Error parsing updatedAt timestamp: ${appException.message}',
+        name: 'admin.realtime.sync',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      return null;
+    }
+  }
+
   /// Sauvegarde un rôle localement (sans déclencher de sync).
-  Future<void> _saveRoleToLocal(UserRole role) async {
+  ///
+  /// Pour les mises à jour depuis Firestore, utilise le timestamp Firestore
+  /// au lieu de DateTime.now() pour préserver l'ordre chronologique.
+  Future<void> _saveRoleToLocal(
+    UserRole role, {
+    DateTime? firestoreUpdatedAt,
+  }) async {
     try {
       final map = {
         'id': role.id,
@@ -587,6 +810,11 @@ class RealtimeSyncService {
         'permissions': role.permissions.toList(),
         'isSystemRole': role.isSystemRole,
       };
+      
+      // Utiliser le timestamp Firestore si fourni, sinon utiliser maintenant
+      // Cela permet de préserver l'ordre chronologique des modifications
+      final localUpdatedAt = firestoreUpdatedAt ?? DateTime.now();
+      
       await driftService.records.upsert(
         collectionName: _rolesCollection,
         localId: role.id,
@@ -594,11 +822,12 @@ class RealtimeSyncService {
         enterpriseId: 'global',
         moduleType: 'administration',
         dataJson: jsonEncode(map),
-        localUpdatedAt: DateTime.now(),
+        localUpdatedAt: localUpdatedAt,
       );
     } catch (e, stackTrace) {
-      developer.log(
-        'Error saving role to local in realtime sync',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error saving role to local in realtime sync: ${appException.message}',
         name: 'admin.realtime.sync',
         error: e,
         stackTrace: stackTrace,
@@ -617,8 +846,9 @@ class RealtimeSyncService {
         moduleType: 'administration',
       );
     } catch (e, stackTrace) {
-      developer.log(
-        'Error deleting role from local in realtime sync',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error deleting role from local in realtime sync: ${appException.message}',
         name: 'admin.realtime.sync',
         error: e,
         stackTrace: stackTrace,
@@ -644,8 +874,9 @@ class RealtimeSyncService {
         localUpdatedAt: DateTime.now(),
       );
     } catch (e, stackTrace) {
-      developer.log(
-        'Error saving EnterpriseModuleUser to local in realtime sync',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error saving EnterpriseModuleUser to local in realtime sync: ${appException.message}',
         name: 'admin.realtime.sync',
         error: e,
         stackTrace: stackTrace,
@@ -665,8 +896,143 @@ class RealtimeSyncService {
         moduleType: 'administration',
       );
     } catch (e, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error deleting EnterpriseModuleUser from local in realtime sync: ${appException.message}',
+        name: 'admin.realtime.sync',
+        error: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  /// Écoute les changements dans les collections pointsOfSale de toutes les entreprises.
+  ///
+  /// Pour chaque entreprise, écoute les changements dans sa sous-collection pointsOfSale.
+  Future<void> _listenToPointsOfSale() async {
+    try {
+      // Récupérer toutes les entreprises pour écouter leurs points de vente
+      final enterprisesSnapshot = await firestore
+          .collection(_enterprisesCollection)
+          .get();
+      
       developer.log(
-        'Error deleting EnterpriseModuleUser from local in realtime sync',
+        'Setting up realtime listeners for points of sale in ${enterprisesSnapshot.docs.length} enterprises',
+        name: 'admin.realtime.sync',
+      );
+      
+      for (final enterpriseDoc in enterprisesSnapshot.docs) {
+        final enterpriseId = enterpriseDoc.id;
+        await _listenToPointsOfSaleForEnterprise(enterpriseId);
+      }
+      
+      // Écouter aussi les nouvelles entreprises pour démarrer l'écoute de leurs points de vente
+      // (cette logique est déjà gérée dans _listenToEnterprises)
+    } catch (e, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error setting up points of sale realtime listeners: ${appException.message}',
+        name: 'admin.realtime.sync',
+        error: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  /// Écoute les changements dans la collection pointsOfSale d'une entreprise spécifique.
+  Future<void> _listenToPointsOfSaleForEnterprise(String enterpriseId) async {
+    // Ne pas créer de doublon si on écoute déjà
+    if (_pointOfSaleSubscriptions.containsKey(enterpriseId)) {
+      return;
+    }
+    
+    try {
+      final posCollection = firestore
+          .collection(_enterprisesCollection)
+          .doc(enterpriseId)
+          .collection('pointofsale');
+      
+      final subscription = posCollection.snapshots().listen(
+        (snapshot) async {
+          for (final docChange in snapshot.docChanges) {
+            try {
+              final data = docChange.doc.data();
+              if (data == null) continue;
+
+              final posData = Map<String, dynamic>.from(data)
+                ..['id'] = docChange.doc.id
+                ..['parentEnterpriseId'] = enterpriseId;
+
+              switch (docChange.type) {
+                case DocumentChangeType.added:
+                case DocumentChangeType.modified:
+                  // Sauvegarder localement
+                  await driftService.records.upsert(
+                    collectionName: 'pointOfSale',
+                    localId: docChange.doc.id,
+                    remoteId: docChange.doc.id,
+                    enterpriseId: enterpriseId,
+                    moduleType: 'gaz',
+                    dataJson: jsonEncode(
+                      posData,
+                      toEncodable: (nonEncodable) {
+                        if (nonEncodable is Timestamp) {
+                          return nonEncodable.toDate().toIso8601String();
+                        }
+                        return nonEncodable;
+                      },
+                    ),
+                    localUpdatedAt: DateTime.now(),
+                  );
+                  developer.log(
+                    'Point of sale ${docChange.type.name} in realtime: ${docChange.doc.id} for enterprise $enterpriseId',
+                    name: 'admin.realtime.sync',
+                  );
+                  break;
+                case DocumentChangeType.removed:
+                  await driftService.records.deleteByLocalId(
+                    collectionName: 'pointOfSale',
+                    localId: docChange.doc.id,
+                    enterpriseId: enterpriseId,
+                    moduleType: 'gaz',
+                  );
+                  developer.log(
+                    'Point of sale removed in realtime: ${docChange.doc.id} for enterprise $enterpriseId',
+                    name: 'admin.realtime.sync',
+                  );
+                  break;
+              }
+            } catch (e, stackTrace) {
+              final appException = ErrorHandler.instance.handleError(e, stackTrace);
+              AppLogger.warning(
+                'Error processing point of sale change in realtime sync: ${appException.message}',
+                name: 'admin.realtime.sync',
+                error: e,
+                stackTrace: stackTrace,
+              );
+            }
+          }
+        },
+        onError: (error, stackTrace) {
+          final appException = ErrorHandler.instance.handleError(error, stackTrace);
+          AppLogger.error(
+            'Error in points of sale realtime stream for enterprise $enterpriseId: ${appException.message}',
+            name: 'admin.realtime.sync',
+            error: error,
+            stackTrace: stackTrace,
+          );
+        },
+      );
+      
+      _pointOfSaleSubscriptions[enterpriseId] = subscription;
+      developer.log(
+        'Started listening to points of sale for enterprise $enterpriseId',
+        name: 'admin.realtime.sync',
+      );
+    } catch (e, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error setting up points of sale realtime listener for enterprise $enterpriseId: ${appException.message}',
         name: 'admin.realtime.sync',
         error: e,
         stackTrace: stackTrace,

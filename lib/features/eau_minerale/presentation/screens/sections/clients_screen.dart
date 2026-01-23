@@ -12,7 +12,6 @@ import '../../widgets/credit_history_dialog.dart';
 import '../../widgets/credit_payment_dialog.dart';
 import '../../widgets/credits_customers_list.dart';
 import '../../widgets/credits_kpi_section.dart';
-import '../../widgets/section_placeholder.dart';
 
 class ClientsScreen extends ConsumerWidget {
   const ClientsScreen({super.key});
@@ -135,13 +134,12 @@ class ClientsScreen extends ConsumerWidget {
           await _showHistoryDialog(context, ref, customerId);
         },
       ),
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stackTrace) => SectionPlaceholder(
-        icon: Icons.people_alt_outlined,
+      loading: () => const LoadingIndicator(),
+      error: (error, stackTrace) => ErrorDisplayWidget(
+        error: error,
         title: 'Clients indisponibles',
-        subtitle: 'Impossible de charger les comptes clients.',
-        primaryActionLabel: 'Réessayer',
-        onPrimaryAction: () => ref.invalidate(clientsStateProvider),
+        message: 'Impossible de charger les comptes clients.',
+        onRetry: () => ref.refresh(clientsStateProvider),
       ),
     );
   }

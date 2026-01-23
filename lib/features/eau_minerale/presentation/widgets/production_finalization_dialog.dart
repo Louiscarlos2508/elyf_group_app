@@ -8,6 +8,7 @@ import '../../domain/entities/production_session_status.dart';
 import 'time_picker_field.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../../../shared/utils/notification_service.dart';
+import '../../../../../../core/logging/app_logger.dart';
 
 /// Dialog pour finaliser une production.
 class ProductionFinalizationDialog extends ConsumerStatefulWidget {
@@ -155,12 +156,25 @@ class _ProductionFinalizationDialogState
       if (!etaitDejaFinalisee) {
         final stockController = ref.read(stockControllerProvider);
 
+        // Packs et emballages déjà gérés à l'enregistrement journalier → ne pas
+        // ré-enregistrer à la finalisation (évite double produit fini / double
+        // décrément emballages).
+        final aDejaJournalier = savedSession.productionDays
+            .any((d) => d.packsProduits > 0 || d.emballagesUtilises > 0);
+        if (aDejaJournalier) {
+          AppLogger.info(
+            'Stock pack/emballage déjà enregistré en journalier → skip '
+            'finalisation (session ${savedSession.id})',
+            name: 'eau_minerale.production',
+          );
+        }
+
         // Les bobines finies ne nécessitent plus de retrait car elles sont gérées par quantité
         // Le stock a déjà été décrémenté lors de l'installation
         // Pas besoin d'enregistrer un retrait supplémentaire
 
-        // Ajouter les packs produits au stock de produits finis
-        if (savedSession.quantiteProduite > 0) {
+        // Ajouter les packs produits au stock de produits finis (sauf si déjà fait via journalier)
+        if (!aDejaJournalier && savedSession.quantiteProduite > 0) {
           try {
             await stockController.recordFinishedGoodsProduction(
               quantiteProduite: savedSession.quantiteProduite,
@@ -169,8 +183,10 @@ class _ProductionFinalizationDialogState
                   'Production finalisée - ${savedSession.quantiteProduite} ${savedSession.quantiteProduiteUnite}(s) produits',
             );
           } catch (e) {
-            debugPrint(
+            AppLogger.error(
               'Erreur lors de la mise à jour du stock de produits finis: $e',
+              name: 'eau_minerale.production',
+              error: e,
             );
             if (mounted) {
               NotificationService.showWarning(
@@ -181,8 +197,9 @@ class _ProductionFinalizationDialogState
           }
         }
 
-        // Enregistrer l'utilisation d'emballages si défini
-        if (savedSession.emballagesUtilises != null &&
+        // Enregistrer l'utilisation d'emballages (sauf si déjà fait via journalier)
+        if (!aDejaJournalier &&
+            savedSession.emballagesUtilises != null &&
             savedSession.emballagesUtilises! > 0) {
           try {
             // Vérifier la disponibilité du stock d'emballages
@@ -232,8 +249,9 @@ class _ProductionFinalizationDialogState
             } else {
               // Aucun stock d'emballages trouvé, avertir mais continuer
               if (mounted) {
-                debugPrint(
+                AppLogger.info(
                   'Aucun stock d\'emballages trouvé. Création d\'un nouveau stock.',
+                  name: 'eau_minerale.production',
                 );
                 // Créer un stock par défaut
                 final nouveauStock = await packagingController.save(
@@ -255,8 +273,10 @@ class _ProductionFinalizationDialogState
             }
           } catch (e) {
             // Si le stock n'existe pas, on continue quand même (l'utilisateur pourra le créer plus tard)
-            debugPrint(
+            AppLogger.error(
               'Erreur lors de la mise à jour du stock d\'emballages: $e',
+              name: 'eau_minerale.production',
+              error: e,
             );
             if (mounted) {
               NotificationService.showWarning(
@@ -268,8 +288,9 @@ class _ProductionFinalizationDialogState
         }
       } else {
         // La session était déjà finalisée, les mouvements de stock ont déjà été enregistrés
-        debugPrint(
+        AppLogger.info(
           'Session déjà finalisée - les mouvements de stock ne seront pas enregistrés à nouveau',
+          name: 'eau_minerale.production',
         );
       }
 

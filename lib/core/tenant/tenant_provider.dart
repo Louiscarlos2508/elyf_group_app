@@ -1,3 +1,5 @@
+import 'dart:developer' as developer;
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -107,14 +109,47 @@ final userAccessibleEnterprisesProvider = FutureProvider<List<Enterprise>>((
     currentUserId,
   );
 
+  developer.log(
+    '🔵 userAccessibleEnterprisesProvider: ${userAccesses.length} accès trouvés pour l\'utilisateur $currentUserId',
+    name: 'userAccessibleEnterprisesProvider',
+  );
+
+  // Log détaillé de tous les accès
+  for (final access in userAccesses) {
+    developer.log(
+      '🔵 userAccessibleEnterprisesProvider: Accès - enterpriseId=${access.enterpriseId}, moduleId=${access.moduleId}, isActive=${access.isActive}',
+      name: 'userAccessibleEnterprisesProvider',
+    );
+  }
+
   // Filtrer uniquement les accès actifs et récupérer les entreprises uniques
   final activeEnterpriseIds = userAccesses
       .where((access) => access.isActive)
       .map((access) => access.enterpriseId)
       .toSet();
 
+  developer.log(
+    '🔵 userAccessibleEnterprisesProvider: ${activeEnterpriseIds.length} entreprises uniques accessibles (IDs: ${activeEnterpriseIds.join(", ")})',
+    name: 'userAccessibleEnterprisesProvider',
+  );
+
   // Récupérer les entreprises correspondantes via le controller (qui déduplique)
+  // getAllEnterprises() inclut les entreprises normales ET les points de vente
   final allEnterprises = await enterpriseController.getAllEnterprises();
+
+  // Log détaillé de toutes les entreprises récupérées
+  final posCount = allEnterprises.where((e) => e.description?.contains("Point de vente") ?? false).length;
+  developer.log(
+    '🔵 userAccessibleEnterprisesProvider: ${allEnterprises.length} entreprises récupérées au total (dont $posCount points de vente)',
+    name: 'userAccessibleEnterprisesProvider',
+  );
+  
+  // Log des IDs de toutes les entreprises
+  final allEnterpriseIds = allEnterprises.map((e) => e.id).toList();
+  developer.log(
+    '🔵 userAccessibleEnterprisesProvider: IDs de toutes les entreprises: ${allEnterpriseIds.join(", ")}',
+    name: 'userAccessibleEnterprisesProvider',
+  );
 
   // Filtrer les entreprises accessibles et actives, puis dédupliquer par ID
   final accessibleEnterprises = allEnterprises
@@ -123,6 +158,29 @@ final userAccessibleEnterprisesProvider = FutureProvider<List<Enterprise>>((
             activeEnterpriseIds.contains(enterprise.id) && enterprise.isActive,
       )
       .toList();
+
+  developer.log(
+    '🔵 userAccessibleEnterprisesProvider: ${accessibleEnterprises.length} entreprises accessibles après filtrage',
+    name: 'userAccessibleEnterprisesProvider',
+  );
+  
+  // Log détaillé des entreprises accessibles
+  for (final enterprise in accessibleEnterprises) {
+    final isPos = enterprise.description?.contains("Point de vente") ?? false;
+    developer.log(
+      '🔵 userAccessibleEnterprisesProvider: Entreprise accessible - id=${enterprise.id}, name=${enterprise.name}, isPointOfSale=$isPos',
+      name: 'userAccessibleEnterprisesProvider',
+    );
+  }
+  
+  // Log des entreprises non trouvées
+  final notFoundIds = activeEnterpriseIds.where((id) => !allEnterpriseIds.contains(id)).toList();
+  if (notFoundIds.isNotEmpty) {
+    developer.log(
+      '⚠️ userAccessibleEnterprisesProvider: ${notFoundIds.length} IDs d\'entreprises non trouvées dans la liste: ${notFoundIds.join(", ")}',
+      name: 'userAccessibleEnterprisesProvider',
+    );
+  }
 
   // Dédupliquer par ID pour éviter les doublons (double sécurité)
   final uniqueEnterprises = <String, Enterprise>{};

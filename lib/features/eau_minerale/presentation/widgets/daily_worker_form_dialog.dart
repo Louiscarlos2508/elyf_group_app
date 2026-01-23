@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
-import '../../../../../shared/utils/notification_service.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../domain/entities/daily_worker.dart';
 
@@ -50,7 +49,8 @@ class _DailyWorkerFormDialogState extends ConsumerState<DailyWorkerFormDialog> {
     if (!_formKey.currentState!.validate()) return;
 
     final name = _nameController.text.trim();
-    final phone = _phoneController.text.trim();
+    final phoneRaw = _phoneController.text.trim();
+    final phone = PhoneUtils.normalizeBurkina(phoneRaw) ?? phoneRaw;
     final salaire = int.tryParse(_salaireController.text);
 
     if (salaire == null || salaire <= 0) {
@@ -176,7 +176,7 @@ class _DailyWorkerFormDialogState extends ConsumerState<DailyWorkerFormDialog> {
                         controller: _phoneController,
                         decoration: const InputDecoration(
                           labelText: 'Numéro de téléphone *',
-                          hintText: 'Ex: +225 07 12 34 56 78',
+                          hintText: '+226 70 00 00 00',
                           prefixIcon: Icon(Icons.phone),
                         ),
                         keyboardType: TextInputType.phone,
@@ -184,7 +184,7 @@ class _DailyWorkerFormDialogState extends ConsumerState<DailyWorkerFormDialog> {
                           if (value == null || value.trim().isEmpty) {
                             return 'Le numéro de téléphone est obligatoire';
                           }
-                          return null;
+                          return Validators.phoneBurkina(value);
                         },
                       ),
                       const SizedBox(height: 16),

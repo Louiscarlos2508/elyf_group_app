@@ -1,3 +1,4 @@
+import '../../../../core/errors/app_exceptions.dart';
 import '../../domain/entities/tenant.dart';
 import '../../domain/repositories/tenant_repository.dart';
 import '../../domain/services/immobilier_validation_service.dart';
@@ -36,7 +37,10 @@ class TenantController {
     // Valider la suppression
     final validationError = await _validationService.validateTenantDeletion(id);
     if (validationError != null) {
-      throw Exception(validationError);
+      throw ValidationException(
+        validationError,
+        'TENANT_DELETION_VALIDATION_FAILED',
+      );
     }
 
     await _tenantRepository.deleteTenant(id);

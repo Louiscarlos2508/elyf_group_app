@@ -1,6 +1,8 @@
-import 'dart:developer' as developer;
 import 'dart:convert';
+import 'dart:developer' as developer;
 
+import '../../../../core/errors/error_handler.dart';
+import '../../../../core/logging/app_logger.dart';
 import '../../../../core/auth/entities/enterprise_module_user.dart';
 import '../../../../core/offline/connectivity_service.dart';
 import '../../../../core/offline/drift_service.dart';
@@ -108,13 +110,40 @@ class AdminOfflineRepository implements AdminRepository {
         enterpriseId: 'global',
         moduleType: 'administration',
       );
-      return records.map((record) {
+      
+      // Convertir les enregistrements en EnterpriseModuleUser
+      final assignments = records.map((record) {
         final map = jsonDecode(record.dataJson) as Map<String, dynamic>;
         return _enterpriseModuleUserFromMap(map);
       }).toList();
+      
+      // Dédupliquer par documentId (userId_enterpriseId_moduleId)
+      // Si plusieurs enregistrements existent pour le même documentId,
+      // garder le plus récent (basé sur updatedAt ou createdAt)
+      final uniqueAssignments = <String, EnterpriseModuleUser>{};
+      for (final assignment in assignments) {
+        final documentId = assignment.documentId;
+        final existing = uniqueAssignments[documentId];
+        
+        if (existing == null) {
+          uniqueAssignments[documentId] = assignment;
+        } else {
+          // Garder le plus récent (priorité à updatedAt, puis createdAt)
+          final existingDate = existing.updatedAt ?? existing.createdAt;
+          final currentDate = assignment.updatedAt ?? assignment.createdAt;
+          
+          if (currentDate != null && 
+              (existingDate == null || currentDate.isAfter(existingDate))) {
+            uniqueAssignments[documentId] = assignment;
+          }
+        }
+      }
+      
+      return uniqueAssignments.values.toList();
     } catch (e, stackTrace) {
-      developer.log(
-        'Error fetching enterprise module users from offline storage',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error fetching enterprise module users from offline storage: ${appException.message}',
         name: 'admin.repository',
         error: e,
         stackTrace: stackTrace,
@@ -157,10 +186,26 @@ class AdminOfflineRepository implements AdminRepository {
   Future<void> assignUserToEnterprise(
     EnterpriseModuleUser enterpriseModuleUser,
   ) async {
-    final localId = _getLocalId(enterpriseModuleUser.documentId);
-    final remoteId = _getRemoteId(enterpriseModuleUser.documentId);
+    // Utiliser le documentId comme localId pour garantir l'unicité
+    // Le documentId est unique: userId_enterpriseId_moduleId
+    final documentId = enterpriseModuleUser.documentId;
+    
+    // Chercher d'abord un enregistrement existant par remoteId (documentId)
+    // pour éviter les doublons si un enregistrement existe déjà avec un localId différent
+    final existingRecord = await driftService.records.findByRemoteId(
+      collectionName: _enterpriseModuleUsersCollection,
+      remoteId: documentId,
+      enterpriseId: 'global',
+      moduleType: 'administration',
+    );
+    
+    // Utiliser le localId existant si trouvé, sinon utiliser le documentId
+    final localId = existingRecord?.localId ?? documentId;
+    final remoteId = documentId; // Le documentId est toujours le remoteId
+    
     final map = _enterpriseModuleUserToMap(enterpriseModuleUser)
       ..['localId'] = localId;
+    
     await driftService.records.upsert(
       collectionName: _enterpriseModuleUsersCollection,
       localId: localId,
@@ -227,12 +272,41 @@ class AdminOfflineRepository implements AdminRepository {
     // Le documentId est utilisé comme remoteId dans Drift
     // Il faut utiliser deleteByRemoteId avec le documentId
     final documentId = '${userId}_${enterpriseId}_$moduleId';
-    await driftService.records.deleteByRemoteId(
+    
+    // Récupérer le localId avant la suppression pour pouvoir le passer à queueDelete
+    final record = await driftService.records.findByRemoteId(
       collectionName: _enterpriseModuleUsersCollection,
       remoteId: documentId,
       enterpriseId: 'global',
       moduleType: 'administration',
     );
+    
+    final localId = record?.localId ?? documentId;
+    
+    // Utiliser une transaction pour garantir l'atomicité
+    await driftService.db.transaction(() async {
+      // 1. Supprimer localement
+      await driftService.records.deleteByRemoteId(
+        collectionName: _enterpriseModuleUsersCollection,
+        remoteId: documentId,
+        enterpriseId: 'global',
+        moduleType: 'administration',
+      );
+      
+      // 2. Mettre en file d'attente la suppression pour synchronisation vers Firestore
+      // Cela garantit que la suppression sera retentée si elle échoue (réseau, permissions, etc.)
+      await syncManager.queueDelete(
+        collectionName: _enterpriseModuleUsersCollection,
+        localId: localId,
+        remoteId: documentId,
+        enterpriseId: 'global',
+      );
+      
+      developer.log(
+        'EnterpriseModuleUser deletion queued: $documentId (localId: $localId)',
+        name: 'admin.repository',
+      );
+    });
   }
 
   @override
@@ -248,8 +322,9 @@ class AdminOfflineRepository implements AdminRepository {
         return _userRoleFromMap(map);
       }).toList();
     } catch (e, stackTrace) {
-      developer.log(
-        'Error fetching roles from offline storage',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error fetching roles from offline storage: ${appException.message}',
         name: 'admin.repository',
         error: e,
         stackTrace: stackTrace,
@@ -297,8 +372,9 @@ class AdminOfflineRepository implements AdminRepository {
 
       return (roles: roles, totalCount: totalCount);
     } catch (e, stackTrace) {
-      developer.log(
-        'Error fetching paginated roles from offline storage',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error fetching paginated roles from offline storage: ${appException.message}',
         name: 'admin.repository',
         error: e,
         stackTrace: stackTrace,
@@ -340,14 +416,42 @@ class AdminOfflineRepository implements AdminRepository {
 
   @override
   Future<void> deleteRole(String roleId) async {
+    // Récupérer le rôle pour obtenir le localId
+    final role = await getRoleById(roleId);
+    if (role == null) {
+      developer.log(
+        'Role not found for deletion: $roleId',
+        name: 'admin.repository',
+      );
+      return;
+    }
+
+    final localId = _getLocalId(roleId);
+    final remoteId = _getRemoteId(roleId);
+
+    developer.log(
+      'AdminOfflineRepository.deleteRole: $_rolesCollection/$localId',
+      name: 'admin.repository',
+    );
+
+    // Delete from local storage first
     // Le roleId est utilisé comme remoteId dans Drift
-    // Il faut utiliser deleteByRemoteId avec le roleId
     await driftService.records.deleteByRemoteId(
       collectionName: _rolesCollection,
       remoteId: roleId,
       enterpriseId: 'global',
       moduleType: 'administration',
     );
+
+    // Queue sync operation if has remote ID
+    if (remoteId != null && remoteId.isNotEmpty) {
+      await syncManager.queueDelete(
+        collectionName: _rolesCollection,
+        localId: localId,
+        remoteId: remoteId,
+        enterpriseId: 'global',
+      );
+    }
   }
 
   @override

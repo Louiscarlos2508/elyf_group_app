@@ -6,6 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../../../../../core/errors/error_handler.dart';
+import '../../../../../core/logging/app_logger.dart';
+
 import '../../../domain/entities/audit_log.dart';
 import '../../../domain/services/audit_export_service.dart';
 import 'audit_export_option_card.dart';
@@ -78,11 +81,13 @@ class _AuditExportDialogState extends State<AuditExportDialog> {
           _exportSuccess = true;
         });
       }
-    } catch (e) {
-      developer.log(
-        'Error exporting audit logs: $e',
+    } catch (e, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error exporting audit logs: ${appException.message}',
         name: 'AuditExport',
-        level: 1000,
+        error: e,
+        stackTrace: stackTrace,
       );
       setState(() {
         _exportResult = 'Erreur: ${e.toString()}';

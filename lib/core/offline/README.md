@@ -10,6 +10,35 @@ Principes :
 2. **Sync en arrière-plan** : quand en ligne, les opérations peuvent être synchronisées vers Firestore.
 3. **Conflits** : résolution basée sur `updated_at` (last write wins) côté SyncManager / handler.
 
+## Gestion des doublons (UNIQUE constraints)
+
+Le projet utilise deux stratégies pour gérer les contraintes UNIQUE :
+
+### 1. OfflineRecords (insertOrReplace)
+La table `OfflineRecords` utilise `InsertMode.insertOrReplace` de Drift pour gérer automatiquement les doublons :
+```dart
+await _db.into(_db.offlineRecords).insert(
+  record,
+  mode: InsertMode.insertOrReplace, // ✅ Remplace si existe déjà
+);
+```
+**Contrainte UNIQUE** : `(collection_name, enterprise_id, module_type, local_id)`
+
+### 2. SyncOperations (upsert intelligent)
+La table `SyncOperations` utilise une approche intelligente avec vérification préventive :
+- ✅ **Vérification préventive** : Cherche d'abord si l'opération existe
+- ✅ **Mise à jour si existe** : Met à jour payload, priority, reset retry count
+- ✅ **Fallback sur erreur** : Gère les conditions de course (race conditions)
+- ✅ **Logging** : Trace les mises à jour pour le diagnostic
+
+**Contrainte UNIQUE** : `(operation_type, collection_name, document_id, enterprise_id, status)`
+
+**Avantages** :
+- Évite les doublons dans la file de synchronisation
+- Assure que les données les plus récentes sont toujours synchronisées
+- Réinitialise automatiquement les retry counts pour les opérations mises à jour
+- Gère les conditions de course entre threads/isolates
+
 ## SyncManager
 
 Le `SyncManager` gère la file d'attente de synchronisation avec Firebase Firestore.
@@ -21,6 +50,7 @@ Le `SyncManager` gère la file d'attente de synchronisation avec Firebase Firest
 - ✅ **Retry logic** : Exponential backoff pour les opérations échouées
 - ✅ **Support CRUD** : Create, update, delete operations
 - ✅ **Statuts** : pending, processing, synced, failed
+- ✅ **Gestion des doublons** : Upsert intelligent pour éviter les opérations redondantes
 - ✅ **Tests d'intégration** : Tests complets pour tous les scénarios
 
 ### Utilisation

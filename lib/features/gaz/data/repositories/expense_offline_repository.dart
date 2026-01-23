@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import '../../../../core/errors/error_handler.dart';
+import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/offline_repository.dart';
 import '../../domain/entities/expense.dart';
 import '../../domain/repositories/expense_repository.dart';
@@ -71,9 +72,11 @@ class GazExpenseOfflineRepository extends OfflineRepository<GazExpense>
 
   @override
   Future<void> saveToLocal(GazExpense entity) async {
-    final localId = getLocalId(entity);
+    // Utiliser la méthode utilitaire pour trouver le localId existant
+    final existingLocalId = await findExistingLocalId(entity, moduleType: moduleType);
+    final localId = existingLocalId ?? getLocalId(entity);
     final remoteId = getRemoteId(entity);
-    final map = toMap(entity)..['localId'] = localId;
+    final map = toMap(entity)..['localId'] = localId..['id'] = localId;
     await driftService.records.upsert(
       collectionName: collectionName,
       localId: localId,
@@ -134,9 +137,17 @@ class GazExpenseOfflineRepository extends OfflineRepository<GazExpense>
       enterpriseId: enterpriseId,
       moduleType: moduleType,
     );
-    return rows
+    final entities = rows
+
         .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+
         .toList();
+
+    
+
+    // Dédupliquer par remoteId pour éviter les doublons
+
+    return deduplicateByRemoteId(entities);
   }
 
   // GazExpenseRepository implementation
@@ -152,8 +163,8 @@ class GazExpenseOfflineRepository extends OfflineRepository<GazExpense>
       }).toList();
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error getting expenses',
+      AppLogger.error(
+        'Error getting expenses: ${appException.message}',
         name: 'GazExpenseOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -168,8 +179,8 @@ class GazExpenseOfflineRepository extends OfflineRepository<GazExpense>
       return await getByLocalId(id);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error getting expense: $id',
+      AppLogger.error(
+        'Error getting expense: $id - ${appException.message}',
         name: 'GazExpenseOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -186,8 +197,8 @@ class GazExpenseOfflineRepository extends OfflineRepository<GazExpense>
       await save(expenseWithLocalId);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error adding expense',
+      AppLogger.error(
+        'Error adding expense: ${appException.message}',
         name: 'GazExpenseOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -202,8 +213,8 @@ class GazExpenseOfflineRepository extends OfflineRepository<GazExpense>
       await save(expense);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error updating expense: ${expense.id}',
+      AppLogger.error(
+        'Error updating expense: ${expense.id} - ${appException.message}',
         name: 'GazExpenseOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -221,8 +232,8 @@ class GazExpenseOfflineRepository extends OfflineRepository<GazExpense>
       }
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error deleting expense: $id',
+      AppLogger.error(
+        'Error deleting expense: $id - ${appException.message}',
         name: 'GazExpenseOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -238,8 +249,8 @@ class GazExpenseOfflineRepository extends OfflineRepository<GazExpense>
       return expenses.fold<double>(0.0, (sum, e) => sum + e.amount);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error getting total expenses',
+      AppLogger.error(
+        'Error getting total expenses: ${appException.message}',
         name: 'GazExpenseOfflineRepository',
         error: error,
         stackTrace: stackTrace,

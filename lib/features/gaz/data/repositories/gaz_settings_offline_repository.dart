@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import '../../../../core/errors/error_handler.dart';
+import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/offline_repository.dart';
 import '../../domain/entities/gaz_settings.dart';
 import '../../domain/repositories/gaz_settings_repository.dart';
@@ -116,9 +117,17 @@ class GazSettingsOfflineRepository extends OfflineRepository<GazSettings>
       enterpriseId: enterpriseId,
       moduleType: moduleType,
     );
-    return rows
+    final entities = rows
+
         .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+
         .toList();
+
+    
+
+    // Dédupliquer par remoteId pour éviter les doublons
+
+    return deduplicateByRemoteId(entities);
   }
 
   // GazSettingsRepository implementation
@@ -133,8 +142,8 @@ class GazSettingsOfflineRepository extends OfflineRepository<GazSettings>
       return await getByLocalId(settingsId);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error getting settings',
+      AppLogger.error(
+        'Error getting settings: ${appException.message}',
         name: 'GazSettingsOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -150,8 +159,8 @@ class GazSettingsOfflineRepository extends OfflineRepository<GazSettings>
       await save(updated);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error saving settings',
+      AppLogger.error(
+        'Error saving settings: ${appException.message}',
         name: 'GazSettingsOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -175,8 +184,8 @@ class GazSettingsOfflineRepository extends OfflineRepository<GazSettings>
       }
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error deleting settings',
+      AppLogger.error(
+        'Error deleting settings: ${appException.message}',
         name: 'GazSettingsOfflineRepository',
         error: error,
         stackTrace: stackTrace,

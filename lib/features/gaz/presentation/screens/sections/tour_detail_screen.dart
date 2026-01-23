@@ -1,3 +1,5 @@
+import 'dart:developer' as developer;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -27,41 +29,70 @@ class TourDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
-  Tour? _tour;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadTour();
-  }
-
-  Future<void> _loadTour() async {
-    try {
-      final controller = ref.read(tourControllerProvider);
-      final tour = await controller.getTourById(widget.tourId);
-      if (mounted) {
-        setState(() {
-          _tour = tour;
-        });
-      }
-    } catch (e) {
-      debugPrint('Erreur lors du chargement du tour: $e');
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isMobile = ResponsiveHelper.isMobile(context);
+    final tourAsync = ref.watch(tourProvider(widget.tourId));
 
-    if (_tour == null) {
-      return Scaffold(
+    return tourAsync.when(
+      data: (tour) {
+        if (tour == null) {
+          return Scaffold(
+            appBar: AppBar(title: const Text('Détails du tour')),
+            body: const Center(
+              child: Text('Tour non trouvé'),
+            ),
+          );
+        }
+
+        return _buildTourDetail(tour, theme, isMobile);
+      },
+      loading: () => Scaffold(
         appBar: AppBar(title: const Text('Détails du tour')),
         body: const Center(child: CircularProgressIndicator()),
-      );
-    }
+      ),
+      error: (e, stackTrace) {
+        developer.log(
+          'Erreur lors du chargement du tour',
+          name: 'TourDetailScreen',
+          error: e,
+          stackTrace: stackTrace,
+        );
+        return Scaffold(
+          appBar: AppBar(title: const Text('Détails du tour')),
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                const SizedBox(height: 16),
+                Text(
+                  'Une erreur inattendue s\'est produite',
+                  style: theme.textTheme.titleMedium,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Veuillez réessayer',
+                  style: theme.textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 24),
+                FilledButton(
+                  onPressed: () {
+                    // Invalider le provider pour réessayer
+                    ref.invalidate(tourProvider(widget.tourId));
+                  },
+                  child: const Text('Réessayer'),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 
-    final tour = _tour!;
+  Widget _buildTourDetail(Tour tour, ThemeData theme, bool isMobile) {
 
     return Scaffold(
       body: Column(
@@ -124,15 +155,20 @@ class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
                                 tourControllerProvider,
                               );
                               await controller.moveToNextStep(tour.id);
-                              if (mounted) {
+                              if (mounted && context.mounted) {
+                                developer.log(
+                                  'Changement d\'étape effectué, rafraîchissement des providers',
+                                  name: 'TourDetailScreen',
+                                );
+                                // Invalider les providers pour rafraîchir
                                 ref.invalidate(
                                   toursProvider((
                                     enterpriseId: widget.enterpriseId,
                                     status: null,
                                   )),
                                 );
-                                // Recharger le tour
-                                await _loadTour();
+                                // Forcer le rechargement du tour en utilisant refresh
+                                ref.refresh(tourProvider(tour.id));
                               }
                             } catch (e) {
                               if (!mounted || !context.mounted) return;
@@ -183,8 +219,8 @@ class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
                                       status: null,
                                     )),
                                   );
-                                  // Recharger le tour
-                                  await _loadTour();
+                                  // Invalider le provider du tour pour forcer le rafraîchissement
+                                  ref.invalidate(tourProvider(tour.id));
                                 }
                               } catch (e) {
                                 if (!mounted || !context.mounted) return;

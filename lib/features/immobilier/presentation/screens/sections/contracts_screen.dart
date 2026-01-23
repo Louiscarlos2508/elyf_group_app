@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
 import 'package:elyf_groupe_app/features/immobilier/application/providers.dart';
 import '../../../domain/entities/contract.dart';
 import '../../../domain/entities/payment.dart';
@@ -177,10 +178,10 @@ class _ContractsScreenState extends ConsumerState<ContractsScreen> {
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: EdgeInsets.fromLTRB(
-                        24,
-                        24,
-                        24,
-                        isWide ? 24 : 16,
+                        AppSpacing.lg,
+                        AppSpacing.lg,
+                        AppSpacing.lg,
+                        isWide ? AppSpacing.lg : AppSpacing.md,
                       ),
                       child: isWide
                           ? Row(
@@ -244,7 +245,7 @@ class _ContractsScreenState extends ConsumerState<ContractsScreen> {
                   // KPI Summary Cards
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      padding: AppSpacing.horizontalPadding,
                       child: _buildKpiCards(
                         theme,
                         contracts.length,
@@ -256,19 +257,10 @@ class _ContractsScreenState extends ConsumerState<ContractsScreen> {
                   ),
 
                   // Section header
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
-                      child: Text(
-                        'LISTE DES CONTRATS',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.5,
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
+                  SectionHeader(
+                    title: 'LISTE DES CONTRATS',
+                    top: AppSpacing.lg,
+                    bottom: AppSpacing.sm,
                   ),
 
                   // Search Bar
@@ -298,9 +290,9 @@ class _ContractsScreenState extends ConsumerState<ContractsScreen> {
                     )
                   else
                     SliverPadding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 8,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: AppSpacing.lg,
+                        vertical: AppSpacing.sm,
                       ),
                       sliver: SliverList(
                         delegate: SliverChildBuilderDelegate((context, index) {
@@ -313,14 +305,21 @@ class _ContractsScreenState extends ConsumerState<ContractsScreen> {
                       ),
                     ),
 
-                  const SliverToBoxAdapter(child: SizedBox(height: 24)),
+                  SliverToBoxAdapter(
+                    child: SizedBox(height: AppSpacing.lg),
+                  ),
                 ],
               );
             },
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => _buildErrorState(theme, error),
+        loading: () => const LoadingIndicator(),
+        error: (error, stackTrace) => ErrorDisplayWidget(
+          error: error,
+          title: 'Erreur de chargement',
+          message: 'Impossible de charger les contrats.',
+          onRetry: () => ref.refresh(contractsProvider),
+        ),
       ),
     );
   }
@@ -371,25 +370,15 @@ class _ContractsScreenState extends ConsumerState<ContractsScreen> {
   }
 
   Widget _buildEmptyState(ThemeData theme, bool isEmpty) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            isEmpty ? Icons.description_outlined : Icons.search_off,
-            size: 64,
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            isEmpty ? 'Aucun contrat enregistré' : 'Aucun résultat trouvé',
-            style: theme.textTheme.titleMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          if (!isEmpty) ...[
-            const SizedBox(height: 8),
-            TextButton(
+    return EmptyState(
+      icon: isEmpty ? Icons.description_outlined : Icons.search_off,
+      title: isEmpty ? 'Aucun contrat enregistré' : 'Aucun résultat trouvé',
+      message: isEmpty
+          ? 'Commencez par créer un contrat'
+          : 'Essayez de modifier vos critères de recherche',
+      action: isEmpty
+          ? null
+          : TextButton(
               onPressed: () {
                 _searchController.clear();
                 _selectedStatus = null;
@@ -397,32 +386,6 @@ class _ContractsScreenState extends ConsumerState<ContractsScreen> {
               },
               child: const Text('Réinitialiser les filtres'),
             ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildErrorState(ThemeData theme, Object error) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.error_outline, size: 64, color: theme.colorScheme.error),
-          const SizedBox(height: 16),
-          Text(
-            'Erreur de chargement',
-            style: theme.textTheme.bodyLarge?.copyWith(
-              color: theme.colorScheme.error,
-            ),
-          ),
-          const SizedBox(height: 16),
-          FilledButton(
-            onPressed: () => ref.invalidate(contractsProvider),
-            child: const Text('Réessayer'),
-          ),
-        ],
-      ),
     );
   }
 }

@@ -59,10 +59,17 @@ class _TenantFormDialogState extends ConsumerState<TenantFormDialog>
       onLoadingChanged:
           (_) {}, // Pas besoin de gestion d'état de chargement séparée
       onSubmit: () async {
+        final rawPhone = _phoneController.text.trim();
+        final phone =
+            PhoneUtils.normalizeBurkina(rawPhone) ?? rawPhone;
+        final rawEmergency = _emergencyContactController.text.trim();
+        final emergencyContact = rawEmergency.isEmpty
+            ? null
+            : (PhoneUtils.normalizeBurkina(rawEmergency) ?? rawEmergency);
         final tenant = Tenant(
           id: widget.tenant?.id ?? IdGenerator.generate(),
           fullName: _fullNameController.text.trim(),
-          phone: _phoneController.text.trim(),
+          phone: phone,
           email: _emailController.text.trim(),
           address: _addressController.text.trim().isEmpty
               ? null
@@ -70,9 +77,7 @@ class _TenantFormDialogState extends ConsumerState<TenantFormDialog>
           idNumber: _idNumberController.text.trim().isEmpty
               ? null
               : _idNumberController.text.trim(),
-          emergencyContact: _emergencyContactController.text.trim().isEmpty
-              ? null
-              : _emergencyContactController.text.trim(),
+          emergencyContact: emergencyContact,
           notes: _notesController.text.trim().isEmpty
               ? null
               : _notesController.text.trim(),
@@ -89,7 +94,6 @@ class _TenantFormDialogState extends ConsumerState<TenantFormDialog>
 
         if (mounted) {
           ref.invalidate(tenantsProvider);
-          Navigator.of(context).pop();
         }
 
         return widget.tenant == null
@@ -137,12 +141,7 @@ class _TenantFormDialogState extends ConsumerState<TenantFormDialog>
                 prefixIcon: Icon(Icons.phone),
               ),
               keyboardType: TextInputType.phone,
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Le téléphone est requis';
-                }
-                return null;
-              },
+              validator: (v) => Validators.phoneBurkina(v),
             ),
             const SizedBox(height: 16),
             TextFormField(

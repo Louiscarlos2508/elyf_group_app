@@ -65,8 +65,8 @@ class ProductionSessionFormDialogs {
       );
 
       if (!existeDeja) {
-        // Le stock est déjà décrémenté dans BobineInstallationForm pour les nouvelles bobines
-        // Les bobines non finie réutilisées n'ont pas besoin de décrément
+        // Le stock est décrémenté à la sauvegarde de la session (create/update),
+        // pas à l'installation. Les bobines non finies réutilisées ne décrémentent pas.
         final updatedBobines = List<BobineUsage>.from(bobinesUtilisees)
           ..add(result);
         onBobinesChanged(updatedBobines);

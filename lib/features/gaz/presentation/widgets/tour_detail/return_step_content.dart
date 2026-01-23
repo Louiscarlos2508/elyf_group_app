@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
+import '../../../../../../core/logging/app_logger.dart';
 import '../../../domain/entities/collection.dart';
 import '../../../domain/entities/tour.dart';
 import '../payment_form_dialog.dart';
@@ -95,6 +96,7 @@ class ReturnStepContent extends ConsumerWidget {
               else
                 ...wholesalerCollections.map((collection) {
                   return Padding(
+                    key: ValueKey('payment_card_${collection.id}_${collection.amountPaid}'),
                     padding: const EdgeInsets.only(bottom: 16),
                     child: WholesalerPaymentCard(
                       collection: collection,
@@ -107,16 +109,22 @@ class ReturnStepContent extends ConsumerWidget {
                               collection: collection,
                             ),
                           );
-                          if (result == true) {
+                          if (result == true && context.mounted) {
                             ref.invalidate(
                               toursProvider((
                                 enterpriseId: enterpriseId,
                                 status: null,
                               )),
                             );
+                            // Forcer le rechargement du tour en utilisant refresh
+                            ref.refresh(tourProvider(tour.id));
                           }
                         } catch (e) {
-                          debugPrint('Erreur: $e');
+                          AppLogger.error(
+                            'Erreur lors du retour de bouteilles: $e',
+                            name: 'gaz.tour',
+                            error: e,
+                          );
                           if (context.mounted) {
                             NotificationService.showError(
                               context,

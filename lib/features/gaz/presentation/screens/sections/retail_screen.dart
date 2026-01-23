@@ -8,6 +8,7 @@ import 'retail/retail_new_sale_tab.dart';
 import 'retail/retail_statistics_tab.dart';
 import 'retail/retail_tab_bar.dart';
 import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/core/logging/app_logger.dart';
 import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
 
 /// Écran de vente au détail - matches Figma design.
@@ -52,7 +53,11 @@ class _GazRetailScreenState extends ConsumerState<GazRetailScreen>
             const GasSaleFormDialog(saleType: SaleType.retail),
       );
     } catch (e) {
-      debugPrint('Erreur lors de l\'ouverture du dialog: $e');
+      AppLogger.error(
+        'Erreur lors de l\'ouverture du dialog de vente: $e',
+        name: 'gaz.retail',
+        error: e,
+      );
       if (mounted) {
         NotificationService.showError(context, 'Erreur: $e');
       }

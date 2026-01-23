@@ -1,33 +1,50 @@
-import '../../domain/entities/sale.dart';
-import '../../domain/repositories/stock_repository.dart';
-import '../../domain/repositories/customer_repository.dart';
+import 'dart:developer' as developer;
+import '../adapters/pack_stock_adapter.dart';
+import '../entities/sale.dart';
+import '../pack_constants.dart';
+import '../repositories/customer_repository.dart';
+import '../repositories/product_repository.dart';
+import '../repositories/stock_repository.dart';
 
 /// Service for sale business logic.
 ///
 /// Extracts business logic from UI widgets to make it testable and reusable.
+/// Pour les produits finis (Pack), utilise [PackStockAdapter].
 class SaleService {
   SaleService({
     required this.stockRepository,
     required this.customerRepository,
+    required this.packStockAdapter,
+    this.productRepository,
   });
 
   final StockRepository stockRepository;
   final CustomerRepository customerRepository;
+  final PackStockAdapter packStockAdapter;
+  final ProductRepository? productRepository;
 
-  /// Validates stock availability for a sale.
-  ///
-  /// Returns true if stock is sufficient, false otherwise.
-  Future<bool> validateStockAvailability({
-    required String productId,
-    required int quantity,
-  }) async {
-    final currentStock = await stockRepository.getStock(productId);
-    return quantity <= currentStock;
-  }
-
-  /// Gets current stock for a product.
+  /// Stock pour un produit. Pack → [getPackStock]. Autres PF → idem. Sinon → repo.
   Future<int> getCurrentStock(String productId) async {
-    return await stockRepository.getStock(productId);
+    try {
+      if (productId == packProductId) {
+        final stock = await packStockAdapter.getPackStock(productId: productId);
+        developer.log('Fetched pack stock: $stock', name: 'elyf.saleService');
+        return stock;
+      }
+      final product = await productRepository?.getProduct(productId);
+      if (product != null && product.isFinishedGood) {
+        final stock = await packStockAdapter.getPackStock(productId: productId);
+        developer.log('Fetched finished good stock: $stock', name: 'elyf.saleService');
+        return stock;
+      }
+      if (product != null) {
+        return await stockRepository.getStock(productId);
+      }
+      return 0;
+    } catch (e, st) {
+      developer.log('Error in getCurrentStock: $e', name: 'elyf.saleService', error: e, stackTrace: st);
+      return 0;
+    }
   }
 
   /// Creates or gets customer ID.
@@ -65,33 +82,41 @@ class SaleService {
     return SaleStatus.validated;
   }
 
-  /// Validates sale data before creation.
+  /// Valide les données de vente.
   ///
-  /// Returns null if valid, error message otherwise.
+  /// Si [packStockOverride] est fourni et [productId] == [packProductId],
+  /// l'utilise au lieu de [getCurrentStock] (même source que Stock/Dashboard).
   Future<String?> validateSale({
     required String? productId,
     required int? quantity,
     required int? totalPrice,
     required int? amountPaid,
+    String? customerId,
+    String? customerName,
+    String? customerPhone,
+    int? packStockOverride,
   }) async {
-    if (productId == null) {
-      return 'Veuillez sélectionner un produit';
-    }
-
+    if (productId == null) return 'Veuillez sélectionner un produit';
     if (quantity == null || totalPrice == null || amountPaid == null) {
       return 'Veuillez remplir tous les champs';
     }
 
-    final stockAvailable = await validateStockAvailability(
-      productId: productId,
-      quantity: quantity,
-    );
-
-    if (!stockAvailable) {
-      final currentStock = await getCurrentStock(productId);
-      return 'Stock insuffisant. Disponible: $currentStock';
+    // Validation du crédit : informations client obligatoires (Nom + Téléphone)
+    if (amountPaid < totalPrice) {
+      final hasName = customerName != null && customerName.trim().isNotEmpty && customerName.trim().toLowerCase() != 'inconnu';
+      final hasPhone = customerPhone != null && customerPhone.trim().isNotEmpty && customerPhone.trim() != 'Aucun numéro';
+      
+      if (!hasName || !hasPhone) {
+        return 'Le nom et le numéro de téléphone sont obligatoires pour une vente à crédit.';
+      }
     }
 
+    final limit = (productId == packProductId && packStockOverride != null)
+        ? packStockOverride
+        : await getCurrentStock(productId);
+    if (quantity > limit) {
+      return 'Stock insuffisant. Disponible: $limit';
+    }
     return null;
   }
 }

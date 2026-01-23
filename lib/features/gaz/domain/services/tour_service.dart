@@ -1,3 +1,4 @@
+import '../../../../core/errors/app_exceptions.dart';
 import '../entities/tour.dart';
 import '../repositories/tour_repository.dart';
 
@@ -59,25 +60,37 @@ class TourService {
     final tour = await tourRepository.getTourById(tourId);
 
     if (tour == null) {
-      throw Exception('Tour introuvable');
+      throw NotFoundException(
+        'Tour introuvable',
+        'TOUR_NOT_FOUND',
+      );
     }
 
     // Valider qu'on peut passer à l'étape suivante
     final validationError = await validateCanMoveToNextStep(tour);
     if (validationError != null) {
-      throw Exception(validationError);
+      throw ValidationException(
+        validationError,
+        'TOUR_VALIDATION_FAILED',
+      );
     }
 
     // Déterminer le prochain statut
     final nextStatus = _getNextStatus(tour.status);
     if (nextStatus == null) {
-      throw Exception('Aucune étape suivante disponible');
+      throw ValidationException(
+        'Aucune étape suivante disponible',
+        'NO_NEXT_STEP',
+      );
     }
 
     // Valider la transition
     final transitionError = validateStatusTransition(tour.status, nextStatus);
     if (transitionError != null) {
-      throw Exception(transitionError);
+      throw ValidationException(
+        transitionError,
+        'INVALID_STATUS_TRANSITION',
+      );
     }
 
     // Mettre à jour le statut

@@ -1,8 +1,10 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import '../../../../core/errors/error_handler.dart';
+import '../../../../core/errors/app_exceptions.dart';
+import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/offline_repository.dart';
+import '../../../../core/offline/collection_names.dart';
 import '../../domain/entities/bobine_stock.dart';
 import '../../domain/entities/bobine_stock_movement.dart';
 import '../../domain/repositories/bobine_stock_quantity_repository.dart';
@@ -23,9 +25,9 @@ class BobineStockQuantityOfflineRepository
   final String enterpriseId;
 
   @override
-  String get collectionName => 'bobine_stocks';
+  String get collectionName => CollectionNames.bobineStocks;
 
-  String get movementsCollectionName => 'bobine_stock_movements';
+  String get movementsCollectionName => CollectionNames.bobineStockMovements;
 
   @override
   BobineStock fromMap(Map<String, dynamic> map) {
@@ -113,17 +115,31 @@ class BobineStockQuantityOfflineRepository
 
   @override
   String getLocalId(BobineStock entity) {
+    // Si l'ID commence par "local_", le retourner tel quel
     if (entity.id.startsWith('local_')) {
       return entity.id;
     }
+    // Si l'ID est un ID fixe basé sur le type (ex: "bobine-bobine"), le préserver
+    // pour garantir la cohérence entre les mouvements et le stock
+    if (entity.id.startsWith('bobine-')) {
+      return 'local_${entity.id}';
+    }
+    // Sinon, générer un nouvel ID
     return LocalIdGenerator.generate();
   }
 
   @override
   String? getRemoteId(BobineStock entity) {
+    // Si l'ID commence par 'local_bobine-', extraire l'ID sans le préfixe 'local_'
+    // pour permettre la synchronisation vers Firestore
+    if (entity.id.startsWith('local_bobine-')) {
+      return entity.id.substring(6); // Enlever 'local_' pour obtenir 'bobine-...'
+    }
+    // Si l'ID ne commence pas par 'local_', c'est un remoteId
     if (!entity.id.startsWith('local_')) {
       return entity.id;
     }
+    // Sinon, c'est un ID local généré, pas encore synchronisé
     return null;
   }
 
@@ -177,13 +193,13 @@ class BobineStockQuantityOfflineRepository
       }
       return fromMap(map);
     } catch (e, stackTrace) {
-      developer.log(
-        'Error getting bobine stock by local ID',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error getting bobine stock by local ID: ${appException.message}',
         name: 'BobineStockQuantityOfflineRepository',
         error: e,
         stackTrace: stackTrace,
       );
-      final appException = ErrorHandler.instance.handleError(e, stackTrace);
       throw appException;
     }
   }
@@ -197,7 +213,7 @@ class BobineStockQuantityOfflineRepository
         moduleType: 'eau_minerale',
       );
 
-      return records.map((record) {
+      final stocks = records.map((record) {
         final map = jsonDecode(record.dataJson) as Map<String, dynamic>;
         map['localId'] = record.localId;
         if (record.remoteId != null) {
@@ -205,14 +221,39 @@ class BobineStockQuantityOfflineRepository
         }
         return fromMap(map);
       }).toList();
+
+      // Dédupliquer par remoteId d'abord
+      final deduplicatedByRemoteId = deduplicateByRemoteId(stocks);
+
+      // Dédupliquer par type : regrouper les stocks de même type et additionner les quantités
+      final Map<String, BobineStock> stocksByType = {};
+      for (final stock in deduplicatedByRemoteId) {
+        final existing = stocksByType[stock.type];
+        if (existing == null) {
+          stocksByType[stock.type] = stock;
+        } else {
+          // Fusionner : garder le plus récent et additionner les quantités
+          final existingUpdatedAt = existing.updatedAt ?? DateTime.now();
+          final stockUpdatedAt = stock.updatedAt ?? DateTime.now();
+          final mergedStock = existing.copyWith(
+            quantity: existing.quantity + stock.quantity,
+            updatedAt: stockUpdatedAt.isAfter(existingUpdatedAt)
+                ? stockUpdatedAt
+                : existingUpdatedAt,
+          );
+          stocksByType[stock.type] = mergedStock;
+        }
+      }
+
+      return stocksByType.values.toList();
     } catch (e, stackTrace) {
-      developer.log(
-        'Error fetching bobine stocks from local',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error fetching bobine stocks from local: ${appException.message}',
         name: 'BobineStockQuantityOfflineRepository',
         error: e,
         stackTrace: stackTrace,
       );
-      final appException = ErrorHandler.instance.handleError(e, stackTrace);
       throw appException;
     }
   }
@@ -228,13 +269,13 @@ class BobineStockQuantityOfflineRepository
     try {
       return await getAllForEnterprise(enterpriseId);
     } catch (e, stackTrace) {
-      developer.log(
-        'Error fetching all bobine stocks',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error fetching all bobine stocks: ${appException.message}',
         name: 'BobineStockQuantityOfflineRepository',
         error: e,
         stackTrace: stackTrace,
       );
-      final appException = ErrorHandler.instance.handleError(e, stackTrace);
       throw appException;
     }
   }
@@ -263,13 +304,13 @@ class BobineStockQuantityOfflineRepository
         return null;
       }
     } catch (e, stackTrace) {
-      developer.log(
-        'Error fetching bobine stock by type',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error fetching bobine stock by type: ${appException.message}',
         name: 'BobineStockQuantityOfflineRepository',
         error: e,
         stackTrace: stackTrace,
       );
-      final appException = ErrorHandler.instance.handleError(e, stackTrace);
       throw appException;
     }
   }
@@ -282,38 +323,21 @@ class BobineStockQuantityOfflineRepository
         updatedAt: now,
         createdAt: entity.createdAt ?? now,
       );
-      await saveToLocal(updatedStock);
-
-      // Queue sync operation
-      final localId = getLocalId(updatedStock);
-      final remoteId = getRemoteId(updatedStock);
-      final map = toMap(updatedStock);
-      if (remoteId == null) {
-        await syncManager.queueCreate(
-          collectionName: collectionName,
-          localId: localId,
-          data: map,
-          enterpriseId: enterpriseId,
-        );
-      } else {
-        await syncManager.queueUpdate(
-          collectionName: collectionName,
-          localId: localId,
-          remoteId: remoteId,
-          data: map,
-          enterpriseId: enterpriseId,
-        );
-      }
-
+      
+      // Utiliser super.save() pour bénéficier de la transaction atomique
+      // et de la gestion automatique de la synchronisation
+      // Cela garantit la même logique que pour les emballages
+      await super.save(updatedStock);
+      
       return updatedStock;
     } catch (e, stackTrace) {
-      developer.log(
-        'Error saving bobine stock',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error saving bobine stock: ${appException.message}',
         name: 'BobineStockQuantityOfflineRepository',
         error: e,
         stackTrace: stackTrace,
       );
-      final appException = ErrorHandler.instance.handleError(e, stackTrace);
       throw appException;
     }
   }
@@ -321,6 +345,14 @@ class BobineStockQuantityOfflineRepository
   @override
   Future<void> recordMovement(BobineStockMovement movement) async {
     try {
+      // Validation du mouvement AVANT toute opération de sauvegarde
+      if (movement.bobineReference.trim().isEmpty) {
+        throw ValidationException('La référence de bobine est requise pour le mouvement.');
+      }
+      if (movement.quantite <= 0) {
+        throw ValidationException('La quantité du mouvement doit être positive.');
+      }
+
       final localId = movement.id.startsWith('local_')
           ? movement.id
           : LocalIdGenerator.generate();
@@ -356,56 +388,78 @@ class BobineStockQuantityOfflineRepository
         );
       }
 
-      // Update stock quantity based on movement type
-      final stock = await fetchById(movement.bobineId);
-      if (stock != null) {
+      // Chercher le stock par type (plus fiable que par ID car l'ID peut changer)
+      var stock = await fetchByType(movement.bobineReference);
+      
+      // Si le stock n'existe pas, le créer avec la quantité initiale basée sur le mouvement
+      if (stock == null) {
+        int initialQuantity = 0;
+        switch (movement.type) {
+          case BobineMovementType.entree:
+            initialQuantity = movement.quantite.toInt();
+            break;
+          case BobineMovementType.sortie:
+          case BobineMovementType.retrait:
+            initialQuantity = 0; // Ne pas créer un stock négatif
+            break;
+        }
+        
+        // Utiliser un ID fixe basé sur le type pour garantir la cohérence
+        final stockId = 'bobine-${movement.bobineReference.toLowerCase().replaceAll(' ', '-')}';
+        stock = BobineStock(
+          id: stockId,
+          type: movement.bobineReference,
+          quantity: initialQuantity,
+          unit: 'unité',
+          createdAt: now,
+          updatedAt: now,
+        );
+      } else {
+        // Mettre à jour la quantité existante
         int newQuantity = stock.quantity;
         switch (movement.type) {
           case BobineMovementType.entree:
             newQuantity += movement.quantite.toInt();
+            // Protection contre les débordements
+            if (newQuantity > 1000000) {
+              throw ValidationException(
+                'La quantité totale ne peut pas dépasser 1 000 000',
+                'QUANTITY_EXCEEDS_LIMIT',
+              );
+            }
             break;
           case BobineMovementType.sortie:
           case BobineMovementType.retrait:
             newQuantity -= movement.quantite.toInt();
+            // Vérifier que le stock ne devient pas négatif
+            if (newQuantity < 0) {
+              throw ValidationException(
+                'Stock insuffisant. Stock actuel: ${stock.quantity}, '
+                'Demandé: ${movement.quantite.toInt()}',
+                'INSUFFICIENT_STOCK',
+              );
+            }
             break;
         }
-        if (newQuantity < 0) newQuantity = 0;
 
-        final updatedStock = stock.copyWith(
+        stock = stock.copyWith(
           quantity: newQuantity,
           updatedAt: now,
         );
-        await saveToLocal(updatedStock);
-
-        // Queue sync operation for stock update
-        final stockLocalId = getLocalId(updatedStock);
-        final stockRemoteId = getRemoteId(updatedStock);
-        final stockMap = toMap(updatedStock);
-        if (stockRemoteId == null) {
-          await syncManager.queueCreate(
-            collectionName: collectionName,
-            localId: stockLocalId,
-            data: stockMap,
-            enterpriseId: enterpriseId,
-          );
-        } else {
-          await syncManager.queueUpdate(
-            collectionName: collectionName,
-            localId: stockLocalId,
-            remoteId: stockRemoteId,
-            data: stockMap,
-            enterpriseId: enterpriseId,
-          );
-        }
       }
+
+      // Sauvegarder le stock (création ou mise à jour) avec la bonne quantité
+      // Utiliser save() au lieu de saveToLocal + queue sync pour être cohérent
+      // avec la méthode save() et garantir la même logique que pour les emballages
+      await save(stock);
     } catch (e, stackTrace) {
-      developer.log(
-        'Error recording bobine stock movement',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error recording bobine stock movement: ${appException.message}',
         name: 'BobineStockQuantityOfflineRepository',
         error: e,
         stackTrace: stackTrace,
       );
-      final appException = ErrorHandler.instance.handleError(e, stackTrace);
       throw appException;
     }
   }
@@ -457,13 +511,13 @@ class BobineStockQuantityOfflineRepository
 
       return movements;
     } catch (e, stackTrace) {
-      developer.log(
-        'Error fetching bobine stock movements',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error fetching bobine stock movements: ${appException.message}',
         name: 'BobineStockQuantityOfflineRepository',
         error: e,
         stackTrace: stackTrace,
       );
-      final appException = ErrorHandler.instance.handleError(e, stackTrace);
       throw appException;
     }
   }
@@ -474,13 +528,13 @@ class BobineStockQuantityOfflineRepository
       final allStocks = await getAllForEnterprise(enterpriseId);
       return allStocks.where((stock) => stock.estStockFaible).toList();
     } catch (e, stackTrace) {
-      developer.log(
-        'Error fetching low stock alerts',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error fetching low stock alerts: ${appException.message}',
         name: 'BobineStockQuantityOfflineRepository',
         error: e,
         stackTrace: stackTrace,
       );
-      final appException = ErrorHandler.instance.handleError(e, stackTrace);
       throw appException;
     }
   }

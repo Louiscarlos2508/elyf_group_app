@@ -1,3 +1,4 @@
+import '../../../../core/errors/app_exceptions.dart';
 import '../../domain/entities/tenant.dart';
 import '../../domain/repositories/tenant_repository.dart';
 
@@ -88,7 +89,10 @@ class MockTenantRepository implements TenantRepository {
   Future<Tenant> updateTenant(Tenant tenant) async {
     final existing = _tenants[tenant.id];
     if (existing == null) {
-      throw Exception('Tenant not found');
+      throw NotFoundException(
+        'Tenant not found',
+        'TENANT_NOT_FOUND',
+      );
     }
     final updated = Tenant(
       id: tenant.id,

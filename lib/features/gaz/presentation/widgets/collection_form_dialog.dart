@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/features/gaz/application/point_of_sale_stock_provider.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/collection.dart';
 import '../../domain/entities/tour.dart';
@@ -34,46 +35,82 @@ class _CollectionFormDialogState extends ConsumerState<CollectionFormDialog> {
   int? _selectedWeight;
   final _quantityController = TextEditingController(text: '0');
 
-  // Clients mockés - TODO: Remplacer par un provider
-  List<Client> get _availableClients {
+  // Pour le formulaire d'ajout de grossiste
+  final _wholesalerNameController = TextEditingController();
+  final _wholesalerPhoneController = TextEditingController();
+  final _wholesalerAddressController = TextEditingController();
+  bool _isAddingNewWholesaler = false;
+
+  /// Récupère les clients disponibles depuis la base de données.
+  List<Client> _getAvailableClients(WidgetRef ref) {
     if (_collectionType == CollectionType.wholesaler) {
-      return const [
-        Client(
-          id: 'wholesaler_1',
-          name: 'Grossiste 1',
-          phone: '+226 70 12 34 56',
-          address: '123 Rue du Commerce',
-        ),
-        Client(
-          id: 'wholesaler_2',
-          name: 'Grossiste 2',
-          phone: '+226 70 12 34 57',
-          address: '456 Avenue de la Paix',
-        ),
-      ];
+      // Récupérer les grossistes depuis la base de données
+      final wholesalersAsync = ref.watch(
+        allWholesalersProvider(widget.tour.enterpriseId),
+      );
+      return wholesalersAsync.when(
+        data: (wholesalers) {
+          return wholesalers
+              .map(
+                (w) => Client(
+                  id: w.id,
+                  name: w.name,
+                  phone: w.phone ?? '',
+                  address: w.address,
+                ),
+              )
+              .toList();
+        },
+        loading: () => [],
+        error: (_, __) => [],
+      );
     } else {
-      return const [
-        Client(
-          id: 'pos_1',
-          name: 'Point de vente 1',
-          phone: '+226 70 12 34 58',
-          address: '123 Rue de la Gaz',
-          emptyStock: {12: 15}, // 15 bouteilles de 12kg disponibles
-        ),
-        Client(
-          id: 'pos_2',
-          name: 'Point de vente 2',
-          phone: '+226 70 12 34 59',
-          address: '789 Boulevard Central',
-          emptyStock: {}, // Aucune bouteille vide
-        ),
-      ];
+      // Récupérer les points de vente depuis la base de données
+      final pointsOfSaleAsync = ref.watch(
+        pointsOfSaleProvider((
+          enterpriseId: widget.tour.enterpriseId,
+          moduleId: 'gaz',
+        )),
+      );
+      return pointsOfSaleAsync.when(
+        data: (pointsOfSale) {
+          return pointsOfSale
+              .map(
+                (pos) {
+                  // Récupérer le stock réel du point de vente
+                  final stockAsync = ref.watch(pointOfSaleStockProvider(pos.id));
+                  final stock = stockAsync.value ?? {};
+                  final stockInt = <int, int>{};
+                  stock.forEach((key, value) {
+                    final weight = int.tryParse(key);
+                    if (weight != null) {
+                      stockInt[weight] = value;
+                    }
+                  });
+
+                  return Client(
+                    id: pos.id,
+                    name: pos.name,
+                    phone: pos.contact,
+                    address: pos.address,
+                    emptyStock: stockInt,
+                  );
+                },
+              )
+              .toList();
+        },
+        loading: () => [],
+        error: (_, __) => [],
+      );
     }
   }
 
   @override
   void dispose() {
     _quantityController.dispose();
+    _wholesalerNameController.dispose();
+    _wholesalerPhoneController.dispose();
+    _wholesalerAddressController.dispose();
     super.dispose();
   }
 
@@ -173,16 +210,7 @@ class _CollectionFormDialogState extends ConsumerState<CollectionFormDialog> {
                       ),
                       const SizedBox(height: 16),
                       // Sélection client
-                      ClientSelector(
-                        selectedClient: _selectedClient,
-                        clients: _availableClients,
-                        collectionType: _collectionType,
-                        onClientSelected: (client) {
-                          setState(() {
-                            _selectedClient = client;
-                          });
-                        },
-                      ),
+                      _buildClientSelector(),
                       const SizedBox(height: 16),
                       // Divider
                       Container(
@@ -235,5 +263,256 @@ class _CollectionFormDialogState extends ConsumerState<CollectionFormDialog> {
         ),
       ),
     );
+  }
+
+  Widget _buildClientSelector() {
+    // Si on est en mode ajout de grossiste, afficher le formulaire
+    if (_collectionType == CollectionType.wholesaler && _isAddingNewWholesaler) {
+      return _buildNewWholesalerForm();
+    }
+
+    final clients = _getAvailableClients(ref);
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        clients.isEmpty
+            ? Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.orange[300]!),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      color: Colors.orange[700],
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Aucun grossiste trouvé. Ajoutez-en un nouveau.',
+                        style: TextStyle(color: Colors.orange[900], fontSize: 12),
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            : ClientSelector(
+                selectedClient: _selectedClient,
+                clients: clients,
+                collectionType: _collectionType,
+                onClientSelected: (client) {
+                  setState(() {
+                    _selectedClient = client;
+                  });
+                },
+              ),
+        // Bouton pour ajouter un nouveau grossiste (seulement pour les grossistes)
+        if (_collectionType == CollectionType.wholesaler) ...[
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: () {
+              setState(() {
+                _isAddingNewWholesaler = true;
+                _selectedClient = null;
+              });
+            },
+            icon: const Icon(Icons.add, size: 18),
+            label: const Text('Ajouter un nouveau grossiste'),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildNewWholesalerForm() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.blue[50],
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.blue[300]!),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.info_outline, color: Colors.blue[700], size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Nouveau grossiste - Les informations seront enregistrées',
+                  style: TextStyle(color: Colors.blue[900], fontSize: 12),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        TextFormField(
+          controller: _wholesalerNameController,
+          decoration: const InputDecoration(
+            labelText: 'Nom du grossiste *',
+            prefixIcon: Icon(Icons.business),
+            border: OutlineInputBorder(),
+          ),
+          validator: (value) {
+            if (value == null || value.trim().isEmpty) {
+              return 'Le nom est requis';
+            }
+            return null;
+          },
+        ),
+        const SizedBox(height: 16),
+        TextFormField(
+          controller: _wholesalerPhoneController,
+          decoration: const InputDecoration(
+            labelText: 'Téléphone',
+            prefixIcon: Icon(Icons.phone),
+            border: OutlineInputBorder(),
+          ),
+          keyboardType: TextInputType.phone,
+        ),
+        const SizedBox(height: 16),
+        TextFormField(
+          controller: _wholesalerAddressController,
+          decoration: const InputDecoration(
+            labelText: 'Adresse',
+            prefixIcon: Icon(Icons.location_on),
+            border: OutlineInputBorder(),
+          ),
+          maxLines: 2,
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: () {
+                  setState(() {
+                    _isAddingNewWholesaler = false;
+                    _wholesalerNameController.clear();
+                    _wholesalerPhoneController.clear();
+                    _wholesalerAddressController.clear();
+                    _selectedClient = null;
+                  });
+                },
+                child: const Text('Annuler'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: FilledButton(
+                onPressed: () async {
+                  final name = _wholesalerNameController.text.trim();
+                  if (name.isEmpty) {
+                    if (context.mounted) {
+                      NotificationService.showError(
+                        context,
+                        'Le nom du grossiste est requis',
+                      );
+                    }
+                    return;
+                  }
+
+                  // Générer un ID unique pour le nouveau grossiste
+                  final newId = 'wholesaler_${DateTime.now().millisecondsSinceEpoch}';
+                  final phone = _wholesalerPhoneController.text.trim();
+                  final address = _wholesalerAddressController.text.trim();
+
+                  // Créer le client
+                  final newClient = Client(
+                    id: newId,
+                    name: name,
+                    phone: phone,
+                    address: address.isNotEmpty ? address : null,
+                  );
+
+                  // Ajouter le grossiste au tour
+                  await _addWholesalerToTour(
+                    widget.tour,
+                    newId,
+                    name,
+                    phone,
+                    address,
+                  );
+
+                  // Sélectionner le nouveau client
+                  setState(() {
+                    _selectedClient = newClient;
+                    _isAddingNewWholesaler = false;
+                    _wholesalerNameController.clear();
+                    _wholesalerPhoneController.clear();
+                    _wholesalerAddressController.clear();
+                  });
+
+                  if (!context.mounted) return;
+                  NotificationService.showSuccess(
+                    context,
+                    'Grossiste "$name" ajouté avec succès',
+                  );
+                },
+                child: const Text('Ajouter'),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Future<void> _addWholesalerToTour(
+    Tour tour,
+    String wholesalerId,
+    String wholesalerName,
+    String phone,
+    String address,
+  ) async {
+    try {
+      final controller = ref.read(tourControllerProvider);
+
+      // Créer une nouvelle collection pour ce grossiste
+      final newCollection = Collection(
+        id: 'collection_${DateTime.now().millisecondsSinceEpoch}',
+        type: CollectionType.wholesaler,
+        clientId: wholesalerId,
+        clientName: wholesalerName,
+        clientPhone: phone,
+        clientAddress: address.isNotEmpty ? address : null,
+        emptyBottles: const {},
+        unitPrice: 0.0,
+      );
+
+      // Ajouter la collection au tour
+      final updatedCollections = [...tour.collections, newCollection];
+      final updatedTour = tour.copyWith(collections: updatedCollections);
+
+      // Mettre à jour le tour
+      await controller.updateTour(updatedTour);
+
+      // Invalider le provider pour rafraîchir la liste
+      if (!context.mounted) return;
+      ref.invalidate(allWholesalersProvider(widget.tour.enterpriseId));
+      ref.invalidate(
+        toursProvider((enterpriseId: widget.tour.enterpriseId, status: null)),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      NotificationService.showError(
+        context,
+        'Erreur lors de l\'ajout au tour: $e',
+      );
+    }
   }
 }

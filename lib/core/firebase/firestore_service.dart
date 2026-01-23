@@ -2,6 +2,9 @@ import 'dart:developer' as developer;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../errors/error_handler.dart';
+import '../logging/app_logger.dart';
+
 /// Service générique pour accéder à Firestore avec support multi-tenant.
 ///
 /// Ce service fournit des méthodes CRUD génériques pour toutes les collections
@@ -96,8 +99,9 @@ class FirestoreService {
         name: 'firestore.service',
       );
     } catch (e, stackTrace) {
-      developer.log(
-        'Error setting document in Firestore',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error setting document in Firestore: ${appException.message}',
         name: 'firestore.service',
         error: e,
         stackTrace: stackTrace,
@@ -129,8 +133,9 @@ class FirestoreService {
 
       return docSnapshot.data();
     } catch (e, stackTrace) {
-      developer.log(
-        'Error getting document from Firestore',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error getting document from Firestore: ${appException.message}',
         name: 'firestore.service',
         error: e,
         stackTrace: stackTrace,
@@ -199,8 +204,9 @@ class FirestoreService {
         name: 'firestore.service',
       );
     } catch (e, stackTrace) {
-      developer.log(
-        'Error deleting document from Firestore',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error deleting document from Firestore: ${appException.message}',
         name: 'firestore.service',
         error: e,
         stackTrace: stackTrace,
@@ -257,8 +263,9 @@ class FirestoreService {
         return result;
       }).toList();
     } catch (e, stackTrace) {
-      developer.log(
-        'Error getting collection from Firestore',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error getting collection from Firestore: ${appException.message}',
         name: 'firestore.service',
         error: e,
         stackTrace: stackTrace,
@@ -315,8 +322,9 @@ class FirestoreService {
         }).toList();
       });
     } catch (e, stackTrace) {
-      developer.log(
-        'Error watching collection from Firestore',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error watching collection from Firestore: ${appException.message}',
         name: 'firestore.service',
         error: e,
         stackTrace: stackTrace,
@@ -351,8 +359,9 @@ class FirestoreService {
         return result;
       });
     } catch (e, stackTrace) {
-      developer.log(
-        'Error watching document from Firestore',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error watching document from Firestore: ${appException.message}',
         name: 'firestore.service',
         error: e,
         stackTrace: stackTrace,
@@ -378,11 +387,13 @@ class FirestoreService {
 
       final docSnapshot = await firestore.doc(docPath).get();
       return docSnapshot.exists;
-    } catch (e) {
-      developer.log(
-        'Error checking if document exists',
+    } catch (e, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.warning(
+        'Error checking if document exists: ${appException.message}',
         name: 'firestore.service',
         error: e,
+        stackTrace: stackTrace,
       );
       return false;
     }
@@ -450,8 +461,9 @@ class FirestoreService {
         return result;
       }).toList();
     } catch (e, stackTrace) {
-      developer.log(
-        'Error querying Firestore',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error querying Firestore: ${appException.message}',
         name: 'firestore.service',
         error: e,
         stackTrace: stackTrace,

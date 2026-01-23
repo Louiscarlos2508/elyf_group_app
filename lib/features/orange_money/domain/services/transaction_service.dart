@@ -1,19 +1,17 @@
+import 'package:elyf_groupe_app/shared.dart';
+
 import '../entities/transaction.dart';
 
 /// Service pour la logique métier des transactions Orange Money.
 class TransactionService {
   TransactionService._();
 
-  /// Valide un numéro de téléphone.
+  /// Valide un numéro de téléphone (Burkina +226).
   static String? validatePhoneNumber(String? phoneNumber) {
-    if (phoneNumber == null || phoneNumber.trim().isEmpty) {
-      return 'Veuillez entrer un numéro de téléphone';
-    }
-    final trimmed = phoneNumber.trim();
-    if (trimmed.length < 8) {
-      return 'Numéro de téléphone invalide';
-    }
-    return null;
+    return PhoneUtils.validateBurkina(
+      phoneNumber,
+      customMessage: 'Veuillez entrer un numéro Burkina (+226)',
+    );
   }
 
   /// Valide un montant.
@@ -29,6 +27,7 @@ class TransactionService {
   }
 
   /// Crée une nouvelle transaction avec les données fournies.
+  /// Le numéro est normalisé au format +226.
   static Transaction createTransaction({
     required TransactionType type,
     required int amount,
@@ -36,11 +35,13 @@ class TransactionService {
     String? customerName,
     String? createdBy,
   }) {
+    final normalized =
+        PhoneUtils.normalizeBurkina(phoneNumber.trim()) ?? phoneNumber.trim();
     return Transaction(
       id: _generateTransactionId(),
       type: type,
       amount: amount,
-      phoneNumber: phoneNumber.trim(),
+      phoneNumber: normalized,
       date: DateTime.now(),
       status: TransactionStatus.pending,
       customerName: customerName?.trim(),
@@ -53,23 +54,16 @@ class TransactionService {
     return 'txn_${DateTime.now().millisecondsSinceEpoch}';
   }
 
-  /// Normalise un numéro de téléphone pour la comparaison.
-  /// Retire les espaces, tirets et ajoute le préfixe +226 si nécessaire.
+  /// Normalise un numéro pour la comparaison (Burkina +226).
   static String normalizePhoneNumber(String phoneNumber) {
-    final cleaned = phoneNumber.trim().replaceAll(' ', '').replaceAll('-', '');
-    if (cleaned.startsWith('+226')) {
-      return cleaned;
-    }
-    if (cleaned.startsWith('226')) {
-      return '+$cleaned';
-    }
-    return '+226$cleaned';
+    return PhoneUtils.normalizeBurkina(phoneNumber.trim()) ??
+        phoneNumber.trim();
   }
 
-  /// Compare deux numéros de téléphone en les normalisant d'abord.
+  /// Compare deux numéros en les normalisant d'abord.
   static bool comparePhoneNumbers(String phone1, String phone2) {
-    final normalized1 = normalizePhoneNumber(phone1);
-    final normalized2 = normalizePhoneNumber(phone2);
-    return normalized1 == normalized2;
+    final n1 = normalizePhoneNumber(phone1);
+    final n2 = normalizePhoneNumber(phone2);
+    return n1 == n2;
   }
 }

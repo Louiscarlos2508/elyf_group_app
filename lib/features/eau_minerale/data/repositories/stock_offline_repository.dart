@@ -2,7 +2,9 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import '../../../../core/errors/error_handler.dart';
+import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/offline_repository.dart';
+import '../../../../core/offline/collection_names.dart';
 import '../../domain/entities/stock_movement.dart';
 import '../../domain/repositories/product_repository.dart';
 import '../../domain/repositories/stock_repository.dart';
@@ -24,7 +26,7 @@ class StockOfflineRepository extends OfflineRepository<StockMovement>
   final ProductRepository productRepository;
 
   @override
-  String get collectionName => 'stock_movements';
+  String get collectionName => CollectionNames.stockMovements;
 
   @override
   StockMovement fromMap(Map<String, dynamic> map) {
@@ -142,9 +144,17 @@ class StockOfflineRepository extends OfflineRepository<StockMovement>
       enterpriseId: enterpriseId,
       moduleType: moduleType,
     );
-    return rows
+    final entities = rows
+
         .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+
         .toList();
+
+    
+
+    // Dédupliquer par remoteId pour éviter les doublons
+
+    return deduplicateByRemoteId(entities);
   }
 
   // StockRepository implementation
@@ -158,8 +168,8 @@ class StockOfflineRepository extends OfflineRepository<StockMovement>
       return 0;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error getting stock for product: $productId',
+      AppLogger.error(
+        'Error getting stock for product: $productId - ${appException.message}',
         name: 'StockOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -173,14 +183,14 @@ class StockOfflineRepository extends OfflineRepository<StockMovement>
     try {
       // Stock updates are done through movements, not directly on Product
       // Product entity doesn't have stock properties
-      developer.log(
+      AppLogger.debug(
         'updateStock called but Product entity does not have stock properties. Use recordMovement instead.',
         name: 'StockOfflineRepository',
       );
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error updating stock for product: $productId',
+      AppLogger.error(
+        'Error updating stock for product: $productId - ${appException.message}',
         name: 'StockOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -195,8 +205,8 @@ class StockOfflineRepository extends OfflineRepository<StockMovement>
       await save(movement);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error recording stock movement',
+      AppLogger.error(
+        'Error recording stock movement: ${appException.message}',
         name: 'StockOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -248,8 +258,8 @@ class StockOfflineRepository extends OfflineRepository<StockMovement>
       return [];
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error getting low stock alerts',
+      AppLogger.error(
+        'Error getting low stock alerts: ${appException.message}',
         name: 'StockOfflineRepository',
         error: error,
         stackTrace: stackTrace,

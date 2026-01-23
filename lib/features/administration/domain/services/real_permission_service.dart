@@ -1,3 +1,8 @@
+import 'dart:developer' as developer;
+
+import '../../../../core/errors/app_exceptions.dart';
+import '../../../../core/errors/error_handler.dart';
+import '../../../../core/logging/app_logger.dart';
 import '../../../../core/permissions/services/permission_service.dart';
 import '../../../../core/permissions/entities/user_role.dart';
 import '../../../../core/permissions/entities/module_user.dart';
@@ -32,6 +37,10 @@ class RealPermissionService implements PermissionService {
       // Récupérer l'entreprise active
       final enterpriseId = getActiveEnterpriseId();
       if (enterpriseId == null) {
+        developer.log(
+          'hasPermission: enterpriseId is null',
+          name: 'RealPermissionService',
+        );
         return false;
       }
 
@@ -48,6 +57,10 @@ class RealPermissionService implements PermissionService {
       );
 
       if (!access.isActive) {
+        developer.log(
+          'hasPermission: access is not active for userId=$userId, moduleId=$moduleId',
+          name: 'RealPermissionService',
+        );
         return false;
       }
 
@@ -55,24 +68,55 @@ class RealPermissionService implements PermissionService {
       final roles = await adminController.getAllRoles();
       final role = roles.firstWhere(
         (r) => r.id == access.roleId,
-        orElse: () => throw Exception('Role not found: ${access.roleId}'),
+        orElse: () => throw NotFoundException(
+          'Role not found: ${access.roleId}',
+          'ROLE_NOT_FOUND',
+        ),
       );
 
       // Vérifier si le rôle a la permission wildcard
       if (role.hasPermission('*')) {
+        developer.log(
+          'hasPermission: role ${role.id} has wildcard permission (*) - granting access to $permissionId',
+          name: 'RealPermissionService',
+        );
         return true;
       }
 
       // Vérifier les permissions du rôle
-      if (role.hasPermission(permissionId)) {
+      final roleHasPermission = role.hasPermission(permissionId);
+      if (roleHasPermission) {
+        developer.log(
+          'hasPermission: role ${role.id} has permission $permissionId',
+          name: 'RealPermissionService',
+        );
         return true;
       }
 
       // Vérifier les permissions personnalisées
-      return access.customPermissions.contains(permissionId);
+      final hasCustomPermission = access.customPermissions.contains(permissionId);
+      developer.log(
+        'hasPermission: userId=$userId, moduleId=$moduleId, permissionId=$permissionId, '
+        'roleId=${role.id}, rolePermissions=${role.permissions}, '
+        'customPermissions=${access.customPermissions}, '
+        'result=$hasCustomPermission',
+        name: 'RealPermissionService',
+      );
+      return hasCustomPermission;
     } on _NoAccessException {
+      developer.log(
+        'hasPermission: NoAccessException for userId=$userId, moduleId=$moduleId, permissionId=$permissionId',
+        name: 'RealPermissionService',
+      );
       return false;
-    } catch (e) {
+    } catch (e, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.warning(
+        'hasPermission: Error checking permission - userId=$userId, moduleId=$moduleId, permissionId=$permissionId: ${appException.message}',
+        name: 'RealPermissionService',
+        error: e,
+        stackTrace: stackTrace,
+      );
       // En cas d'erreur, retourner false (fail-safe)
       return false;
     }
@@ -100,11 +144,21 @@ class RealPermissionService implements PermissionService {
       final roles = await adminController.getAllRoles();
       return roles.firstWhere(
         (r) => r.id == access.roleId,
-        orElse: () => throw Exception('Role not found: ${access.roleId}'),
+        orElse: () => throw NotFoundException(
+          'Role not found: ${access.roleId}',
+          'ROLE_NOT_FOUND',
+        ),
       );
     } on _NoAccessException {
       return null;
-    } catch (e) {
+    } catch (e, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.warning(
+        'Error getting user role: ${appException.message}',
+        name: 'RealPermissionService',
+        error: e,
+        stackTrace: stackTrace,
+      );
       return null;
     }
   }
@@ -140,7 +194,14 @@ class RealPermissionService implements PermissionService {
       );
     } on _NoAccessException {
       return null;
-    } catch (e) {
+    } catch (e, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.warning(
+        'Error getting module user: ${appException.message}',
+        name: 'RealPermissionService',
+        error: e,
+        stackTrace: stackTrace,
+      );
       return null;
     }
   }

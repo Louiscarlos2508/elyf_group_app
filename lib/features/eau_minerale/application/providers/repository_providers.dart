@@ -63,7 +63,7 @@ final stockRepositoryProvider = Provider<StockRepository>((ref) {
     connectivityService: connectivityService,
     enterpriseId: enterpriseId,
     moduleType: 'eau_minerale',
-    productRepository: ref.watch(productRepositoryProvider),
+    productRepository: ref.watch(eauMineraleProductRepositoryProvider),
   );
 });
 
@@ -120,7 +120,10 @@ final financeRepositoryProvider = Provider<FinanceRepository>((ref) {
   );
 });
 
-final productRepositoryProvider = Provider<ProductRepository>((ref) {
+/// Product repository pour le module Eau Minérale.
+/// Nom explicite pour éviter toute collision avec d'autres modules (ex. Boutique).
+final eauMineraleProductRepositoryProvider =
+    Provider<ProductRepository>((ref) {
   final enterpriseId =
       ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
   final driftService = DriftService.instance;
@@ -134,6 +137,7 @@ final productRepositoryProvider = Provider<ProductRepository>((ref) {
     enterpriseId: enterpriseId,
   );
 });
+
 
 final activityRepositoryProvider = Provider<ActivityRepository>(
   (ref) => MockActivityRepository(),

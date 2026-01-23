@@ -27,7 +27,16 @@ class EnterpriseActions {
         await ref
             .read(enterpriseControllerProvider)
             .createEnterprise(result, currentUserId: currentUserId);
+        
+        // Attendre un peu pour que la base de données soit à jour
+        await Future.delayed(const Duration(milliseconds: 100));
+        
+        // Invalider les providers pour forcer le rafraîchissement
         ref.invalidate(enterprisesProvider);
+        ref.invalidate(adminStatsProvider);
+        // Invalider aussi les providers dépendants
+        ref.invalidate(enterprisesByTypeProvider);
+        ref.invalidate(enterpriseByIdProvider);
         // Invalider aussi l'audit trail pour afficher le nouveau log
         ref.invalidate(recentAuditLogsProvider);
         if (context.mounted) {
@@ -58,7 +67,16 @@ class EnterpriseActions {
         await ref
             .read(enterpriseControllerProvider)
             .updateEnterprise(result, currentUserId: currentUserId);
+        
+        // Attendre un peu pour que la base de données soit à jour
+        await Future.delayed(const Duration(milliseconds: 100));
+        
+        // Invalider les providers pour forcer le rafraîchissement
         ref.invalidate(enterprisesProvider);
+        ref.invalidate(adminStatsProvider);
+        // Invalider aussi les providers dépendants
+        ref.invalidate(enterprisesByTypeProvider);
+        ref.invalidate(enterpriseByIdProvider);
         ref.invalidate(recentAuditLogsProvider);
         if (context.mounted) {
           NotificationService.showSuccess(context, 'Entreprise modifiée');
@@ -138,14 +156,32 @@ class EnterpriseActions {
               currentUserId: currentUserId,
               enterpriseData: enterprise,
             );
-        ref.refresh(enterprisesProvider);
-        ref.refresh(recentAuditLogsProvider);
+        
+        // Attendre un peu pour que la base de données soit à jour
+        await Future.delayed(const Duration(milliseconds: 100));
+        
+        // Invalider les providers pour forcer le rafraîchissement
+        ref.invalidate(enterprisesProvider);
+        ref.invalidate(adminStatsProvider);
+        // Invalider aussi les providers dépendants
+        ref.invalidate(enterprisesByTypeProvider);
+        ref.invalidate(enterpriseByIdProvider);
+        ref.invalidate(recentAuditLogsProvider);
+        
         if (context.mounted) {
           NotificationService.showSuccess(context, 'Entreprise supprimée');
         }
       } catch (e) {
         if (context.mounted) {
-          NotificationService.showError(context, e.toString());
+          // Afficher un message d'erreur plus clair pour l'utilisateur
+          final errorMessage = e.toString().contains('2067') || 
+                              e.toString().contains('FOREIGN KEY') ||
+                              e.toString().contains('données liées')
+              ? 'Impossible de supprimer l\'entreprise "${enterprise.name}". '
+                'Elle contient encore des données liées. '
+                'Veuillez supprimer toutes les données associées avant de supprimer l\'entreprise.'
+              : e.toString();
+          NotificationService.showError(context, errorMessage);
         }
       }
     }

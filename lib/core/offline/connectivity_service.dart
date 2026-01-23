@@ -4,6 +4,9 @@ import 'dart:developer' as developer;
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 
+import '../errors/error_handler.dart';
+import '../logging/app_logger.dart';
+
 /// Service for monitoring network connectivity status.
 ///
 /// Provides real-time updates on network availability and type.
@@ -34,11 +37,13 @@ class ConnectivityService {
 
       _subscription = _connectivity.onConnectivityChanged.listen(
         _updateStatus,
-        onError: (Object error) {
-          developer.log(
-            'Connectivity monitoring error',
+        onError: (Object error, StackTrace? stackTrace) {
+          final appException = ErrorHandler.instance.handleError(error, stackTrace ?? StackTrace.current);
+          AppLogger.warning(
+            'Connectivity monitoring error: ${appException.message}',
             name: 'offline.connectivity',
             error: error,
+            stackTrace: stackTrace,
           );
           _currentStatus = ConnectivityStatus.unknown;
           _controller.add(_currentStatus);
@@ -92,11 +97,13 @@ class ConnectivityService {
       final results = await _connectivity.checkConnectivity();
       _updateStatus(results);
       return _currentStatus;
-    } catch (error) {
-      developer.log(
-        'Failed to check connectivity',
+    } catch (error, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
+      AppLogger.warning(
+        'Failed to check connectivity: ${appException.message}',
         name: 'offline.connectivity',
         error: error,
+        stackTrace: stackTrace,
       );
       return ConnectivityStatus.unknown;
     }

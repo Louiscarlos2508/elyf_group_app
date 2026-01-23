@@ -2,26 +2,68 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
 import '../../../application/controllers/stock_controller.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../widgets/finished_products_card.dart';
 import '../../widgets/raw_materials_card.dart';
-import '../../widgets/section_placeholder.dart';
 import '../../widgets/stock_alerts_widget.dart';
 import '../../widgets/stock_movement_table.dart';
 import '../../widgets/stock_movement_filters.dart';
 import '../../widgets/stock_entry_form.dart';
+import '../../widgets/stock_adjustment_form.dart';
+import '../../widgets/stock_integrity_check_dialog.dart';
 
 class StockScreen extends ConsumerWidget {
   const StockScreen({super.key});
 
-  void _showStockEntry(BuildContext context) {
+  void _showStockEntry(BuildContext context, WidgetRef ref) {
+    final formKey = GlobalKey<StockEntryFormState>();
+
     showDialog(
       context: context,
-      builder: (context) => FormDialog(
-        title: 'Approvisionnement Matières Premières',
-        child: const StockEntryForm(),
-      ),
+      builder: (dialogContext) {
+        return FormDialog(
+          title: 'Approvisionnement Matières Premières',
+          saveLabel: 'Ajouter au stock',
+          onSave: () async {
+            final formState = formKey.currentState;
+            if (formState != null) {
+              return await formState.submit();
+            }
+            return false;
+          },
+          child: StockEntryForm(
+            key: formKey,
+            showSubmitButton: false,
+          ),
+        );
+      },
+    );
+  }
+
+  void _showStockAdjustment(BuildContext context, WidgetRef ref) {
+    final formKey = GlobalKey<StockAdjustmentFormState>();
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return FormDialog(
+          title: 'Ajustement de Stock (Retrait)',
+          saveLabel: 'Retirer',
+          onSave: () async {
+            final formState = formKey.currentState;
+            if (formState != null) {
+              return await formState.submit();
+            }
+            return false;
+          },
+          child: StockAdjustmentForm(
+            key: formKey,
+            showSubmitButton: false,
+          ),
+        );
+      },
     );
   }
 
@@ -31,15 +73,15 @@ class StockScreen extends ConsumerWidget {
     return state.when(
       data: (data) => _StockContentWithFilters(
         state: data,
-        onStockEntry: () => _showStockEntry(context),
+        onStockEntry: () => _showStockEntry(context, ref),
+        onStockAdjustment: () => _showStockAdjustment(context, ref),
       ),
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stackTrace) => SectionPlaceholder(
-        icon: Icons.inventory_2_outlined,
+      loading: () => const LoadingIndicator(),
+      error: (error, stackTrace) => ErrorDisplayWidget(
+        error: error,
         title: 'Stocks indisponibles',
-        subtitle: 'Impossible de récupérer les inventaires.',
-        primaryActionLabel: 'Réessayer',
-        onPrimaryAction: () => ref.invalidate(stockStateProvider),
+        message: 'Impossible de récupérer les inventaires.',
+        onRetry: () => ref.refresh(stockStateProvider),
       ),
     );
   }
@@ -49,10 +91,12 @@ class _StockContentWithFilters extends ConsumerStatefulWidget {
   const _StockContentWithFilters({
     required this.state,
     required this.onStockEntry,
+    required this.onStockAdjustment,
   });
 
   final StockState state;
   final VoidCallback onStockEntry;
+  final VoidCallback onStockAdjustment;
 
   @override
   ConsumerState<_StockContentWithFilters> createState() =>
@@ -87,6 +131,31 @@ class _StockContentWithFiltersState
         ),
       ),
     );
+  }
+
+  Future<void> _reconcilePack(BuildContext context) async {
+    final ctrl = ref.read(stockControllerProvider);
+    try {
+      final updated = await ctrl.reconcilePackQuantityFromMovements();
+      if (!context.mounted) return;
+      ref.invalidate(stockStateProvider);
+      ref.invalidate(stockMovementsProvider);
+      if (updated) {
+        NotificationService.showSuccess(
+          context,
+          'Stock Pack aligné avec les mouvements.',
+        );
+      } else {
+        NotificationService.showInfo(
+          context,
+          'Aucun écart entre stock Pack et mouvements.',
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        NotificationService.showError(context, 'Reconcilier Pack: $e');
+      }
+    }
   }
 
   void _onFiltersChanged({
@@ -146,7 +215,12 @@ class _StockContentWithFiltersState
           slivers: [
             SliverToBoxAdapter(
               child: Padding(
-                padding: EdgeInsets.fromLTRB(24, 24, 24, isWide ? 24 : 16),
+                padding: EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  AppSpacing.lg,
+                  AppSpacing.lg,
+                  isWide ? AppSpacing.lg : AppSpacing.md,
+                ),
                 child: isWide
                     ? Row(
                         children: [
@@ -157,26 +231,58 @@ class _StockContentWithFiltersState
                             ),
                           ),
                           const Spacer(),
-                          IconButton(
-                            icon: const Icon(Icons.refresh),
-                            onPressed: () {
-                              ref.invalidate(stockStateProvider);
-                              final filterParams = StockMovementFiltersParams(
-                                startDate: _startDate,
-                                endDate: _endDate,
-                                type: _selectedType,
-                                productName: _selectedProduct,
-                              );
-                              ref.invalidate(
-                                stockMovementsProvider((filterParams)),
-                              );
+                          PopupMenuButton<String>(
+                            icon: const Icon(Icons.more_vert),
+                            tooltip: 'Plus d\'options',
+                            onSelected: (value) {
+                              switch (value) {
+                                case 'report':
+                                  _showStockReport(context);
+                                  break;
+                                case 'integrity':
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) =>
+                                        const StockIntegrityCheckDialog(),
+                                  );
+                                  break;
+                                case 'reconcile':
+                                  _reconcilePack(context);
+                                  break;
+                              }
                             },
-                            tooltip: 'Actualiser les stocks',
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.analytics),
-                            onPressed: () => _showStockReport(context),
-                            tooltip: 'Rapport de stock',
+                            itemBuilder: (context) => [
+                              const PopupMenuItem(
+                                value: 'report',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.analytics, size: 20),
+                                    SizedBox(width: 12),
+                                    Text('Rapport de stock'),
+                                  ],
+                                ),
+                              ),
+                              const PopupMenuItem(
+                                value: 'integrity',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.verified_user, size: 20),
+                                    SizedBox(width: 12),
+                                    Text('Vérifier l\'intégrité'),
+                                  ],
+                                ),
+                              ),
+                              const PopupMenuItem(
+                                value: 'reconcile',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.sync, size: 20),
+                                    SizedBox(width: 12),
+                                    Text('Reconcilier Pack'),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
                           const SizedBox(width: 8),
                           IntrinsicWidth(
@@ -184,6 +290,14 @@ class _StockContentWithFiltersState
                               onPressed: widget.onStockEntry,
                               icon: const Icon(Icons.add),
                               label: const Text('Approvisionnement'),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          IntrinsicWidth(
+                            child: OutlinedButton.icon(
+                              onPressed: widget.onStockAdjustment,
+                              icon: const Icon(Icons.tune),
+                              label: const Text('Ajustement'),
                             ),
                           ),
                         ],
@@ -201,38 +315,80 @@ class _StockContentWithFiltersState
                                   ),
                                 ),
                               ),
-                              IconButton(
-                                icon: const Icon(Icons.refresh),
-                                onPressed: () {
-                                  ref.invalidate(stockStateProvider);
-                                  final filterParams =
-                                      StockMovementFiltersParams(
-                                        startDate: _startDate,
-                                        endDate: _endDate,
-                                        type: _selectedType,
-                                        productName: _selectedProduct,
+                              PopupMenuButton<String>(
+                                icon: const Icon(Icons.more_vert),
+                                tooltip: 'Plus d\'options',
+                                onSelected: (value) {
+                                  switch (value) {
+                                    case 'report':
+                                      _showStockReport(context);
+                                      break;
+                                    case 'integrity':
+                                      showDialog(
+                                        context: context,
+                                        builder: (context) =>
+                                            const StockIntegrityCheckDialog(),
                                       );
-                                  ref.invalidate(
-                                    stockMovementsProvider((filterParams)),
-                                  );
+                                      break;
+                                    case 'reconcile':
+                                      _reconcilePack(context);
+                                      break;
+                                  }
                                 },
-                                tooltip: 'Actualiser les stocks',
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.analytics),
-                                onPressed: () => _showStockReport(context),
-                                tooltip: 'Rapport de stock',
+                                itemBuilder: (context) => [
+                                  const PopupMenuItem(
+                                    value: 'report',
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.analytics, size: 20),
+                                        SizedBox(width: 12),
+                                        Text('Rapport de stock'),
+                                      ],
+                                    ),
+                                  ),
+                                  const PopupMenuItem(
+                                    value: 'integrity',
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.verified_user, size: 20),
+                                        SizedBox(width: 12),
+                                        Text('Vérifier l\'intégrité'),
+                                      ],
+                                    ),
+                                  ),
+                                  const PopupMenuItem(
+                                    value: 'reconcile',
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.sync, size: 20),
+                                        SizedBox(width: 12),
+                                        Text('Reconcilier Pack'),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
                           const SizedBox(height: 8),
-                          SizedBox(
-                            width: double.infinity,
-                            child: FilledButton.icon(
-                              onPressed: widget.onStockEntry,
-                              icon: const Icon(Icons.add),
-                              label: const Text('Approvisionnement'),
-                            ),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: FilledButton.icon(
+                                  onPressed: widget.onStockEntry,
+                                  icon: const Icon(Icons.add),
+                                  label: const Text('Approvisionnement'),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: widget.onStockAdjustment,
+                                  icon: const Icon(Icons.tune),
+                                  label: const Text('Ajustement'),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -316,7 +472,7 @@ class _StockContentWithFiltersState
                       loading: () => const Center(
                         child: Padding(
                           padding: EdgeInsets.all(24.0),
-                          child: CircularProgressIndicator(),
+                          child: LoadingIndicator(),
                         ),
                       ),
                       error: (error, stack) => Container(

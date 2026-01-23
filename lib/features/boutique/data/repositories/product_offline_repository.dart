@@ -2,6 +2,7 @@ import 'dart:developer' as developer;
 import 'dart:convert';
 
 import '../../../../core/errors/error_handler.dart';
+import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/offline_repository.dart';
 import '../../domain/entities/product.dart';
 import '../../domain/repositories/product_repository.dart';
@@ -159,11 +160,15 @@ class ProductOfflineRepository extends OfflineRepository<Product>
       enterpriseId: enterpriseId,
       moduleType: moduleType,
     );
-    // Filtrer les produits supprimés (soft delete)
-    return rows
+    final products = rows
         .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
-        .where((product) => !product.isDeleted)
         .toList();
+    
+    // Dédupliquer par remoteId pour éviter les doublons
+    final deduplicatedProducts = deduplicateByRemoteId(products);
+    
+    // Filtrer les produits supprimés (soft delete)
+    return deduplicatedProducts.where((product) => !product.isDeleted).toList();
   }
 
   // ProductRepository interface implementation
@@ -171,15 +176,15 @@ class ProductOfflineRepository extends OfflineRepository<Product>
   @override
   Future<List<Product>> fetchProducts() async {
     try {
-      developer.log(
+      AppLogger.debug(
         'Fetching products for enterprise: $enterpriseId',
         name: 'ProductOfflineRepository',
       );
       return await getAllForEnterprise(enterpriseId);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error fetching products',
+      AppLogger.error(
+        'Error fetching products: ${appException.message}',
         name: 'ProductOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -195,8 +200,8 @@ class ProductOfflineRepository extends OfflineRepository<Product>
       return await getByLocalId(id);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error getting product: $id',
+      AppLogger.error(
+        'Error getting product: $id - ${appException.message}',
         name: 'ProductOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -216,8 +221,8 @@ class ProductOfflineRepository extends OfflineRepository<Product>
       }
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error getting product by barcode: $barcode',
+      AppLogger.error(
+        'Error getting product by barcode: $barcode - ${appException.message}',
         name: 'ProductOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -251,8 +256,8 @@ class ProductOfflineRepository extends OfflineRepository<Product>
       await save(product);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error updating product: ${product.id}',
+      AppLogger.error(
+        'Error updating product: ${product.id} - ${appException.message}',
         name: 'ProductOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -299,8 +304,8 @@ class ProductOfflineRepository extends OfflineRepository<Product>
       }
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error restoring product: $id',
+      AppLogger.error(
+        'Error restoring product: $id - ${appException.message}',
         name: 'ProductOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -330,8 +335,8 @@ class ProductOfflineRepository extends OfflineRepository<Product>
       return products;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error fetching deleted products',
+      AppLogger.error(
+        'Error fetching deleted products: ${appException.message}',
         name: 'ProductOfflineRepository',
         error: error,
         stackTrace: stackTrace,

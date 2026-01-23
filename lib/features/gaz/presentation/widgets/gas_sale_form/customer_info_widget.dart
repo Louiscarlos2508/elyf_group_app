@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:elyf_groupe_app/shared.dart';
+
 /// Widget pour saisir les informations du client (nom, téléphone, notes).
 class CustomerInfoWidget extends StatelessWidget {
   const CustomerInfoWidget({
@@ -31,10 +33,15 @@ class CustomerInfoWidget extends StatelessWidget {
           controller: customerPhoneController,
           decoration: InputDecoration(
             labelText: 'Téléphone (optionnel)',
+            hintText: '+226 70 00 00 00',
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             prefixIcon: const Icon(Icons.phone),
           ),
           keyboardType: TextInputType.phone,
+          validator: (v) =>
+              (v == null || v.trim().isEmpty)
+                  ? null
+                  : Validators.phoneBurkina(v),
         ),
         const SizedBox(height: 16),
         TextFormField(

@@ -33,7 +33,7 @@ class CustomerFormFields {
     );
   }
 
-  /// Champ téléphone.
+  /// Champ téléphone (Burkina +226 par défaut).
   static Widget phoneField({
     required TextEditingController controller,
     String? Function(String?)? validator,
@@ -45,12 +45,12 @@ class CustomerFormFields {
       controller: controller,
       decoration: InputDecoration(
         labelText: label,
-        hintText: hint ?? 'Numéro de téléphone (ex: +237 6XX XXX XXX)',
+        hintText: hint ?? 'Numéro de téléphone (ex: +226 70 00 00 00)',
         prefixIcon: const Icon(Icons.phone),
       ),
       keyboardType: TextInputType.phone,
       enabled: enabled,
-      validator: validator ?? ((value) => Validators.phone(value)),
+      validator: validator ?? ((value) => Validators.phoneBurkina(value)),
     );
   }
 

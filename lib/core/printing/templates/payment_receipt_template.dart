@@ -26,14 +26,14 @@ class PaymentReceiptTemplate {
     // Fonction pour créer une ligne de séparation
     String separator(String char) => char * 26;
 
-    // En-tête avec nom de l'entreprise
+    // En-tête simplifié
     lines.add('');
-    lines.add(centerText('╔══════════════════╗'));
-    lines.add(centerText('║   ELYF GROUPE    ║'));
-    lines.add(centerText('╚══════════════════╝'));
+    lines.add(centerText('ELYF GROUPE'));
+    lines.add('');
+    lines.add(centerText(separator('-')));
     lines.add('');
     lines.add(centerText('REÇU DE PAIEMENT'));
-    lines.add(separator('═'));
+    lines.add(centerText(separator('=')));
     lines.add('');
 
     // Informations du reçu
@@ -97,8 +97,8 @@ class PaymentReceiptTemplate {
     lines.add(centerText('confiance !'));
     lines.add('');
 
-    // Ajouter des lignes vides à la fin pour éviter la coupure
-    for (int i = 0; i < 6; i++) {
+    // Ajouter des lignes vides à la fin pour la découpe
+    for (int i = 0; i < 4; i++) {
       lines.add('');
     }
 

@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/errors/app_exceptions.dart';
 import '../../../../core/domain/entities/expense_balance_data.dart';
 import '../../domain/adapters/expense_balance_adapter.dart';
 import '../../domain/entities/daily_worker.dart';
@@ -14,7 +15,9 @@ import '../../domain/entities/report_data.dart';
 import '../../domain/entities/report_period.dart';
 import '../../domain/entities/salary_report_data.dart';
 import '../../domain/entities/sale.dart';
+import '../../domain/entities/stock_item.dart';
 import '../../domain/entities/stock_movement.dart';
+import '../../domain/pack_constants.dart';
 import 'controller_providers.dart';
 import 'repository_providers.dart';
 import 'service_providers.dart';
@@ -51,6 +54,32 @@ final salesStateProvider = FutureProvider.autoDispose(
 final stockStateProvider = FutureProvider.autoDispose(
   (ref) async => ref.watch(stockControllerProvider).fetchSnapshot(),
 );
+
+/// Stock Pack (produits finis). Même source que Stock / Dashboard.
+/// À utiliser pour les ventes au lieu de getCurrentStock.
+final packStockQuantityProvider = FutureProvider.autoDispose<int>((ref) async {
+  final state = await ref.watch(stockStateProvider.future);
+  
+  // 1. Chercher ID pack-1 ou nom contenant 'pack'
+  final fg = state.items
+      .where((i) =>
+          i.type == StockType.finishedGoods &&
+          (i.id == packStockItemId || i.name.toLowerCase().contains(packName.toLowerCase())))
+      .toList();
+      
+  if (fg.isNotEmpty) {
+    final pack = fg.any((i) => i.id == packStockItemId)
+        ? fg.firstWhere((i) => i.id == packStockItemId)
+        : fg.first;
+    return pack.quantity.toInt();
+  }
+
+  // 2. Fallback: Si un seul item fini existe, c'est lui le "Pack"
+  final allFG = state.items.where((i) => i.type == StockType.finishedGoods).toList();
+  if (allFG.length == 1) return allFG.first.quantity.toInt();
+
+  return 0;
+});
 
 final clientsStateProvider = FutureProvider.autoDispose(
   (ref) async => ref.watch(clientsControllerProvider).fetchCustomers(),
@@ -128,6 +157,16 @@ final productionSessionsStateProvider =
       return ref.read(productionSessionControllerProvider).fetchSessions();
     });
 
+final productionSessionsInPeriodProvider = FutureProvider.autoDispose
+    .family<List<ProductionSession>, ({DateTime start, DateTime end})>(
+  (ref, range) async {
+    return ref.read(productionSessionControllerProvider).fetchSessions(
+          startDate: range.start,
+          endDate: range.end,
+        );
+  },
+);
+
 /// Provider pour récupérer une session par son ID.
 final productionSessionDetailProvider = FutureProvider.autoDispose
     .family<ProductionSession, String>((ref, sessionId) async {
@@ -135,7 +174,10 @@ final productionSessionDetailProvider = FutureProvider.autoDispose
           .read(productionSessionControllerProvider)
           .fetchSessionById(sessionId);
       if (session == null) {
-        throw Exception('Session non trouvée: $sessionId');
+        throw NotFoundException(
+          'Session non trouvée: $sessionId',
+          'SESSION_NOT_FOUND',
+        );
       }
       return session;
     });
@@ -143,28 +185,20 @@ final productionSessionDetailProvider = FutureProvider.autoDispose
 /// Provider pour récupérer les ventes liées à une session.
 final ventesParSessionProvider = FutureProvider.autoDispose
     .family<List<Sale>, String>((ref, sessionId) async {
-      // Pour l'instant, on filtre les ventes par date de la session
       final session = await ref.read(
-        productionSessionDetailProvider((sessionId)).future,
+        productionSessionDetailProvider(sessionId).future,
       );
+      
+      // Utiliser fetchSales avec filtre de date pour récupérer toutes les ventes du jour
+      final sessionDate = session.date;
+      final startOfDay = DateTime(sessionDate.year, sessionDate.month, sessionDate.day);
+      final endOfDay = startOfDay.add(const Duration(days: 1)).subtract(const Duration(milliseconds: 1));
+
       final allSales = await ref
           .read(saleRepositoryProvider)
-          .fetchRecentSales();
+          .fetchSales(startDate: startOfDay, endDate: endOfDay);
 
-      // Filtrer les ventes du même jour que la session
-      return allSales.where((sale) {
-        final saleDate = DateTime(
-          sale.date.year,
-          sale.date.month,
-          sale.date.day,
-        );
-        final sessionDate = DateTime(
-          session.date.year,
-          session.date.month,
-          session.date.day,
-        );
-        return saleDate == sessionDate;
-      }).toList();
+      return allSales;
     });
 
 final salaryStateProvider = FutureProvider.autoDispose(

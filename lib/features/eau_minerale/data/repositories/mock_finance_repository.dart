@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import '../../../../core/errors/app_exceptions.dart';
 import '../../domain/entities/expense_record.dart';
 import '../../domain/repositories/finance_repository.dart';
 
@@ -43,7 +44,10 @@ class MockFinanceRepository implements FinanceRepository {
   Future<void> updateExpense(ExpenseRecord expense) async {
     await Future<void>.delayed(const Duration(milliseconds: 150));
     if (!_expenses.containsKey(expense.id)) {
-      throw Exception('Dépense introuvable');
+      throw NotFoundException(
+        'Dépense introuvable',
+        'EXPENSE_NOT_FOUND',
+      );
     }
     _expenses[expense.id] = expense.copyWith(updatedAt: DateTime.now());
   }

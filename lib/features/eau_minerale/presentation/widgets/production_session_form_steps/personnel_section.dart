@@ -83,7 +83,7 @@ class PersonnelSection extends ConsumerWidget {
         leading: CircleAvatar(
           backgroundColor: Theme.of(context).colorScheme.primaryContainer,
           child: Text(
-            '${day.nombrePersonnes}',
+            '${day.personnelIds.length}',
             style: TextStyle(
               color: Theme.of(context).colorScheme.onPrimaryContainer,
               fontWeight: FontWeight.bold,
@@ -97,7 +97,7 @@ class PersonnelSection extends ConsumerWidget {
           ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
         ),
         subtitle: Text(
-          '${day.nombrePersonnes} personne${day.nombrePersonnes > 1 ? 's' : ''} • ${day.coutTotalPersonnel} CFA',
+          '${day.personnelIds.length} personne${day.personnelIds.length > 1 ? 's' : ''} • ${day.coutTotalPersonnel} CFA',
         ),
         trailing: IconButton(
           icon: const Icon(Icons.delete, size: 20),

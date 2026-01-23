@@ -19,6 +19,7 @@ class ProductionPaymentPersonsSection extends ConsumerWidget {
     required this.onUpdatePerson,
     required this.period,
     required this.onLoadFromProduction,
+    this.onSourceDaysLoaded,
   });
 
   final List<ProductionPaymentPerson> persons;
@@ -27,6 +28,7 @@ class ProductionPaymentPersonsSection extends ConsumerWidget {
   final void Function(int, ProductionPaymentPerson) onUpdatePerson;
   final String period;
   final ValueChanged<List<ProductionPaymentPerson>> onLoadFromProduction;
+  final ValueChanged<List<String>>? onSourceDaysLoaded;
 
   Future<void> _loadFromProduction(BuildContext context, WidgetRef ref) async {
     try {
@@ -87,35 +89,24 @@ class ProductionPaymentPersonsSection extends ConsumerWidget {
       final workerMap = {for (var w in workers) w.id: w};
 
       // Grouper par ouvrier et compter les jours travaillés
-      final Map<String, ({int daysWorked, int pricePerDay})> workerStats = {};
+      final Map<String, int> workerDays = {};
 
       for (final day in productionDays) {
         for (final workerId in day.personnelIds) {
-          if (workerStats.containsKey(workerId)) {
-            final current = workerStats[workerId]!;
-            workerStats[workerId] = (
-              daysWorked: current.daysWorked + 1,
-              pricePerDay: day.salaireJournalierParPersonne,
-            );
-          } else {
-            workerStats[workerId] = (
-              daysWorked: 1,
-              pricePerDay: day.salaireJournalierParPersonne,
-            );
-          }
+          workerDays[workerId] = (workerDays[workerId] ?? 0) + 1;
         }
       }
 
-      // Créer la liste des personnes à payer
+      // Créer la liste des personnes à payer (salaire = taux de l’ouvrier)
       final personsToPay = <ProductionPaymentPerson>[];
-      for (final entry in workerStats.entries) {
+      for (final entry in workerDays.entries) {
         final worker = workerMap[entry.key];
         if (worker != null) {
           personsToPay.add(
             ProductionPaymentPerson(
               name: worker.name,
-              pricePerDay: entry.value.pricePerDay,
-              daysWorked: entry.value.daysWorked,
+              pricePerDay: worker.salaireJournalier,
+              daysWorked: entry.value,
             ),
           );
         }
@@ -134,8 +125,14 @@ class ProductionPaymentPersonsSection extends ConsumerWidget {
       // Trier par nom
       personsToPay.sort((a, b) => a.name.compareTo(b.name));
 
+      // Collecter les IDs des jours de production sources
+      final sourceDayIds = productionDays.map((day) => day.id).toList();
+
       // Appeler le callback pour mettre à jour la liste
       onLoadFromProduction(personsToPay);
+      
+      // Passer les IDs des jours sources si le callback est fourni
+      onSourceDaysLoaded?.call(sourceDayIds);
 
       if (context.mounted) {
         NotificationService.showSuccess(

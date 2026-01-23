@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/entities/stock_item.dart';
+import '../../domain/pack_constants.dart';
 
 /// Card displaying finished products stock summary.
 class FinishedProductsCard extends StatelessWidget {
@@ -17,24 +18,35 @@ class FinishedProductsCard extends StatelessWidget {
         .where((item) => item.type == StockType.finishedGoods)
         .toList();
 
-    // Find pack item
+    // Pack uniquement (produits finis) — même Pack qu'en paramètres et ventes
     StockItem pack;
     if (finishedGoods.isEmpty) {
       pack = StockItem(
-        id: 'pack',
-        name: 'Pack',
+        id: packStockItemId,
+        name: packName,
         quantity: 0,
-        unit: 'unité',
+        unit: packUnit,
         type: StockType.finishedGoods,
         updatedAt: DateTime.now(),
       );
     } else {
-      pack = finishedGoods.firstWhere(
-        (item) =>
-            item.name.toLowerCase().contains('pack') ||
-            item.name.toLowerCase().contains('sachet'),
-        orElse: () => finishedGoods.first,
-      );
+      final packs = finishedGoods
+          .where((item) => item.name.toLowerCase().contains('pack'))
+          .toList();
+      if (packs.any((i) => i.id == packStockItemId)) {
+        pack = packs.firstWhere((i) => i.id == packStockItemId);
+      } else if (packs.isNotEmpty) {
+        pack = packs.first;
+      } else {
+        pack = StockItem(
+          id: packStockItemId,
+          name: packName,
+          quantity: 0,
+          unit: packUnit,
+          type: StockType.finishedGoods,
+          updatedAt: DateTime.now(),
+        );
+      }
     }
 
     return Container(
@@ -76,7 +88,7 @@ class FinishedProductsCard extends StatelessWidget {
           const SizedBox(height: 20),
           _buildProductItem(
             context,
-            'Pack',
+            packName,
             'Ajouté par production • Déduit par ventes',
             pack.quantity,
             pack.unit,

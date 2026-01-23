@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
+import '../../../../../../../../core/logging/app_logger.dart';
 import '../../../../../../../../shared/presentation/widgets/gaz_button_styles.dart';
 import '../../../../application/providers.dart';
 import '../../../../domain/entities/tour.dart';
@@ -51,13 +52,19 @@ class TransportStepHeader extends ConsumerWidget {
                 context: context,
                 builder: (context) => TransportExpenseFormDialog(tour: tour),
               );
-              if (result == true) {
+              if (result == true && context.mounted) {
                 ref.invalidate(
                   toursProvider((enterpriseId: enterpriseId, status: null)),
                 );
+                // Invalider le provider du tour pour forcer le rafraîchissement
+                ref.refresh(tourProvider(tour.id));
               }
             } catch (e) {
-              debugPrint('Erreur: $e');
+              AppLogger.error(
+                'Erreur lors de l\'ajout de dépense de transport: $e',
+                name: 'gaz.tour',
+                error: e,
+              );
             }
           },
           icon: const Icon(Icons.add, size: 16),

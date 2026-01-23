@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:elyf_groupe_app/core/logging/app_logger.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../domain/entities/bobine_usage.dart';
 import '../../domain/entities/machine.dart';
@@ -63,8 +64,9 @@ class _BobineInstallationFormState
             // Prendre la première trouvée (la plus récente car les sessions sont triées)
             if (bobineNonFinieTrouvee == null) {
               bobineNonFinieTrouvee = bobine;
-              debugPrint(
+              AppLogger.debug(
                 'Bobine non finie trouvée pour ${widget.machine.nom}: ${bobine.bobineType} dans session ${session.id}',
+                name: 'eau_minerale.production',
               );
             }
             // Si on a trouvé une bobine, on peut arrêter (on prend la plus récente)
@@ -80,7 +82,11 @@ class _BobineInstallationFormState
         _aChargeBobines = true;
       });
     } catch (e) {
-      debugPrint('Erreur lors du chargement de la bobine non finie: $e');
+      AppLogger.error(
+        'Erreur lors du chargement de la bobine non finie: $e',
+        name: 'eau_minerale.production',
+        error: e,
+      );
       setState(() {
         _aChargeBobines = true;
       });
@@ -105,12 +111,18 @@ class _BobineInstallationFormState
 
       if (_bobineNonFinieExistante != null) {
         // Réutiliser la bobine non finie existante (ne pas décrémenter car déjà fait)
+        // IMPORTANT: On garde la date d'installation d'origine pour que le contrôleur
+        // détecte bien que c'est la même bobine (comparaison par date).
         usage = _bobineNonFinieExistante!.copyWith(
-          dateInstallation: dateHeureInstallation,
-          heureInstallation: dateHeureInstallation,
+          dateInstallation: _bobineNonFinieExistante!.dateInstallation,
+          heureInstallation: _bobineNonFinieExistante!.heureInstallation,
+          // On peut éventuellement mettre à jour lastUsageDate ici si on avait champ
         );
       } else {
-        // Prendre automatiquement le premier type de bobine disponible
+        // Prendre automatiquement le premier type de bobine disponible.
+        // Le stock n'est pas décrémenté ici : il le sera uniquement à la
+        // sauvegarde de la session (create/update) pour éviter double
+        // décrémentation si l'installation est modifiée ou écrasée.
         final bobineStocks = await ref.read(
           bobineStocksDisponiblesProvider.future,
         );
@@ -126,33 +138,6 @@ class _BobineInstallationFormState
         }
 
         final bobineStock = bobineStocks.first;
-
-        // Décrémenter le stock IMMÉDIATEMENT en temps réel lors de l'installation
-        final stockController = ref.read(stockControllerProvider);
-        try {
-          await stockController.recordBobineExit(
-            bobineType: bobineStock.type,
-            quantite: 1,
-            productionId:
-                null, // Sera mis à jour lors de la sauvegarde de la session
-            machineId: widget.machine.id,
-            notes: 'Installation en production - ${widget.machine.nom}',
-          );
-
-          // Invalider le provider pour rafraîchir le stock en temps réel
-          ref.invalidate(bobineStocksDisponiblesProvider);
-          ref.invalidate(stockStateProvider);
-        } catch (e) {
-          if (mounted) {
-            NotificationService.showError(
-              context,
-              'Erreur lors de la décrémentation du stock: $e',
-            );
-          }
-          setState(() => _isLoading = false);
-          return;
-        }
-
         usage = BobineUsage(
           bobineType: bobineStock.type,
           machineId: widget.machine.id,
@@ -220,35 +205,74 @@ class _BobineInstallationFormState
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: Colors.orange.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: Colors.orange.withValues(alpha: 0.3),
                   ),
                 ),
-                child: Row(
+                child: Column(
                   children: [
-                    Icon(Icons.info_outline, color: Colors.orange.shade700),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Bobine non finie réutilisée',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: Colors.orange.shade700,
+                    Row(
+                      children: [
+                        Icon(Icons.history, color: Colors.orange.shade800),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Rejoindre la bobine précédente ?',
+                                style: theme.textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.orange.shade900,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Une bobine de type "${_bobineNonFinieExistante!.bobineType}" installée le ${_formatDate(_bobineNonFinieExistante!.dateInstallation)} est toujours active sur cette machine.',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: Colors.orange.shade800,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () {
+                              // Ignorer la bobine existante et en créer une nouvelle
+                              setState(() {
+                                _bobineNonFinieExistante = null;
+                                // Reset dates to now (default)
+                                _dateInstallation = DateTime.now();
+                                _heureInstallation = TimeOfDay.now();
+                              });
+                            },
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: theme.colorScheme.primary,
+                              padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 8), // Compact
+                            ),
+                            child: const Text('Installer une NOUVELLE', textAlign: TextAlign.center, style: TextStyle(fontSize: 12)),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: FilledButton.icon(
+                            onPressed: null, // Déjà sélectionné par défaut
+                            icon: const Icon(Icons.check, size: 16),
+                            label: const Text('Réutiliser', style: TextStyle(fontSize: 12)),
+                            style: FilledButton.styleFrom(
+                                backgroundColor: Colors.orange.shade800,
+                                padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 8),
                             ),
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'La bobine ${_bobineNonFinieExistante!.bobineType} sera réutilisée.',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: Colors.orange.shade700,
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ],
                 ),

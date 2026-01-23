@@ -125,7 +125,16 @@ class _AdminUsersSectionState extends ConsumerState<AdminUsersSection> {
     if (confirmed == true && mounted) {
       try {
         await ref.read(userControllerProvider).deleteUser(user.id);
-        ref.refresh(usersProvider);
+        
+        // Attendre un peu pour que la base de données soit à jour
+        await Future.delayed(const Duration(milliseconds: 100));
+        
+        // Invalider le provider pour forcer le rafraîchissement
+        ref.invalidate(usersProvider);
+        // Invalider aussi les providers dépendants
+        ref.invalidate(enterpriseModuleUsersProvider);
+        ref.invalidate(userEnterpriseModuleUsersProvider(user.id));
+        
         if (mounted) {
           NotificationService.showSuccess(context, 'Utilisateur supprimé');
         }

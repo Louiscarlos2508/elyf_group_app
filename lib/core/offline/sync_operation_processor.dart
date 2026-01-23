@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:developer' as developer;
 
+import '../errors/error_handler.dart';
+import '../logging/app_logger.dart';
 import 'drift_service.dart';
 import 'security/data_sanitizer.dart';
 import 'sync_manager.dart';
@@ -59,11 +61,13 @@ class SyncOperationProcessor {
               );
             },
           );
-    } catch (e) {
-      developer.log(
-        'Failed to process operation ${operation.id}: $e',
+    } catch (e, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Failed to process operation ${operation.id}: ${appException.message}',
         name: 'offline.sync.processor',
         error: e,
+        stackTrace: stackTrace,
       );
       rethrow;
     }

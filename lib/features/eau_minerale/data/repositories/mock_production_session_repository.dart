@@ -1,3 +1,4 @@
+import '../../../../core/errors/app_exceptions.dart';
 import '../../domain/entities/production_session.dart';
 import '../../domain/repositories/production_session_repository.dart';
 
@@ -60,7 +61,10 @@ class MockProductionSessionRepository implements ProductionSessionRepository {
     await Future.delayed(const Duration(milliseconds: 400));
     final index = _sessions.indexWhere((s) => s.id == session.id);
     if (index == -1) {
-      throw Exception('Session non trouvée');
+      throw NotFoundException(
+        'Session non trouvée',
+        'SESSION_NOT_FOUND',
+      );
     }
     final updatedSession = session.copyWith(updatedAt: DateTime.now());
     _sessions[index] = updatedSession;

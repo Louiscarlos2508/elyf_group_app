@@ -2,6 +2,7 @@ import 'dart:developer' as developer;
 import 'dart:convert';
 
 import '../../../../core/errors/error_handler.dart';
+import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/offline_repository.dart';
 import '../../domain/entities/sale.dart';
 import '../../domain/repositories/sale_repository.dart';
@@ -189,7 +190,13 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
     final sales = rows
         .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
         .toList();
-    sales.sort((a, b) => b.date.compareTo(a.date));
+    
+    // Dédupliquer par remoteId pour éviter les doublons
+    final deduplicatedSales = deduplicateByRemoteId(sales);
+    
+    // Trier par date décroissante
+    deduplicatedSales.sort((a, b) => b.date.compareTo(a.date));
+    return deduplicatedSales;
     return sales;
   }
 
@@ -198,7 +205,7 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
   @override
   Future<List<Sale>> fetchRecentSales({int limit = 50}) async {
     try {
-      developer.log(
+      AppLogger.debug(
         'Fetching recent sales for enterprise: $enterpriseId',
         name: 'SaleOfflineRepository',
       );
@@ -206,8 +213,8 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
       return allSales.take(limit).toList();
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error fetching recent sales',
+      AppLogger.error(
+        'Error fetching recent sales: ${appException.message}',
         name: 'SaleOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -236,8 +243,8 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
       return localId;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error creating sale',
+      AppLogger.error(
+        'Error creating sale: ${appException.message}',
         name: 'SaleOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -252,8 +259,8 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
       return await getByLocalId(id);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error getting sale: $id',
+      AppLogger.error(
+        'Error getting sale: $id - ${appException.message}',
         name: 'SaleOfflineRepository',
         error: error,
         stackTrace: stackTrace,

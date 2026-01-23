@@ -3,7 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/auth/providers.dart'
-    show authControllerProvider, currentUserProvider;
+    show
+        authControllerProvider,
+        currentUserProfileProvider,
+        currentUserProvider;
 
 /// Logout card for profile screen.
 class ProfileLogoutCard extends ConsumerWidget {
@@ -34,7 +37,7 @@ class ProfileLogoutCard extends ConsumerWidget {
       final authController = ref.read(authControllerProvider);
       await authController.signOut();
 
-      // Invalider les providers pour forcer un rechargement
+      ref.invalidate(currentUserProfileProvider);
       ref.invalidate(currentUserProvider);
       ref.invalidate(authControllerProvider);
 

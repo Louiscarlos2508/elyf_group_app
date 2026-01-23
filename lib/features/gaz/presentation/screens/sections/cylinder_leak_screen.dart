@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
+import 'package:elyf_groupe_app/core/logging/app_logger.dart';
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import '../../../domain/entities/cylinder_leak.dart';
 import '../../widgets/cylinder_leak_form_dialog.dart';
-import 'cylinder_leak/leak_empty_state.dart';
 import 'cylinder_leak/leak_filters.dart';
 import 'cylinder_leak/leak_header.dart';
 import 'cylinder_leak/leak_list_item.dart';
-import 'package:elyf_groupe_app/shared.dart';
-import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
 
 /// Écran de gestion des bouteilles avec fuites.
 class CylinderLeakScreen extends ConsumerStatefulWidget {
@@ -48,7 +48,11 @@ class _CylinderLeakScreenState extends ConsumerState<CylinderLeakScreen> {
         }
       });
     } catch (e) {
-      debugPrint('Erreur lors de l\'ouverture du dialog: $e');
+      AppLogger.error(
+        'Erreur lors de l\'ouverture du dialog de fuite: $e',
+        name: 'gaz.cylinder_leak',
+        error: e,
+      );
       if (mounted) {
         NotificationService.showError(context, 'Erreur: $e');
       }
@@ -82,11 +86,22 @@ class _CylinderLeakScreenState extends ConsumerState<CylinderLeakScreen> {
         leaksAsync.when(
           data: (leaks) {
             if (leaks.isEmpty) {
-              return const SliverFillRemaining(child: LeakEmptyState());
+              return const SliverFillRemaining(
+                child: EmptyState(
+                  icon: Icons.warning_outlined,
+                  title: 'Aucune fuite enregistrée',
+                  message: 'Toutes les bouteilles sont en bon état.',
+                ),
+              );
             }
 
             return SliverPadding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+              padding: EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                0,
+                AppSpacing.lg,
+                AppSpacing.lg,
+              ),
               sliver: SliverList.separated(
                 itemCount: leaks.length,
                 separatorBuilder: (_, __) => const SizedBox(height: 12),
@@ -96,10 +111,21 @@ class _CylinderLeakScreenState extends ConsumerState<CylinderLeakScreen> {
             );
           },
           loading: () => const SliverFillRemaining(
-            child: Center(child: CircularProgressIndicator()),
+            child: LoadingIndicator(),
           ),
-          error: (e, _) =>
-              SliverFillRemaining(child: Center(child: Text('Erreur: $e'))),
+          error: (error, stackTrace) => SliverFillRemaining(
+            child: ErrorDisplayWidget(
+              error: error,
+              title: 'Erreur de chargement',
+              message: 'Impossible de charger les fuites de bouteilles.',
+              onRetry: () => ref.refresh(
+                cylinderLeaksProvider((
+                  enterpriseId: widget.enterpriseId,
+                  status: _filterStatus,
+                )),
+              ),
+            ),
+          ),
         ),
         const SliverToBoxAdapter(child: SizedBox(height: 24)),
       ],

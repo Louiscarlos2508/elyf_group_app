@@ -2,6 +2,9 @@ import 'dart:developer' as developer;
 
 import 'package:firebase_auth/firebase_auth.dart';
 
+import '../../../../core/errors/app_exceptions.dart';
+import '../../../../core/errors/error_handler.dart';
+import '../../../../core/logging/app_logger.dart';
 import '../../../../core/auth/services/auth_service.dart';
 
 /// Service for integrating user creation with Firebase Auth.
@@ -41,19 +44,23 @@ class FirebaseAuthIntegrationService {
             userId: firebaseUid,
             displayName: displayName,
           );
-        } catch (e) {
+        } catch (e, stackTrace) {
           // Log but don't fail - display name is optional
-          developer.log(
-            'Failed to set display name: $e',
+          final appException = ErrorHandler.instance.handleError(e, stackTrace);
+          AppLogger.warning(
+            'Failed to set display name: ${appException.message}',
             name: 'admin.firebase.auth',
+            error: e,
+            stackTrace: stackTrace,
           );
         }
       }
 
       return firebaseUid;
     } catch (e, stackTrace) {
-      developer.log(
-        'Error creating Firebase Auth user',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error creating Firebase Auth user: ${appException.message}',
         name: 'admin.firebase.auth',
         error: e,
         stackTrace: stackTrace,
@@ -71,7 +78,10 @@ class FirebaseAuthIntegrationService {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null || user.uid != userId) {
-        throw Exception('User not authenticated or ID mismatch');
+        throw AuthenticationException(
+          'User not authenticated or ID mismatch',
+          'USER_AUTH_MISMATCH',
+        );
       }
 
       await user.updateDisplayName(displayName);
@@ -86,8 +96,9 @@ class FirebaseAuthIntegrationService {
         name: 'admin.firebase.auth',
       );
     } catch (e, stackTrace) {
-      developer.log(
-        'Error updating Firebase Auth profile',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error updating Firebase Auth profile: ${appException.message}',
         name: 'admin.firebase.auth',
         error: e,
         stackTrace: stackTrace,
@@ -101,7 +112,10 @@ class FirebaseAuthIntegrationService {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null || user.uid != userId) {
-        throw Exception('User not authenticated or ID mismatch');
+        throw AuthenticationException(
+          'User not authenticated or ID mismatch',
+          'USER_AUTH_MISMATCH',
+        );
       }
 
       await user.delete();
@@ -111,8 +125,9 @@ class FirebaseAuthIntegrationService {
         name: 'admin.firebase.auth',
       );
     } catch (e, stackTrace) {
-      developer.log(
-        'Error deleting Firebase Auth user',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error deleting Firebase Auth user: ${appException.message}',
         name: 'admin.firebase.auth',
         error: e,
         stackTrace: stackTrace,
@@ -131,8 +146,9 @@ class FirebaseAuthIntegrationService {
         name: 'admin.firebase.auth',
       );
     } catch (e, stackTrace) {
-      developer.log(
-        'Error sending password reset email',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error sending password reset email: ${appException.message}',
         name: 'admin.firebase.auth',
         error: e,
         stackTrace: stackTrace,

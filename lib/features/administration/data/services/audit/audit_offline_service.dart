@@ -1,6 +1,8 @@
-import 'dart:developer' as developer;
 import 'dart:convert';
+import 'dart:developer' as developer;
 
+import '../../../../../core/errors/error_handler.dart';
+import '../../../../../core/logging/app_logger.dart';
 import '../../../../../core/offline/drift_service.dart';
 import '../../../domain/entities/audit_log.dart';
 import '../../../domain/services/audit/audit_service.dart';
@@ -74,17 +76,20 @@ class AuditOfflineService implements AuditService {
       // Synchroniser avec Firestore (en arrière-plan, sans bloquer)
       if (firestoreSync != null) {
         // Ne pas attendre - la synchronisation se fait en arrière-plan
-        firestoreSync!.syncAuditLogToFirestore(log).catchError((e) {
-          developer.log(
-            'Error syncing audit log to Firestore (log saved locally): $e',
+        firestoreSync!.syncAuditLogToFirestore(log).catchError((e, stackTrace) {
+          final appException = ErrorHandler.instance.handleError(e, stackTrace);
+          AppLogger.warning(
+            'Error syncing audit log to Firestore (log saved locally): ${appException.message}',
             name: 'admin.audit',
             error: e,
+            stackTrace: stackTrace,
           );
         });
       }
     } catch (e, stackTrace) {
-      developer.log(
-        'Error creating audit log',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error creating audit log: ${appException.message}',
         name: 'admin.audit',
         error: e,
         stackTrace: stackTrace,
@@ -115,8 +120,14 @@ class AuditOfflineService implements AuditService {
           })
           .toList()
         ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
-    } catch (e) {
-      developer.log('Error fetching audit logs', name: 'admin.audit', error: e);
+    } catch (e, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error fetching audit logs: ${appException.message}',
+        name: 'admin.audit',
+        error: e,
+        stackTrace: stackTrace,
+      );
       return [];
     }
   }
@@ -138,11 +149,13 @@ class AuditOfflineService implements AuditService {
           .where((log) => log.userId == userId)
           .toList()
         ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
-    } catch (e) {
-      developer.log(
-        'Error fetching audit logs for user',
+    } catch (e, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error fetching audit logs for user: ${appException.message}',
         name: 'admin.audit',
         error: e,
+        stackTrace: stackTrace,
       );
       return [];
     }
@@ -165,11 +178,13 @@ class AuditOfflineService implements AuditService {
           .where((log) => log.moduleId == moduleId)
           .toList()
         ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
-    } catch (e) {
-      developer.log(
-        'Error fetching audit logs for module',
+    } catch (e, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error fetching audit logs for module: ${appException.message}',
         name: 'admin.audit',
         error: e,
+        stackTrace: stackTrace,
       );
       return [];
     }
@@ -188,11 +203,13 @@ class AuditOfflineService implements AuditService {
         final map = jsonDecode(record.dataJson) as Map<String, dynamic>;
         return AuditLog.fromMap(map);
       }).toList()..sort((a, b) => b.timestamp.compareTo(a.timestamp));
-    } catch (e) {
-      developer.log(
-        'Error fetching audit logs for enterprise',
+    } catch (e, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error fetching audit logs for enterprise: ${appException.message}',
         name: 'admin.audit',
         error: e,
+        stackTrace: stackTrace,
       );
       return [];
     }
@@ -221,11 +238,13 @@ class AuditOfflineService implements AuditService {
 
       logs.sort((a, b) => b.timestamp.compareTo(a.timestamp));
       return logs.take(limit).toList();
-    } catch (e) {
-      developer.log(
-        'Error fetching recent audit logs',
+    } catch (e, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error fetching recent audit logs: ${appException.message}',
         name: 'admin.audit',
         error: e,
+        stackTrace: stackTrace,
       );
       return [];
     }

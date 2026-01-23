@@ -1,3 +1,4 @@
+import '../../../../core/errors/app_exceptions.dart';
 import '../../domain/entities/property.dart';
 import '../../domain/repositories/property_repository.dart';
 import '../../domain/services/immobilier_validation_service.dart';
@@ -33,7 +34,10 @@ class PropertyController {
     // Récupérer l'ancienne propriété pour comparer les statuts
     final oldProperty = await _propertyRepository.getPropertyById(property.id);
     if (oldProperty == null) {
-      throw Exception('La propriété à mettre à jour n\'existe pas');
+      throw NotFoundException(
+        'La propriété à mettre à jour n\'existe pas',
+        'PROPERTY_NOT_FOUND',
+      );
     }
 
     // Valider le changement de statut
@@ -41,7 +45,10 @@ class PropertyController {
       final validationError = await _validationService
           .validatePropertyStatusUpdate(property.id, property.status);
       if (validationError != null) {
-        throw Exception(validationError);
+        throw ValidationException(
+          validationError,
+          'PROPERTY_STATUS_UPDATE_VALIDATION_FAILED',
+        );
       }
     }
 
@@ -55,7 +62,10 @@ class PropertyController {
       id,
     );
     if (validationError != null) {
-      throw Exception(validationError);
+      throw ValidationException(
+        validationError,
+        'PROPERTY_DELETION_VALIDATION_FAILED',
+      );
     }
 
     await _propertyRepository.deleteProperty(id);

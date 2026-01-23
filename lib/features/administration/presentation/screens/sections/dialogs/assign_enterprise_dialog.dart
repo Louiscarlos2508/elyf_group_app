@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/core/logging/app_logger.dart';
 import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
 import '../../../../domain/entities/user.dart';
 import 'package:elyf_groupe_app/core.dart';
@@ -146,6 +147,17 @@ class _AssignEnterpriseDialogState
                         _selectedModuleIds.isNotEmpty)
                       enterprisesAsync.when(
                         data: (enterprises) {
+                          // Debug: Log pour voir si les points de vente sont inclus
+                          final posCount = enterprises.where((e) => e.description?.contains("Point de vente") ?? false).length;
+                          AppLogger.debug(
+                            'AssignEnterpriseDialog: ${enterprises.length} entreprises récupérées (dont $posCount points de vente)',
+                            name: 'admin.enterprise',
+                          );
+                          AppLogger.debug(
+                            'AssignEnterpriseDialog: IDs des entreprises: ${enterprises.map((e) => e.id).join(", ")}',
+                            name: 'admin.enterprise',
+                          );
+                          
                           return MultipleModuleEnterpriseSelection(
                             enterprises: enterprises,
                             selectedEnterpriseIds: _selectedEnterpriseIds,

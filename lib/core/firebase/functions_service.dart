@@ -2,6 +2,10 @@ import 'dart:developer' as developer;
 
 import 'package:cloud_functions/cloud_functions.dart';
 
+import '../errors/app_exceptions.dart';
+import '../errors/error_handler.dart';
+import '../logging/app_logger.dart';
+
 /// Service pour appeler les Cloud Functions Firebase de manière sécurisée.
 ///
 /// Ce service gère :
@@ -68,11 +72,12 @@ class FunctionsService {
         return responseData ?? {};
       } catch (e, stackTrace) {
         attempts++;
+        final appException = ErrorHandler.instance.handleError(e, stackTrace);
 
         // Si c'est la dernière tentative, rethrow
         if (attempts >= maxRetries) {
-          developer.log(
-            'Cloud Function $functionName failed after $maxRetries attempts',
+          AppLogger.error(
+            'Cloud Function $functionName failed after $maxRetries attempts: ${appException.message}',
             name: 'functions.service',
             error: e,
             stackTrace: stackTrace,
@@ -82,17 +87,21 @@ class FunctionsService {
 
         // Attendre avant de réessayer (backoff exponentiel)
         final delay = Duration(milliseconds: 1000 * (1 << (attempts - 1)));
-        developer.log(
-          'Cloud Function $functionName failed, retrying in ${delay.inMilliseconds}ms',
+        AppLogger.warning(
+          'Cloud Function $functionName failed, retrying in ${delay.inMilliseconds}ms: ${appException.message}',
           name: 'functions.service',
           error: e,
+          stackTrace: stackTrace,
         );
 
         await Future<void>.delayed(delay);
       }
     }
 
-    throw Exception('Failed to call Cloud Function after $maxRetries attempts');
+    throw NetworkException(
+      'Failed to call Cloud Function after $maxRetries attempts',
+      'CLOUD_FUNCTION_CALL_FAILED',
+    );
   }
 
   /// Appelle une Cloud Function et retourne le résultat typé.

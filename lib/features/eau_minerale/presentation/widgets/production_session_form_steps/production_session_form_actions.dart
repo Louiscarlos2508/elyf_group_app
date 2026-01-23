@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:elyf_groupe_app/core/logging/app_logger.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../../domain/entities/bobine_usage.dart';
 import '../../../domain/entities/production_day.dart';
@@ -14,11 +15,16 @@ import '../../widgets/bobine_usage_form_field.dart'
 /// Extracted from ProductionSessionFormSteps to reduce file size.
 class ProductionSessionFormActions {
   /// Load unfinished bobines for selected machines.
+  ///
+  /// [bobinesExistantes] : bobines déjà en place dans le formulaire (installations
+  /// manuelles, etc.). Elles sont conservées pour ne pas écraser ni perdre
+  /// d'installation ni provoquer de double décrémentation du stock.
   static Future<void> chargerBobinesNonFinies({
     required WidgetRef ref,
     required List<String> machinesSelectionnees,
     required Function(List<BobineUsage>) onBobinesChanged,
     required Function(Map<String, BobineUsage>) onMachinesAvecBobineChanged,
+    List<BobineUsage>? bobinesExistantes,
   }) async {
     if (machinesSelectionnees.isEmpty) {
       onBobinesChanged([]);
@@ -36,24 +42,32 @@ class ProductionSessionFormActions {
         bobineStocksDisponiblesProvider.future,
       );
 
-      // Utiliser ProductionService pour charger les bobines non finies
+      // Utiliser ProductionService pour charger les bobines non finies.
+      // On transmet les bobines existantes du formulaire pour les préserver.
       final productionService = ref.read(productionServiceProvider);
       final result = await productionService.chargerBobinesNonFinies(
         machinesSelectionnees: machinesSelectionnees,
         sessionsPrecedentes: sessions.toList(),
         machines: machines,
         bobineStocksDisponibles: bobineStocks,
+        bobinesExistantesParam: bobinesExistantes,
       );
 
       // Mettre à jour la liste des bobines utilisées
       onBobinesChanged(result.bobinesUtilisees);
       onMachinesAvecBobineChanged(result.machinesAvecBobineNonFinie);
 
-      debugPrint(
+      AppLogger.debug(
         'Bobines assignées: ${result.bobinesUtilisees.length} pour ${machinesSelectionnees.length} machines',
+        name: 'eau_minerale.production',
       );
-    } catch (e) {
-      debugPrint('Erreur lors de la vérification de l\'état des machines: $e');
+    } catch (e, stackTrace) {
+      AppLogger.error(
+        'Erreur lors de la vérification de l\'état des machines: $e',
+        name: 'eau_minerale.production',
+        error: e,
+        stackTrace: stackTrace,
+      );
     }
   }
 

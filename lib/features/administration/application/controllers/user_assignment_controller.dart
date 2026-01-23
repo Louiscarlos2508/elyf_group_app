@@ -1,5 +1,8 @@
 import 'dart:developer' as developer;
 
+import '../../../../core/errors/app_exceptions.dart';
+import '../../../../core/errors/error_handler.dart';
+import '../../../../core/logging/app_logger.dart';
 import '../../../../core/auth/entities/enterprise_module_user.dart';
 import '../../domain/repositories/admin_repository.dart';
 import '../../domain/repositories/user_repository.dart';
@@ -38,10 +41,13 @@ class UserAssignmentController {
     try {
       final user = await userRepository!.getUserById(userId);
       return user?.fullName;
-    } catch (e) {
-      developer.log(
-        'Error fetching user display name for audit log: $e',
+    } catch (e, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.warning(
+        'Error fetching user display name for audit log: ${appException.message}',
         name: 'user.assignment.controller',
+        error: e,
+        stackTrace: stackTrace,
       );
       return null;
     }
@@ -56,8 +62,9 @@ class UserAssignmentController {
       final localAssignments = await _repository.getEnterpriseModuleUsers();
       return localAssignments;
     } catch (e, stackTrace) {
-      developer.log(
-        'Error getting EnterpriseModuleUsers from local database: $e',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error getting EnterpriseModuleUsers from local database: ${appException.message}',
         name: 'user.assignment.controller',
         error: e,
         stackTrace: stackTrace,
@@ -106,7 +113,10 @@ class UserAssignmentController {
         userId: currentUserId,
       );
       if (!hasPermission) {
-        throw Exception('Permission denied: Cannot assign users');
+        throw AuthorizationException(
+          'Permission denied: Cannot assign users',
+          'PERMISSION_DENIED',
+        );
       }
     }
     await _repository.assignUserToEnterprise(enterpriseModuleUser);
@@ -150,12 +160,18 @@ class UserAssignmentController {
         userId: currentUserId,
       );
       if (!hasPermission) {
-        throw Exception('Permission denied: Cannot assign users');
+        throw AuthorizationException(
+          'Permission denied: Cannot assign users',
+          'PERMISSION_DENIED',
+        );
       }
     }
 
     if (enterpriseIds.isEmpty) {
-      throw Exception('At least one enterprise must be selected');
+      throw ValidationException(
+        'At least one enterprise must be selected',
+        'NO_ENTERPRISE_SELECTED',
+      );
     }
 
     // Récupérer le nom de l'utilisateur pour l'audit trail
@@ -217,16 +233,25 @@ class UserAssignmentController {
         userId: currentUserId,
       );
       if (!hasPermission) {
-        throw Exception('Permission denied: Cannot assign users');
+        throw AuthorizationException(
+          'Permission denied: Cannot assign users',
+          'PERMISSION_DENIED',
+        );
       }
     }
 
     if (moduleIds.isEmpty) {
-      throw Exception('At least one module must be selected');
+      throw ValidationException(
+        'At least one module must be selected',
+        'NO_MODULE_SELECTED',
+      );
     }
 
     if (enterpriseIds.isEmpty) {
-      throw Exception('At least one enterprise must be selected');
+      throw ValidationException(
+        'At least one enterprise must be selected',
+        'NO_ENTERPRISE_SELECTED',
+      );
     }
 
     // Récupérer le nom de l'utilisateur pour l'audit trail
@@ -290,8 +315,9 @@ class UserAssignmentController {
     }
 
     if (assignments.isEmpty) {
-      throw Exception(
+      throw ValidationException(
         'Aucune assignation valide: toutes les combinaisons entreprise/module sont incompatibles',
+        'NO_VALID_ASSIGNMENT',
       );
     }
 
@@ -336,7 +362,10 @@ class UserAssignmentController {
         userId: currentUserId,
       );
       if (!hasPermission) {
-        throw Exception('Permission denied: Cannot update roles');
+        throw AuthorizationException(
+          'Permission denied: Cannot update roles',
+          'PERMISSION_DENIED',
+        );
       }
     }
     await _repository.updateUserRole(userId, enterpriseId, moduleId, roleId);
@@ -346,7 +375,10 @@ class UserAssignmentController {
         .getEnterpriseModuleUsersByEnterpriseAndModule(enterpriseId, moduleId);
     final assignment = assignments.firstWhere(
       (a) => a.userId == userId,
-      orElse: () => throw Exception('Assignment not found'),
+      orElse: () => throw NotFoundException(
+        'Assignment not found',
+        'ASSIGNMENT_NOT_FOUND',
+      ),
     );
 
     // Sync to Firestore
@@ -391,7 +423,10 @@ class UserAssignmentController {
         userId: currentUserId,
       );
       if (!hasPermission) {
-        throw Exception('Permission denied: Cannot update permissions');
+        throw AuthorizationException(
+          'Permission denied: Cannot update permissions',
+          'PERMISSION_DENIED',
+        );
       }
     }
     await _repository.updateUserPermissions(
@@ -406,7 +441,10 @@ class UserAssignmentController {
         .getEnterpriseModuleUsersByEnterpriseAndModule(enterpriseId, moduleId);
     final assignment = assignments.firstWhere(
       (a) => a.userId == userId,
-      orElse: () => throw Exception('Assignment not found'),
+      orElse: () => throw NotFoundException(
+        'Assignment not found',
+        'ASSIGNMENT_NOT_FOUND',
+      ),
     );
 
     // Sync to Firestore
@@ -452,7 +490,10 @@ class UserAssignmentController {
         userId: currentUserId,
       );
       if (!hasPermission) {
-        throw Exception('Permission denied: Cannot remove users');
+        throw AuthorizationException(
+          'Permission denied: Cannot remove users',
+          'PERMISSION_DENIED',
+        );
       }
     }
     // Get assignment before deletion if not provided
@@ -463,16 +504,20 @@ class UserAssignmentController {
           moduleId,
         )).firstWhere(
           (a) => a.userId == userId,
-          orElse: () => throw Exception('Assignment not found'),
+          orElse: () => throw NotFoundException(
+        'Assignment not found',
+        'ASSIGNMENT_NOT_FOUND',
+      ),
         );
 
+    // La suppression locale et la mise en file d'attente de la sync sont gérées par le repository
+    // Le repository utilise syncManager.queueDelete() pour garantir que la suppression sera
+    // synchronisée vers Firestore même en cas d'erreur réseau temporaire
     await _repository.removeUserFromEnterprise(userId, enterpriseId, moduleId);
-
-    // Delete from Firestore
-    firestoreSync?.deleteFromFirestore(
-      collection: 'enterprise_module_users',
-      documentId: assignment.documentId,
-    );
+    
+    // Note: La suppression dans Firestore est maintenant gérée par le système de synchronisation
+    // via syncManager.queueDelete() dans AdminOfflineRepository.removeUserFromEnterprise()
+    // Plus besoin d'appeler directement firestoreSync?.deleteFromFirestore() ici
 
     // Récupérer le nom de l'utilisateur pour l'audit trail
     final userDisplayName = await _getUserDisplayName(currentUserId);

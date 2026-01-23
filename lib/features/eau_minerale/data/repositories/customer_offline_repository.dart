@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import '../../../../core/errors/error_handler.dart';
+import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/connectivity_service.dart';
 import '../../../../core/offline/drift_service.dart';
 import '../../../../core/offline/offline_repository.dart';
@@ -125,8 +126,8 @@ class CustomerOfflineRepository implements CustomerRepository {
         summaries.add(
           CustomerSummary(
             id: customerId,
-            name: customer['name'] as String,
-            phone: customer['phone'] as String,
+            name: customer['name'] as String? ?? 'Inconnu',
+            phone: customer['phone'] as String? ?? customer['phoneNumber'] as String? ?? '',
             totalCredit: totalCredit,
             purchaseCount: purchaseCount,
             lastPurchaseDate: lastPurchase,
@@ -138,8 +139,8 @@ class CustomerOfflineRepository implements CustomerRepository {
       return summaries;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error fetching customers',
+      AppLogger.error(
+        'Error fetching customers: ${appException.message}',
         name: 'CustomerOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -164,9 +165,9 @@ class CustomerOfflineRepository implements CustomerRepository {
           : null;
 
       return CustomerSummary(
-        id: customer['id'] as String,
-        name: customer['name'] as String,
-        phone: customer['phone'] as String,
+        id: customer['id'] as String? ?? id,
+        name: customer['name'] as String? ?? 'Inconnu',
+        phone: customer['phone'] as String? ?? customer['phoneNumber'] as String? ?? '',
         totalCredit: totalCredit,
         purchaseCount: purchaseCount,
         lastPurchaseDate: lastPurchase,
@@ -174,8 +175,8 @@ class CustomerOfflineRepository implements CustomerRepository {
       );
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error getting customer: $id',
+      AppLogger.error(
+        'Error getting customer: $id - ${appException.message}',
         name: 'CustomerOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -227,8 +228,8 @@ class CustomerOfflineRepository implements CustomerRepository {
       return await saleRepository.fetchSales(customerId: customerId);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error fetching customer history: $customerId',
+      AppLogger.error(
+        'Error fetching customer history: $customerId - ${appException.message}',
         name: 'CustomerOfflineRepository',
         error: error,
         stackTrace: stackTrace,

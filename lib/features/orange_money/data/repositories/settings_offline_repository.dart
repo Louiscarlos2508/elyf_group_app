@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import '../../../../core/errors/error_handler.dart';
+import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/offline_repository.dart';
 import '../../domain/entities/settings.dart';
 import '../../domain/repositories/settings_repository.dart';
@@ -136,9 +137,17 @@ class SettingsOfflineRepository extends OfflineRepository<OrangeMoneySettings>
       enterpriseId: enterpriseId,
       moduleType: moduleType,
     );
-    return rows
+    final entities = rows
+
         .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+
         .toList();
+
+    
+
+    // Dédupliquer par remoteId pour éviter les doublons
+
+    return deduplicateByRemoteId(entities);
   }
 
   // SettingsRepository implementation
@@ -174,8 +183,8 @@ class SettingsOfflineRepository extends OfflineRepository<OrangeMoneySettings>
       await save(updated);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error saving settings',
+      AppLogger.error(
+        'Error saving settings: ${appException.message}',
         name: 'SettingsOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -204,8 +213,8 @@ class SettingsOfflineRepository extends OfflineRepository<OrangeMoneySettings>
       }
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error updating notifications',
+      AppLogger.error(
+        'Error updating notifications: ${appException.message}',
         name: 'SettingsOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -261,8 +270,8 @@ class SettingsOfflineRepository extends OfflineRepository<OrangeMoneySettings>
       }
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error updating SIM number',
+      AppLogger.error(
+        'Error updating SIM number: ${appException.message}',
         name: 'SettingsOfflineRepository',
         error: error,
         stackTrace: stackTrace,

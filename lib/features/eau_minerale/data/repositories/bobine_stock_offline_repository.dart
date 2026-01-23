@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import '../../../../core/errors/error_handler.dart';
+import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/offline_repository.dart';
 import '../../domain/entities/bobine_stock.dart';
 import '../../domain/entities/bobine_stock_movement.dart';
@@ -140,9 +141,17 @@ class BobineStockOfflineRepository extends OfflineRepository<BobineStock>
       enterpriseId: enterpriseId,
       moduleType: moduleType,
     );
-    return rows
+    final entities = rows
+
         .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+
         .toList();
+
+    
+
+    // Dédupliquer par remoteId pour éviter les doublons
+
+    return deduplicateByRemoteId(entities);
   }
 
   // BobineStockQuantityRepository implementation
@@ -153,8 +162,8 @@ class BobineStockOfflineRepository extends OfflineRepository<BobineStock>
       return await getAllForEnterprise(enterpriseId);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error fetching bobine stocks',
+      AppLogger.error(
+        'Error fetching bobine stocks: ${appException.message}',
         name: 'BobineStockOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -169,8 +178,8 @@ class BobineStockOfflineRepository extends OfflineRepository<BobineStock>
       return await getByLocalId(id);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error fetching bobine stock: $id',
+      AppLogger.error(
+        'Error fetching bobine stock: $id - ${appException.message}',
         name: 'BobineStockOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -190,8 +199,8 @@ class BobineStockOfflineRepository extends OfflineRepository<BobineStock>
       }
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error fetching bobine stock by type: $type',
+      AppLogger.error(
+        'Error fetching bobine stock by type: $type - ${appException.message}',
         name: 'BobineStockOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -213,8 +222,8 @@ class BobineStockOfflineRepository extends OfflineRepository<BobineStock>
       return stockWithLocalId;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error saving bobine stock',
+      AppLogger.error(
+        'Error saving bobine stock: ${appException.message}',
         name: 'BobineStockOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -229,6 +238,7 @@ class BobineStockOfflineRepository extends OfflineRepository<BobineStock>
       final localId = movement.id.startsWith('local_')
           ? movement.id
           : LocalIdGenerator.generate();
+      final remoteId = movement.id.startsWith('local_') ? null : movement.id;
       final map = {
         'id': localId,
         'localId': localId,
@@ -247,16 +257,34 @@ class BobineStockOfflineRepository extends OfflineRepository<BobineStock>
       await driftService.records.upsert(
         collectionName: movementsCollection,
         localId: localId,
-        remoteId: null,
+        remoteId: remoteId,
         enterpriseId: enterpriseId,
         moduleType: moduleType,
         dataJson: jsonEncode(map),
         localUpdatedAt: DateTime.now(),
       );
+
+      // Queue sync operation pour synchroniser avec Firestore
+      if (remoteId == null) {
+        await syncManager.queueCreate(
+          collectionName: movementsCollection,
+          localId: localId,
+          data: map,
+          enterpriseId: enterpriseId,
+        );
+      } else {
+        await syncManager.queueUpdate(
+          collectionName: movementsCollection,
+          localId: localId,
+          remoteId: remoteId,
+          data: map,
+          enterpriseId: enterpriseId,
+        );
+      }
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error recording bobine movement',
+      AppLogger.error(
+        'Error recording bobine movement: ${appException.message}',
         name: 'BobineStockOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -332,8 +360,8 @@ class BobineStockOfflineRepository extends OfflineRepository<BobineStock>
       return stocks.where((s) => s.estStockFaible).toList();
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error fetching low stock alerts',
+      AppLogger.error(
+        'Error fetching low stock alerts: ${appException.message}',
         name: 'BobineStockOfflineRepository',
         error: error,
         stackTrace: stackTrace,

@@ -1,8 +1,11 @@
 import 'dart:convert';
 import 'dart:developer' as developer;
 
+import '../../../../core/errors/app_exceptions.dart';
 import '../../../../core/errors/error_handler.dart';
+import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/offline_repository.dart';
+import '../../../../core/offline/security/data_sanitizer.dart';
 import '../../domain/entities/stock_item.dart';
 import '../../domain/repositories/inventory_repository.dart';
 
@@ -130,9 +133,17 @@ class InventoryOfflineRepository extends OfflineRepository<StockItem>
       enterpriseId: enterpriseId,
       moduleType: moduleType,
     );
-    return rows
+    final entities = rows
+
         .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+
         .toList();
+
+    
+
+    // Dédupliquer par remoteId pour éviter les doublons
+
+    return deduplicateByRemoteId(entities);
   }
 
   // InventoryRepository implementation
@@ -143,8 +154,8 @@ class InventoryOfflineRepository extends OfflineRepository<StockItem>
       return await getAllForEnterprise(enterpriseId);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error fetching stock items',
+      AppLogger.error(
+        'Error fetching stock items: ${appException.message}',
         name: 'InventoryOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -156,6 +167,18 @@ class InventoryOfflineRepository extends OfflineRepository<StockItem>
   @override
   Future<void> updateStockItem(StockItem item) async {
     try {
+      if (item.id.trim().isEmpty) {
+        throw ValidationException(
+          'StockItem.id requis',
+          'INVALID_STOCK_ITEM_ID',
+        );
+      }
+      if (item.quantity < 0) {
+        throw ValidationException(
+          'La quantité ne peut pas être négative: ${item.quantity}',
+          'INVALID_QUANTITY',
+        );
+      }
       final updated = StockItem(
         id: item.id,
         name: item.name,
@@ -164,7 +187,50 @@ class InventoryOfflineRepository extends OfflineRepository<StockItem>
         type: item.type,
         updatedAt: DateTime.now(),
       );
-      await save(updated);
+      final remoteId = getRemoteId(updated);
+      if (remoteId == null || remoteId.isEmpty) {
+        await save(updated);
+        return;
+      }
+      final existing = await driftService.records.findByRemoteId(
+        collectionName: collectionName,
+        remoteId: remoteId,
+        enterpriseId: enterpriseId,
+        moduleType: moduleType,
+      );
+      if (existing == null) {
+        await save(updated);
+        return;
+      }
+      final localId = existing.localId;
+      final rawMap = toMap(updated)..['localId'] = localId;
+      final sanitized = DataSanitizer.sanitizeMap(rawMap);
+      DataSanitizer.validateJsonSize(jsonEncode(sanitized));
+      final now = DateTime.now();
+      await driftService.db.transaction(() async {
+        await driftService.records.upsert(
+          collectionName: collectionName,
+          localId: localId,
+          remoteId: remoteId,
+          enterpriseId: enterpriseId,
+          moduleType: moduleType,
+          dataJson: jsonEncode(sanitized),
+          localUpdatedAt: now,
+        );
+        if (enableAutoSync) {
+          await syncManager.queueUpdate(
+            collectionName: collectionName,
+            localId: localId,
+            remoteId: remoteId,
+            data: sanitized,
+            enterpriseId: enterpriseId,
+          );
+        }
+      });
+    } on ValidationException {
+      rethrow;
+    } on DataSizeException {
+      rethrow;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
@@ -183,8 +249,8 @@ class InventoryOfflineRepository extends OfflineRepository<StockItem>
       return await getByLocalId(id);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error fetching stock item: $id',
+      AppLogger.error(
+        'Error fetching stock item: $id - ${appException.message}',
         name: 'InventoryOfflineRepository',
         error: error,
         stackTrace: stackTrace,

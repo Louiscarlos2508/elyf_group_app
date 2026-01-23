@@ -1,3 +1,4 @@
+import '../../../../core/errors/app_exceptions.dart';
 import '../../domain/entities/contract.dart';
 import '../../domain/entities/property.dart';
 import '../../domain/repositories/contract_repository.dart';
@@ -42,7 +43,10 @@ class ContractController {
       contract,
     );
     if (validationError != null) {
-      throw Exception(validationError);
+      throw ValidationException(
+        validationError,
+        'CONTRACT_VALIDATION_FAILED',
+      );
     }
 
     // Créer le contrat
@@ -81,7 +85,10 @@ class ContractController {
     // Récupérer l'ancien contrat pour comparer les statuts
     final oldContract = await _contractRepository.getContractById(contract.id);
     if (oldContract == null) {
-      throw Exception('Le contrat à mettre à jour n\'existe pas');
+      throw NotFoundException(
+        'Le contrat à mettre à jour n\'existe pas',
+        'CONTRACT_NOT_FOUND',
+      );
     }
 
     // Valider la mise à jour
@@ -89,7 +96,10 @@ class ContractController {
       final validationError = await _validationService
           .validateContractStatusUpdate(contract.id, contract.status);
       if (validationError != null) {
-        throw Exception(validationError);
+        throw ValidationException(
+        validationError,
+        'CONTRACT_VALIDATION_FAILED',
+      );
       }
     }
 
@@ -151,7 +161,10 @@ class ContractController {
   Future<void> deleteContract(String id) async {
     final contract = await _contractRepository.getContractById(id);
     if (contract == null) {
-      throw Exception('Le contrat à supprimer n\'existe pas');
+      throw NotFoundException(
+        'Le contrat à supprimer n\'existe pas',
+        'CONTRACT_NOT_FOUND',
+      );
     }
 
     final propertyId = contract.propertyId;

@@ -9,6 +9,9 @@ import 'package:cloud_firestore/cloud_firestore.dart'
         FirebaseException,
         Query;
 
+import '../../../../core/errors/app_exceptions.dart';
+import '../../../../core/errors/error_handler.dart';
+import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/drift_service.dart';
 import '../../domain/entities/user.dart';
 import '../../domain/entities/enterprise.dart';
@@ -52,8 +55,9 @@ class FirestoreSyncService {
         name: 'admin.firestore.sync',
       );
     } catch (e, stackTrace) {
-      developer.log(
-        'Error syncing user to Firestore',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.warning(
+        'Error syncing user to Firestore: ${appException.message}',
         name: 'admin.firestore.sync',
         error: e,
         stackTrace: stackTrace,
@@ -83,8 +87,9 @@ class FirestoreSyncService {
         name: 'admin.firestore.sync',
       );
     } catch (e, stackTrace) {
-      developer.log(
-        'Error syncing enterprise to Firestore',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.warning(
+        'Error syncing enterprise to Firestore: ${appException.message}',
         name: 'admin.firestore.sync',
         error: e,
         stackTrace: stackTrace,
@@ -122,8 +127,9 @@ class FirestoreSyncService {
         name: 'admin.firestore.sync',
       );
     } on FirebaseException catch (e, stackTrace) {
-      developer.log(
-        'Error syncing role to Firestore',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error syncing role to Firestore: ${appException.message}',
         name: 'admin.firestore.sync',
         error: e,
         stackTrace: stackTrace,
@@ -131,22 +137,25 @@ class FirestoreSyncService {
 
       // Propager les erreurs de permission avec un message clair
       if (e.code == 'permission-denied') {
-        throw Exception(
+        throw AuthorizationException(
           'Permission refusée : Vous n\'avez pas les droits pour créer/modifier des rôles dans Firestore. '
           'Vérifiez que :\n'
           '1. Votre utilisateur a le flag isAdmin: true dans Firestore\n'
           '2. Les règles de sécurité Firestore permettent l\'écriture dans la collection "roles"\n'
           '3. Votre utilisateur est bien authentifié avec Firebase Auth',
+          'FIRESTORE_PERMISSION_DENIED',
         );
       }
 
       // Propager les autres erreurs Firestore avec un message adapté
-      throw Exception(
+      throw SyncException(
         'Erreur lors de la synchronisation avec Firestore: ${e.message ?? e.code}',
+        'FIRESTORE_SYNC_ERROR',
       );
     } catch (e, stackTrace) {
-      developer.log(
-        'Error syncing role to Firestore',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error syncing role to Firestore: ${appException.message}',
         name: 'admin.firestore.sync',
         error: e,
         stackTrace: stackTrace,
@@ -179,8 +188,9 @@ class FirestoreSyncService {
         name: 'admin.firestore.sync',
       );
     } catch (e, stackTrace) {
-      developer.log(
-        'Error syncing EnterpriseModuleUser to Firestore',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.warning(
+        'Error syncing EnterpriseModuleUser to Firestore: ${appException.message}',
         name: 'admin.firestore.sync',
         error: e,
         stackTrace: stackTrace,
@@ -204,8 +214,9 @@ class FirestoreSyncService {
         name: 'admin.firestore.sync',
       );
     } on FirebaseException catch (e, stackTrace) {
-      developer.log(
-        'Error deleting from Firestore',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error deleting from Firestore: ${appException.message}',
         name: 'admin.firestore.sync',
         error: e,
         stackTrace: stackTrace,
@@ -213,22 +224,25 @@ class FirestoreSyncService {
 
       // Propager les erreurs de permission avec un message clair
       if (e.code == 'permission-denied') {
-        throw Exception(
+        throw AuthorizationException(
           'Permission refusée : Vous n\'avez pas les droits pour supprimer dans Firestore. '
           'Vérifiez que :\n'
           '1. Votre utilisateur a le flag isAdmin: true dans Firestore\n'
           '2. Les règles de sécurité Firestore permettent la suppression dans la collection "$collection"\n'
           '3. Votre utilisateur est bien authentifié avec Firebase Auth',
+          'FIRESTORE_PERMISSION_DENIED',
         );
       }
 
       // Propager les autres erreurs Firestore avec un message adapté
-      throw Exception(
+      throw SyncException(
         'Erreur lors de la suppression dans Firestore: ${e.message ?? e.code}',
+        'FIRESTORE_DELETE_ERROR',
       );
     } catch (e, stackTrace) {
-      developer.log(
-        'Error deleting from Firestore',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error deleting from Firestore: ${appException.message}',
         name: 'admin.firestore.sync',
         error: e,
         stackTrace: stackTrace,
@@ -274,16 +288,18 @@ class FirestoreSyncService {
         );
       }).toList();
     } on FirebaseException catch (e, stackTrace) {
-      developer.log(
-        'Firebase error pulling users from Firestore (code: ${e.code}): ${e.message}',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.warning(
+        'Firebase error pulling users from Firestore (code: ${e.code}): ${appException.message}',
         name: 'admin.firestore.sync',
         error: e,
         stackTrace: stackTrace,
       );
       return [];
     } catch (e, stackTrace) {
-      developer.log(
-        'Error pulling users from Firestore: $e',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.warning(
+        'Error pulling users from Firestore: ${appException.message}',
         name: 'admin.firestore.sync',
         error: e,
         stackTrace: stackTrace,
@@ -299,11 +315,13 @@ class FirestoreSyncService {
       return snapshot.docs
           .map((doc) => Enterprise.fromMap(doc.data()))
           .toList();
-    } catch (e) {
-      developer.log(
-        'Error pulling enterprises from Firestore',
+    } catch (e, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.warning(
+        'Error pulling enterprises from Firestore: ${appException.message}',
         name: 'admin.firestore.sync',
         error: e,
+        stackTrace: stackTrace,
       );
       return [];
     }
@@ -327,11 +345,13 @@ class FirestoreSyncService {
           isSystemRole: data['isSystemRole'] as bool? ?? false,
         );
       }).toList();
-    } catch (e) {
-      developer.log(
-        'Error pulling roles from Firestore',
+    } catch (e, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.warning(
+        'Error pulling roles from Firestore: ${appException.message}',
         name: 'admin.firestore.sync',
         error: e,
+        stackTrace: stackTrace,
       );
       return [];
     }
@@ -347,11 +367,13 @@ class FirestoreSyncService {
       return snapshot.docs
           .map((doc) => EnterpriseModuleUser.fromMap(doc.data()))
           .toList();
-    } catch (e) {
-      developer.log(
-        'Error pulling EnterpriseModuleUsers from Firestore',
+    } catch (e, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.warning(
+        'Error pulling EnterpriseModuleUsers from Firestore: ${appException.message}',
         name: 'admin.firestore.sync',
         error: e,
+        stackTrace: stackTrace,
       );
       return [];
     }
@@ -378,16 +400,18 @@ class FirestoreSyncService {
         name: 'admin.firestore.sync',
       );
     } on FirebaseException catch (e, stackTrace) {
-      developer.log(
-        'Firebase error syncing audit log to Firestore (code: ${e.code}): ${e.message}',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.warning(
+        'Firebase error syncing audit log to Firestore (code: ${e.code}): ${appException.message}',
         name: 'admin.firestore.sync',
         error: e,
         stackTrace: stackTrace,
       );
       // Ne pas rethrow - les erreurs de sync ne doivent pas bloquer l'application
     } catch (e, stackTrace) {
-      developer.log(
-        'Error syncing audit log to Firestore: $e',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.warning(
+        'Error syncing audit log to Firestore: ${appException.message}',
         name: 'admin.firestore.sync',
         error: e,
         stackTrace: stackTrace,
@@ -425,7 +449,10 @@ class FirestoreSyncService {
       return snapshot.docs.map((doc) {
         final data = doc.data() as Map<String, dynamic>?;
         if (data == null) {
-          throw Exception('Document data is null for audit log: ${doc.id}');
+          throw NotFoundException(
+            'Document data is null for audit log: ${doc.id}',
+            'AUDIT_LOG_DATA_NULL',
+          );
         }
 
         // Convertir le Timestamp Firestore en DateTime
@@ -454,16 +481,18 @@ class FirestoreSyncService {
         );
       }).toList();
     } on FirebaseException catch (e, stackTrace) {
-      developer.log(
-        'Firebase error pulling audit logs from Firestore (code: ${e.code}): ${e.message}',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.warning(
+        'Firebase error pulling audit logs from Firestore (code: ${e.code}): ${appException.message}',
         name: 'admin.firestore.sync',
         error: e,
         stackTrace: stackTrace,
       );
       return [];
     } catch (e, stackTrace) {
-      developer.log(
-        'Error pulling audit logs from Firestore: $e',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.warning(
+        'Error pulling audit logs from Firestore: ${appException.message}',
         name: 'admin.firestore.sync',
         error: e,
         stackTrace: stackTrace,

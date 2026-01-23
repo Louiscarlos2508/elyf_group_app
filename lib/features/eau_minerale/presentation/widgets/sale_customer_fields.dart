@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:elyf_groupe_app/shared.dart';
+
 /// Customer information fields for the sale form.
 class SaleCustomerFields extends StatelessWidget {
   const SaleCustomerFields({
@@ -32,9 +34,10 @@ class SaleCustomerFields extends StatelessWidget {
           decoration: const InputDecoration(
             labelText: 'Téléphone',
             prefixIcon: Icon(Icons.phone),
+            hintText: '+226 70 00 00 00',
           ),
           keyboardType: TextInputType.phone,
-          validator: (v) => v?.isEmpty ?? true ? 'Requis' : null,
+          validator: (v) => Validators.phoneBurkina(v),
         ),
         const SizedBox(height: 16),
         TextFormField(

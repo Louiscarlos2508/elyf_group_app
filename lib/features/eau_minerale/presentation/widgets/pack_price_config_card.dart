@@ -5,6 +5,8 @@ import 'package:elyf_groupe_app/shared.dart';
 import '../../../../../shared/utils/notification_service.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../domain/entities/product.dart';
+import '../../domain/entities/stock_item.dart';
+import '../../domain/pack_constants.dart';
 
 /// Widget pour configurer le prix du pack dans les paramètres.
 class PackPriceConfigCard extends ConsumerStatefulWidget {
@@ -20,6 +22,8 @@ class _PackPriceConfigCardState extends ConsumerState<PackPriceConfigCard> {
   final _priceController = TextEditingController();
   bool _isLoading = false;
   Product? _packProduct;
+  int _packStockQuantity = -1;
+  String? _loadError;
 
   @override
   void initState() {
@@ -28,27 +32,38 @@ class _PackPriceConfigCardState extends ConsumerState<PackPriceConfigCard> {
   }
 
   Future<void> _loadPackProduct() async {
-    final products = await ref.read(productsProvider.future);
-    Product? pack;
+    if (!mounted) return;
+    _loadError = null;
+    final productController = ref.read(productControllerProvider);
+    final stockCtrl = ref.read(stockControllerProvider);
 
+    List<Object?> results;
     try {
-      pack = products.firstWhere(
-        (p) => p.isFinishedGood && p.name.toLowerCase().contains('pack'),
-      );
-    } catch (_) {
-      try {
-        pack = products.firstWhere((p) => p.isFinishedGood);
-      } catch (_) {
-        // Aucun produit fini trouvé
-      }
+      results = await Future.wait<Object?>([
+        productController.ensurePackProduct(),
+        stockCtrl.ensurePackStockItem(),
+      ]);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _loadError = e.toString());
+      return;
     }
 
-    if (mounted && pack != null) {
-      setState(() {
-        _packProduct = pack;
-        _priceController.text = pack!.unitPrice.toString();
-      });
+    if (!mounted) return;
+    final pack = results[0] is Product ? results[0] as Product : null;
+    if (pack == null) {
+      setState(() => _loadError = 'Pack introuvable');
+      return;
     }
+    final stockQty = results[1] is StockItem
+        ? (results[1] as StockItem).quantity.toInt()
+        : -1;
+
+    setState(() {
+      _packProduct = pack;
+      _priceController.text = pack.unitPrice.toString();
+      _packStockQuantity = stockQty;
+    });
   }
 
   @override
@@ -104,52 +119,60 @@ class _PackPriceConfigCardState extends ConsumerState<PackPriceConfigCard> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
+    final pack = _packProduct;
 
-    return FutureBuilder<Product?>(
-      future: _packProduct != null
-          ? Future.value(_packProduct)
-          : ref.read(productsProvider.future).then((products) {
-              try {
-                return products.firstWhere(
-                  (p) =>
-                      p.isFinishedGood && p.name.toLowerCase().contains('pack'),
-                );
-              } catch (_) {
-                try {
-                  return products.firstWhere((p) => p.isFinishedGood);
-                } catch (_) {
-                  return null;
-                }
-              }
-            }),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Card(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Center(
-                child: CircularProgressIndicator(color: colors.primary),
-              ),
-            ),
-          );
-        }
+    if (pack == null) {
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Center(
+            child: _loadError != null
+                ? Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        size: 40,
+                        color: colors.error,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        _loadError!,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: colors.onSurfaceVariant,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 12),
+                      FilledButton.icon(
+                        onPressed: () {
+                          _loadError = null;
+                          _loadPackProduct();
+                        },
+                        icon: const Icon(Icons.refresh, size: 18),
+                        label: const Text('Réessayer'),
+                      ),
+                    ],
+                  )
+                : Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CircularProgressIndicator(color: colors.primary),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Chargement du pack…',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: colors.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
+        ),
+      );
+    }
 
-        final pack = snapshot.data ?? _packProduct;
-        if (pack == null) {
-          return Card(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Text(
-                'Aucun produit pack trouvé',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: colors.onSurfaceVariant,
-                ),
-              ),
-            ),
-          );
-        }
-
-        return Card(
+    return Card(
           elevation: 2,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -181,14 +204,14 @@ class _PackPriceConfigCardState extends ConsumerState<PackPriceConfigCard> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Prix du Pack',
+                              'Prix du $packName',
                               style: theme.textTheme.titleLarge?.copyWith(
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'Configurez le prix de vente du pack',
+                              'Même produit que dans Stock et Ventes',
                               style: theme.textTheme.bodySmall?.copyWith(
                                 color: colors.onSurfaceVariant,
                               ),
@@ -256,22 +279,38 @@ class _PackPriceConfigCardState extends ConsumerState<PackPriceConfigCard> {
                       color: colors.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Row(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(
-                          Icons.info_outline,
-                          size: 16,
-                          color: colors.onSurfaceVariant,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Produit: ${pack.name} • Prix actuel: ${pack.unitPrice} CFA/${pack.unit}',
-                            style: theme.textTheme.bodySmall?.copyWith(
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.info_outline,
+                              size: 16,
                               color: colors.onSurfaceVariant,
                             ),
-                          ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Produit: ${pack.name} • Prix: ${pack.unitPrice} CFA/$packUnit',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: colors.onSurfaceVariant,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
+                        if (_packStockQuantity >= 0) ...[
+                          const SizedBox(height: 6),
+                          Text(
+                            'Stock actuel: $_packStockQuantity $packUnit(s) '
+                            '(écran Stock)',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: colors.onSurfaceVariant,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -280,7 +319,5 @@ class _PackPriceConfigCardState extends ConsumerState<PackPriceConfigCard> {
             ),
           ),
         );
-      },
-    );
   }
 }

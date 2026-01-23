@@ -34,11 +34,13 @@ class CustomerFormState extends ConsumerState<CustomerForm>
       formKey: _formKey,
       onLoadingChanged: (isLoading) => setState(() => _isLoading = isLoading),
       onSubmit: () async {
+        final rawPhone = _phoneController.text.trim();
+        final phone = PhoneUtils.normalizeBurkina(rawPhone) ?? rawPhone;
         await ref
             .read(clientsControllerProvider)
             .createCustomer(
               _nameController.text.trim(),
-              _phoneController.text.trim(),
+              phone,
               cnib: _cnibController.text.isEmpty
                   ? null
                   : _cnibController.text.trim(),
@@ -83,10 +85,10 @@ class CustomerFormState extends ConsumerState<CustomerForm>
               decoration: const InputDecoration(
                 labelText: 'Téléphone',
                 prefixIcon: Icon(Icons.phone),
-                helperText: 'Numéro de téléphone (ex: +237 6XX XXX XXX)',
+                helperText: 'Numéro de téléphone (ex: +226 70 00 00 00)',
               ),
               keyboardType: TextInputType.phone,
-              validator: (v) => Validators.phone(v),
+              validator: (v) => Validators.phoneBurkina(v),
             ),
             const SizedBox(height: 16),
             TextFormField(

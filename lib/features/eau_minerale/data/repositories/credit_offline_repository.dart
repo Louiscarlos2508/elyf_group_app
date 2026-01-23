@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import '../../../../core/errors/error_handler.dart';
+import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/offline_repository.dart';
 import '../../domain/entities/credit_payment.dart';
 import '../../domain/entities/sale.dart';
@@ -129,9 +130,17 @@ class CreditOfflineRepository extends OfflineRepository<CreditPayment>
       enterpriseId: enterpriseId,
       moduleType: moduleType,
     );
-    return rows
+    final entities = rows
+
         .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+
         .toList();
+
+    
+
+    // Dédupliquer par remoteId pour éviter les doublons
+
+    return deduplicateByRemoteId(entities);
   }
 
   // CreditRepository implementation
@@ -143,8 +152,8 @@ class CreditOfflineRepository extends OfflineRepository<CreditPayment>
       return allSales.where((s) => !s.isFullyPaid).toList();
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error fetching credit sales',
+      AppLogger.error(
+        'Error fetching credit sales: ${appException.message}',
         name: 'CreditOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -160,8 +169,8 @@ class CreditOfflineRepository extends OfflineRepository<CreditPayment>
       return creditSales.where((s) => s.customerId == customerId).toList();
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error fetching customer credits: $customerId',
+      AppLogger.error(
+        'Error fetching customer credits: $customerId - ${appException.message}',
         name: 'CreditOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -202,8 +211,8 @@ class CreditOfflineRepository extends OfflineRepository<CreditPayment>
       return localId;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error recording payment',
+      AppLogger.error(
+        'Error recording payment: ${appException.message}',
         name: 'CreditOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -219,8 +228,8 @@ class CreditOfflineRepository extends OfflineRepository<CreditPayment>
       return creditSales.fold<int>(0, (sum, s) => sum + s.remainingAmount);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error getting total credits',
+      AppLogger.error(
+        'Error getting total credits: ${appException.message}',
         name: 'CreditOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -237,8 +246,8 @@ class CreditOfflineRepository extends OfflineRepository<CreditPayment>
       return customerIds.length;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error getting credit customers count',
+      AppLogger.error(
+        'Error getting credit customers count: ${appException.message}',
         name: 'CreditOfflineRepository',
         error: error,
         stackTrace: stackTrace,

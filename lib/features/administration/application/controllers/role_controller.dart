@@ -1,7 +1,8 @@
 import 'dart:developer' as developer;
 
-import 'package:cloud_firestore/cloud_firestore.dart';
-
+import '../../../../core/errors/app_exceptions.dart';
+import '../../../../core/errors/error_handler.dart';
+import '../../../../core/logging/app_logger.dart';
 import '../../../../core/permissions/entities/user_role.dart';
 import '../../domain/repositories/admin_repository.dart';
 import '../../domain/repositories/user_repository.dart';
@@ -36,10 +37,13 @@ class RoleController {
     try {
       final user = await userRepository!.getUserById(userId);
       return user?.fullName;
-    } catch (e) {
-      developer.log(
-        'Error fetching user display name for audit log: $e',
+    } catch (e, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.warning(
+        'Error fetching user display name for audit log: ${appException.message}',
         name: 'role.controller',
+        error: e,
+        stackTrace: stackTrace,
       );
       return null;
     }
@@ -67,8 +71,9 @@ class RoleController {
 
       return uniqueRoles.values.toList();
     } catch (e, stackTrace) {
-      developer.log(
-        'Error getting all roles from local database: $e',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error getting all roles from local database: ${appException.message}',
         name: 'role.controller',
         error: e,
         stackTrace: stackTrace,
@@ -97,9 +102,10 @@ class RoleController {
         userId: currentUserId,
       );
       if (!hasPermission) {
-        throw Exception(
+        throw AuthorizationException(
           'Permission refusée : Vous n\'avez pas les droits pour créer des rôles. '
           'Contactez un administrateur pour obtenir les permissions nécessaires.',
+          'PERMISSION_DENIED',
         );
       }
     }
@@ -131,13 +137,23 @@ class RoleController {
         },
         userDisplayName: userDisplayName,
       );
-    } catch (e) {
-      // Si c'est déjà une exception avec un message clair, la propager
-      if (e is Exception) {
+    } catch (e, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Erreur lors de la création du rôle: ${appException.message}',
+        name: 'role.controller',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      // Si c'est déjà une AppException, la propager
+      if (e is AppException) {
         rethrow;
       }
       // Sinon, envelopper dans une exception avec message clair
-      throw Exception('Erreur lors de la création du rôle: ${e.toString()}');
+      throw UnknownException(
+        'Erreur lors de la création du rôle: ${appException.message}',
+        'ROLE_CREATION_ERROR',
+      );
     }
   }
 
@@ -161,9 +177,10 @@ class RoleController {
         userId: currentUserId,
       );
       if (!hasPermission) {
-        throw Exception(
+        throw AuthorizationException(
           'Permission refusée : Vous n\'avez pas les droits pour modifier des rôles. '
           'Contactez un administrateur pour obtenir les permissions nécessaires.',
+          'PERMISSION_DENIED',
         );
       }
     }
@@ -174,7 +191,10 @@ class RoleController {
           oldRole ??
           (await _repository.getModuleRoles(role.id)).firstWhere(
             (r) => r.id == role.id,
-            orElse: () => throw Exception('Rôle non trouvé: ${role.id}'),
+            orElse: () => throw NotFoundException(
+              'Rôle non trouvé: ${role.id}',
+              'ROLE_NOT_FOUND',
+            ),
           );
 
       await _repository.updateRole(role);
@@ -210,14 +230,22 @@ class RoleController {
         },
         userDisplayName: userDisplayName,
       );
-    } catch (e) {
-      // Si c'est déjà une exception avec un message clair, la propager
-      if (e is Exception) {
+    } catch (e, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Erreur lors de la modification du rôle: ${appException.message}',
+        name: 'role.controller',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      // Si c'est déjà une AppException, la propager
+      if (e is AppException) {
         rethrow;
       }
       // Sinon, envelopper dans une exception avec message clair
-      throw Exception(
-        'Erreur lors de la modification du rôle: ${e.toString()}',
+      throw UnknownException(
+        'Erreur lors de la modification du rôle: ${appException.message}',
+        'ROLE_UPDATE_ERROR',
       );
     }
   }
@@ -242,9 +270,10 @@ class RoleController {
         userId: currentUserId,
       );
       if (!hasPermission) {
-        throw Exception(
+        throw AuthorizationException(
           'Permission refusée : Vous n\'avez pas les droits pour supprimer des rôles. '
           'Contactez un administrateur pour obtenir les permissions nécessaires.',
+          'PERMISSION_DENIED',
         );
       }
     }
@@ -255,36 +284,16 @@ class RoleController {
           roleData ??
           (await _repository.getAllRoles()).firstWhere(
             (r) => r.id == roleId,
-            orElse: () => throw Exception('Rôle non trouvé: $roleId'),
+            orElse: () => throw NotFoundException(
+              'Rôle non trouvé: $roleId',
+              'ROLE_NOT_FOUND',
+            ),
           );
 
+      // Delete from repository (this will queue sync to Firestore automatically)
+      // Note: La synchronisation vers Firestore est gérée automatiquement par le repository
+      // via la queue de sync (SyncManager). Pas besoin d'appel manuel ici.
       await _repository.deleteRole(roleId);
-
-      // Delete from Firestore
-      if (firestoreSync != null) {
-        try {
-          await firestoreSync!.deleteFromFirestore(
-            collection: 'roles',
-            documentId: roleId,
-          );
-        } catch (e) {
-          // Logger l'erreur mais ne pas bloquer la suppression locale
-          developer.log(
-            'Error deleting role from Firestore (local deletion succeeded)',
-            name: 'role.controller',
-            error: e,
-          );
-          // Propager l'erreur pour informer l'utilisateur
-          if (e is FirebaseException && e.code == 'permission-denied') {
-            throw Exception(
-              'Permission refusée : Impossible de supprimer le rôle dans Firestore. '
-              'Le rôle a été supprimé localement mais la synchronisation a échoué. '
-              'Vérifiez les règles de sécurité Firestore.',
-            );
-          }
-          rethrow;
-        }
-      }
 
       // Récupérer le nom de l'utilisateur pour l'audit trail
       final userDisplayName = await _getUserDisplayName(currentUserId);
@@ -305,13 +314,23 @@ class RoleController {
         },
         userDisplayName: userDisplayName,
       );
-    } catch (e) {
-      // Si c'est déjà une exception avec un message clair, la propager
-      if (e is Exception) {
+    } catch (e, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Erreur lors de la suppression du rôle: ${appException.message}',
+        name: 'role.controller',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      // Si c'est déjà une AppException, la propager
+      if (e is AppException) {
         rethrow;
       }
       // Sinon, envelopper dans une exception avec message clair
-      throw Exception('Erreur lors de la suppression du rôle: ${e.toString()}');
+      throw UnknownException(
+        'Erreur lors de la suppression du rôle: ${appException.message}',
+        'ROLE_DELETE_ERROR',
+      );
     }
   }
 }

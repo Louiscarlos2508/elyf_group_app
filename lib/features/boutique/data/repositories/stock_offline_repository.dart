@@ -1,6 +1,5 @@
-import 'dart:developer' as developer;
-
 import '../../../../core/errors/error_handler.dart';
+import '../../../../core/logging/app_logger.dart';
 import '../../domain/entities/product.dart';
 import '../../domain/repositories/product_repository.dart';
 import '../../domain/repositories/stock_repository.dart';
@@ -17,7 +16,7 @@ class StockOfflineRepository implements StockRepository {
   @override
   Future<void> updateStock(String productId, int quantity) async {
     try {
-      developer.log(
+      AppLogger.debug(
         'Updating stock for product: $productId to $quantity',
         name: 'StockOfflineRepository',
       );
@@ -28,8 +27,8 @@ class StockOfflineRepository implements StockRepository {
       }
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error updating stock for product: $productId',
+      AppLogger.error(
+        'Error updating stock for product: $productId - ${appException.message}',
         name: 'StockOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -45,8 +44,8 @@ class StockOfflineRepository implements StockRepository {
       return product?.stock ?? 0;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error getting stock for product: $productId',
+      AppLogger.error(
+        'Error getting stock for product: $productId - ${appException.message}',
         name: 'StockOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -58,7 +57,7 @@ class StockOfflineRepository implements StockRepository {
   @override
   Future<List<Product>> getLowStockProducts({int threshold = 10}) async {
     try {
-      developer.log(
+      AppLogger.debug(
         'Getting low stock products with threshold: $threshold',
         name: 'StockOfflineRepository',
       );
@@ -66,8 +65,8 @@ class StockOfflineRepository implements StockRepository {
       return products.where((p) => p.stock <= threshold).toList();
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error getting low stock products',
+      AppLogger.error(
+        'Error getting low stock products: ${appException.message}',
         name: 'StockOfflineRepository',
         error: error,
         stackTrace: stackTrace,

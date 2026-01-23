@@ -1,5 +1,7 @@
 import 'dart:developer' as developer;
 
+import '../../../../core/errors/error_handler.dart';
+import '../../../../core/logging/app_logger.dart';
 import '../../domain/entities/user.dart';
 import '../../domain/entities/audit_log.dart';
 import '../../domain/repositories/user_repository.dart';
@@ -48,8 +50,9 @@ class UserController {
 
       return uniqueUsers.values.toList();
     } catch (e, stackTrace) {
-      developer.log(
-        'Error getting all users from local database: $e',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error getting all users from local database: ${appException.message}',
         name: 'user.controller',
         error: e,
         stackTrace: stackTrace,
@@ -95,7 +98,14 @@ class UserController {
         );
         // Update user ID to Firebase UID
         user = user.copyWith(id: firebaseUid);
-      } catch (e) {
+      } catch (e, stackTrace) {
+        final appException = ErrorHandler.instance.handleError(e, stackTrace);
+        AppLogger.warning(
+          'Error creating Firebase Auth user (continuing with local user): ${appException.message}',
+          name: 'user.controller',
+          error: e,
+          stackTrace: stackTrace,
+        );
         // If Firebase Auth creation fails, continue with local user
         // but log the error
       }
@@ -105,13 +115,16 @@ class UserController {
     User createdUser;
     try {
       createdUser = await _repository.createUser(user);
-    } catch (e) {
+    } catch (e, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.warning(
+        'Error saving user to local database (user created in Firestore, will be synced later): ${appException.message}',
+        name: 'user.controller',
+        error: e,
+        stackTrace: stackTrace,
+      );
       // Si la sauvegarde locale échoue, on continue quand même
       // L'utilisateur existe dans Firestore et sera récupéré lors de la prochaine sync
-      developer.log(
-        'Error saving user to local database (user created in Firestore, will be synced later): $e',
-        name: 'user.controller',
-      );
       // Créer un objet utilisateur temporaire avec les données fournies
       // pour permettre à l'opération de continuer
       createdUser = user.copyWith(
@@ -123,10 +136,13 @@ class UserController {
     // Sync to Firestore (cela peut avoir déjà été fait via Firebase Auth)
     try {
       await firestoreSync?.syncUserToFirestore(createdUser);
-    } catch (e) {
-      developer.log(
-        'Error syncing user to Firestore (may already exist): $e',
+    } catch (e, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.warning(
+        'Error syncing user to Firestore (may already exist): ${appException.message}',
         name: 'user.controller',
+        error: e,
+        stackTrace: stackTrace,
       );
       // Ne pas bloquer - l'utilisateur peut déjà exister dans Firestore
     }
@@ -137,10 +153,13 @@ class UserController {
       try {
         final actingUser = await _repository.getUserById(currentUserId);
         userDisplayName = actingUser?.fullName;
-      } catch (e) {
-        developer.log(
-          'Error fetching user for audit log: $e',
+      } catch (e, stackTrace) {
+        final appException = ErrorHandler.instance.handleError(e, stackTrace);
+        AppLogger.warning(
+          'Error fetching user for audit log: ${appException.message}',
           name: 'user.controller',
+          error: e,
+          stackTrace: stackTrace,
         );
       }
     }
@@ -156,8 +175,14 @@ class UserController {
         newValue: createdUser.toMap(),
         userDisplayName: userDisplayName,
       );
-    } catch (e) {
-      developer.log('Error logging audit trail: $e', name: 'user.controller');
+    } catch (e, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.warning(
+        'Error logging audit trail: ${appException.message}',
+        name: 'user.controller',
+        error: e,
+        stackTrace: stackTrace,
+      );
       // Ne pas bloquer si l'audit échoue
     }
 
@@ -176,7 +201,14 @@ class UserController {
     final oldUserData = oldUser ?? await _repository.getUserById(user.id);
 
     // Update user in repository
+    // Note: save() dans OfflineRepository queue automatiquement la sync via SyncManager
+    // Pas besoin d'appel direct à syncUserToFirestore ici
     final updatedUser = await _repository.updateUser(user);
+    
+    developer.log(
+      'User updated in repository: ${updatedUser.id}, name: ${updatedUser.fullName}',
+      name: 'user.controller',
+    );
 
     // Update Firebase Auth profile if email changed
     if (user.email != null &&
@@ -187,13 +219,25 @@ class UserController {
           userId: user.id,
           displayName: '${user.firstName} ${user.lastName}',
         );
-      } catch (e) {
-        // Log error but continue
+        developer.log(
+          'Firebase Auth profile updated for user: ${user.id}',
+          name: 'user.controller',
+        );
+      } catch (e, stackTrace) {
+        final appException = ErrorHandler.instance.handleError(e, stackTrace);
+        AppLogger.warning(
+          'Error updating Firebase Auth profile: ${appException.message}',
+          name: 'user.controller',
+          error: e,
+          stackTrace: stackTrace,
+        );
+        // Log error but continue - the user is already saved locally
       }
     }
 
-    // Sync to Firestore
-    firestoreSync?.syncUserToFirestore(updatedUser, isUpdate: true);
+    // Note: La synchronisation vers Firestore est gérée automatiquement par SyncManager
+    // via la queue de sync dans OfflineRepository.save(). Pas besoin d'appel direct ici.
+    // L'appel direct à syncUserToFirestore peut échouer silencieusement et créer des incohérences.
 
     // Récupérer le nom de l'utilisateur qui fait l'action pour l'audit trail
     String? userDisplayName;
@@ -201,10 +245,13 @@ class UserController {
       try {
         final actingUser = await _repository.getUserById(currentUserId);
         userDisplayName = actingUser?.fullName;
-      } catch (e) {
-        developer.log(
-          'Error fetching user for audit log: $e',
+      } catch (e, stackTrace) {
+        final appException = ErrorHandler.instance.handleError(e, stackTrace);
+        AppLogger.warning(
+          'Error fetching user for audit log: ${appException.message}',
           name: 'user.controller',
+          error: e,
+          stackTrace: stackTrace,
         );
       }
     }
@@ -237,18 +284,26 @@ class UserController {
     if (user == null) return;
 
     // Delete Firebase Auth user if exists
+    // Note: Firebase Auth deletion should happen immediately as it's authentication-related
     if (firebaseAuthIntegration != null) {
       try {
         await firebaseAuthIntegration!.deleteFirebaseUser(userId);
-      } catch (e) {
+      } catch (e, stackTrace) {
+        final appException = ErrorHandler.instance.handleError(e, stackTrace);
+        AppLogger.warning(
+          'Error deleting Firebase Auth user: ${appException.message}',
+          name: 'user.controller',
+          error: e,
+          stackTrace: stackTrace,
+        );
         // Log error but continue with local deletion
+        // The user will be removed from local storage and sync queue
       }
     }
 
-    // Delete from Firestore
-    firestoreSync?.deleteFromFirestore(collection: 'users', documentId: userId);
-
-    // Delete from repository
+    // Delete from repository (this will queue sync to Firestore automatically)
+    // Note: La synchronisation vers Firestore est gérée automatiquement par le repository
+    // via la queue de sync (SyncManager). Pas besoin d'appel manuel ici.
     await _repository.deleteUser(userId);
 
     // Récupérer le nom de l'utilisateur qui fait l'action pour l'audit trail
@@ -257,10 +312,13 @@ class UserController {
       try {
         final actingUser = await _repository.getUserById(currentUserId);
         userDisplayName = actingUser?.fullName;
-      } catch (e) {
-        developer.log(
-          'Error fetching user for audit log: $e',
+      } catch (e, stackTrace) {
+        final appException = ErrorHandler.instance.handleError(e, stackTrace);
+        AppLogger.warning(
+          'Error fetching user for audit log: ${appException.message}',
           name: 'user.controller',
+          error: e,
+          stackTrace: stackTrace,
         );
       }
     }
@@ -301,10 +359,13 @@ class UserController {
         try {
           final actingUser = await _repository.getUserById(currentUserId);
           userDisplayName = actingUser?.fullName;
-        } catch (e) {
-          developer.log(
-            'Error fetching user for audit log: $e',
+        } catch (e, stackTrace) {
+          final appException = ErrorHandler.instance.handleError(e, stackTrace);
+          AppLogger.warning(
+            'Error fetching user for audit log: ${appException.message}',
             name: 'user.controller',
+            error: e,
+            stackTrace: stackTrace,
           );
         }
       }

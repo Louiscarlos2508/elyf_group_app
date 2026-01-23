@@ -1,4 +1,7 @@
 import 'dart:developer' as developer;
+
+import '../../../../core/errors/error_handler.dart';
+import '../../../../core/logging/app_logger.dart';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -14,13 +17,8 @@ import '../../../../features/administration/application/providers.dart'
         adminRepositoryProvider,
         permissionServiceProvider,
         enterpriseRepositoryProvider;
-import '../../../../features/administration/domain/repositories/enterprise_repository.dart';
-import '../../../../features/administration/domain/entities/enterprise.dart';
 import '../../../../core/tenant/tenant_provider.dart'
     show activeEnterpriseIdProvider, userAccessibleEnterprisesProvider;
-import '../../../../core/auth/entities/enterprise_module_user.dart';
-import '../../../../features/modules/presentation/screens/module_menu_screen.dart'
-    show ModuleMenuScreen;
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -158,8 +156,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         ref.invalidate(userAccessibleEnterprisesProvider);
         // Ne pas invalider usersProvider ici pour éviter les erreurs d'initialisation
         // Il sera rafraîchi automatiquement quand l'utilisateur accède à la page admin
-      } catch (e) {
-        developer.log('Error invalidating providers: $e', name: 'login');
+      } catch (e, stackTrace) {
+        final appException = ErrorHandler.instance.handleError(e, stackTrace);
+        AppLogger.warning(
+          'Error invalidating providers: ${appException.message}',
+          name: 'login',
+          error: e,
+          stackTrace: stackTrace,
+        );
         // Ne pas bloquer la redirection même en cas d'erreur d'invalidation
       }
 
@@ -278,6 +282,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
       // Récupérer tous les accès de l'utilisateur
       final userAccesses = await adminRepo.getUserEnterpriseModuleUsers(userId);
+      
+      AppLogger.debug(
+        'LOGIN REDIRECT: ${userAccesses.length} accès trouvés pour l\'utilisateur $userId',
+        name: 'login.redirect',
+      );
+      for (final access in userAccesses) {
+        AppLogger.debug(
+          'LOGIN REDIRECT: Accès - enterpriseId=${access.enterpriseId}, moduleId=${access.moduleId}, isActive=${access.isActive}',
+          name: 'login.redirect',
+        );
+      }
+      
       developer.log(
         'Redirect: Found ${userAccesses.length} total access(es) for user: ${userAccesses.map((a) => '${a.enterpriseId}/${a.moduleId}(isActive:${a.isActive})').join(", ")}',
         name: 'login.redirect',
@@ -287,6 +303,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           .where((access) => access.isActive)
           .toList();
 
+      AppLogger.debug(
+        'LOGIN REDIRECT: ${activeAccesses.length} accès actifs',
+        name: 'login.redirect',
+      );
       developer.log(
         'Redirect: Found ${activeAccesses.length} active access(es)',
         name: 'login.redirect',
@@ -306,12 +326,33 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           .map((access) => access.enterpriseId)
           .toSet()
           .toList();
+      
+      AppLogger.debug(
+        'LOGIN REDIRECT: ${enterpriseIds.length} IDs d\'entreprises uniques depuis EnterpriseModuleUser: ${enterpriseIds.join(", ")}',
+        name: 'login.redirect',
+      );
       developer.log(
         'Redirect: Found ${enterpriseIds.length} unique enterprise ID(s): $enterpriseIds',
         name: 'login.redirect',
       );
 
       final allEnterprises = await enterpriseRepo.getAllEnterprises();
+      
+      final posCount = allEnterprises.where((e) => e.description?.contains("Point de vente") ?? false).length;
+      AppLogger.debug(
+        'LOGIN REDIRECT: ${allEnterprises.length} entreprises récupérées au total (dont $posCount points de vente)',
+        name: 'login.redirect',
+      );
+      AppLogger.debug(
+        'LOGIN REDIRECT: IDs de toutes les entreprises: ${allEnterprises.map((e) => e.id).join(", ")}',
+        name: 'login.redirect',
+      );
+      
+      developer.log(
+        'Redirect: ${allEnterprises.length} entreprises récupérées au total (dont $posCount points de vente)',
+        name: 'login.redirect',
+      );
+      
       final accessibleEnterprises = allEnterprises
           .where(
             (enterprise) =>
@@ -319,8 +360,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           )
           .toList();
 
+      AppLogger.debug(
+        'LOGIN REDIRECT: ${accessibleEnterprises.length} entreprises accessibles après filtrage',
+        name: 'login.redirect',
+      );
+      AppLogger.debug(
+        'LOGIN REDIRECT: IDs des entreprises accessibles: ${accessibleEnterprises.map((e) => e.id).join(", ")}',
+        name: 'login.redirect',
+      );
+      
+      // Log des entreprises non trouvées
+      final notFoundIds = enterpriseIds.where((id) => !allEnterprises.any((e) => e.id == id)).toList();
+      if (notFoundIds.isNotEmpty) {
+        AppLogger.warning(
+          'LOGIN REDIRECT: IDs d\'entreprises non trouvées dans getAllEnterprises(): ${notFoundIds.join(", ")}',
+          name: 'login.redirect',
+        );
+      }
+      
       developer.log(
-        'Redirect: Found ${accessibleEnterprises.length} accessible enterprise(s)',
+        'Redirect: Found ${accessibleEnterprises.length} accessible enterprise(s) (IDs: ${accessibleEnterprises.map((e) => e.id).join(", ")})',
         name: 'login.redirect',
       );
 

@@ -82,6 +82,7 @@ class DriftService {
 
   Future<void> clearEnterpriseData(String enterpriseId) async {
     await records.clearEnterprise(enterpriseId);
+    await syncOperations.clearEnterprise(enterpriseId);
   }
 
   Future<int> getPendingSyncCount() async {

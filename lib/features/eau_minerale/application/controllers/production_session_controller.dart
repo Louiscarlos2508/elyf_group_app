@@ -1,5 +1,4 @@
-import 'package:flutter/foundation.dart';
-
+import '../../../../core/logging/app_logger.dart';
 import '../../domain/entities/bobine_usage.dart';
 import '../../domain/entities/bobine_stock_movement.dart';
 import '../../domain/entities/production_session.dart';
@@ -71,8 +70,14 @@ class ProductionSessionController {
     required bool estNouvelleSession,
     ProductionSession? sessionExistante,
   }) async {
-    debugPrint('=== Décrémentation stock bobines pour session $sessionId ===');
-    debugPrint('Nombre de bobines à vérifier: ${bobinesUtilisees.length}');
+    AppLogger.debug(
+      '=== Décrémentation stock bobines pour session $sessionId ===',
+      name: 'eau_minerale.production',
+    );
+    AppLogger.debug(
+      'Nombre de bobines à vérifier: ${bobinesUtilisees.length}',
+      name: 'eau_minerale.production',
+    );
 
     // Récupérer toutes les sessions pour vérifier quelles bobines ont déjà été utilisées
     final toutesSessions = await _repository.fetchSessions();
@@ -104,8 +109,9 @@ class ProductionSessionController {
           bobinesDejaUtiliseesParMachine[bobineUsage.machineId] = [];
         }
         bobinesDejaUtiliseesParMachine[bobineUsage.machineId]!.add(bobineUsage);
-        debugPrint(
+        AppLogger.debug(
           'Bobine déjà utilisée trouvée: ${bobineUsage.bobineType} sur machine ${bobineUsage.machineId} (session ${session.date}, finie: ${bobineUsage.estFinie})',
+          name: 'eau_minerale.production',
         );
 
         // Seulement les bobines non finies sont considérées comme "réutilisables"
@@ -115,56 +121,90 @@ class ProductionSessionController {
           // Cela garantit qu'on prend la bobine la plus récente (car on parcourt de la plus récente à la plus ancienne)
           if (!bobinesNonFiniesParMachine.containsKey(bobineUsage.machineId)) {
             bobinesNonFiniesParMachine[bobineUsage.machineId] = bobineUsage;
-            debugPrint(
+            AppLogger.debug(
               'Bobine non finie trouvée: ${bobineUsage.bobineType} sur machine ${bobineUsage.machineId} (session ${session.date})',
+              name: 'eau_minerale.production',
             );
           } else {
-            debugPrint(
+            AppLogger.debug(
               'Machine ${bobineUsage.machineId} a déjà une bobine non finie plus récente, ignorée',
+              name: 'eau_minerale.production',
             );
           }
         }
       }
     }
 
-    debugPrint(
+    AppLogger.debug(
       'Total machines avec bobines non finies détectées: ${bobinesNonFiniesParMachine.length}',
+      name: 'eau_minerale.production',
     );
     final totalBobinesDejaUtilisees = bobinesDejaUtiliseesParMachine.values
         .fold<int>(0, (sum, list) => sum + list.length);
-    debugPrint(
+    AppLogger.debug(
       'Total bobines déjà utilisées (toutes): $totalBobinesDejaUtilisees',
+      name: 'eau_minerale.production',
     );
 
     // Si on met à jour une session, exclure les bobines de la session existante
     // (car on veut décrémenter seulement les nouvelles ajoutées)
     if (!estNouvelleSession && sessionExistante != null) {
       for (final bobineUsage in sessionExistante.bobinesUtilisees) {
-        // Retirer de la liste car ce sont des bobines de cette session
         bobinesNonFiniesParMachine.remove(bobineUsage.machineId);
         bobinesDejaUtiliseesParMachine.remove(bobineUsage.machineId);
       }
     }
 
-    debugPrint(
+    // Quota de bobines à ignorer (déjà dans la session avant mise à jour → déjà décrémentées).
+    // Évite double décrément quand on marque "finie" ou qu'on ajoute une nouvelle sur la même machine.
+    final skipQuota = <String, int>{};
+    if (!estNouvelleSession && sessionExistante != null) {
+      for (final b in sessionExistante.bobinesUtilisees) {
+        final key = '${b.machineId}|${b.bobineType}';
+        skipQuota[key] = (skipQuota[key] ?? 0) + 1;
+      }
+    }
+
+    AppLogger.debug(
       'Bobines non finies par machine: ${bobinesNonFiniesParMachine.length}',
+      name: 'eau_minerale.production',
     );
-    debugPrint('Bobines à traiter: ${bobinesUtilisees.length}');
+    AppLogger.debug(
+      'Bobines à traiter: ${bobinesUtilisees.length}',
+      name: 'eau_minerale.production',
+    );
     for (final bobineUsage in bobinesUtilisees) {
-      debugPrint(
-        '  - ${bobineUsage.bobineType} sur machine ${bobineUsage.machineId}',
+      AppLogger.debug(
+        'Bobine à traiter: ${bobineUsage.bobineType} sur machine ${bobineUsage.machineId}',
+        name: 'eau_minerale.production',
       );
     }
 
-    // Traiter CHAQUE bobine individuellement
     int bobinesDecrimentees = 0;
     int bobinesReutilisees = 0;
     int bobinesAvecMouvementRecent = 0;
+    int bobinesDejaEnSession = 0;
 
     for (final bobineUsage in bobinesUtilisees) {
-      debugPrint(
-        '\n--- Vérification bobine: ${bobineUsage.bobineType} sur machine ${bobineUsage.machineId} ---',
+      AppLogger.debug(
+        'Vérification bobine: ${bobineUsage.bobineType} sur machine ${bobineUsage.machineId}',
+        name: 'eau_minerale.production',
       );
+
+      // ÉTAPE 0: Ignorer les bobines déjà présentes avant la mise à jour (déjà décrémentées).
+      if (!estNouvelleSession && sessionExistante != null) {
+        final key = '${bobineUsage.machineId}|${bobineUsage.bobineType}';
+        final quota = skipQuota[key] ?? 0;
+        if (quota > 0) {
+          skipQuota[key] = quota - 1;
+          AppLogger.debug(
+            'Bobine déjà en session (${bobineUsage.bobineType} / ${bobineUsage.machineId}) - pas de décrémentation',
+            name: 'eau_minerale.production',
+          );
+          bobinesDejaEnSession++;
+          continue;
+        }
+      }
 
       // ÉTAPE 1: Vérifier si cette machine a une bobine non finie du même type
       // Si oui, c'est une bobine réutilisée qui a déjà été décrémentée lors de sa première installation
@@ -172,12 +212,17 @@ class ProductionSessionController {
           bobinesNonFiniesParMachine[bobineUsage.machineId];
       final estBobineNonFinieReutilisee =
           bobineNonFinieExistante != null &&
-          bobineNonFinieExistante.bobineType == bobineUsage.bobineType;
+          bobineNonFinieExistante.bobineType == bobineUsage.bobineType &&
+          // IMPORTANT: Pour être considérée comme réutilisée, la date d'installation doit être IDENTIQUE.
+          // Si la date diffère, cela signifie que c'est une NOUVELLE bobine du même type
+          // qui a été installée physiquement (et le formulaire a mis une nouvelle date).
+          bobineNonFinieExistante.dateInstallation.isAtSameMomentAs(bobineUsage.dateInstallation);
 
       if (estBobineNonFinieReutilisee) {
         // Bobine non finie réutilisée : ne PAS décrémenter le stock car déjà fait lors de la première installation
-        debugPrint(
-          '✓ Bobine non finie réutilisée (${bobineNonFinieExistante.bobineType}) - pas de décrémentation',
+        AppLogger.debug(
+          'Bobine non finie réutilisée (${bobineNonFinieExistante.bobineType}) - pas de décrémentation',
+          name: 'eau_minerale.production',
         );
         bobinesReutilisees++;
         continue;
@@ -200,15 +245,17 @@ class ProductionSessionController {
           // Il y a une bobine non finie de ce type qui n'a pas été détectée dans bobinesNonFiniesParMachine
           // Cela peut arriver si la bobine a été marquée comme finie puis une nouvelle installée dans la même session
           // On évite la décrémentation pour être sûr
-          debugPrint(
-            '⚠ Bobine du même type non finie trouvée sur cette machine - pas de décrémentation par sécurité',
+          AppLogger.warning(
+            'Bobine du même type non finie trouvée sur cette machine - pas de décrémentation par sécurité',
+            name: 'eau_minerale.production',
           );
           bobinesReutilisees++;
           continue;
         }
         // Si toutes les bobines précédentes sont finies, alors cette bobine est nouvelle → on continue pour décrémenter
-        debugPrint(
-          '→ Toutes les bobines précédentes de ce type sont finies - cette bobine est nouvelle',
+        AppLogger.debug(
+          'Toutes les bobines précédentes de ce type sont finies - cette bobine est nouvelle',
+          name: 'eau_minerale.production',
         );
       }
 
@@ -227,8 +274,9 @@ class ProductionSessionController {
       }
 
       if (aDejaMouvementRecent) {
-        debugPrint(
-          '✓ Mouvement très récent trouvé (installation via formulaire) - pas de décrémentation supplémentaire',
+        AppLogger.debug(
+          'Mouvement très récent trouvé (installation via formulaire) - pas de décrémentation supplémentaire',
+          name: 'eau_minerale.production',
         );
         bobinesAvecMouvementRecent++;
         continue;
@@ -236,8 +284,9 @@ class ProductionSessionController {
 
       // ÉTAPE 3: Nouvelle bobine qui n'a pas encore été décrémentée
       // Décrémenter le stock pour cette machine
-      debugPrint(
-        '→ NOUVELLE bobine sur machine ${bobineUsage.machineId} - DÉCRÉMENTATION du stock',
+      AppLogger.debug(
+        'NOUVELLE bobine sur machine ${bobineUsage.machineId} - DÉCRÉMENTATION du stock',
+        name: 'eau_minerale.production',
       );
       try {
         await _stockController.recordBobineExit(
@@ -247,24 +296,30 @@ class ProductionSessionController {
           machineId: bobineUsage.machineId,
           notes: 'Installation en production',
         );
-        debugPrint(
-          '✓ Stock décrémenté avec succès pour machine ${bobineUsage.machineId}',
+        AppLogger.debug(
+          'Stock décrémenté avec succès pour machine ${bobineUsage.machineId}',
+          name: 'eau_minerale.production',
         );
         bobinesDecrimentees++;
-      } catch (e) {
-        debugPrint(
-          '✗ ERREUR lors de la décrémentation pour machine ${bobineUsage.machineId}: $e',
+      } catch (e, stackTrace) {
+        AppLogger.error(
+          'ERREUR lors de la décrémentation pour machine ${bobineUsage.machineId}: $e',
+          name: 'eau_minerale.production',
+          error: e,
+          stackTrace: stackTrace,
         );
         // Continuer avec les autres bobines même en cas d'erreur
       }
     }
 
-    debugPrint('=== Résumé décrémentation stock bobines ===');
-    debugPrint('Total bobines traitées: ${bobinesUtilisees.length}');
-    debugPrint('Bobines décrémentées: $bobinesDecrimentees');
-    debugPrint('Bobines réutilisées (non finies): $bobinesReutilisees');
-    debugPrint('Bobines avec mouvement récent: $bobinesAvecMouvementRecent');
-    debugPrint('=== Fin décrémentation stock bobines ===\n');
+    AppLogger.info(
+      '=== Résumé décrémentation stock bobines ===',
+      name: 'eau_minerale.production',
+    );
+    AppLogger.info(
+      'Total bobines traitées: ${bobinesUtilisees.length}, Décrémentées: $bobinesDecrimentees, Réutilisées: $bobinesReutilisees, Déjà en session: $bobinesDejaEnSession, Avec mouvement récent: $bobinesAvecMouvementRecent',
+      name: 'eau_minerale.production',
+    );
   }
 
   /// Vérifie si une bobine a déjà un mouvement de sortie pour cette machine.
@@ -289,8 +344,9 @@ class ProductionSessionController {
         bobineType,
       );
       if (stock == null) {
-        debugPrint(
+        AppLogger.debug(
           'Stock non trouvé pour $bobineType - on considère qu\'il n\'y a pas de mouvement',
+          name: 'eau_minerale.production',
         );
         return false;
       }
@@ -316,14 +372,19 @@ class ProductionSessionController {
       );
 
       if (mouvementExistant) {
-        debugPrint(
+        AppLogger.debug(
           'Mouvement récent trouvé pour $bobineType sur machine $machineId ($timeWindowMinutes min)',
+          name: 'eau_minerale.production',
         );
       }
 
       return mouvementExistant;
     } catch (e) {
-      debugPrint('Erreur lors de la vérification du mouvement: $e');
+      AppLogger.error(
+        'Erreur lors de la vérification du mouvement: $e',
+        name: 'eau_minerale.production',
+        error: e,
+      );
       // En cas d'erreur, ne pas bloquer : on décrémente pour être sûr
       return false;
     }

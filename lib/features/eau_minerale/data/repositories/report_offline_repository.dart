@@ -1,6 +1,7 @@
 import 'dart:developer' as developer;
 
 import '../../../../core/errors/error_handler.dart';
+import '../../../../core/logging/app_logger.dart';
 import '../../domain/entities/expense_report_data.dart';
 import '../../domain/entities/expense_record.dart' show ExpenseCategory;
 import '../../domain/entities/product_sales_summary.dart';
@@ -109,8 +110,8 @@ class ReportOfflineRepository implements ReportRepository {
       );
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error fetching report data',
+      AppLogger.error(
+        'Error fetching report data: ${appException.message}',
         name: 'ReportOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -169,8 +170,8 @@ class ReportOfflineRepository implements ReportRepository {
       return summaries;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error fetching product sales summary',
+      AppLogger.error(
+        'Error fetching product sales summary: ${appException.message}',
         name: 'ReportOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -272,8 +273,8 @@ class ReportOfflineRepository implements ReportRepository {
       );
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error fetching expense report',
+      AppLogger.error(
+        'Error fetching expense report: ${appException.message}',
         name: 'ReportOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -309,8 +310,8 @@ class ReportOfflineRepository implements ReportRepository {
       );
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error fetching salary report',
+      AppLogger.error(
+        'Error fetching salary report: ${appException.message}',
         name: 'ReportOfflineRepository',
         error: error,
         stackTrace: stackTrace,

@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:open_file/open_file.dart';
 
 import '../../domain/entities/sale.dart';
+import 'invoice_print/invoice_print_button.dart';
+import 'invoice_print/invoice_print_service.dart';
+import 'sale_detail_dialog.dart';
+import 'sale_form.dart';
+import 'package:elyf_groupe_app/shared.dart';
 
 /// Helper widgets for sales table.
 class SalesTableHelpers {
@@ -45,30 +51,134 @@ class SalesTableHelpers {
     void Function(Sale sale, String action)? onActionTap,
   ) {
     final theme = Theme.of(context);
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
+    return PopupMenuButton<String>(
+      icon: Icon(
+        Icons.more_horiz,
+        color: theme.colorScheme.primary,
+      ),
+      tooltip: 'Actions',
+      onSelected: (value) async {
+        if (value == 'print') {
+          _showPrintOptions(context, sale);
+        } else {
+          onActionTap?.call(sale, value);
+        }
+      },
+      itemBuilder: (context) => [
+        PopupMenuItem(
+          value: 'view',
+          child: ListTile(
+            leading: const Icon(Icons.visibility_outlined, size: 20),
+            title: const Text('Voir les détails'),
+            contentPadding: EdgeInsets.zero,
+            visualDensity: VisualDensity.compact,
+            dense: true,
+          ),
+        ),
+        PopupMenuItem(
+          value: 'print',
+          child: ListTile(
+            leading: const Icon(Icons.print_outlined, size: 20),
+            title: const Text('Imprimer Facture'),
+            contentPadding: EdgeInsets.zero,
+            visualDensity: VisualDensity.compact,
+            dense: true,
+          ),
+        ),
+        PopupMenuItem(
+          value: 'edit',
+          child: ListTile(
+            leading: const Icon(Icons.edit_outlined, size: 20),
+            title: const Text('Modifier la vente'),
+            contentPadding: EdgeInsets.zero,
+            visualDensity: VisualDensity.compact,
+            dense: true,
+          ),
+        ),
+      ],
+    );
+  }
+
+  static Future<void> _showPrintOptions(BuildContext context, Sale sale) async {
+    // We basically trigger the same logic as EauMineralePrintButton but without needing the widget
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => _PrintOptionsSheet(sale: sale),
+    );
+  }
+}
+
+class _PrintOptionsSheet extends StatefulWidget {
+  final Sale sale;
+  const _PrintOptionsSheet({required this.sale});
+
+  @override
+  State<_PrintOptionsSheet> createState() => _PrintOptionsSheetState();
+}
+
+class _PrintOptionsSheetState extends State<_PrintOptionsSheet> {
+  bool _isSunmiAvailable = false;
+  bool _isPrinting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkSunmi();
+  }
+
+  Future<void> _checkSunmi() async {
+    final available = await EauMineraleInvoiceService.instance.isSunmiAvailable();
+    if (mounted) setState(() => _isSunmiAvailable = available);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          IconButton(
-            icon: const Icon(Icons.visibility, size: 18),
-            onPressed: () => onActionTap?.call(sale, 'view'),
-            tooltip: 'Voir',
-            padding: const EdgeInsets.all(8),
-            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-            color: theme.colorScheme.primary,
+          const Padding(
+            padding: EdgeInsets.all(16),
+            child: Text(
+              'Options d\'impression',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
           ),
-          const SizedBox(width: 4),
-          IconButton(
-            icon: const Icon(Icons.edit, size: 18),
-            onPressed: () => onActionTap?.call(sale, 'edit'),
-            tooltip: 'Modifier',
-            padding: const EdgeInsets.all(8),
-            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-            color: theme.colorScheme.primary,
+          ListTile(
+            leading: const Icon(Icons.picture_as_pdf),
+            title: const Text('Générer PDF'),
+            subtitle: const Text('Créer un fichier PDF'),
+            onTap: () async {
+              Navigator.pop(context);
+              await _handlePrint('pdf');
+            },
           ),
+          if (_isSunmiAvailable)
+            ListTile(
+              leading: const Icon(Icons.print),
+              title: const Text('Imprimer (Sunmi)'),
+              subtitle: const Text('Imprimante thermique'),
+              onTap: () async {
+                Navigator.pop(context);
+                await _handlePrint('sunmi');
+              },
+            ),
+          const SizedBox(height: 8),
         ],
       ),
     );
+  }
+
+  Future<void> _handlePrint(String type) async {
+    try {
+      if (type == 'pdf') {
+        final file = await EauMineraleInvoiceService.instance.generateSalePdf(widget.sale);
+        await OpenFile.open(file.path);
+      } else {
+        await EauMineraleInvoiceService.instance.printSaleInvoice(widget.sale);
+      }
+    } catch (e) {
+      debugPrint('Error printing: $e');
+    }
   }
 }

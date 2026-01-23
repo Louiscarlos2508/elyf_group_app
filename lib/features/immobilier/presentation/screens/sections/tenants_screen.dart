@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
 import 'package:elyf_groupe_app/features/immobilier/application/providers.dart';
 import '../../../domain/entities/contract.dart';
 import '../../../domain/entities/payment.dart';
@@ -121,10 +122,10 @@ class _TenantsScreenState extends ConsumerState<TenantsScreen> {
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: EdgeInsets.fromLTRB(
-                        24,
-                        24,
-                        24,
-                        isWide ? 24 : 16,
+                        AppSpacing.lg,
+                        AppSpacing.lg,
+                        AppSpacing.lg,
+                        isWide ? AppSpacing.lg : AppSpacing.md,
                       ),
                       child: isWide
                           ? Row(
@@ -192,7 +193,7 @@ class _TenantsScreenState extends ConsumerState<TenantsScreen> {
                   // KPI Summary Cards
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      padding: AppSpacing.horizontalPadding,
                       child: Row(
                         children: [
                           Expanded(
@@ -218,19 +219,10 @@ class _TenantsScreenState extends ConsumerState<TenantsScreen> {
                   ),
 
                   // Section header
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
-                      child: Text(
-                        'LISTE DES LOCATAIRES',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.5,
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
+                  SectionHeader(
+                    title: 'LISTE DES LOCATAIRES',
+                    top: AppSpacing.lg,
+                    bottom: AppSpacing.sm,
                   ),
 
                   // Search Bar
@@ -250,9 +242,9 @@ class _TenantsScreenState extends ConsumerState<TenantsScreen> {
                     )
                   else
                     SliverPadding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 8,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: AppSpacing.lg,
+                        vertical: AppSpacing.sm,
                       ),
                       sliver: SliverList(
                         delegate: SliverChildBuilderDelegate((context, index) {
@@ -270,70 +262,44 @@ class _TenantsScreenState extends ConsumerState<TenantsScreen> {
                       ),
                     ),
 
-                  const SliverToBoxAdapter(child: SizedBox(height: 24)),
+                  SliverToBoxAdapter(
+                    child: SizedBox(height: AppSpacing.lg),
+                  ),
                 ],
               );
             },
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => _buildErrorState(theme, error),
+        loading: () => const LoadingIndicator(),
+        error: (error, stackTrace) => ErrorDisplayWidget(
+          error: error,
+          title: 'Erreur de chargement',
+          message: 'Impossible de charger les locataires.',
+          onRetry: () {
+            ref.refresh(tenantsProvider);
+            ref.refresh(contractsProvider);
+          },
+        ),
       ),
     );
   }
 
   Widget _buildEmptyState(ThemeData theme, bool isEmpty) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            isEmpty ? Icons.people_outline : Icons.search_off,
-            size: 64,
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            isEmpty ? 'Aucun locataire enregistré' : 'Aucun résultat trouvé',
-            style: theme.textTheme.titleMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          if (!isEmpty) ...[
-            const SizedBox(height: 8),
-            TextButton(
+    return EmptyState(
+      icon: isEmpty ? Icons.people_outline : Icons.search_off,
+      title: isEmpty ? 'Aucun locataire enregistré' : 'Aucun résultat trouvé',
+      message: isEmpty
+          ? 'Commencez par ajouter un locataire'
+          : 'Essayez de modifier vos critères de recherche',
+      action: isEmpty
+          ? null
+          : TextButton(
               onPressed: () {
                 _searchController.clear();
                 setState(() {});
               },
               child: const Text('Réinitialiser la recherche'),
             ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildErrorState(ThemeData theme, Object error) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.error_outline, size: 64, color: theme.colorScheme.error),
-          const SizedBox(height: 16),
-          Text(
-            'Erreur de chargement',
-            style: theme.textTheme.bodyLarge?.copyWith(
-              color: theme.colorScheme.error,
-            ),
-          ),
-          const SizedBox(height: 16),
-          FilledButton(
-            onPressed: () => ref.invalidate(tenantsProvider),
-            child: const Text('Réessayer'),
-          ),
-        ],
-      ),
     );
   }
 }

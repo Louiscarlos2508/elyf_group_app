@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../application/providers.dart';
 import '../../../domain/entities/production_session.dart';
 import '../../widgets/production_session_form_steps.dart';
 
@@ -19,6 +20,19 @@ class _ProductionSessionFormScreenState
     extends ConsumerState<ProductionSessionFormScreen> {
   int _currentStep = 0;
   final _formStepsKey = GlobalKey<ProductionSessionFormStepsState>();
+  ProviderContainer? _container;
+
+  @override
+  void initState() {
+    super.initState();
+    _container = ProviderScope.containerOf(context, listen: false);
+  }
+
+  @override
+  void dispose() {
+    _container?.invalidate(productionSessionsStateProvider);
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -222,7 +236,7 @@ class _ProductionSessionFormScreenState
                     onPressed: () async {
                       final formState = _formStepsKey.currentState;
                       if (formState != null) {
-                        await formState.saveDraft();
+                        await formState.saveDraft(silent: false);
                       }
                     },
                     icon: const Icon(Icons.save, size: 18),
@@ -238,8 +252,8 @@ class _ProductionSessionFormScreenState
                       final formState = _formStepsKey.currentState;
                       if (formState != null &&
                           formState.validateCurrentStep()) {
-                        // Sauvegarder automatiquement avant de passer à l'étape suivante
-                        await formState.saveDraft();
+                        // Sauvegarder avant "Suivant" (silent pour éviter double toast)
+                        await formState.saveDraft(silent: true);
                         setState(() => _currentStep++);
                       }
                     } else {

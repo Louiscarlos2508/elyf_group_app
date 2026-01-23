@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import '../../../../core/errors/app_exceptions.dart';
 import '../../domain/entities/stock_item.dart';
 import '../../domain/entities/stock_movement.dart';
 import '../../domain/repositories/inventory_repository.dart';
@@ -44,7 +45,10 @@ class MockStockRepository implements StockRepository {
   Future<void> updateStock(String productId, int quantity) async {
     await Future<void>.delayed(const Duration(milliseconds: 150));
     if (quantity < 0) {
-      throw Exception('Le stock ne peut pas être négatif');
+      throw ValidationException(
+        'Le stock ne peut pas être négatif',
+        'NEGATIVE_STOCK',
+      );
     }
 
     // Pour les produits finis, mettre à jour InventoryRepository

@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../../../shared/utils/currency_formatter.dart';
+import '../../application/providers.dart';
 import '../../domain/entities/collection.dart';
 import '../../domain/entities/tour.dart';
+import 'collection_edit_dialog.dart';
 
 /// Widget pour afficher une collecte selon le design Figma.
-class CollectionItemWidget extends StatelessWidget {
+class CollectionItemWidget extends ConsumerWidget {
   const CollectionItemWidget({
     super.key,
     required this.tour,
@@ -19,7 +22,7 @@ class CollectionItemWidget extends StatelessWidget {
   final VoidCallback? onEdit;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final totalBottles = collection.totalBottles;
 
     return Container(
@@ -73,10 +76,9 @@ class CollectionItemWidget extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   InkWell(
-                    onTap:
-                        onEdit ??
+                    onTap: onEdit ??
                         () async {
-                          // TODO: Implémenter l'édition
+                          await _showEditDialog(context, ref);
                         },
                     borderRadius: BorderRadius.circular(8),
                     child: Container(
@@ -135,6 +137,8 @@ class CollectionItemWidget extends StatelessWidget {
                 ...collection.emptyBottles.entries.map((entry) {
                   final weight = entry.key;
                   final qty = entry.value;
+                  // Utiliser le prix spécifique au poids (prix en gros pour les grossistes)
+                  final pricePerBottle = collection.getUnitPriceForWeight(weight);
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 4),
                     child: Row(
@@ -148,7 +152,7 @@ class CollectionItemWidget extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          '$qty × ${CurrencyFormatter.formatDouble(collection.unitPrice)}',
+                          '$qty × ${CurrencyFormatter.formatDouble(pricePerBottle)}',
                           style: const TextStyle(
                             fontSize: 14,
                             color: Color(0xFF101828),
@@ -238,5 +242,32 @@ class CollectionItemWidget extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _showEditDialog(BuildContext context, WidgetRef ref) async {
+    try {
+      final result = await showDialog<bool>(
+        context: context,
+        builder: (context) => CollectionEditDialog(
+          tour: tour,
+          collection: collection,
+        ),
+      );
+      
+      if (result == true && context.mounted) {
+        // Invalider les providers pour rafraîchir
+        ref.invalidate(
+          toursProvider((enterpriseId: tour.enterpriseId, status: null)),
+        );
+        ref.invalidate(tourProvider(tour.id));
+      }
+    } catch (e) {
+      if (context.mounted) {
+        NotificationService.showError(
+          context,
+          'Erreur lors de l\'édition: $e',
+        );
+      }
+    }
   }
 }

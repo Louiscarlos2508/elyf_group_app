@@ -11,19 +11,12 @@ class SalesReceiptTemplate {
   String generate() {
     final buffer = StringBuffer();
 
-    // En-tête avec nom d'entreprise agrandi et centré
-    buffer.writeln(_centerText('══════════════════════'));
+    // En-tête simplifié et moderne
     buffer.writeln();
+    buffer.writeln(_centerText('BOUTIQUE ELYF'));
+    buffer.writeln(_centerText('GROUPE APP'));
     buffer.writeln();
-    // Nom de l'entreprise en caractères plus visibles et centré
-    buffer.writeln(_centerText('╔══════════════════════╗'));
-    buffer.writeln(_centerText('║    BOUTIQUE ELYF     ║'));
-    buffer.writeln(_centerText('║                      ║'));
-    buffer.writeln(_centerText('╚══════════════════════╝'));
-    buffer.writeln();
-    buffer.writeln();
-    buffer.writeln(_centerText('══════════════════════'));
-    buffer.writeln();
+    buffer.writeln(_centerText('--------------------------------'));
     buffer.writeln();
 
     // Informations de la vente (centrées)
@@ -96,14 +89,13 @@ class SalesReceiptTemplate {
     }
 
     buffer.writeln();
-    buffer.writeln(_centerText('═' * 26));
+    buffer.writeln(_centerText('--------------------------------'));
     buffer.writeln();
     buffer.writeln(_centerText('MERCI DE VOTRE VISITE !'));
     buffer.writeln();
 
-    // Espace en bas pour éviter que le texte soit coupé
-    buffer.writeln();
-    buffer.writeln();
+
+    // Espace en bas pour la découpe
     buffer.writeln();
     buffer.writeln();
     buffer.writeln();

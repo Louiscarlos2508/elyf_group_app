@@ -45,7 +45,7 @@ class _NewCustomerFormCardState extends State<NewCustomerFormCard> {
   final _lastNameController = TextEditingController();
   final _idNumberController = TextEditingController();
 
-  final String _idType = "Carte Nationale d'Identité";
+  String _idType = "Carte Nationale d'Identité"; // Type de pièce sélectionné
   DateTime? _idIssueDate;
   DateTime? _idExpiryDate;
   bool _isSaving = false;
@@ -119,6 +119,68 @@ class _NewCustomerFormCardState extends State<NewCustomerFormCard> {
     }
   }
 
+  /// Affiche un dialog pour sélectionner le type de pièce d'identité.
+  Future<String?> _showIdTypeDialog(BuildContext context) async {
+    final idTypes = [
+      "Carte Nationale d'Identité",
+      "Passeport",
+      "Permis de Conduire",
+      "Carte de Séjour",
+      "Carte Consulaire",
+    ];
+
+    return showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text(
+          'Type de pièce d\'identité',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+        contentPadding: const EdgeInsets.symmetric(vertical: 16),
+        content: SizedBox(
+          width: 300,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: idTypes.length,
+            itemBuilder: (context, index) {
+              final type = idTypes[index];
+              final isSelected = type == _idType;
+              
+              return ListTile(
+                title: Text(
+                  type,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: isSelected 
+                        ? const Color(0xFFF54900) 
+                        : const Color(0xFF0A0A0A),
+                    fontWeight: isSelected 
+                        ? FontWeight.bold 
+                        : FontWeight.normal,
+                  ),
+                ),
+                leading: Icon(
+                  isSelected ? Icons.check_circle : Icons.circle_outlined,
+                  color: isSelected 
+                      ? const Color(0xFFF54900) 
+                      : const Color(0xFF717182),
+                  size: 20,
+                ),
+                onTap: () => Navigator.of(context).pop(type),
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Annuler'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -170,8 +232,14 @@ class _NewCustomerFormCardState extends State<NewCustomerFormCard> {
               // Type de pièce d'identité
               IdTypeField(
                 idType: _idType,
-                onTap: () {
-                  // TODO: Show ID type selector dialog
+                onTap: () async {
+                  // ✅ TODO résolu: Show ID type selector dialog
+                  final selectedType = await _showIdTypeDialog(context);
+                  if (selectedType != null) {
+                    setState(() {
+                      _idType = selectedType;
+                    });
+                  }
                 },
               ),
               const SizedBox(height: 16),

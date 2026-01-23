@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 class PersonnelHeader extends StatelessWidget {
   const PersonnelHeader({super.key, required this.onAddDay});
 
-  final VoidCallback onAddDay;
+  final VoidCallback? onAddDay;
 
   @override
   Widget build(BuildContext context) {

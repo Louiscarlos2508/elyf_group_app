@@ -1,3 +1,5 @@
+import 'dart:developer' as developer;
+
 import '../../domain/entities/point_of_sale.dart';
 import '../../domain/repositories/point_of_sale_repository.dart';
 
@@ -12,10 +14,19 @@ class PointOfSaleController {
     required String enterpriseId,
     required String moduleId,
   }) async {
-    return _repository.getPointsOfSale(
+    developer.log(
+      'PointOfSaleController.getPointsOfSale: enterpriseId=$enterpriseId, moduleId=$moduleId',
+      name: 'PointOfSaleController',
+    );
+    final result = await _repository.getPointsOfSale(
       enterpriseId: enterpriseId,
       moduleId: moduleId,
     );
+    developer.log(
+      'PointOfSaleController.getPointsOfSale: trouvé ${result.length} points de vente',
+      name: 'PointOfSaleController',
+    );
+    return result;
   }
 
   /// Récupère un point de vente par son ID.

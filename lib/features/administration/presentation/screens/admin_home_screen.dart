@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/auth/providers.dart' show currentUserIdProvider;
+import '../../../../core/errors/app_exceptions.dart';
 import 'package:elyf_groupe_app/shared.dart'
     show NavigationSection, ProfileScreen, AdaptiveNavigationScaffold;
 import '../../application/providers.dart'
@@ -44,14 +45,20 @@ class _AdminHomeScreenState extends ConsumerState<AdminHomeScreen> {
                 }) async {
                   final currentUserId = ref.read(currentUserIdProvider);
                   if (currentUserId == null || currentUserId != userId) {
-                    throw Exception('Utilisateur non connecté ou ID invalide');
+                    throw AuthenticationException(
+                      'Utilisateur non connecté ou ID invalide',
+                      'USER_NOT_AUTHENTICATED',
+                    );
                   }
 
                   // Récupérer l'utilisateur actuel
                   final List<User> users = await ref.read(usersProvider.future);
                   final currentUser = users.firstWhere(
                     (u) => u.id == currentUserId,
-                    orElse: () => throw Exception('Utilisateur non trouvé'),
+                    orElse: () => throw NotFoundException(
+                      'Utilisateur non trouvé',
+                      'USER_NOT_FOUND',
+                    ),
                   );
 
                   // Créer l'utilisateur mis à jour

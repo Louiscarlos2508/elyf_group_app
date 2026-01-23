@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import '../../../../core/errors/error_handler.dart';
+import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/offline_repository.dart';
 import '../../domain/entities/daily_worker.dart';
 import '../../domain/repositories/daily_worker_repository.dart';
@@ -151,9 +152,17 @@ class DailyWorkerOfflineRepository extends OfflineRepository<DailyWorker>
       enterpriseId: enterpriseId,
       moduleType: moduleType,
     );
-    return rows
+    final entities = rows
+
         .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+
         .toList();
+
+    
+
+    // Dédupliquer par remoteId pour éviter les doublons
+
+    return deduplicateByRemoteId(entities);
   }
 
   // DailyWorkerRepository implementation
@@ -164,8 +173,8 @@ class DailyWorkerOfflineRepository extends OfflineRepository<DailyWorker>
       return await getAllForEnterprise(enterpriseId);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error fetching all workers',
+      AppLogger.error(
+        'Error fetching all workers: ${appException.message}',
         name: 'DailyWorkerOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -203,8 +212,8 @@ class DailyWorkerOfflineRepository extends OfflineRepository<DailyWorker>
       return workerWithLocalId;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error creating worker',
+      AppLogger.error(
+        'Error creating worker: ${appException.message}',
         name: 'DailyWorkerOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -240,8 +249,8 @@ class DailyWorkerOfflineRepository extends OfflineRepository<DailyWorker>
       }
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error deleting worker: $id',
+      AppLogger.error(
+        'Error deleting worker: $id - ${appException.message}',
         name: 'DailyWorkerOfflineRepository',
         error: error,
         stackTrace: stackTrace,

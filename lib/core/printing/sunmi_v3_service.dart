@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
+
+import '../logging/app_logger.dart';
 import 'package:sunmi_flutter_plugin_printer/bean/printer.dart';
 import 'package:sunmi_flutter_plugin_printer/enum/setting_item.dart';
 import 'package:sunmi_flutter_plugin_printer/listener/printer_listener.dart';
@@ -58,7 +60,11 @@ class SunmiV3Service {
 
       return _isSunmiDeviceCache!;
     } catch (e) {
-      debugPrint('SunmiV3Service: Erreur détection device: $e');
+      AppLogger.error(
+        'SunmiV3Service: Erreur détection device: $e',
+        name: 'printing.sunmi',
+        error: e,
+      );
       _isSunmiDeviceCache = false;
       return false;
     }
@@ -85,7 +91,10 @@ class SunmiV3Service {
               receivedPrinter = printer;
               _printer = printer;
               _isInitialized = true;
-              debugPrint('SunmiV3Service: Printer initialisé avec succès');
+              AppLogger.info(
+                'SunmiV3Service: Printer initialisé avec succès',
+                name: 'printing.sunmi',
+              );
             },
           ),
         );
@@ -94,8 +103,9 @@ class SunmiV3Service {
         await Future<void>.delayed(const Duration(milliseconds: 300));
 
         if (receivedPrinter == null || _printer == null) {
-          debugPrint(
+          AppLogger.warning(
             'SunmiV3Service: Aucun printer disponible - mode simulation',
+            name: 'printing.sunmi',
           );
           _isInitialized = true;
           return true; // Mode simulation
@@ -103,16 +113,25 @@ class SunmiV3Service {
 
         return true;
       } catch (e) {
-        debugPrint(
+        AppLogger.error(
           'SunmiV3Service: Erreur lors de l\'obtention du printer: $e',
+          name: 'printing.sunmi',
+          error: e,
         );
         // Mode simulation si le package n'est pas disponible
-        debugPrint('SunmiV3Service: Package non disponible - mode simulation');
+        AppLogger.warning(
+          'SunmiV3Service: Package non disponible - mode simulation',
+          name: 'printing.sunmi',
+        );
         _isInitialized = true;
         return true;
       }
     } catch (e) {
-      debugPrint('SunmiV3Service: Erreur initialisation imprimante: $e');
+      AppLogger.error(
+        'SunmiV3Service: Erreur initialisation imprimante: $e',
+        name: 'printing.sunmi',
+        error: e,
+      );
       return false;
     }
   }
@@ -140,11 +159,19 @@ class SunmiV3Service {
         // _printer!.queryApi; // Réservé pour usage futur
         return true;
       } catch (e) {
-        debugPrint('SunmiV3Service: Erreur QueryApi: $e');
+        AppLogger.error(
+          'SunmiV3Service: Erreur QueryApi: $e',
+          name: 'printing.sunmi',
+          error: e,
+        );
         return true; // Mode simulation en cas d'erreur
       }
     } catch (e) {
-      debugPrint('SunmiV3Service: Erreur vérification imprimante: $e');
+      AppLogger.error(
+        'SunmiV3Service: Erreur vérification imprimante: $e',
+        name: 'printing.sunmi',
+        error: e,
+      );
       return false;
     }
   }
@@ -155,12 +182,18 @@ class SunmiV3Service {
   /// Retourne true si l'impression a réussi, false sinon.
   Future<bool> printReceipt(String content) async {
     if (!await isSunmiDevice) {
-      debugPrint('SunmiV3Service: Appareil non-Sunmi détecté');
+      AppLogger.debug(
+        'SunmiV3Service: Appareil non-Sunmi détecté',
+        name: 'printing.sunmi',
+      );
       return false;
     }
 
     if (!await isPrinterAvailable()) {
-      debugPrint('SunmiV3Service: Imprimante non disponible');
+      AppLogger.warning(
+        'SunmiV3Service: Imprimante non disponible',
+        name: 'printing.sunmi',
+      );
       return false;
     }
 
@@ -169,7 +202,10 @@ class SunmiV3Service {
       if (!_isInitialized) {
         final initialized = await _initializePrinter();
         if (!initialized) {
-          debugPrint('SunmiV3Service: Impossible d\'initialiser l\'imprimante');
+          AppLogger.error(
+            'SunmiV3Service: Impossible d\'initialiser l\'imprimante',
+            name: 'printing.sunmi',
+          );
           return false;
         }
       }
@@ -179,7 +215,10 @@ class SunmiV3Service {
       // Vérifier si le printer est disponible
       if (_printer == null) {
         // Mode simulation
-        debugPrint('SunmiV3Service: Impression simulée:\n$content');
+        AppLogger.debug(
+          'SunmiV3Service: Impression simulée:\n$content',
+          name: 'printing.sunmi',
+        );
         await Future<void>.delayed(const Duration(milliseconds: 500));
         return true;
       }
@@ -201,12 +240,12 @@ class SunmiV3Service {
         final totalTextStyle = TextStyle(totalTextFormat);
 
         // Nettoyer le contenu et diviser en lignes
-        final cleanedContent = content.trimRight();
+        final cleanedContent = content.trim();
         final lines = cleanedContent.split('\n');
 
         // Imprimer chaque ligne (ignorer les lignes vides)
         for (final line in lines) {
-          if (line.isEmpty) continue; // Skip empty lines
+          if (line.trim().isEmpty) continue; // Skip empty or whitespace-only lines
 
           // Détecter le type de ligne pour appliquer le bon style
           final isTitle =
@@ -231,16 +270,30 @@ class SunmiV3Service {
         // Faire sortir le papier automatiquement
         await lineApi.autoOut();
       } catch (e) {
-        debugPrint('SunmiV3Service: Erreur lors de l\'impression réelle: $e');
+        AppLogger.error(
+          'SunmiV3Service: Erreur lors de l\'impression réelle: $e',
+          name: 'printing.sunmi',
+          error: e,
+        );
         // Fallback en mode simulation
-        debugPrint('SunmiV3Service: Impression simulée:\n$content');
+        AppLogger.debug(
+          'SunmiV3Service: Impression simulée:\n$content',
+          name: 'printing.sunmi',
+        );
         await Future<void>.delayed(const Duration(milliseconds: 500));
       }
 
-      debugPrint('SunmiV3Service: Facture imprimée avec succès (simulation)');
+      AppLogger.info(
+        'SunmiV3Service: Facture imprimée avec succès (simulation)',
+        name: 'printing.sunmi',
+      );
       return true;
     } catch (e) {
-      debugPrint('SunmiV3Service: Erreur lors de l\'impression: $e');
+      AppLogger.error(
+        'SunmiV3Service: Erreur lors de l\'impression: $e',
+        name: 'printing.sunmi',
+        error: e,
+      );
       return false;
     }
   }
@@ -264,7 +317,10 @@ class SunmiV3Service {
       // Vérifier si le printer est disponible
       if (_printer == null) {
         // Mode simulation
-        debugPrint('SunmiV3Service: Ouverture tiroir-caisse (simulation)');
+        AppLogger.debug(
+          'SunmiV3Service: Ouverture tiroir-caisse (simulation)',
+          name: 'printing.sunmi',
+        );
         await Future<void>.delayed(const Duration(milliseconds: 200));
         return true;
       }
@@ -274,17 +330,31 @@ class SunmiV3Service {
         // Note: La méthode exacte peut varier selon la version du SDK
         // Pour l'instant, on simule l'ouverture
         // _printer!.cashDrawerApi; // Réservé pour usage futur
-        debugPrint('SunmiV3Service: Ouverture tiroir-caisse');
+        AppLogger.info(
+          'SunmiV3Service: Ouverture tiroir-caisse',
+          name: 'printing.sunmi',
+        );
         return true;
       } catch (e) {
-        debugPrint('SunmiV3Service: Erreur ouverture tiroir réelle: $e');
+        AppLogger.error(
+          'SunmiV3Service: Erreur ouverture tiroir réelle: $e',
+          name: 'printing.sunmi',
+          error: e,
+        );
         // Fallback en mode simulation
-        debugPrint('SunmiV3Service: Ouverture tiroir-caisse (simulation)');
+        AppLogger.debug(
+          'SunmiV3Service: Ouverture tiroir-caisse (simulation)',
+          name: 'printing.sunmi',
+        );
         await Future<void>.delayed(const Duration(milliseconds: 200));
         return true;
       }
     } catch (e) {
-      debugPrint('SunmiV3Service: Erreur ouverture tiroir: $e');
+      AppLogger.error(
+        'SunmiV3Service: Erreur ouverture tiroir: $e',
+        name: 'printing.sunmi',
+        error: e,
+      );
       return false;
     }
   }
@@ -295,9 +365,16 @@ class SunmiV3Service {
     try {
       await PrinterSdk.instance.destroy();
       _isInitialized = false;
-      debugPrint('SunmiV3Service: SDK libéré');
+      AppLogger.info(
+        'SunmiV3Service: SDK libéré',
+        name: 'printing.sunmi',
+      );
     } catch (e) {
-      debugPrint('SunmiV3Service: Erreur lors de la libération: $e');
+      AppLogger.error(
+        'SunmiV3Service: Erreur lors de la libération: $e',
+        name: 'printing.sunmi',
+        error: e,
+      );
     }
   }
 
@@ -310,7 +387,11 @@ class SunmiV3Service {
     try {
       return await PrinterSdk.instance.startSettings(item);
     } catch (e) {
-      debugPrint('SunmiV3Service: Erreur ouverture paramètres: $e');
+      AppLogger.error(
+        'SunmiV3Service: Erreur ouverture paramètres: $e',
+        name: 'printing.sunmi',
+        error: e,
+      );
       return false;
     }
   }

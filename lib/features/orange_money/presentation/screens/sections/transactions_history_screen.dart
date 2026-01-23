@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/orange_money/application/providers.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
 import '../../../domain/entities/transaction.dart';
 import '../../widgets/transactions_history/transactions_history_header.dart';
 import '../../widgets/transactions_history/transactions_history_filters.dart';
@@ -78,12 +80,12 @@ class _TransactionsHistoryScreenState
     return Container(
       color: const Color(0xFFF9FAFB),
       child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(AppSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const TransactionsHistoryHeader(),
-            const SizedBox(height: 24),
+            SizedBox(height: AppSpacing.lg),
             TransactionsHistoryFilters(
               searchController: _searchController,
               selectedTypeFilter: _selectedTypeFilter,
@@ -95,24 +97,18 @@ class _TransactionsHistoryScreenState
               },
               onDateSelected: () => _selectDate(context),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: AppSpacing.lg),
             transactionsAsync.when(
               data: (transactions) => transactions.isEmpty
                   ? const TransactionsHistoryEmptyState()
                   : TransactionsHistoryTable(transactions: transactions),
-              loading: () => const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(24),
-                  child: CircularProgressIndicator(),
-                ),
-              ),
-              error: (error, stack) => Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Text(
-                    'Erreur: $error',
-                    style: const TextStyle(color: Colors.red),
-                  ),
+              loading: () => const LoadingIndicator(),
+              error: (error, stackTrace) => ErrorDisplayWidget(
+                error: error,
+                title: 'Erreur de chargement',
+                message: 'Impossible de charger l\'historique des transactions.',
+                onRetry: () => ref.refresh(
+                  filteredTransactionsProvider((providerKey)),
                 ),
               ),
             ),

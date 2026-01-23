@@ -1,3 +1,5 @@
+import 'phone_utils.dart';
+
 /// Validateurs réutilisables pour les formulaires.
 ///
 /// Tous les validateurs retournent `String?` :
@@ -16,24 +18,28 @@ class Validators {
     return null;
   }
 
-  /// Valide un numéro de téléphone.
+  /// Valide un numéro de téléphone (générique).
   ///
   /// Accepte les formats avec ou sans indicatif (+), minimum 8 chiffres.
-  /// Exemples valides : +237 6XX XXX XXX, 6XX XXX XXX, 0123456789
+  /// Exemples : +226 70 XX XX XX, 70 12 34 56, 0123456789
   static String? phone(String? value, {String? customMessage}) {
     if (value == null || value.trim().isEmpty) {
       return customMessage ?? 'Le numéro de téléphone est requis';
     }
 
-    // Nettoie les espaces et tirets
     final cleaned = value.replaceAll(RegExp(r'[\s\-]'), '');
-
-    // Valide : commence par + ou un chiffre, minimum 8 chiffres
     if (!RegExp(r'^(\+?[0-9]{8,})$').hasMatch(cleaned)) {
       return customMessage ?? 'Format de téléphone invalide';
     }
 
     return null;
+  }
+
+  /// Valide un numéro Burkina (+226) et impose l'indicatif.
+  ///
+  /// Accepte : 7X XX XX XX, 70123456, +226 70 12 34 56, 22670123456.
+  static String? phoneBurkina(String? value, {String? customMessage}) {
+    return PhoneUtils.validateBurkina(value, customMessage: customMessage);
   }
 
   /// Valide un montant entier positif.

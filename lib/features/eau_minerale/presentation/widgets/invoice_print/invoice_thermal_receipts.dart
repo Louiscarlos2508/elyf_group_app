@@ -4,54 +4,63 @@ import 'invoice_print_helpers.dart';
 /// Génère le contenu texte pour l'imprimante thermique (vente).
 String generateSaleReceipt(Sale sale) {
   final buffer = StringBuffer();
+  const width = 32;
 
-  // Entête compact
-  buffer.write('================================\n');
-  buffer.write('      EAU MINERALE ELYF\n');
-  buffer.write('================================\n');
-  buffer.write('FACTURE: ${InvoicePrintHelpers.truncateId(sale.id)}\n');
-  buffer.write(
-    'Date: ${InvoicePrintHelpers.formatDate(sale.date)} '
-    '${InvoicePrintHelpers.formatTime(sale.date)}\n',
-  );
-  buffer.write('--------------------------------\n');
-  buffer.write('Client: ${sale.customerName}\n');
-  if (sale.customerPhone.isNotEmpty) {
-    buffer.write('Tel: ${sale.customerPhone}\n');
+  String center(String text) {
+    if (text.length >= width) return text.substring(0, width);
+    final padding = (width - text.length) ~/ 2;
+    return ' ' * padding + text;
   }
-  buffer.write('--------------------------------\n');
-  buffer.write('Article: ${sale.productName}\n');
-  buffer.write(
+
+  String separator() => center('--------------------------------');
+
+  // Entête moderne et centré
+  buffer.writeln(center('EAU MINERALE ELYF'));
+  buffer.writeln(center('GROUPE APP'));
+  buffer.writeln(separator());
+  
+  buffer.writeln(center('FACTURE N°: ${InvoicePrintHelpers.truncateId(sale.id)}'));
+  buffer.writeln(center('${InvoicePrintHelpers.formatDate(sale.date)} ${InvoicePrintHelpers.formatTime(sale.date)}'));
+  
+  buffer.writeln(separator());
+
+  // Client centré
+  buffer.writeln(center('Client: ${sale.customerName}'));
+  if (sale.customerPhone.isNotEmpty) {
+    buffer.writeln(center('Tel: ${sale.customerPhone}'));
+  }
+  buffer.writeln();
+
+  // Détails
+  buffer.writeln(separator());
+  buffer.writeln('Article: ${sale.productName}');
+  buffer.writeln(
     'Qte: ${sale.quantity} x '
-    '${InvoicePrintHelpers.formatCurrency(sale.unitPrice)}\n',
+    '${InvoicePrintHelpers.formatCurrency(sale.unitPrice)}',
   );
-  buffer.write('--------------------------------\n');
-  buffer.write(
-    'TOTAL: ${InvoicePrintHelpers.formatCurrency(sale.totalPrice)}\n',
-  );
-  buffer.write(
-    'Paye: ${InvoicePrintHelpers.formatCurrency(sale.amountPaid)}\n',
-  );
+  buffer.writeln(separator());
+  buffer.writeln();
+
+  // Totaux
+  buffer.writeln('TOTAL: ${InvoicePrintHelpers.formatCurrency(sale.totalPrice)}');
+  buffer.writeln('Paye:  ${InvoicePrintHelpers.formatCurrency(sale.amountPaid)}');
 
   if (sale.cashAmount > 0) {
-    buffer.write(
-      '  Cash: ${InvoicePrintHelpers.formatCurrency(sale.cashAmount)}\n',
-    );
+    buffer.writeln('  Cash: ${InvoicePrintHelpers.formatCurrency(sale.cashAmount)}');
   }
   if (sale.orangeMoneyAmount > 0) {
-    buffer.write(
-      '  OM: ${InvoicePrintHelpers.formatCurrency(sale.orangeMoneyAmount)}\n',
-    );
+    buffer.writeln('  OM:   ${InvoicePrintHelpers.formatCurrency(sale.orangeMoneyAmount)}');
   }
 
   if (sale.remainingAmount > 0) {
-    buffer.write(
-      'CREDIT: ${InvoicePrintHelpers.formatCurrency(sale.remainingAmount)}\n',
-    );
+    buffer.writeln();
+    buffer.writeln('CREDIT: ${InvoicePrintHelpers.formatCurrency(sale.remainingAmount)}');
   }
 
-  buffer.write('================================\n');
-  buffer.write('        Merci!\n');
+  buffer.writeln();
+  buffer.writeln(separator());
+  buffer.writeln(center('Merci !'));
+  buffer.writeln('\n\n'); 
 
   return buffer.toString();
 }
@@ -65,49 +74,54 @@ String generateCreditPaymentReceipt({
   String? notes,
 }) {
   final buffer = StringBuffer();
+  const width = 32;
+
+  String center(String text) {
+    if (text.length >= width) return text.substring(0, width);
+    final padding = (width - text.length) ~/ 2;
+    return ' ' * padding + text;
+  }
+
+  String separator() => center('--------------------------------');
   final now = DateTime.now();
   final newAmountPaid = sale.amountPaid + paymentAmount;
 
-  // Entête compact
-  buffer.write('================================\n');
-  buffer.write('      EAU MINERALE ELYF\n');
-  buffer.write('      RECU DE PAIEMENT\n');
-  buffer.write('================================\n');
-  buffer.write(
-    'Date: ${InvoicePrintHelpers.formatDate(now)} '
-    '${InvoicePrintHelpers.formatTime(now)}\n',
-  );
-  buffer.write('Client: $customerName\n');
-  buffer.write('--------------------------------\n');
-  buffer.write('Ref vente: ${InvoicePrintHelpers.formatDate(sale.date)}\n');
-  buffer.write('${sale.productName} x${sale.quantity}\n');
-  buffer.write(
-    'Total vente: ${InvoicePrintHelpers.formatCurrency(sale.totalPrice)}\n',
-  );
-  buffer.write('--------------------------------\n');
-  buffer.write(
-    'Deja paye: ${InvoicePrintHelpers.formatCurrency(sale.amountPaid)}\n',
-  );
-  buffer.write(
-    'PAIEMENT: ${InvoicePrintHelpers.formatCurrency(paymentAmount)}\n',
-  );
-  buffer.write(
-    'Total paye: ${InvoicePrintHelpers.formatCurrency(newAmountPaid)}\n',
-  );
+  // Entête moderne et centré
+  buffer.writeln(center('EAU MINERALE ELYF'));
+  buffer.writeln(center('RECU DE PAIEMENT'));
+  buffer.writeln(separator());
+
+  buffer.writeln(center('${InvoicePrintHelpers.formatDate(now)} ${InvoicePrintHelpers.formatTime(now)}'));
+  buffer.writeln(center('Client: $customerName'));
+  buffer.writeln(separator());
+
+  // Info Vente
+  buffer.writeln('Ref vente: ${InvoicePrintHelpers.formatDate(sale.date)}');
+  buffer.writeln('${sale.productName} x${sale.quantity}');
+  buffer.writeln('Total vente: ${InvoicePrintHelpers.formatCurrency(sale.totalPrice)}');
+  buffer.writeln(separator());
+
+  // Info Paiement
+  buffer.writeln('Deja paye:  ${InvoicePrintHelpers.formatCurrency(sale.amountPaid)}');
+  buffer.writeln('PAIEMENT:   ${InvoicePrintHelpers.formatCurrency(paymentAmount)}');
+  buffer.writeln('Total paye: ${InvoicePrintHelpers.formatCurrency(newAmountPaid)}');
+  
   if (remainingAfterPayment > 0) {
-    buffer.write(
-      'Reste: ${InvoicePrintHelpers.formatCurrency(remainingAfterPayment)}\n',
-    );
+    buffer.writeln('Reste:      ${InvoicePrintHelpers.formatCurrency(remainingAfterPayment)}');
   } else {
-    buffer.write('*** SOLDE ***\n');
+    buffer.writeln();
+    buffer.writeln(center('*** SOLDE ***'));
   }
 
   if (notes != null && notes.isNotEmpty) {
-    buffer.write('Note: $notes\n');
+    buffer.writeln();
+    buffer.writeln('Note: $notes');
   }
 
-  buffer.write('================================\n');
-  buffer.write('        Merci!\n');
+  buffer.writeln();
+  buffer.writeln(separator());
+  buffer.writeln(center('Merci !'));
+  buffer.writeln('\n\n');
 
   return buffer.toString();
 }

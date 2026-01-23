@@ -86,7 +86,13 @@ class AdminRolesSection extends ConsumerWidget {
         await ref
             .read(adminControllerProvider)
             .deleteRole(role.id, currentUserId: currentUserId, roleData: role);
-        ref.refresh(rolesProvider);
+        
+        // Attendre un peu pour que la base de données soit à jour
+        await Future.delayed(const Duration(milliseconds: 100));
+        
+        // Invalider le provider pour forcer le rafraîchissement
+        ref.invalidate(rolesProvider);
+        
         if (context.mounted) {
           NotificationService.showSuccess(context, 'Rôle supprimé');
         }

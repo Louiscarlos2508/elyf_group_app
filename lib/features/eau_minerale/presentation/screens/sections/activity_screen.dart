@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
 import '../../../domain/entities/activity_summary.dart';
 import '../../widgets/enhanced_kpi_card.dart';
-import '../../widgets/section_placeholder.dart';
 
 class ActivityScreen extends ConsumerWidget {
   const ActivityScreen({super.key});
@@ -15,13 +16,12 @@ class ActivityScreen extends ConsumerWidget {
 
     return summary.when(
       data: (data) => _ActivityContent(summary: data),
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stackTrace) => SectionPlaceholder(
-        icon: Icons.error_outline,
+      loading: () => const LoadingIndicator(),
+      error: (error, stackTrace) => ErrorDisplayWidget(
+        error: error,
         title: "Impossible de charger l'activité",
-        subtitle: 'Réessaie plus tard.',
-        primaryActionLabel: 'Réessayer',
-        onPrimaryAction: () => ref.invalidate(activityStateProvider),
+        message: 'Réessaie plus tard.',
+        onRetry: () => ref.refresh(activityStateProvider),
       ),
     );
   }
@@ -65,10 +65,10 @@ class _ActivityContent extends StatelessWidget {
       builder: (context, constraints) {
         final crossAxisCount = constraints.maxWidth > 900 ? 4 : 2;
         return GridView.count(
-          padding: const EdgeInsets.all(24),
+          padding: EdgeInsets.all(AppSpacing.lg),
           crossAxisCount: crossAxisCount,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
+          crossAxisSpacing: AppSpacing.md,
+          mainAxisSpacing: AppSpacing.md,
           childAspectRatio: 1.3,
           children: cards,
         );

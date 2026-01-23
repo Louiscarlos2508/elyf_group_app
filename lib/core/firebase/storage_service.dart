@@ -4,6 +4,10 @@ import 'dart:typed_data';
 
 import 'package:firebase_storage/firebase_storage.dart';
 
+import '../errors/app_exceptions.dart';
+import '../errors/error_handler.dart';
+import '../logging/app_logger.dart';
+
 /// Service pour gérer l'upload et le download de fichiers dans Firebase Storage.
 ///
 /// Ce service gère :
@@ -110,8 +114,9 @@ class StorageService {
 
       return downloadUrl;
     } catch (e, stackTrace) {
-      developer.log(
-        'Error uploading file to Storage',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error uploading file to Storage: ${appException.message}',
         name: 'storage.service',
         error: e,
         stackTrace: stackTrace,
@@ -148,13 +153,17 @@ class StorageService {
       }
 
       if (data == null) {
-        throw Exception('Failed to download file: data is null');
+        throw NotFoundException(
+          'Failed to download file: data is null',
+          'FILE_DOWNLOAD_FAILED',
+        );
       }
 
       return data;
     } catch (e, stackTrace) {
-      developer.log(
-        'Error downloading file from Storage',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error downloading file from Storage: ${appException.message}',
         name: 'storage.service',
         error: e,
         stackTrace: stackTrace,
@@ -217,8 +226,9 @@ class StorageService {
       final ref = storage.ref(storagePath);
       return await ref.getDownloadURL();
     } catch (e, stackTrace) {
-      developer.log(
-        'Error getting download URL',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error getting download URL: ${appException.message}',
         name: 'storage.service',
         error: e,
         stackTrace: stackTrace,
@@ -247,8 +257,9 @@ class StorageService {
 
       developer.log('File deleted: $storagePath', name: 'storage.service');
     } catch (e, stackTrace) {
-      developer.log(
-        'Error deleting file from Storage',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error deleting file from Storage: ${appException.message}',
         name: 'storage.service',
         error: e,
         stackTrace: stackTrace,
@@ -288,8 +299,9 @@ class StorageService {
 
       return listResult.items;
     } catch (e, stackTrace) {
-      developer.log(
-        'Error listing files',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error listing files: ${appException.message}',
         name: 'storage.service',
         error: e,
         stackTrace: stackTrace,
@@ -316,8 +328,9 @@ class StorageService {
       final ref = storage.ref(storagePath);
       return await ref.getMetadata();
     } catch (e, stackTrace) {
-      developer.log(
-        'Error getting file metadata',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error getting file metadata: ${appException.message}',
         name: 'storage.service',
         error: e,
         stackTrace: stackTrace,
@@ -357,8 +370,9 @@ class StorageService {
         name: 'storage.service',
       );
     } catch (e, stackTrace) {
-      developer.log(
-        'Error updating file metadata',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error updating file metadata: ${appException.message}',
         name: 'storage.service',
         error: e,
         stackTrace: stackTrace,

@@ -9,6 +9,7 @@ import 'personnel_day_card.dart';
 import 'personnel_delete_dialog.dart';
 import 'personnel_empty_state.dart';
 import 'personnel_header.dart';
+import 'personnel_stock_helper.dart';
 import 'personnel_total_cost.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
@@ -21,6 +22,18 @@ class PersonnelSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final today = DateTime.now();
+    final existingForToday = session.productionDays.cast<ProductionDay?>().firstWhere(
+          (day) =>
+              day != null &&
+              day.date.year == today.year &&
+              day.date.month == today.month &&
+              day.date.day == today.day,
+          orElse: () => null,
+        );
+
+    final hasTodayProduction = existingForToday != null;
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -28,20 +41,11 @@ class PersonnelSection extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             PersonnelHeader(
-              onAddDay: () {
-                final today = DateTime.now();
-                final existingForToday = session.productionDays
-                    .cast<ProductionDay?>()
-                    .firstWhere(
-                      (day) =>
-                          day != null &&
-                          day.date.year == today.year &&
-                          day.date.month == today.month &&
-                          day.date.day == today.day,
-                      orElse: () => null,
-                    );
-                _showPersonnelForm(context, ref, today, existingForToday);
-              },
+              onAddDay: hasTodayProduction
+                  ? null
+                  : () {
+                      _showPersonnelForm(context, ref, today, null);
+                    },
             ),
             const SizedBox(height: 16),
             if (session.productionDays.isEmpty)
@@ -73,6 +77,18 @@ class PersonnelSection extends ConsumerWidget {
 
     if (confirm != true || !context.mounted) return;
 
+    try {
+      await addBackStockOnDayDelete(ref, day);
+    } catch (e) {
+      if (context.mounted) {
+        NotificationService.showError(
+          context,
+          'Erreur lors de la réintégration du stock: $e',
+        );
+      }
+      return;
+    }
+
     final updatedDays = List<ProductionDay>.from(session.productionDays)
       ..removeWhere((d) => d.id == day.id);
 
@@ -83,6 +99,7 @@ class PersonnelSection extends ConsumerWidget {
 
     if (context.mounted) {
       ref.invalidate(productionSessionDetailProvider((session.id)));
+      ref.invalidate(stockStateProvider);
       NotificationService.showInfo(
         context,
         'Jour de production supprimé avec succès',
@@ -107,6 +124,23 @@ class PersonnelSection extends ConsumerWidget {
             date: date,
             existingDay: existingDay,
             onSaved: (productionDay) async {
+              try {
+                await applyStockOnSave(
+                  ref,
+                  productionDay,
+                  existingDay,
+                  session.id,
+                );
+              } catch (e) {
+                if (context.mounted) {
+                  NotificationService.showError(
+                    context,
+                    'Erreur stock emballages: $e',
+                  );
+                }
+                return;
+              }
+
               final updatedDays = List<ProductionDay>.from(
                 session.productionDays,
               );

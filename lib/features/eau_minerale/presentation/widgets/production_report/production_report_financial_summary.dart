@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../application/providers.dart';
 import '../../../domain/entities/expense_record.dart';
 import '../../../domain/entities/production_session.dart';
 import 'production_report_components.dart';
 import 'production_report_helpers.dart';
 
 /// Résumé financier du rapport.
-class ProductionReportFinancialSummary extends StatelessWidget {
+class ProductionReportFinancialSummary extends ConsumerWidget {
   const ProductionReportFinancialSummary({
     super.key,
     required this.session,
@@ -17,7 +19,7 @@ class ProductionReportFinancialSummary extends StatelessWidget {
   final List<ExpenseRecord> linkedExpenses;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final coutPersonnel = session.coutTotalPersonnel;
     final coutBobines = session.coutBobines ?? 0;
@@ -27,7 +29,9 @@ class ProductionReportFinancialSummary extends StatelessWidget {
       (sum, expense) => sum + expense.amountCfa,
     );
     final coutTotal = session.coutTotal + coutDepenses;
-    final revenusEstimes = 0; // TODO: Calculer les revenus estimés
+    
+    // Calculer les revenus estimés basés sur la quantité produite et le prix moyen des ventes
+    final revenusEstimes = _calculateEstimatedRevenue(ref, session);
     final marge = revenusEstimes - coutTotal;
     final margePourcentage = revenusEstimes > 0
         ? (marge / revenusEstimes * 100)
@@ -121,5 +125,55 @@ class ProductionReportFinancialSummary extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  /// Calcule les revenus estimés basés sur la quantité produite et le prix moyen des ventes.
+  int _calculateEstimatedRevenue(WidgetRef ref, ProductionSession session) {
+    if (session.quantiteProduite <= 0) {
+      return 0;
+    }
+
+    try {
+      // Récupérer les ventes récentes pour calculer le prix moyen
+      final salesAsync = ref.read(salesStateProvider);
+      final salesState = salesAsync.value;
+      final sales = salesState?.sales ?? [];
+
+      if (sales.isEmpty) {
+        // Si aucune vente, utiliser un prix par défaut estimé (ex: 200 CFA par unité)
+        // Ce prix peut être ajusté selon les besoins métier
+        const defaultUnitPrice = 200;
+        return session.quantiteProduite * defaultUnitPrice;
+      }
+
+      // Calculer le prix unitaire moyen des ventes récentes
+      final totalRevenue = sales.fold<int>(0, (sum, s) => sum + s.totalPrice);
+      final totalQuantity = sales.fold<int>(0, (sum, s) => sum + s.quantity);
+      
+      if (totalQuantity > 0) {
+        final averageUnitPrice = (totalRevenue / totalQuantity).round();
+        return (session.quantiteProduite * averageUnitPrice).toInt();
+      }
+
+      // Fallback: utiliser le prix moyen des ventes individuelles
+      final averagePrice = sales.isNotEmpty
+          ? (totalRevenue / sales.length).round()
+          : 0;
+      
+      if (averagePrice > 0) {
+        // Estimer le prix unitaire en divisant par une quantité moyenne estimée
+        const estimatedAverageQuantity = 10; // Quantité moyenne par vente
+        final estimatedUnitPrice = (averagePrice / estimatedAverageQuantity).round();
+        return (session.quantiteProduite * estimatedUnitPrice).toInt();
+      }
+
+      // Dernier fallback: prix par défaut
+      const defaultUnitPrice = 200;
+      return session.quantiteProduite * defaultUnitPrice;
+    } catch (e) {
+      // En cas d'erreur, utiliser un prix par défaut
+      const defaultUnitPrice = 200;
+      return session.quantiteProduite * defaultUnitPrice;
+    }
   }
 }

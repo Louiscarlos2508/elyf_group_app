@@ -1,7 +1,7 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import '../../../../core/errors/error_handler.dart';
+import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/offline_repository.dart';
 import '../../domain/entities/liquidity_checkpoint.dart';
 import '../../domain/repositories/liquidity_repository.dart';
@@ -159,8 +159,13 @@ class LiquidityOfflineRepository extends OfflineRepository<LiquidityCheckpoint>
     final checkpoints = rows
         .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
         .toList();
-    checkpoints.sort((a, b) => b.date.compareTo(a.date));
-    return checkpoints;
+    
+    // Dédupliquer par remoteId pour éviter les doublons
+    final deduplicatedCheckpoints = deduplicateByRemoteId(checkpoints);
+    
+    // Trier par date décroissante
+    deduplicatedCheckpoints.sort((a, b) => b.date.compareTo(a.date));
+    return deduplicatedCheckpoints;
   }
 
   // LiquidityRepository implementation
@@ -182,8 +187,8 @@ class LiquidityOfflineRepository extends OfflineRepository<LiquidityCheckpoint>
       }).toList();
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error fetching checkpoints',
+      AppLogger.error(
+        'Error fetching checkpoints: ${appException.message}',
         name: 'LiquidityOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -198,8 +203,8 @@ class LiquidityOfflineRepository extends OfflineRepository<LiquidityCheckpoint>
       return await getByLocalId(checkpointId);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error getting checkpoint: $checkpointId',
+      AppLogger.error(
+        'Error getting checkpoint: $checkpointId - ${appException.message}',
         name: 'LiquidityOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -222,8 +227,8 @@ class LiquidityOfflineRepository extends OfflineRepository<LiquidityCheckpoint>
       return checkpoints.isNotEmpty ? checkpoints.first : null;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error getting today checkpoint',
+      AppLogger.error(
+        'Error getting today checkpoint: ${appException.message}',
         name: 'LiquidityOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -258,8 +263,8 @@ class LiquidityOfflineRepository extends OfflineRepository<LiquidityCheckpoint>
       return localId;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error creating checkpoint',
+      AppLogger.error(
+        'Error creating checkpoint: ${appException.message}',
         name: 'LiquidityOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -292,8 +297,8 @@ class LiquidityOfflineRepository extends OfflineRepository<LiquidityCheckpoint>
       await save(updated);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error updating checkpoint: ${checkpoint.id}',
+      AppLogger.error(
+        'Error updating checkpoint: ${checkpoint.id} - ${appException.message}',
         name: 'LiquidityOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -311,8 +316,8 @@ class LiquidityOfflineRepository extends OfflineRepository<LiquidityCheckpoint>
       }
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error deleting checkpoint: $checkpointId',
+      AppLogger.error(
+        'Error deleting checkpoint: $checkpointId - ${appException.message}',
         name: 'LiquidityOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -349,8 +354,8 @@ class LiquidityOfflineRepository extends OfflineRepository<LiquidityCheckpoint>
       };
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error getting liquidity statistics',
+      AppLogger.error(
+        'Error getting liquidity statistics: ${appException.message}',
         name: 'LiquidityOfflineRepository',
         error: error,
         stackTrace: stackTrace,

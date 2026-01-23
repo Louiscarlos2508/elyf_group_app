@@ -5,8 +5,10 @@ import 'package:elyf_groupe_app/shared.dart';
 import '../../../../../shared/utils/notification_service.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../domain/entities/product.dart';
+import '../../domain/pack_constants.dart';
 
-/// Widget for selecting a product in the sale form.
+/// Sélecteur Pack pour les ventes. Stock = [packStockQuantityProvider],
+/// même source que Stock / Dashboard.
 class SaleProductSelector extends ConsumerWidget {
   const SaleProductSelector({
     super.key,
@@ -18,31 +20,37 @@ class SaleProductSelector extends ConsumerWidget {
   final ValueChanged<Product> onProductSelected;
 
   Future<void> _selectProduct(BuildContext context, WidgetRef ref) async {
-    final products = await ref.read(productsProvider.future);
-    final finishedGoods = products.where((p) => p.isFinishedGood).toList();
-
-    if (finishedGoods.isEmpty) {
+    List<Product> list;
+    int packStock = 0;
+    try {
+      final products = await ref.read(productsProvider.future);
+      list = products
+          .where((p) =>
+              p.id == packProductId ||
+              (p.isFinishedGood &&
+                  p.name.toLowerCase().contains(packName.toLowerCase())))
+          .toList();
+      if (list.isEmpty) {
+        if (!context.mounted) return;
+        NotificationService.showInfo(context, 'Aucun produit disponible');
+        return;
+      }
+      packStock = await ref.read(packStockQuantityProvider.future);
+    } catch (e) {
       if (!context.mounted) return;
-      NotificationService.showInfo(context, 'Aucun produit disponible');
+      NotificationService.showError(
+        context,
+        'Impossible de charger: $e',
+      );
       return;
     }
-
-    final stockRepository = ref.read(stockRepositoryProvider);
-
-    // Charger les stocks avant d'afficher le dialogue
-    final stockFutures = finishedGoods.map(
-      (p) => stockRepository.getStock(p.id).then((s) => MapEntry(p.id, s)),
-    );
-    final stocksMap = await Future.wait(
-      stockFutures,
-    ).then((entries) => Map.fromEntries(entries));
 
     if (!context.mounted) return;
     final theme = Theme.of(context);
 
     final selected = await showDialog<Product>(
       context: context,
-      builder: (dialogContext) => Dialog(
+      builder: (_) => Dialog(
         child: Container(
           constraints: const BoxConstraints(maxWidth: 400, maxHeight: 500),
           child: Column(
@@ -63,7 +71,7 @@ class SaleProductSelector extends ConsumerWidget {
                     ),
                     IconButton(
                       icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.of(dialogContext).pop(),
+                      onPressed: () => Navigator.of(context).pop(),
                     ),
                   ],
                 ),
@@ -72,12 +80,10 @@ class SaleProductSelector extends ConsumerWidget {
               Flexible(
                 child: ListView(
                   shrinkWrap: true,
-                  children: finishedGoods.map((product) {
-                    final availableStock = stocksMap[product.id] ?? 0;
-                    final isOutOfStock = availableStock <= 0;
-
+                  children: list.map((product) {
+                    final isOutOfStock = packStock <= 0;
                     return ListTile(
-                      enabled: !isOutOfStock,
+                      enabled: true,
                       leading: Icon(
                         Icons.inventory_2_outlined,
                         color: isOutOfStock
@@ -101,7 +107,7 @@ class SaleProductSelector extends ConsumerWidget {
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                'Stock: $availableStock ${product.unit}',
+                                'Stock: $packStock ${product.unit}',
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   color: isOutOfStock
                                       ? theme.colorScheme.error
@@ -116,16 +122,15 @@ class SaleProductSelector extends ConsumerWidget {
                       trailing: isOutOfStock
                           ? Chip(
                               label: const Text('Rupture'),
-                              backgroundColor: theme.colorScheme.errorContainer,
+                              backgroundColor:
+                                  theme.colorScheme.errorContainer,
                               labelStyle: TextStyle(
                                 color: theme.colorScheme.onErrorContainer,
                                 fontSize: 11,
                               ),
                             )
                           : null,
-                      onTap: isOutOfStock
-                          ? null
-                          : () => Navigator.of(dialogContext).pop(product),
+                      onTap: () => Navigator.of(context).pop(product),
                     );
                   }).toList(),
                 ),
@@ -136,15 +141,13 @@ class SaleProductSelector extends ConsumerWidget {
       ),
     );
 
-    if (selected != null) {
-      onProductSelected(selected);
-    }
+    if (selected != null) onProductSelected(selected);
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final stockRepository = ref.watch(stockRepositoryProvider);
+    final packStockAsync = ref.watch(packStockQuantityProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -192,110 +195,72 @@ class SaleProductSelector extends ConsumerWidget {
                       ),
                       if (selectedProduct != null) ...[
                         const SizedBox(height: 4),
-                        LayoutBuilder(
-                          builder: (context, constraints) {
-                            final isWide = constraints.maxWidth > 300;
-
-                            if (isWide) {
-                              return Row(
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                '${selectedProduct!.unitPrice} CFA/${selectedProduct!.unit}',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            packStockAsync.when(
+                              data: (stock) => Row(
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Flexible(
-                                    child: Text(
-                                      '${selectedProduct!.unitPrice} CFA/${selectedProduct!.unit}',
-                                      style: theme.textTheme.bodySmall
-                                          ?.copyWith(
-                                            color: theme
-                                                .colorScheme
-                                                .onSurfaceVariant,
-                                          ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
+                                  Icon(
+                                    Icons.store_outlined,
+                                    size: 14,
+                                    color: stock > 0
+                                        ? theme.colorScheme.primary
+                                        : theme.colorScheme.error,
                                   ),
-                                  const SizedBox(width: 12),
-                                  FutureBuilder<int>(
-                                    future: stockRepository.getStock(
-                                      selectedProduct!.id,
-                                    ),
-                                    builder: (context, snapshot) {
-                                      final stock = snapshot.data ?? 0;
-                                      return Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(
-                                            Icons.store_outlined,
-                                            size: 14,
-                                            color: stock > 0
-                                                ? theme.colorScheme.primary
-                                                : theme.colorScheme.error,
-                                          ),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            'Stock: $stock',
-                                            style: theme.textTheme.bodySmall
-                                                ?.copyWith(
-                                                  color: stock > 0
-                                                      ? theme
-                                                            .colorScheme
-                                                            .primary
-                                                      : theme.colorScheme.error,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                          ),
-                                        ],
-                                      );
-                                    },
-                                  ),
-                                ],
-                              );
-                            } else {
-                              return Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
+                                  const SizedBox(width: 4),
                                   Text(
-                                    '${selectedProduct!.unitPrice} CFA/${selectedProduct!.unit}',
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      color: theme.colorScheme.onSurfaceVariant,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  FutureBuilder<int>(
-                                    future: stockRepository.getStock(
-                                      selectedProduct!.id,
-                                    ),
-                                    builder: (context, snapshot) {
-                                      final stock = snapshot.data ?? 0;
-                                      return Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(
-                                            Icons.store_outlined,
-                                            size: 14,
-                                            color: stock > 0
-                                                ? theme.colorScheme.primary
-                                                : theme.colorScheme.error,
-                                          ),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            'Stock: $stock',
-                                            style: theme.textTheme.bodySmall
-                                                ?.copyWith(
-                                                  color: stock > 0
-                                                      ? theme
-                                                            .colorScheme
-                                                            .primary
-                                                      : theme.colorScheme.error,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                          ),
-                                        ],
-                                      );
-                                    },
+                                    'Stock: $stock $packUnit',
+                                    style: theme.textTheme.bodySmall
+                                        ?.copyWith(
+                                          color: stock > 0
+                                              ? theme.colorScheme.primary
+                                              : theme.colorScheme.error,
+                                          fontWeight: FontWeight.w600,
+                                        ),
                                   ),
                                 ],
-                              );
-                            }
-                          },
+                              ),
+                              loading: () => Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  SizedBox(
+                                    width: 14,
+                                    height: 14,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: theme.colorScheme.primary,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Stock…',
+                                    style: theme.textTheme.bodySmall
+                                        ?.copyWith(
+                                          color: theme
+                                              .colorScheme.onSurfaceVariant,
+                                        ),
+                                  ),
+                                ],
+                              ),
+                              error: (_, __) => Text(
+                                'Stock indisponible',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.error,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ],

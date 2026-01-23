@@ -6,10 +6,13 @@ import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart
 import '../../../domain/entities/production_session.dart';
 import '../../../domain/entities/sale.dart';
 import '../../../domain/services/production_margin_calculator.dart';
+import '../../../domain/entities/machine.dart';
 import '../../widgets/production_detail_report.dart';
 import '../../widgets/section_placeholder.dart';
 // Removed: ventesParSessionProvider is imported from providers.dart
+import '../../../domain/entities/bobine_usage.dart';
 import 'production_session_form_screen.dart';
+import '../../widgets/production_tracking/personnel_section.dart';
 
 /// Écran de détail d'une session de production.
 class ProductionSessionDetailScreen extends ConsumerStatefulWidget {
@@ -122,40 +125,59 @@ class _ProductionSessionDetailContent extends ConsumerWidget {
       productionSessionDetailProvider((sessionId)),
     );
 
-    return sessionAsync.when(
-      data: (session) => SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeaderCard(context, session),
-            const SizedBox(height: 16),
-            _buildConsumptionCard(context, session),
-            const SizedBox(height: 16),
-            _buildMachinesCard(context, session),
-            const SizedBox(height: 16),
-            _buildBobinesCard(context, session),
-            const SizedBox(height: 16),
-            ventesAsync.when(
-              data: (ventes) => _buildMarginCard(context, session, ventes),
-              loading: () => const CircularProgressIndicator(),
-              error: (_, __) => const SizedBox.shrink(),
-            ),
-            if (session.notes != null) ...[
+    return RefreshIndicator(
+      onRefresh: () async {
+        ref.invalidate(productionSessionDetailProvider((sessionId)));
+        ref.invalidate(ventesParSessionProvider((sessionId)));
+        await Future.wait([
+          ref.read(productionSessionDetailProvider((sessionId)).future),
+          ref.read(ventesParSessionProvider((sessionId)).future),
+        ]);
+      },
+      child: sessionAsync.when(
+        data: (session) => SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeaderCard(context, session),
               const SizedBox(height: 16),
-              _buildNotesCard(context, session),
+              _buildConsumptionCard(context, session),
+              const SizedBox(height: 16),
+              _buildMachinesCard(context, session),
+              const SizedBox(height: 16),
+              _buildBobinesCard(context, session),
+              const SizedBox(height: 16),
+              PersonnelSection(session: session),
+              const SizedBox(height: 16),
+              ventesAsync.when(
+                data: (ventes) => _buildMarginCard(context, session, ventes),
+                loading: () => const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 24.0),
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+                error: (_, __) => _buildMarginCard(context, session, []),
+              ),
+              if (session.notes != null) ...[
+                const SizedBox(height: 16),
+                _buildNotesCard(context, session),
+              ],
             ],
-          ],
+          ),
         ),
-      ),
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) => SectionPlaceholder(
-        icon: Icons.error_outline,
-        title: 'Erreur de chargement',
-        subtitle: 'Impossible de charger les détails de la session.',
-        primaryActionLabel: 'Réessayer',
-        onPrimaryAction: () =>
-            ref.invalidate(productionSessionDetailProvider((sessionId))),
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stack) => SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: SectionPlaceholder(
+            icon: Icons.error_outline,
+            title: 'Erreur de chargement',
+            subtitle: 'Impossible de charger les détails de la session.',
+            primaryActionLabel: 'Réessayer',
+            onPrimaryAction: () =>
+                ref.invalidate(productionSessionDetailProvider((sessionId))),
+          ),
+        ),
       ),
     );
   }
@@ -245,17 +267,56 @@ class _ProductionSessionDetailContent extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 8),
-            ...session.machinesUtilisees.map(
-              (machineId) => Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Row(
-                  children: [
-                    const Icon(Icons.precision_manufacturing, size: 16),
-                    const SizedBox(width: 8),
-                    Text(machineId),
-                  ],
-                ),
-              ),
+            Consumer(
+              builder: (context, ref, child) {
+                final machinesAsync = ref.watch(allMachinesProvider);
+                return machinesAsync.when(
+                  data: (machines) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: session.machinesUtilisees.map((machineId) {
+                        final machine = machines.where((m) => m.id == machineId).firstOrNull;
+                        final name = machine?.nom ?? machineId;
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 4),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.precision_manufacturing, size: 16),
+                              const SizedBox(width: 8),
+                              Text(name),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                    );
+                  },
+                  loading: () => const Padding(
+                    padding: EdgeInsets.all(8.0),
+                    child: Center(
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ),
+                  ),
+                  error: (_, __) => Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: session.machinesUtilisees.map((machineId) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.precision_manufacturing, size: 16),
+                            const SizedBox(width: 8),
+                            Text(machineId),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                );
+              },
             ),
           ],
         ),
@@ -265,53 +326,186 @@ class _ProductionSessionDetailContent extends ConsumerWidget {
 
   Widget _buildBobinesCard(BuildContext context, ProductionSession session) {
     final theme = Theme.of(context);
+    
+    // Grouper les bobines par machine
+    final bobinesParMachine = <String, List<BobineUsage>>{};
+    for (final bobine in session.bobinesUtilisees) {
+      if (!bobinesParMachine.containsKey(bobine.machineName)) {
+        bobinesParMachine[bobine.machineName] = [];
+      }
+      bobinesParMachine[bobine.machineName]!.add(bobine);
+    }
+
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Bobines utilisées',
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            ...session.bobinesUtilisees.map(
-              (bobine) => Card(
-                margin: const EdgeInsets.only(bottom: 8),
-                color: bobine.estFinie
-                    ? null
-                    : theme.colorScheme.primaryContainer.withValues(alpha: 0.1),
-                child: ListTile(
-                  leading: Icon(
-                    bobine.estFinie ? Icons.check_circle : Icons.rotate_right,
-                    color: bobine.estFinie
-                        ? Colors.green
-                        : theme.colorScheme.primary,
+            Row(
+              children: [
+                Icon(
+                  Icons.album, 
+                  color: theme.colorScheme.primary,
+                  size: 24,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Utilisation des Bobines',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
                   ),
-                  title: Text(bobine.bobineType),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Machine: ${bobine.machineName}'),
-                      if (!bobine.estFinie)
-                        Text(
-                          'Bobine non finie - reste en machine',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: Colors.orange.shade700,
-                            fontStyle: FontStyle.italic,
-                            fontWeight: FontWeight.w600,
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            if (session.bobinesUtilisees.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: Text(
+                  'Aucune bobine installée pour le moment.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              )
+            else
+              ...bobinesParMachine.entries.map((entry) {
+                final machineName = entry.key;
+                final bobines = entry.value;
+                // Trier par date d'installation (plus récent en haut ou en bas ? En bas c'est plus logique pour une timeline)
+                bobines.sort((a, b) => a.heureInstallation.compareTo(b.heureInstallation));
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(top: 12, bottom: 8),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.precision_manufacturing,
+                            size: 16,
+                            color: theme.colorScheme.secondary,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            machineName,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: theme.colorScheme.secondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      decoration: BoxDecoration(
+                        border: Border(
+                          left: BorderSide(
+                            color: theme.colorScheme.outlineVariant,
+                            width: 2,
                           ),
                         ),
-                    ],
+                      ),
+                      margin: const EdgeInsets.only(left: 7), // Aligner avec l'icône machine
+                      padding: const EdgeInsets.only(left: 16),
+                      child: Column(
+                        children: bobines.map((bobine) {
+                          final isLast = bobine == bobines.last;
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: _buildBobineTile(context, bobine, isLast),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ],
+                );
+              }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBobineTile(BuildContext context, BobineUsage bobine, bool isLast) {
+    final theme = Theme.of(context);
+    final isFinished = bobine.estFinie;
+    final isActive = !isFinished;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isActive 
+            ? theme.colorScheme.primaryContainer.withValues(alpha: 0.3)
+            : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(12),
+        border: isActive 
+            ? Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.5))
+            : null,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                isActive ? Icons.rotate_right : Icons.check_circle_outline,
+                size: 20,
+                color: isActive ? theme.colorScheme.primary : theme.colorScheme.outline,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  bobine.bobineType,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+                    color: isActive ? theme.colorScheme.onSurface : theme.colorScheme.onSurfaceVariant,
+                    decoration: isFinished ? TextDecoration.lineThrough : null,
                   ),
                 ),
               ),
+              if (isActive)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    'EN COURS',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.onPrimary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Padding(
+            padding: const EdgeInsets.only(left: 28), // Aligner sous le texte
+            child: Text(
+              'Installée à ${_formatTime(bobine.heureInstallation)}',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
-          ],
-        ),
+          ),
+          if (isFinished)
+            Padding(
+              padding: const EdgeInsets.only(left: 28, top: 2),
+              child: Text(
+                'Terminée et remplacée',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.outline,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

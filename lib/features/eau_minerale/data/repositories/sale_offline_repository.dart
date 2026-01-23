@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import '../../../../core/errors/error_handler.dart';
+import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/offline_repository.dart';
 import '../../domain/entities/sale.dart';
 import '../../domain/repositories/sale_repository.dart';
@@ -23,9 +24,18 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
 
   @override
   Sale fromMap(Map<String, dynamic> map) {
-    // Extract metadata if stored in notes
+    // Extract metadata if stored in a dedicated key or notes (legacy)
     Map<String, dynamic>? metadata;
-    if (map['notes'] != null && map['notes'].toString().startsWith('{')) {
+    if (map['metadata'] != null) {
+      try {
+        final metaStr = map['metadata'] as String;
+        metadata = jsonDecode(metaStr) as Map<String, dynamic>;
+      } catch (e) {
+        // Not valid JSON
+      }
+    }
+    
+    if (metadata == null && map['notes'] != null && map['notes'].toString().trim().startsWith('{')) {
       try {
         metadata = jsonDecode(map['notes'] as String) as Map<String, dynamic>;
       } catch (e) {
@@ -116,7 +126,8 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
       'customerName': entity.customerName,
       'customerId': entity.customerId,
       'paymentMethod': entity.isCredit ? 'credit' : 'cash',
-      'notes': entity.notes ?? jsonEncode(metadata),
+      'notes': entity.notes,
+      'metadata': jsonEncode(metadata),
       'soldBy': entity.createdBy,
       'isComplete': entity.isFullyPaid,
       'status': entity.status.name,
@@ -221,9 +232,12 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
       enterpriseId: enterpriseId,
       moduleType: 'eau_minerale',
     );
-    return rows
+    final sales = rows
         .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
         .toList();
+    
+    // Dédupliquer par remoteId pour éviter les doublons
+    return deduplicateByRemoteId(sales);
   }
 
   // SaleRepository interface implementation
@@ -275,8 +289,8 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
       return allSales;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error fetching sales',
+      AppLogger.error(
+        'Error fetching sales: ${appException.message}',
         name: 'SaleOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -329,8 +343,8 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
       return localId;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error creating sale',
+      AppLogger.error(
+        'Error creating sale: ${appException.message}',
         name: 'SaleOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -389,8 +403,8 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
       }
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error updating sale amount paid: $saleId',
+      AppLogger.error(
+        'Error updating sale amount paid: $saleId - ${appException.message}',
         name: 'SaleOfflineRepository',
         error: error,
         stackTrace: stackTrace,

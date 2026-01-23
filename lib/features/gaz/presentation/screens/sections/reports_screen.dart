@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:open_file/open_file.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
+import 'package:elyf_groupe_app/core/pdf/gaz_report_pdf_service.dart';
 import '../../../domain/entities/report_data.dart';
 import '../../widgets/expenses_report_content_v2.dart';
 import '../../widgets/financial_report_content_v2.dart';
@@ -53,9 +55,65 @@ class _GazReportsScreenState extends ConsumerState<GazReportsScreen> {
   }
 
   Future<void> _downloadReport() async {
-    // TODO: Implement PDF generation
-    if (mounted) {
-      NotificationService.showInfo(context, 'Génération PDF - À implémenter');
+    try {
+      // Afficher un indicateur de chargement
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+
+      // Récupérer les données du rapport
+      final reportDataAsync = ref.read(
+        gazReportDataProvider(
+          (
+            period: GazReportPeriod.custom,
+            startDate: _startDate,
+            endDate: _endDate,
+          )
+              as ({
+            GazReportPeriod period,
+            DateTime? startDate,
+            DateTime? endDate,
+          }),
+        ),
+      );
+
+      final reportData = await reportDataAsync.when(
+        data: (data) => data,
+        loading: () => throw Exception('Chargement des données en cours'),
+        error: (error, _) => throw Exception('Erreur: $error'),
+      );
+
+      // Générer le PDF
+      final pdfService = GazReportPdfService.instance;
+      final file = await pdfService.generateReport(
+        reportData: reportData,
+        startDate: _startDate,
+        endDate: _endDate,
+      );
+
+      if (!mounted) return;
+      Navigator.of(context).pop(); // Fermer le dialog de chargement
+
+      // Ouvrir le fichier PDF
+      final result = await OpenFile.open(file.path);
+      if (!mounted) return;
+
+      if (result.type != ResultType.done) {
+        NotificationService.showInfo(
+          context,
+          'PDF généré: ${file.path}',
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.of(context).pop(); // Fermer le dialog de chargement en cas d'erreur
+      NotificationService.showError(
+        context,
+        'Erreur lors de la génération PDF: $e',
+      );
     }
   }
 

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
 import '../../../domain/entities/bobine_usage.dart';
+import '../../../domain/entities/machine.dart';
 import '../../../domain/entities/production_session.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../bobine_installation_form.dart';
@@ -19,81 +20,83 @@ class MachineDialogs {
     WidgetRef ref,
     ProductionSession session,
   ) async {
-    final machinesAsync = ref.watch(allMachinesProvider);
+    if (!context.mounted) return;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
 
-    await machinesAsync.when(
-      data: (allMachines) async {
-        final machinesUtiliseesIds = session.machinesUtilisees.toSet();
-        final machinesDisponibles = allMachines
-            .where((m) => m.estActive && !machinesUtiliseesIds.contains(m.id))
-            .toList();
-
-        if (machinesDisponibles.isEmpty) {
-          if (context.mounted) {
-            NotificationService.showWarning(
-              context,
-              'Toutes les machines actives sont déjà utilisées',
-            );
-          }
-          return;
-        }
-
-        if (!context.mounted) return;
-
-        final machineSelectionnee = await MachineSelectionDialog.show(
+    List<Machine> allMachines;
+    try {
+      allMachines = await ref.read(allMachinesProvider.future);
+    } catch (e, _) {
+      if (context.mounted) Navigator.of(context).pop();
+      if (context.mounted) {
+        NotificationService.showInfo(
           context,
-          machinesDisponibles,
+          'Erreur lors du chargement des machines: $e',
         );
+      }
+      return;
+    }
 
-        if (machineSelectionnee == null || !context.mounted) return;
+    if (!context.mounted) return;
+    Navigator.of(context).pop();
 
-        final bobineNonFinieExistante =
-            await MachineAddHelpers.findUnfinishedBobine(
-              ref,
-              machineSelectionnee.id,
-            );
+    final machinesUtiliseesIds = session.machinesUtilisees.toSet();
+    final machinesActives =
+        allMachines.where((m) => m.estActive).toList();
+    final machinesDisponibles = machinesActives
+        .where((m) => !machinesUtiliseesIds.contains(m.id))
+        .toList();
 
-        if (!context.mounted) return;
+    if (machinesDisponibles.isEmpty) {
+      if (context.mounted) {
+        final message = machinesActives.isEmpty
+            ? 'Aucune machine active configurée. Ajoutez-en dans les paramètres.'
+            : 'Toutes les machines actives sont déjà utilisées dans cette session.';
+        NotificationService.showWarning(context, message);
+      }
+      return;
+    }
 
-        if (bobineNonFinieExistante != null) {
-          await MachineAddHelpers.reuseUnfinishedBobine(
-            context,
-            ref,
-            session,
-            machineSelectionnee,
-            bobineNonFinieExistante,
-          );
-          return;
-        }
+    if (!context.mounted) return;
 
-        if (!context.mounted) return;
+    final machineSelectionnee = await MachineSelectionDialog.show(
+      context,
+      machinesDisponibles,
+    );
 
-        await MachineInstallationFormDialog.show(
-          context,
+    if (machineSelectionnee == null || !context.mounted) return;
+
+    final bobineNonFinieExistante =
+        await MachineAddHelpers.findUnfinishedBobine(
           ref,
-          session,
-          machineSelectionnee,
-          null,
+          machineSelectionnee.id,
         );
-      },
-      loading: () {
-        if (context.mounted) {
-          showDialog(
-            context: context,
-            barrierDismissible: false,
-            builder: (context) =>
-                const Center(child: CircularProgressIndicator()),
-          );
-        }
-      },
-      error: (error, stack) {
-        if (context.mounted) {
-          NotificationService.showInfo(
-            context,
-            'Erreur lors du chargement des machines: $error',
-          );
-        }
-      },
+
+    if (!context.mounted) return;
+
+    if (bobineNonFinieExistante != null) {
+      await MachineAddHelpers.reuseUnfinishedBobine(
+        context,
+        ref,
+        session,
+        machineSelectionnee,
+        bobineNonFinieExistante,
+      );
+      return;
+    }
+
+    if (!context.mounted) return;
+
+    await MachineInstallationFormDialog.show(
+      context,
+      ref,
+      session,
+      machineSelectionnee,
+      null,
     );
   }
 
@@ -142,11 +145,29 @@ class MachineDialogs {
                 session.bobinesUtilisees,
               );
 
+              // 1. Marquer la bobine précédente comme finie
+              final indexOld = updatedBobines.indexWhere(
+                (b) =>
+                    b.machineId == oldBobine.machineId &&
+                    b.bobineType == oldBobine.bobineType &&
+                    !b.estFinie,
+              );
+
+              if (indexOld != -1) {
+                updatedBobines[indexOld] = updatedBobines[indexOld].copyWith(
+                  estFinie: true,
+                  dateUtilisation: DateTime.now(), // Date de fin = maintenant
+                );
+              }
+
+              // 2. Ajouter la nouvelle bobine
+              // Vérifier doublon (au cas où)
               final existeDeja = updatedBobines.any(
                 (b) =>
                     b.bobineType == newBobine.bobineType &&
                     b.machineId == newBobine.machineId &&
-                    !b.estFinie,
+                    !b.estFinie &&
+                    b != updatedBobines[indexOld], // Différent de celle qu'on vient de finir
               );
 
               if (!existeDeja) {

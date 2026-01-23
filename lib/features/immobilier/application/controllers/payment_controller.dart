@@ -1,3 +1,4 @@
+import '../../../../core/errors/app_exceptions.dart';
 import '../../domain/entities/payment.dart';
 import '../../domain/repositories/payment_repository.dart';
 import '../../domain/services/immobilier_validation_service.dart';
@@ -34,7 +35,10 @@ class PaymentController {
       payment,
     );
     if (validationError != null) {
-      throw Exception(validationError);
+      throw ValidationException(
+        validationError,
+        'PAYMENT_VALIDATION_FAILED',
+      );
     }
 
     return await _paymentRepository.createPayment(payment);
@@ -47,7 +51,10 @@ class PaymentController {
       payment,
     );
     if (validationError != null) {
-      throw Exception(validationError);
+      throw ValidationException(
+        validationError,
+        'PAYMENT_VALIDATION_FAILED',
+      );
     }
 
     return await _paymentRepository.updatePayment(payment);

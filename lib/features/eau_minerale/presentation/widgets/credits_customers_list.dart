@@ -4,7 +4,8 @@ import '../../domain/entities/customer_credit.dart';
 import '../../domain/services/credit_calculation_service.dart';
 import '../../domain/repositories/customer_repository.dart'
     show CustomerSummary;
-import 'customer_credit_card.dart';
+import 'credits_table_desktop.dart';
+import 'credits_list_mobile.dart';
 
 /// Customers list section for credits screen.
 class CreditsCustomersList extends StatelessWidget {
@@ -37,52 +38,71 @@ class CreditsCustomersList extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Suivi par Client',
-          style: theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'Regroupement des crédits par client avec historique des paiements',
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-        const SizedBox(height: 16),
-        ...customersWithRealCredits.map((customer) {
-          final credits = getCredits(customer);
-          // Calculer le crédit total réel à partir des crédits détaillés
-          final totalCreditFromCredits = credits.fold<int>(
-            0,
-            (sum, credit) => sum + credit.remainingAmount,
-          );
-          // Ne pas afficher si le client n'a pas de crédit réel (le widget le gère aussi)
-          if (totalCreditFromCredits <= 0) {
-            return const SizedBox.shrink();
-          }
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 16),
-            child: CustomerCreditCard(
-              customer: customer,
-              credits: credits,
-              onHistoryTap: () => onHistoryTap(customer.id),
-              onPaymentTap: () => onPaymentTap(customer.id),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Suivi par Client',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  'Regroupement des crédits par client',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
             ),
-          );
-        }),
+          ],
+        ),
+        const SizedBox(height: 24),
         if (customersWithRealCredits.isEmpty)
           Center(
             child: Padding(
               padding: const EdgeInsets.all(48),
-              child: Text(
-                'Aucun crédit en cours',
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.check_circle_outline,
+                    size: 48,
+                    color: theme.colorScheme.primary.withValues(alpha: 0.5),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Aucun crédit en cours',
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
               ),
             ),
+          )
+        else
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isWide = constraints.maxWidth > 900;
+              if (isWide) {
+                return CreditsTableDesktop(
+                  customers: customersWithRealCredits,
+                  getCredits: getCredits,
+                  onHistoryTap: onHistoryTap,
+                  onPaymentTap: onPaymentTap,
+                );
+              } else {
+                return CreditsListMobile(
+                  customers: customersWithRealCredits,
+                  getCredits: getCredits,
+                  onHistoryTap: onHistoryTap,
+                  onPaymentTap: onPaymentTap,
+                );
+              }
+            },
           ),
       ],
     );

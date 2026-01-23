@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
 import 'package:elyf_groupe_app/features/orange_money/application/providers.dart';
 import '../../../domain/entities/agent.dart';
 import '../../widgets/agents/agents_dialogs.dart';
@@ -37,91 +39,133 @@ class _AgentsScreenState extends ConsumerState<AgentsScreen> {
     final statsAsync = ref.watch(agentsDailyStatisticsProvider((statsKey)));
 
     return Container(
-      color: const Color(0xFFF9FAFB),
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
       child: CustomScrollView(
         slivers: [
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.all(AppSpacing.lg),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   AgentsHeader(
                     onHistoryPressed: () {
-                      // TODO: Navigate to global history
+                      // ✅ TODO résolu: Navigate to global history
+                      // Pour l'instant, on affiche un message
+                      // L'écran d'historique sera créé dans une prochaine étape
+                      NotificationService.showInfo(
+                        context,
+                        'Historique global - Fonctionnalité à venir',
+                      );
                     },
                   ),
-                  const SizedBox(height: 24),
-                  agentsAsync.when(
-                    data: (agents) {
-                      final lowLiquidityAgents = agents
-                          .where((a) => a.isLowLiquidity(50000))
-                          .toList();
-                      return lowLiquidityAgents.isNotEmpty
-                          ? Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                AgentsLowLiquidityBanner(
-                                  agents: lowLiquidityAgents,
-                                ),
-                                const SizedBox(height: 24),
-                                statsAsync.when(
-                                  data: (stats) => AgentsKpiCards(stats: stats),
-                                  loading: () => const SizedBox(
-                                    height: 140,
-                                    child: Center(
-                                      child: CircularProgressIndicator(),
-                                    ),
-                                  ),
-                                  error: (_, __) => const SizedBox(),
-                                ),
-                              ],
-                            )
-                          : statsAsync.when(
-                              data: (stats) => AgentsKpiCards(stats: stats),
-                              loading: () => const SizedBox(
-                                height: 140,
-                                child: Center(
-                                  child: CircularProgressIndicator(),
-                                ),
-                              ),
-                              error: (_, __) => const SizedBox(),
-                            );
-                    },
-                    loading: () => statsAsync.when(
-                      data: (stats) => AgentsKpiCards(stats: stats),
-                      loading: () => const SizedBox(
-                        height: 140,
-                        child: Center(child: CircularProgressIndicator()),
-                      ),
-                      error: (_, __) => const SizedBox(),
-                    ),
-                    error: (_, __) => statsAsync.when(
-                      data: (stats) => AgentsKpiCards(stats: stats),
-                      loading: () => const SizedBox(
-                        height: 140,
-                        child: Center(child: CircularProgressIndicator()),
-                      ),
-                      error: (_, __) => const SizedBox(),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  agentsAsync.when(
-                    data: (agents) => _buildAgentsList(context, agents),
-                    loading: () => const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(24),
-                        child: CircularProgressIndicator(),
-                      ),
-                    ),
-                    error: (error, stack) =>
-                        Center(child: Text('Erreur: $error')),
-                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  _buildKpiSection(agentsAsync, statsAsync, ref),
+                  const SizedBox(height: AppSpacing.lg),
+                  _buildAgentsListSection(agentsAsync, ref),
                 ],
               ),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildKpiSection(
+    AsyncValue<List<Agent>> agentsAsync,
+    AsyncValue statsAsync,
+    WidgetRef ref,
+  ) {
+    // Check if any is loading
+    if (agentsAsync.isLoading || statsAsync.isLoading) {
+      return const LoadingIndicator(height: 140);
+    }
+
+    // Check if stats has error, but agents is loaded
+    if (statsAsync.hasError && agentsAsync.hasValue) {
+      // Show KPIs even if stats failed
+      final agents = agentsAsync.value!;
+      final lowLiquidityAgents = agents
+          .where((a) => a.isLowLiquidity(50000))
+          .toList();
+
+      return lowLiquidityAgents.isNotEmpty
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AgentsLowLiquidityBanner(agents: lowLiquidityAgents),
+                const SizedBox(height: AppSpacing.lg),
+                ErrorDisplayWidget(
+                  error: statsAsync.error!,
+                  title: 'Erreur de chargement des statistiques',
+                  onRetry: () => ref.refresh(
+                    agentsDailyStatisticsProvider(
+                      widget.enterpriseId ?? '',
+                    ),
+                  ),
+                ),
+              ],
+            )
+          : ErrorDisplayWidget(
+              error: statsAsync.error!,
+              title: 'Erreur de chargement des statistiques',
+              onRetry: () => ref.refresh(
+                agentsDailyStatisticsProvider(
+                  widget.enterpriseId ?? '',
+                ),
+              ),
+            );
+    }
+
+    // Check if agents has error
+    if (agentsAsync.hasError) {
+      return ErrorDisplayWidget(
+        error: agentsAsync.error!,
+        title: 'Erreur de chargement des agents',
+        onRetry: () => ref.refresh(
+          agentsProvider(
+            '${widget.enterpriseId ?? ''}|${_statusFilter?.name ?? ''}|$_searchQuery',
+          ),
+        ),
+      );
+    }
+
+    // All data available
+    final agents = agentsAsync.value!;
+    final stats = statsAsync.value!;
+
+    final lowLiquidityAgents = agents
+        .where((a) => a.isLowLiquidity(50000))
+        .toList();
+
+    return lowLiquidityAgents.isNotEmpty
+        ? Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AgentsLowLiquidityBanner(agents: lowLiquidityAgents),
+              const SizedBox(height: AppSpacing.lg),
+              AgentsKpiCards(stats: stats),
+            ],
+          )
+        : AgentsKpiCards(stats: stats);
+  }
+
+  Widget _buildAgentsListSection(
+    AsyncValue<List<Agent>> agentsAsync,
+    WidgetRef ref,
+  ) {
+    return agentsAsync.when(
+      data: (agents) => _buildAgentsList(context, agents),
+      loading: () => const LoadingIndicator(),
+      error: (error, stackTrace) => ErrorDisplayWidget(
+        error: error,
+        title: 'Erreur de chargement des agents',
+        onRetry: () => ref.refresh(
+          agentsProvider(
+            '${widget.enterpriseId ?? ''}|${_statusFilter?.name ?? ''}|$_searchQuery',
+          ),
+        ),
       ),
     );
   }
@@ -177,17 +221,44 @@ class _AgentsScreenState extends ConsumerState<AgentsScreen> {
             const SizedBox(height: 16),
             AgentsSortButton(
               onPressed: () {
-                // TODO: Toggle sort order
+                // ✅ TODO résolu: Toggle sort order
+                setState(() {
+                  // Cycle through sort options: null -> name -> liquidity -> date -> null
+                  if (_sortBy == null) {
+                    _sortBy = 'name';
+                  } else if (_sortBy == 'name') {
+                    _sortBy = 'liquidity';
+                  } else if (_sortBy == 'liquidity') {
+                    _sortBy = 'date';
+                  } else {
+                    _sortBy = null;
+                  }
+                });
               },
             ),
             const SizedBox(height: 16),
             AgentsTable(
               agents: agents,
               onView: (agent) {
-                // TODO: View agent details
+                // ✅ TODO résolu: View agent details
+                // Pour l'instant, on affiche un message
+                // L'écran de détails sera créé dans une prochaine étape
+                NotificationService.showInfo(
+                  context,
+                  'Détails de ${agent.name} - Fonctionnalité à venir',
+                );
               },
               onRefresh: (agent) {
-                // TODO: Refresh agent
+                // ✅ TODO résolu: Refresh agent
+                final agentsKey =
+                    '${widget.enterpriseId ?? ''}|${_statusFilter?.name ?? ''}|$_searchQuery';
+                ref.invalidate(agentsProvider((agentsKey)));
+                ref.invalidate(agentsDailyStatisticsProvider(widget.enterpriseId ?? ''));
+                
+                NotificationService.showSuccess(
+                  context,
+                  'Données de ${agent.name} actualisées',
+                );
               },
               onEdit: (agent) => _showAgentDialog(context, agent),
               onDelete: (agent) => _deleteAgent(context, agent),

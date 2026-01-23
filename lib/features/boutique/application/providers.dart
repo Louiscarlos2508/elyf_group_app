@@ -24,6 +24,9 @@ import '../domain/repositories/purchase_repository.dart';
 import '../domain/repositories/report_repository.dart';
 import '../domain/repositories/sale_repository.dart';
 import '../domain/repositories/stock_repository.dart';
+import '../domain/entities/sale.dart';
+import '../domain/entities/purchase.dart';
+import '../domain/entities/expense.dart';
 import '../domain/services/calculation/cart_calculation_service.dart';
 import '../domain/services/cart_service.dart';
 import '../domain/services/dashboard_calculation_service.dart';
@@ -186,6 +189,26 @@ final purchasesProvider = FutureProvider.autoDispose(
 
 final expensesProvider = FutureProvider.autoDispose(
   (ref) async => ref.watch(storeControllerProvider).fetchExpenses(),
+);
+
+/// Provider combiné pour les métriques mensuelles du dashboard boutique.
+///
+/// Simplifie l'utilisation en combinant sales, purchases et expenses
+/// en un seul AsyncValue.
+final boutiqueMonthlyMetricsProvider = FutureProvider.autoDispose<
+    ({List<Sale> sales, List<Purchase> purchases, List<Expense> expenses})>(
+  (ref) async {
+    final sales = await ref.watch(storeControllerProvider).fetchRecentSales();
+    final purchases =
+        await ref.watch(storeControllerProvider).fetchPurchases();
+    final expenses = await ref.watch(storeControllerProvider).fetchExpenses();
+
+    return (
+      sales: sales,
+      purchases: purchases,
+      expenses: expenses,
+    );
+  },
 );
 
 /// Provider pour le bilan des dépenses Boutique.

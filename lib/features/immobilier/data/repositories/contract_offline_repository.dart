@@ -1,7 +1,8 @@
-import 'dart:developer' as developer;
 import 'dart:convert';
+import 'dart:developer' as developer;
 
 import '../../../../core/errors/error_handler.dart';
+import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/offline_repository.dart';
 import '../../domain/entities/contract.dart';
 import '../../domain/repositories/contract_repository.dart';
@@ -150,9 +151,17 @@ class ContractOfflineRepository extends OfflineRepository<Contract>
       enterpriseId: enterpriseId,
       moduleType: 'immobilier',
     );
-    return rows
+    final entities = rows
+
         .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+
         .toList();
+
+    
+
+    // Dédupliquer par remoteId pour éviter les doublons
+
+    return deduplicateByRemoteId(entities);
   }
 
   // ContractRepository interface implementation
@@ -160,15 +169,15 @@ class ContractOfflineRepository extends OfflineRepository<Contract>
   @override
   Future<List<Contract>> getAllContracts() async {
     try {
-      developer.log(
+      AppLogger.debug(
         'Fetching contracts for enterprise: $enterpriseId',
         name: 'ContractOfflineRepository',
       );
       return await getAllForEnterprise(enterpriseId);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error fetching contracts',
+      AppLogger.error(
+        'Error fetching contracts: ${appException.message}',
         name: 'ContractOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -183,8 +192,8 @@ class ContractOfflineRepository extends OfflineRepository<Contract>
       return await getByLocalId(id);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error getting contract: $id',
+      AppLogger.error(
+        'Error getting contract: $id - ${appException.message}',
         name: 'ContractOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -217,8 +226,8 @@ class ContractOfflineRepository extends OfflineRepository<Contract>
       return allContracts.where((c) => c.propertyId == propertyId).toList();
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error getting contracts by property: $propertyId',
+      AppLogger.error(
+        'Error getting contracts by property: $propertyId - ${appException.message}',
         name: 'ContractOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -270,8 +279,8 @@ class ContractOfflineRepository extends OfflineRepository<Contract>
       return contractWithLocalId;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error creating contract',
+      AppLogger.error(
+        'Error creating contract: ${appException.message}',
         name: 'ContractOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -287,8 +296,8 @@ class ContractOfflineRepository extends OfflineRepository<Contract>
       return contract;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error updating contract: ${contract.id}',
+      AppLogger.error(
+        'Error updating contract: ${contract.id} - ${appException.message}',
         name: 'ContractOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -306,8 +315,8 @@ class ContractOfflineRepository extends OfflineRepository<Contract>
       }
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error deleting contract: $id',
+      AppLogger.error(
+        'Error deleting contract: $id - ${appException.message}',
         name: 'ContractOfflineRepository',
         error: error,
         stackTrace: stackTrace,

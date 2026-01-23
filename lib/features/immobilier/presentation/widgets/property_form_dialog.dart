@@ -88,7 +88,6 @@ class _PropertyFormDialogState extends ConsumerState<PropertyFormDialog>
 
         if (mounted) {
           ref.invalidate(propertiesProvider);
-          Navigator.of(context).pop();
         }
 
         return widget.property == null

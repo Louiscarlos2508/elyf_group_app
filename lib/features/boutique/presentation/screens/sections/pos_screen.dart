@@ -10,6 +10,7 @@ import '../../widgets/cart_summary.dart';
 import '../../widgets/checkout_dialog.dart';
 import '../../widgets/permission_guard.dart';
 import '../../widgets/product_tile.dart';
+import '../../widgets/barcode_scanner_widget.dart';
 import 'package:elyf_groupe_app/shared.dart';
 
 class PosScreen extends ConsumerStatefulWidget {
@@ -210,12 +211,46 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                             const SizedBox(width: 8),
                             IconButton(
                               icon: const Icon(Icons.qr_code_scanner),
-                              onPressed: () {
-                                // TODO: Implement barcode scanning
-                                NotificationService.showInfo(
-                                  context,
-                                  'Scan de code-barres - À implémenter',
+                              onPressed: () async {
+                                // ✅ TODO résolu: Implement barcode scanning
+                                final scannedBarcode = await Navigator.of(context).push<String>(
+                                  MaterialPageRoute(
+                                    builder: (context) => BarcodeScannerWidget(
+                                      onBarcodeDetected: (barcode) {
+                                        Navigator.of(context).pop(barcode);
+                                      },
+                                      onError: (error) {
+                                        NotificationService.showError(
+                                          context,
+                                          'Erreur de scan: $error',
+                                        );
+                                      },
+                                    ),
+                                  ),
                                 );
+
+                                if (scannedBarcode != null && mounted) {
+                                  // Rechercher le produit par code-barres
+                                  final productsAsync = ref.read(productsProvider);
+                                  productsAsync.whenData((products) {
+                                    try {
+                                      final product = products.firstWhere(
+                                        (p) => p.barcode == scannedBarcode,
+                                      );
+                                      
+                                      _addToCart(product);
+                                      NotificationService.showSuccess(
+                                        context,
+                                        '${product.name} ajouté au panier',
+                                      );
+                                    } catch (e) {
+                                      NotificationService.showWarning(
+                                        context,
+                                        'Produit avec code-barres $scannedBarcode non trouvé',
+                                      );
+                                    }
+                                  });
+                                }
                               },
                               tooltip: 'Scanner un code-barres',
                               style: IconButton.styleFrom(

@@ -1,3 +1,4 @@
+import '../../../../core/errors/app_exceptions.dart';
 import '../../domain/entities/property.dart';
 import '../../domain/repositories/property_repository.dart';
 
@@ -102,7 +103,10 @@ class MockPropertyRepository implements PropertyRepository {
   Future<Property> updateProperty(Property property) async {
     final existing = _properties[property.id];
     if (existing == null) {
-      throw Exception('Property not found');
+      throw NotFoundException(
+        'Property not found',
+        'PROPERTY_NOT_FOUND',
+      );
     }
     final updated = Property(
       id: property.id,

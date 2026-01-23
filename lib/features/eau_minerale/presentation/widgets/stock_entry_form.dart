@@ -1,78 +1,108 @@
+import 'dart:developer' as developer;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/errors/error_handler.dart';
+import '../../../../core/logging/app_logger.dart';
+
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../../../shared/utils/notification_service.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
+import '../../../../core/offline/providers.dart' as offline_providers;
+import '../../../../core/errors/app_exceptions.dart';
 import '../../domain/entities/packaging_stock.dart';
-import '../../domain/entities/stock_item.dart';
 
 /// Formulaire pour ajouter des matières premières en stock (bobines, emballages, autres).
 class StockEntryForm extends ConsumerStatefulWidget {
-  const StockEntryForm({super.key});
+  const StockEntryForm({
+    super.key,
+    this.showSubmitButton = true,
+    this.onSubmit,
+  });
+
+  /// Afficher le bouton de soumission dans le formulaire.
+  /// Si false, le bouton n'est pas affiché (pour utiliser le bouton du FormDialog).
+  final bool showSubmitButton;
+
+  /// Callback optionnel pour la soumission (utilisé par FormDialog).
+  final Future<bool> Function()? onSubmit;
 
   @override
-  ConsumerState<StockEntryForm> createState() => _StockEntryFormState();
+  ConsumerState<StockEntryForm> createState() => StockEntryFormState();
 }
 
-enum _StockEntryType { bobine, emballage, produitFini }
+enum _StockEntryType { bobine, emballage }
 
-class _StockEntryFormState extends ConsumerState<StockEntryForm> {
+class StockEntryFormState extends ConsumerState<StockEntryForm> {
   final _formKey = GlobalKey<FormState>();
   final _quantityController = TextEditingController();
-  final _typeController =
-      TextEditingController(); // Type de bobine (ex: "Bobine standard")
   final _supplierController = TextEditingController();
   final _priceController = TextEditingController();
   final _notesController = TextEditingController();
 
   _StockEntryType _selectedType = _StockEntryType.bobine;
-  StockMovementType _movementType =
-      StockMovementType.entry; // Pour produits finis uniquement
   DateTime _selectedDate = DateTime.now();
-
-  @override
-  void initState() {
-    super.initState();
-    // Initialiser la valeur par défaut du type de bobine
-    _typeController.text = 'Bobine standard';
-  }
+  
+  // Type fixe pour toutes les bobines
+  static const String _bobineType = 'Bobine';
 
   bool _isLoading = false;
 
   @override
   void dispose() {
     _quantityController.dispose();
-    _typeController.dispose();
     _supplierController.dispose();
     _priceController.dispose();
     _notesController.dispose();
     super.dispose();
   }
 
-  Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
+  /// Méthode publique pour soumettre le formulaire (utilisée par FormDialog).
+  Future<bool> submit() async {
+    developer.log('StockEntryForm.submit() called', name: 'StockEntryForm');
+    
+    if (widget.onSubmit != null) {
+      developer.log('Using widget.onSubmit', name: 'StockEntryForm');
+      return await widget.onSubmit!();
+    }
+    
+    if (!_formKey.currentState!.validate()) {
+      developer.log('Form validation failed', name: 'StockEntryForm');
+      return false;
+    }
 
+    developer.log('Starting stock entry submission', name: 'StockEntryForm');
     setState(() => _isLoading = true);
     try {
+      developer.log('Reading stock controller', name: 'StockEntryForm');
       final stockController = ref.read(stockControllerProvider);
-      final quantiteStr = _quantityController.text;
-      final quantite = _selectedType == _StockEntryType.produitFini
-          ? double.parse(quantiteStr)
-          : double.parse(quantiteStr); // Utiliser double pour tous les cas
+      final quantiteStr = _quantityController.text.trim();
+      developer.log('Quantité saisie: "$quantiteStr"', name: 'StockEntryForm');
+      
+      // Valider et parser la quantité
+      if (quantiteStr.isEmpty) {
+        developer.log('Quantité vide - validation failed', name: 'StockEntryForm');
+        throw ValidationException('La quantité est requise');
+      }
+      
+      final quantite = int.tryParse(quantiteStr);
+      if (quantite == null || quantite <= 0) {
+        developer.log('Quantité invalide: $quantite', name: 'StockEntryForm');
+        throw ValidationException('La quantité doit être un nombre entier positif');
+      }
+      
+      developer.log('Quantité validée: $quantite, Type: $_selectedType', name: 'StockEntryForm');
 
       switch (_selectedType) {
         case _StockEntryType.bobine:
-          // Utiliser le nouveau système de stock par type/quantité
-          final bobineType = _typeController.text.isEmpty
-              ? 'Bobine standard'
-              : _typeController.text;
-
-          // Enregistrer l'entrée de bobines (ajoute à la quantité du type)
+          developer.log('Recording bobine entry - calling recordBobineEntry', name: 'StockEntryForm');
+          // Utiliser un type fixe pour toutes les bobines
+          // Enregistrer l'entrée de bobines (ajoute à la quantité du stock)
           await stockController.recordBobineEntry(
-            bobineType: bobineType,
-            quantite: quantite.toInt(),
+            bobineType: _bobineType,
+            quantite: quantite,
             fournisseur: _supplierController.text.isEmpty
                 ? null
                 : _supplierController.text,
@@ -81,9 +111,11 @@ class _StockEntryFormState extends ConsumerState<StockEntryForm> {
           break;
 
         case _StockEntryType.emballage:
+          developer.log('Recording packaging entry - starting', name: 'StockEntryForm');
           final prixUnitaire = _priceController.text.isEmpty
               ? null
               : int.tryParse(_priceController.text);
+          developer.log('Prix unitaire: $prixUnitaire', name: 'StockEntryForm');
 
           // Récupérer ou créer le stock d'emballages
           final packagingController = ref.read(
@@ -94,11 +126,14 @@ class _StockEntryFormState extends ConsumerState<StockEntryForm> {
           );
 
           if (stockEmballage == null) {
-            // Créer un nouveau stock d'emballages
+            // Créer un nouveau stock d'emballages en mémoire seulement
+            // Utiliser un ID fixe basé sur le type pour garantir la cohérence
+            // (comme pour les bobines avec 'bobine-${type}')
+            final packagingId = 'packaging-emballage';
             stockEmballage = PackagingStock(
-              id: 'packaging-${DateTime.now().millisecondsSinceEpoch}',
+              id: packagingId,
               type: 'Emballage',
-              quantity: 0,
+              quantity: 0, // Sera mis à jour par recordPackagingEntry
               unit: 'unité',
               fournisseur: _supplierController.text.isEmpty
                   ? null
@@ -107,94 +142,125 @@ class _StockEntryFormState extends ConsumerState<StockEntryForm> {
               createdAt: _selectedDate,
               updatedAt: _selectedDate,
             );
-            stockEmballage = await packagingController.save(stockEmballage);
+            // Ne pas sauvegarder ici - recordPackagingEntry le fera avec la bonne quantité
           }
 
           // Enregistrer l'entrée
           await stockController.recordPackagingEntry(
             packagingId: stockEmballage.id,
             packagingType: 'Emballage',
-            quantite: quantite.toInt(),
+            quantite: quantite,
             fournisseur: _supplierController.text.isEmpty
                 ? null
                 : _supplierController.text,
             notes: _notesController.text.isEmpty ? null : _notesController.text,
           );
           break;
-
-        case _StockEntryType.produitFini:
-          // Récupérer le stock de produits finis
-          final stockState = await stockController.fetchSnapshot();
-          final stockItems = stockState.items;
-
-          // Chercher le stock de produits finis (Pack)
-          StockItem packStock;
-          try {
-            packStock = stockItems.firstWhere(
-              (item) =>
-                  item.type == StockType.finishedGoods &&
-                  item.name.toLowerCase().contains('pack'),
-            );
-          } catch (_) {
-            try {
-              packStock = stockItems.firstWhere(
-                (item) => item.type == StockType.finishedGoods,
-              );
-            } catch (_) {
-              // Créer un nouveau stock de produits finis si aucun n'existe
-              packStock = StockItem(
-                id: 'pack-1',
-                name: 'Pack',
-                quantity: 0,
-                unit: 'unité',
-                type: StockType.finishedGoods,
-                updatedAt: DateTime.now(),
-              );
-              // Le stock sera créé lors de la première mise à jour via recordItemMovement
-              // Mais on doit d'abord l'enregistrer dans le repository
-              final inventoryController = ref.read(inventoryControllerProvider);
-              final allItems = await inventoryController.fetchStockItems();
-              if (!allItems.any((item) => item.id == packStock.id)) {
-                await inventoryController.updateStockItem(packStock);
-              }
-            }
-          }
-
-          // Ajuster le stock (entrée ou sortie) - packStock est toujours non-null ici
-          final finalPackStock = packStock;
-          await stockController.recordItemMovement(
-            itemId: finalPackStock.id,
-            itemName: finalPackStock.name,
-            type: _movementType,
-            quantity: quantite,
-            unit: finalPackStock.unit,
-            reason: _notesController.text.isEmpty
-                ? (_movementType == StockMovementType.entry
-                      ? 'Ajustement entrée'
-                      : 'Ajustement sortie')
-                : _notesController.text,
-            notes: _notesController.text.isEmpty ? null : _notesController.text,
-          );
-          break;
       }
 
-      if (!mounted) return;
-      Navigator.of(context).pop();
+      if (!mounted) {
+        developer.log('Widget not mounted after submission', name: 'StockEntryForm');
+        return false;
+      }
+      
+      developer.log('Submission successful, invalidating state', name: 'StockEntryForm');
       ref.invalidate(stockStateProvider);
+      // Invalider tous les providers de mouvements pour rafraîchir l'historique
+      ref.invalidate(stockMovementsProvider);
+      
       final message = _selectedType == _StockEntryType.bobine
-          ? '${quantite.toInt()} bobine(s) ajoutée(s)'
-          : _selectedType == _StockEntryType.emballage
-          ? '${quantite.toInt()} emballage(s) ajouté(s)'
-          : _movementType == StockMovementType.entry
-          ? '${quantite.toStringAsFixed(0)} pack(s) ajouté(s) au stock'
-          : '${quantite.toStringAsFixed(0)} pack(s) retiré(s) du stock';
+          ? '${quantite} bobine(s) ajoutée(s)'
+          : '${quantite} emballage(s) ajouté(s)';
+      developer.log('Showing success message: $message', name: 'StockEntryForm');
       NotificationService.showSuccess(context, message);
-    } catch (e) {
-      if (!mounted) return;
-      NotificationService.showError(context, e.toString());
+      
+      developer.log('Returning true - FormDialog will close', name: 'StockEntryForm');
+      // Ne pas fermer le dialog ici - le FormDialog le fera automatiquement
+      // si on retourne true
+      return true;
+    } catch (e, stackTrace) {
+      if (!mounted) return false;
+      
+      // Capturer l'erreur originale avant qu'elle ne soit convertie
+      final originalErrorString = e.toString();
+      final errorType = e.runtimeType.toString();
+      
+      // Logger l'erreur complète pour le débogage avec plus de détails
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        '=== ERROR IN STOCK ENTRY FORM === Error type: $errorType, Message: ${appException.message}',
+        name: 'StockEntryForm',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      
+      // Extraire le message utilisateur-friendly
+      String errorMessage;
+      if (e is AppException) {
+        errorMessage = e.message;
+        // Si c'est une UnknownException, essayer d'extraire le message original
+        if (e is UnknownException) {
+          // L'erreur originale a été convertie, mais on peut au moins donner un message plus utile
+          // Vérifier si c'est une erreur de parsing ou autre
+          if (originalErrorString.toLowerCase().contains('format') ||
+              originalErrorString.toLowerCase().contains('parse')) {
+            errorMessage = 'Format de données invalide. Vérifiez les valeurs saisies.';
+          } else if (originalErrorString.toLowerCase().contains('null')) {
+            errorMessage = 'Données manquantes. Veuillez remplir tous les champs requis.';
+          } else {
+            errorMessage = 'Erreur lors de l\'enregistrement. Vérifiez les données saisies et réessayez.';
+          }
+        }
+      } else {
+        // Si c'est une erreur de synchronisation mais que les données sont sauvegardées localement,
+        // on affiche un message d'avertissement plutôt qu'une erreur
+        final errorString = e.toString().toLowerCase();
+        if (errorString.contains('sync') || errorString.contains('synchronization')) {
+          // Vérifier si la connexion est disponible
+          final isOnline = ref.read(offline_providers.isOnlineProvider);
+          final message = isOnline
+              ? 'Données enregistrées localement. La synchronisation sera effectuée en arrière-plan.'
+              : 'Données enregistrées localement. La synchronisation se fera automatiquement quand la connexion sera disponible.';
+          
+          NotificationService.showWarning(context, message);
+          // Invalider quand même pour rafraîchir l'affichage
+          ref.invalidate(stockStateProvider);
+          // Ne pas fermer le dialog ici - le FormDialog le fera automatiquement
+          // si on retourne true
+          return true; // Considérer comme succès car données sauvegardées
+        }
+        
+        // Extraire un message plus lisible depuis l'erreur originale
+        errorMessage = originalErrorString
+            .replaceAll('Exception: ', '')
+            .replaceAll('Error: ', '')
+            .replaceAll('Une erreur inattendue s\'est produite. Veuillez réessayer.', '')
+            .trim();
+        
+        // Détecter des erreurs spécifiques
+        final lowerError = errorMessage.toLowerCase();
+        if (lowerError.contains('format') || lowerError.contains('parse')) {
+          errorMessage = 'Format de données invalide. Vérifiez les valeurs saisies.';
+        } else if (lowerError.contains('null') || lowerError.contains('missing')) {
+          errorMessage = 'Données manquantes. Veuillez remplir tous les champs requis.';
+        } else if (lowerError.contains('duplicate') || lowerError.contains('existe déjà')) {
+          errorMessage = 'Cette entrée existe déjà.';
+        } else if (errorMessage.isEmpty || errorMessage == '') {
+          errorMessage = 'Erreur lors de l\'enregistrement. Vérifiez les données saisies et réessayez.';
+        } else if (errorMessage.length > 150) {
+          errorMessage = '${errorMessage.substring(0, 150)}...';
+        }
+      }
+      
+      NotificationService.showError(context, errorMessage);
+      return false;
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  Future<void> _submit() async {
+    await submit();
   }
 
   @override
@@ -221,11 +287,6 @@ class _StockEntryFormState extends ConsumerState<StockEntryForm> {
                   label: Text('Emballage'),
                   icon: Icon(Icons.inventory_2, size: 18),
                 ),
-                ButtonSegment(
-                  value: _StockEntryType.produitFini,
-                  label: Text('Produit Fini'),
-                  icon: Icon(Icons.shopping_bag, size: 18),
-                ),
               ],
               selected: {_selectedType},
               onSelectionChanged: (Set<_StockEntryType> newSelection) {
@@ -235,31 +296,6 @@ class _StockEntryFormState extends ConsumerState<StockEntryForm> {
               },
             ),
             const SizedBox(height: 24),
-
-            // Type de mouvement (uniquement pour produits finis)
-            if (_selectedType == _StockEntryType.produitFini) ...[
-              SegmentedButton<StockMovementType>(
-                segments: const [
-                  ButtonSegment(
-                    value: StockMovementType.entry,
-                    label: Text('Ajout'),
-                    icon: Icon(Icons.add_circle_outline, size: 18),
-                  ),
-                  ButtonSegment(
-                    value: StockMovementType.exit,
-                    label: Text('Retrait'),
-                    icon: Icon(Icons.remove_circle_outline, size: 18),
-                  ),
-                ],
-                selected: {_movementType},
-                onSelectionChanged: (Set<StockMovementType> newSelection) {
-                  setState(() {
-                    _movementType = newSelection.first;
-                  });
-                },
-              ),
-              const SizedBox(height: 24),
-            ],
 
             // Date de réception
             InkWell(
@@ -295,11 +331,7 @@ class _StockEntryFormState extends ConsumerState<StockEntryForm> {
                 suffixText: 'unité${quantite > 1 ? 's' : ''}',
                 helperText: _selectedType == _StockEntryType.bobine
                     ? 'Nombre de bobines à ajouter'
-                    : _selectedType == _StockEntryType.emballage
-                    ? 'Nombre d\'emballages à ajouter'
-                    : _movementType == StockMovementType.entry
-                    ? 'Quantité de packs à ajouter au stock'
-                    : 'Quantité de packs à retirer du stock',
+                    : 'Nombre d\'emballages à ajouter',
               ),
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
@@ -309,31 +341,12 @@ class _StockEntryFormState extends ConsumerState<StockEntryForm> {
               ],
               validator: (v) {
                 if (v == null || v.isEmpty) return 'Requis';
-                final qty = double.tryParse(v);
+                final qty = int.tryParse(v);
                 if (qty == null || qty <= 0) return 'Quantité invalide';
-                if (_selectedType == _StockEntryType.produitFini &&
-                    _movementType == StockMovementType.exit) {
-                  // Pour les retraits, vérifier que le stock est suffisant
-                  // Cette validation sera faite côté serveur dans recordItemMovement
-                }
                 return null;
               },
             ),
             const SizedBox(height: 16),
-
-            // Type de bobine (uniquement pour bobines)
-            if (_selectedType == _StockEntryType.bobine) ...[
-              TextFormField(
-                controller: _typeController,
-                decoration: const InputDecoration(
-                  labelText: 'Type de bobine',
-                  prefixIcon: Icon(Icons.category),
-                  helperText:
-                      'Ex: "Bobine standard", "Bobine grande taille" (par défaut: "Bobine standard")',
-                ),
-              ),
-              const SizedBox(height: 16),
-            ],
 
             // Fournisseur
             TextFormField(
@@ -345,26 +358,24 @@ class _StockEntryFormState extends ConsumerState<StockEntryForm> {
             ),
             const SizedBox(height: 16),
 
-            // Prix unitaire (pas pour produits finis)
-            if (_selectedType != _StockEntryType.produitFini) ...[
-              TextFormField(
-                controller: _priceController,
-                decoration: const InputDecoration(
-                  labelText: 'Prix unitaire (FCFA, optionnel)',
-                  prefixIcon: Icon(Icons.attach_money),
-                ),
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                validator: (v) {
-                  if (v != null && v.isNotEmpty) {
-                    final price = int.tryParse(v);
-                    if (price == null || price < 0) return 'Prix invalide';
-                  }
-                  return null;
-                },
+            // Prix unitaire
+            TextFormField(
+              controller: _priceController,
+              decoration: const InputDecoration(
+                labelText: 'Prix unitaire (FCFA, optionnel)',
+                prefixIcon: Icon(Icons.attach_money),
               ),
-              const SizedBox(height: 16),
-            ],
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              validator: (v) {
+                if (v != null && v.isNotEmpty) {
+                  final price = int.tryParse(v);
+                  if (price == null || price < 0) return 'Prix invalide';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
 
             // Notes
             TextFormField(
@@ -375,19 +386,20 @@ class _StockEntryFormState extends ConsumerState<StockEntryForm> {
               ),
               maxLines: 2,
             ),
-            const SizedBox(height: 24),
-
-            // Bouton de soumission
-            FilledButton(
-              onPressed: _isLoading ? null : _submit,
-              child: _isLoading
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Ajouter au stock'),
-            ),
+            // Bouton de soumission (seulement si showSubmitButton est true)
+            if (widget.showSubmitButton) ...[
+              const SizedBox(height: 24),
+              FilledButton(
+                onPressed: _isLoading ? null : _submit,
+                child: _isLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Ajouter au stock'),
+              ),
+            ],
           ],
         ),
       ),

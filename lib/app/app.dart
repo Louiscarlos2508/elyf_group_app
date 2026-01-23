@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/navigation/navigation_service.dart';
 import '../shared/providers/app_boot_status_provider.dart';
 import 'router/app_router.dart';
 import 'theme/app_theme.dart';
@@ -27,6 +28,9 @@ class _ElyfAppState extends ConsumerState<ElyfApp> {
   Widget build(BuildContext context) {
     final router = ref.watch(appRouterProvider);
     final bootStatus = ref.watch(appBootStatusProvider);
+
+    // Initialiser le NavigationService avec le router
+    NavigationService.instance.initialize(() => router);
 
     return MaterialApp.router(
       title: 'Elyf Groupe',

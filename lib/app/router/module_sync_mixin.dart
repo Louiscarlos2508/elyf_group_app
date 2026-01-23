@@ -1,21 +1,24 @@
 import 'dart:developer' as developer;
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/offline/drift_service.dart';
-import '../../core/offline/module_realtime_sync_service.dart';
+import '../../core/errors/error_handler.dart';
+import '../../core/logging/app_logger.dart';
+
+import '../../app/bootstrap.dart' show globalModuleRealtimeSyncService;
 
 /// Mixin pour déclencher la synchronisation en temps réel lors de l'accès à un module.
 ///
-/// Utilisé par les RouteWrappers pour démarrer la synchronisation en temps réel
-/// des données d'un module depuis Firestore vers Drift.
+/// Utilisé par les RouteWrappers pour s'assurer que la synchronisation en temps réel
+/// est active pour le module visité.
+///
+/// Utilise le GlobalModuleRealtimeSyncService pour éviter les duplications.
+/// Si la synchronisation est déjà active (démarrée après la connexion), ne fait rien.
 ///
 /// Gère automatiquement le démarrage et l'arrêt de la synchronisation
 /// pour éviter les fuites mémoire et les race conditions.
 mixin ModuleSyncMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
-  ModuleRealtimeSyncService? _realtimeSyncService;
   String? _lastEnterpriseId;
   String? _lastModuleId;
   bool _isDisposed = false;
@@ -29,27 +32,24 @@ mixin ModuleSyncMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
 
   /// Arrête la synchronisation en temps réel.
   ///
-  /// Appelé automatiquement dans dispose() pour éviter les fuites mémoire.
+  /// Note: Ne fait rien car la synchronisation est gérée globalement.
+  /// La synchronisation reste active même après la navigation pour permettre
+  /// la détection des changements Firestore en temps réel.
+  ///
+  /// Si vous voulez vraiment arrêter la sync, utilisez globalModuleRealtimeSyncService
+  /// directement depuis le code qui gère la déconnexion.
   void stopModuleSync() {
-    if (_realtimeSyncService != null) {
-      _realtimeSyncService!
-          .stopRealtimeSync()
-          .catchError((error) {
-            developer.log(
-              'Error stopping module sync: $error',
-              name: 'module.sync.mixin',
-              error: error,
-            );
-          })
-          .whenComplete(() {
-            _realtimeSyncService = null;
-            _lastEnterpriseId = null;
-            _lastModuleId = null;
-          });
-    }
+    // Ne rien faire - la synchronisation est gérée globalement
+    // et doit rester active même après la navigation pour détecter
+    // les changements Firestore en temps réel
+    _lastEnterpriseId = null;
+    _lastModuleId = null;
   }
 
   /// Déclenche la synchronisation en temps réel des données du module.
+  ///
+  /// Utilise le GlobalModuleRealtimeSyncService pour éviter les duplications.
+  /// Si la synchronisation est déjà active (démarrée après la connexion), ne fait rien.
   ///
   /// Utilise un callback post-frame pour éviter les appels dans build()
   /// et vérifie que le widget est toujours monté avant de démarrer.
@@ -57,25 +57,15 @@ mixin ModuleSyncMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
   /// [enterpriseId] : ID de l'entreprise active
   /// [moduleId] : ID du module à synchroniser
   void startModuleSync(String enterpriseId, String moduleId) {
-    // Ne pas démarrer si le widget est déjà disposé
+    // Ne pas démarrer si le widget est déjà disposed
     if (_isDisposed) {
       return;
     }
 
-    // Arrêter la sync précédente si on change de module/entreprise
-    if (_realtimeSyncService != null &&
-        (_lastEnterpriseId != enterpriseId || _lastModuleId != moduleId)) {
-      stopModuleSync();
-      // Attendre un peu pour que l'arrêt se termine
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _startSyncSafely(enterpriseId, moduleId);
-      });
-      return;
-    }
-
-    // Vérifier si on est déjà en train d'écouter ce module
-    if (_realtimeSyncService?.isListeningTo(enterpriseId, moduleId) ?? false) {
-      return;
+    // Si on change de module/entreprise, mettre à jour les références
+    if (_lastEnterpriseId != enterpriseId || _lastModuleId != moduleId) {
+      _lastEnterpriseId = enterpriseId;
+      _lastModuleId = moduleId;
     }
 
     // Utiliser addPostFrameCallback pour éviter d'appeler dans build()
@@ -85,40 +75,61 @@ mixin ModuleSyncMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
   }
 
   /// Démarre la synchronisation de manière sûre en vérifiant que le widget est monté.
+  ///
+  /// Utilise le GlobalModuleRealtimeSyncService pour éviter les duplications.
+  /// Si la synchronisation est déjà active, ne fait rien.
   void _startSyncSafely(String enterpriseId, String moduleId) {
     // Vérifier que le widget est toujours monté
     if (_isDisposed || !mounted) {
       return;
     }
 
-    // Vérifier à nouveau si on est déjà en train d'écouter
-    if (_realtimeSyncService?.isListeningTo(enterpriseId, moduleId) ?? false) {
+    // Vérifier si le service global est disponible
+    final globalSync = globalModuleRealtimeSyncService;
+    if (globalSync == null) {
+      developer.log(
+        'GlobalModuleRealtimeSyncService not available, skipping sync',
+        name: 'module.sync.mixin',
+      );
       return;
     }
 
-    _lastEnterpriseId = enterpriseId;
-    _lastModuleId = moduleId;
+    // Vérifier si la synchronisation est déjà active pour ce module
+    // Cela évite les duplications : si la sync a été démarrée après la connexion,
+    // elle est déjà active et on ne fait rien
+    if (globalSync.isListeningTo(enterpriseId, moduleId)) {
+      developer.log(
+        'Realtime sync already active for module $moduleId in enterprise $enterpriseId',
+        name: 'module.sync.mixin',
+      );
+      return;
+    }
 
-    // Créer et démarrer le service de synchronisation en temps réel
-    _realtimeSyncService = ModuleRealtimeSyncService(
-      firestore: FirebaseFirestore.instance,
-      driftService: DriftService.instance,
-    );
-
-    // Démarrer la sync de manière asynchrone et vérifier mounted après
-    _realtimeSyncService!
+    // Démarrer la synchronisation via le service global
+    // Cela évite les duplications car le service global vérifie déjà
+    // si une sync est active avant de démarrer
+    globalSync
         .startRealtimeSync(enterpriseId: enterpriseId, moduleId: moduleId)
         .then((_) {
           if (!mounted || _isDisposed) {
-            // Si le widget a été disposé pendant la sync, arrêter immédiatement
-            stopModuleSync();
+            developer.log(
+              'Widget disposed during sync start, but sync will continue globally',
+              name: 'module.sync.mixin',
+            );
+          } else {
+            developer.log(
+              'Realtime sync started/verified for module $moduleId in enterprise $enterpriseId',
+              name: 'module.sync.mixin',
+            );
           }
         })
-        .catchError((error) {
-          developer.log(
-            'Error starting module sync: $error',
+        .catchError((error, stackTrace) {
+          final appException = ErrorHandler.instance.handleError(error, stackTrace);
+          AppLogger.warning(
+            'Error starting module sync: ${appException.message}',
             name: 'module.sync.mixin',
             error: error,
+            stackTrace: stackTrace,
           );
           // Log l'erreur mais ne bloque pas l'affichage du module
           // Les données locales seront utilisées même si la sync échoue

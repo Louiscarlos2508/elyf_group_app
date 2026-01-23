@@ -1,6 +1,7 @@
 import 'dart:developer' as developer;
 
 import '../../../../core/errors/error_handler.dart';
+import '../../../../core/logging/app_logger.dart';
 import '../../domain/entities/activity_summary.dart';
 import '../../domain/repositories/activity_repository.dart';
 import '../../domain/repositories/credit_repository.dart';
@@ -63,8 +64,8 @@ class ActivityOfflineRepository implements ActivityRepository {
       );
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error fetching today summary',
+      AppLogger.error(
+        'Error fetching today summary: ${appException.message}',
         name: 'ActivityOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -114,8 +115,8 @@ class ActivityOfflineRepository implements ActivityRepository {
       );
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error fetching monthly summary',
+      AppLogger.error(
+        'Error fetching monthly summary: ${appException.message}',
         name: 'ActivityOfflineRepository',
         error: error,
         stackTrace: stackTrace,

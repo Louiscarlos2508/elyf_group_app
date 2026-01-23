@@ -43,18 +43,25 @@ class DashboardKpiSection extends ConsumerWidget {
         ? cylinders.first.enterpriseId
         : 'default_enterprise';
 
-    final stocksAsync = ref.watch(
+    // Récupérer tous les stocks pour calculer pleines et vides
+    final allStocksAsync = ref.watch(
       cylinderStocksProvider((
         enterpriseId: enterpriseId,
-        status: CylinderStatus.full,
+        status: null, // null = tous les stocks
         siteId: null,
       )),
     );
 
-    return stocksAsync.when(
-      data: (stocks) {
-        final fullBottles = stocks.fold<int>(0, (sum, s) => sum + s.quantity);
-        final emptyBottles = 0; // TODO: Calculate empty bottles
+    return allStocksAsync.when(
+      data: (allStocks) {
+        // Calculer les bouteilles pleines
+        final fullBottles = GazCalculationService.calculateTotalFullCylinders(
+          allStocks,
+        );
+        // Calculer les bouteilles vides (emptyAtStore + emptyInTransit)
+        final emptyBottles = GazCalculationService.calculateTotalEmptyCylinders(
+          allStocks,
+        );
 
         return LayoutBuilder(
           builder: (context, constraints) {

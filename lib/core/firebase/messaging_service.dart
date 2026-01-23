@@ -2,6 +2,9 @@ import 'dart:developer' as developer;
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 
+import '../errors/error_handler.dart';
+import '../logging/app_logger.dart';
+
 /// Service pour gérer les notifications push FCM (Firebase Cloud Messaging).
 ///
 /// Ce service gère :
@@ -60,8 +63,9 @@ class MessagingService {
       final token = await messaging.getToken();
       return token;
     } catch (e, stackTrace) {
-      developer.log(
-        'Error getting FCM token',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error getting FCM token: ${appException.message}',
         name: 'messaging.service',
         error: e,
         stackTrace: stackTrace,
@@ -76,8 +80,9 @@ class MessagingService {
       await messaging.deleteToken();
       developer.log('FCM token deleted', name: 'messaging.service');
     } catch (e, stackTrace) {
-      developer.log(
-        'Error deleting FCM token',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error deleting FCM token: ${appException.message}',
         name: 'messaging.service',
         error: e,
         stackTrace: stackTrace,
@@ -113,8 +118,9 @@ class MessagingService {
         );
       }
     } catch (e, stackTrace) {
-      developer.log(
-        'Error subscribing to topic',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error subscribing to topic: ${appException.message}',
         name: 'messaging.service',
         error: e,
         stackTrace: stackTrace,
@@ -147,8 +153,9 @@ class MessagingService {
         );
       }
     } catch (e, stackTrace) {
-      developer.log(
-        'Error unsubscribing from topic',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error unsubscribing from topic: ${appException.message}',
         name: 'messaging.service',
         error: e,
         stackTrace: stackTrace,
@@ -162,8 +169,9 @@ class MessagingService {
     try {
       return await messaging.getInitialMessage();
     } catch (e, stackTrace) {
-      developer.log(
-        'Error getting initial message',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error getting initial message: ${appException.message}',
         name: 'messaging.service',
         error: e,
         stackTrace: stackTrace,

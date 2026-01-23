@@ -1,7 +1,8 @@
-import 'dart:developer' as developer;
 import 'dart:convert';
+import 'dart:developer' as developer;
 
 import '../../../../core/errors/error_handler.dart';
+import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/offline_repository.dart';
 import '../../domain/entities/expense.dart';
 import '../../domain/repositories/expense_repository.dart';
@@ -139,7 +140,20 @@ class PropertyExpenseOfflineRepository
       moduleType: 'immobilier',
     );
     if (byRemote != null) {
-      return fromMap(jsonDecode(byRemote.dataJson) as Map<String, dynamic>);
+      final map = safeDecodeJson(byRemote.dataJson, localId);
+      if (map == null) return null;
+      try {
+        return fromMap(map);
+      } catch (e, stackTrace) {
+        final appException = ErrorHandler.instance.handleError(e, stackTrace);
+        AppLogger.warning(
+          'Error parsing PropertyExpense from map: ${appException.message}',
+          name: 'PropertyExpenseOfflineRepository',
+          error: e,
+          stackTrace: stackTrace,
+        );
+        return null;
+      }
     }
 
     final byLocal = await driftService.records.findByLocalId(
@@ -149,7 +163,20 @@ class PropertyExpenseOfflineRepository
       moduleType: 'immobilier',
     );
     if (byLocal == null) return null;
-    return fromMap(jsonDecode(byLocal.dataJson) as Map<String, dynamic>);
+    final map = safeDecodeJson(byLocal.dataJson, localId);
+    if (map == null) return null;
+    try {
+      return fromMap(map);
+    } catch (e, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.warning(
+        'Error parsing PropertyExpense from map: ${appException.message}',
+        name: 'PropertyExpenseOfflineRepository',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      return null;
+    }
   }
 
   @override
@@ -159,12 +186,33 @@ class PropertyExpenseOfflineRepository
       enterpriseId: enterpriseId,
       moduleType: 'immobilier',
     );
-    final expenses =
-        rows
-            .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
-            .toList()
-          ..sort((a, b) => b.expenseDate.compareTo(a.expenseDate));
-    return expenses;
+    
+    // Décoder et parser de manière sécurisée, en ignorant les données corrompues
+    final expenses = <PropertyExpense>[];
+    for (final row in rows) {
+      final map = safeDecodeJson(row.dataJson, row.localId);
+      if (map == null) continue; // Ignorer les données corrompues
+      
+      try {
+        expenses.add(fromMap(map));
+      } catch (e, stackTrace) {
+        final appException = ErrorHandler.instance.handleError(e, stackTrace);
+        AppLogger.warning(
+          'Error parsing PropertyExpense from map (skipping): ${appException.message}',
+          name: 'PropertyExpenseOfflineRepository',
+          error: e,
+          stackTrace: stackTrace,
+        );
+        // Continuer avec les autres enregistrements
+      }
+    }
+    
+    // Dédupliquer par remoteId pour éviter les doublons
+    final deduplicatedExpenses = deduplicateByRemoteId(expenses);
+    
+    // Trier par date décroissante
+    deduplicatedExpenses.sort((a, b) => b.expenseDate.compareTo(a.expenseDate));
+    return deduplicatedExpenses;
   }
 
   // PropertyExpenseRepository interface implementation
@@ -172,15 +220,15 @@ class PropertyExpenseOfflineRepository
   @override
   Future<List<PropertyExpense>> getAllExpenses() async {
     try {
-      developer.log(
+      AppLogger.debug(
         'Fetching all property expenses for enterprise: $enterpriseId',
         name: 'PropertyExpenseOfflineRepository',
       );
       return await getAllForEnterprise(enterpriseId);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error fetching all expenses',
+      AppLogger.error(
+        'Error fetching all expenses: ${appException.message}',
         name: 'PropertyExpenseOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -195,8 +243,8 @@ class PropertyExpenseOfflineRepository
       return await getByLocalId(id);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error getting expense: $id',
+      AppLogger.error(
+        'Error getting expense: $id - ${appException.message}',
         name: 'PropertyExpenseOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -214,8 +262,8 @@ class PropertyExpenseOfflineRepository
       return filtered;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error fetching expenses by property: $propertyId',
+      AppLogger.error(
+        'Error fetching expenses by property: $propertyId - ${appException.message}',
         name: 'PropertyExpenseOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -235,8 +283,8 @@ class PropertyExpenseOfflineRepository
       return filtered;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error fetching expenses by category: ${category.name}',
+      AppLogger.error(
+        'Error fetching expenses by category: ${category.name} - ${appException.message}',
         name: 'PropertyExpenseOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -261,8 +309,8 @@ class PropertyExpenseOfflineRepository
       return filtered;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error fetching expenses by period',
+      AppLogger.error(
+        'Error fetching expenses by period: ${appException.message}',
         name: 'PropertyExpenseOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -291,8 +339,8 @@ class PropertyExpenseOfflineRepository
       return expenseWithLocalId;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error creating expense',
+      AppLogger.error(
+        'Error creating expense: ${appException.message}',
         name: 'PropertyExpenseOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -327,8 +375,8 @@ class PropertyExpenseOfflineRepository
       }
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error deleting expense: $id',
+      AppLogger.error(
+        'Error deleting expense: $id - ${appException.message}',
         name: 'PropertyExpenseOfflineRepository',
         error: error,
         stackTrace: stackTrace,

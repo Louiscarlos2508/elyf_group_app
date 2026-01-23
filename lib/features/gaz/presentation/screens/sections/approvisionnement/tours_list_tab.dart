@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../application/providers.dart';
+import '../../../../../../core/logging/app_logger.dart';
+import '../../../../../../core/logging/app_logger.dart';
 import '../../../../domain/entities/tour.dart';
 import '../../../widgets/tour_card.dart';
 import '../../../widgets/tours_empty_state.dart';
@@ -98,6 +100,11 @@ class ToursListTab extends ConsumerWidget {
                             child: TourCard(
                               tour: tour,
                               onTap: () {
+                                // Logger l'ID du tour pour le débogage
+                                AppLogger.debug(
+                                  'Ouverture du tour avec ID: ${tour.id}',
+                                  name: 'gaz.tours',
+                                );
                                 Navigator.of(context).push(
                                   MaterialPageRoute(
                                     builder: (context) => TourDetailScreen(

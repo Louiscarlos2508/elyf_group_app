@@ -1,7 +1,7 @@
-import 'dart:developer' as developer;
 import 'dart:convert';
 
 import '../../../../core/errors/error_handler.dart';
+import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/offline_repository.dart';
 import '../../../../shared/domain/entities/payment_method.dart';
 import '../../domain/entities/payment.dart';
@@ -159,9 +159,17 @@ class PaymentOfflineRepository extends OfflineRepository<Payment>
       enterpriseId: enterpriseId,
       moduleType: 'immobilier',
     );
-    return rows
+    final entities = rows
+
         .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+
         .toList();
+
+    
+
+    // Dédupliquer par remoteId pour éviter les doublons
+
+    return deduplicateByRemoteId(entities);
   }
 
   // PaymentRepository interface implementation
@@ -169,15 +177,15 @@ class PaymentOfflineRepository extends OfflineRepository<Payment>
   @override
   Future<List<Payment>> getAllPayments() async {
     try {
-      developer.log(
+      AppLogger.debug(
         'Fetching payments for enterprise: $enterpriseId',
         name: 'PaymentOfflineRepository',
       );
       return await getAllForEnterprise(enterpriseId);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error fetching payments',
+      AppLogger.error(
+        'Error fetching payments: ${appException.message}',
         name: 'PaymentOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -192,8 +200,8 @@ class PaymentOfflineRepository extends OfflineRepository<Payment>
       return await getByLocalId(id);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error getting payment: $id',
+      AppLogger.error(
+        'Error getting payment: $id - ${appException.message}',
         name: 'PaymentOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -209,8 +217,8 @@ class PaymentOfflineRepository extends OfflineRepository<Payment>
       return allPayments.where((p) => p.contractId == contractId).toList();
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error getting payments by contract: $contractId',
+      AppLogger.error(
+        'Error getting payments by contract: $contractId - ${appException.message}',
         name: 'PaymentOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -234,8 +242,8 @@ class PaymentOfflineRepository extends OfflineRepository<Payment>
       }).toList();
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error getting payments by period',
+      AppLogger.error(
+        'Error getting payments by period: ${appException.message}',
         name: 'PaymentOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -270,8 +278,8 @@ class PaymentOfflineRepository extends OfflineRepository<Payment>
       return paymentWithLocalId;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error creating payment',
+      AppLogger.error(
+        'Error creating payment: ${appException.message}',
         name: 'PaymentOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -287,8 +295,8 @@ class PaymentOfflineRepository extends OfflineRepository<Payment>
       return payment;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error updating payment: ${payment.id}',
+      AppLogger.error(
+        'Error updating payment: ${payment.id} - ${appException.message}',
         name: 'PaymentOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -306,8 +314,8 @@ class PaymentOfflineRepository extends OfflineRepository<Payment>
       }
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error deleting payment: $id',
+      AppLogger.error(
+        'Error deleting payment: $id - ${appException.message}',
         name: 'PaymentOfflineRepository',
         error: error,
         stackTrace: stackTrace,

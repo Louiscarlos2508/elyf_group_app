@@ -27,6 +27,7 @@ class ProductionPaymentFormState extends ConsumerState<ProductionPaymentForm> {
   DateTime _paymentDate = DateTime.now();
   String _period = '';
   final List<ProductionPaymentPerson> _persons = [];
+  List<String> _sourceProductionDayIds = [];
   bool _isLoading = false;
 
   @override
@@ -99,6 +100,7 @@ class ProductionPaymentFormState extends ConsumerState<ProductionPaymentForm> {
         notes: _notesController.text.isEmpty
             ? null
             : _notesController.text.trim(),
+        sourceProductionDayIds: _sourceProductionDayIds,
       );
 
       await ref.read(salaryControllerProvider).createProductionPayment(payment);
@@ -154,6 +156,11 @@ class ProductionPaymentFormState extends ConsumerState<ProductionPaymentForm> {
                 setState(() {
                   _persons.clear();
                   _persons.addAll(persons);
+                });
+              },
+              onSourceDaysLoaded: (dayIds) {
+                setState(() {
+                  _sourceProductionDayIds = dayIds;
                 });
               },
             ),

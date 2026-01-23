@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
+import '../../../../core/logging/app_logger.dart';
 import '../../domain/entities/bobine_usage.dart';
 import '../../domain/entities/production_day.dart';
 import '../../domain/entities/production_session.dart';
@@ -84,6 +85,7 @@ class ProductionSessionFormStepsState
   }
 
   /// Vérifie l'état de chaque machine sélectionnée et charge les bobines appropriées.
+  /// Préserve les bobines déjà présentes dans le formulaire pour éviter de les écraser.
   Future<void> _chargerBobinesNonFinies() async {
     await ProductionSessionFormActions.chargerBobinesNonFinies(
       ref: ref,
@@ -92,6 +94,7 @@ class ProductionSessionFormStepsState
           setState(() => _bobinesUtilisees = bobines),
       onMachinesAvecBobineChanged: (machines) =>
           setState(() => _machinesAvecBobineNonFinie = machines),
+      bobinesExistantes: _bobinesUtilisees,
     );
   }
 
@@ -203,17 +206,14 @@ class ProductionSessionFormStepsState
         // Créer une nouvelle session seulement si aucune session n'existe
         savedSession = await controller.createSession(session);
         _createdSessionId = savedSession.id; // Stocker l'ID créé
-
-        // Le stock a déjà été décrémenté lors de l'assignation des bobines dans _chargerBobinesNonFinies()
-        // Pas besoin de décrémenter à nouveau ici
+        // Le stock est décrémenté dans createSession pour les nouvelles bobines
       } else {
-        // Le stock sera géré automatiquement dans updateSession (nouvelles bobines seulement)
+        // Le stock est géré dans updateSession (nouvelles bobines seulement)
         savedSession = await controller.updateSession(session);
       }
 
       if (!mounted) return;
       Navigator.of(context).pop();
-      ref.invalidate(productionSessionsStateProvider);
       NotificationService.showInfo(
         context,
         widget.session == null
@@ -229,11 +229,14 @@ class ProductionSessionFormStepsState
   }
 
   /// Sauvegarde l'état actuel comme brouillon (méthode publique pour l'écran parent).
-  Future<void> saveDraft() async {
+  ///
+  /// [silent] : si true, n'affiche pas "État sauvegardé" (ex. sauvegarde avant "Suivant").
+  Future<void> saveDraft({bool silent = false}) async {
     // Éviter les appels multiples simultanés
     if (_isSavingDraft) return;
-    if (_machinesSelectionnees.isEmpty)
+    if (_machinesSelectionnees.isEmpty) {
       return; // Pas de sauvegarde si pas de machines
+    }
 
     _isSavingDraft = true;
     try {
@@ -288,20 +291,27 @@ class ProductionSessionFormStepsState
         final createdSession = await controller.createSession(session);
         _createdSessionId =
             createdSession.id; // Stocker l'ID pour les prochaines sauvegardes
-        if (mounted) {
+        if (mounted && !silent) {
           NotificationService.showInfo(context, 'État sauvegardé');
         }
       } else {
-        // Mettre à jour la session existante (soit widget.session, soit _createdSessionId, soit session trouvée)
+        // Mettre à jour la session existante (même ID → pas de doublon).
+        // Le statut est recalculé à chaque sauvegarde depuis les données du formulaire.
         final sessionToUpdate = session.copyWith(id: existingSessionId);
         await controller.updateSession(sessionToUpdate);
-        // Ne pas afficher de message pour les sauvegardes automatiques silencieuses
+        if (mounted && !silent) {
+          NotificationService.showInfo(context, 'État sauvegardé');
+        }
       }
-      // Invalider le provider pour rafraîchir la liste
-      ref.invalidate(productionSessionsStateProvider);
+      // Ne pas invalider ici : on est dans le formulaire, la liste n'est pas visible.
+      // L'invalidation se fait au submit (ou en quittant) pour limiter les chargements longs.
     } catch (e) {
       // Ignorer les erreurs de sauvegarde automatique silencieusement
-      debugPrint('Erreur sauvegarde automatique: $e');
+      AppLogger.error(
+        'Erreur sauvegarde automatique: $e',
+        name: 'eau_minerale.production',
+        error: e,
+      );
     } finally {
       _isSavingDraft = false;
     }

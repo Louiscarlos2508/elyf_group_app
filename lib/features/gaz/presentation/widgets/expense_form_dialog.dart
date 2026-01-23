@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/tenant/tenant_provider.dart';
+import '../../../../../../core/errors/app_exceptions.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/expense.dart';
@@ -77,7 +78,10 @@ class _GazExpenseFormDialogState extends ConsumerState<GazExpenseFormDialog>
       onSubmit: () async {
         final amount = double.tryParse(_amountController.text);
         if (amount == null || amount <= 0) {
-          throw Exception('Montant invalide');
+          throw ValidationException(
+            'Montant invalide. Le montant doit être supérieur à 0',
+            'INVALID_AMOUNT',
+          );
         }
 
         final expense = GazExpense(

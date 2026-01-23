@@ -1,3 +1,4 @@
+import '../../../../core/errors/app_exceptions.dart';
 import '../entities/cylinder.dart';
 import '../repositories/cylinder_stock_repository.dart';
 
@@ -51,7 +52,10 @@ class StockService {
   ) async {
     final error = await validateStatusChange(stockId, newStatus);
     if (error != null) {
-      throw Exception(error);
+      throw ValidationException(
+        error,
+        'STOCK_STATUS_CHANGE_ERROR',
+      );
     }
 
     await stockRepository.changeStockStatus(stockId, newStatus);
@@ -60,7 +64,10 @@ class StockService {
   /// Ajuste la quantité d'un stock.
   Future<void> adjustStockQuantity(String stockId, int newQuantity) async {
     if (newQuantity < 0) {
-      throw Exception('La quantité ne peut pas être négative');
+      throw ValidationException(
+        'La quantité ne peut pas être négative',
+        'NEGATIVE_QUANTITY',
+      );
     }
 
     await stockRepository.updateStockQuantity(stockId, newQuantity);

@@ -37,7 +37,71 @@ class _EditRoleDialogState extends ConsumerState<EditRoleDialog>
     _descriptionController = TextEditingController(
       text: widget.role.description,
     );
-    _selectedPermissions = Set.from(widget.role.permissions);
+    // Normaliser les permissions pour s'assurer qu'elles correspondent aux IDs du PermissionRegistry
+    _selectedPermissions = _normalizePermissions(widget.role.permissions);
+  }
+
+  /// Normalise les IDs de permissions pour qu'ils correspondent au format du PermissionRegistry.
+  ///
+  /// Les permissions peuvent être stockées avec ou sans préfixe de module.
+  /// Cette méthode s'assure qu'elles sont dans le bon format pour la comparaison.
+  Set<String> _normalizePermissions(Set<String> permissions) {
+    final normalized = <String>{};
+    final registry = PermissionRegistry.instance;
+
+    // Créer un index de toutes les permissions disponibles dans le registry
+    // pour une recherche plus rapide
+    final allRegistryPermissions = <String>{};
+    for (final moduleId in registry.registeredModules) {
+      final modulePerms = registry.getModulePermissions(moduleId);
+      if (modulePerms != null) {
+        allRegistryPermissions.addAll(modulePerms.keys);
+      }
+    }
+
+    for (final permissionId in permissions) {
+      String? normalizedId;
+
+      // Si la permission contient un point (format module.permission), extraire juste l'ID
+      if (permissionId.contains('.')) {
+        final parts = permissionId.split('.');
+        // Prendre la dernière partie comme ID de permission
+        final permissionIdOnly = parts.last;
+        
+        // Vérifier si cette permission existe dans le registry
+        if (allRegistryPermissions.contains(permissionIdOnly)) {
+          normalizedId = permissionIdOnly;
+        }
+      } else {
+        // Vérifier si la permission existe directement dans le registry
+        if (allRegistryPermissions.contains(permissionId)) {
+          normalizedId = permissionId;
+        }
+      }
+
+      // Ajouter la permission normalisée ou l'originale si pas trouvée
+      if (normalizedId != null) {
+        normalized.add(normalizedId);
+      } else {
+        // Garder l'ID original si pas trouvé dans le registry
+        // (pour les permissions personnalisées ou non enregistrées)
+        normalized.add(permissionId);
+      }
+    }
+
+    return normalized;
+  }
+
+  @override
+  void didUpdateWidget(EditRoleDialog oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Mettre à jour les permissions si le rôle a changé
+    if (oldWidget.role.id != widget.role.id ||
+        oldWidget.role.permissions != widget.role.permissions) {
+      _selectedPermissions = _normalizePermissions(widget.role.permissions);
+      _nameController.text = widget.role.name;
+      _descriptionController.text = widget.role.description;
+    }
   }
 
   @override

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/providers.dart';
+import '../../../../core/logging/app_logger.dart';
 import '../../domain/entities/cylinder.dart';
 import 'cylinder_form_dialog.dart';
 import 'cylinder_list_item.dart';
@@ -181,7 +182,11 @@ class _CylinderManagementCardState
         builder: (dialogContext) => const CylinderFormDialog(),
       );
     } catch (e) {
-      debugPrint('Erreur lors de l\'ouverture du dialog: $e');
+      AppLogger.error(
+        'Erreur lors de l\'ouverture du dialog de bouteille: $e',
+        name: 'gaz.cylinder',
+        error: e,
+      );
       NotificationService.showError(context, 'Erreur: $e');
     }
   }
@@ -193,7 +198,11 @@ class _CylinderManagementCardState
         builder: (dialogContext) => CylinderFormDialog(cylinder: cylinder),
       );
     } catch (e) {
-      debugPrint('Erreur lors de l\'ouverture du dialog: $e');
+      AppLogger.error(
+        'Erreur lors de l\'ouverture du dialog de bouteille: $e',
+        name: 'gaz.cylinder',
+        error: e,
+      );
       NotificationService.showError(context, 'Erreur: $e');
     }
   }

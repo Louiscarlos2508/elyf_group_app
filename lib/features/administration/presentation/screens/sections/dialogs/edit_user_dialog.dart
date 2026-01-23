@@ -63,7 +63,8 @@ class _EditUserDialogState extends State<EditUserDialog> with FormHelperMixin {
               : _emailController.text.trim(),
           phone: _phoneController.text.trim().isEmpty
               ? null
-              : _phoneController.text.trim(),
+              : (PhoneUtils.normalizeBurkina(_phoneController.text.trim()) ??
+                  _phoneController.text.trim()),
           isActive: _isActive,
           updatedAt: DateTime.now(),
         );
@@ -87,12 +88,8 @@ class _EditUserDialogState extends State<EditUserDialog> with FormHelperMixin {
   }
 
   String? _validatePhone(String? value) {
-    if (value == null || value.isEmpty) return null;
-    final phoneRegex = RegExp(r'^\+?[0-9]{8,15}$');
-    if (!phoneRegex.hasMatch(value.replaceAll(' ', ''))) {
-      return 'Téléphone invalide';
-    }
-    return null;
+    if (value == null || value.trim().isEmpty) return null;
+    return Validators.phoneBurkina(value);
   }
 
   String? _validateUsername(String? value) {

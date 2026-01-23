@@ -4,8 +4,9 @@ import '../providers.dart'
     show currentUserIdProvider, firestoreUserServiceProvider;
 
 /// Provider pour récupérer les données complètes du profil utilisateur depuis Firestore.
+/// Non autoDispose pour éviter un rechargement à chaque visite du profil.
 final currentUserProfileProvider =
-    FutureProvider.autoDispose<Map<String, dynamic>?>((ref) async {
+    FutureProvider<Map<String, dynamic>?>((ref) async {
       final userId = ref.read(currentUserIdProvider);
       if (userId == null) return null;
 

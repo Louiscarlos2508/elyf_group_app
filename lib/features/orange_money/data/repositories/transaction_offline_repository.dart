@@ -1,7 +1,7 @@
-import 'dart:developer' as developer;
 import 'dart:convert';
 
 import '../../../../core/errors/error_handler.dart';
+import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/offline_repository.dart';
 import '../../domain/entities/transaction.dart';
 import '../../domain/repositories/transaction_repository.dart';
@@ -143,9 +143,12 @@ class TransactionOfflineRepository extends OfflineRepository<Transaction>
       enterpriseId: enterpriseId,
       moduleType: 'orange_money',
     );
-    return rows
+    final transactions = rows
         .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
         .toList();
+    
+    // Dédupliquer par remoteId pour éviter les doublons
+    return deduplicateByRemoteId(transactions);
   }
 
   // TransactionRepository interface implementation
@@ -158,7 +161,7 @@ class TransactionOfflineRepository extends OfflineRepository<Transaction>
     TransactionStatus? status,
   }) async {
     try {
-      developer.log(
+      AppLogger.debug(
         'Fetching transactions for enterprise: $enterpriseId',
         name: 'TransactionOfflineRepository',
       );
@@ -199,8 +202,8 @@ class TransactionOfflineRepository extends OfflineRepository<Transaction>
       return allTransactions;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error fetching transactions',
+      AppLogger.error(
+        'Error fetching transactions: ${appException.message}',
         name: 'TransactionOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -215,8 +218,8 @@ class TransactionOfflineRepository extends OfflineRepository<Transaction>
       return await getByLocalId(transactionId);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error getting transaction: $transactionId',
+      AppLogger.error(
+        'Error getting transaction: $transactionId - ${appException.message}',
         name: 'TransactionOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -247,8 +250,8 @@ class TransactionOfflineRepository extends OfflineRepository<Transaction>
       return localId;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error creating transaction',
+      AppLogger.error(
+        'Error creating transaction: ${appException.message}',
         name: 'TransactionOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -283,8 +286,8 @@ class TransactionOfflineRepository extends OfflineRepository<Transaction>
       }
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error updating transaction status: $transactionId',
+      AppLogger.error(
+        'Error updating transaction status: $transactionId - ${appException.message}',
         name: 'TransactionOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -343,8 +346,8 @@ class TransactionOfflineRepository extends OfflineRepository<Transaction>
       };
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error getting statistics',
+      AppLogger.error(
+        'Error getting statistics: ${appException.message}',
         name: 'TransactionOfflineRepository',
         error: error,
         stackTrace: stackTrace,

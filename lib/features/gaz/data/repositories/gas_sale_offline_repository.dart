@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import '../../../../core/errors/error_handler.dart';
+import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/offline_repository.dart';
 import '../../domain/entities/cylinder.dart';
 import '../../domain/entities/gas_sale.dart';
@@ -84,9 +85,11 @@ class GasSaleOfflineRepository extends OfflineRepository<GasSale>
 
   @override
   Future<void> saveToLocal(GasSale entity) async {
-    final localId = getLocalId(entity);
+    // Utiliser la méthode utilitaire pour trouver le localId existant
+    final existingLocalId = await findExistingLocalId(entity, moduleType: moduleType);
+    final localId = existingLocalId ?? getLocalId(entity);
     final remoteId = getRemoteId(entity);
-    final map = toMap(entity)..['localId'] = localId;
+    final map = toMap(entity)..['localId'] = localId..['id'] = localId;
     await driftService.records.upsert(
       collectionName: collectionName,
       localId: localId,
@@ -147,9 +150,12 @@ class GasSaleOfflineRepository extends OfflineRepository<GasSale>
       enterpriseId: enterpriseId,
       moduleType: moduleType,
     );
-    return rows
+    final sales = rows
         .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
         .toList();
+    
+    // Dédupliquer par remoteId pour éviter les doublons
+    return deduplicateByRemoteId(sales);
   }
 
   // GasRepository - Sales implementation
@@ -181,8 +187,8 @@ class GasSaleOfflineRepository extends OfflineRepository<GasSale>
       return await getByLocalId(id);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error getting sale: $id',
+      AppLogger.error(
+        'Error getting sale: $id - ${appException.message}',
         name: 'GasSaleOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -215,8 +221,8 @@ class GasSaleOfflineRepository extends OfflineRepository<GasSale>
       await save(sale);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error updating sale: ${sale.id}',
+      AppLogger.error(
+        'Error updating sale: ${sale.id} - ${appException.message}',
         name: 'GasSaleOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -234,8 +240,8 @@ class GasSaleOfflineRepository extends OfflineRepository<GasSale>
       }
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error deleting sale: $id',
+      AppLogger.error(
+        'Error deleting sale: $id - ${appException.message}',
         name: 'GasSaleOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -287,8 +293,8 @@ class GasSaleOfflineRepository extends OfflineRepository<GasSale>
           .toList();
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error getting cylinders',
+      AppLogger.error(
+        'Error getting cylinders: ${appException.message}',
         name: 'GasSaleOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -323,8 +329,8 @@ class GasSaleOfflineRepository extends OfflineRepository<GasSale>
       );
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error getting cylinder: $id',
+      AppLogger.error(
+        'Error getting cylinder: $id - ${appException.message}',
         name: 'GasSaleOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -351,8 +357,8 @@ class GasSaleOfflineRepository extends OfflineRepository<GasSale>
       );
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error adding cylinder',
+      AppLogger.error(
+        'Error adding cylinder: ${appException.message}',
         name: 'GasSaleOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -367,8 +373,8 @@ class GasSaleOfflineRepository extends OfflineRepository<GasSale>
       await addCylinder(cylinder);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error updating cylinder: ${cylinder.id}',
+      AppLogger.error(
+        'Error updating cylinder: ${cylinder.id} - ${appException.message}',
         name: 'GasSaleOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -394,8 +400,8 @@ class GasSaleOfflineRepository extends OfflineRepository<GasSale>
       );
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error deleting cylinder: $id',
+      AppLogger.error(
+        'Error deleting cylinder: $id - ${appException.message}',
         name: 'GasSaleOfflineRepository',
         error: error,
         stackTrace: stackTrace,

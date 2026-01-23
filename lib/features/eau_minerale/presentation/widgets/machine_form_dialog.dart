@@ -241,34 +241,31 @@ class _MachineFormDialogState extends ConsumerState<MachineFormDialog>
               ),
               Padding(
                 padding: const EdgeInsets.all(24),
-                child: Align(
-                  alignment: Alignment.centerRight,
-                  child: IntrinsicWidth(
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        TextButton(
-                          onPressed: _isLoading
-                              ? null
-                              : () => Navigator.of(context).pop(),
-                          child: const Text('Annuler'),
-                        ),
-                        const SizedBox(width: 12),
-                        FilledButton(
-                          onPressed: _isLoading ? null : _submit,
-                          child: _isLoading
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : const Text('Enregistrer'),
-                        ),
-                      ],
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: _isLoading
+                          ? null
+                          : () => Navigator.of(context).pop(),
+                      child: const Text('Annuler'),
                     ),
-                  ),
+                    const SizedBox(width: 12),
+                    IntrinsicWidth(
+                      child: FilledButton(
+                        onPressed: _isLoading ? null : _submit,
+                        child: _isLoading
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Text('Enregistrer'),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],

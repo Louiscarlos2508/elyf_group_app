@@ -4,6 +4,19 @@ import '../../domain/entities/bobine_stock.dart';
 import '../../domain/entities/packaging_stock.dart';
 import '../../domain/entities/stock_item.dart';
 
+/// Helper class pour regrouper les stocks de même type.
+class _GroupedStock {
+  _GroupedStock({
+    required this.quantity,
+    required this.isLowStock,
+    this.seuilAlerte,
+  });
+
+  final int quantity;
+  final bool isLowStock;
+  final int? seuilAlerte;
+}
+
 /// Card displaying raw materials stock summary (including bobines and packaging).
 class RawMaterialsCard extends StatelessWidget {
   const RawMaterialsCard({
@@ -70,22 +83,43 @@ class RawMaterialsCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 20),
-          // Afficher les bobines par type (comme les emballages)
+          // Afficher les bobines par type (regrouper les stocks de même type)
           if (bobineStocks.isNotEmpty) ...[
-            ...bobineStocks.map((stock) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: _buildPackagingItem(
-                  context,
-                  stock.type,
-                  'Géré automatiquement • Déduit lors des installations en production',
-                  stock.quantity.toDouble(),
-                  stock.unit,
-                  stock.estStockFaible,
-                  stock.seuilAlerte,
-                ),
-              );
-            }),
+            ...() {
+              // Regrouper les stocks par type et additionner les quantités
+              final Map<String, _GroupedStock> groupedStocks = {};
+              for (final stock in bobineStocks) {
+                final existing = groupedStocks[stock.type];
+                if (existing == null) {
+                  groupedStocks[stock.type] = _GroupedStock(
+                    quantity: stock.quantity,
+                    isLowStock: stock.estStockFaible,
+                    seuilAlerte: stock.seuilAlerte,
+                  );
+                } else {
+                  groupedStocks[stock.type] = _GroupedStock(
+                    quantity: existing.quantity + stock.quantity,
+                    isLowStock: existing.isLowStock || stock.estStockFaible,
+                    seuilAlerte: existing.seuilAlerte ?? stock.seuilAlerte,
+                  );
+                }
+              }
+              
+              return groupedStocks.entries.map((entry) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: _buildPackagingItem(
+                    context,
+                    entry.key,
+                    'Géré automatiquement • Déduit lors des installations en production',
+                    entry.value.quantity.toDouble(),
+                    'unité',
+                    entry.value.isLowStock,
+                    entry.value.seuilAlerte,
+                  ),
+                );
+              });
+            }(),
           ] else if (availableBobines > 0) ...[
             // Fallback si bobineStocks est vide mais availableBobines > 0
             _buildMaterialItem(

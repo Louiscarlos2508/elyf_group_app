@@ -2,6 +2,9 @@ import 'dart:developer' as developer;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../errors/error_handler.dart';
+import '../logging/app_logger.dart';
+
 /// Service pour gérer les utilisateurs dans Firestore.
 ///
 /// Structure Firestore :
@@ -57,6 +60,22 @@ class FirestoreUserService {
         );
       } else {
         // Mettre à jour l'utilisateur existant
+        // ⚠️ IMPORTANT: Ne pas écraser firstName et lastName si l'utilisateur existe déjà
+        // et que ces valeurs ne sont pas fournies (pour éviter d'écraser les vraies valeurs)
+        final existingData = userSnapshot.data();
+        if (existingData != null) {
+          // Si firstName/lastName ne sont pas fournis, garder les valeurs existantes
+          if (firstName == null || firstName.isEmpty) {
+            userData['firstName'] = existingData['firstName'] ?? '';
+          }
+          if (lastName == null || lastName.isEmpty) {
+            userData['lastName'] = existingData['lastName'] ?? '';
+          }
+          // Si username n'est pas fourni, garder la valeur existante
+          if (username == null || username.isEmpty) {
+            userData['username'] = existingData['username'] ?? email.split('@').first;
+          }
+        }
         await userDoc.update(userData);
         developer.log(
           'Updated user in Firestore: $userId',
@@ -208,11 +227,13 @@ class FirestoreUserService {
       final userDoc = firestore.collection(_usersCollection).doc(userId);
       final userSnapshot = await userDoc.get();
       return userSnapshot.exists;
-    } catch (e) {
-      developer.log(
-        'Error checking if user exists',
+    } catch (e, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.warning(
+        'Error checking if user exists: ${appException.message}',
         name: 'firestore.user',
         error: e,
+        stackTrace: stackTrace,
       );
       return false;
     }
@@ -310,8 +331,9 @@ class FirestoreUserService {
         name: 'firestore.user',
       );
     } catch (e, stackTrace) {
-      developer.log(
-        'Error updating admin status',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error updating admin status: ${appException.message}',
         name: 'firestore.user',
         error: e,
         stackTrace: stackTrace,

@@ -3,6 +3,9 @@ import 'dart:developer' as developer;
 
 import 'package:flutter/foundation.dart';
 
+import '../../errors/error_handler.dart';
+import '../../logging/app_logger.dart';
+
 /// Provides secure handling of sensitive data.
 ///
 /// Note: For truly sensitive data (passwords, tokens), use flutter_secure_storage.
@@ -103,11 +106,13 @@ class SecureDataHandler {
       }
 
       return utf8.decode(deobfuscated);
-    } catch (e) {
-      developer.log(
-        'Failed to deobfuscate data',
+    } catch (e, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.warning(
+        'Failed to deobfuscate data: ${appException.message}',
         name: 'offline.security',
         error: e,
+        stackTrace: stackTrace,
       );
       return '';
     }

@@ -161,13 +161,21 @@ class ExpenseOfflineRepository extends OfflineRepository<Expense>
       enterpriseId: enterpriseId,
       moduleType: moduleType,
     );
-    // Filtrer les dépenses supprimées (soft delete)
     final expenses = rows
         .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+        .toList();
+    
+    // Dédupliquer par remoteId pour éviter les doublons
+    final deduplicatedExpenses = deduplicateByRemoteId(expenses);
+    
+    // Filtrer les dépenses supprimées (soft delete)
+    final filteredExpenses = deduplicatedExpenses
         .where((expense) => !expense.isDeleted)
         .toList();
-    expenses.sort((a, b) => b.date.compareTo(a.date));
-    return expenses;
+    
+    // Trier par date décroissante
+    filteredExpenses.sort((a, b) => b.date.compareTo(a.date));
+    return filteredExpenses;
   }
 
   // ExpenseRepository interface implementation

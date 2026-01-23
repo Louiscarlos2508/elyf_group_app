@@ -1,4 +1,8 @@
+import 'dart:developer' as developer;
+
+import '../../../../core/errors/app_exceptions.dart';
 import '../../domain/entities/bobine_stock.dart';
+import '../../domain/pack_constants.dart';
 import '../../domain/entities/bobine_stock_movement.dart';
 import '../../domain/entities/packaging_stock.dart';
 import '../../domain/entities/packaging_stock_movement.dart';
@@ -51,22 +55,41 @@ class StockController {
     String? fournisseur,
     String? notes,
   }) async {
-    // Récupérer ou créer le stock
-    var stock = await _bobineStockQuantityRepository.fetchByType(bobineType);
-    stock ??= BobineStock(
-      id: 'bobine-stock-${DateTime.now().millisecondsSinceEpoch}',
-      type: bobineType,
-      quantity: 0,
-      unit: 'unité',
-      fournisseur: fournisseur,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-    );
+    // Validation des paramètres
+    if (bobineType.trim().isEmpty) {
+      throw ValidationException('Le type de bobine est requis.');
+    }
+    if (quantite <= 0 || quantite > 1000000) {
+      throw ValidationException(
+        'La quantité de bobines doit être un nombre entier positif et inférieur à 1 000 000.',
+      );
+    }
 
-    // Enregistrer le mouvement
+    // Récupérer ou créer le stock (sans le sauvegarder encore)
+    var stock = await _bobineStockQuantityRepository.fetchByType(bobineType);
+    final isNewStock = stock == null;
+    
+    // Utiliser l'ID du stock existant s'il existe, sinon créer un ID fixe basé sur le type
+    // Cela garantit qu'on utilise toujours le même stock pour le même type
+    final stockId = stock?.id ?? 'bobine-${bobineType.toLowerCase().replaceAll(' ', '-')}';
+    
+    if (isNewStock) {
+      // Créer le stock en mémoire seulement (ne pas sauvegarder avec quantity: 0)
+      stock = BobineStock(
+        id: stockId, // ID fixe basé sur le type pour garantir la cohérence
+        type: bobineType,
+        quantity: 0, // Sera mis à jour par recordMovement
+        unit: 'unité',
+        fournisseur: fournisseur,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+    }
+
+    // Enregistrer le mouvement (qui créera le stock s'il est nouveau et mettra à jour la quantité)
     final movement = BobineStockMovement(
       id: 'movement-${DateTime.now().millisecondsSinceEpoch}',
-      bobineId: stock.id,
+      bobineId: stockId, // Utiliser l'ID du stock (existant ou nouvellement créé)
       bobineReference: bobineType,
       type: BobineMovementType.entree,
       date: DateTime.now(),
@@ -75,15 +98,9 @@ class StockController {
       notes: notes,
       createdAt: DateTime.now(),
     );
+    // recordMovement créera le stock s'il est nouveau et mettra automatiquement à jour le stock
+    // Il utilise maintenant save() au lieu de saveToLocal + queue sync, comme pour les emballages
     await _bobineStockQuantityRepository.recordMovement(movement);
-
-    // Mettre à jour le stock
-    final updatedStock = stock.copyWith(
-      quantity: stock.quantity + quantite,
-      fournisseur: fournisseur ?? stock.fournisseur,
-      updatedAt: DateTime.now(),
-    );
-    await _bobineStockQuantityRepository.save(updatedStock);
   }
 
   /// Enregistre une sortie de bobine du stock (installation en production).
@@ -100,17 +117,17 @@ class StockController {
     // Récupérer le stock de bobines
     var stock = await _bobineStockQuantityRepository.fetchByType(bobineType);
     if (stock == null) {
-      throw Exception('Stock de bobine non trouvé pour le type: $bobineType');
+      throw NotFoundException('Stock de bobine non trouvé pour le type: $bobineType');
     }
 
     // Vérifier que le stock est suffisant
     if (!stock.peutSatisfaire(quantite)) {
-      throw Exception(
+      throw ValidationException(
         'Stock insuffisant. Disponible: ${stock.quantity}, Demandé: $quantite',
       );
     }
 
-    // Enregistrer le mouvement
+    // Enregistrer le mouvement (qui mettra automatiquement à jour le stock)
     final movement = BobineStockMovement(
       id: 'movement-${DateTime.now().millisecondsSinceEpoch}',
       bobineId:
@@ -125,14 +142,8 @@ class StockController {
       notes: notes,
       createdAt: DateTime.now(),
     );
+    // recordMovement met automatiquement à jour le stock, donc pas besoin de save après
     await _bobineStockQuantityRepository.recordMovement(movement);
-
-    // Mettre à jour le stock
-    final updatedStock = stock.copyWith(
-      quantity: stock.quantity - quantite,
-      updatedAt: DateTime.now(),
-    );
-    await _bobineStockQuantityRepository.save(updatedStock);
   }
 
   /// Enregistre un retrait de bobine après utilisation complète.
@@ -190,17 +201,18 @@ class StockController {
     // Récupérer le stock actuel
     final stock = await _packagingStockRepository.fetchById(packagingId);
     if (stock == null) {
-      throw Exception('Stock d\'emballage non trouvé: $packagingId');
+      throw NotFoundException('Stock d\'emballage non trouvé: $packagingId');
     }
 
     // Vérifier que le stock est suffisant
     if (!stock.peutSatisfaire(quantite)) {
-      throw Exception(
+      throw ValidationException(
         'Stock insuffisant. Disponible: ${stock.quantity}, Demandé: $quantite',
       );
     }
 
     // Enregistrer le mouvement
+    // recordMovement met automatiquement à jour le stock (comme pour les bobines)
     final movement = PackagingStockMovement(
       id: 'movement-${DateTime.now().millisecondsSinceEpoch}',
       packagingId: packagingId,
@@ -213,14 +225,8 @@ class StockController {
       notes: notes,
       createdAt: DateTime.now(),
     );
+    // recordMovement met automatiquement à jour le stock, donc pas besoin de save après
     await _packagingStockRepository.recordMovement(movement);
-
-    // Mettre à jour le stock
-    final updatedStock = stock.copyWith(
-      quantity: stock.quantity - quantite,
-      updatedAt: DateTime.now(),
-    );
-    await _packagingStockRepository.save(updatedStock);
   }
 
   /// Enregistre une entrée d'emballages en stock (livraison).
@@ -231,21 +237,46 @@ class StockController {
     String? fournisseur,
     String? notes,
   }) async {
-    // Récupérer ou créer le stock
-    var stock = await _packagingStockRepository.fetchById(packagingId);
-    stock ??= PackagingStock(
-      id: packagingId,
-      type: packagingType,
-      quantity: 0,
-      unit: 'packs',
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-    );
+    // Validation des paramètres
+    if (packagingId.trim().isEmpty) {
+      throw ValidationException('L\'ID d\'emballage est requis.');
+    }
+    if (packagingType.trim().isEmpty) {
+      throw ValidationException('Le type d\'emballage est requis.');
+    }
+    if (quantite <= 0 || quantite > 1000000) {
+      throw ValidationException(
+        'La quantité d\'emballages doit être un nombre entier positif et inférieur à 1 000 000.',
+      );
+    }
+
+    // Utiliser un ID fixe basé sur le type pour garantir la cohérence
+    // (comme pour les bobines avec 'bobine-${bobineType}')
+    final fixedPackagingId = packagingId.isEmpty 
+        ? 'packaging-${packagingType.toLowerCase().replaceAll(' ', '-')}'
+        : packagingId;
+    
+    // Récupérer ou créer le stock (sans le sauvegarder encore)
+    var stock = await _packagingStockRepository.fetchById(fixedPackagingId);
+    final isNewStock = stock == null;
+    if (isNewStock) {
+      // Créer le stock en mémoire seulement (ne pas sauvegarder avec quantity: 0)
+      stock = PackagingStock(
+        id: fixedPackagingId,
+        type: packagingType,
+        quantity: 0, // Sera mis à jour après le mouvement
+        unit: 'unité',
+        fournisseur: fournisseur,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+    }
 
     // Enregistrer le mouvement
+    // recordMovement met automatiquement à jour le stock (comme pour les bobines)
     final movement = PackagingStockMovement(
       id: 'movement-${DateTime.now().millisecondsSinceEpoch}',
-      packagingId: packagingId,
+      packagingId: fixedPackagingId,
       packagingType: packagingType,
       type: PackagingMovementType.entree,
       date: DateTime.now(),
@@ -255,14 +286,8 @@ class StockController {
       notes: notes,
       createdAt: DateTime.now(),
     );
+    // recordMovement met automatiquement à jour le stock, donc pas besoin de save après
     await _packagingStockRepository.recordMovement(movement);
-
-    // Mettre à jour le stock
-    final updatedStock = stock.copyWith(
-      quantity: stock.quantity + quantite,
-      updatedAt: DateTime.now(),
-    );
-    await _packagingStockRepository.save(updatedStock);
   }
 
   /// Récupère les alertes de stock faible.
@@ -294,12 +319,18 @@ class StockController {
       endDate: endDate,
     );
 
+    // Log pour déboguer
+    developer.log(
+      'Fetched ${bobineMovements.length} bobine movements and ${packagingMovements.length} packaging movements',
+      name: 'StockController.fetchAllMovements',
+    );
+
     // Convertir les mouvements de bobines
     final unifiedBobineMovements = bobineMovements.map((m) {
       return StockMovement(
         id: m.id,
         date: m.date,
-        productName: 'Bobine ${m.bobineReference}',
+        productName: m.bobineReference, // bobineReference est déjà "Bobine"
         type: _convertBobineMovementType(m.type),
         reason: m.raison,
         quantity: m.quantite.toDouble(),
@@ -323,9 +354,14 @@ class StockController {
         notes: m.notes,
       );
     }).toList();
+    
+    developer.log(
+      'Converted to ${unifiedBobineMovements.length} unified bobine movements and ${unifiedPackagingMovements.length} unified packaging movements',
+      name: 'StockController.fetchAllMovements',
+    );
 
-    // Récupérer les mouvements de ventes depuis StockRepository
-    final saleMovements = await _stockRepository.fetchMovements(
+    // Récupérer les mouvements de produits finis (ajustements, ventes) depuis StockRepository
+    final stockItemMovements = await _stockRepository.fetchMovements(
       productId: null, // Récupérer tous les produits
       startDate: startDate,
       endDate: endDate,
@@ -335,7 +371,7 @@ class StockController {
     final allMovements = [
       ...unifiedBobineMovements,
       ...unifiedPackagingMovements,
-      ...saleMovements,
+      ...stockItemMovements,
     ];
     allMovements.sort((a, b) => b.date.compareTo(a.date));
 
@@ -375,7 +411,10 @@ class StockController {
     // Récupérer l'item actuel
     final item = await _inventoryRepository.fetchStockItemById(itemId);
     if (item == null) {
-      throw Exception('Item non trouvé: $itemId');
+      throw NotFoundException(
+        'Item non trouvé: $itemId',
+        'STOCK_ITEM_NOT_FOUND',
+      );
     }
 
     // Calculer la nouvelle quantité
@@ -384,11 +423,25 @@ class StockController {
         : item.quantity - quantity;
 
     if (newQuantity < 0) {
-      throw Exception(
+      throw ValidationException(
         'Stock insuffisant. Stock actuel: ${item.quantity} $unit, '
         'Demandé: $quantity $unit',
+        'INSUFFICIENT_STOCK',
       );
     }
+
+    // Enregistrer le mouvement dans l'historique
+    final movement = StockMovement(
+      id: 'movement-${DateTime.now().millisecondsSinceEpoch}',
+      date: DateTime.now(),
+      productName: itemName,
+      type: type,
+      reason: reason,
+      quantity: quantity,
+      unit: unit,
+      notes: notes,
+    );
+    await _stockRepository.recordMovement(movement);
 
     // Mettre à jour le stock
     final updatedItem = StockItem(
@@ -411,33 +464,34 @@ class StockController {
     // Récupérer tous les stocks pour trouver le stock de produits finis
     final stockItems = await _inventoryRepository.fetchStockItems();
 
-    // Chercher le stock de produits finis (packs)
+    // Chercher le stock de produits finis (le Pack ou équivalent)
     StockItem? finishedGoodsStock;
     try {
-      finishedGoodsStock = stockItems.firstWhere(
-        (item) =>
-            item.type == StockType.finishedGoods &&
-            (item.name.toLowerCase().contains('pack') ||
-                item.name.toLowerCase().contains('sachet')),
-      );
+      // 1. Chercher par ID pack-1
+      finishedGoodsStock = stockItems.firstWhere((i) => i.id == packStockItemId);
     } catch (_) {
-      // Si pas trouvé avec "pack" ou "sachet", chercher n'importe quel produit fini
       try {
+        // 2. Chercher par type PF et nom contenant 'pack'
         finishedGoodsStock = stockItems.firstWhere(
-          (item) => item.type == StockType.finishedGoods,
+          (item) =>
+              item.type == StockType.finishedGoods &&
+              item.name.toLowerCase().contains('pack'),
         );
       } catch (_) {
-        // Aucun stock de produits finis trouvé, on en créera un nouveau
+        // 3. Si un seul item fini existe, c'est lui
+        final allFG = stockItems.where((i) => i.type == StockType.finishedGoods).toList();
+        if (allFG.length == 1) {
+          finishedGoodsStock = allFG.first;
+        }
       }
     }
 
     if (finishedGoodsStock == null) {
-      // Créer un nouveau stock de produits finis si aucun n'existe
       finishedGoodsStock = StockItem(
-        id: 'pack-1',
-        name: 'Pack',
+        id: packStockItemId,
+        name: packName,
         quantity: quantiteProduite.toDouble(),
-        unit: 'unité',
+        unit: packUnit,
         type: StockType.finishedGoods,
         updatedAt: DateTime.now(),
       );
@@ -455,6 +509,86 @@ class StockController {
 
     // Sauvegarder la mise à jour
     await _inventoryRepository.updateStockItem(finishedGoodsStock);
+  }
+
+  /// Retourne le StockItem approprié (Pack ou produit fini spécifié).
+  /// Crée le Pack par défaut s'il n'y a rien du tout.
+  Future<StockItem> ensurePackStockItem({String? productId}) async {
+    final stockItems = await _inventoryRepository.fetchStockItems();
+    
+    // 1. Si productId fourni, chercher l'item exact
+    if (productId != null) {
+      try {
+        return stockItems.firstWhere((i) => i.id == productId);
+      } catch (_) {
+        // Continue
+      }
+    }
+
+    // 2. Chercher par ID pack-1 ou nom contenant 'pack'
+    final packs = stockItems
+        .where(
+          (i) =>
+              i.type == StockType.finishedGoods &&
+              (i.id == packStockItemId || i.name.toLowerCase().contains('pack')),
+        )
+        .toList();
+    
+    if (packs.isNotEmpty) {
+      return packs.any((i) => i.id == packStockItemId)
+          ? packs.firstWhere((i) => i.id == packStockItemId)
+          : packs.first;
+    }
+
+    // 3. Fallback: Si un seul item fini existe, c'est lui
+    final allFG = stockItems.where((i) => i.type == StockType.finishedGoods).toList();
+    if (allFG.length == 1) return allFG.first;
+
+    // 4. Création d'un item Pack par défaut si rien trouvé
+    final created = StockItem(
+      id: packStockItemId,
+      name: packName,
+      quantity: 0,
+      unit: packUnit,
+      type: StockType.finishedGoods,
+      updatedAt: DateTime.now(),
+    );
+    await _inventoryRepository.updateStockItem(created);
+    return created;
+  }
+
+  /// Quantité Pack calculée depuis les mouvements (entrées − sorties).
+  Future<double> computePackQuantityFromMovements() async {
+    final movements = await fetchAllMovements();
+    final pack =
+        movements.where((m) => m.productName == packName).toList();
+    double qty = 0;
+    for (final m in pack) {
+      if (m.type == StockMovementType.entry) {
+        qty += m.quantity;
+      } else {
+        qty -= m.quantity;
+      }
+    }
+    return qty;
+  }
+
+  /// Recalcule Pack.quantity depuis les mouvements et met à jour l'inventaire si
+  /// différent. Utile quand suivi (journalier) affiche 151 mais stock Pack = 1.
+  Future<bool> reconcilePackQuantityFromMovements() async {
+    final pack = await ensurePackStockItem();
+    final expected = await computePackQuantityFromMovements();
+    if (expected < 0 || pack.quantity == expected) return false;
+    final updated = StockItem(
+      id: pack.id,
+      name: pack.name,
+      quantity: expected,
+      unit: pack.unit,
+      type: pack.type,
+      updatedAt: DateTime.now(),
+    );
+    await _inventoryRepository.updateStockItem(updated);
+    return true;
   }
 }
 

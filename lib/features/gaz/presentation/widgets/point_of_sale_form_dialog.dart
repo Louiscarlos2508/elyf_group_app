@@ -2,9 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'dart:developer' as developer;
+
 import 'package:elyf_groupe_app/shared.dart';
-import '../../application/providers.dart';
+import '../../../../core/tenant/tenant_provider.dart' show activeEnterpriseProvider;
+import '../../application/providers.dart' as gaz_providers;
 import '../../domain/entities/point_of_sale.dart';
+import '../../../../features/administration/application/providers.dart'
+    show enterprisesProvider, enterprisesByTypeProvider, enterpriseByIdProvider, adminStatsProvider;
 
 /// Dialogue pour créer ou modifier un point de vente.
 class PointOfSaleFormDialog extends ConsumerStatefulWidget {
@@ -38,16 +43,29 @@ class _PointOfSaleFormDialogState extends ConsumerState<PointOfSaleFormDialog>
   @override
   void initState() {
     super.initState();
-    // Utiliser les mêmes valeurs par défaut que dans les paramètres pour la cohérence
-    _enterpriseId = widget.enterpriseId ?? 'gaz_1';
-    _moduleId = widget.moduleId ?? 'gaz';
+    developer.log(
+      'PointOfSaleFormDialog.initState: pointOfSale=${widget.pointOfSale?.id ?? "null"}, enterpriseId=${widget.enterpriseId}, moduleId=${widget.moduleId}',
+      name: 'PointOfSaleFormDialog',
+    );
+    
+    // Les valeurs seront initialisées dans build() avec activeEnterpriseProvider
+    // pour éviter les valeurs codées en dur
 
     if (widget.pointOfSale != null) {
       _nameController.text = widget.pointOfSale!.name;
       _addressController.text = widget.pointOfSale!.address;
       _contactController.text = widget.pointOfSale!.contact;
-      _enterpriseId = widget.pointOfSale!.enterpriseId;
+      _enterpriseId = widget.pointOfSale!.parentEnterpriseId;
       _moduleId = widget.pointOfSale!.moduleId;
+      developer.log(
+        'PointOfSaleFormDialog.initState: Mode édition, parentEnterpriseId=$_enterpriseId',
+        name: 'PointOfSaleFormDialog',
+      );
+    } else {
+      developer.log(
+        'PointOfSaleFormDialog.initState: Mode création',
+        name: 'PointOfSaleFormDialog',
+      );
     }
   }
 
@@ -73,36 +91,101 @@ class _PointOfSaleFormDialogState extends ConsumerState<PointOfSaleFormDialog>
       formKey: _formKey,
       onLoadingChanged: (isLoading) => setState(() => _isLoading = isLoading),
       onSubmit: () async {
-        final controller = ref.read(pointOfSaleControllerProvider);
-        final pointOfSale = PointOfSale(
-          id:
-              widget.pointOfSale?.id ??
-              'pos-${DateTime.now().millisecondsSinceEpoch}',
-          name: _nameController.text.trim(),
-          address: _addressController.text.trim(),
-          contact: _contactController.text.trim(),
-          enterpriseId: _enterpriseId!,
-          moduleId: _moduleId!,
-          isActive: widget.pointOfSale?.isActive ?? true,
-          createdAt: widget.pointOfSale?.createdAt ?? DateTime.now(),
-          updatedAt: DateTime.now(),
-        );
+        // Utiliser le provider depuis gaz/application/providers.dart
+        // qui gère déjà le fallback pour les utilisateurs non connectés
+        // Utiliser le provider depuis gaz/application/providers.dart
+        // qui gère déjà le fallback pour les utilisateurs non connectés
+        final currentUserId = ref.read(gaz_providers.currentUserIdProvider);
 
         if (widget.pointOfSale == null) {
-          await controller.addPointOfSale(pointOfSale);
+          // Création : utiliser le service pour créer avec Enterprise automatique
+          // ⚠️ IMPORTANT: _enterpriseId doit être l'entreprise mère (gaz_1), pas un point de vente
+          // Si _enterpriseId commence par 'pos_', c'est un point de vente, pas l'entreprise mère
+          final parentEnterpriseId = _enterpriseId!;
+          
+          developer.log(
+            'Création d\'un point de vente avec parentEnterpriseId=$parentEnterpriseId',
+            name: 'PointOfSaleFormDialog._savePointOfSale',
+          );
+          
+          final service = ref.read(gaz_providers.pointOfSaleServiceProvider);
+          await service.createPointOfSaleWithEnterprise(
+            name: _nameController.text.trim(),
+            address: _addressController.text.trim(),
+            contact: _contactController.text.trim(),
+            parentEnterpriseId: parentEnterpriseId,
+            createdByUserId: currentUserId,
+            cylinderIds: const [],
+          );
         } else {
+          // Mise à jour : utiliser le controller existant
+          final controller = ref.read(gaz_providers.pointOfSaleControllerProvider);
+          final pointOfSale = widget.pointOfSale!.copyWith(
+            name: _nameController.text.trim(),
+            address: _addressController.text.trim(),
+            contact: _contactController.text.trim(),
+            updatedAt: DateTime.now(),
+          );
           await controller.updatePointOfSale(pointOfSale);
         }
 
         if (mounted) {
-          // Invalider le provider pour rafraîchir la liste
+          developer.log(
+            'Point de vente créé, invalidation des providers...',
+            name: 'PointOfSaleFormDialog._savePointOfSale',
+          );
+          
+          // Attendre un peu pour que la base de données soit à jour
+          await Future.delayed(const Duration(milliseconds: 300));
+          
+          // Invalider les providers pour forcer le rafraîchissement
+          // 1. Invalider les points de vente
           ref.invalidate(
-            pointsOfSaleProvider((
+            gaz_providers.pointsOfSaleProvider((
               enterpriseId: _enterpriseId!,
               moduleId: _moduleId!,
             )),
           );
-          Navigator.of(context).pop(true);
+          
+          // 2. Invalider et forcer le refresh des entreprises pour que le nouveau point de vente
+          // apparaisse dans la liste d'administration
+          developer.log(
+            'Invalidation de enterprisesProvider...',
+            name: 'PointOfSaleFormDialog._savePointOfSale',
+          );
+          ref.invalidate(enterprisesProvider);
+          
+          // Forcer un refresh immédiat pour s'assurer que l'entreprise est visible
+          try {
+            await ref.read(enterprisesProvider.future);
+            developer.log(
+              'Refresh de enterprisesProvider effectué',
+              name: 'PointOfSaleFormDialog._savePointOfSale',
+            );
+          } catch (e) {
+            developer.log(
+              'Erreur lors du refresh de enterprisesProvider: $e',
+              name: 'PointOfSaleFormDialog._savePointOfSale',
+              error: e,
+            );
+          }
+          
+          // 3. Invalider aussi les providers dépendants
+          ref.invalidate(enterprisesByTypeProvider);
+          ref.invalidate(enterpriseByIdProvider);
+          ref.invalidate(adminStatsProvider);
+          
+          // Attendre encore un peu pour que les invalidations soient prises en compte
+          await Future.delayed(const Duration(milliseconds: 200));
+          
+          developer.log(
+            'Providers invalidés, fermeture du dialog...',
+            name: 'PointOfSaleFormDialog._savePointOfSale',
+          );
+          
+          if (mounted && context.mounted) {
+            Navigator.of(context).pop(true);
+          }
         }
 
         return widget.pointOfSale == null
@@ -114,7 +197,35 @@ class _PointOfSaleFormDialogState extends ConsumerState<PointOfSaleFormDialog>
 
   @override
   Widget build(BuildContext context) {
+    developer.log(
+      'PointOfSaleFormDialog.build: appelé',
+      name: 'PointOfSaleFormDialog',
+    );
+    
     final theme = Theme.of(context);
+    
+    // Récupérer l'entreprise active depuis le tenant provider
+    final activeEnterpriseAsync = ref.watch(activeEnterpriseProvider);
+    
+    // Initialiser enterpriseId et moduleId depuis l'entreprise active si pas déjà défini
+    activeEnterpriseAsync.whenData((enterprise) {
+      if (_enterpriseId == null && enterprise != null) {
+        _enterpriseId = widget.enterpriseId ?? enterprise.id;
+        _moduleId = widget.moduleId ?? 'gaz';
+        developer.log(
+          'PointOfSaleFormDialog.build: _enterpriseId initialisé depuis activeEnterprise=${enterprise.id}, final=$_enterpriseId',
+          name: 'PointOfSaleFormDialog',
+        );
+      } else if (_enterpriseId == null) {
+        // Fallback uniquement si aucune entreprise active n'est disponible
+        _enterpriseId = widget.enterpriseId;
+        _moduleId = widget.moduleId ?? 'gaz';
+        developer.log(
+          'PointOfSaleFormDialog.build: _enterpriseId initialisé depuis widget.enterpriseId=$_enterpriseId',
+          name: 'PointOfSaleFormDialog',
+        );
+      }
+    });
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),

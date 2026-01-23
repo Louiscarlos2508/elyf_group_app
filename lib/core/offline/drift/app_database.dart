@@ -48,6 +48,7 @@ class SyncOperations extends Table {
     const Constant('pending'),
   )(); // 'pending', 'processing', 'synced', 'failed'
   DateTimeColumn get localUpdatedAt => dateTime()();
+  IntColumn get priority => integer().withDefault(const Constant(2))(); // 0=critical, 1=high, 2=normal, 3=low
 
   @override
   List<String> get customConstraints => [
@@ -60,7 +61,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(openDriftConnection());
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration {
@@ -69,6 +70,10 @@ class AppDatabase extends _$AppDatabase {
         if (from < 2) {
           // Add sync_operations table
           await migrator.createTable(syncOperations);
+        }
+        if (from < 3) {
+          // Add priority column to sync_operations
+          await migrator.addColumn(syncOperations, syncOperations.priority);
         }
       },
     );

@@ -1,3 +1,4 @@
+import '../../../../core/errors/app_exceptions.dart';
 import '../../domain/entities/contract.dart';
 import '../../domain/repositories/contract_repository.dart';
 
@@ -84,7 +85,10 @@ class MockContractRepository implements ContractRepository {
   Future<Contract> updateContract(Contract contract) async {
     final existing = _contracts[contract.id];
     if (existing == null) {
-      throw Exception('Contract not found');
+      throw NotFoundException(
+        'Contract not found',
+        'CONTRACT_NOT_FOUND',
+      );
     }
     final updated = Contract(
       id: contract.id,

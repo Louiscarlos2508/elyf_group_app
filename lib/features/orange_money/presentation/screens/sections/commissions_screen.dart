@@ -7,6 +7,7 @@ import '../../../domain/entities/commission.dart';
 import '../../widgets/commission_form_dialog.dart';
 import '../../widgets/kpi_card.dart';
 import 'package:elyf_groupe_app/shared.dart';
+import '../../../../../shared/providers/storage_provider.dart';
 
 /// Screen for managing commissions.
 class CommissionsScreen extends ConsumerWidget {
@@ -426,8 +427,34 @@ class CommissionsScreen extends ConsumerWidget {
           try {
             final controller = ref.read(commissionsControllerProvider);
 
-            // TODO: Upload photo file if provided (to Firebase Storage or similar)
-            // For now, we'll just create the commission without the photo
+            // ✅ TODO résolu: Upload photo file if provided (to Firebase Storage)
+            String? photoUrl;
+            if (photoFile != null) {
+              try {
+                final storageService = ref.read(storageServiceProvider);
+                final fileName = 'commission_${DateTime.now().millisecondsSinceEpoch}.jpg';
+                
+                photoUrl = await storageService.uploadFile(
+                  file: photoFile,
+                  fileName: fileName,
+                  enterpriseId: enterpriseId,
+                  moduleId: 'orange_money',
+                  subfolder: 'commissions',
+                  contentType: 'image/jpeg',
+                  metadata: {
+                    'period': period,
+                    'uploadedAt': DateTime.now().toIso8601String(),
+                  },
+                );
+              } catch (uploadError) {
+                if (!context.mounted) return;
+                NotificationService.showWarning(
+                  context,
+                  'Photo non uploadée: $uploadError',
+                );
+                // Continue without photo
+              }
+            }
 
             final commission = Commission(
               id: 'commission_${DateTime.now().millisecondsSinceEpoch}',
@@ -437,6 +464,7 @@ class CommissionsScreen extends ConsumerWidget {
               transactionsCount: 0, // Manual commission
               estimatedAmount: 0, // Manual commission
               enterpriseId: enterpriseId,
+              photoUrl: photoUrl, // URL de la photo uploadée
               notes: notes,
               createdAt: DateTime.now(),
               updatedAt: DateTime.now(),
@@ -449,19 +477,17 @@ class CommissionsScreen extends ConsumerWidget {
             ref.invalidate(commissionsStatisticsProvider(enterpriseId));
             ref.invalidate(currentMonthCommissionProvider((enterpriseId)));
 
-            if (context.mounted) {
-              NotificationService.showSuccess(
-                context,
-                'Commission enregistrée avec succès',
-              );
-            }
+            if (!context.mounted) return;
+            NotificationService.showSuccess(
+              context,
+              'Commission enregistrée avec succès',
+            );
           } catch (e) {
-            if (context.mounted) {
-              NotificationService.showError(
-                context,
-                'Erreur lors de l\'enregistrement: $e',
-              );
-            }
+            if (!context.mounted) return;
+            NotificationService.showError(
+              context,
+              'Erreur lors de l\'enregistrement: $e',
+            );
           }
         },
       ),

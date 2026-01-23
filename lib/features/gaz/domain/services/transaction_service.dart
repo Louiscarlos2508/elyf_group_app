@@ -1,5 +1,8 @@
+import '../../../../core/errors/app_exceptions.dart';
+import '../../../../core/logging/app_logger.dart';
 import '../entities/collection.dart';
 import '../entities/cylinder.dart';
+import '../entities/cylinder_stock.dart';
 import '../entities/gas_sale.dart';
 import '../entities/tour.dart';
 import '../repositories/cylinder_stock_repository.dart';
@@ -49,7 +52,10 @@ class TransactionService {
     );
 
     if (consistencyError != null) {
-      throw Exception('Validation échouée: $consistencyError');
+      throw ValidationException(
+        'Validation échouée: $consistencyError',
+        'VALIDATION_FAILED',
+      );
     }
 
     // 2. Débiter le stock
@@ -91,8 +97,9 @@ class TransactionService {
       }
 
       if (remainingToDebit > 0) {
-        throw Exception(
+        throw ValidationException(
           'Stock insuffisant pour ${weight}kg: $remainingToDebit manquants',
+          'INSUFFICIENT_STOCK',
         );
       }
 
@@ -109,9 +116,14 @@ class TransactionService {
             entry.key,
             stockInfo.originalQuantity,
           );
-        } catch (rollbackError) {
+        } catch (rollbackError, rollbackStackTrace) {
           // Log l'erreur de rollback mais ne pas bloquer
-          // TODO: Logger l'erreur
+          AppLogger.error(
+            'TransactionService: Erreur lors du rollback du stock ${entry.key}',
+            name: 'transaction.rollback',
+            error: rollbackError,
+            stackTrace: rollbackStackTrace,
+          );
         }
       }
       rethrow;
@@ -128,7 +140,10 @@ class TransactionService {
   Future<Tour> executeTourClosureTransaction({required String tourId}) async {
     final tour = await tourRepository.getTourById(tourId);
     if (tour == null) {
-      throw Exception('Tour introuvable');
+      throw NotFoundException(
+        'Tour introuvable',
+        'TOUR_NOT_FOUND',
+      );
     }
 
     // 1. Validation
@@ -136,12 +151,16 @@ class TransactionService {
       tour,
     );
     if (consistencyError != null) {
-      throw Exception('Validation échouée: $consistencyError');
+      throw ValidationException(
+        'Validation échouée: $consistencyError',
+        'VALIDATION_FAILED',
+      );
     }
 
     if (!tour.areAllCollectionsPaid) {
-      throw Exception(
+      throw ValidationException(
         'Toutes les collectes doivent être payées avant la clôture',
+        'UNPAID_COLLECTIONS',
       );
     }
 
@@ -153,9 +172,98 @@ class TransactionService {
 
     await tourRepository.updateTour(updatedTour);
 
-    // 3. Mise à jour des stocks si nécessaire
-    // (Les bouteilles collectées peuvent être ajoutées au stock)
-    // TODO: Implémenter selon la logique métier
+    // 3. Mise à jour des stocks : ajouter les bouteilles vides collectées au stock
+    // Les bouteilles collectées sont ajoutées au stock avec le statut emptyAtStore
+    try {
+      // Récupérer tous les cylindres pour mapper les poids aux cylinderId
+      final allCylinders = await gasRepository.getCylinders();
+      // Filtrer par entreprise
+      final cylinders = allCylinders
+          .where((c) => c.enterpriseId == updatedTour.enterpriseId)
+          .toList();
+      
+      // Agréger toutes les bouteilles vides collectées par poids
+      final emptyBottlesByWeight = <int, int>{};
+      for (final collection in updatedTour.collections) {
+        for (final entry in collection.emptyBottles.entries) {
+          final weight = entry.key;
+          final quantity = entry.value;
+          // Soustraire les fuites car elles ne sont pas ajoutées au stock
+          final leakQuantity = collection.leaks[weight] ?? 0;
+          final validQuantity = quantity - leakQuantity;
+          
+          if (validQuantity > 0) {
+            emptyBottlesByWeight[weight] = 
+                (emptyBottlesByWeight[weight] ?? 0) + validQuantity;
+          }
+        }
+      }
+
+      // Pour chaque poids, trouver ou créer un stock et ajouter les bouteilles
+      for (final entry in emptyBottlesByWeight.entries) {
+        final weight = entry.key;
+        final quantityToAdd = entry.value;
+
+        // Trouver le cylindre correspondant au poids
+        final cylinder = cylinders.firstWhere(
+          (c) => c.weight == weight,
+          orElse: () {
+            throw NotFoundException(
+              'Aucun cylindre trouvé pour le poids $weight kg',
+              'CYLINDER_NOT_FOUND',
+            );
+          },
+        );
+
+        // Chercher un stock existant avec le statut emptyAtStore pour ce poids
+        final existingStocks = await stockRepository.getStocksByWeight(
+          updatedTour.enterpriseId,
+          weight,
+        );
+
+        final emptyStocks = existingStocks
+            .where(
+              (s) => s.status == CylinderStatus.emptyAtStore && 
+                     s.cylinderId == cylinder.id,
+            )
+            .toList();
+        final emptyStock = emptyStocks.isNotEmpty ? emptyStocks.first : null;
+
+        if (emptyStock != null) {
+          // Mettre à jour le stock existant
+          await stockRepository.updateStockQuantity(
+            emptyStock.id,
+            emptyStock.quantity + quantityToAdd,
+          );
+        } else {
+          // Créer un nouveau stock
+          final newStock = CylinderStock(
+            id: 'stock_${DateTime.now().millisecondsSinceEpoch}_$weight',
+            cylinderId: cylinder.id,
+            weight: weight,
+            status: CylinderStatus.emptyAtStore,
+            quantity: quantityToAdd,
+            enterpriseId: updatedTour.enterpriseId,
+            updatedAt: DateTime.now(),
+          );
+          await stockRepository.addStock(newStock);
+        }
+      }
+
+      AppLogger.info(
+        'TransactionService: ${emptyBottlesByWeight.values.fold<int>(0, (sum, qty) => sum + qty)} bouteilles vides ajoutées au stock lors de la clôture du tour ${updatedTour.id}',
+        name: 'transaction.tour_closure',
+      );
+    } catch (e, stackTrace) {
+      AppLogger.error(
+        'TransactionService: Erreur lors de la mise à jour des stocks pour le tour ${updatedTour.id}: $e',
+        name: 'transaction.tour_closure',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      // Ne pas faire échouer la clôture du tour si la mise à jour du stock échoue
+      // Le tour est déjà clôturé, on log juste l'erreur
+    }
 
     return updatedTour;
   }
@@ -174,26 +282,36 @@ class TransactionService {
   }) async {
     final tour = await tourRepository.getTourById(tourId);
     if (tour == null) {
-      throw Exception('Tour introuvable');
+      throw NotFoundException(
+        'Tour introuvable',
+        'TOUR_NOT_FOUND',
+      );
     }
 
     final collectionIndex = tour.collections.indexWhere(
       (c) => c.id == collectionId,
     );
     if (collectionIndex == -1) {
-      throw Exception('Collection introuvable dans le tour');
+      throw NotFoundException(
+        'Collection introuvable dans le tour',
+        'COLLECTION_NOT_FOUND',
+      );
     }
 
     final collection = tour.collections[collectionIndex];
 
     // 1. Validation
     if (amount < 0) {
-      throw Exception('Le montant ne peut pas être négatif');
+      throw ValidationException(
+        'Le montant ne peut pas être négatif',
+        'NEGATIVE_AMOUNT',
+      );
     }
 
     if (amount > collection.remainingAmount) {
-      throw Exception(
+      throw ValidationException(
         'Le montant payé ($amount) ne peut pas dépasser le reste à payer (${collection.remainingAmount})',
+        'PAYMENT_AMOUNT_EXCEEDS_REMAINING',
       );
     }
 

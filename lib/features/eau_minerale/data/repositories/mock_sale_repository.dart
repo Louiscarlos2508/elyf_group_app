@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import '../../../../core/errors/app_exceptions.dart';
 import '../../domain/entities/sale.dart';
 import '../../domain/repositories/sale_repository.dart';
 
@@ -98,7 +99,10 @@ class MockSaleRepository implements SaleRepository {
     await Future<void>.delayed(const Duration(milliseconds: 150));
     final sale = _sales[saleId];
     if (sale == null) {
-      throw Exception('Vente introuvable');
+      throw NotFoundException(
+        'Vente introuvable',
+        'SALE_NOT_FOUND',
+      );
     }
     _sales[saleId] = Sale(
       id: sale.id,

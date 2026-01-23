@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import '../../../../core/errors/error_handler.dart';
+import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/offline_repository.dart';
 import '../../domain/entities/commission.dart';
 import '../../domain/repositories/commission_repository.dart';
@@ -150,9 +151,17 @@ class CommissionOfflineRepository extends OfflineRepository<Commission>
       enterpriseId: enterpriseId,
       moduleType: moduleType,
     );
-    return rows
+    final entities = rows
+
         .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+
         .toList();
+
+    
+
+    // Dédupliquer par remoteId pour éviter les doublons
+
+    return deduplicateByRemoteId(entities);
   }
 
   // CommissionRepository implementation
@@ -190,8 +199,8 @@ class CommissionOfflineRepository extends OfflineRepository<Commission>
       return await getByLocalId(commissionId);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error getting commission: $commissionId',
+      AppLogger.error(
+        'Error getting commission: $commissionId - ${appException.message}',
         name: 'CommissionOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -213,8 +222,8 @@ class CommissionOfflineRepository extends OfflineRepository<Commission>
       return commissions.isNotEmpty ? commissions.first : null;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error getting current month commission',
+      AppLogger.error(
+        'Error getting current month commission: ${appException.message}',
         name: 'CommissionOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -275,8 +284,8 @@ class CommissionOfflineRepository extends OfflineRepository<Commission>
       await save(updated);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error updating commission: ${commission.id}',
+      AppLogger.error(
+        'Error updating commission: ${commission.id} - ${appException.message}',
         name: 'CommissionOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -310,8 +319,8 @@ class CommissionOfflineRepository extends OfflineRepository<Commission>
       };
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error getting commission statistics',
+      AppLogger.error(
+        'Error getting commission statistics: ${appException.message}',
         name: 'CommissionOfflineRepository',
         error: error,
         stackTrace: stackTrace,

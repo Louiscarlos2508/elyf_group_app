@@ -231,7 +231,9 @@ class SaleDetailDialog extends StatelessWidget {
                     ),
                   ],
                 ),
-                if (sale.notes != null && sale.notes!.isNotEmpty) ...[
+                if (sale.notes != null && 
+                    sale.notes!.isNotEmpty && 
+                    !sale.notes!.trim().startsWith('{')) ...[
                   const SizedBox(height: 16),
                   SaleDetailRow(
                     label: 'Notes',

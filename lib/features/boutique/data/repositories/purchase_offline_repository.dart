@@ -3,6 +3,7 @@ import 'dart:developer' as developer;
 
 import '../../../../core/domain/entities/attached_file.dart';
 import '../../../../core/errors/error_handler.dart';
+import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/offline_repository.dart';
 import '../../domain/entities/purchase.dart';
 import '../../domain/repositories/purchase_repository.dart';
@@ -175,7 +176,20 @@ class PurchaseOfflineRepository extends OfflineRepository<Purchase>
       moduleType: moduleType,
     );
     if (byRemote != null) {
-      return fromMap(jsonDecode(byRemote.dataJson) as Map<String, dynamic>);
+      final map = safeDecodeJson(byRemote.dataJson, localId);
+      if (map == null) return null;
+      try {
+        return fromMap(map);
+      } catch (e, stackTrace) {
+        final appException = ErrorHandler.instance.handleError(e, stackTrace);
+        AppLogger.warning(
+          'Error parsing Purchase from map: ${appException.message}',
+          name: 'PurchaseOfflineRepository',
+          error: e,
+          stackTrace: stackTrace,
+        );
+        return null;
+      }
     }
     final byLocal = await driftService.records.findByLocalId(
       collectionName: collectionName,
@@ -184,7 +198,19 @@ class PurchaseOfflineRepository extends OfflineRepository<Purchase>
       moduleType: moduleType,
     );
     if (byLocal == null) return null;
-    return fromMap(jsonDecode(byLocal.dataJson) as Map<String, dynamic>);
+    final map = safeDecodeJson(byLocal.dataJson, localId);
+    if (map == null) return null;
+    try {
+      return fromMap(map);
+    } catch (e, stackTrace) {
+      developer.log(
+        'Error parsing Purchase from map: $e',
+        name: 'PurchaseOfflineRepository',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      return null;
+    }
   }
 
   @override
@@ -194,11 +220,33 @@ class PurchaseOfflineRepository extends OfflineRepository<Purchase>
       enterpriseId: enterpriseId,
       moduleType: moduleType,
     );
-    final purchases = rows
-        .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
-        .toList();
-    purchases.sort((a, b) => b.date.compareTo(a.date));
-    return purchases;
+    
+    // Décoder et parser de manière sécurisée, en ignorant les données corrompues
+    final purchases = <Purchase>[];
+    for (final row in rows) {
+      final map = safeDecodeJson(row.dataJson, row.localId);
+      if (map == null) continue; // Ignorer les données corrompues
+      
+      try {
+        purchases.add(fromMap(map));
+      } catch (e, stackTrace) {
+        final appException = ErrorHandler.instance.handleError(e, stackTrace);
+        AppLogger.warning(
+          'Error parsing Purchase from map (skipping): ${appException.message}',
+          name: 'PurchaseOfflineRepository',
+          error: e,
+          stackTrace: stackTrace,
+        );
+        // Continuer avec les autres enregistrements
+      }
+    }
+    
+    // Dédupliquer par remoteId pour éviter les doublons
+    final deduplicatedPurchases = deduplicateByRemoteId(purchases);
+    
+    // Trier par date décroissante
+    deduplicatedPurchases.sort((a, b) => b.date.compareTo(a.date));
+    return deduplicatedPurchases;
   }
 
   // PurchaseRepository implementation
@@ -206,7 +254,7 @@ class PurchaseOfflineRepository extends OfflineRepository<Purchase>
   @override
   Future<List<Purchase>> fetchPurchases({int limit = 50}) async {
     try {
-      developer.log(
+      AppLogger.debug(
         'Fetching purchases for enterprise: $enterpriseId',
         name: 'PurchaseOfflineRepository',
       );
@@ -214,8 +262,8 @@ class PurchaseOfflineRepository extends OfflineRepository<Purchase>
       return purchases.take(limit).toList();
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error fetching purchases',
+      AppLogger.error(
+        'Error fetching purchases: ${appException.message}',
         name: 'PurchaseOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -257,8 +305,8 @@ class PurchaseOfflineRepository extends OfflineRepository<Purchase>
       return localId;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error creating purchase',
+      AppLogger.error(
+        'Error creating purchase: ${appException.message}',
         name: 'PurchaseOfflineRepository',
         error: error,
         stackTrace: stackTrace,

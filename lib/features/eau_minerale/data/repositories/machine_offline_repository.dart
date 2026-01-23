@@ -1,7 +1,9 @@
 import 'dart:developer' as developer;
 import 'dart:convert';
 
+import '../../../../core/errors/app_exceptions.dart';
 import '../../../../core/errors/error_handler.dart';
+import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/offline_repository.dart';
 import '../../domain/entities/machine.dart';
 import '../../domain/repositories/machine_repository.dart';
@@ -141,9 +143,66 @@ class MachineOfflineRepository extends OfflineRepository<Machine>
       enterpriseId: enterpriseId,
       moduleType: 'eau_minerale',
     );
-    return rows
-        .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+    final entities = rows
+        .map((r) {
+          try {
+            return fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>);
+          } catch (e, stackTrace) {
+            final appException = ErrorHandler.instance.handleError(e, stackTrace);
+            AppLogger.warning(
+              'Error decoding machine data: ${appException.message}',
+              name: 'MachineOfflineRepository',
+              error: e,
+              stackTrace: stackTrace,
+            );
+            return null;
+          }
+        })
+        .whereType<Machine>()
         .toList();
+
+    // Dédupliquer par remoteId d'abord
+    final deduplicatedByRemoteId = deduplicateByRemoteId(entities);
+    
+    // Ensuite dédupliquer par référence pour éviter les doublons même sans remoteId
+    return _deduplicateByReference(deduplicatedByRemoteId);
+  }
+
+  /// Déduplique les machines par référence.
+  ///
+  /// Garde la machine la plus récente pour chaque référence unique.
+  List<Machine> _deduplicateByReference(List<Machine> machines) {
+    final Map<String, Machine> machinesByReference = {};
+    
+    for (final machine in machines) {
+      final reference = machine.reference.trim().toUpperCase();
+      if (!machinesByReference.containsKey(reference)) {
+        machinesByReference[reference] = machine;
+      } else {
+        // Garder la machine la plus récente
+        final existing = machinesByReference[reference]!;
+        final existingUpdatedAt = existing.updatedAt ?? existing.createdAt ?? DateTime(1970);
+        final currentUpdatedAt = machine.updatedAt ?? machine.createdAt ?? DateTime(1970);
+        if (currentUpdatedAt.isAfter(existingUpdatedAt)) {
+          machinesByReference[reference] = machine;
+        }
+      }
+    }
+    
+    return machinesByReference.values.toList();
+  }
+
+  /// Trouve une machine par sa référence.
+  Future<Machine?> findMachineByReference(String reference) async {
+    final allMachines = await getAllForEnterprise(enterpriseId);
+    final normalizedReference = reference.trim().toUpperCase();
+    try {
+      return allMachines.firstWhere(
+        (m) => m.reference.trim().toUpperCase() == normalizedReference,
+      );
+    } catch (_) {
+      return null;
+    }
   }
 
   // MachineRepository interface implementation
@@ -162,8 +221,8 @@ class MachineOfflineRepository extends OfflineRepository<Machine>
       return allMachines;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error fetching machines',
+      AppLogger.error(
+        'Error fetching machines: ${appException.message}',
         name: 'MachineOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -178,8 +237,8 @@ class MachineOfflineRepository extends OfflineRepository<Machine>
       return await getByLocalId(id);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error getting machine: $id',
+      AppLogger.error(
+        'Error getting machine: $id - ${appException.message}',
         name: 'MachineOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -191,14 +250,27 @@ class MachineOfflineRepository extends OfflineRepository<Machine>
   @override
   Future<Machine> createMachine(Machine machine) async {
     try {
+      // Vérifier si une machine avec la même référence existe déjà
+      final existingMachine = await findMachineByReference(machine.reference);
+      if (existingMachine != null) {
+        developer.log(
+          'Machine with reference ${machine.reference} already exists: ${existingMachine.id}',
+          name: 'MachineOfflineRepository',
+        );
+        throw ValidationException(
+          'Une machine avec la référence "${machine.reference}" existe déjà',
+          'MACHINE_REFERENCE_DUPLICATE',
+        );
+      }
+      
       final localId = getLocalId(machine);
       final machineWithLocalId = machine.copyWith(id: localId);
       await save(machineWithLocalId);
       return machineWithLocalId;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error creating machine',
+      AppLogger.error(
+        'Error creating machine: ${appException.message}',
         name: 'MachineOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -214,8 +286,8 @@ class MachineOfflineRepository extends OfflineRepository<Machine>
       return machine;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error updating machine: ${machine.id}',
+      AppLogger.error(
+        'Error updating machine: ${machine.id} - ${appException.message}',
         name: 'MachineOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -233,8 +305,8 @@ class MachineOfflineRepository extends OfflineRepository<Machine>
       }
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error deleting machine: $id',
+      AppLogger.error(
+        'Error deleting machine: $id - ${appException.message}',
         name: 'MachineOfflineRepository',
         error: error,
         stackTrace: stackTrace,

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
+import '../../../../../core/errors/app_exceptions.dart';
 import 'package:elyf_groupe_app/features/orange_money/application/providers.dart';
 import '../../../domain/entities/settings.dart';
 import '../../widgets/settings_account_card.dart';
@@ -79,11 +80,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
       // Validate thresholds
       if (_thresholds.criticalLiquidityThreshold < 0) {
-        throw Exception('Le seuil de liquidité ne peut pas être négatif');
+        throw ValidationException(
+          'Le seuil de liquidité ne peut pas être négatif',
+          'NEGATIVE_LIQUIDITY_THRESHOLD',
+        );
       }
       if (_thresholds.paymentDueDaysBefore < 0 ||
           _thresholds.paymentDueDaysBefore > 30) {
-        throw Exception('Le nombre de jours doit être entre 0 et 30');
+        throw ValidationException(
+          'Le nombre de jours doit être entre 0 et 30',
+          'INVALID_DAYS_RANGE',
+        );
       }
 
       // Update notifications

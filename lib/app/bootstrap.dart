@@ -6,6 +6,9 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
+import '../core/errors/error_handler.dart';
+import '../core/logging/app_logger.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart'
     show FirebaseFirestore, Settings;
 
@@ -16,10 +19,13 @@ import '../features/administration/data/services/firestore_sync_service.dart';
 import '../features/administration/data/services/realtime_sync_service.dart';
 import '../core/offline/sync_manager.dart';
 import '../core/offline/handlers/firebase_sync_handler.dart';
+import '../core/offline/global_module_realtime_sync_service.dart';
 import '../core/firebase/messaging_service.dart';
 import '../core/firebase/fcm_handlers.dart'
     show onBackgroundMessage, onForegroundMessage, onMessageOpenedApp;
 import '../core/permissions/services/permission_initializer.dart';
+import '../core/navigation/navigation_service.dart';
+import '../shared/utils/local_notification_service.dart';
 
 /// Global connectivity service instance.
 ///
@@ -37,6 +43,12 @@ SyncManager? globalSyncManager;
 /// Used to stop realtime sync on logout.
 RealtimeSyncService? globalRealtimeSyncService;
 
+/// Global module realtime sync service instance.
+///
+/// Available after [bootstrap] completes successfully.
+/// Used to manage realtime sync for all business modules.
+GlobalModuleRealtimeSyncService? globalModuleRealtimeSyncService;
+
 /// Global messaging service instance.
 ///
 /// Available after [bootstrap] completes successfully.
@@ -46,6 +58,89 @@ MessagingService? globalMessagingService;
 ///
 /// This is where we initialize Firebase, Drift, Remote Config,
 /// crash reporting, and any other shared services.
+/// Global collection paths configuration.
+///
+/// Maps logical collection names to physical Firestore paths.
+/// Used by all sync services to ensure consistency.
+final collectionPaths = <String, String Function(String?)>{
+  // Administration module (collections globales)
+  'enterprises': (enterpriseId) => 'enterprises',
+  'users': (enterpriseId) => 'users',
+  'roles': (enterpriseId) => 'roles',
+  'enterprise_module_users': (enterpriseId) => 'enterprise_module_users',
+
+  // Boutique module
+  'sales': (enterpriseId) => 'enterprises/${enterpriseId!}/sales',
+  'products': (enterpriseId) => 'enterprises/${enterpriseId!}/products',
+  'expenses': (enterpriseId) => 'enterprises/${enterpriseId!}/expenses',
+  'purchases': (enterpriseId) => 'enterprises/${enterpriseId!}/purchases',
+
+  // Eau Minérale module
+  'customers': (enterpriseId) => 'enterprises/${enterpriseId!}/customers',
+  'machines': (enterpriseId) => 'enterprises/${enterpriseId!}/machines',
+  'bobines': (enterpriseId) => 'enterprises/${enterpriseId!}/bobines',
+  'production_sessions': (enterpriseId) =>
+      'enterprises/${enterpriseId!}/productionSessions',
+  'employees': (enterpriseId) => 'enterprises/${enterpriseId!}/employees',
+  'salary_payments': (enterpriseId) =>
+      'enterprises/${enterpriseId!}/salaryPayments',
+  'production_payments': (enterpriseId) =>
+      'enterprises/${enterpriseId!}/productionPayments',
+  'credit_payments': (enterpriseId) =>
+      'enterprises/${enterpriseId!}/creditPayments',
+  'daily_workers': (enterpriseId) =>
+      'enterprises/${enterpriseId!}/dailyWorkers',
+  'bobine_stocks': (enterpriseId) =>
+      'enterprises/${enterpriseId!}/bobineStocks',
+  'bobine_stock_movements': (enterpriseId) =>
+      'enterprises/${enterpriseId!}/bobineStockMovements',
+  'expense_records': (enterpriseId) =>
+      'enterprises/${enterpriseId!}/expenseRecords',
+  'stock_items': (enterpriseId) => 'enterprises/${enterpriseId!}/stockItems',
+  'stock_movements': (enterpriseId) =>
+      'enterprises/${enterpriseId!}/stockMovements',
+  'packaging_stocks': (enterpriseId) =>
+      'enterprises/${enterpriseId!}/packagingStocks',
+  'packaging_stock_movements': (enterpriseId) =>
+      'enterprises/${enterpriseId!}/packagingStockMovements',
+
+  // Orange Money module
+  'agents': (enterpriseId) => 'enterprises/${enterpriseId!}/agents',
+  'transactions': (enterpriseId) =>
+      'enterprises/${enterpriseId!}/transactions',
+  'commissions': (enterpriseId) =>
+      'enterprises/${enterpriseId!}/commissions',
+  'liquidity_checkpoints': (enterpriseId) =>
+      'enterprises/${enterpriseId!}/liquidityCheckpoints',
+  'orange_money_settings': (enterpriseId) =>
+      'enterprises/${enterpriseId!}/orangeMoneySettings',
+
+  // Immobilier module
+  'properties': (enterpriseId) => 'enterprises/${enterpriseId!}/properties',
+  'tenants': (enterpriseId) => 'enterprises/${enterpriseId!}/tenants',
+  'contracts': (enterpriseId) => 'enterprises/${enterpriseId!}/contracts',
+  'payments': (enterpriseId) => 'enterprises/${enterpriseId!}/payments',
+  'property_expenses': (enterpriseId) =>
+      'enterprises/${enterpriseId!}/propertyExpenses',
+
+  // Gaz module
+  'gas_sales': (enterpriseId) => 'enterprises/${enterpriseId!}/gasSales',
+  'cylinders': (enterpriseId) => 'enterprises/${enterpriseId!}/cylinders',
+  'cylinder_stocks': (enterpriseId) =>
+      'enterprises/${enterpriseId!}/cylinderStocks',
+  'pointOfSale': (enterpriseId) =>
+      'enterprises/${enterpriseId!}/pointsOfSale',
+  'tours': (enterpriseId) => 'enterprises/${enterpriseId!}/tours',
+  'gaz_expenses': (enterpriseId) =>
+      'enterprises/${enterpriseId!}/gazExpenses',
+  'cylinder_leaks': (enterpriseId) =>
+      'enterprises/${enterpriseId!}/cylinderLeaks',
+  'gaz_settings': (enterpriseId) =>
+      'enterprises/${enterpriseId!}/gazSettings',
+  'financial_reports': (enterpriseId) =>
+      'enterprises/${enterpriseId!}/financialReports',
+};
+
 Future<void> bootstrap() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -67,8 +162,9 @@ Future<void> bootstrap() async {
     );
     developer.log('Firebase initialized successfully', name: 'bootstrap');
   } catch (e, stackTrace) {
-    developer.log(
-      'Error initializing Firebase: ${e.toString()}',
+    final appException = ErrorHandler.instance.handleError(e, stackTrace);
+    AppLogger.critical(
+      'Error initializing Firebase: ${appException.message}',
       name: 'bootstrap',
       error: e,
       stackTrace: stackTrace,
@@ -132,98 +228,30 @@ Future<void> _initializeOfflineServices() async {
     // gracefully by the sync manager. The app can work offline-first and will
     // sync automatically when the database becomes available.
 
+    // collectionPaths is now global
+
     final firebaseHandler = FirebaseSyncHandler(
       firestore: firestore,
-      collectionPaths: {
-        // Administration module (collections globales)
-        'enterprises': (enterpriseId) => 'enterprises',
-        'users': (enterpriseId) => 'users',
-        'roles': (enterpriseId) => 'roles',
-        'enterprise_module_users': (enterpriseId) => 'enterprise_module_users',
-
-        // Boutique module
-        'sales': (enterpriseId) => 'enterprises/$enterpriseId/sales',
-        'products': (enterpriseId) => 'enterprises/$enterpriseId/products',
-        'expenses': (enterpriseId) => 'enterprises/$enterpriseId/expenses',
-        'purchases': (enterpriseId) => 'enterprises/$enterpriseId/purchases',
-
-        // Eau Minérale module
-        'customers': (enterpriseId) => 'enterprises/$enterpriseId/customers',
-        'machines': (enterpriseId) => 'enterprises/$enterpriseId/machines',
-        'bobines': (enterpriseId) => 'enterprises/$enterpriseId/bobines',
-        'productionSessions': (enterpriseId) =>
-            'enterprises/$enterpriseId/productionSessions',
-        'employees': (enterpriseId) => 'enterprises/$enterpriseId/employees',
-        'salary_payments': (enterpriseId) =>
-            'enterprises/$enterpriseId/salaryPayments',
-        'production_payments': (enterpriseId) =>
-            'enterprises/$enterpriseId/productionPayments',
-        'credit_payments': (enterpriseId) =>
-            'enterprises/$enterpriseId/creditPayments',
-        'daily_workers': (enterpriseId) =>
-            'enterprises/$enterpriseId/dailyWorkers',
-        'bobine_stocks': (enterpriseId) =>
-            'enterprises/$enterpriseId/bobineStocks',
-        'bobine_stock_movements': (enterpriseId) =>
-            'enterprises/$enterpriseId/bobineStockMovements',
-        'expense_records': (enterpriseId) =>
-            'enterprises/$enterpriseId/expenseRecords',
-        'stock_items': (enterpriseId) => 'enterprises/$enterpriseId/stockItems',
-        'stock_movements': (enterpriseId) =>
-            'enterprises/$enterpriseId/stockMovements',
-        'packaging_stocks': (enterpriseId) =>
-            'enterprises/$enterpriseId/packagingStocks',
-        'packaging_stock_movements': (enterpriseId) =>
-            'enterprises/$enterpriseId/packagingStockMovements',
-
-        // Orange Money module
-        'agents': (enterpriseId) => 'enterprises/$enterpriseId/agents',
-        'transactions': (enterpriseId) =>
-            'enterprises/$enterpriseId/transactions',
-        'commissions': (enterpriseId) =>
-            'enterprises/$enterpriseId/commissions',
-        'liquidity_checkpoints': (enterpriseId) =>
-            'enterprises/$enterpriseId/liquidityCheckpoints',
-        'orange_money_settings': (enterpriseId) =>
-            'enterprises/$enterpriseId/orangeMoneySettings',
-
-        // Immobilier module
-        'properties': (enterpriseId) => 'enterprises/$enterpriseId/properties',
-        'tenants': (enterpriseId) => 'enterprises/$enterpriseId/tenants',
-        'contracts': (enterpriseId) => 'enterprises/$enterpriseId/contracts',
-        'payments': (enterpriseId) => 'enterprises/$enterpriseId/payments',
-        'property_expenses': (enterpriseId) =>
-            'enterprises/$enterpriseId/propertyExpenses',
-
-        // Gaz module
-        'gas_sales': (enterpriseId) => 'enterprises/$enterpriseId/gasSales',
-        'cylinders': (enterpriseId) => 'enterprises/$enterpriseId/cylinders',
-        'cylinder_stocks': (enterpriseId) =>
-            'enterprises/$enterpriseId/cylinderStocks',
-        'points_of_sale': (enterpriseId) =>
-            'enterprises/$enterpriseId/pointsOfSale',
-        'tours': (enterpriseId) => 'enterprises/$enterpriseId/tours',
-        'gaz_expenses': (enterpriseId) =>
-            'enterprises/$enterpriseId/gazExpenses',
-        'cylinder_leaks': (enterpriseId) =>
-            'enterprises/$enterpriseId/cylinderLeaks',
-        'gaz_settings': (enterpriseId) =>
-            'enterprises/$enterpriseId/gazSettings',
-        'financial_reports': (enterpriseId) =>
-            'enterprises/$enterpriseId/financialReports',
-      },
-    );
-
-    globalSyncManager = SyncManager(
       driftService: DriftService.instance,
-      connectivityService: globalConnectivityService!,
-      config: const SyncConfig(
-        maxRetryAttempts: 5,
-        syncIntervalMinutes: 5,
-        maxOperationAgeHours: 72,
-      ),
-      syncHandler: firebaseHandler,
+      collectionPaths: collectionPaths,
     );
+
+        // Récupérer AuthService pour vérifier l'authentification pendant sync
+        // Note: AuthService est un singleton, on peut le récupérer via le provider
+        // mais pour éviter la dépendance circulaire, on l'injectera plus tard si nécessaire
+        // Pour l'instant, on peut utiliser null et l'injecter via un setter si besoin
+        globalSyncManager = SyncManager(
+          driftService: DriftService.instance,
+          connectivityService: globalConnectivityService!,
+          config: const SyncConfig(
+            maxRetryAttempts: 5,
+            syncIntervalMinutes: 5,
+            maxOperationAgeHours: 72,
+          ),
+          syncHandler: firebaseHandler,
+          // AuthService sera injecté après l'initialisation via un setter si nécessaire
+          // Pour l'instant, on peut utiliser null et vérifier via FirebaseAuth directement
+        );
     await globalSyncManager!.initialize();
 
     // Initialize realtime sync for administration module
@@ -243,8 +271,9 @@ Future<void> _initializeOfflineServices() async {
         name: 'bootstrap',
       );
     } catch (e, stackTrace) {
-      developer.log(
-        'Failed to start realtime sync (will continue with periodic sync)',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.warning(
+        'Failed to start realtime sync (will continue with periodic sync): ${appException.message}',
         name: 'bootstrap',
         error: e,
         stackTrace: stackTrace,
@@ -252,13 +281,39 @@ Future<void> _initializeOfflineServices() async {
       // Continue app startup even if realtime sync fails
     }
 
+    // Initialize global module realtime sync service
+    // This will be used to sync all business modules after login
+    try {
+      globalModuleRealtimeSyncService = GlobalModuleRealtimeSyncService(
+        firestore: firestore,
+        driftService: DriftService.instance,
+        syncManager: globalSyncManager,
+        conflictResolver: const ConflictResolver(),
+        collectionPaths: collectionPaths,
+      );
+      developer.log(
+        'Global module realtime sync service initialized',
+        name: 'bootstrap',
+      );
+    } catch (e, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.warning(
+        'Failed to initialize global module realtime sync service: ${appException.message}',
+        name: 'bootstrap',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      // Continue app startup even if this fails
+    }
+
     developer.log(
       'Offline services initialized successfully',
       name: 'bootstrap',
     );
   } catch (error, stackTrace) {
-    developer.log(
-      'Failed to initialize offline services',
+    final appException = ErrorHandler.instance.handleError(error, stackTrace);
+    AppLogger.critical(
+      'Failed to initialize offline services: ${appException.message}',
       name: 'bootstrap',
       error: error,
       stackTrace: stackTrace,
@@ -274,6 +329,9 @@ Future<void> _initializeFCM() async {
     final messaging = FirebaseMessaging.instance;
     globalMessagingService = MessagingService(messaging: messaging);
 
+    // Initialize local notifications service
+    await _initializeLocalNotifications();
+
     // Initialize the messaging service with handlers
     await globalMessagingService!.initialize(
       onMessage: onForegroundMessage,
@@ -283,14 +341,51 @@ Future<void> _initializeFCM() async {
 
     developer.log('FCM initialized successfully', name: 'bootstrap');
   } catch (error, stackTrace) {
-    developer.log(
-      'Failed to initialize FCM',
+    final appException = ErrorHandler.instance.handleError(error, stackTrace);
+    AppLogger.warning(
+      'Failed to initialize FCM: ${appException.message}',
       name: 'bootstrap',
       error: error,
       stackTrace: stackTrace,
     );
     // Continue app startup even if FCM fails
     // The app should still work without push notifications
+  }
+}
+
+/// Initializes local notifications service.
+Future<void> _initializeLocalNotifications() async {
+  try {
+    await LocalNotificationService.initialize(
+      onNotificationTap: (payload) {
+        // Handle notification tap
+        // The payload contains JSON data from the notification
+        developer.log(
+          'Notification tapped with payload: $payload',
+          name: 'bootstrap',
+        );
+        
+        // Navigate based on payload using NavigationService
+        NavigationService.instance.navigateFromPayload(payload);
+      },
+    );
+
+    // Request permissions for iOS
+    await LocalNotificationService.requestPermissions();
+
+    developer.log(
+      'Local notifications initialized successfully',
+      name: 'bootstrap',
+    );
+  } catch (error, stackTrace) {
+    final appException = ErrorHandler.instance.handleError(error, stackTrace);
+    AppLogger.warning(
+      'Failed to initialize local notifications: ${appException.message}',
+      name: 'bootstrap',
+      error: error,
+      stackTrace: stackTrace,
+    );
+    // Continue even if local notifications fail
   }
 }
 

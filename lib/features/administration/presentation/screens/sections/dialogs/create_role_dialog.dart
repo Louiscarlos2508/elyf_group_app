@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/core.dart';
 import 'package:elyf_groupe_app/shared.dart';
+import '../../../../../../core/errors/app_exceptions.dart';
 import '../../../../application/providers.dart';
 import 'package:elyf_groupe_app/core/permissions/services/permission_registry.dart';
 import 'package:elyf_groupe_app/core/auth/providers.dart'
@@ -62,8 +63,9 @@ class _CreateRoleDialogState extends ConsumerState<CreateRoleDialog>
         final currentUserId = ref.read(currentUserIdProvider);
 
         if (currentUserId == null) {
-          throw Exception(
+          throw AuthenticationException(
             'Aucun utilisateur connecté. Veuillez vous reconnecter.',
+            'USER_NOT_AUTHENTICATED',
           );
         }
 

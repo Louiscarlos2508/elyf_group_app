@@ -1,3 +1,4 @@
+import '../../../../core/errors/app_exceptions.dart';
 import '../../domain/entities/liquidity_checkpoint.dart';
 import '../../domain/repositories/liquidity_repository.dart';
 import '../../domain/services/liquidity_checkpoint_service.dart';
@@ -45,7 +46,10 @@ class LiquidityController {
       simAmount,
     );
     if (validationError != null) {
-      throw Exception(validationError);
+      throw ValidationException(
+        validationError,
+        'LIQUIDITY_VALIDATION_FAILED',
+      );
     }
 
     // Créer le checkpoint via le service

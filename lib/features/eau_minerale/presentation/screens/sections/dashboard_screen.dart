@@ -3,13 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
+import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
 import '../../../domain/entities/stock_item.dart';
 import '../../widgets/dashboard_header.dart';
 import '../../widgets/dashboard_month_kpis.dart';
 import '../../widgets/dashboard_stock_list.dart';
 import '../../widgets/dashboard_today_section.dart';
 import '../../widgets/dashboard_trends_chart.dart';
-import '../../widgets/section_placeholder.dart';
 import '../../widgets/stock_alert_banner.dart';
 import 'package:elyf_groupe_app/shared/presentation/widgets/refresh_button.dart';
 
@@ -31,7 +31,12 @@ class DashboardScreen extends ConsumerWidget {
               builder: (context, constraints) {
                 final isWide = constraints.maxWidth > 600;
                 return Padding(
-                  padding: EdgeInsets.fromLTRB(24, 24, 24, isWide ? 24 : 16),
+                  padding: EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    AppSpacing.lg,
+                    AppSpacing.lg,
+                    isWide ? AppSpacing.lg : AppSpacing.md,
+                  ),
                   child: Row(
                     children: [
                       Expanded(
@@ -40,15 +45,20 @@ class DashboardScreen extends ConsumerWidget {
                           role: 'Responsable',
                         ),
                       ),
-                      RefreshButton(
-                        onRefresh: () {
-                          ref.invalidate(salesStateProvider);
-                          ref.invalidate(financesStateProvider);
-                          ref.invalidate(clientsStateProvider);
-                          ref.invalidate(stockStateProvider);
-                          ref.invalidate(productionSessionsStateProvider);
-                        },
-                        tooltip: 'Actualiser le tableau de bord',
+                      Semantics(
+                        label: 'Actualiser le tableau de bord',
+                        hint: 'Recharge toutes les données affichées',
+                        button: true,
+                        child: RefreshButton(
+                          onRefresh: () {
+                            ref.invalidate(salesStateProvider);
+                            ref.invalidate(financesStateProvider);
+                            ref.invalidate(clientsStateProvider);
+                            ref.invalidate(stockStateProvider);
+                            ref.invalidate(productionSessionsStateProvider);
+                          },
+                          tooltip: 'Actualiser le tableau de bord',
+                        ),
                       ),
                     ],
                   ),
@@ -82,50 +92,70 @@ class DashboardScreen extends ConsumerWidget {
           ),
 
           // Today section
-          _buildSectionHeader("AUJOURD'HUI", 24, 16),
+          SectionHeader(
+            title: "AUJOURD'HUI",
+            top: AppSpacing.lg,
+            bottom: AppSpacing.md,
+          ),
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+            padding: AppSpacing.sectionPadding,
             sliver: SliverToBoxAdapter(
               child: salesState.when(
                 data: (data) => DashboardTodaySection(salesState: data),
-                loading: () => const SizedBox(
-                  height: 120,
-                  child: Center(child: CircularProgressIndicator()),
+                loading: () => const LoadingIndicator(),
+                error: (error, stackTrace) => ErrorDisplayWidget(
+                  error: error,
+                  onRetry: () => ref.refresh(salesStateProvider),
                 ),
-                error: (_, __) => const SizedBox.shrink(),
               ),
             ),
           ),
 
           // Month KPIs section
-          _buildSectionHeader('CE MOIS', 0, 8),
-          const SliverPadding(
-            padding: EdgeInsets.fromLTRB(24, 8, 24, 24),
-            sliver: SliverToBoxAdapter(child: DashboardMonthKpis()),
+          const SectionHeader(
+            title: 'CE MOIS',
+            bottom: AppSpacing.sm,
+          ),
+          SliverPadding(
+            padding: AppSpacing.sectionPadding,
+            sliver: const SliverToBoxAdapter(
+              child: DashboardMonthKpis(),
+            ),
           ),
 
           // Trends chart section
-          _buildSectionHeader('TENDANCES', 0, 8),
-          const SliverPadding(
-            padding: EdgeInsets.fromLTRB(24, 8, 24, 24),
-            sliver: SliverToBoxAdapter(child: DashboardTrendsChart()),
+          const SectionHeader(
+            title: 'TENDANCES',
+            bottom: AppSpacing.sm,
+          ),
+          SliverPadding(
+            padding: AppSpacing.sectionPadding,
+            sliver: const SliverToBoxAdapter(
+              child: DashboardTrendsChart(),
+            ),
           ),
 
           // Stock section
-          _buildSectionHeader('Stock Produits Finis', 0, 8),
+          const SectionHeader(
+            title: 'Stock Produits Finis',
+            bottom: AppSpacing.sm,
+          ),
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
+            padding: EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.sm,
+              AppSpacing.lg,
+              AppSpacing.xl,
+            ),
             sliver: SliverToBoxAdapter(
               child: stockState.when(
                 data: (data) => DashboardStockList(stockState: data),
-                loading: () => const SizedBox(
-                  height: 100,
-                  child: Center(child: CircularProgressIndicator()),
-                ),
-                error: (_, __) => SectionPlaceholder(
-                  icon: Icons.inventory_2_outlined,
+                loading: () => const LoadingIndicator(height: 100),
+                error: (error, stackTrace) => ErrorDisplayWidget(
+                  error: error,
                   title: 'Stock indisponible',
-                  subtitle: 'Impossible de charger le stock.',
+                  message: 'Impossible de charger le stock.',
+                  onRetry: () => ref.refresh(stockStateProvider),
                 ),
               ),
             ),
@@ -135,19 +165,4 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSectionHeader(String title, double top, double bottom) {
-    return SliverToBoxAdapter(
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(24, top, 24, bottom),
-        child: Text(
-          title,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 0.5,
-          ),
-        ),
-      ),
-    );
-  }
 }

@@ -30,16 +30,16 @@ class DailyPersonnelForm extends ConsumerStatefulWidget {
 
 class _DailyPersonnelFormState extends ConsumerState<DailyPersonnelForm> {
   final _formKey = GlobalKey<FormState>();
-  final _salaireController = TextEditingController();
   final _notesController = TextEditingController();
   final _packsController = TextEditingController();
   final _emballagesController = TextEditingController();
 
   final Set<String> _selectedWorkerIds = {};
   int _nombrePersonnes = 0;
-  int _salaireJournalier = 0;
   int _packsProduits = 0;
   int _emballagesUtilises = 0;
+  List<DailyWorker> _workers = [];
+  String _workersKey = '';
 
   @override
   void initState() {
@@ -47,8 +47,6 @@ class _DailyPersonnelFormState extends ConsumerState<DailyPersonnelForm> {
     if (widget.existingDay != null) {
       _selectedWorkerIds.addAll(widget.existingDay!.personnelIds);
       _nombrePersonnes = widget.existingDay!.nombrePersonnes;
-      _salaireJournalier = widget.existingDay!.salaireJournalierParPersonne;
-      _salaireController.text = _salaireJournalier.toString();
       _notesController.text = widget.existingDay!.notes ?? '';
       _packsProduits = widget.existingDay!.packsProduits;
       _emballagesUtilises = widget.existingDay!.emballagesUtilises;
@@ -58,21 +56,30 @@ class _DailyPersonnelFormState extends ConsumerState<DailyPersonnelForm> {
       if (_emballagesUtilises > 0) {
         _emballagesController.text = _emballagesUtilises.toString();
       }
-    } else {
-      // Valeur par défaut pour le salaire journalier
-      _salaireJournalier = 5000; // TODO: Récupérer depuis les paramètres
-      _salaireController.text = _salaireJournalier.toString();
     }
     _updateNombrePersonnes();
   }
 
   @override
   void dispose() {
-    _salaireController.dispose();
     _notesController.dispose();
     _packsController.dispose();
     _emballagesController.dispose();
     super.dispose();
+  }
+
+  int _coutTotalFromWorkers() {
+    if (_selectedWorkerIds.isEmpty || _workers.isEmpty) return 0;
+    return _workers
+        .where((w) => _selectedWorkerIds.contains(w.id))
+        .fold<int>(0, (s, w) => s + w.salaireJournalier);
+  }
+
+  int _salaireMoyenFromWorkers() {
+    final n = _selectedWorkerIds.length;
+    if (n == 0) return 0;
+    final total = _coutTotalFromWorkers();
+    return (total / n).round();
   }
 
   void _updateNombrePersonnes() {
@@ -94,12 +101,6 @@ class _DailyPersonnelFormState extends ConsumerState<DailyPersonnelForm> {
 
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
-
-    final salaire = int.tryParse(_salaireController.text);
-    if (salaire == null || salaire <= 0) {
-      NotificationService.showWarning(context, 'Salaire journalier invalide');
-      return;
-    }
 
     if (_selectedWorkerIds.isEmpty) {
       NotificationService.showWarning(
@@ -131,6 +132,10 @@ class _DailyPersonnelFormState extends ConsumerState<DailyPersonnelForm> {
     _packsProduits = packs;
     _emballagesUtilises = emballages;
 
+    final totalReel = _coutTotalFromWorkers();
+    final salaireMoyen = _salaireMoyenFromWorkers();
+    final n = _selectedWorkerIds.length;
+
     final productionDay = ProductionDay(
       id:
           widget.existingDay?.id ??
@@ -138,8 +143,9 @@ class _DailyPersonnelFormState extends ConsumerState<DailyPersonnelForm> {
       productionId: widget.session.id,
       date: widget.date,
       personnelIds: _selectedWorkerIds.toList(),
-      nombrePersonnes: _nombrePersonnes,
-      salaireJournalierParPersonne: salaire,
+      nombrePersonnes: n,
+      salaireJournalierParPersonne: salaireMoyen,
+      coutTotalPersonnelStored: totalReel > 0 ? totalReel : null,
       packsProduits: _packsProduits,
       emballagesUtilises: _emballagesUtilises,
       notes: _notesController.text.isEmpty ? null : _notesController.text,
@@ -199,8 +205,6 @@ class _DailyPersonnelFormState extends ConsumerState<DailyPersonnelForm> {
                       if (result != null && mounted) {
                         // Rafraîchir la liste des ouvriers
                         ref.invalidate(allDailyWorkersProvider);
-                        // Sélectionner automatiquement le nouvel ouvrier
-                        _toggleWorker(result.id);
                       }
                     },
                     icon: const Icon(Icons.add, size: 18),
@@ -252,6 +256,17 @@ class _DailyPersonnelFormState extends ConsumerState<DailyPersonnelForm> {
                           ],
                         ),
                       );
+                    }
+                    final idsKey = workers.map((w) => w.id).join(',');
+                    if (idsKey != _workersKey) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (mounted) {
+                          setState(() {
+                            _workers = workers;
+                            _workersKey = idsKey;
+                          });
+                        }
+                      });
                     }
                     return Column(
                       children: workers.map((worker) {
@@ -329,9 +344,19 @@ class _DailyPersonnelFormState extends ConsumerState<DailyPersonnelForm> {
                       labelText: 'Packs produits (jour)',
                       prefixIcon: Icon(Icons.inventory_2),
                       helperText:
-                          'Nombre de packs produits ce jour (optionnel)',
+                          'Nombre de packs produits ce jour (obligatoire)',
                     ),
                     keyboardType: TextInputType.number,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Obligatoire';
+                      }
+                      final n = int.tryParse(value.trim());
+                      if (n == null || n < 0) {
+                        return 'Entier positif requis';
+                      }
+                      return null;
+                    },
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -379,7 +404,7 @@ class _DailyPersonnelFormState extends ConsumerState<DailyPersonnelForm> {
             ),
             const SizedBox(height: 24),
 
-            // Nombre de personnes
+            // Nombre de personnes et coût (salaire issu des ouvriers)
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -408,35 +433,6 @@ class _DailyPersonnelFormState extends ConsumerState<DailyPersonnelForm> {
               ),
             ),
 
-            const SizedBox(height: 24),
-
-            // Salaire journalier par personne
-            TextFormField(
-              controller: _salaireController,
-              decoration: const InputDecoration(
-                labelText: 'Salaire journalier par personne (CFA)',
-                prefixIcon: Icon(Icons.attach_money),
-                helperText: 'Salaire journalier pour chaque personne',
-              ),
-              keyboardType: TextInputType.number,
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Requis';
-                }
-                final salaire = int.tryParse(value);
-                if (salaire == null || salaire <= 0) {
-                  return 'Montant invalide';
-                }
-                return null;
-              },
-              onChanged: (value) {
-                final salaire = int.tryParse(value);
-                if (salaire != null && salaire > 0) {
-                  setState(() => _salaireJournalier = salaire);
-                }
-              },
-            ),
-
             const SizedBox(height: 16),
 
             // Notes
@@ -452,7 +448,7 @@ class _DailyPersonnelFormState extends ConsumerState<DailyPersonnelForm> {
 
             const SizedBox(height: 24),
 
-            // Coût total calculé
+            // Coût total (somme des salaires des ouvriers sélectionnés)
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -461,20 +457,32 @@ class _DailyPersonnelFormState extends ConsumerState<DailyPersonnelForm> {
                 ),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Coût total du personnel',
-                    style: theme.textTheme.bodyLarge?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Coût total du personnel',
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        '${_coutTotalFromWorkers()} CFA',
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.secondary,
+                        ),
+                      ),
+                    ],
                   ),
+                  const SizedBox(height: 4),
                   Text(
-                    '${(_nombrePersonnes * _salaireJournalier).toStringAsFixed(0)} CFA',
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.secondary,
+                    'Calculé à partir du salaire journalier de chaque ouvrier.',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],

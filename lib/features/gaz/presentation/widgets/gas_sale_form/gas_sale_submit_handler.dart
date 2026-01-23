@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
+import '../../../../../../core/errors/app_exceptions.dart';
+import '../../../../../../core/errors/error_handler.dart';
+import '../../../../../../core/logging/app_logger.dart';
 import '../../../domain/entities/cylinder.dart';
 import '../../../domain/entities/gas_sale.dart';
 
@@ -41,6 +44,10 @@ class GasSaleSubmitHandler {
     onLoadingChanged();
 
     try {
+      final phone = (customerPhone == null || customerPhone.trim().isEmpty)
+          ? null
+          : (PhoneUtils.normalizeBurkina(customerPhone.trim()) ??
+              customerPhone.trim());
       final sale = GasSale(
         id: 'sale-${DateTime.now().millisecondsSinceEpoch}',
         cylinderId: selectedCylinder.id,
@@ -50,7 +57,7 @@ class GasSaleSubmitHandler {
         saleDate: DateTime.now(),
         saleType: saleType,
         customerName: customerName,
-        customerPhone: customerPhone,
+        customerPhone: phone,
         notes: notes,
         tourId: tourId,
         wholesalerId: wholesalerId,
@@ -77,10 +84,16 @@ class GasSaleSubmitHandler {
         if (newQuantity >= 0) {
           await stockController.adjustStockQuantity(fullStock.id, newQuantity);
         } else {
-          throw Exception('Stock insuffisant après validation');
+          throw ValidationException(
+            'Stock insuffisant après validation',
+            'INSUFFICIENT_STOCK',
+          );
         }
       } else {
-        throw Exception('Aucun stock disponible trouvé');
+        throw NotFoundException(
+          'Aucun stock disponible trouvé',
+          'STOCK_NOT_FOUND',
+        );
       }
 
       if (!context.mounted) return false;
@@ -103,9 +116,19 @@ class GasSaleSubmitHandler {
       );
 
       return true;
-    } catch (e) {
+    } catch (e, stackTrace) {
       if (!context.mounted) return false;
-      NotificationService.showError(context, e.toString());
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Erreur lors de l\'enregistrement de la vente: ${appException.message}',
+        name: 'gaz.sale',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      NotificationService.showError(
+        context,
+        ErrorHandler.instance.getUserMessage(appException),
+      );
       return false;
     } finally {
       onLoadingChanged();

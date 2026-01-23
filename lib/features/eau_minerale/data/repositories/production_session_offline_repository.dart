@@ -2,8 +2,10 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import '../../../../core/errors/error_handler.dart';
+import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/offline_repository.dart';
 import '../../domain/entities/bobine_usage.dart';
+import '../../domain/entities/payment_status.dart';
 import '../../domain/entities/production_day.dart';
 import '../../domain/entities/production_event.dart';
 import '../../domain/entities/production_session.dart';
@@ -28,56 +30,22 @@ class ProductionSessionOfflineRepository
 
   @override
   ProductionSession fromMap(Map<String, dynamic> map) {
-    // Parse bobinesUtilisees from JSON
-    List<BobineUsage> bobinesUtilisees = [];
-    if (map['bobinesUtiliseesJson'] != null) {
-      try {
-        final bobinesList =
-            jsonDecode(map['bobinesUtiliseesJson'] as String) as List<dynamic>;
-        bobinesUtilisees = bobinesList
-            .map((b) => _bobineUsageFromJson(b as Map<String, dynamic>))
-            .toList();
-      } catch (e) {
-        developer.log(
-          'Error parsing bobinesUtilisees: $e',
-          name: 'ProductionSessionOfflineRepository',
-        );
-      }
-    }
-
-    // Parse events from JSON
-    List<ProductionEvent> events = [];
-    if (map['eventsJson'] != null) {
-      try {
-        final eventsList =
-            jsonDecode(map['eventsJson'] as String) as List<dynamic>;
-        events = eventsList
-            .map((e) => _productionEventFromJson(e as Map<String, dynamic>))
-            .toList();
-      } catch (e) {
-        developer.log(
-          'Error parsing events: $e',
-          name: 'ProductionSessionOfflineRepository',
-        );
-      }
-    }
-
-    // Parse productionDays from JSON
-    List<ProductionDay> productionDays = [];
-    if (map['productionDaysJson'] != null) {
-      try {
-        final daysList =
-            jsonDecode(map['productionDaysJson'] as String) as List<dynamic>;
-        productionDays = daysList
-            .map((d) => _productionDayFromJson(d as Map<String, dynamic>))
-            .toList();
-      } catch (e) {
-        developer.log(
-          'Error parsing productionDays: $e',
-          name: 'ProductionSessionOfflineRepository',
-        );
-      }
-    }
+    // Support both our format (*Json string) and Firestore format (array)
+    final bobinesUtilisees = _parseJsonList<BobineUsage>(
+      map['bobinesUtiliseesJson'] ?? map['bobinesUtilisees'],
+      (b) => _bobineUsageFromJson(b as Map<String, dynamic>),
+      'bobinesUtilisees',
+    );
+    final events = _parseJsonList<ProductionEvent>(
+      map['eventsJson'] ?? map['events'],
+      (e) => _productionEventFromJson(e as Map<String, dynamic>),
+      'events',
+    );
+    final productionDays = _parseJsonList<ProductionDay>(
+      map['productionDaysJson'] ?? map['productionDays'],
+      (d) => _productionDayFromJson(d as Map<String, dynamic>),
+      'productionDays',
+    );
 
     return ProductionSession(
       id: map['id'] as String? ?? map['localId'] as String,
@@ -91,9 +59,11 @@ class ProductionSessionOfflineRepository
       indexCompteurFinalKwh: map['indexCompteurFinalKwh'] as int?,
       consommationCourant:
           (map['consommationCourant'] as num?)?.toDouble() ?? 0,
-      machinesUtilisees: map['machinesUtilisees'] != null
-          ? (map['machinesUtilisees'] as List).cast<String>()
-          : [],
+      machinesUtilisees: map['machinesUtilisees'] is List
+          ? (map['machinesUtilisees'] as List)
+              .map((e) => (e as Object?).toString())
+              .toList()
+          : <String>[],
       bobinesUtilisees: bobinesUtilisees,
       quantiteProduite: map['quantiteProduite'] as int? ?? 0,
       quantiteProduiteUnite: map['quantiteProduiteUnite'] as String,
@@ -211,7 +181,10 @@ class ProductionSessionOfflineRepository
       moduleType: 'eau_minerale',
     );
     if (byRemote != null) {
-      return fromMap(jsonDecode(byRemote.dataJson) as Map<String, dynamic>);
+      final session = fromMap(
+        jsonDecode(byRemote.dataJson) as Map<String, dynamic>,
+      );
+      return _mergeLocalBobinesIfEmpty(session);
     }
 
     final byLocal = await driftService.records.findByLocalId(
@@ -221,7 +194,40 @@ class ProductionSessionOfflineRepository
       moduleType: 'eau_minerale',
     );
     if (byLocal == null) return null;
-    return fromMap(jsonDecode(byLocal.dataJson) as Map<String, dynamic>);
+    final session = fromMap(
+      jsonDecode(byLocal.dataJson) as Map<String, dynamic>,
+    );
+    return _mergeLocalBobinesIfEmpty(session);
+  }
+
+  /// Si la session a des bobines vides, tente de les récupérer depuis une
+  /// session locale (sans remoteId) même date+heure début — détail aligné
+  /// avec la liste.
+  Future<ProductionSession> _mergeLocalBobinesIfEmpty(
+    ProductionSession session,
+  ) async {
+    if (session.bobinesUtilisees.isNotEmpty) return session;
+
+    final rows = await driftService.records.listForEnterprise(
+      collectionName: collectionName,
+      enterpriseId: enterpriseId,
+      moduleType: 'eau_minerale',
+    );
+    final key = _sessionKey(session);
+    for (final r in rows) {
+      final map = jsonDecode(r.dataJson) as Map<String, dynamic>;
+      if (r.remoteId != null && r.remoteId!.isNotEmpty) continue;
+      if (r.localId == session.id) continue;
+      try {
+        final other = fromMap(map);
+        if (_sessionKey(other) != key) continue;
+        if (other.bobinesUtilisees.isEmpty) continue;
+        return session.copyWith(bobinesUtilisees: other.bobinesUtilisees);
+      } catch (_) {
+        continue;
+      }
+    }
+    return session;
   }
 
   @override
@@ -233,9 +239,62 @@ class ProductionSessionOfflineRepository
       enterpriseId: enterpriseId,
       moduleType: 'eau_minerale',
     );
-    return rows
+    final entities = rows
         .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
         .toList();
+
+    var deduped = deduplicateByRemoteId(entities);
+    deduped = _mergeLocalBobinesIntoSync(deduped);
+    return deduped;
+  }
+
+  /// Clé pour matcher deux enregistrements de la même session (date + heure début).
+  static String _sessionKey(ProductionSession s) {
+    final d = s.date;
+    final h = s.heureDebut;
+    return '${d.year}-${d.month}-${d.day}-${h.hour}-${h.minute}';
+  }
+
+  /// Fusionne les bobines des sessions locales (sans remoteId) dans les sessions
+  /// sync (avec remoteId) quand la sync a des bobines vides, pour éviter
+  /// "détail montre bobines, ailleurs non" (list/card).
+  List<ProductionSession> _mergeLocalBobinesIntoSync(
+    List<ProductionSession> sessions,
+  ) {
+    final localByKey = <String, ProductionSession>{};
+    final syncList = <ProductionSession>[];
+
+    for (final s in sessions) {
+      final key = _sessionKey(s);
+      if (getRemoteId(s) != null) {
+        syncList.add(s);
+      } else {
+        final existing = localByKey[key];
+        if (existing == null ||
+            (s.bobinesUtilisees.isNotEmpty &&
+                existing.bobinesUtilisees.isEmpty)) {
+          localByKey[key] = s;
+        }
+      }
+    }
+
+    final merged = <ProductionSession>[];
+    for (final sync in syncList) {
+      final key = _sessionKey(sync);
+      final local = localByKey[key];
+      if (sync.bobinesUtilisees.isEmpty &&
+          local != null &&
+          local.bobinesUtilisees.isNotEmpty) {
+        merged.add(
+          sync.copyWith(bobinesUtilisees: local.bobinesUtilisees),
+        );
+        localByKey.remove(key);
+      } else {
+        merged.add(sync);
+      }
+    }
+    merged.addAll(localByKey.values);
+    return merged;
   }
 
   // ProductionSessionRepository interface implementation
@@ -293,8 +352,8 @@ class ProductionSessionOfflineRepository
       return await getByLocalId(id);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error getting production session: $id',
+      AppLogger.error(
+        'Error getting production session: $id - ${appException.message}',
         name: 'ProductionSessionOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -312,8 +371,8 @@ class ProductionSessionOfflineRepository
       return sessionWithLocalId;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error creating production session',
+      AppLogger.error(
+        'Error creating production session: ${appException.message}',
         name: 'ProductionSessionOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -329,8 +388,8 @@ class ProductionSessionOfflineRepository
       return session;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error updating production session: ${session.id}',
+      AppLogger.error(
+        'Error updating production session: ${session.id} - ${appException.message}',
         name: 'ProductionSessionOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -348,8 +407,8 @@ class ProductionSessionOfflineRepository
       }
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error deleting production session: $id',
+      AppLogger.error(
+        'Error deleting production session: $id - ${appException.message}',
         name: 'ProductionSessionOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -373,6 +432,54 @@ class ProductionSessionOfflineRepository
       default:
         return ProductionSessionStatus.draft;
     }
+  }
+
+  /// Parse a JSON list field that may be stored as List or as JSON string.
+  /// If the string was sanitized (quotes escaped as \\u0022), tries to reverse
+  /// that before decoding to fix "Unexpected character" FormatException.
+  List<T> _parseJsonList<T>(
+    dynamic value,
+    T Function(dynamic) itemMapper,
+    String fieldName,
+  ) {
+    if (value == null) return [];
+    if (value is List) {
+      try {
+        return value.map(itemMapper).toList();
+      } catch (e, st) {
+        AppLogger.warning(
+          'Error parsing $fieldName (list): ${ErrorHandler.instance.handleError(e, st).message}',
+          name: 'ProductionSessionOfflineRepository',
+          error: e,
+          stackTrace: st,
+        );
+        return [];
+      }
+    }
+    if (value is! String) return [];
+    Object? lastError;
+    StackTrace? lastStack;
+    for (final raw in [value, value.replaceAll(r'\u0022', '"')]) {
+      try {
+        var decoded = jsonDecode(raw);
+        // Double-encoded: decoded is a JSON string to decode again
+        if (decoded is String) {
+          decoded = jsonDecode(decoded);
+        }
+        if (decoded is! List) return [];
+        return List<dynamic>.from(decoded).map(itemMapper).toList();
+      } catch (e, st) {
+        lastError = e;
+        lastStack = st;
+      }
+    }
+    AppLogger.warning(
+      'Error parsing $fieldName: ${ErrorHandler.instance.handleError(lastError!, lastStack!).message}',
+      name: 'ProductionSessionOfflineRepository',
+      error: lastError,
+      stackTrace: lastStack,
+    );
+    return [];
   }
 
   Map<String, dynamic> _bobineUsageToJson(BobineUsage bobine) {
@@ -441,7 +548,7 @@ class ProductionSessionOfflineRepository
   }
 
   Map<String, dynamic> _productionDayToJson(ProductionDay day) {
-    return {
+    final map = <String, dynamic>{
       'id': day.id,
       'productionId': day.productionId,
       'date': day.date.toIso8601String(),
@@ -453,7 +560,14 @@ class ProductionSessionOfflineRepository
       'notes': day.notes,
       'createdAt': day.createdAt?.toIso8601String(),
       'updatedAt': day.updatedAt?.toIso8601String(),
+      'paymentStatus': day.paymentStatus.name,
+      'paymentId': day.paymentId,
+      'datePaiement': day.datePaiement?.toIso8601String(),
     };
+    if (day.coutTotalPersonnelStored != null) {
+      map['coutTotalPersonnelStored'] = day.coutTotalPersonnelStored;
+    }
+    return map;
   }
 
   ProductionDay _productionDayFromJson(Map<String, dynamic> json) {
@@ -464,6 +578,8 @@ class ProductionSessionOfflineRepository
       personnelIds: (json['personnelIds'] as List).cast<String>(),
       nombrePersonnes: json['nombrePersonnes'] as int,
       salaireJournalierParPersonne: json['salaireJournalierParPersonne'] as int,
+      coutTotalPersonnelStored:
+          (json['coutTotalPersonnelStored'] as num?)?.toInt(),
       packsProduits: json['packsProduits'] as int? ?? 0,
       emballagesUtilises: json['emballagesUtilises'] as int? ?? 0,
       notes: json['notes'] as String?,
@@ -472,6 +588,11 @@ class ProductionSessionOfflineRepository
           : null,
       updatedAt: json['updatedAt'] != null
           ? DateTime.parse(json['updatedAt'] as String)
+          : null,
+      paymentStatus: _parsePaymentStatus(json['paymentStatus'] as String?),
+      paymentId: json['paymentId'] as String?,
+      datePaiement: json['datePaiement'] != null
+          ? DateTime.parse(json['datePaiement'] as String)
           : null,
     );
   }
@@ -489,3 +610,20 @@ class ProductionSessionOfflineRepository
     }
   }
 }
+
+  PaymentStatus _parsePaymentStatus(String? status) {
+    if (status == null) return PaymentStatus.unpaid;
+    switch (status) {
+      case "unpaid":
+        return PaymentStatus.unpaid;
+      case "partial":
+        return PaymentStatus.partial;
+      case "paid":
+        return PaymentStatus.paid;
+      case "verified":
+        return PaymentStatus.verified;
+      default:
+        return PaymentStatus.unpaid;
+    }
+  }
+

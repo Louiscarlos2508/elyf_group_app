@@ -1,3 +1,4 @@
+import '../../../../core/errors/app_exceptions.dart';
 import '../../domain/entities/expense.dart';
 import '../../domain/repositories/expense_repository.dart';
 
@@ -95,7 +96,10 @@ class MockPropertyExpenseRepository implements PropertyExpenseRepository {
   Future<PropertyExpense> updateExpense(PropertyExpense expense) async {
     final existing = _expenses[expense.id];
     if (existing == null) {
-      throw Exception('Expense not found');
+      throw NotFoundException(
+        'Expense not found',
+        'EXPENSE_NOT_FOUND',
+      );
     }
     final updated = PropertyExpense(
       id: expense.id,

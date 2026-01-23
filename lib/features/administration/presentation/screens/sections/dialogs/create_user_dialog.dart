@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
+import '../../../../../../core/errors/app_exceptions.dart';
 import '../../../../domain/entities/user.dart';
 import '../../../../application/providers.dart';
 import '../../../../../../core/auth/providers.dart' show currentUserIdProvider;
@@ -95,7 +96,8 @@ class _CreateUserDialogState extends ConsumerState<CreateUserDialog>
               : _emailController.text.trim(),
           phone: _phoneController.text.trim().isEmpty
               ? null
-              : _phoneController.text.trim(),
+              : (PhoneUtils.normalizeBurkina(_phoneController.text.trim()) ??
+                  _phoneController.text.trim()),
           isActive: _isActive,
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
@@ -114,7 +116,10 @@ class _CreateUserDialogState extends ConsumerState<CreateUserDialog>
           }
           return 'Utilisateur créé avec succès${_createFirebaseAccount ? ' (compte Firebase Auth créé)' : ''}';
         } catch (e) {
-          throw Exception('Erreur lors de la création: ${e.toString()}');
+          throw UnknownException(
+            'Erreur lors de la création: ${e.toString()}',
+            'USER_CREATION_ERROR',
+          );
         }
       },
     );
@@ -130,12 +135,8 @@ class _CreateUserDialogState extends ConsumerState<CreateUserDialog>
   }
 
   String? _validatePhone(String? value) {
-    if (value == null || value.isEmpty) return null;
-    final phoneRegex = RegExp(r'^\+?[0-9]{8,15}$');
-    if (!phoneRegex.hasMatch(value.replaceAll(' ', ''))) {
-      return 'Téléphone invalide';
-    }
-    return null;
+    if (value == null || value.trim().isEmpty) return null;
+    return Validators.phoneBurkina(value);
   }
 
   String? _validateUsername(String? value) {

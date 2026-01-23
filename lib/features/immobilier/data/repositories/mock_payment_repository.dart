@@ -1,3 +1,4 @@
+import '../../../../core/errors/app_exceptions.dart';
 import '../../../../shared/domain/entities/payment_method.dart';
 import '../../domain/entities/payment.dart';
 import '../../domain/repositories/payment_repository.dart';
@@ -96,7 +97,10 @@ class MockPaymentRepository implements PaymentRepository {
   Future<Payment> updatePayment(Payment payment) async {
     final existing = _payments[payment.id];
     if (existing == null) {
-      throw Exception('Payment not found');
+      throw NotFoundException(
+        'Payment not found',
+        'PAYMENT_NOT_FOUND',
+      );
     }
     final updated = Payment(
       id: payment.id,

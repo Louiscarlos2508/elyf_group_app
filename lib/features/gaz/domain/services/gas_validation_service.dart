@@ -1,3 +1,5 @@
+import 'package:elyf_groupe_app/shared.dart';
+
 import '../entities/cylinder.dart';
 import 'gas_calculation_service.dart';
 
@@ -28,22 +30,14 @@ class GasValidationService {
     return null;
   }
 
-  /// Validates customer phone.
+  /// Validates customer phone (Burkina +226).
   ///
   /// Returns null if valid, error message otherwise.
   static String? validateCustomerPhone(String? phone) {
-    if (phone == null || phone.trim().isEmpty) {
-      return 'Le téléphone du client est requis';
-    }
-    // Basic phone validation (can be enhanced)
-    final phoneRegex = RegExp(r'^[0-9+\-\s()]+$');
-    if (!phoneRegex.hasMatch(phone)) {
-      return 'Format de téléphone invalide';
-    }
-    if (phone.replaceAll(RegExp(r'[^0-9]'), '').length < 8) {
-      return 'Le numéro de téléphone doit contenir au moins 8 chiffres';
-    }
-    return null;
+    return PhoneUtils.validateBurkina(
+      phone,
+      customMessage: 'Le téléphone du client est requis',
+    );
   }
 
   /// Validates that stock is available.

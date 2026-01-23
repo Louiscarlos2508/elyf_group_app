@@ -128,7 +128,13 @@ class UserActionHandlers {
     if (confirmed == true && context.mounted) {
       try {
         await ref.read(userControllerProvider).deleteUser(user.id);
-        ref.refresh(usersProvider);
+        // Attendre un peu pour que la base de données soit à jour
+        await Future.delayed(const Duration(milliseconds: 100));
+        // Invalider le provider pour forcer le rafraîchissement
+        ref.invalidate(usersProvider);
+        // Invalider aussi les providers dépendants
+        ref.invalidate(enterpriseModuleUsersProvider);
+        ref.invalidate(userEnterpriseModuleUsersProvider(user.id));
         if (context.mounted) {
           NotificationService.showSuccess(context, 'Utilisateur supprimé');
         }
@@ -192,8 +198,10 @@ class UserActionHandlers {
               assignment.enterpriseId,
               assignment.moduleId,
             );
-        ref.refresh(enterpriseModuleUsersProvider);
-        ref.refresh(userEnterpriseModuleUsersProvider(assignment.userId));
+        // Attendre un peu pour que la base de données soit à jour
+        await Future.delayed(const Duration(milliseconds: 100));
+        ref.invalidate(enterpriseModuleUsersProvider);
+        ref.invalidate(userEnterpriseModuleUsersProvider(assignment.userId));
         if (context.mounted) {
           NotificationService.showSuccess(
             context,

@@ -5,7 +5,6 @@ import '../../../domain/entities/production_session.dart';
 import '../../../domain/entities/production_session_status.dart';
 import '../../../domain/entities/sale.dart';
 import '../../../domain/services/production_margin_calculator.dart';
-import '../../screens/sections/production_session_form_screen.dart';
 import '../../screens/sections/production_tracking_screen.dart';
 
 /// Composants réutilisables pour les cartes de sessions.
@@ -131,54 +130,26 @@ class ProductionSessionsCardComponents {
   }
 
   /// Construit les boutons d'action.
+  /// Modifier est disponible dans l'écran Détail (action AppBar) et dans Suivi.
   static Widget buildActionButtons(
     BuildContext context,
     ProductionSession session,
   ) {
-    final canEdit =
-        session.effectiveStatus == ProductionSessionStatus.draft ||
-        session.effectiveStatus == ProductionSessionStatus.started ||
-        session.effectiveStatus == ProductionSessionStatus.inProgress;
-
-    return Row(
-      children: [
-        if (canEdit)
-          Expanded(
-            child: OutlinedButton.icon(
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) =>
-                        ProductionSessionFormScreen(session: session),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.edit, size: 18),
-              label: const Text('Modifier'),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-              ),
-            ),
+    return FilledButton.icon(
+      onPressed: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) =>
+                ProductionTrackingScreen(sessionId: session.id),
           ),
-        if (canEdit) const SizedBox(width: 12),
-        Expanded(
-          child: FilledButton.icon(
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) =>
-                      ProductionTrackingScreen(sessionId: session.id),
-                ),
-              );
-            },
-            icon: const Icon(Icons.track_changes, size: 18),
-            label: const Text('Suivre'),
-            style: FilledButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-            ),
-          ),
-        ),
-      ],
+        );
+      },
+      icon: const Icon(Icons.track_changes, size: 18),
+      label: const Text('Suivre'),
+      style: FilledButton.styleFrom(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        minimumSize: const Size(double.infinity, 0),
+      ),
     );
   }
 

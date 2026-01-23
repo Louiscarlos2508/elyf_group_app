@@ -1,10 +1,16 @@
+import 'dart:developer' as developer;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../../../core/errors/app_exceptions.dart';
+
+import '../../../../../../core/tenant/tenant_provider.dart' show activeEnterpriseProvider;
 import '../../widgets/bottle_price_table.dart';
 import '../../widgets/cylinder_form_dialog.dart';
 import '../../widgets/point_of_sale_form_dialog.dart';
 import '../../widgets/point_of_sale_table.dart';
+import '../../../application/providers.dart' show pointsOfSaleProvider;
 
 /// Écran de paramètres pour le module Gaz selon le design Figma.
 class GazSettingsScreen extends ConsumerWidget {
@@ -15,12 +21,28 @@ class GazSettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final effectiveEnterpriseId = enterpriseId ?? 'gaz_1';
-    final effectiveModuleId = moduleId ?? 'gaz';
-    final theme = Theme.of(context);
-    final isMobile = MediaQuery.of(context).size.width < 800;
+    // Récupérer l'entreprise active depuis le tenant provider
+    final activeEnterpriseAsync = ref.watch(activeEnterpriseProvider);
+    
+    return activeEnterpriseAsync.when(
+      data: (enterprise) {
+        final effectiveEnterpriseId = enterpriseId ?? 
+            enterprise?.id ?? 
+            (throw NotFoundException(
+              'Aucune entreprise active disponible',
+              'NO_ACTIVE_ENTERPRISE',
+            ));
+        final effectiveModuleId = moduleId ?? 'gaz';
+        
+        // Debug: Log l'entreprise active
+        developer.log(
+          '🔵 GazSettingsScreen: enterprise=${enterprise?.name} (${enterprise?.id}), type=${enterprise?.type}, effectiveEnterpriseId=$effectiveEnterpriseId',
+          name: 'GazSettingsScreen',
+        );
+        final theme = Theme.of(context);
+        final isMobile = MediaQuery.of(context).size.width < 800;
 
-    return Container(
+        return Container(
       color: const Color(0xFFF9FAFB),
       child: CustomScrollView(
         slivers: [
@@ -40,6 +62,7 @@ class GazSettingsScreen extends ConsumerWidget {
                 // Section Gestion des points de vente
                 _buildPointOfSaleSection(
                   context: context,
+                  ref: ref,
                   theme: theme,
                   enterpriseId: effectiveEnterpriseId,
                   moduleId: effectiveModuleId,
@@ -49,6 +72,17 @@ class GazSettingsScreen extends ConsumerWidget {
             ),
           ),
         ],
+      ),
+    );
+      },
+      loading: () => const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      ),
+      error: (error, _) => Scaffold(
+        appBar: AppBar(title: const Text('Paramètres')),
+        body: Center(
+          child: Text('Erreur: $error'),
+        ),
       ),
     );
   }
@@ -184,6 +218,7 @@ class GazSettingsScreen extends ConsumerWidget {
   /// Construit la section de gestion des points de vente.
   Widget _buildPointOfSaleSection({
     required BuildContext context,
+    required WidgetRef ref,
     required ThemeData theme,
     required String enterpriseId,
     required String moduleId,
@@ -232,14 +267,49 @@ class GazSettingsScreen extends ConsumerWidget {
                       ),
                       minimumSize: const Size(201.057, 36),
                     ),
-                    onPressed: () {
-                      showDialog(
-                        context: context,
-                        builder: (context) => PointOfSaleFormDialog(
-                          enterpriseId: enterpriseId,
-                          moduleId: moduleId,
-                        ),
+                    onPressed: () async {
+                      developer.log(
+                        '🔵 [SETTINGS] Bouton "Nouveau point de vente" cliqué',
+                        name: 'GazSettingsScreen',
                       );
+                      developer.log(
+                        '🔵 [SETTINGS] enterpriseId=$enterpriseId, moduleId=$moduleId',
+                        name: 'GazSettingsScreen',
+                      );
+                      
+                      final result = await showDialog<bool>(
+                        context: context,
+                        builder: (context) {
+                          developer.log(
+                            '🔵 [SETTINGS] showDialog builder appelé',
+                            name: 'GazSettingsScreen',
+                          );
+                          return PointOfSaleFormDialog(
+                            enterpriseId: enterpriseId,
+                            moduleId: moduleId,
+                          );
+                        },
+                      );
+                      
+                      developer.log(
+                        '🔵 [SETTINGS] Dialog fermé avec result=$result',
+                        name: 'GazSettingsScreen',
+                      );
+                      
+                      // Le provider sera rafraîchi dans le dialog
+                      if (result == true && context.mounted) {
+                        developer.log(
+                          '🔵 [SETTINGS] Invalidation du provider pointsOfSaleProvider',
+                          name: 'GazSettingsScreen',
+                        );
+                        // Forcer le rafraîchissement pour s'assurer que l'UI se met à jour
+                        ref.invalidate(
+                          pointsOfSaleProvider((
+                            enterpriseId: enterpriseId,
+                            moduleId: moduleId,
+                          )),
+                        );
+                      }
                     },
                     icon: const Icon(Icons.add, size: 16),
                     label: const Text(
@@ -290,14 +360,49 @@ class GazSettingsScreen extends ConsumerWidget {
                           vertical: 9.99,
                         ),
                       ),
-                      onPressed: () {
-                        showDialog(
-                          context: context,
-                          builder: (context) => PointOfSaleFormDialog(
-                            enterpriseId: enterpriseId,
-                            moduleId: moduleId,
-                          ),
+                      onPressed: () async {
+                        developer.log(
+                          '🔵 [SETTINGS] Bouton "Nouveau point de vente" cliqué (desktop)',
+                          name: 'GazSettingsScreen',
                         );
+                        developer.log(
+                          '🔵 [SETTINGS] enterpriseId=$enterpriseId, moduleId=$moduleId',
+                          name: 'GazSettingsScreen',
+                        );
+                        
+                        final result = await showDialog<bool>(
+                          context: context,
+                          builder: (context) {
+                            developer.log(
+                              '🔵 [SETTINGS] showDialog builder appelé (desktop)',
+                              name: 'GazSettingsScreen',
+                            );
+                            return PointOfSaleFormDialog(
+                              enterpriseId: enterpriseId,
+                              moduleId: moduleId,
+                            );
+                          },
+                        );
+                        
+                        developer.log(
+                          '🔵 [SETTINGS] Dialog fermé avec result=$result (desktop)',
+                          name: 'GazSettingsScreen',
+                        );
+                        
+                        // Le provider sera rafraîchi dans le dialog
+                        if (result == true && context.mounted) {
+                          developer.log(
+                            '🔵 [SETTINGS] Invalidation du provider pointsOfSaleProvider (desktop)',
+                            name: 'GazSettingsScreen',
+                          );
+                          // Forcer le rafraîchissement pour s'assurer que l'UI se met à jour
+                          ref.invalidate(
+                            pointsOfSaleProvider((
+                              enterpriseId: enterpriseId,
+                              moduleId: moduleId,
+                            )),
+                          );
+                        }
                       },
                       icon: const Icon(Icons.add, size: 16),
                       label: const Text(

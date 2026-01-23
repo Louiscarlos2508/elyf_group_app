@@ -45,6 +45,14 @@ class SalaryTabs extends StatelessWidget {
               onTap: () => onTabChanged(2),
             ),
           ),
+          Expanded(
+            child: _SalaryTab(
+              label: 'Analyses',
+              index: 3,
+              isSelected: selectedTab == 3,
+              onTap: () => onTabChanged(3),
+            ),
+          ),
         ],
       ),
     );

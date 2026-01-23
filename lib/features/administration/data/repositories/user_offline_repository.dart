@@ -1,6 +1,9 @@
 import 'dart:developer' as developer;
 import 'dart:convert';
 
+import '../../../../core/errors/app_exceptions.dart';
+import '../../../../core/errors/error_handler.dart';
+import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/offline_repository.dart';
 import '../../domain/entities/user.dart';
 import '../../domain/repositories/user_repository.dart';
@@ -78,9 +81,20 @@ class UserOfflineRepository extends OfflineRepository<User>
   @override
   Future<void> saveToLocal(User entity) async {
     try {
-      final localId = getLocalId(entity);
+      // Utiliser findExistingLocalId pour éviter les duplications
+      final existingLocalId = await findExistingLocalId(
+        entity,
+        moduleType: 'administration',
+      );
+      final localId = existingLocalId ?? getLocalId(entity);
       final remoteId = getRemoteId(entity);
       final map = toMap(entity)..['localId'] = localId;
+      
+      developer.log(
+        'Sauvegarde User: id=${entity.id}, localId=$localId, remoteId=$remoteId, existingLocalId=$existingLocalId',
+        name: 'offline.repository.user',
+      );
+      
       await driftService.records.upsert(
         collectionName: collectionName,
         localId: localId,
@@ -92,16 +106,21 @@ class UserOfflineRepository extends OfflineRepository<User>
         dataJson: jsonEncode(map),
         localUpdatedAt: DateTime.now(),
       );
-    } catch (e, stackTrace) {
+      
       developer.log(
-        'Error saving user to local Drift database (user exists in Firestore, will be synced later): $e',
+        '✅ User sauvegardé avec succès: id=${entity.id}, localId=$localId',
+        name: 'offline.repository.user',
+      );
+    } catch (e, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        '❌ Error saving user to local Drift database: ${appException.message}',
         name: 'offline.repository.user',
         error: e,
         stackTrace: stackTrace,
       );
-      // Ne pas rethrow - permet à la création de continuer même si Drift échoue
-      // L'utilisateur sera récupéré depuis Firestore lors de la prochaine synchronisation
-      // ou lors d'un refresh manuel
+      // Rethrow pour que l'appelant puisse gérer l'erreur
+      rethrow;
     }
   }
 
@@ -149,8 +168,9 @@ class UserOfflineRepository extends OfflineRepository<User>
         return fromMap(map);
       }).toList();
     } catch (e, stackTrace) {
-      developer.log(
-        'Error fetching users from offline storage',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error fetching users from offline storage: ${appException.message}',
         name: 'admin.user.repository',
         error: e,
         stackTrace: stackTrace,
@@ -198,8 +218,9 @@ class UserOfflineRepository extends OfflineRepository<User>
 
       return (users: users, totalCount: totalCount);
     } catch (e, stackTrace) {
-      developer.log(
-        'Error fetching paginated users from offline storage',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error fetching paginated users from offline storage: ${appException.message}',
         name: 'admin.user.repository',
         error: e,
         stackTrace: stackTrace,
@@ -286,8 +307,9 @@ class UserOfflineRepository extends OfflineRepository<User>
       }
       return createdUser;
     } catch (e, stackTrace) {
-      developer.log(
-        'Error creating user in local database (user may exist in Firestore): $e',
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.warning(
+        'Error creating user in local database (user may exist in Firestore): ${appException.message}',
         name: 'offline.repository.user',
         error: e,
         stackTrace: stackTrace,
@@ -307,7 +329,10 @@ class UserOfflineRepository extends OfflineRepository<User>
     await save(user);
     final updatedUser = await getUserById(user.id);
     if (updatedUser == null) {
-      throw Exception('Failed to update user');
+      throw StorageException(
+        'Failed to update user',
+        'USER_UPDATE_FAILED',
+      );
     }
     return updatedUser;
   }
@@ -332,7 +357,14 @@ class UserOfflineRepository extends OfflineRepository<User>
         }
       }
       return null;
-    } catch (e) {
+    } catch (e, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.warning(
+        'Error in getUserByUsername: ${appException.message}',
+        name: 'admin.user.repository',
+        error: e,
+        stackTrace: stackTrace,
+      );
       return null;
     }
   }
@@ -375,7 +407,10 @@ class UserOfflineRepository extends OfflineRepository<User>
     await save(adminUser);
     final createdUser = await getUserById(adminId);
     if (createdUser == null) {
-      throw Exception('Failed to create default admin user');
+      throw StorageException(
+        'Failed to create default admin user',
+        'ADMIN_CREATION_FAILED',
+      );
     }
     return createdUser;
   }

@@ -34,36 +34,46 @@ class OfflineRecordDao {
         );
   }
 
+  /// Returns the most recently updated record when duplicates exist.
   Future<OfflineRecord?> findByLocalId({
     required String collectionName,
     required String localId,
     required String enterpriseId,
     required String moduleType,
-  }) {
-    return (_db.select(_db.offlineRecords)..where(
-          (t) =>
-              t.collectionName.equals(collectionName) &
-              t.enterpriseId.equals(enterpriseId) &
-              t.moduleType.equals(moduleType) &
-              t.localId.equals(localId),
-        ))
-        .getSingleOrNull();
+  }) async {
+    final list = await (_db.select(_db.offlineRecords)
+          ..where(
+            (t) =>
+                t.collectionName.equals(collectionName) &
+                t.enterpriseId.equals(enterpriseId) &
+                t.moduleType.equals(moduleType) &
+                t.localId.equals(localId),
+          )
+          ..orderBy([(t) => OrderingTerm.desc(t.localUpdatedAt)])
+          ..limit(1))
+        .get();
+    return list.isEmpty ? null : list.first;
   }
 
+  /// Returns the most recently updated record when duplicates exist.
   Future<OfflineRecord?> findByRemoteId({
     required String collectionName,
     required String remoteId,
     required String enterpriseId,
     required String moduleType,
-  }) {
-    return (_db.select(_db.offlineRecords)..where(
-          (t) =>
-              t.collectionName.equals(collectionName) &
-              t.enterpriseId.equals(enterpriseId) &
-              t.moduleType.equals(moduleType) &
-              t.remoteId.equals(remoteId),
-        ))
-        .getSingleOrNull();
+  }) async {
+    final list = await (_db.select(_db.offlineRecords)
+          ..where(
+            (t) =>
+                t.collectionName.equals(collectionName) &
+                t.enterpriseId.equals(enterpriseId) &
+                t.moduleType.equals(moduleType) &
+                t.remoteId.equals(remoteId),
+          )
+          ..orderBy([(t) => OrderingTerm.desc(t.localUpdatedAt)])
+          ..limit(1))
+        .get();
+    return list.isEmpty ? null : list.first;
   }
 
   Future<List<OfflineRecord>> listForEnterprise({
@@ -163,18 +173,46 @@ class OfflineRecordDao {
     )..where((t) => t.enterpriseId.equals(enterpriseId))).go();
   }
 
+  /// List all records for a collection and module type, regardless of enterpriseId.
+  ///
+  /// Useful for retrieving all points of sale across all enterprises.
+  Future<List<OfflineRecord>> listForCollection({
+    required String collectionName,
+    required String moduleType,
+  }) {
+    return (_db.select(_db.offlineRecords)
+          ..where(
+            (t) =>
+                t.collectionName.equals(collectionName) &
+                t.moduleType.equals(moduleType),
+          )
+          ..orderBy([(t) => OrderingTerm.desc(t.localUpdatedAt)]))
+        .get();
+  }
+
   /// Updates the remote ID for a record after successful sync.
+  ///
+  /// Filtre par [enterpriseId] et [moduleType] lorsqu'ils sont fournis pour
+  /// éviter de modifier des lignes d'une autre entreprise/module.
   Future<void> updateRemoteId({
     required String collectionName,
     required String localId,
     required String remoteId,
     DateTime? serverUpdatedAt,
+    String? enterpriseId,
+    String? moduleType,
   }) async {
-    await (_db.update(_db.offlineRecords)..where(
-          (t) =>
-              t.collectionName.equals(collectionName) &
-              t.localId.equals(localId),
-        ))
+    await (_db.update(_db.offlineRecords)..where((t) {
+          var e = t.collectionName.equals(collectionName) &
+              t.localId.equals(localId);
+          if (enterpriseId != null && enterpriseId.isNotEmpty) {
+            e = e & t.enterpriseId.equals(enterpriseId);
+          }
+          if (moduleType != null && moduleType.isNotEmpty) {
+            e = e & t.moduleType.equals(moduleType);
+          }
+          return e;
+        }))
         .write(
           OfflineRecordsCompanion(
             remoteId: Value(remoteId),

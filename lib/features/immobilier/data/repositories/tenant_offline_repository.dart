@@ -1,7 +1,8 @@
-import 'dart:developer' as developer;
 import 'dart:convert';
+import 'dart:developer' as developer;
 
 import '../../../../core/errors/error_handler.dart';
+import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/offline_repository.dart';
 import '../../domain/entities/tenant.dart';
 import '../../domain/repositories/tenant_repository.dart';
@@ -141,9 +142,12 @@ class TenantOfflineRepository extends OfflineRepository<Tenant>
       enterpriseId: enterpriseId,
       moduleType: 'immobilier',
     );
-    return rows
+    final tenants = rows
         .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
         .toList();
+    
+    // Dédupliquer par remoteId pour éviter les doublons
+    return deduplicateByRemoteId(tenants);
   }
 
   // TenantRepository interface implementation
@@ -151,15 +155,15 @@ class TenantOfflineRepository extends OfflineRepository<Tenant>
   @override
   Future<List<Tenant>> getAllTenants() async {
     try {
-      developer.log(
+      AppLogger.debug(
         'Fetching tenants for enterprise: $enterpriseId',
         name: 'TenantOfflineRepository',
       );
       return await getAllForEnterprise(enterpriseId);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error fetching tenants',
+      AppLogger.error(
+        'Error fetching tenants: ${appException.message}',
         name: 'TenantOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -196,8 +200,8 @@ class TenantOfflineRepository extends OfflineRepository<Tenant>
       }).toList();
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error searching tenants',
+      AppLogger.error(
+        'Error searching tenants: ${appException.message}',
         name: 'TenantOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -226,8 +230,8 @@ class TenantOfflineRepository extends OfflineRepository<Tenant>
       return tenantWithLocalId;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error creating tenant',
+      AppLogger.error(
+        'Error creating tenant: ${appException.message}',
         name: 'TenantOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -262,8 +266,8 @@ class TenantOfflineRepository extends OfflineRepository<Tenant>
       }
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error deleting tenant: $id',
+      AppLogger.error(
+        'Error deleting tenant: $id - ${appException.message}',
         name: 'TenantOfflineRepository',
         error: error,
         stackTrace: stackTrace,

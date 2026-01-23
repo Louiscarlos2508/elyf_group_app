@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../../../../core/logging/app_logger.dart';
 import '../../../../../domain/entities/enterprise.dart';
 
 /// Widget pour la sélection multiple d'entreprises avec support pour plusieurs modules.
@@ -43,6 +44,13 @@ class MultipleModuleEnterpriseSelection extends StatelessWidget {
     final availableEnterprises = enterprises
         .where((e) => e.isActive && enterpriseTypes.contains(e.type))
         .toList();
+    
+    // Debug: Log pour voir si les points de vente sont inclus
+    final posCount = availableEnterprises.where((e) => e.description?.contains("Point de vente") ?? false).length;
+    AppLogger.debug(
+      'MultipleModuleEnterpriseSelection: ${enterprises.length} entreprises au total, ${availableEnterprises.length} disponibles pour modules $moduleIds (dont $posCount points de vente)',
+      name: 'admin.enterprise',
+    );
 
     if (availableEnterprises.isEmpty) {
       return const Text(

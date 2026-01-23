@@ -5,6 +5,7 @@ import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../domain/entities/sale.dart';
 import '../../domain/entities/product.dart';
+import '../../domain/pack_constants.dart';
 import '../../domain/repositories/customer_repository.dart';
 import 'sale_product_selector.dart';
 import 'sale_customer_selector.dart';
@@ -23,6 +24,7 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
   final _customerPhoneController = TextEditingController();
   final _quantityController = TextEditingController();
   final _amountPaidController = TextEditingController();
+  final _notesController = TextEditingController();
 
   Product? _selectedProduct;
   CustomerSummary? _selectedCustomer;
@@ -36,6 +38,7 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
     _customerPhoneController.dispose();
     _quantityController.dispose();
     _amountPaidController.dispose();
+    _notesController.dispose();
     super.dispose();
   }
 
@@ -44,6 +47,7 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
   int? get _totalPrice =>
       _unitPrice != null && _quantity != null ? _unitPrice! * _quantity! : null;
   int? get _amountPaid => int.tryParse(_amountPaidController.text);
+  bool get _isCredit => (_totalPrice ?? 0) > (_amountPaid ?? 0);
 
   void _handleProductSelected(Product product) {
     setState(() {
@@ -111,6 +115,75 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
     });
   }
 
+  Widget _buildQuantityField(WidgetRef ref) {
+    final packStockAsync = ref.watch(packStockQuantityProvider);
+    return packStockAsync.when(
+      data: (stock) {
+        final stockError = _quantity != null && stock < _quantity!;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextFormField(
+              controller: _quantityController,
+              decoration: InputDecoration(
+                labelText: 'Quantité',
+                prefixIcon: const Icon(Icons.inventory_2),
+                helperText: stockError
+                    ? 'Stock insuffisant. Disponible: $stock'
+                    : 'Stock disponible: $stock',
+                helperMaxLines: 2,
+                errorText: stockError && _quantity != null
+                    ? 'Stock insuffisant. Disponible: $stock'
+                    : null,
+              ),
+              keyboardType: TextInputType.number,
+              onChanged: (_) => setState(() {}),
+              validator: (v) {
+                if (v == null || v.isEmpty) return 'Requis';
+                final qty = int.tryParse(v);
+                if (qty == null || qty <= 0) return 'Quantité invalide';
+                if (qty > stock) return 'Stock insuffisant. Disponible: $stock';
+                return null;
+              },
+            ),
+          ],
+        );
+      },
+      loading: () => TextFormField(
+        controller: _quantityController,
+        decoration: const InputDecoration(
+          labelText: 'Quantité',
+          prefixIcon: Icon(Icons.inventory_2),
+          helperText: 'Chargement du stock…',
+        ),
+        keyboardType: TextInputType.number,
+        onChanged: (_) => setState(() {}),
+        validator: (v) {
+          if (v == null || v.isEmpty) return 'Requis';
+          final qty = int.tryParse(v);
+          if (qty == null || qty <= 0) return 'Quantité invalide';
+          return null;
+        },
+      ),
+      error: (_, __) => TextFormField(
+        controller: _quantityController,
+        decoration: const InputDecoration(
+          labelText: 'Quantité',
+          prefixIcon: Icon(Icons.inventory_2),
+          helperText: 'Stock indisponible',
+        ),
+        keyboardType: TextInputType.number,
+        onChanged: (_) => setState(() {}),
+        validator: (v) {
+          if (v == null || v.isEmpty) return 'Requis';
+          final qty = int.tryParse(v);
+          if (qty == null || qty <= 0) return 'Quantité invalide';
+          return null;
+        },
+      ),
+    );
+  }
+
   Future<void> submit() async {
     if (_selectedProduct == null) {
       NotificationService.showWarning(
@@ -128,13 +201,19 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
       return;
     }
 
-    // Utiliser SaleService pour valider la vente (logique métier dans le service)
     final saleService = ref.read(saleServiceProvider);
+    final packStock = _selectedProduct!.id == packProductId
+        ? await ref.read(packStockQuantityProvider.future)
+        : null;
     final validationError = await saleService.validateSale(
       productId: _selectedProduct!.id,
       quantity: _quantity,
       totalPrice: _totalPrice,
       amountPaid: _amountPaid,
+      customerId: _selectedCustomer?.id,
+      customerName: _customerNameController.text,
+      customerPhone: _customerPhoneController.text,
+      packStockOverride: packStock,
     );
 
     if (!mounted) return;
@@ -151,7 +230,10 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
         // Si pas de client sélectionné mais nom renseigné, créer un nouveau client
         String customerId = _selectedCustomer?.id ?? '';
         final customerName = _customerNameController.text.trim();
-        final customerPhone = _customerPhoneController.text.trim();
+        final rawPhone = _customerPhoneController.text.trim();
+        final customerPhone = rawPhone.isEmpty
+            ? ''
+            : (PhoneUtils.normalizeBurkina(rawPhone) ?? rawPhone);
 
         if (customerId.isEmpty && customerName.isNotEmpty) {
           // Créer le nouveau client via le controller (logique métier dans le controller)
@@ -171,10 +253,17 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
           _amountPaid!,
         );
 
+        final product = _selectedProduct!;
+        final productId = product.id == packProductId
+            ? packProductId
+            : product.id;
+        final productName = product.id == packProductId
+            ? packName
+            : product.name;
         final sale = Sale(
           id: '',
-          productId: _selectedProduct!.id,
-          productName: _selectedProduct!.name,
+          productId: productId,
+          productName: productName,
           quantity: _quantity!,
           unitPrice: _unitPrice!,
           totalPrice: _totalPrice!,
@@ -186,7 +275,7 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
           date: DateTime.now(),
           status: saleStatus,
           createdBy: 'user-1',
-          notes: null,
+          notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
           cashAmount: _cashAmount,
           orangeMoneyAmount: _orangeMoneyAmount,
         );
@@ -200,8 +289,6 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
           ref.invalidate(salesStateProvider);
           ref.invalidate(stockStateProvider);
           ref.invalidate(clientsStateProvider);
-          Navigator.of(context).pop();
-          ref.invalidate(salesStateProvider);
         }
 
         return 'Vente enregistrée';
@@ -235,65 +322,43 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
           // Nom et téléphone (pré-remplis si client sélectionné)
           TextFormField(
             controller: _customerNameController,
-            decoration: const InputDecoration(
-              labelText: 'Nom du client',
-              prefixIcon: Icon(Icons.person_outline),
+            decoration: InputDecoration(
+              labelText: 'Nom du client${_isCredit ? ' (Requis)' : ''}',
+              prefixIcon: const Icon(Icons.person_outline),
+              helperText: _isCredit ? 'Obligatoire pour une vente à crédit' : null,
+              helperStyle: _isCredit ? TextStyle(color: theme.colorScheme.error) : null,
             ),
+            validator: (v) {
+              if (_isCredit && (v == null || v.trim().isEmpty)) {
+                return 'Nom obligatoire pour le crédit';
+              }
+              return null;
+            },
           ),
           const SizedBox(height: 16),
           TextFormField(
             controller: _customerPhoneController,
-            decoration: const InputDecoration(
-              labelText: 'Téléphone',
-              prefixIcon: Icon(Icons.phone),
+            decoration: InputDecoration(
+              labelText: 'Téléphone${_isCredit ? ' (Requis)' : ''}',
+              prefixIcon: const Icon(Icons.phone),
+              hintText: '+226 70 00 00 00',
+              helperText: _isCredit ? 'Obligatoire pour une vente à crédit' : null,
+              helperStyle: _isCredit ? TextStyle(color: theme.colorScheme.error) : null,
             ),
             keyboardType: TextInputType.phone,
+            validator: (v) {
+              if (_isCredit && (v == null || v.trim().isEmpty)) {
+                return 'Téléphone obligatoire pour le crédit';
+              }
+              if (v != null && v.trim().isNotEmpty) {
+                return Validators.phoneBurkina(v);
+              }
+              return null;
+            },
           ),
           const SizedBox(height: 16),
-          // Quantité avec validation du stock
           if (_selectedProduct != null)
-            FutureBuilder<int>(
-              future: ref
-                  .read(saleServiceProvider)
-                  .getCurrentStock(_selectedProduct!.id),
-              builder: (context, snapshot) {
-                final stock = snapshot.data ?? 0;
-                final stockError = _quantity != null && stock < _quantity!;
-
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    TextFormField(
-                      controller: _quantityController,
-                      decoration: InputDecoration(
-                        labelText: 'Quantité',
-                        prefixIcon: const Icon(Icons.inventory_2),
-                        helperText: snapshot.hasData
-                            ? (stockError
-                                  ? 'Stock insuffisant. Disponible: $stock'
-                                  : 'Stock disponible: $stock')
-                            : 'Vérification du stock...',
-                        helperMaxLines: 2,
-                        errorText: stockError && _quantity != null
-                            ? 'Stock insuffisant. Disponible: $stock'
-                            : null,
-                      ),
-                      keyboardType: TextInputType.number,
-                      onChanged: (_) => setState(() {}),
-                      validator: (v) {
-                        if (v == null || v.isEmpty) return 'Requis';
-                        final qty = int.tryParse(v);
-                        if (qty == null || qty <= 0) return 'Quantité invalide';
-                        if (snapshot.hasData && qty > stock) {
-                          return 'Stock insuffisant. Disponible: $stock';
-                        }
-                        return null;
-                      },
-                    ),
-                  ],
-                );
-              },
-            )
+            _buildQuantityField(ref)
           else
             TextFormField(
               controller: _quantityController,
@@ -411,6 +476,17 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
               mobileMoneyLabel: 'Orange Money',
             ),
           ],
+          const SizedBox(height: 16),
+          // Notes
+          TextFormField(
+            controller: _notesController,
+            decoration: const InputDecoration(
+              labelText: 'Notes / Observations',
+              prefixIcon: Icon(Icons.note_alt_outlined),
+              hintText: 'Ex: Commande spéciale, livraison prévue le...',
+            ),
+            maxLines: 2,
+          ),
         ],
       ),
     );

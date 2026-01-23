@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import '../../../../core/errors/error_handler.dart';
+import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/offline_repository.dart';
 import '../../domain/entities/cylinder.dart';
 import '../../domain/entities/cylinder_stock.dart';
@@ -72,9 +73,11 @@ class CylinderStockOfflineRepository extends OfflineRepository<CylinderStock>
 
   @override
   Future<void> saveToLocal(CylinderStock entity) async {
-    final localId = getLocalId(entity);
+    // Utiliser la méthode utilitaire pour trouver le localId existant
+    final existingLocalId = await findExistingLocalId(entity, moduleType: moduleType);
+    final localId = existingLocalId ?? getLocalId(entity);
     final remoteId = getRemoteId(entity);
-    final map = toMap(entity)..['localId'] = localId;
+    final map = toMap(entity)..['localId'] = localId..['id'] = localId;
     await driftService.records.upsert(
       collectionName: collectionName,
       localId: localId,
@@ -135,9 +138,17 @@ class CylinderStockOfflineRepository extends OfflineRepository<CylinderStock>
       enterpriseId: enterpriseId,
       moduleType: moduleType,
     );
-    return rows
+    final entities = rows
+
         .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+
         .toList();
+
+    
+
+    // Dédupliquer par remoteId pour éviter les doublons
+
+    return deduplicateByRemoteId(entities);
   }
 
   // CylinderStockRepository implementation
@@ -157,8 +168,8 @@ class CylinderStockOfflineRepository extends OfflineRepository<CylinderStock>
       }).toList();
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error getting stocks by status',
+      AppLogger.error(
+        'Error getting stocks by status: ${appException.message}',
         name: 'CylinderStockOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -198,8 +209,8 @@ class CylinderStockOfflineRepository extends OfflineRepository<CylinderStock>
       return await getByLocalId(id);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error getting stock: $id',
+      AppLogger.error(
+        'Error getting stock: $id - ${appException.message}',
         name: 'CylinderStockOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -244,8 +255,8 @@ class CylinderStockOfflineRepository extends OfflineRepository<CylinderStock>
       }
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error changing stock status: $id',
+      AppLogger.error(
+        'Error changing stock status: $id - ${appException.message}',
         name: 'CylinderStockOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -282,8 +293,8 @@ class CylinderStockOfflineRepository extends OfflineRepository<CylinderStock>
       await save(stockWithLocalId);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error adding stock',
+      AppLogger.error(
+        'Error adding stock: ${appException.message}',
         name: 'CylinderStockOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -317,8 +328,8 @@ class CylinderStockOfflineRepository extends OfflineRepository<CylinderStock>
       }
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error deleting stock: $id',
+      AppLogger.error(
+        'Error deleting stock: $id - ${appException.message}',
         name: 'CylinderStockOfflineRepository',
         error: error,
         stackTrace: stackTrace,

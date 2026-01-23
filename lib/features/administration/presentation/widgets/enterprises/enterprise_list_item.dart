@@ -10,6 +10,7 @@ class EnterpriseListItem extends ConsumerWidget {
   const EnterpriseListItem({
     super.key,
     required this.enterprise,
+    this.isPointOfSale = false,
     required this.onEdit,
     required this.onToggleStatus,
     required this.onDelete,
@@ -17,6 +18,7 @@ class EnterpriseListItem extends ConsumerWidget {
   });
 
   final Enterprise enterprise;
+  final bool isPointOfSale;
   final VoidCallback onEdit;
   final VoidCallback onToggleStatus;
   final VoidCallback onDelete;
@@ -96,6 +98,19 @@ class EnterpriseListItem extends ConsumerWidget {
                             visualDensity: VisualDensity.compact,
                             padding: EdgeInsets.zero,
                           ),
+                          if (isPointOfSale)
+                            Chip(
+                              label: const Text(
+                                'Point de vente',
+                                style: TextStyle(fontSize: 11),
+                              ),
+                              visualDensity: VisualDensity.compact,
+                              padding: EdgeInsets.zero,
+                              backgroundColor: theme.colorScheme.secondaryContainer,
+                              labelStyle: TextStyle(
+                                color: theme.colorScheme.onSecondaryContainer,
+                              ),
+                            ),
                           _StatusChip(isActive: enterprise.isActive),
                         ],
                       ),
@@ -237,6 +252,15 @@ class EnterpriseListItem extends ConsumerWidget {
                 label: Text(typeService.getTypeLabel(enterprise.type)),
                 visualDensity: VisualDensity.compact,
               ),
+              if (isPointOfSale)
+                Chip(
+                  label: const Text('Point de vente'),
+                  visualDensity: VisualDensity.compact,
+                  backgroundColor: theme.colorScheme.secondaryContainer,
+                  labelStyle: TextStyle(
+                    color: theme.colorScheme.onSecondaryContainer,
+                  ),
+                ),
               _StatusChip(isActive: enterprise.isActive),
             ],
           ),

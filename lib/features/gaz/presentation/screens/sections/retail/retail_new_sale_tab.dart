@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../../../core/tenant/tenant_provider.dart';
 import '../../../../application/providers.dart';
 import '../../../../domain/entities/cylinder.dart';
 import 'retail_cylinder_list.dart';
@@ -16,7 +17,13 @@ class RetailNewSaleTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final cylindersAsync = ref.watch(cylindersProvider);
-    const enterpriseId = 'default_enterprise'; // TODO: depuis contexte
+    // Récupérer l'entreprise active depuis le contexte
+    final activeEnterpriseIdAsync = ref.watch(activeEnterpriseIdProvider);
+    final enterpriseId = activeEnterpriseIdAsync.when(
+      data: (id) => id ?? 'default_enterprise',
+      loading: () => 'default_enterprise',
+      error: (_, __) => 'default_enterprise',
+    );
 
     return CustomScrollView(
       slivers: [

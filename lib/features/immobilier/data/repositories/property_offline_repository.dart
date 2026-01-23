@@ -1,7 +1,8 @@
-import 'dart:developer' as developer;
 import 'dart:convert';
+import 'dart:developer' as developer;
 
 import '../../../../core/errors/error_handler.dart';
+import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/offline_repository.dart';
 import '../../domain/entities/property.dart';
 import '../../domain/repositories/property_repository.dart';
@@ -151,9 +152,12 @@ class PropertyOfflineRepository extends OfflineRepository<Property>
       enterpriseId: enterpriseId,
       moduleType: 'immobilier',
     );
-    return rows
+    final properties = rows
         .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
         .toList();
+    
+    // Dédupliquer par remoteId pour éviter les doublons
+    return deduplicateByRemoteId(properties);
   }
 
   // PropertyRepository interface implementation
@@ -161,15 +165,15 @@ class PropertyOfflineRepository extends OfflineRepository<Property>
   @override
   Future<List<Property>> getAllProperties() async {
     try {
-      developer.log(
+      AppLogger.debug(
         'Fetching properties for enterprise: $enterpriseId',
         name: 'PropertyOfflineRepository',
       );
       return await getAllForEnterprise(enterpriseId);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error fetching properties',
+      AppLogger.error(
+        'Error fetching properties: ${appException.message}',
         name: 'PropertyOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -184,8 +188,8 @@ class PropertyOfflineRepository extends OfflineRepository<Property>
       return await getByLocalId(id);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error getting property: $id',
+      AppLogger.error(
+        'Error getting property: $id - ${appException.message}',
         name: 'PropertyOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -201,8 +205,8 @@ class PropertyOfflineRepository extends OfflineRepository<Property>
       return allProperties.where((p) => p.status == status).toList();
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error getting properties by status',
+      AppLogger.error(
+        'Error getting properties by status: ${appException.message}',
         name: 'PropertyOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -218,8 +222,8 @@ class PropertyOfflineRepository extends OfflineRepository<Property>
       return allProperties.where((p) => p.propertyType == type).toList();
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error getting properties by type',
+      AppLogger.error(
+        'Error getting properties by type: ${appException.message}',
         name: 'PropertyOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -251,8 +255,8 @@ class PropertyOfflineRepository extends OfflineRepository<Property>
       return propertyWithLocalId;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error creating property',
+      AppLogger.error(
+        'Error creating property: ${appException.message}',
         name: 'PropertyOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -287,8 +291,8 @@ class PropertyOfflineRepository extends OfflineRepository<Property>
       }
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error deleting property: $id',
+      AppLogger.error(
+        'Error deleting property: $id - ${appException.message}',
         name: 'PropertyOfflineRepository',
         error: error,
         stackTrace: stackTrace,

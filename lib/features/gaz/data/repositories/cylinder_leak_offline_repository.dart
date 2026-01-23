@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import '../../../../core/errors/error_handler.dart';
+import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/offline_repository.dart';
 import '../../domain/entities/cylinder_leak.dart';
 import '../../domain/repositories/cylinder_leak_repository.dart';
@@ -73,9 +74,11 @@ class CylinderLeakOfflineRepository extends OfflineRepository<CylinderLeak>
 
   @override
   Future<void> saveToLocal(CylinderLeak entity) async {
-    final localId = getLocalId(entity);
+    // Utiliser la méthode utilitaire pour trouver le localId existant
+    final existingLocalId = await findExistingLocalId(entity, moduleType: moduleType);
+    final localId = existingLocalId ?? getLocalId(entity);
     final remoteId = getRemoteId(entity);
-    final map = toMap(entity)..['localId'] = localId;
+    final map = toMap(entity)..['localId'] = localId..['id'] = localId;
     await driftService.records.upsert(
       collectionName: collectionName,
       localId: localId,
@@ -136,9 +139,17 @@ class CylinderLeakOfflineRepository extends OfflineRepository<CylinderLeak>
       enterpriseId: enterpriseId,
       moduleType: moduleType,
     );
-    return rows
+    final entities = rows
+
         .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+
         .toList();
+
+    
+
+    // Dédupliquer par remoteId pour éviter les doublons
+
+    return deduplicateByRemoteId(entities);
   }
 
   // CylinderLeakRepository implementation
@@ -154,8 +165,8 @@ class CylinderLeakOfflineRepository extends OfflineRepository<CylinderLeak>
       return leaks.where((leak) => leak.status == status).toList();
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error getting leaks',
+      AppLogger.error(
+        'Error getting leaks: ${appException.message}',
         name: 'CylinderLeakOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -170,8 +181,8 @@ class CylinderLeakOfflineRepository extends OfflineRepository<CylinderLeak>
       return await getByLocalId(id);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error getting leak: $id',
+      AppLogger.error(
+        'Error getting leak: $id - ${appException.message}',
         name: 'CylinderLeakOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -189,8 +200,8 @@ class CylinderLeakOfflineRepository extends OfflineRepository<CylinderLeak>
       return localId;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error reporting leak',
+      AppLogger.error(
+        'Error reporting leak: ${appException.message}',
         name: 'CylinderLeakOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -205,8 +216,8 @@ class CylinderLeakOfflineRepository extends OfflineRepository<CylinderLeak>
       await save(leak);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error updating leak: ${leak.id}',
+      AppLogger.error(
+        'Error updating leak: ${leak.id} - ${appException.message}',
         name: 'CylinderLeakOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -225,8 +236,8 @@ class CylinderLeakOfflineRepository extends OfflineRepository<CylinderLeak>
       }
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error marking leak as sent for exchange: $leakId',
+      AppLogger.error(
+        'Error marking leak as sent for exchange: $leakId - ${appException.message}',
         name: 'CylinderLeakOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -248,8 +259,8 @@ class CylinderLeakOfflineRepository extends OfflineRepository<CylinderLeak>
       }
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error marking leak as exchanged: $leakId',
+      AppLogger.error(
+        'Error marking leak as exchanged: $leakId - ${appException.message}',
         name: 'CylinderLeakOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -267,8 +278,8 @@ class CylinderLeakOfflineRepository extends OfflineRepository<CylinderLeak>
       }
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error deleting leak: $id',
+      AppLogger.error(
+        'Error deleting leak: $id - ${appException.message}',
         name: 'CylinderLeakOfflineRepository',
         error: error,
         stackTrace: stackTrace,

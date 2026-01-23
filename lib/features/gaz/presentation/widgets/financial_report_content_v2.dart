@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/tenant/tenant_provider.dart';
 import '../../application/providers.dart';
+import '../../domain/entities/expense.dart';
 import '../../domain/services/gaz_report_calculation_service.dart';
 import 'financial_summary_card.dart';
 import 'package:elyf_groupe_app/shared.dart';
@@ -22,7 +24,13 @@ class GazFinancialReportContentV2 extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    String enterpriseId = 'default_enterprise'; // TODO: depuis contexte
+    // Récupérer l'entreprise active depuis le contexte
+    final activeEnterpriseIdAsync = ref.watch(activeEnterpriseIdProvider);
+    final enterpriseId = activeEnterpriseIdAsync.when(
+      data: (id) => id ?? 'default_enterprise',
+      loading: () => 'default_enterprise',
+      error: (_, __) => 'default_enterprise',
+    );
 
     // Récupérer les ventes pour analyse
     final salesAsync = ref.watch(gasSalesProvider);
@@ -93,7 +101,7 @@ class GazFinancialReportContentV2 extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  _buildHeadquartersPayment(context, theme, netAmount),
+                  _buildHeadquartersPayment(context, ref, theme, netAmount, enterpriseId),
                   const SizedBox(height: 24),
                   // Analyse des ventes par type
                   salesAsync.when(
@@ -212,8 +220,10 @@ class GazFinancialReportContentV2 extends ConsumerWidget {
 
   Widget _buildHeadquartersPayment(
     BuildContext context,
+    WidgetRef ref,
     ThemeData theme,
     double netAmount,
+    String enterpriseId,
   ) {
     final canTransfer = netAmount > 0;
 
@@ -268,13 +278,7 @@ class GazFinancialReportContentV2 extends ConsumerWidget {
             SizedBox(
               width: double.infinity,
               child: FilledButton.icon(
-                onPressed: () {
-                  // TODO: Implémenter action de versement
-                  NotificationService.showInfo(
-                    context,
-                    'Fonctionnalité de versement à implémenter',
-                  );
-                },
+                onPressed: () => _showTransferDialog(context, ref, netAmount, enterpriseId),
                 icon: const Icon(Icons.account_balance_wallet),
                 label: const Text('Préparer versement siège'),
               ),
@@ -441,5 +445,103 @@ class GazFinancialReportContentV2 extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  /// Affiche un dialog pour confirmer et enregistrer le versement au siège.
+  Future<void> _showTransferDialog(
+    BuildContext context,
+    WidgetRef ref,
+    double amount,
+    String enterpriseId,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Versement au siège'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Montant à verser:',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              CurrencyFormatter.formatDouble(amount),
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.green,
+                  ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Cette action va créer une dépense pour enregistrer le versement.',
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Annuler'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Confirmer'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      // Créer une dépense pour enregistrer le versement
+      final expense = GazExpense(
+        id: 'transfer-${DateTime.now().millisecondsSinceEpoch}',
+        category: ExpenseCategory.other,
+        amount: amount,
+        description: 'Versement au siège - Reliquat net',
+        date: DateTime.now(),
+        enterpriseId: enterpriseId,
+        isFixed: false,
+        notes: 'Versement automatique depuis le rapport financier - Période: ${startDate.day}/${startDate.month}/${startDate.year} au ${endDate.day}/${endDate.month}/${endDate.year}',
+      );
+
+      try {
+        final expenseController = ref.read(expenseControllerProvider);
+        await expenseController.addExpense(expense);
+
+        // Invalider les providers pour rafraîchir
+        ref.invalidate(gazExpensesProvider);
+        ref.invalidate(
+          financialChargesProvider((
+            enterpriseId: enterpriseId,
+            startDate: startDate,
+            endDate: endDate,
+          )),
+        );
+        ref.invalidate(
+          financialNetAmountProvider((
+            enterpriseId: enterpriseId,
+            startDate: startDate,
+            endDate: endDate,
+            totalRevenue: totalRevenue,
+          )),
+        );
+
+        if (context.mounted) {
+          NotificationService.showSuccess(
+            context,
+            'Versement enregistré avec succès',
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          NotificationService.showError(
+            context,
+            'Erreur lors de l\'enregistrement du versement: $e',
+          );
+        }
+      }
+    }
   }
 }

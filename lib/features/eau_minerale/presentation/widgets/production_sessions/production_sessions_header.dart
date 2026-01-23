@@ -9,10 +9,14 @@ class ProductionSessionsHeader extends ConsumerWidget {
     super.key,
     required this.totalSessions,
     required this.onCreateSession,
+    this.hasSessionInProgress = false,
   });
 
   final int totalSessions;
   final VoidCallback onCreateSession;
+
+  /// Si true, le bouton "Nouvelle session" est caché (une session est déjà en cours).
+  final bool hasSessionInProgress;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -50,15 +54,48 @@ class ProductionSessionsHeader extends ConsumerWidget {
             ),
           ],
         ),
-        const SizedBox(height: 16),
-        SizedBox(
-          width: double.infinity,
-          child: FilledButton.icon(
-            onPressed: onCreateSession,
-            icon: const Icon(Icons.add),
-            label: const Text('Nouvelle session'),
+        if (hasSessionInProgress) ...[
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primaryContainer.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: theme.colorScheme.primary.withValues(alpha: 0.3),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.info_outline,
+                  size: 20,
+                  color: theme.colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Une session est en cours. Terminez-la ou finalisez-la '
+                    'avant d\'en créer une nouvelle.',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurface,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
+        ] else ...[
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: onCreateSession,
+              icon: const Icon(Icons.add),
+              label: const Text('Nouvelle session'),
+            ),
+          ),
+        ],
       ],
     );
   }

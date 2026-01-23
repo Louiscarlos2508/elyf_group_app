@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../../core/errors/app_exceptions.dart';
 import 'package:elyf_groupe_app/core/permissions/modules/boutique_permissions.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import '../../application/providers.dart';
@@ -137,8 +138,9 @@ class _CheckoutDialogState extends ConsumerState<CheckoutDialog>
         // Validation pour paiement mixte
         if (_paymentMethod == PaymentMethod.both) {
           if (_cashAmount + _mobileMoneyAmount != widget.total) {
-            throw Exception(
+            throw ValidationException(
               'La somme des montants (${CurrencyFormatter.formatFCFA(_cashAmount + _mobileMoneyAmount)}) doit être égale au total (${CurrencyFormatter.formatFCFA(widget.total)})',
+              'PAYMENT_AMOUNT_MISMATCH',
             );
           }
         }
@@ -288,11 +290,15 @@ class _CheckoutDialogState extends ConsumerState<CheckoutDialog>
                       validator: (v) {
                         if (v == null || v.isEmpty) return 'Requis';
                         final amount = int.tryParse(v);
-                        if (amount == null || amount <= 0)
+                        if (amount == null || amount <= 0) {
                           return 'Montant invalide';
+                        }
+                        if (amount > widget.total) {
+                          return 'Le montant ne peut pas dépasser ${CurrencyFormatter.formatFCFA(widget.total)}';
+                        }
                         if (amount < widget.total &&
                             _paymentMethod == PaymentMethod.cash) {
-                          return 'Montant insuffisant';
+                          return 'Le crédit n\'est pas supporté ici';
                         }
                         return null;
                       },
@@ -306,34 +312,6 @@ class _CheckoutDialogState extends ConsumerState<CheckoutDialog>
                       initialCashAmount: _cashAmount,
                       initialMobileMoneyAmount: _mobileMoneyAmount,
                       mobileMoneyLabel: 'Mobile Money',
-                    ),
-                  ],
-                  if (_change > 0) ...[
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.green.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Monnaie à rendre',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          Text(
-                            CurrencyFormatter.formatFCFA(_change),
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.green.shade700,
-                            ),
-                          ),
-                        ],
-                      ),
                     ),
                   ],
                   const SizedBox(height: 24),
