@@ -21,16 +21,21 @@ class PointOfSaleOfflineRepository extends OfflineRepository<PointOfSale>
   final String moduleType;
 
   @override
-  String get collectionName => 'points_of_sale';
+  String get collectionName => 'pointOfSale';
 
   @override
   PointOfSale fromMap(Map<String, dynamic> map) {
+    // Support pour l'ancien format (enterpriseId) et le nouveau (parentEnterpriseId)
+    final parentEnterpriseId = map['parentEnterpriseId'] as String? ??
+        map['enterpriseId'] as String? ??
+        '';
+    
     return PointOfSale(
       id: map['id'] as String? ?? map['localId'] as String,
       name: map['name'] as String,
       address: map['address'] as String,
       contact: map['contact'] as String,
-      enterpriseId: map['enterpriseId'] as String,
+      parentEnterpriseId: parentEnterpriseId,
       moduleId: map['moduleId'] as String,
       isActive: map['isActive'] as bool? ?? true,
       cylinderIds:
@@ -54,7 +59,8 @@ class PointOfSaleOfflineRepository extends OfflineRepository<PointOfSale>
       'name': entity.name,
       'address': entity.address,
       'contact': entity.contact,
-      'enterpriseId': entity.enterpriseId,
+      'parentEnterpriseId': entity.parentEnterpriseId, // ⚠️ IMPORTANT : stocker explicitement
+      'enterpriseId': entity.enterpriseId, // Pour compatibilité avec l'ancien format
       'moduleId': entity.moduleId,
       'isActive': entity.isActive,
       'cylinderIds': entity.cylinderIds,
@@ -76,18 +82,36 @@ class PointOfSaleOfflineRepository extends OfflineRepository<PointOfSale>
   }
 
   @override
-  String? getEnterpriseId(PointOfSale entity) => entity.enterpriseId;
+  String? getEnterpriseId(PointOfSale entity) {
+    // Utiliser parentEnterpriseId pour le stockage dans Drift
+    // Cela permet de récupérer les points de vente depuis l'entreprise mère
+    // via getAllForEnterprise('gaz_1')
+    return entity.parentEnterpriseId;
+  }
 
   @override
   Future<void> saveToLocal(PointOfSale entity) async {
-    final localId = getLocalId(entity);
+    // Utiliser la méthode utilitaire pour trouver le localId existant
+    final existingLocalId = await findExistingLocalId(entity, moduleType: moduleType);
+    final localId = existingLocalId ?? getLocalId(entity);
     final remoteId = getRemoteId(entity);
-    final map = toMap(entity)..['localId'] = localId;
+    final map = toMap(entity)..['localId'] = localId..['id'] = localId;
+    
+    // ⚠️ IMPORTANT : Utiliser getEnterpriseId(entity) qui retourne parentEnterpriseId
+    // Cela permet de stocker le point de vente avec l'ID de l'entreprise mère
+    // pour qu'il soit récupérable via getAllForEnterprise('gaz_1')
+    final storageEnterpriseId = getEnterpriseId(entity) ?? enterpriseId;
+    
+    developer.log(
+      'Sauvegarde PointOfSale: id=${entity.id}, parentEnterpriseId=${entity.parentEnterpriseId}, storageEnterpriseId=$storageEnterpriseId',
+      name: 'PointOfSaleOfflineRepository.saveToLocal',
+    );
+    
     await driftService.records.upsert(
       collectionName: collectionName,
       localId: localId,
       remoteId: remoteId,
-      enterpriseId: enterpriseId,
+      enterpriseId: storageEnterpriseId,
       moduleType: moduleType,
       dataJson: jsonEncode(map),
       localUpdatedAt: DateTime.now(),
@@ -138,14 +162,53 @@ class PointOfSaleOfflineRepository extends OfflineRepository<PointOfSale>
 
   @override
   Future<List<PointOfSale>> getAllForEnterprise(String enterpriseId) async {
+    developer.log(
+      'Récupération des points de vente pour enterpriseId: $enterpriseId',
+      name: 'PointOfSaleOfflineRepository.getAllForEnterprise',
+    );
+    
     final rows = await driftService.records.listForEnterprise(
       collectionName: collectionName,
       enterpriseId: enterpriseId,
       moduleType: moduleType,
     );
-    return rows
-        .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+    
+    developer.log(
+      'Nombre de lignes trouvées: ${rows.length}',
+      name: 'PointOfSaleOfflineRepository.getAllForEnterprise',
+    );
+    
+    final entities = rows
+        .map((r) {
+          try {
+            final map = jsonDecode(r.dataJson) as Map<String, dynamic>;
+            final entity = fromMap(map);
+            developer.log(
+              'PointOfSale trouvé: id=${entity.id}, parentEnterpriseId=${entity.parentEnterpriseId}',
+              name: 'PointOfSaleOfflineRepository.getAllForEnterprise',
+            );
+            return entity;
+          } catch (e) {
+            developer.log(
+              'Erreur lors du parsing: $e',
+              name: 'PointOfSaleOfflineRepository.getAllForEnterprise',
+              error: e,
+            );
+            return null;
+          }
+        })
+        .whereType<PointOfSale>()
         .toList();
+
+    // Dédupliquer par remoteId pour éviter les doublons
+    final deduplicated = deduplicateByRemoteId(entities);
+    
+    developer.log(
+      'Points de vente après déduplication: ${deduplicated.length}',
+      name: 'PointOfSaleOfflineRepository.getAllForEnterprise',
+    );
+    
+    return deduplicated;
   }
 
   // PointOfSaleRepository implementation

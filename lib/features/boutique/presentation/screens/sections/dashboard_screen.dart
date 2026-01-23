@@ -3,9 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/boutique/application/providers.dart';
-import '../../../domain/entities/expense.dart';
-import '../../../domain/entities/purchase.dart';
-import '../../../domain/entities/sale.dart';
+import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
 import '../../widgets/dashboard_header.dart';
 import '../../widgets/dashboard_low_stock_list.dart';
 import '../../widgets/dashboard_month_section.dart';
@@ -21,8 +19,6 @@ class DashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final salesAsync = ref.watch(recentSalesProvider);
     final lowStockAsync = ref.watch(lowStockProductsProvider);
-    final purchasesAsync = ref.watch(purchasesProvider);
-    final expensesAsync = ref.watch(expensesProvider);
 
     return Scaffold(
       body: CustomScrollView(
@@ -30,7 +26,12 @@ class DashboardScreen extends ConsumerWidget {
           // Header
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+              padding: EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                AppSpacing.lg,
+                AppSpacing.lg,
+                AppSpacing.md,
+              ),
               child: Row(
                 children: [
                   Expanded(
@@ -39,15 +40,21 @@ class DashboardScreen extends ConsumerWidget {
                       role: 'Gérant',
                     ),
                   ),
-                  RefreshButton(
-                    onRefresh: () {
-                      ref.invalidate(recentSalesProvider);
-                      ref.invalidate(productsProvider);
-                      ref.invalidate(lowStockProductsProvider);
-                      ref.invalidate(purchasesProvider);
-                      ref.invalidate(expensesProvider);
-                    },
-                    tooltip: 'Actualiser le tableau de bord',
+                  Semantics(
+                    label: 'Actualiser le tableau de bord',
+                    hint: 'Recharge toutes les données affichées',
+                    button: true,
+                    child: RefreshButton(
+                      onRefresh: () {
+                    ref.invalidate(recentSalesProvider);
+                    ref.invalidate(productsProvider);
+                    ref.invalidate(lowStockProductsProvider);
+                    ref.invalidate(purchasesProvider);
+                    ref.invalidate(expensesProvider);
+                    ref.invalidate(boutiqueMonthlyMetricsProvider);
+                      },
+                      tooltip: 'Actualiser le tableau de bord',
+                    ),
                   ),
                 ],
               ),
@@ -55,11 +62,15 @@ class DashboardScreen extends ConsumerWidget {
           ),
 
           // Today section header
-          _buildSectionHeader("AUJOURD'HUI", 8, 8),
+          SectionHeader(
+            title: "AUJOURD'HUI",
+            top: AppSpacing.sm,
+            bottom: AppSpacing.sm,
+          ),
 
           // Today KPIs
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+            padding: AppSpacing.sectionPadding,
             sliver: SliverToBoxAdapter(
               child: salesAsync.when(
                 data: (sales) {
@@ -71,53 +82,70 @@ class DashboardScreen extends ConsumerWidget {
                   );
                   return DashboardTodaySection(metrics: metrics);
                 },
-                loading: () => const SizedBox(
-                  height: 120,
-                  child: Center(child: CircularProgressIndicator()),
+                loading: () => const LoadingIndicator(),
+                error: (error, stackTrace) => ErrorDisplayWidget(
+                  error: error,
+                  onRetry: () => ref.refresh(recentSalesProvider),
                 ),
-                error: (_, __) => const SizedBox.shrink(),
               ),
             ),
           ),
 
           // Month section header
-          _buildSectionHeader('CE MOIS', 0, 8),
+          const SectionHeader(
+            title: 'CE MOIS',
+            bottom: AppSpacing.sm,
+          ),
 
           // Month KPIs
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+            padding: AppSpacing.sectionPadding,
             sliver: SliverToBoxAdapter(
-              child: _buildMonthKpis(
-                ref,
-                salesAsync,
-                purchasesAsync,
-                expensesAsync,
-              ),
+              child: _buildMonthKpis(ref),
             ),
           ),
 
           // Low stock section header
-          _buildSectionHeader('ALERTES STOCK', 0, 8),
+          const SectionHeader(
+            title: 'ALERTES STOCK',
+            bottom: AppSpacing.sm,
+          ),
 
           // Low stock list
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
+            padding: EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.sm,
+              AppSpacing.lg,
+              AppSpacing.xl,
+            ),
             sliver: SliverToBoxAdapter(
               child: lowStockAsync.when(
-                data: (products) => DashboardLowStockList(
-                  products: products,
-                  onProductTap: (product) {
-                    showDialog(
-                      context: context,
-                      builder: (_) => RestockDialog(product: product),
+                data: (products) {
+                  if (products.isEmpty) {
+                    return const EmptyState(
+                      icon: Icons.inventory_2_outlined,
+                      title: 'Aucune alerte de stock',
+                      message: 'Tous les produits sont en stock suffisant.',
                     );
-                  },
+                  }
+                  return DashboardLowStockList(
+                    products: products,
+                    onProductTap: (product) {
+                      showDialog(
+                        context: context,
+                        builder: (_) => RestockDialog(product: product),
+                      );
+                    },
+                  );
+                },
+                loading: () => const LoadingIndicator(height: 100),
+                error: (error, stackTrace) => ErrorDisplayWidget(
+                  error: error,
+                  title: 'Erreur de chargement',
+                  message: 'Impossible de charger les alertes de stock.',
+                  onRetry: () => ref.refresh(lowStockProductsProvider),
                 ),
-                loading: () => const SizedBox(
-                  height: 100,
-                  child: Center(child: CircularProgressIndicator()),
-                ),
-                error: (_, __) => const SizedBox.shrink(),
               ),
             ),
           ),
@@ -126,69 +154,36 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSectionHeader(String title, double top, double bottom) {
-    return SliverToBoxAdapter(
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(24, top, 24, bottom),
-        child: Text(
-          title,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 0.5,
-          ),
-        ),
-      ),
-    );
-  }
+  Widget _buildMonthKpis(WidgetRef ref) {
+    final metricsAsync = ref.watch(boutiqueMonthlyMetricsProvider);
 
-  Widget _buildMonthKpis(
-    WidgetRef ref,
-    AsyncValue<List<Sale>> salesAsync,
-    AsyncValue<List<Purchase>> purchasesAsync,
-    AsyncValue<List<Expense>> expensesAsync,
-  ) {
-    return salesAsync.when(
-      data: (sales) => purchasesAsync.when(
-        data: (purchases) => expensesAsync.when(
-          data: (expenses) {
-            final calculationService = ref.read(
-              boutiqueDashboardCalculationServiceProvider,
-            );
+    return metricsAsync.when(
+      data: (data) {
+        final calculationService = ref.read(
+          boutiqueDashboardCalculationServiceProvider,
+        );
 
-            // Use the calculation service for monthly metrics
-            final metrics = calculationService
-                .calculateMonthlyMetricsWithPurchases(
-                  sales: sales,
-                  expenses: expenses,
-                  purchases: purchases,
-                );
+        final metrics = calculationService
+            .calculateMonthlyMetricsWithPurchases(
+          sales: data.sales,
+          expenses: data.expenses,
+          purchases: data.purchases,
+        );
 
-            return DashboardMonthSection(
-              monthRevenue: metrics.revenue,
-              monthSalesCount: metrics.salesCount,
-              monthPurchasesAmount: metrics.purchasesAmount,
-              monthExpensesAmount: metrics.expensesAmount,
-              monthProfit: metrics.profit,
-            );
-          },
-          loading: () => const SizedBox(
-            height: 200,
-            child: Center(child: CircularProgressIndicator()),
-          ),
-          error: (_, __) => const SizedBox.shrink(),
-        ),
-        loading: () => const SizedBox(
-          height: 200,
-          child: Center(child: CircularProgressIndicator()),
-        ),
-        error: (_, __) => const SizedBox.shrink(),
+        return DashboardMonthSection(
+          monthRevenue: metrics.revenue,
+          monthSalesCount: metrics.salesCount,
+          monthPurchasesAmount: metrics.purchasesAmount,
+          monthExpensesAmount: metrics.expensesAmount,
+          monthProfit: metrics.profit,
+        );
+      },
+      loading: () => const LoadingIndicator(height: 200),
+      error: (error, stackTrace) => ErrorDisplayWidget(
+        error: error,
+        title: 'Erreur de chargement des métriques mensuelles',
+        onRetry: () => ref.refresh(boutiqueMonthlyMetricsProvider),
       ),
-      loading: () => const SizedBox(
-        height: 200,
-        child: Center(child: CircularProgressIndicator()),
-      ),
-      error: (_, __) => const SizedBox.shrink(),
     );
   }
 }

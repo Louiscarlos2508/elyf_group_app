@@ -4,16 +4,22 @@ import 'dart:developer' as developer;
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'drift_service.dart';
+import 'security/data_sanitizer.dart';
 
 /// Service pour synchroniser les données d'un module depuis Firestore vers Drift.
 ///
 /// Ce service permet de synchroniser automatiquement les collections d'un module
 /// lors de l'accès au module.
 class ModuleDataSyncService {
-  ModuleDataSyncService({required this.firestore, required this.driftService});
+  ModuleDataSyncService({
+    required this.firestore,
+    required this.driftService,
+    required this.collectionPaths,
+  });
 
   final FirebaseFirestore firestore;
   final DriftService driftService;
+  final Map<String, String Function(String p1)> collectionPaths;
 
   /// Configuration des collections par module.
   ///
@@ -36,6 +42,8 @@ class ModuleDataSyncService {
       'daily_workers',
       'expense_records',
       'packaging_stocks',
+      'bobine_stock_movements',
+      'packaging_stock_movements',
     ],
     'gaz': [
       'cylinders',
@@ -44,7 +52,7 @@ class ModuleDataSyncService {
       'cylinder_leaks',
       'gaz_expenses',
       'tours',
-      'points_of_sale',
+      'pointOfSale',
       'gaz_settings',
       'financial_reports',
     ],
@@ -60,7 +68,7 @@ class ModuleDataSyncService {
       'tenants',
       'contracts',
       'payments',
-      'expenses',
+      'property_expenses', // Correction: was 'expenses' which is ambiguous, verify bootstrap match
     ],
   };
 
@@ -70,10 +78,13 @@ class ModuleDataSyncService {
   /// [moduleId] : ID du module (ex: 'boutique', 'gaz', etc.)
   /// [collections] : Liste optionnelle des collections à synchroniser.
   ///                 Si non fournie, utilise la configuration par défaut du module.
+  /// [lastSyncAt] : Timestamp de la dernière sync (pour delta sync).
+  ///                Si null, fait un pull complet.
   Future<void> syncModuleData({
     required String enterpriseId,
     required String moduleId,
     List<String>? collections,
+    DateTime? lastSyncAt,
   }) async {
     // Utiliser la configuration par défaut si collections n'est pas fourni
     final collectionsToSync = collections ?? moduleCollections[moduleId] ?? [];
@@ -93,10 +104,20 @@ class ModuleDataSyncService {
 
       for (final collectionName in collectionsToSync) {
         try {
+          // Vérifier si un chemin est configuré pour cette collection
+          if (!collectionPaths.containsKey(collectionName)) {
+            developer.log(
+              'No path configured for collection $collectionName, skipping sync',
+              name: 'module.sync',
+            );
+            continue;
+          }
+
           await _syncCollection(
             enterpriseId: enterpriseId,
             moduleId: moduleId,
             collectionName: collectionName,
+            lastSyncAt: lastSyncAt,
           );
         } catch (e, stackTrace) {
           developer.log(
@@ -141,22 +162,42 @@ class ModuleDataSyncService {
   }
 
   /// Synchronise une collection depuis Firestore vers Drift.
+  ///
+  /// Utilise delta sync (sync incrémentale) si lastSyncAt est fourni,
+  /// sinon fait un pull complet.
   Future<void> _syncCollection({
     required String enterpriseId,
     required String moduleId,
     required String collectionName,
+    DateTime? lastSyncAt,
   }) async {
     try {
-      // Construire la référence de collection Firestore
-      // Structure simplifiée: enterprises/{enterpriseId}/{collectionName}
-      // (compatible avec la structure utilisée dans bootstrap.dart)
-      final collectionRef = firestore
-          .collection('enterprises')
-          .doc(enterpriseId)
-          .collection(collectionName);
+      // Obtenir le chemin physique de la collection
+      // La fonction retourne le path complet (ex: enterprises/123/gasSales)
+      final pathBuilder = collectionPaths[collectionName];
+      if (pathBuilder == null) {
+        throw Exception('No path builder found for $collectionName');
+      }
+      
+      final fullPath = pathBuilder(enterpriseId);
+      final collectionRef = firestore.collection(fullPath);
 
-      // Récupérer tous les documents
-      final snapshot = await collectionRef.get();
+      Query query = collectionRef;
+      
+      // Delta sync: récupérer uniquement les documents modifiés depuis lastSyncAt
+      if (lastSyncAt != null) {
+        query = collectionRef.where(
+          'updatedAt',
+          isGreaterThan: Timestamp.fromDate(lastSyncAt),
+        );
+        developer.log(
+          'Delta sync for $collectionName since ${lastSyncAt.toIso8601String()}',
+          name: 'module.sync',
+        );
+      }
+
+      // Récupérer les documents (tous ou seulement modifiés)
+      final snapshot = await query.get();
 
       developer.log(
         'Syncing $collectionName: ${snapshot.docs.length} documents',
@@ -166,7 +207,7 @@ class ModuleDataSyncService {
       // Sauvegarder chaque document dans Drift
       for (final doc in snapshot.docs) {
         try {
-          final data = doc.data();
+          final data = doc.data() as Map<String, dynamic>? ?? {};
           final documentId = doc.id;
 
           // Ajouter l'ID du document dans les données
@@ -176,14 +217,44 @@ class ModuleDataSyncService {
           // Convertir les Timestamp en format JSON-compatible
           final jsonCompatibleData = _convertToJsonCompatible(dataWithId);
 
+          // Sanitizer et valider les données avant sauvegarde locale
+          final sanitizedData = DataSanitizer.sanitizeMap(jsonCompatibleData);
+          final jsonPayload = jsonEncode(sanitizedData);
+          
+          // Valider la taille du payload
+          try {
+            DataSanitizer.validateJsonSize(jsonPayload);
+          } on DataSizeException catch (e) {
+            developer.log(
+              'Document ${doc.id} in collection $collectionName exceeds size limit: ${e.message}. Skipping.',
+              name: 'module.sync',
+            );
+            continue; // Skip ce document et continuer avec les autres
+          }
+
+          // Pour les points de vente, utiliser le parentEnterpriseId depuis les données
+          // au lieu de l'enterpriseId passé en paramètre
+          // Car les points de vente sont dans enterprises/{parentEnterpriseId}/pointofsale/
+          String storageEnterpriseId = enterpriseId;
+          if (collectionName == 'pointOfSale') {
+            final parentEnterpriseId = sanitizedData['parentEnterpriseId'] as String? ??
+                                       sanitizedData['enterpriseId'] as String? ??
+                                       enterpriseId;
+            storageEnterpriseId = parentEnterpriseId;
+            developer.log(
+              'Point de vente: utilisation de parentEnterpriseId=$parentEnterpriseId pour le stockage (au lieu de enterpriseId=$enterpriseId)',
+              name: 'module.sync',
+            );
+          }
+          
           // Sauvegarder dans Drift
           await driftService.records.upsert(
             collectionName: collectionName,
             localId: documentId,
             remoteId: documentId,
-            enterpriseId: enterpriseId,
+            enterpriseId: storageEnterpriseId,
             moduleType: moduleId,
-            dataJson: jsonEncode(jsonCompatibleData),
+            dataJson: jsonPayload,
             localUpdatedAt: DateTime.now(),
           );
         } catch (e, stackTrace) {

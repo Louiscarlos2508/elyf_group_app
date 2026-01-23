@@ -95,6 +95,7 @@ class ReturnStepContent extends ConsumerWidget {
               else
                 ...wholesalerCollections.map((collection) {
                   return Padding(
+                    key: ValueKey('payment_card_${collection.id}_${collection.amountPaid}'),
                     padding: const EdgeInsets.only(bottom: 16),
                     child: WholesalerPaymentCard(
                       collection: collection,
@@ -107,13 +108,15 @@ class ReturnStepContent extends ConsumerWidget {
                               collection: collection,
                             ),
                           );
-                          if (result == true) {
+                          if (result == true && context.mounted) {
                             ref.invalidate(
                               toursProvider((
                                 enterpriseId: enterpriseId,
                                 status: null,
                               )),
                             );
+                            // Forcer le rechargement du tour en utilisant refresh
+                            ref.refresh(tourProvider(tour.id));
                           }
                         } catch (e) {
                           debugPrint('Erreur: $e');

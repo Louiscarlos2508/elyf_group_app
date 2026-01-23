@@ -33,6 +33,7 @@ import '../domain/entities/gaz_settings.dart';
 import '../domain/entities/point_of_sale.dart';
 import '../domain/entities/report_data.dart';
 import '../domain/entities/tour.dart';
+import '../domain/services/wholesaler_service.dart';
 import '../domain/repositories/cylinder_leak_repository.dart';
 import '../domain/repositories/cylinder_stock_repository.dart';
 import '../domain/repositories/expense_repository.dart';
@@ -47,6 +48,7 @@ import '../domain/services/gas_calculation_service.dart';
 import '../domain/services/gas_validation_service.dart';
 import '../domain/services/filtering/gaz_filter_service.dart';
 import '../domain/services/gaz_dashboard_calculation_service.dart';
+import '../domain/services/point_of_sale_service.dart';
 import '../domain/services/gaz_report_calculation_service.dart';
 import '../domain/services/realtime_sync_service.dart';
 import '../domain/services/stock_service.dart';
@@ -78,6 +80,18 @@ final gasCalculationServiceProvider = Provider<GasCalculationService>(
 /// Provider for GasValidationService.
 final gasValidationServiceProvider = Provider<GasValidationService>(
   (ref) => GasValidationService(),
+);
+
+/// Provider for WholesalerService.
+final wholesalerServiceProvider = Provider<WholesalerService>(
+  (ref) {
+    final tourRepository = ref.watch(tourRepositoryProvider);
+    final gasRepository = ref.watch(gasRepositoryProvider);
+    return WholesalerService(
+      tourRepository: tourRepository,
+      gasRepository: gasRepository,
+    );
+  },
 );
 
 // Repositories
@@ -308,8 +322,15 @@ final pointOfSaleControllerProvider = Provider<PointOfSaleController>((ref) {
   return PointOfSaleController(repo);
 });
 
+/// Provider pour le service PointOfSaleService.
+final pointOfSaleServiceProvider = Provider<PointOfSaleService>((ref) {
+  return PointOfSaleService(
+    pointOfSaleRepository: ref.watch(pointOfSaleRepositoryProvider),
+  );
+});
+
 // Cylinders
-final cylindersProvider = FutureProvider<List<Cylinder>>((ref) async {
+final cylindersProvider = FutureProvider.autoDispose<List<Cylinder>>((ref) async {
   final repo = ref.watch(gasRepositoryProvider);
   return repo.getCylinders();
 });
@@ -370,6 +391,25 @@ final gazExpensesProvider = FutureProvider<List<GazExpense>>((ref) async {
   final repo = ref.watch(gazExpenseRepositoryProvider);
   return repo.getExpenses();
 });
+
+/// Provider combiné pour les données du dashboard gaz.
+///
+/// Simplifie l'utilisation en combinant sales, expenses et cylinders
+/// en un seul AsyncValue.
+final gazDashboardDataProvider = FutureProvider<
+    ({List<GasSale> sales, List<GazExpense> expenses, List<Cylinder> cylinders})>(
+  (ref) async {
+    final sales = await ref.watch(gasSalesProvider.future);
+    final expenses = await ref.watch(gazExpensesProvider.future);
+    final cylinders = await ref.watch(cylindersProvider.future);
+
+    return (
+      sales: sales,
+      expenses: expenses,
+      cylinders: cylinders,
+    );
+  },
+);
 
 // KPIs
 final gazTotalSalesProvider = FutureProvider<double>((ref) async {
@@ -570,6 +610,21 @@ final financialNetAmountProvider =
         params.totalRevenue,
       );
     });
+
+/// Provider pour récupérer tous les grossistes.
+final allWholesalersProvider =
+    FutureProvider.family<List<Wholesaler>, String>((ref, enterpriseId) async {
+      final service = ref.watch(wholesalerServiceProvider);
+      return service.getAllWholesalers(enterpriseId);
+    });
+
+/// Provider pour récupérer un tour spécifique par son ID.
+final tourProvider = FutureProvider.autoDispose.family<Tour?, String>(
+  (ref, tourId) async {
+    final controller = ref.watch(tourControllerProvider);
+    return controller.getTourById(tourId);
+  },
+);
 
 // Tours
 final toursProvider =

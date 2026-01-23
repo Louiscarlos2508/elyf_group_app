@@ -21,7 +21,7 @@ class SyncOperationDao {
     )..where((t) => t.id.equals(id))).getSingleOrNull();
   }
 
-  /// Gets all pending operations, ordered by creation time (oldest first).
+  /// Gets all pending operations, ordered by priority (critical first) then creation time.
   Future<List<SyncOperation>> getPending({
     int? limit,
     String? collectionName,
@@ -38,7 +38,11 @@ class SyncOperationDao {
         }
         return condition;
       })
-      ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]);
+      // Order by priority (ascending: 0=critical first), then by creation time (oldest first)
+      ..orderBy([
+        (t) => OrderingTerm.asc(t.priority),
+        (t) => OrderingTerm.asc(t.createdAt),
+      ]);
 
     if (limit != null) {
       query = query..limit(limit);
@@ -152,6 +156,13 @@ class SyncOperationDao {
     await _db.delete(_db.syncOperations).go();
   }
 
+  /// Deletes all sync operations for a specific enterprise.
+  Future<void> clearEnterprise(String enterpriseId) async {
+    await (_db.delete(_db.syncOperations)
+          ..where((t) => t.enterpriseId.equals(enterpriseId)))
+        .go();
+  }
+
   /// Converts a Drift SyncOperation to a SyncOperation entity.
   entities.SyncOperation toEntity(SyncOperation data) {
     final operation = entities.SyncOperation();
@@ -167,6 +178,11 @@ class SyncOperationDao {
     operation.processedAt = data.processedAt;
     operation.status = data.status;
     operation.localUpdatedAt = data.localUpdatedAt;
+    // Map priority integer to SyncPriority enum
+    operation.priority = entities.SyncPriority.values.firstWhere(
+      (p) => p.value == data.priority,
+      orElse: () => entities.SyncPriority.normal,
+    );
     return operation;
   }
 
@@ -184,6 +200,7 @@ class SyncOperationDao {
       processedAt: Value(operation.processedAt),
       status: Value(operation.status),
       localUpdatedAt: operation.localUpdatedAt,
+      priority: Value(operation.priority.value),
     );
   }
 }

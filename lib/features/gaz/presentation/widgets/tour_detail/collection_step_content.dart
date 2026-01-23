@@ -20,7 +20,7 @@ class CollectionStepContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
+    
     // Séparer les collections par type
     final wholesalerCollections = tour.collections
         .where((c) => c.type == CollectionType.wholesaler)

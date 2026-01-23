@@ -178,9 +178,17 @@ class SalaryOfflineRepository extends OfflineRepository<Employee>
       enterpriseId: enterpriseId,
       moduleType: moduleType,
     );
-    return rows
+    final entities = rows
+
         .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+
         .toList();
+
+    
+
+    // Dédupliquer par remoteId pour éviter les doublons
+
+    return deduplicateByRemoteId(entities);
   }
 
   // SalaryRepository implementation

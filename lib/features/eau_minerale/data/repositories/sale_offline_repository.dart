@@ -221,9 +221,12 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
       enterpriseId: enterpriseId,
       moduleType: 'eau_minerale',
     );
-    return rows
+    final sales = rows
         .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
         .toList();
+    
+    // Dédupliquer par remoteId pour éviter les doublons
+    return deduplicateByRemoteId(sales);
   }
 
   // SaleRepository interface implementation

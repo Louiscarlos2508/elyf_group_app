@@ -98,6 +98,8 @@ class ToursListTab extends ConsumerWidget {
                             child: TourCard(
                               tour: tour,
                               onTap: () {
+                                // Logger l'ID du tour pour le débogage
+                                debugPrint('Ouverture du tour avec ID: ${tour.id}');
                                 Navigator.of(context).push(
                                   MaterialPageRoute(
                                     builder: (context) => TourDetailScreen(

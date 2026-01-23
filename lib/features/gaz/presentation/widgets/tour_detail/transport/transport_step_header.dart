@@ -51,10 +51,12 @@ class TransportStepHeader extends ConsumerWidget {
                 context: context,
                 builder: (context) => TransportExpenseFormDialog(tour: tour),
               );
-              if (result == true) {
+              if (result == true && context.mounted) {
                 ref.invalidate(
                   toursProvider((enterpriseId: enterpriseId, status: null)),
                 );
+                // Invalider le provider du tour pour forcer le rafraîchissement
+                ref.refresh(tourProvider(tour.id));
               }
             } catch (e) {
               debugPrint('Erreur: $e');

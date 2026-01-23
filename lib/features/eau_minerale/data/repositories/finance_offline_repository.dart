@@ -121,7 +121,19 @@ class FinanceOfflineRepository extends OfflineRepository<ExpenseRecord>
       moduleType: moduleType,
     );
     if (byRemote != null) {
-      return fromMap(jsonDecode(byRemote.dataJson) as Map<String, dynamic>);
+      final map = safeDecodeJson(byRemote.dataJson, localId);
+      if (map == null) return null;
+      try {
+        return fromMap(map);
+      } catch (e, stackTrace) {
+        developer.log(
+          'Error parsing ExpenseRecord from map: $e',
+          name: 'FinanceOfflineRepository',
+          error: e,
+          stackTrace: stackTrace,
+        );
+        return null;
+      }
     }
     final byLocal = await driftService.records.findByLocalId(
       collectionName: collectionName,
@@ -130,7 +142,19 @@ class FinanceOfflineRepository extends OfflineRepository<ExpenseRecord>
       moduleType: moduleType,
     );
     if (byLocal == null) return null;
-    return fromMap(jsonDecode(byLocal.dataJson) as Map<String, dynamic>);
+    final map = safeDecodeJson(byLocal.dataJson, localId);
+    if (map == null) return null;
+    try {
+      return fromMap(map);
+    } catch (e, stackTrace) {
+      developer.log(
+        'Error parsing ExpenseRecord from map: $e',
+        name: 'FinanceOfflineRepository',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      return null;
+    }
   }
 
   @override
@@ -140,11 +164,32 @@ class FinanceOfflineRepository extends OfflineRepository<ExpenseRecord>
       enterpriseId: enterpriseId,
       moduleType: moduleType,
     );
-    final expenses = rows
-        .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
-        .toList();
-    expenses.sort((a, b) => b.date.compareTo(a.date));
-    return expenses;
+    
+    // Décoder et parser de manière sécurisée, en ignorant les données corrompues
+    final expenses = <ExpenseRecord>[];
+    for (final row in rows) {
+      final map = safeDecodeJson(row.dataJson, row.localId);
+      if (map == null) continue; // Ignorer les données corrompues
+      
+      try {
+        expenses.add(fromMap(map));
+      } catch (e, stackTrace) {
+        developer.log(
+          'Error parsing ExpenseRecord from map (skipping): $e',
+          name: 'FinanceOfflineRepository',
+          error: e,
+          stackTrace: stackTrace,
+        );
+        // Continuer avec les autres enregistrements
+      }
+    }
+    
+    // Dédupliquer par remoteId pour éviter les doublons
+    final deduplicatedExpenses = deduplicateByRemoteId(expenses);
+    
+    // Trier par date décroissante
+    deduplicatedExpenses.sort((a, b) => b.date.compareTo(a.date));
+    return deduplicatedExpenses;
   }
 
   // FinanceRepository implementation

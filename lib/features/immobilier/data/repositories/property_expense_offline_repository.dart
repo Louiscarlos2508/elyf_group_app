@@ -139,7 +139,19 @@ class PropertyExpenseOfflineRepository
       moduleType: 'immobilier',
     );
     if (byRemote != null) {
-      return fromMap(jsonDecode(byRemote.dataJson) as Map<String, dynamic>);
+      final map = safeDecodeJson(byRemote.dataJson, localId);
+      if (map == null) return null;
+      try {
+        return fromMap(map);
+      } catch (e, stackTrace) {
+        developer.log(
+          'Error parsing PropertyExpense from map: $e',
+          name: 'PropertyExpenseOfflineRepository',
+          error: e,
+          stackTrace: stackTrace,
+        );
+        return null;
+      }
     }
 
     final byLocal = await driftService.records.findByLocalId(
@@ -149,7 +161,19 @@ class PropertyExpenseOfflineRepository
       moduleType: 'immobilier',
     );
     if (byLocal == null) return null;
-    return fromMap(jsonDecode(byLocal.dataJson) as Map<String, dynamic>);
+    final map = safeDecodeJson(byLocal.dataJson, localId);
+    if (map == null) return null;
+    try {
+      return fromMap(map);
+    } catch (e, stackTrace) {
+      developer.log(
+        'Error parsing PropertyExpense from map: $e',
+        name: 'PropertyExpenseOfflineRepository',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      return null;
+    }
   }
 
   @override
@@ -159,12 +183,32 @@ class PropertyExpenseOfflineRepository
       enterpriseId: enterpriseId,
       moduleType: 'immobilier',
     );
-    final expenses =
-        rows
-            .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
-            .toList()
-          ..sort((a, b) => b.expenseDate.compareTo(a.expenseDate));
-    return expenses;
+    
+    // Décoder et parser de manière sécurisée, en ignorant les données corrompues
+    final expenses = <PropertyExpense>[];
+    for (final row in rows) {
+      final map = safeDecodeJson(row.dataJson, row.localId);
+      if (map == null) continue; // Ignorer les données corrompues
+      
+      try {
+        expenses.add(fromMap(map));
+      } catch (e, stackTrace) {
+        developer.log(
+          'Error parsing PropertyExpense from map (skipping): $e',
+          name: 'PropertyExpenseOfflineRepository',
+          error: e,
+          stackTrace: stackTrace,
+        );
+        // Continuer avec les autres enregistrements
+      }
+    }
+    
+    // Dédupliquer par remoteId pour éviter les doublons
+    final deduplicatedExpenses = deduplicateByRemoteId(expenses);
+    
+    // Trier par date décroissante
+    deduplicatedExpenses.sort((a, b) => b.expenseDate.compareTo(a.expenseDate));
+    return deduplicatedExpenses;
   }
 
   // PropertyExpenseRepository interface implementation

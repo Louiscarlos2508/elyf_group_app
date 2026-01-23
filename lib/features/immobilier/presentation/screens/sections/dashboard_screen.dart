@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/immobilier/application/providers.dart';
+import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
 import '../../../domain/entities/contract.dart';
 import '../../../domain/entities/expense.dart' show PropertyExpense;
 import '../../../domain/entities/payment.dart';
@@ -12,7 +14,6 @@ import '../../widgets/dashboard_alerts_section.dart';
 import '../../widgets/dashboard_header_v2.dart';
 import '../../widgets/dashboard_month_section_v2.dart';
 import '../../widgets/dashboard_today_section_v2.dart';
-import 'package:elyf_groupe_app/shared/presentation/widgets/refresh_button.dart';
 
 /// Professional dashboard screen for immobilier module.
 class DashboardScreen extends ConsumerWidget {
@@ -21,10 +22,10 @@ class DashboardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final propertiesAsync = ref.watch(propertiesProvider);
+    final tenantsAsync = ref.watch(tenantsProvider);
     final contractsAsync = ref.watch(contractsProvider);
     final paymentsAsync = ref.watch(paymentsProvider);
     final expensesAsync = ref.watch(expensesProvider);
-    final tenantsAsync = ref.watch(tenantsProvider);
     final calculationService = ref.watch(
       immobilierDashboardCalculationServiceProvider,
     );
@@ -35,7 +36,12 @@ class DashboardScreen extends ConsumerWidget {
           // Header
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+              padding: EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                AppSpacing.lg,
+                AppSpacing.lg,
+                AppSpacing.md,
+              ),
               child: Row(
                 children: [
                   Expanded(
@@ -44,15 +50,22 @@ class DashboardScreen extends ConsumerWidget {
                       role: 'Gestionnaire',
                     ),
                   ),
-                  RefreshButton(
-                    onRefresh: () {
-                      ref.invalidate(propertiesProvider);
-                      ref.invalidate(contractsProvider);
-                      ref.invalidate(paymentsProvider);
-                      ref.invalidate(expensesProvider);
-                      ref.invalidate(tenantsProvider);
-                    },
-                    tooltip: 'Actualiser le tableau de bord',
+                  Semantics(
+                    label: 'Actualiser le tableau de bord',
+                    hint: 'Recharge toutes les données affichées',
+                    button: true,
+                    child: RefreshButton(
+                      onRefresh: () {
+                        ref.invalidate(propertiesProvider);
+                        ref.invalidate(contractsProvider);
+                        ref.invalidate(paymentsProvider);
+                        ref.invalidate(expensesProvider);
+                        ref.invalidate(tenantsProvider);
+                        ref.invalidate(immobilierMonthlyMetricsProvider);
+                        ref.invalidate(immobilierAlertsProvider);
+                      },
+                      tooltip: 'Actualiser le tableau de bord',
+                    ),
                   ),
                 ],
               ),
@@ -60,22 +73,32 @@ class DashboardScreen extends ConsumerWidget {
           ),
 
           // Today section header
-          _buildSectionHeader("AUJOURD'HUI", 8, 8),
+          SectionHeader(
+            title: "AUJOURD'HUI",
+            top: AppSpacing.sm,
+            bottom: AppSpacing.sm,
+          ),
 
           // Today KPIs
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+            padding: AppSpacing.sectionPadding,
             sliver: SliverToBoxAdapter(
-              child: _DashboardTodayKpis(paymentsAsync: paymentsAsync),
+              child: _DashboardTodayKpis(
+                ref: ref,
+                paymentsAsync: paymentsAsync,
+              ),
             ),
           ),
 
           // Month section header
-          _buildSectionHeader('CE MOIS', 0, 8),
+          const SectionHeader(
+            title: 'CE MOIS',
+            bottom: AppSpacing.sm,
+          ),
 
           // Month KPIs
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+            padding: AppSpacing.sectionPadding,
             sliver: SliverToBoxAdapter(
               child: _DashboardMonthKpis(
                 propertiesAsync: propertiesAsync,
@@ -89,16 +112,21 @@ class DashboardScreen extends ConsumerWidget {
           ),
 
           // Alerts section header
-          _buildSectionHeader('ALERTES', 0, 8),
+          const SectionHeader(
+            title: 'ALERTES',
+            bottom: AppSpacing.sm,
+          ),
 
           // Alerts
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
+            padding: EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.sm,
+              AppSpacing.lg,
+              AppSpacing.xl,
+            ),
             sliver: SliverToBoxAdapter(
-              child: _DashboardAlerts(
-                paymentsAsync: paymentsAsync,
-                contractsAsync: contractsAsync,
-              ),
+              child: _DashboardAlerts(ref: ref),
             ),
           ),
         ],
@@ -106,27 +134,16 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSectionHeader(String title, double top, double bottom) {
-    return SliverToBoxAdapter(
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(24, top, 24, bottom),
-        child: Text(
-          title,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 0.5,
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 /// Widget privé pour les KPIs d'aujourd'hui.
 class _DashboardTodayKpis extends StatelessWidget {
-  const _DashboardTodayKpis({required this.paymentsAsync});
+  const _DashboardTodayKpis({
+    required this.ref,
+    required this.paymentsAsync,
+  });
 
+  final WidgetRef ref;
   final AsyncValue<List<Payment>> paymentsAsync;
 
   @override
@@ -144,11 +161,11 @@ class _DashboardTodayKpis extends StatelessWidget {
             .toList();
         return DashboardTodaySectionV2(todayPayments: todayPayments);
       },
-      loading: () => const SizedBox(
-        height: 120,
-        child: Center(child: CircularProgressIndicator()),
+      loading: () => const LoadingIndicator(),
+      error: (error, stackTrace) => ErrorDisplayWidget(
+        error: error,
+        onRetry: () => ref.refresh(paymentsProvider),
       ),
-      error: (_, __) => const SizedBox.shrink(),
     );
   }
 }
@@ -204,9 +221,9 @@ class _DashboardMonthKpis extends StatelessWidget {
                       },
                       loading: () => const SizedBox(
                         height: 200,
-                        child: Center(child: CircularProgressIndicator()),
+                        child: LoadingIndicator(),
                       ),
-                      error: (_, __) => const SizedBox.shrink(),
+                      error: (error, stackTrace) => const SizedBox.shrink(),
                     );
                   },
                   loading: () => const SizedBox(
@@ -232,28 +249,26 @@ class _DashboardMonthKpis extends StatelessWidget {
       },
       loading: () => const SizedBox(
         height: 200,
-        child: Center(child: CircularProgressIndicator()),
+        child: LoadingIndicator(),
       ),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (error, stackTrace) => const SizedBox.shrink(),
     );
   }
 }
 
 /// Widget privé pour les alertes.
 class _DashboardAlerts extends StatelessWidget {
-  const _DashboardAlerts({
-    required this.paymentsAsync,
-    required this.contractsAsync,
-  });
+  const _DashboardAlerts({required this.ref});
 
-  final AsyncValue<List<Payment>> paymentsAsync;
-  final AsyncValue<List<Contract>> contractsAsync;
+  final WidgetRef ref;
 
   @override
   Widget build(BuildContext context) {
-    return paymentsAsync.when(
-      data: (payments) {
-        final unpaidPayments = payments
+    final alertsAsync = ref.watch(immobilierAlertsProvider);
+
+    return alertsAsync.when(
+      data: (data) {
+        final unpaidPayments = data.payments
             .where(
               (p) =>
                   p.status == PaymentStatus.pending ||
@@ -261,35 +276,27 @@ class _DashboardAlerts extends StatelessWidget {
             )
             .toList();
 
-        return contractsAsync.when(
-          data: (contracts) {
-            final now = DateTime.now();
-            final expiringContracts = contracts
-                .where(
-                  (c) =>
-                      c.status == ContractStatus.active &&
-                      c.endDate.difference(now).inDays <= 30 &&
-                      c.endDate.isAfter(now),
-                )
-                .toList();
+        final now = DateTime.now();
+        final expiringContracts = data.contracts
+            .where(
+              (c) =>
+                  c.status == ContractStatus.active &&
+                  c.endDate.difference(now).inDays <= 30 &&
+                  c.endDate.isAfter(now),
+            )
+            .toList();
 
-            return DashboardAlertsSection(
-              unpaidPayments: unpaidPayments,
-              expiringContracts: expiringContracts,
-            );
-          },
-          loading: () => const SizedBox(
-            height: 100,
-            child: Center(child: CircularProgressIndicator()),
-          ),
-          error: (_, __) => const SizedBox.shrink(),
+        return DashboardAlertsSection(
+          unpaidPayments: unpaidPayments,
+          expiringContracts: expiringContracts,
         );
       },
-      loading: () => const SizedBox(
-        height: 100,
-        child: Center(child: CircularProgressIndicator()),
+      loading: () => const LoadingIndicator(height: 100),
+      error: (error, stackTrace) => ErrorDisplayWidget(
+        error: error,
+        title: 'Erreur de chargement des alertes',
+        onRetry: () => ref.refresh(immobilierAlertsProvider),
       ),
-      error: (_, __) => const SizedBox.shrink(),
     );
   }
 }

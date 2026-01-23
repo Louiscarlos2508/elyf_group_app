@@ -150,9 +150,17 @@ class ContractOfflineRepository extends OfflineRepository<Contract>
       enterpriseId: enterpriseId,
       moduleType: 'immobilier',
     );
-    return rows
+    final entities = rows
+
         .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+
         .toList();
+
+    
+
+    // Dédupliquer par remoteId pour éviter les doublons
+
+    return deduplicateByRemoteId(entities);
   }
 
   // ContractRepository interface implementation

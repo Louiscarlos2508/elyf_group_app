@@ -159,8 +159,13 @@ class LiquidityOfflineRepository extends OfflineRepository<LiquidityCheckpoint>
     final checkpoints = rows
         .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
         .toList();
-    checkpoints.sort((a, b) => b.date.compareTo(a.date));
-    return checkpoints;
+    
+    // Dédupliquer par remoteId pour éviter les doublons
+    final deduplicatedCheckpoints = deduplicateByRemoteId(checkpoints);
+    
+    // Trier par date décroissante
+    deduplicatedCheckpoints.sort((a, b) => b.date.compareTo(a.date));
+    return deduplicatedCheckpoints;
   }
 
   // LiquidityRepository implementation

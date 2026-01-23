@@ -8,6 +8,7 @@ class Commission {
     required this.transactionsCount,
     required this.estimatedAmount,
     required this.enterpriseId,
+    this.photoUrl,
     this.paidAt,
     this.paymentDueDate,
     this.notes,
@@ -22,6 +23,7 @@ class Commission {
   final int transactionsCount; // Nombre de transactions validées
   final int estimatedAmount; // Montant estimé en FCFA (pour le mois en cours)
   final String enterpriseId;
+  final String? photoUrl; // URL de la photo de preuve (Firebase Storage)
   final DateTime? paidAt;
   final DateTime? paymentDueDate;
   final String? notes;

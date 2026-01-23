@@ -1,3 +1,5 @@
+import 'dart:developer' as developer;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -62,6 +64,22 @@ class PaymentSubmitHandler {
       await controller.updateTour(
         tour.copyWith(collections: updatedCollections),
       );
+
+      // Invalider les providers pour rafraîchir l'UI
+      if (context.mounted) {
+        developer.log(
+          'Paiement enregistré, rafraîchissement des providers',
+          name: 'PaymentSubmitHandler',
+        );
+        ref.invalidate(
+          toursProvider((
+            enterpriseId: tour.enterpriseId,
+            status: null,
+          )),
+        );
+        // Forcer le rechargement du tour en utilisant refresh
+        ref.refresh(tourProvider(tour.id));
+      }
 
       // Créer les enregistrements CylinderLeak pour chaque fuite signalée
       if (leaks.isNotEmpty) {

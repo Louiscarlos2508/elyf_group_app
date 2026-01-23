@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
 import 'package:elyf_groupe_app/features/orange_money/application/providers.dart';
 import '../../../domain/entities/liquidity_checkpoint.dart';
 import '../../widgets/liquidity_checkpoint_dialog.dart';
@@ -51,15 +53,16 @@ class _LiquidityScreenState extends ConsumerState<LiquidityScreen> {
     return Container(
       color: const Color(0xFFF9FAFB),
       child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(AppSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildTodayTrackingCard(context, todayCheckpointAsync),
-            const SizedBox(height: 16),
+            SizedBox(height: AppSpacing.md),
             _buildHistorySection(
               context,
               _selectedTab == 0 ? recentCheckpointsAsync : allCheckpointsAsync,
+              _selectedTab == 0 ? recentCheckpointsKey : allCheckpointsKey,
             ),
           ],
         ),
@@ -100,8 +103,8 @@ class _LiquidityScreenState extends ConsumerState<LiquidityScreen> {
           const SizedBox(height: 30),
           todayCheckpointAsync.when(
             data: (checkpoint) => _buildCheckpointCards(context, checkpoint),
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (_, __) => _buildCheckpointCards(context, null),
+            loading: () => const LoadingIndicator(),
+            error: (error, stackTrace) => _buildCheckpointCards(context, null),
           ),
           const SizedBox(height: 16),
           Padding(
@@ -185,6 +188,7 @@ class _LiquidityScreenState extends ConsumerState<LiquidityScreen> {
   Widget _buildHistorySection(
     BuildContext context,
     AsyncValue<List<LiquidityCheckpoint>> checkpointsAsync,
+    String providerKey,
   ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -193,14 +197,15 @@ class _LiquidityScreenState extends ConsumerState<LiquidityScreen> {
           selectedTab: _selectedTab,
           onTabChanged: (tab) => setState(() => _selectedTab = tab),
         ),
-        const SizedBox(height: 8),
-        _buildHistoryContent(checkpointsAsync),
+        SizedBox(height: AppSpacing.xs),
+        _buildHistoryContent(checkpointsAsync, providerKey),
       ],
     );
   }
 
   Widget _buildHistoryContent(
     AsyncValue<List<LiquidityCheckpoint>> checkpointsAsync,
+    String providerKey,
   ) {
     return Container(
       decoration: BoxDecoration(
@@ -239,7 +244,7 @@ class _LiquidityScreenState extends ConsumerState<LiquidityScreen> {
                 });
               },
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: AppSpacing.md),
           ],
           checkpointsAsync.when(
             data: (checkpoints) {
@@ -252,16 +257,15 @@ class _LiquidityScreenState extends ConsumerState<LiquidityScreen> {
             loading: () => const Center(
               child: Padding(
                 padding: EdgeInsets.all(48),
-                child: CircularProgressIndicator(),
+                child: LoadingIndicator(),
               ),
             ),
-            error: (error, stack) => Center(
-              child: Padding(
-                padding: EdgeInsets.all(24),
-                child: Text(
-                  'Erreur: $error',
-                  style: const TextStyle(color: Colors.red),
-                ),
+            error: (error, stackTrace) => ErrorDisplayWidget(
+              error: error,
+              title: 'Erreur de chargement',
+              message: 'Impossible de charger les pointages de liquidité.',
+              onRetry: () => ref.refresh(
+                liquidityCheckpointsProvider((providerKey)),
               ),
             ),
           ),

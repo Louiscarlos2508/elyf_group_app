@@ -175,7 +175,19 @@ class PurchaseOfflineRepository extends OfflineRepository<Purchase>
       moduleType: moduleType,
     );
     if (byRemote != null) {
-      return fromMap(jsonDecode(byRemote.dataJson) as Map<String, dynamic>);
+      final map = safeDecodeJson(byRemote.dataJson, localId);
+      if (map == null) return null;
+      try {
+        return fromMap(map);
+      } catch (e, stackTrace) {
+        developer.log(
+          'Error parsing Purchase from map: $e',
+          name: 'PurchaseOfflineRepository',
+          error: e,
+          stackTrace: stackTrace,
+        );
+        return null;
+      }
     }
     final byLocal = await driftService.records.findByLocalId(
       collectionName: collectionName,
@@ -184,7 +196,19 @@ class PurchaseOfflineRepository extends OfflineRepository<Purchase>
       moduleType: moduleType,
     );
     if (byLocal == null) return null;
-    return fromMap(jsonDecode(byLocal.dataJson) as Map<String, dynamic>);
+    final map = safeDecodeJson(byLocal.dataJson, localId);
+    if (map == null) return null;
+    try {
+      return fromMap(map);
+    } catch (e, stackTrace) {
+      developer.log(
+        'Error parsing Purchase from map: $e',
+        name: 'PurchaseOfflineRepository',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      return null;
+    }
   }
 
   @override
@@ -194,11 +218,32 @@ class PurchaseOfflineRepository extends OfflineRepository<Purchase>
       enterpriseId: enterpriseId,
       moduleType: moduleType,
     );
-    final purchases = rows
-        .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
-        .toList();
-    purchases.sort((a, b) => b.date.compareTo(a.date));
-    return purchases;
+    
+    // Décoder et parser de manière sécurisée, en ignorant les données corrompues
+    final purchases = <Purchase>[];
+    for (final row in rows) {
+      final map = safeDecodeJson(row.dataJson, row.localId);
+      if (map == null) continue; // Ignorer les données corrompues
+      
+      try {
+        purchases.add(fromMap(map));
+      } catch (e, stackTrace) {
+        developer.log(
+          'Error parsing Purchase from map (skipping): $e',
+          name: 'PurchaseOfflineRepository',
+          error: e,
+          stackTrace: stackTrace,
+        );
+        // Continuer avec les autres enregistrements
+      }
+    }
+    
+    // Dédupliquer par remoteId pour éviter les doublons
+    final deduplicatedPurchases = deduplicateByRemoteId(purchases);
+    
+    // Trier par date décroissante
+    deduplicatedPurchases.sort((a, b) => b.date.compareTo(a.date));
+    return deduplicatedPurchases;
   }
 
   // PurchaseRepository implementation

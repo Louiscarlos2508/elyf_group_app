@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
 import 'package:elyf_groupe_app/features/immobilier/application/providers.dart';
 import '../../../domain/adapters/expense_balance_adapter.dart';
 import '../../../domain/entities/expense.dart';
@@ -50,10 +51,10 @@ class ExpensesScreen extends ConsumerWidget {
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: EdgeInsets.fromLTRB(
-                        24,
-                        24,
-                        24,
-                        isWide ? 24 : 16,
+                        AppSpacing.lg,
+                        AppSpacing.lg,
+                        AppSpacing.lg,
+                        isWide ? AppSpacing.lg : AppSpacing.md,
                       ),
                       child: isWide
                           ? Row(
@@ -174,7 +175,12 @@ class ExpensesScreen extends ConsumerWidget {
                   // Today's expenses table
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+                      padding: EdgeInsets.fromLTRB(
+                        AppSpacing.lg,
+                        AppSpacing.lg,
+                        AppSpacing.lg,
+                        AppSpacing.md,
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -195,7 +201,7 @@ class ExpensesScreen extends ConsumerWidget {
                                 ),
                               ),
                             ),
-                            padding: const EdgeInsets.all(20),
+                            padding: EdgeInsets.all(AppSpacing.lg),
                             child: ExpensesTableV2(
                               expenses: todayExpenses,
                               formatCurrency: CurrencyFormatter.formatFCFA,
@@ -221,36 +227,20 @@ class ExpensesScreen extends ConsumerWidget {
                     ),
                   ),
 
-                  const SliverToBoxAdapter(child: SizedBox(height: 24)),
+                  SliverToBoxAdapter(
+                    child: SizedBox(height: AppSpacing.lg),
+                  ),
                 ],
               );
             },
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (_, __) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.error_outline,
-                size: 64,
-                color: theme.colorScheme.error,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Erreur de chargement',
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: theme.colorScheme.error,
-                ),
-              ),
-              const SizedBox(height: 16),
-              FilledButton(
-                onPressed: () => ref.invalidate(expensesProvider),
-                child: const Text('Réessayer'),
-              ),
-            ],
-          ),
+        loading: () => const LoadingIndicator(),
+        error: (error, stackTrace) => ErrorDisplayWidget(
+          error: error,
+          title: 'Erreur de chargement',
+          message: 'Impossible de charger les dépenses.',
+          onRetry: () => ref.refresh(expensesProvider),
         ),
       ),
     );

@@ -135,6 +135,8 @@ class CollectionItemWidget extends StatelessWidget {
                 ...collection.emptyBottles.entries.map((entry) {
                   final weight = entry.key;
                   final qty = entry.value;
+                  // Utiliser le prix spécifique au poids (prix en gros pour les grossistes)
+                  final pricePerBottle = collection.getUnitPriceForWeight(weight);
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 4),
                     child: Row(
@@ -148,7 +150,7 @@ class CollectionItemWidget extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          '$qty × ${CurrencyFormatter.formatDouble(collection.unitPrice)}',
+                          '$qty × ${CurrencyFormatter.formatDouble(pricePerBottle)}',
                           style: const TextStyle(
                             fontSize: 14,
                             color: Color(0xFF101828),

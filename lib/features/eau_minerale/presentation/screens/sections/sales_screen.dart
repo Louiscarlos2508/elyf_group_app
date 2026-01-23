@@ -11,7 +11,6 @@ import '../../widgets/centralized_permission_guard.dart';
 import '../../widgets/sale_detail_dialog.dart';
 import '../../widgets/sale_form.dart';
 import '../../widgets/sales_table.dart';
-import '../../widgets/section_placeholder.dart';
 
 class SalesScreen extends ConsumerWidget {
   const SalesScreen({super.key});
@@ -67,13 +66,12 @@ class SalesScreen extends ConsumerWidget {
             }
           },
         ),
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stackTrace) => SectionPlaceholder(
-          icon: Icons.point_of_sale,
+        loading: () => const LoadingIndicator(),
+        error: (error, stackTrace) => ErrorDisplayWidget(
+          error: error,
           title: 'Ventes indisponibles',
-          subtitle: 'Impossible de récupérer les dernières ventes.',
-          primaryActionLabel: 'Réessayer',
-          onPrimaryAction: () => ref.invalidate(salesStateProvider),
+          message: 'Impossible de récupérer les dernières ventes.',
+          onRetry: () => ref.refresh(salesStateProvider),
         ),
       ),
     );

@@ -1,10 +1,17 @@
 import 'dart:developer' as developer;
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../services/auth_service.dart';
 import '../../firebase/firestore_user_service.dart';
-import '../../../app/bootstrap.dart' show globalRealtimeSyncService;
+import '../../../app/bootstrap.dart'
+    show globalRealtimeSyncService, globalModuleRealtimeSyncService, collectionPaths;
+import '../../../core/offline/drift_service.dart';
+import '../../../core/offline/module_data_sync_service.dart';
+import '../../../features/administration/application/controllers/admin_controller.dart';
+import '../../../features/administration/application/providers.dart'
+    show adminControllerProvider;
 
 /// Controller pour gérer l'authentification.
 ///
@@ -14,10 +21,15 @@ class AuthController {
   AuthController({
     required this.authService,
     required this.firestoreUserService,
-  });
+    AdminController? adminController,
+    FirebaseFirestore? firestore,
+  })  : _adminController = adminController,
+        _firestore = firestore;
 
   final AuthService authService;
   final FirestoreUserService firestoreUserService;
+  final AdminController? _adminController;
+  final FirebaseFirestore? _firestore;
 
   /// Se connecter avec email et mot de passe.
   ///
@@ -43,51 +55,49 @@ class AuthController {
         password: password,
       );
 
-      // S'assurer que la synchronisation est démarrée et attendre qu'elle soit terminée
+      // Démarrer la synchronisation en arrière-plan (ne bloque pas la connexion)
+      // Les données se chargeront progressivement après la connexion
       if (globalRealtimeSyncService != null) {
-        // Si la synchronisation n'est pas en cours, la redémarrer
+        // Si la synchronisation n'est pas en cours, la démarrer en arrière-plan
         if (!globalRealtimeSyncService!.isListening) {
           developer.log(
-            'Realtime sync not running, starting it...',
+            'Starting realtime sync in background after login...',
             name: 'auth.controller',
           );
-          try {
-            await globalRealtimeSyncService!.startRealtimeSync();
+          // Démarrer la sync en arrière-plan sans attendre
+          globalRealtimeSyncService!.startRealtimeSync().catchError((error) {
             developer.log(
-              'Realtime sync started after login',
+              'Warning: Failed to start realtime sync after login (will continue anyway): $error',
               name: 'auth.controller',
-            );
-          } catch (e) {
-            developer.log(
-              'Warning: Failed to start realtime sync after login (will continue anyway): $e',
-              name: 'auth.controller',
+              error: error,
             );
             // Continuer même si le démarrage échoue - les données peuvent déjà être en cache
-          }
+          });
+        } else {
+          developer.log(
+            'Realtime sync already running, skipping start',
+            name: 'auth.controller',
+          );
         }
-
-        // Attendre que la synchronisation initiale soit terminée pour que
-        // les données de rôles/permissions soient disponibles
+        
+        // Ne PAS attendre le pull initial - permettre à l'utilisateur de se connecter immédiatement
+        // Les données se chargeront progressivement en arrière-plan
+        // Si les données sont déjà en cache (Drift), elles seront disponibles immédiatement
         developer.log(
-          'Waiting for initial sync to complete after login...',
+          'Login completed - data will sync in background',
           name: 'auth.controller',
         );
-        try {
-          await globalRealtimeSyncService!.waitForInitialPull(
-            timeout: const Duration(seconds: 15),
-          );
-          developer.log(
-            'Initial sync completed after login',
-            name: 'auth.controller',
-          );
-        } catch (e) {
-          developer.log(
-            'Warning: Initial sync timeout or error after login (continuing anyway): $e',
-            name: 'auth.controller',
-          );
-          // Continuer même si le timeout est atteint - les données se chargeront progressivement
-        }
       }
+
+      // Synchroniser les modules métier auxquels l'utilisateur a accès
+      // (en arrière-plan, ne bloque pas la connexion)
+      _syncUserModulesInBackground(user.id).catchError((error) {
+        developer.log(
+          'Error syncing user modules after login (non-blocking): $error',
+          name: 'auth.controller',
+          error: error,
+        );
+      });
 
       return user;
     } catch (e) {
@@ -137,10 +147,32 @@ class AuthController {
   /// Note: La synchronisation en temps réel des données administratives
   /// (roles, entreprises, enterprise_module_users) continue de fonctionner
   /// car ces données sont partagées entre tous les utilisateurs.
+  ///
+  /// La synchronisation en temps réel des modules métier est arrêtée car
+  /// elle est spécifique à l'utilisateur connecté.
   Future<void> signOut() async {
-    // Note: On ne stop PAS la synchronisation en temps réel car les données
-    // (roles, entreprises, enterprise_module_users) sont globales et partagées.
+    // Note: On ne stop PAS la synchronisation en temps réel des données
+    // administratives car elles sont globales et partagées.
     // La synchronisation reste active pour le prochain utilisateur qui se connectera.
+
+    // Arrêter la synchronisation en temps réel des modules métier
+    // (spécifique à l'utilisateur connecté)
+    if (globalModuleRealtimeSyncService != null) {
+      try {
+        await globalModuleRealtimeSyncService!.stopAllRealtimeSync();
+        developer.log(
+          'Stopped all module realtime syncs on logout',
+          name: 'auth.controller',
+        );
+      } catch (e) {
+        developer.log(
+          'Error stopping module realtime syncs on logout: $e',
+          name: 'auth.controller',
+          error: e,
+        );
+        // Continuer même si l'arrêt échoue
+      }
+    }
 
     // Déconnecter de l'auth service
     await authService.signOut();
@@ -208,6 +240,141 @@ class AuthController {
       isAdmin: isAdmin,
     );
   }
+
+  /// Synchronise en arrière-plan tous les modules auxquels l'utilisateur a accès.
+  ///
+  /// Cette méthode est appelée après la connexion pour s'assurer que les données
+  /// des modules métier sont synchronisées depuis Firestore vers le stockage local.
+  ///
+  /// Ne bloque pas la connexion - s'exécute en arrière-plan.
+  Future<void> _syncUserModulesInBackground(String userId) async {
+    // Ne pas synchroniser si AdminController ou Firestore ne sont pas disponibles
+    final adminController = _adminController;
+    final firestore = _firestore;
+    if (adminController == null || firestore == null) {
+      developer.log(
+        'AdminController or Firestore not available, skipping module sync',
+        name: 'auth.controller',
+      );
+      return;
+    }
+
+    try {
+      developer.log(
+        'Starting background sync of user modules for user $userId',
+        name: 'auth.controller',
+      );
+
+      // Récupérer tous les accès EnterpriseModuleUser de l'utilisateur
+      final userAccesses = await adminController.getUserEnterpriseModuleUsers(
+        userId,
+      );
+
+      // Filtrer uniquement les accès actifs
+      final activeAccesses = userAccesses.where((access) => access.isActive).toList();
+
+      if (activeAccesses.isEmpty) {
+        developer.log(
+          'No active module accesses found for user $userId',
+          name: 'auth.controller',
+        );
+        return;
+      }
+
+      developer.log(
+        'Found ${activeAccesses.length} active module accesses for user $userId',
+        name: 'auth.controller',
+      );
+
+      // Grouper par entreprise et module pour éviter les doublons
+      final syncTasks = <String, Set<String>>{};
+      for (final access in activeAccesses) {
+        syncTasks.putIfAbsent(access.enterpriseId, () => <String>{}).add(
+              access.moduleId,
+            );
+      }
+
+      // Synchroniser chaque module pour chaque entreprise
+      final syncService = ModuleDataSyncService(
+        firestore: firestore,
+        driftService: DriftService.instance,
+        collectionPaths: collectionPaths,
+      );
+
+      // Démarrer la synchronisation en temps réel pour tous les modules
+      final globalModuleSync = globalModuleRealtimeSyncService;
+
+      int syncedCount = 0;
+      int realtimeSyncCount = 0;
+      for (final entry in syncTasks.entries) {
+        final enterpriseId = entry.key;
+        final moduleIds = entry.value;
+
+        for (final moduleId in moduleIds) {
+          try {
+            developer.log(
+              'Syncing module $moduleId for enterprise $enterpriseId',
+              name: 'auth.controller',
+            );
+            // 1. Pull initial des données
+            await syncService.syncModuleData(
+              enterpriseId: enterpriseId,
+              moduleId: moduleId,
+            );
+            syncedCount++;
+
+            // 2. Démarrer la synchronisation en temps réel pour ce module
+            if (globalModuleSync != null) {
+              try {
+                await globalModuleSync.startRealtimeSync(
+                  enterpriseId: enterpriseId,
+                  moduleId: moduleId,
+                );
+                realtimeSyncCount++;
+                developer.log(
+                  'Realtime sync started for module $moduleId in enterprise $enterpriseId',
+                  name: 'auth.controller',
+                );
+              } catch (e) {
+                developer.log(
+                  'Error starting realtime sync for module $moduleId: $e',
+                  name: 'auth.controller',
+                  error: e,
+                );
+                // Continuer même si la sync en temps réel échoue
+              }
+            }
+
+            developer.log(
+              'Successfully synced module $moduleId for enterprise $enterpriseId',
+              name: 'auth.controller',
+            );
+          } catch (e, stackTrace) {
+            developer.log(
+              'Error syncing module $moduleId for enterprise $enterpriseId: $e',
+              name: 'auth.controller',
+              error: e,
+              stackTrace: stackTrace,
+            );
+            // Continuer avec les autres modules même si un échoue
+          }
+        }
+      }
+
+      developer.log(
+        'Background module sync completed: $syncedCount modules synced, $realtimeSyncCount realtime syncs started',
+        name: 'auth.controller',
+      );
+    } catch (e, stackTrace) {
+      developer.log(
+        'Error during background module sync: $e',
+        name: 'auth.controller',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      // Ne pas rethrow - cette synchronisation ne doit pas bloquer la connexion
+    }
+  }
 }
 
 /// Provider pour le controller d'authentification.
@@ -215,5 +382,7 @@ final authControllerProvider = Provider<AuthController>((ref) {
   return AuthController(
     authService: ref.watch(authServiceProvider),
     firestoreUserService: ref.watch(firestoreUserServiceProvider),
+    adminController: ref.watch(adminControllerProvider),
+    firestore: FirebaseFirestore.instance,
   );
 });

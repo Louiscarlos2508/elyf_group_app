@@ -51,6 +51,31 @@ class SyncMetadata {
   DateTime localUpdatedAt;
 }
 
+/// Priority levels for sync operations.
+///
+/// Higher priority operations are processed first.
+enum SyncPriority {
+  /// Critical operations: sales, payments, financial transactions
+  critical(0),
+
+  /// High priority: inventory, stocks, important updates
+  high(1),
+
+  /// Normal priority: general data updates
+  normal(2),
+
+  /// Low priority: logs, metrics, non-critical data
+  low(3);
+
+  const SyncPriority(this.value);
+  final int value;
+
+  /// Compare priorities (lower value = higher priority).
+  static int compare(SyncPriority a, SyncPriority b) {
+    return a.value.compareTo(b.value);
+  }
+}
+
 /// SyncOperation class representing a queued sync operation.
 class SyncOperation {
   int id = 0;
@@ -65,8 +90,44 @@ class SyncOperation {
   DateTime? processedAt;
   String status = 'pending';
   late DateTime localUpdatedAt;
+  SyncPriority priority = SyncPriority.normal;
 
   SyncOperation();
+
+  /// Determines priority based on collection name and operation type.
+  ///
+  /// Critical: sales, payments, transactions
+  /// High: stocks, inventory, important updates
+  /// Normal: everything else
+  static SyncPriority determinePriority(
+    String collectionName,
+    String operationType,
+  ) {
+    // Critical collections
+    if (collectionName.contains('sale') ||
+        collectionName.contains('payment') ||
+        collectionName.contains('transaction') ||
+        collectionName.contains('purchase')) {
+      return SyncPriority.critical;
+    }
+
+    // High priority collections
+    if (collectionName.contains('stock') ||
+        collectionName.contains('inventory') ||
+        collectionName.contains('cylinder') ||
+        collectionName.contains('product')) {
+      return SyncPriority.high;
+    }
+
+    // Low priority collections
+    if (collectionName.contains('log') ||
+        collectionName.contains('metric') ||
+        collectionName.contains('audit')) {
+      return SyncPriority.low;
+    }
+
+    return SyncPriority.normal;
+  }
 
   /// Parses the JSON payload into a Map.
   Map<String, dynamic>? get payloadMap {

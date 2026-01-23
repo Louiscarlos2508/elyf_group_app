@@ -57,6 +57,22 @@ class FirestoreUserService {
         );
       } else {
         // Mettre à jour l'utilisateur existant
+        // ⚠️ IMPORTANT: Ne pas écraser firstName et lastName si l'utilisateur existe déjà
+        // et que ces valeurs ne sont pas fournies (pour éviter d'écraser les vraies valeurs)
+        final existingData = userSnapshot.data();
+        if (existingData != null) {
+          // Si firstName/lastName ne sont pas fournis, garder les valeurs existantes
+          if (firstName == null || firstName.isEmpty) {
+            userData['firstName'] = existingData['firstName'] ?? '';
+          }
+          if (lastName == null || lastName.isEmpty) {
+            userData['lastName'] = existingData['lastName'] ?? '';
+          }
+          // Si username n'est pas fourni, garder la valeur existante
+          if (username == null || username.isEmpty) {
+            userData['username'] = existingData['username'] ?? email.split('@').first;
+          }
+        }
         await userDoc.update(userData);
         developer.log(
           'Updated user in Firestore: $userId',

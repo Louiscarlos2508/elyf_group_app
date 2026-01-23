@@ -1,3 +1,5 @@
+import 'dart:developer' as developer;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -16,7 +18,16 @@ class AdminEnterprisesSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final enterprisesAsync = ref.watch(enterprisesProvider);
+    final combinedAsync = ref.watch(enterprisesWithPointsOfSaleProvider);
+    
+    // Log pour déboguer
+    combinedAsync.whenData((combined) {
+      final posCount = combined.where((item) => item.isPointOfSale).length;
+      developer.log(
+        '🔵 AdminEnterprisesSection: ${combined.length} éléments au total ($posCount points de vente)',
+        name: 'AdminEnterprisesSection',
+      );
+    });
 
     return CustomScrollView(
       slivers: [
@@ -25,13 +36,27 @@ class AdminEnterprisesSection extends ConsumerWidget {
         SliverToBoxAdapter(
           child: SizedBox(height: ResponsiveHelper.isMobile(context) ? 16 : 24),
         ),
-        enterprisesAsync.when(
-          data: (enterprises) =>
-              _buildEnterprisesList(context, ref, enterprises),
+        combinedAsync.when(
+          data: (combined) {
+            final posCount = combined.where((item) => item.isPointOfSale).length;
+            developer.log(
+              '🔵 AdminEnterprisesSection: Affichage de ${combined.length} éléments ($posCount points de vente)',
+              name: 'AdminEnterprisesSection',
+            );
+            return _buildEnterprisesList(context, ref, combined);
+          },
           loading: () => const SliverToBoxAdapter(
             child: Center(child: CircularProgressIndicator()),
           ),
-          error: (error, stack) => _buildErrorState(context, theme, error),
+          error: (error, stack) {
+            developer.log(
+              '❌ AdminEnterprisesSection: Erreur: $error',
+              name: 'AdminEnterprisesSection',
+              error: error,
+              stackTrace: stack,
+            );
+            return _buildErrorState(context, theme, error);
+          },
         ),
         SliverToBoxAdapter(
           child: SizedBox(height: ResponsiveHelper.isMobile(context) ? 16 : 24),
@@ -98,26 +123,45 @@ class AdminEnterprisesSection extends ConsumerWidget {
   Widget _buildEnterprisesList(
     BuildContext context,
     WidgetRef ref,
-    List<Enterprise> enterprises,
+    List<({Enterprise enterprise, bool isPointOfSale})> combined,
   ) {
-    if (enterprises.isEmpty) {
+    if (combined.isEmpty) {
       return const SliverToBoxAdapter(child: EnterpriseEmptyState());
     }
 
     return SliverList(
       delegate: SliverChildBuilderDelegate((context, index) {
-        final enterprise = enterprises[index];
+        final item = combined[index];
         return EnterpriseListItem(
-          enterprise: enterprise,
-          onEdit: () => EnterpriseActions.edit(context, ref, enterprise),
+          enterprise: item.enterprise,
+          isPointOfSale: item.isPointOfSale,
+          onEdit: () => EnterpriseActions.edit(context, ref, item.enterprise),
           onToggleStatus: () =>
-              EnterpriseActions.toggleStatus(context, ref, enterprise),
-          onDelete: () => EnterpriseActions.delete(context, ref, enterprise),
+              EnterpriseActions.toggleStatus(context, ref, item.enterprise),
+          onDelete: () => EnterpriseActions.delete(context, ref, item.enterprise),
           onNavigate: () {
-            context.go('/modules/${enterprise.type}/${enterprise.id}');
+            if (item.isPointOfSale) {
+              // Pour les points de vente, naviguer vers l'entreprise mère
+              // On doit extraire le parentEnterpriseId depuis l'ID du point de vente
+              // Format: pos_{parentEnterpriseId}_{timestamp}
+              final posId = item.enterprise.id;
+              if (posId.startsWith('pos_')) {
+                final parts = posId.split('_');
+                if (parts.length >= 2) {
+                  final parentEnterpriseId = parts[1];
+                  context.go('/modules/${item.enterprise.type}/$parentEnterpriseId');
+                } else {
+                  context.go('/modules/${item.enterprise.type}');
+                }
+              } else {
+                context.go('/modules/${item.enterprise.type}');
+              }
+            } else {
+              context.go('/modules/${item.enterprise.type}/${item.enterprise.id}');
+            }
           },
         );
-      }, childCount: enterprises.length),
+      }, childCount: combined.length),
     );
   }
 

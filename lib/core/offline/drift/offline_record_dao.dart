@@ -163,6 +163,23 @@ class OfflineRecordDao {
     )..where((t) => t.enterpriseId.equals(enterpriseId))).go();
   }
 
+  /// List all records for a collection and module type, regardless of enterpriseId.
+  ///
+  /// Useful for retrieving all points of sale across all enterprises.
+  Future<List<OfflineRecord>> listForCollection({
+    required String collectionName,
+    required String moduleType,
+  }) {
+    return (_db.select(_db.offlineRecords)
+          ..where(
+            (t) =>
+                t.collectionName.equals(collectionName) &
+                t.moduleType.equals(moduleType),
+          )
+          ..orderBy([(t) => OrderingTerm.desc(t.localUpdatedAt)]))
+        .get();
+  }
+
   /// Updates the remote ID for a record after successful sync.
   Future<void> updateRemoteId({
     required String collectionName,

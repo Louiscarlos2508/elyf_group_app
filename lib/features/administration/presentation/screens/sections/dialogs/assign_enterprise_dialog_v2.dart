@@ -285,6 +285,7 @@ class _AssignEnterpriseDialogState
                                       _selectedEnterpriseId = id;
                                     });
                                   },
+                                  moduleId: _selectedModuleId!,
                                 ),
                             ],
                           );

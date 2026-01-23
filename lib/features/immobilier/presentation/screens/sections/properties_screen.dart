@@ -4,6 +4,7 @@ import 'package:open_file/open_file.dart';
 
 import 'package:elyf_groupe_app/core/pdf/immobilier_stock_report_pdf_service.dart';
 import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
 import 'package:elyf_groupe_app/features/immobilier/application/providers.dart';
 import '../../../domain/entities/property.dart';
 import '../../widgets/property_detail_dialog.dart';
@@ -91,7 +92,7 @@ class _PropertiesScreenState extends ConsumerState<PropertiesScreen> {
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (context) => const Center(child: CircularProgressIndicator()),
+        builder: (context) => const LoadingIndicator(),
       );
 
       final controller = ref.read(propertyControllerProvider);
@@ -144,10 +145,10 @@ class _PropertiesScreenState extends ConsumerState<PropertiesScreen> {
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: EdgeInsets.fromLTRB(
-                        24,
-                        24,
-                        24,
-                        isWide ? 24 : 16,
+                        AppSpacing.lg,
+                        AppSpacing.lg,
+                        AppSpacing.lg,
+                        isWide ? AppSpacing.lg : AppSpacing.md,
                       ),
                       child: isWide
                           ? Row(
@@ -158,16 +159,26 @@ class _PropertiesScreenState extends ConsumerState<PropertiesScreen> {
                                       ?.copyWith(fontWeight: FontWeight.bold),
                                 ),
                                 const Spacer(),
-                                RefreshButton(
-                                  onRefresh: () =>
-                                      ref.invalidate(propertiesProvider),
-                                  tooltip: 'Actualiser',
+                                Semantics(
+                                  label: 'Actualiser les propriétés',
+                                  hint: 'Recharge la liste des propriétés',
+                                  button: true,
+                                  child: RefreshButton(
+                                    onRefresh: () =>
+                                        ref.invalidate(propertiesProvider),
+                                    tooltip: 'Actualiser',
+                                  ),
                                 ),
-                                IconButton(
-                                  icon: const Icon(Icons.download),
-                                  onPressed: () =>
-                                      _downloadStockReport(context),
-                                  tooltip: 'Télécharger rapport PDF',
+                                Semantics(
+                                  label: 'Télécharger rapport PDF',
+                                  hint: 'Génère et télécharge un rapport PDF des propriétés',
+                                  button: true,
+                                  child: IconButton(
+                                    icon: const Icon(Icons.download),
+                                    onPressed: () =>
+                                        _downloadStockReport(context),
+                                    tooltip: 'Télécharger rapport PDF',
+                                  ),
                                 ),
                                 PropertySortMenu(
                                   selectedSort: _sortOption,
@@ -198,16 +209,24 @@ class _PropertiesScreenState extends ConsumerState<PropertiesScreen> {
                                             ),
                                       ),
                                     ),
-                                    RefreshButton(
-                                      onRefresh: () =>
-                                          ref.invalidate(propertiesProvider),
-                                      tooltip: 'Actualiser',
+                                    Semantics(
+                                      label: 'Actualiser les propriétés',
+                                      button: true,
+                                      child: RefreshButton(
+                                        onRefresh: () =>
+                                            ref.invalidate(propertiesProvider),
+                                        tooltip: 'Actualiser',
+                                      ),
                                     ),
-                                    IconButton(
-                                      icon: const Icon(Icons.download),
-                                      onPressed: () =>
-                                          _downloadStockReport(context),
-                                      tooltip: 'Télécharger rapport PDF',
+                                    Semantics(
+                                      label: 'Télécharger rapport PDF',
+                                      button: true,
+                                      child: IconButton(
+                                        icon: const Icon(Icons.download),
+                                        onPressed: () =>
+                                            _downloadStockReport(context),
+                                        tooltip: 'Télécharger rapport PDF',
+                                      ),
                                     ),
                                     PropertySortMenu(
                                       selectedSort: _sortOption,
@@ -233,7 +252,7 @@ class _PropertiesScreenState extends ConsumerState<PropertiesScreen> {
                   // KPI Summary Cards
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      padding: AppSpacing.horizontalPadding,
                       child: _buildKpiCards(
                         theme,
                         properties.length,
@@ -244,19 +263,10 @@ class _PropertiesScreenState extends ConsumerState<PropertiesScreen> {
                   ),
 
                   // Search and Filters Section Header
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
-                      child: Text(
-                        'LISTE DES PROPRIÉTÉS',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.5,
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
+                  SectionHeader(
+                    title: 'LISTE DES PROPRIÉTÉS',
+                    top: AppSpacing.lg,
+                    bottom: AppSpacing.sm,
                   ),
 
                   // Search Bar
@@ -305,14 +315,21 @@ class _PropertiesScreenState extends ConsumerState<PropertiesScreen> {
                       onPropertyTap: _showPropertyDetails,
                     ),
 
-                  const SliverToBoxAdapter(child: SizedBox(height: 24)),
+                  SliverToBoxAdapter(
+                    child: SizedBox(height: AppSpacing.lg),
+                  ),
                 ],
               );
             },
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => _buildErrorState(theme, error),
+        loading: () => const LoadingIndicator(),
+        error: (error, stackTrace) => ErrorDisplayWidget(
+          error: error,
+          title: 'Erreur de chargement',
+          message: 'Impossible de charger les propriétés.',
+          onRetry: () => ref.refresh(propertiesProvider),
+        ),
       ),
     );
   }
@@ -350,28 +367,6 @@ class _PropertiesScreenState extends ConsumerState<PropertiesScreen> {
     );
   }
 
-  Widget _buildErrorState(ThemeData theme, Object error) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.error_outline, size: 64, color: theme.colorScheme.error),
-          const SizedBox(height: 16),
-          Text(
-            'Erreur de chargement',
-            style: theme.textTheme.bodyLarge?.copyWith(
-              color: theme.colorScheme.error,
-            ),
-          ),
-          const SizedBox(height: 16),
-          FilledButton(
-            onPressed: () => ref.invalidate(propertiesProvider),
-            child: const Text('Réessayer'),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class _KpiCard extends StatelessWidget {

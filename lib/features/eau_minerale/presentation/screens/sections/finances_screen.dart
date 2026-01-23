@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
 import '../../../../../../core/permissions/modules/eau_minerale_permissions.dart';
 import '../../../application/controllers/finances_controller.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
@@ -14,7 +15,6 @@ import '../../widgets/expense_detail_dialog.dart';
 import '../../widgets/expense_form.dart';
 import '../../widgets/expenses_table.dart';
 import '../../widgets/monthly_expense_summary.dart';
-import '../../widgets/section_placeholder.dart';
 
 class FinancesScreen extends ConsumerWidget {
   const FinancesScreen({super.key});
@@ -81,13 +81,12 @@ class FinancesScreen extends ConsumerWidget {
             );
           },
         ),
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stackTrace) => SectionPlaceholder(
-          icon: Icons.account_balance,
+        loading: () => const LoadingIndicator(),
+        error: (error, stackTrace) => ErrorDisplayWidget(
+          error: error,
           title: 'Charges indisponibles',
-          subtitle: 'Impossible de charger les dernières dépenses.',
-          primaryActionLabel: 'Réessayer',
-          onPrimaryAction: () => ref.invalidate(financesStateProvider),
+          message: 'Impossible de charger les dernières dépenses.',
+          onRetry: () => ref.refresh(financesStateProvider),
         ),
       ),
     );
@@ -138,7 +137,12 @@ class _ExpensesContent extends StatelessWidget {
           slivers: [
             SliverToBoxAdapter(
               child: Padding(
-                padding: EdgeInsets.fromLTRB(24, 24, 24, isWide ? 24 : 16),
+                padding: EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  AppSpacing.lg,
+                  AppSpacing.lg,
+                  isWide ? AppSpacing.lg : AppSpacing.md,
+                ),
                 child: isWide
                     ? Row(
                         children: [
@@ -215,7 +219,7 @@ class _ExpensesContent extends StatelessWidget {
             ),
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+                padding: AppSpacing.horizontalPadding,
                 child: DailyExpenseSummaryCard(
                   total: todayTotal,
                   formatCurrency: formatCurrency,
@@ -224,7 +228,12 @@ class _ExpensesContent extends StatelessWidget {
             ),
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+                padding: EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  AppSpacing.lg,
+                  AppSpacing.lg,
+                  AppSpacing.md,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -245,7 +254,7 @@ class _ExpensesContent extends StatelessWidget {
                           ),
                         ),
                       ),
-                      padding: const EdgeInsets.all(20),
+                      padding: EdgeInsets.all(AppSpacing.lg),
                       child: ExpensesTable(
                         expenses: todayExpenses,
                         formatCurrency: formatCurrency,
@@ -258,11 +267,13 @@ class _ExpensesContent extends StatelessWidget {
             ),
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+                padding: AppSpacing.horizontalPadding,
                 child: MonthlyExpenseSummary(expenses: state.expenses),
               ),
             ),
-            const SliverToBoxAdapter(child: SizedBox(height: 24)),
+            SliverToBoxAdapter(
+              child: SizedBox(height: AppSpacing.lg),
+            ),
           ],
         );
       },

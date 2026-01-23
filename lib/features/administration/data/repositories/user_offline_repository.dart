@@ -78,9 +78,20 @@ class UserOfflineRepository extends OfflineRepository<User>
   @override
   Future<void> saveToLocal(User entity) async {
     try {
-      final localId = getLocalId(entity);
+      // Utiliser findExistingLocalId pour éviter les duplications
+      final existingLocalId = await findExistingLocalId(
+        entity,
+        moduleType: 'administration',
+      );
+      final localId = existingLocalId ?? getLocalId(entity);
       final remoteId = getRemoteId(entity);
       final map = toMap(entity)..['localId'] = localId;
+      
+      developer.log(
+        'Sauvegarde User: id=${entity.id}, localId=$localId, remoteId=$remoteId, existingLocalId=$existingLocalId',
+        name: 'offline.repository.user',
+      );
+      
       await driftService.records.upsert(
         collectionName: collectionName,
         localId: localId,
@@ -92,16 +103,20 @@ class UserOfflineRepository extends OfflineRepository<User>
         dataJson: jsonEncode(map),
         localUpdatedAt: DateTime.now(),
       );
+      
+      developer.log(
+        '✅ User sauvegardé avec succès: id=${entity.id}, localId=$localId',
+        name: 'offline.repository.user',
+      );
     } catch (e, stackTrace) {
       developer.log(
-        'Error saving user to local Drift database (user exists in Firestore, will be synced later): $e',
+        '❌ Error saving user to local Drift database: $e',
         name: 'offline.repository.user',
         error: e,
         stackTrace: stackTrace,
       );
-      // Ne pas rethrow - permet à la création de continuer même si Drift échoue
-      // L'utilisateur sera récupéré depuis Firestore lors de la prochaine synchronisation
-      // ou lors d'un refresh manuel
+      // Rethrow pour que l'appelant puisse gérer l'erreur
+      rethrow;
     }
   }
 

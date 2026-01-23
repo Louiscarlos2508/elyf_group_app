@@ -1,3 +1,4 @@
+import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -154,10 +155,26 @@ final accessibleGazSectionsProvider = FutureProvider<List<NavigationSection>>((
     // Vérifier si l'utilisateur a au moins une des permissions requises
     final hasAccess = await adapter.hasAnyPermission(item.requiredPermissions);
 
+    // Log pour déboguer les permissions
+    developer.log(
+      'Section "${item.section.label}": permissions requises=${item.requiredPermissions}, hasAccess=$hasAccess',
+      name: 'gaz.sections',
+    );
+
     if (hasAccess) {
       accessibleSections.add(item.section);
+    } else {
+      developer.log(
+        'Section "${item.section.label}" exclue: pas de permission',
+        name: 'gaz.sections',
+      );
     }
   }
+
+  developer.log(
+    'Sections accessibles: ${accessibleSections.map((s) => s.label).join(", ")}',
+    name: 'gaz.sections',
+  );
 
   return accessibleSections;
 });

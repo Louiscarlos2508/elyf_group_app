@@ -10,8 +10,8 @@ pw.Widget buildSalePdfContent(Sale sale) {
     crossAxisAlignment: pw.CrossAxisAlignment.start,
     children: [
       buildPdfHeader('FACTURE DE VENTE'),
-      pw.SizedBox(height: 20),
-      pw.Divider(),
+      pw.SizedBox(height: 10),
+      pw.Divider(), 
       pw.SizedBox(height: 10),
 
       // Info facture

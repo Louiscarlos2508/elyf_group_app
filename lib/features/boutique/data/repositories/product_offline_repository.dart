@@ -159,11 +159,15 @@ class ProductOfflineRepository extends OfflineRepository<Product>
       enterpriseId: enterpriseId,
       moduleType: moduleType,
     );
-    // Filtrer les produits supprimés (soft delete)
-    return rows
+    final products = rows
         .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
-        .where((product) => !product.isDeleted)
         .toList();
+    
+    // Dédupliquer par remoteId pour éviter les doublons
+    final deduplicatedProducts = deduplicateByRemoteId(products);
+    
+    // Filtrer les produits supprimés (soft delete)
+    return deduplicatedProducts.where((product) => !product.isDeleted).toList();
   }
 
   // ProductRepository interface implementation

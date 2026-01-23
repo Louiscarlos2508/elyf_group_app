@@ -105,11 +105,14 @@ class GasOfflineRepository implements GasRepository {
         moduleType: 'gaz',
       );
 
-      return rows
+      final cylinders = rows
           .map((row) {
             try {
               final map = jsonDecode(row.dataJson) as Map<String, dynamic>;
-              return _cylinderFromMap(map);
+              // S'assurer que l'ID dans le JSON correspond au localId de la base
+              final cylinder = _cylinderFromMap(map);
+              // Utiliser le localId de la base de données comme ID principal
+              return cylinder.copyWith(id: row.localId);
             } catch (e) {
               developer.log(
                 'Error parsing cylinder: $e',
@@ -120,6 +123,41 @@ class GasOfflineRepository implements GasRepository {
           })
           .whereType<Cylinder>()
           .toList();
+
+      // Dédupliquer par weight + enterpriseId (un cylinder est unique par cette combinaison)
+      final deduplicated = <String, Cylinder>{};
+
+      for (final cylinder in cylinders) {
+        // Un cylinder est unique par weight + enterpriseId
+        final uniqueKey = '${cylinder.weight}_${cylinder.enterpriseId}';
+        
+        if (!deduplicated.containsKey(uniqueKey)) {
+          deduplicated[uniqueKey] = cylinder;
+        } else {
+          // Si on trouve un doublon, garder celui avec le localId le plus récent
+          final existing = deduplicated[uniqueKey]!;
+          // Préférer celui qui a un localId (plus récent) ou celui avec l'ID le plus long (plus spécifique)
+          if (cylinder.id.startsWith('local_') && 
+              !existing.id.startsWith('local_')) {
+            deduplicated[uniqueKey] = cylinder;
+          } else if (cylinder.id.length > existing.id.length) {
+            // Si les deux ont le même préfixe, garder celui avec l'ID le plus long
+            deduplicated[uniqueKey] = cylinder;
+          }
+        }
+      }
+
+      final result = deduplicated.values.toList();
+      
+      // Trier par poids
+      result.sort((a, b) => a.weight.compareTo(b.weight));
+      
+      developer.log(
+        'Cylinders récupérés: ${result.length} (après déduplication de ${cylinders.length})',
+        name: 'GasOfflineRepository.getCylinders',
+      );
+      
+      return result;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(
@@ -166,12 +204,67 @@ class GasOfflineRepository implements GasRepository {
   @override
   Future<void> addCylinder(Cylinder cylinder) async {
     try {
-      final localId = cylinder.id.startsWith('local_')
-          ? cylinder.id
-          : LocalIdGenerator.generate();
-      final remoteId = cylinder.id.startsWith('local_') ? null : cylinder.id;
+      String localId;
+      String? remoteId;
+      
+      // Si l'ID commence par 'local_', c'est déjà un localId
+      if (cylinder.id.startsWith('local_')) {
+        localId = cylinder.id;
+        remoteId = null;
+      } else {
+        remoteId = cylinder.id;
+        
+        // Chercher d'abord par remoteId pour éviter les duplications
+        final byRemote = await driftService.records.findByRemoteId(
+          collectionName: _cylindersCollection,
+          remoteId: remoteId,
+          enterpriseId: enterpriseId,
+          moduleType: 'gaz',
+        );
+        
+        if (byRemote != null) {
+          // Cylinder existant trouvé, utiliser son localId
+          localId = byRemote.localId;
+          developer.log(
+            'Cylinder existant trouvé par remoteId lors de l\'ajout, utilisation du localId: $localId',
+            name: 'GasOfflineRepository.addCylinder',
+          );
+        } else {
+          // Chercher par weight + enterpriseId (un cylinder est unique par poids et entreprise)
+          final rows = await driftService.records.listForEnterprise(
+            collectionName: _cylindersCollection,
+            enterpriseId: enterpriseId,
+            moduleType: 'gaz',
+          );
+          final found = rows.where((r) {
+            try {
+              final map = jsonDecode(r.dataJson) as Map<String, dynamic>;
+              final cyl = _cylinderFromMap(map);
+              return cyl.weight == cylinder.weight &&
+                  cyl.enterpriseId == cylinder.enterpriseId;
+            } catch (_) {
+              return false;
+            }
+          }).firstOrNull;
+          
+          if (found != null) {
+            localId = found.localId;
+            developer.log(
+              'Cylinder existant trouvé par weight+enterprise lors de l\'ajout, utilisation du localId: $localId',
+              name: 'GasOfflineRepository.addCylinder',
+            );
+          } else {
+            // Nouveau cylinder, générer un nouveau localId
+            localId = LocalIdGenerator.generate();
+            developer.log(
+              'Nouveau cylinder, génération du localId: $localId',
+              name: 'GasOfflineRepository.addCylinder',
+            );
+          }
+        }
+      }
 
-      final map = _cylinderToMap(cylinder)..['localId'] = localId;
+      final map = _cylinderToMap(cylinder)..['localId'] = localId..['id'] = localId;
 
       await driftService.records.upsert(
         collectionName: _cylindersCollection,
@@ -204,12 +297,81 @@ class GasOfflineRepository implements GasRepository {
   @override
   Future<void> updateCylinder(Cylinder cylinder) async {
     try {
-      final localId = cylinder.id.startsWith('local_')
-          ? cylinder.id
-          : LocalIdGenerator.generate();
-      final remoteId = cylinder.id.startsWith('local_') ? null : cylinder.id;
+      String localId;
+      String? remoteId;
+      
+      // Si l'ID commence par 'local_', c'est déjà un localId
+      if (cylinder.id.startsWith('local_')) {
+        localId = cylinder.id;
+        remoteId = null;
+      } else {
+        remoteId = cylinder.id;
+        
+        // Chercher d'abord par remoteId
+        final byRemote = await driftService.records.findByRemoteId(
+          collectionName: _cylindersCollection,
+          remoteId: remoteId,
+          enterpriseId: enterpriseId,
+          moduleType: 'gaz',
+        );
+        
+        if (byRemote != null) {
+          localId = byRemote.localId;
+        } else {
+          // Chercher par l'ID
+          final existingCylinder = await getCylinderById(cylinder.id);
+          if (existingCylinder != null) {
+            if (existingCylinder.id.startsWith('local_')) {
+              localId = existingCylinder.id;
+            } else {
+              // Chercher dans la base pour trouver le localId
+              final rows = await driftService.records.listForEnterprise(
+                collectionName: _cylindersCollection,
+                enterpriseId: enterpriseId,
+                moduleType: 'gaz',
+              );
+              final found = rows.firstWhere(
+                (r) {
+                  try {
+                    final map = jsonDecode(r.dataJson) as Map<String, dynamic>;
+                    final cyl = _cylinderFromMap(map);
+                    return cyl.id == cylinder.id;
+                  } catch (_) {
+                    return false;
+                  }
+                },
+                orElse: () => throw Exception('Cylinder not found'),
+              );
+              localId = found.localId;
+            }
+          } else {
+            // Si on ne trouve pas par ID, chercher par weight + enterpriseId
+            final rows = await driftService.records.listForEnterprise(
+              collectionName: _cylindersCollection,
+              enterpriseId: enterpriseId,
+              moduleType: 'gaz',
+            );
+            final found = rows.firstWhere(
+              (r) {
+                try {
+                  final map = jsonDecode(r.dataJson) as Map<String, dynamic>;
+                  final cyl = _cylinderFromMap(map);
+                  return cyl.weight == cylinder.weight &&
+                      cyl.enterpriseId == cylinder.enterpriseId;
+                } catch (_) {
+                  return false;
+                }
+              },
+              orElse: () => throw Exception(
+                'Cylinder not found for weight ${cylinder.weight} and enterprise ${cylinder.enterpriseId}',
+              ),
+            );
+            localId = found.localId;
+          }
+        }
+      }
 
-      final map = _cylinderToMap(cylinder)..['localId'] = localId;
+      final map = _cylinderToMap(cylinder)..['localId'] = localId..['id'] = localId;
 
       await driftService.records.upsert(
         collectionName: _cylindersCollection,
@@ -228,6 +390,11 @@ class GasOfflineRepository implements GasRepository {
         remoteId: remoteId ?? localId,
         data: map,
         enterpriseId: enterpriseId,
+      );
+      
+      developer.log(
+        'Cylinder sauvegardé - localId: $localId, remoteId: $remoteId, cylinder.id: ${cylinder.id}',
+        name: 'GasOfflineRepository.updateCylinder',
       );
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);

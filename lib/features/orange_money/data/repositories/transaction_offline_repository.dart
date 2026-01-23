@@ -143,9 +143,12 @@ class TransactionOfflineRepository extends OfflineRepository<Transaction>
       enterpriseId: enterpriseId,
       moduleType: 'orange_money',
     );
-    return rows
+    final transactions = rows
         .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
         .toList();
+    
+    // Dédupliquer par remoteId pour éviter les doublons
+    return deduplicateByRemoteId(transactions);
   }
 
   // TransactionRepository interface implementation

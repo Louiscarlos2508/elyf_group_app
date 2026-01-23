@@ -97,8 +97,10 @@ class UserListItem extends ConsumerWidget {
                             assignment.enterpriseId,
                             assignment.moduleId,
                           );
-                      ref.refresh(enterpriseModuleUsersProvider);
-                      ref.refresh(
+                      // Attendre un peu pour que la base de données soit à jour
+                      await Future.delayed(const Duration(milliseconds: 100));
+                      ref.invalidate(enterpriseModuleUsersProvider);
+                      ref.invalidate(
                         userEnterpriseModuleUsersProvider(assignment.userId),
                       );
                       if (context.mounted) {

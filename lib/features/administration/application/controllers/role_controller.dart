@@ -1,7 +1,5 @@
 import 'dart:developer' as developer;
 
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 import '../../../../core/permissions/entities/user_role.dart';
 import '../../domain/repositories/admin_repository.dart';
 import '../../domain/repositories/user_repository.dart';
@@ -258,33 +256,10 @@ class RoleController {
             orElse: () => throw Exception('Rôle non trouvé: $roleId'),
           );
 
+      // Delete from repository (this will queue sync to Firestore automatically)
+      // Note: La synchronisation vers Firestore est gérée automatiquement par le repository
+      // via la queue de sync (SyncManager). Pas besoin d'appel manuel ici.
       await _repository.deleteRole(roleId);
-
-      // Delete from Firestore
-      if (firestoreSync != null) {
-        try {
-          await firestoreSync!.deleteFromFirestore(
-            collection: 'roles',
-            documentId: roleId,
-          );
-        } catch (e) {
-          // Logger l'erreur mais ne pas bloquer la suppression locale
-          developer.log(
-            'Error deleting role from Firestore (local deletion succeeded)',
-            name: 'role.controller',
-            error: e,
-          );
-          // Propager l'erreur pour informer l'utilisateur
-          if (e is FirebaseException && e.code == 'permission-denied') {
-            throw Exception(
-              'Permission refusée : Impossible de supprimer le rôle dans Firestore. '
-              'Le rôle a été supprimé localement mais la synchronisation a échoué. '
-              'Vérifiez les règles de sécurité Firestore.',
-            );
-          }
-          rethrow;
-        }
-      }
 
       // Récupérer le nom de l'utilisateur pour l'audit trail
       final userDisplayName = await _getUserDisplayName(currentUserId);

@@ -62,7 +62,17 @@ class _TransportExpenseFormDialogState
 
       await controller.updateTour(updatedTour);
 
-      if (mounted) {
+      if (mounted && context.mounted) {
+        // Invalider les providers pour rafraîchir l'UI
+        ref.invalidate(
+          toursProvider((
+            enterpriseId: widget.tour.enterpriseId,
+            status: null,
+          )),
+        );
+        // Forcer le rechargement du tour
+        ref.refresh(tourProvider(widget.tour.id));
+        
         Navigator.of(context).pop(true);
       }
     } catch (e) {

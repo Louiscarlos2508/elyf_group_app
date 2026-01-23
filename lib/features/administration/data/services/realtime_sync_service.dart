@@ -38,6 +38,8 @@ class RealtimeSyncService {
   StreamSubscription<QuerySnapshot>? _enterprisesSubscription;
   StreamSubscription<QuerySnapshot>? _rolesSubscription;
   StreamSubscription<QuerySnapshot>? _enterpriseModuleUsersSubscription;
+  // Map pour stocker les subscriptions des points de vente par entreprise
+  final Map<String, StreamSubscription<QuerySnapshot>> _pointOfSaleSubscriptions = {};
 
   bool _isListening = false;
   bool _initialPullCompleted = false;
@@ -69,6 +71,7 @@ class RealtimeSyncService {
       await _listenToEnterprises();
       await _listenToRoles();
       await _listenToEnterpriseModuleUsers();
+      await _listenToPointsOfSale();
 
       _isListening = true;
       developer.log(
@@ -153,6 +156,61 @@ class RealtimeSyncService {
       }
       developer.log(
         'Pulled ${enterprisesSnapshot.docs.length} enterprises from Firestore',
+        name: 'admin.realtime.sync',
+      );
+
+      // Pull des points de vente pour toutes les entreprises
+      // Les points de vente sont dans enterprises/{enterpriseId}/pointofsale/
+      int totalPosCount = 0;
+      for (final enterpriseDoc in enterprisesSnapshot.docs) {
+        final enterpriseId = enterpriseDoc.id;
+        try {
+          final posCollection = firestore
+              .collection(_enterprisesCollection)
+              .doc(enterpriseId)
+              .collection('pointofsale');
+          
+          final posSnapshot = await posCollection.get();
+          
+          for (final posDoc in posSnapshot.docs) {
+            try {
+              final posData = posDoc.data();
+              final posDataWithId = Map<String, dynamic>.from(posData)
+                ..['id'] = posDoc.id
+                ..['parentEnterpriseId'] = enterpriseId;
+              
+              // Sauvegarder dans Drift avec moduleType='gaz' et enterpriseId=parentEnterpriseId
+              await driftService.records.upsert(
+                collectionName: 'pointOfSale',
+                localId: posDoc.id,
+                remoteId: posDoc.id,
+                enterpriseId: enterpriseId, // parentEnterpriseId
+                moduleType: 'gaz',
+                dataJson: jsonEncode(posDataWithId),
+                localUpdatedAt: DateTime.now(),
+              );
+              
+              totalPosCount++;
+            } catch (e, stackTrace) {
+              developer.log(
+                'Error saving point of sale ${posDoc.id} for enterprise $enterpriseId: $e',
+                name: 'admin.realtime.sync',
+                error: e,
+                stackTrace: stackTrace,
+              );
+            }
+          }
+        } catch (e, stackTrace) {
+          developer.log(
+            'Error pulling points of sale for enterprise $enterpriseId: $e',
+            name: 'admin.realtime.sync',
+            error: e,
+            stackTrace: stackTrace,
+          );
+        }
+      }
+      developer.log(
+        'Pulled $totalPosCount points of sale from Firestore',
         name: 'admin.realtime.sync',
       );
 
@@ -313,14 +371,27 @@ class RealtimeSyncService {
                   switch (docChange.type) {
                     case DocumentChangeType.added:
                     case DocumentChangeType.modified:
-                      await _saveEnterpriseToLocal(enterprise);
+                      final isPointOfSale = enterprise.id.startsWith('pos_');
                       developer.log(
-                        'Enterprise ${docChange.type.name} in realtime: ${enterprise.id}',
+                        'Enterprise ${docChange.type.name} in realtime: id=${enterprise.id}, name=${enterprise.name}, type=${enterprise.type}, isPointOfSale=$isPointOfSale',
                         name: 'admin.realtime.sync',
                       );
+                      await _saveEnterpriseToLocal(enterprise);
+                      developer.log(
+                        '✅ Enterprise sauvegardée localement: id=${enterprise.id}',
+                        name: 'admin.realtime.sync',
+                      );
+                      
+                      // Si c'est une nouvelle entreprise, démarrer l'écoute de ses points de vente
+                      if (docChange.type == DocumentChangeType.added) {
+                        await _listenToPointsOfSaleForEnterprise(enterprise.id);
+                      }
                       break;
                     case DocumentChangeType.removed:
                       await _deleteEnterpriseFromLocal(enterprise.id);
+                      // Arrêter l'écoute des points de vente de cette entreprise
+                      await _pointOfSaleSubscriptions[enterprise.id]?.cancel();
+                      _pointOfSaleSubscriptions.remove(enterprise.id);
                       developer.log(
                         'Enterprise removed in realtime: ${enterprise.id}',
                         name: 'admin.realtime.sync',
@@ -667,6 +738,127 @@ class RealtimeSyncService {
     } catch (e, stackTrace) {
       developer.log(
         'Error deleting EnterpriseModuleUser from local in realtime sync',
+        name: 'admin.realtime.sync',
+        error: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  /// Écoute les changements dans les collections pointofsale de toutes les entreprises.
+  ///
+  /// Pour chaque entreprise, écoute les changements dans sa sous-collection pointofsale.
+  Future<void> _listenToPointsOfSale() async {
+    try {
+      // Récupérer toutes les entreprises pour écouter leurs points de vente
+      final enterprisesSnapshot = await firestore
+          .collection(_enterprisesCollection)
+          .get();
+      
+      developer.log(
+        'Setting up realtime listeners for points of sale in ${enterprisesSnapshot.docs.length} enterprises',
+        name: 'admin.realtime.sync',
+      );
+      
+      for (final enterpriseDoc in enterprisesSnapshot.docs) {
+        final enterpriseId = enterpriseDoc.id;
+        await _listenToPointsOfSaleForEnterprise(enterpriseId);
+      }
+      
+      // Écouter aussi les nouvelles entreprises pour démarrer l'écoute de leurs points de vente
+      // (cette logique est déjà gérée dans _listenToEnterprises)
+    } catch (e, stackTrace) {
+      developer.log(
+        'Error setting up points of sale realtime listeners',
+        name: 'admin.realtime.sync',
+        error: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  /// Écoute les changements dans la collection pointofsale d'une entreprise spécifique.
+  Future<void> _listenToPointsOfSaleForEnterprise(String enterpriseId) async {
+    // Ne pas créer de doublon si on écoute déjà
+    if (_pointOfSaleSubscriptions.containsKey(enterpriseId)) {
+      return;
+    }
+    
+    try {
+      final posCollection = firestore
+          .collection(_enterprisesCollection)
+          .doc(enterpriseId)
+          .collection('pointofsale');
+      
+      final subscription = posCollection.snapshots().listen(
+        (snapshot) async {
+          for (final docChange in snapshot.docChanges) {
+            try {
+              final data = docChange.doc.data();
+              if (data == null) continue;
+
+              final posData = Map<String, dynamic>.from(data)
+                ..['id'] = docChange.doc.id
+                ..['parentEnterpriseId'] = enterpriseId;
+
+              switch (docChange.type) {
+                case DocumentChangeType.added:
+                case DocumentChangeType.modified:
+                  // Sauvegarder localement
+                  await driftService.records.upsert(
+                    collectionName: 'pointOfSale',
+                    localId: docChange.doc.id,
+                    remoteId: docChange.doc.id,
+                    enterpriseId: enterpriseId,
+                    moduleType: 'gaz',
+                    dataJson: jsonEncode(posData),
+                    localUpdatedAt: DateTime.now(),
+                  );
+                  developer.log(
+                    'Point of sale ${docChange.type.name} in realtime: ${docChange.doc.id} for enterprise $enterpriseId',
+                    name: 'admin.realtime.sync',
+                  );
+                  break;
+                case DocumentChangeType.removed:
+                  await driftService.records.deleteByLocalId(
+                    collectionName: 'pointOfSale',
+                    localId: docChange.doc.id,
+                    enterpriseId: enterpriseId,
+                    moduleType: 'gaz',
+                  );
+                  developer.log(
+                    'Point of sale removed in realtime: ${docChange.doc.id} for enterprise $enterpriseId',
+                    name: 'admin.realtime.sync',
+                  );
+                  break;
+              }
+            } catch (e, stackTrace) {
+              developer.log(
+                'Error processing point of sale change in realtime sync',
+                name: 'admin.realtime.sync',
+                error: e,
+                stackTrace: stackTrace,
+              );
+            }
+          }
+        },
+        onError: (error) {
+          developer.log(
+            'Error in points of sale realtime stream for enterprise $enterpriseId',
+            name: 'admin.realtime.sync',
+            error: error,
+          );
+        },
+      );
+      
+      _pointOfSaleSubscriptions[enterpriseId] = subscription;
+      developer.log(
+        'Started listening to points of sale for enterprise $enterpriseId',
+        name: 'admin.realtime.sync',
+      );
+    } catch (e, stackTrace) {
+      developer.log(
+        'Error setting up points of sale realtime listener for enterprise $enterpriseId',
         name: 'admin.realtime.sync',
         error: e,
         stackTrace: stackTrace,

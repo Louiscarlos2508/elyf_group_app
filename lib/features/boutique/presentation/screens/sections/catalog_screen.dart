@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/core/permissions/modules/boutique_permissions.dart';
 import 'package:elyf_groupe_app/features/boutique/application/providers.dart';
 import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
 import '../../../domain/entities/product.dart';
 import '../../../domain/services/product_filter_service.dart';
 import '../../widgets/permission_guard.dart';
@@ -44,7 +45,7 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
       slivers: [
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.all(AppSpacing.lg),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -56,19 +57,24 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: AppSpacing.md),
                 BoutiquePermissionGuard(
                   permission: BoutiquePermissions.createProduct,
                   child: IntrinsicWidth(
-                    child: FilledButton.icon(
-                      onPressed: () {
-                        showDialog(
-                          context: context,
-                          builder: (context) => const ProductFormDialog(),
-                        );
-                      },
-                      icon: const Icon(Icons.add),
-                      label: const Text('Nouveau Produit'),
+                    child: Semantics(
+                      label: 'Nouveau produit',
+                      hint: 'Créer un nouveau produit dans le catalogue',
+                      button: true,
+                      child: FilledButton.icon(
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (context) => const ProductFormDialog(),
+                          );
+                        },
+                        icon: const Icon(Icons.add),
+                        label: const Text('Nouveau Produit'),
+                      ),
                     ),
                   ),
                 ),
@@ -78,7 +84,7 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
         ),
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+            padding: AppSpacing.horizontalPadding,
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
@@ -104,35 +110,37 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
           ),
         ),
         SliverPadding(
-          padding: const EdgeInsets.all(24),
+          padding: EdgeInsets.all(AppSpacing.lg),
           sliver: productsAsync.when(
             data: (products) {
               final filteredProducts = _filterProducts(products, _searchQuery);
               if (filteredProducts.isEmpty) {
                 return SliverFillRemaining(
                   hasScrollBody: false,
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.inventory_2_outlined,
-                          size: 64,
-                          color: theme.colorScheme.onSurfaceVariant.withValues(
-                            alpha: 0.5,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          _searchQuery.isEmpty
-                              ? 'Aucun produit enregistré'
-                              : 'Aucun résultat pour "$_searchQuery"',
-                          style: theme.textTheme.bodyLarge?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
+                  child: EmptyState(
+                    icon: Icons.inventory_2_outlined,
+                    title: _searchQuery.isEmpty
+                        ? 'Aucun produit enregistré'
+                        : 'Aucun résultat',
+                    message: _searchQuery.isEmpty
+                        ? 'Commencez par ajouter un produit au catalogue'
+                        : 'Aucun produit ne correspond à "$_searchQuery"',
+                    action: _searchQuery.isEmpty
+                        ? Semantics(
+                            label: 'Ajouter un produit',
+                            button: true,
+                            child: FilledButton.icon(
+                              onPressed: () {
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => const ProductFormDialog(),
+                                );
+                              },
+                              icon: const Icon(Icons.add),
+                              label: const Text('Ajouter un produit'),
+                            ),
+                          )
+                        : null,
                   ),
                 );
               }
@@ -211,16 +219,14 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
               );
             },
             loading: () => const SliverFillRemaining(
-              child: Center(child: CircularProgressIndicator()),
+              child: LoadingIndicator(),
             ),
-            error: (_, __) => SliverFillRemaining(
-              child: Center(
-                child: Text(
-                  'Erreur de chargement',
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    color: theme.colorScheme.error,
-                  ),
-                ),
+            error: (error, stackTrace) => SliverFillRemaining(
+              child: ErrorDisplayWidget(
+                error: error,
+                title: 'Erreur de chargement',
+                message: 'Impossible de charger les produits.',
+                onRetry: () => ref.refresh(productsProvider),
               ),
             ),
           ),

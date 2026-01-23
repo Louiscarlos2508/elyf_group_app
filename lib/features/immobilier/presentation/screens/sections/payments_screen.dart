@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
 import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
 import 'package:elyf_groupe_app/features/immobilier/application/providers.dart';
 import '../../../domain/entities/contract.dart';
@@ -74,14 +75,21 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
                   _buildSearchBar(),
                   _buildFilters(),
                   _buildPaymentsList(theme, filtered, payments.isEmpty),
-                  const SliverToBoxAdapter(child: SizedBox(height: 24)),
+                  SliverToBoxAdapter(
+                    child: SizedBox(height: AppSpacing.lg),
+                  ),
                 ],
               );
             },
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => _buildErrorState(theme, error),
+        loading: () => const LoadingIndicator(),
+        error: (error, stackTrace) => ErrorDisplayWidget(
+          error: error,
+          title: 'Erreur de chargement',
+          message: 'Impossible de charger les paiements.',
+          onRetry: () => ref.refresh(paymentsProvider),
+        ),
       ),
     );
   }
@@ -120,7 +128,12 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
   Widget _buildHeader(ThemeData theme, bool isWide) {
     return SliverToBoxAdapter(
       child: Padding(
-        padding: EdgeInsets.fromLTRB(24, 24, 24, isWide ? 24 : 16),
+        padding: EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          AppSpacing.lg,
+          AppSpacing.lg,
+          isWide ? AppSpacing.lg : AppSpacing.md,
+        ),
         child: isWide ? _buildWideHeader(theme) : _buildNarrowHeader(theme),
       ),
     );
@@ -256,19 +269,10 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
   }
 
   Widget _buildSectionHeader(ThemeData theme) {
-    return SliverToBoxAdapter(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
-        child: Text(
-          'LISTE DES PAIEMENTS',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 0.5,
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-      ),
+    return SectionHeader(
+      title: 'LISTE DES PAIEMENTS',
+      top: AppSpacing.lg,
+      bottom: AppSpacing.sm,
     );
   }
 
@@ -312,7 +316,10 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
     }
 
     return SliverPadding(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+      padding: EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.sm,
+      ),
       sliver: SliverList(
         delegate: SliverChildBuilderDelegate((context, index) {
           final payment = filtered[index];
@@ -326,25 +333,15 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
   }
 
   Widget _buildEmptyState(ThemeData theme, bool isEmpty) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            isEmpty ? Icons.payment_outlined : Icons.search_off,
-            size: 64,
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            isEmpty ? 'Aucun paiement enregistré' : 'Aucun résultat trouvé',
-            style: theme.textTheme.titleMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          if (!isEmpty) ...[
-            const SizedBox(height: 8),
-            TextButton(
+    return EmptyState(
+      icon: isEmpty ? Icons.payment_outlined : Icons.search_off,
+      title: isEmpty ? 'Aucun paiement enregistré' : 'Aucun résultat trouvé',
+      message: isEmpty
+          ? 'Commencez par enregistrer un paiement'
+          : 'Essayez de modifier vos critères de recherche',
+      action: isEmpty
+          ? null
+          : TextButton(
               onPressed: () {
                 _searchController.clear();
                 _selectedStatus = null;
@@ -353,34 +350,9 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
               },
               child: const Text('Réinitialiser les filtres'),
             ),
-          ],
-        ],
-      ),
     );
   }
 
-  Widget _buildErrorState(ThemeData theme, Object error) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.error_outline, size: 64, color: theme.colorScheme.error),
-          const SizedBox(height: 16),
-          Text(
-            'Erreur de chargement',
-            style: theme.textTheme.bodyLarge?.copyWith(
-              color: theme.colorScheme.error,
-            ),
-          ),
-          const SizedBox(height: 16),
-          FilledButton(
-            onPressed: () => ref.invalidate(paymentsProvider),
-            child: const Text('Réessayer'),
-          ),
-        ],
-      ),
-    );
-  }
 
   // Dialog methods
 

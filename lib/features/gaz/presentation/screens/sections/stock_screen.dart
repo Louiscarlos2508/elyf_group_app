@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
+import '../../../../../core/tenant/tenant_provider.dart' show activeEnterpriseProvider;
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import '../../widgets/stock_adjustment_dialog.dart';
 import 'stock/stock_header.dart';
@@ -24,10 +27,23 @@ class _GazStockScreenState extends ConsumerState<GazStockScreen> {
     final theme = Theme.of(context);
     final isMobile = MediaQuery.of(context).size.width < 600;
 
-    // TODO: Récupérer enterpriseId et moduleId depuis le contexte/tenant
-    // Utiliser les mêmes valeurs que dans les paramètres pour la cohérence
-    _enterpriseId ??= 'gaz_1';
-    _moduleId ??= 'gaz';
+    // Récupérer l'entreprise active depuis le tenant provider
+    final activeEnterpriseAsync = ref.watch(activeEnterpriseProvider);
+    activeEnterpriseAsync.whenData((enterprise) {
+      if (_enterpriseId == null && enterprise != null) {
+        _enterpriseId = enterprise.id;
+        _moduleId = 'gaz';
+      }
+    });
+    
+    if (_enterpriseId == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Stock')),
+        body: const Center(
+          child: Text('Aucune entreprise active disponible'),
+        ),
+      );
+    }
 
     // Récupérer les points de vente depuis le provider
     final pointsOfSaleAsync = ref.watch(
@@ -73,7 +89,12 @@ class _GazStockScreenState extends ConsumerState<GazStockScreen> {
             // KPI Cards
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                padding: EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  0,
+                  AppSpacing.lg,
+                  AppSpacing.lg,
+                ),
                 child: allStocksAsync.when(
                   data: (allStocks) => StockKpiSection(
                     allStocks: allStocks,
@@ -82,9 +103,9 @@ class _GazStockScreenState extends ConsumerState<GazStockScreen> {
                   ),
                   loading: () => const SizedBox(
                     height: 169,
-                    child: Center(child: CircularProgressIndicator()),
+                    child: LoadingIndicator(),
                   ),
-                  error: (_, __) => const SizedBox.shrink(),
+                  error: (error, stackTrace) => const SizedBox.shrink(),
                 ),
               ),
             ),
@@ -92,7 +113,12 @@ class _GazStockScreenState extends ConsumerState<GazStockScreen> {
             // Tab section
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                padding: EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  0,
+                  AppSpacing.lg,
+                  AppSpacing.lg,
+                ),
                 child: Container(
                   padding: const EdgeInsets.all(2),
                   decoration: BoxDecoration(
@@ -122,41 +148,49 @@ class _GazStockScreenState extends ConsumerState<GazStockScreen> {
 
             // Points of sale cards
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+              padding: EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                0,
+                AppSpacing.lg,
+                AppSpacing.xl,
+              ),
               sliver: allStocksAsync.when(
                 data: (allStocks) => StockPosList(
                   activePointsOfSale: activePointsOfSale,
                   allStocks: allStocks,
                 ),
                 loading: () => const SliverFillRemaining(
-                  child: Center(child: CircularProgressIndicator()),
+                  child: LoadingIndicator(),
                 ),
-                error: (e, _) => SliverFillRemaining(
-                  child: Center(child: Text('Erreur: $e')),
+                error: (error, stackTrace) => SliverFillRemaining(
+                  child: ErrorDisplayWidget(
+                    error: error,
+                    title: 'Erreur de chargement',
+                    message: 'Impossible de charger le stock.',
+                    onRetry: () => ref.refresh(
+                      cylinderStocksProvider((
+                        enterpriseId: _enterpriseId!,
+                        status: null,
+                        siteId: null,
+                      )),
+                    ),
+                  ),
                 ),
               ),
             ),
           ],
         );
       },
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
-            const SizedBox(height: 16),
-            Text(
-              'Erreur de chargement des points de vente',
-              style: TextStyle(color: Colors.red[700]),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              e.toString(),
-              style: TextStyle(color: Colors.grey[600], fontSize: 12),
-              textAlign: TextAlign.center,
-            ),
-          ],
+      loading: () => const LoadingIndicator(),
+      error: (error, stackTrace) => ErrorDisplayWidget(
+        error: error,
+        title: 'Erreur de chargement',
+        message: 'Impossible de charger les points de vente.',
+        onRetry: () => ref.refresh(
+          pointsOfSaleProvider((
+            enterpriseId: _enterpriseId!,
+            moduleId: _moduleId!,
+          )),
         ),
       ),
     );

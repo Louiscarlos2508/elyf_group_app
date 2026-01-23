@@ -130,9 +130,17 @@ class InventoryOfflineRepository extends OfflineRepository<StockItem>
       enterpriseId: enterpriseId,
       moduleType: moduleType,
     );
-    return rows
+    final entities = rows
+
         .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+
         .toList();
+
+    
+
+    // Dédupliquer par remoteId pour éviter les doublons
+
+    return deduplicateByRemoteId(entities);
   }
 
   // InventoryRepository implementation

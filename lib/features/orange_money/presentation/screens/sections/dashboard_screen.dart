@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
+import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/orange_money/application/providers.dart';
@@ -26,7 +28,7 @@ class DashboardScreen extends ConsumerWidget {
           slivers: [
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.all(24),
+                padding: EdgeInsets.all(AppSpacing.lg),
                 child: Text(
                   'Tableau de Bord',
                   style: theme.textTheme.headlineMedium?.copyWith(
@@ -37,7 +39,7 @@ class DashboardScreen extends ConsumerWidget {
             ),
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+                padding: AppSpacing.horizontalPadding,
                 child: Row(
                   children: [
                     Expanded(
@@ -46,10 +48,10 @@ class DashboardScreen extends ConsumerWidget {
                         'Cash-In Total',
                         CurrencyFormatter.formatFCFA(cashInTotal),
                         Icons.arrow_downward,
-                        Colors.green,
+                        theme.colorScheme.primary,
                       ),
                     ),
-                    const SizedBox(width: 16),
+                    const SizedBox(width: AppSpacing.md),
                     Expanded(
                       child: _buildStatCard(
                         context,
@@ -63,10 +65,10 @@ class DashboardScreen extends ConsumerWidget {
                 ),
               ),
             ),
-            const SliverToBoxAdapter(child: SizedBox(height: 16)),
+            const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.md)),
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+                padding: AppSpacing.horizontalPadding,
                 child: Row(
                   children: [
                     Expanded(
@@ -78,7 +80,7 @@ class DashboardScreen extends ConsumerWidget {
                         Colors.blue,
                       ),
                     ),
-                    const SizedBox(width: 16),
+                    const SizedBox(width: AppSpacing.md),
                     Expanded(
                       child: _buildStatCard(
                         context,
@@ -95,11 +97,11 @@ class DashboardScreen extends ConsumerWidget {
             if (pendingTransactions > 0)
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.all(24),
+                  padding: EdgeInsets.all(AppSpacing.lg),
                   child: Card(
                     color: Colors.orange.withValues(alpha: 0.1),
                     child: Padding(
-                      padding: const EdgeInsets.all(16),
+                      padding: EdgeInsets.all(AppSpacing.md),
                       child: Row(
                         children: [
                           const Icon(Icons.warning, color: Colors.orange),
@@ -119,8 +121,11 @@ class DashboardScreen extends ConsumerWidget {
           ],
         );
       },
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) => Center(child: Text('Erreur: $error')),
+      loading: () => const LoadingIndicator(),
+      error: (error, stackTrace) => ErrorDisplayWidget(
+        error: error,
+        onRetry: () => ref.refresh(orangeMoneyStateProvider),
+      ),
     );
   }
 
@@ -134,7 +139,7 @@ class DashboardScreen extends ConsumerWidget {
     final theme = Theme.of(context);
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.all(AppSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

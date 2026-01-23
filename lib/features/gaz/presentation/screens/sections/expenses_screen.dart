@@ -128,31 +128,12 @@ class _GazExpensesScreenState extends ConsumerState<GazExpensesScreen>
             ],
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (_, __) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.error_outline,
-                size: 64,
-                color: theme.colorScheme.error,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Erreur de chargement',
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: theme.colorScheme.error,
-                ),
-              ),
-              const SizedBox(height: 16),
-              FilledButton(
-                onPressed: () => ref.invalidate(gazExpensesProvider),
-                style: GazButtonStyles.filledPrimary,
-                child: const Text('Réessayer'),
-              ),
-            ],
-          ),
+        loading: () => const LoadingIndicator(),
+        error: (error, stackTrace) => ErrorDisplayWidget(
+          error: error,
+          title: 'Erreur de chargement',
+          message: 'Impossible de charger les dépenses.',
+          onRetry: () => ref.refresh(gazExpensesProvider),
         ),
       ),
     );

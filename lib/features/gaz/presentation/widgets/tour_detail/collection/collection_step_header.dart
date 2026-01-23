@@ -12,10 +12,12 @@ class CollectionStepHeader extends ConsumerWidget {
     super.key,
     required this.tour,
     required this.enterpriseId,
+    this.onTourUpdated,
   });
 
   final Tour tour;
   final String enterpriseId;
+  final VoidCallback? onTourUpdated;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -46,10 +48,18 @@ class CollectionStepHeader extends ConsumerWidget {
                 context: context,
                 builder: (context) => CollectionFormDialog(tour: tour),
               );
-              if (result == true) {
+              if (result == true && context.mounted) {
+                // Invalider les providers pour rafraîchir
                 ref.invalidate(
                   toursProvider((enterpriseId: enterpriseId, status: null)),
                 );
+                // Invalider le provider du tour spécifique pour forcer le rafraîchissement
+                ref.invalidate(tourProvider(tour.id));
+                
+                // Appeler le callback si disponible pour notifier le parent
+                if (onTourUpdated != null) {
+                  onTourUpdated!();
+                }
               }
             } catch (e) {
               debugPrint('Erreur: $e');

@@ -22,8 +22,14 @@ class EnterpriseOfflineRepository extends OfflineRepository<Enterprise>
 
   @override
   Enterprise fromMap(Map<String, dynamic> map) {
+    // Prioriser localId si disponible (pour cohérence avec saveToLocal)
+    // Sinon utiliser id, puis localId comme fallback
+    final id = map['localId'] as String? ?? 
+                map['id'] as String? ?? 
+                (throw Exception('Enterprise must have an id or localId'));
+    
     return Enterprise(
-      id: map['id'] as String? ?? map['localId'] as String,
+      id: id,
       name: map['name'] as String,
       type: map['type'] as String,
       description: map['description'] as String?,
@@ -58,10 +64,15 @@ class EnterpriseOfflineRepository extends OfflineRepository<Enterprise>
 
   @override
   String getLocalId(Enterprise entity) {
+    // Si l'ID commence par 'local_', c'est déjà un localId
     if (entity.id.startsWith('local_')) {
       return entity.id;
     }
-    return LocalIdGenerator.generate();
+    // Pour les entreprises avec un ID non-local (ex: pos_gaz_1_1234567890),
+    // utiliser l'ID directement comme localId pour éviter les duplications
+    // Le système upsert se chargera de mettre à jour l'enregistrement existant
+    // si il existe déjà (par remoteId ou localId)
+    return entity.id;
   }
 
   @override
@@ -77,9 +88,17 @@ class EnterpriseOfflineRepository extends OfflineRepository<Enterprise>
 
   @override
   Future<void> saveToLocal(Enterprise entity) async {
-    final localId = getLocalId(entity);
+    // Utiliser findExistingLocalId pour éviter les duplications
+    final existingLocalId = await findExistingLocalId(entity, moduleType: 'administration');
+    final localId = existingLocalId ?? getLocalId(entity);
     final remoteId = getRemoteId(entity);
-    final map = toMap(entity)..['localId'] = localId;
+    final map = toMap(entity)..['localId'] = localId..['id'] = localId;
+    
+    developer.log(
+      'Sauvegarde Enterprise: id=${entity.id}, localId=$localId, remoteId=$remoteId',
+      name: 'EnterpriseOfflineRepository.saveToLocal',
+    );
+    
     await driftService.records.upsert(
       collectionName: collectionName,
       localId: localId,
@@ -130,10 +149,42 @@ class EnterpriseOfflineRepository extends OfflineRepository<Enterprise>
         enterpriseId: 'global',
         moduleType: 'administration',
       );
-      return records.map((record) {
-        final map = jsonDecode(record.dataJson) as Map<String, dynamic>;
-        return fromMap(map);
-      }).toList();
+      
+      developer.log(
+        'Récupération de ${records.length} entreprises depuis Drift',
+        name: 'EnterpriseOfflineRepository.getAllEnterprises',
+      );
+      
+      final enterprises = records.map((record) {
+        try {
+          final map = jsonDecode(record.dataJson) as Map<String, dynamic>;
+          // S'assurer que localId est dans le map pour fromMap
+          map['localId'] = record.localId;
+          final enterprise = fromMap(map);
+          final isPointOfSale = enterprise.id.startsWith('pos_');
+          developer.log(
+            'Enterprise récupérée: id=${enterprise.id}, name=${enterprise.name}, type=${enterprise.type}, isPointOfSale=$isPointOfSale',
+            name: 'EnterpriseOfflineRepository.getAllEnterprises',
+          );
+          return enterprise;
+        } catch (e, stackTrace) {
+          developer.log(
+            'Erreur lors du parsing d\'une entreprise: $e',
+            name: 'EnterpriseOfflineRepository.getAllEnterprises',
+            error: e,
+            stackTrace: stackTrace,
+          );
+          return null;
+        }
+      }).whereType<Enterprise>().toList();
+      
+      final pointOfSaleCount = enterprises.where((e) => e.id.startsWith('pos_')).length;
+      developer.log(
+        '${enterprises.length} entreprises parsées avec succès (dont $pointOfSaleCount points de vente)',
+        name: 'EnterpriseOfflineRepository.getAllEnterprises',
+      );
+      
+      return enterprises;
     } catch (e, stackTrace) {
       developer.log(
         'Error fetching enterprises from offline storage',

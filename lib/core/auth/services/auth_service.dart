@@ -519,13 +519,17 @@ class AuthService {
       // Créer ou mettre à jour le profil utilisateur dans Firestore
       // Cette opération peut échouer silencieusement si Firestore n'est pas accessible (réseau, permissions)
       // L'authentification continuera quand même et le profil sera créé quand Firestore sera disponible
+      // ⚠️ IMPORTANT: Ne pas passer firstName/lastName pour éviter d'écraser les vraies valeurs existantes
+      // Si l'utilisateur existe déjà, ses firstName/lastName seront préservés
+      // Si c'est un nouvel utilisateur, ils seront vides et pourront être mis à jour via l'admin
       try {
         await _firestoreUserService
             .createOrUpdateUser(
               userId: firebaseUser.uid,
               email: firebaseUser.email ?? email,
-              firstName: 'Admin',
-              lastName: 'System',
+              // Ne pas passer firstName/lastName pour éviter d'écraser les valeurs existantes
+              // firstName: null, // Ne sera utilisé que pour les nouveaux utilisateurs
+              // lastName: null,  // Ne sera utilisé que pour les nouveaux utilisateurs
               username: email.split('@').first,
               isActive: true,
               isAdmin: shouldBeAdmin,
@@ -542,11 +546,12 @@ class AuthService {
 
       // Récupérer les données utilisateur depuis Firestore
       // Si Firestore n'est pas disponible (réseau, permissions), on utilise les valeurs par défaut
+      // Utiliser un timeout court pour ne pas bloquer la connexion
       Map<String, dynamic>? userData;
       try {
         userData = await _firestoreUserService
             .getUserById(firebaseUser.uid)
-            .timeout(const Duration(seconds: 5));
+            .timeout(const Duration(seconds: 2)); // Réduit de 5 à 2 secondes pour accélérer
       } catch (e) {
         developer.log(
           'Error getting user data from Firestore (network/permissions issue - using default values): $e',
@@ -554,6 +559,7 @@ class AuthService {
         );
         userData = null; // Utilisera les valeurs par défaut
         // Ce n'est pas critique - l'utilisateur peut se connecter avec les valeurs par défaut
+        // Les données seront récupérées lors de la synchronisation en arrière-plan
       }
 
       // Créer l'utilisateur avec les données disponibles

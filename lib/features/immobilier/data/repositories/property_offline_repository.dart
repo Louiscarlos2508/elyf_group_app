@@ -151,9 +151,12 @@ class PropertyOfflineRepository extends OfflineRepository<Property>
       enterpriseId: enterpriseId,
       moduleType: 'immobilier',
     );
-    return rows
+    final properties = rows
         .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
         .toList();
+    
+    // Dédupliquer par remoteId pour éviter les doublons
+    return deduplicateByRemoteId(properties);
   }
 
   // PropertyRepository interface implementation

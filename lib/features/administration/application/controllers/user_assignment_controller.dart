@@ -466,13 +466,14 @@ class UserAssignmentController {
           orElse: () => throw Exception('Assignment not found'),
         );
 
+    // La suppression locale et la mise en file d'attente de la sync sont gérées par le repository
+    // Le repository utilise syncManager.queueDelete() pour garantir que la suppression sera
+    // synchronisée vers Firestore même en cas d'erreur réseau temporaire
     await _repository.removeUserFromEnterprise(userId, enterpriseId, moduleId);
-
-    // Delete from Firestore
-    firestoreSync?.deleteFromFirestore(
-      collection: 'enterprise_module_users',
-      documentId: assignment.documentId,
-    );
+    
+    // Note: La suppression dans Firestore est maintenant gérée par le système de synchronisation
+    // via syncManager.queueDelete() dans AdminOfflineRepository.removeUserFromEnterprise()
+    // Plus besoin d'appeler directement firestoreSync?.deleteFromFirestore() ici
 
     // Récupérer le nom de l'utilisateur pour l'audit trail
     final userDisplayName = await _getUserDisplayName(currentUserId);

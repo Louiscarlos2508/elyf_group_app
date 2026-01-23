@@ -189,7 +189,13 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
     final sales = rows
         .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
         .toList();
-    sales.sort((a, b) => b.date.compareTo(a.date));
+    
+    // Dédupliquer par remoteId pour éviter les doublons
+    final deduplicatedSales = deduplicateByRemoteId(sales);
+    
+    // Trier par date décroissante
+    deduplicatedSales.sort((a, b) => b.date.compareTo(a.date));
+    return deduplicatedSales;
     return sales;
   }
 

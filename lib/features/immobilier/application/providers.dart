@@ -149,6 +149,51 @@ final immobilierDashboardCalculationServiceProvider =
       (ref) => ImmobilierDashboardCalculationService(),
     );
 
+/// Provider combiné pour les métriques mensuelles du dashboard immobilier.
+///
+/// Simplifie l'utilisation en combinant toutes les données nécessaires
+/// en un seul AsyncValue.
+final immobilierMonthlyMetricsProvider = FutureProvider.autoDispose<
+    ({
+      List<Property> properties,
+      List<Tenant> tenants,
+      List<Contract> contracts,
+      List<Payment> payments,
+      List<PropertyExpense> expenses,
+    })>(
+  (ref) async {
+    final properties = await ref.watch(propertiesProvider.future);
+    final tenants = await ref.watch(tenantsProvider.future);
+    final contracts = await ref.watch(contractsProvider.future);
+    final payments = await ref.watch(paymentsProvider.future);
+    final expenses = await ref.watch(expensesProvider.future);
+
+    return (
+      properties: properties,
+      tenants: tenants as List<Tenant>,
+      contracts: contracts,
+      payments: payments,
+      expenses: expenses as List<PropertyExpense>,
+    );
+  },
+);
+
+/// Provider combiné pour les alertes du dashboard immobilier.
+///
+/// Combine payments et contracts pour les alertes.
+final immobilierAlertsProvider = FutureProvider.autoDispose<
+    ({List<Payment> payments, List<Contract> contracts})>(
+  (ref) async {
+    final payments = await ref.watch(paymentsProvider.future);
+    final contracts = await ref.watch(contractsProvider.future);
+
+    return (
+      payments: payments,
+      contracts: contracts,
+    );
+  },
+);
+
 // Controllers
 final propertyControllerProvider = Provider<PropertyController>(
   (ref) => PropertyController(

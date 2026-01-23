@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
+import '../../../../../core/tenant/tenant_provider.dart' show activeEnterpriseProvider;
 import '../../application/providers.dart';
 import '../../domain/entities/cylinder.dart';
 import 'cylinder_form/cylinder_form_header.dart';
@@ -32,8 +33,7 @@ class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
   @override
   void initState() {
     super.initState();
-    _enterpriseId ??= 'gaz_1';
-    _moduleId ??= 'gaz';
+    // Les valeurs seront initialisées dans build() avec activeEnterpriseProvider
 
     if (widget.cylinder != null) {
       _selectedWeight = widget.cylinder!.weight;
@@ -102,6 +102,37 @@ class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
 
   @override
   Widget build(BuildContext context) {
+    // Récupérer l'entreprise active depuis le tenant provider
+    final activeEnterpriseAsync = ref.watch(activeEnterpriseProvider);
+    
+    // Initialiser enterpriseId et moduleId depuis l'entreprise active si pas déjà défini
+    activeEnterpriseAsync.whenData((enterprise) {
+      if (_enterpriseId == null && enterprise != null) {
+        _enterpriseId = enterprise.id;
+        _moduleId = 'gaz';
+      }
+    });
+    
+    if (_enterpriseId == null) {
+      return Dialog(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.error_outline, size: 48, color: Colors.red),
+              const SizedBox(height: 16),
+              const Text('Aucune entreprise active disponible'),
+              const SizedBox(height: 16),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Fermer'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       child: ConstrainedBox(

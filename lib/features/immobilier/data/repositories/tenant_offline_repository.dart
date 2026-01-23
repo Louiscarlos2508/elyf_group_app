@@ -141,9 +141,12 @@ class TenantOfflineRepository extends OfflineRepository<Tenant>
       enterpriseId: enterpriseId,
       moduleType: 'immobilier',
     );
-    return rows
+    final tenants = rows
         .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
         .toList();
+    
+    // Dédupliquer par remoteId pour éviter les doublons
+    return deduplicateByRemoteId(tenants);
   }
 
   // TenantRepository interface implementation

@@ -71,9 +71,11 @@ class GazExpenseOfflineRepository extends OfflineRepository<GazExpense>
 
   @override
   Future<void> saveToLocal(GazExpense entity) async {
-    final localId = getLocalId(entity);
+    // Utiliser la méthode utilitaire pour trouver le localId existant
+    final existingLocalId = await findExistingLocalId(entity, moduleType: moduleType);
+    final localId = existingLocalId ?? getLocalId(entity);
     final remoteId = getRemoteId(entity);
-    final map = toMap(entity)..['localId'] = localId;
+    final map = toMap(entity)..['localId'] = localId..['id'] = localId;
     await driftService.records.upsert(
       collectionName: collectionName,
       localId: localId,
@@ -134,9 +136,17 @@ class GazExpenseOfflineRepository extends OfflineRepository<GazExpense>
       enterpriseId: enterpriseId,
       moduleType: moduleType,
     );
-    return rows
+    final entities = rows
+
         .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+
         .toList();
+
+    
+
+    // Dédupliquer par remoteId pour éviter les doublons
+
+    return deduplicateByRemoteId(entities);
   }
 
   // GazExpenseRepository implementation

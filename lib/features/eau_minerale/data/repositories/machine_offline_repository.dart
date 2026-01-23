@@ -141,9 +141,17 @@ class MachineOfflineRepository extends OfflineRepository<Machine>
       enterpriseId: enterpriseId,
       moduleType: 'eau_minerale',
     );
-    return rows
+    final entities = rows
+
         .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+
         .toList();
+
+    
+
+    // Dédupliquer par remoteId pour éviter les doublons
+
+    return deduplicateByRemoteId(entities);
   }
 
   // MachineRepository interface implementation

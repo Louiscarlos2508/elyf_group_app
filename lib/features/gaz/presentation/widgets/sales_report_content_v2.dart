@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../../core/tenant/tenant_provider.dart' show activeEnterpriseProvider;
 import '../../application/providers.dart';
 import '../../domain/entities/cylinder.dart';
 import '../../domain/entities/gas_sale.dart';
@@ -27,11 +28,23 @@ class GazSalesReportContentV2 extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final salesAsync = ref.watch(gasSalesProvider);
-    final cylindersAsync = ref.watch(cylindersProvider);
-    final pointsOfSaleAsync = ref.watch(
-      pointsOfSaleProvider((enterpriseId: 'gaz_1', moduleId: 'gaz')),
-    );
+    // Récupérer l'entreprise active depuis le tenant provider
+    final activeEnterpriseAsync = ref.watch(activeEnterpriseProvider);
+    
+    return activeEnterpriseAsync.when(
+      data: (enterprise) {
+        if (enterprise == null) {
+          return const Center(child: Text('Aucune entreprise active disponible'));
+        }
+        
+        final enterpriseId = enterprise.id;
+        const moduleId = 'gaz';
+        
+        final salesAsync = ref.watch(gasSalesProvider);
+        final cylindersAsync = ref.watch(cylindersProvider);
+        final pointsOfSaleAsync = ref.watch(
+          pointsOfSaleProvider((enterpriseId: enterpriseId, moduleId: moduleId)),
+        );
     final reportDataAsync = ref.watch(
       gazReportDataProvider(
         (period: GazReportPeriod.custom, startDate: startDate, endDate: endDate)
@@ -108,6 +121,18 @@ class GazSalesReportContentV2 extends ConsumerWidget {
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (_, __) => const SizedBox.shrink(),
+      ),
+    );
+      },
+      loading: () => Container(
+        padding: const EdgeInsets.all(24),
+        child: const Center(child: CircularProgressIndicator()),
+      ),
+      error: (_, __) => Container(
+        padding: const EdgeInsets.all(24),
+        child: const Center(
+          child: Text('Erreur de chargement de l\'entreprise active'),
+        ),
       ),
     );
   }

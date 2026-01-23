@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
 import '../../../application/controllers/stock_controller.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../widgets/finished_products_card.dart';
 import '../../widgets/raw_materials_card.dart';
-import '../../widgets/section_placeholder.dart';
 import '../../widgets/stock_alerts_widget.dart';
 import '../../widgets/stock_movement_table.dart';
 import '../../widgets/stock_movement_filters.dart';
@@ -33,13 +33,12 @@ class StockScreen extends ConsumerWidget {
         state: data,
         onStockEntry: () => _showStockEntry(context),
       ),
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stackTrace) => SectionPlaceholder(
-        icon: Icons.inventory_2_outlined,
+      loading: () => const LoadingIndicator(),
+      error: (error, stackTrace) => ErrorDisplayWidget(
+        error: error,
         title: 'Stocks indisponibles',
-        subtitle: 'Impossible de récupérer les inventaires.',
-        primaryActionLabel: 'Réessayer',
-        onPrimaryAction: () => ref.invalidate(stockStateProvider),
+        message: 'Impossible de récupérer les inventaires.',
+        onRetry: () => ref.refresh(stockStateProvider),
       ),
     );
   }
@@ -146,7 +145,12 @@ class _StockContentWithFiltersState
           slivers: [
             SliverToBoxAdapter(
               child: Padding(
-                padding: EdgeInsets.fromLTRB(24, 24, 24, isWide ? 24 : 16),
+                padding: EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  AppSpacing.lg,
+                  AppSpacing.lg,
+                  isWide ? AppSpacing.lg : AppSpacing.md,
+                ),
                 child: isWide
                     ? Row(
                         children: [
@@ -316,7 +320,7 @@ class _StockContentWithFiltersState
                       loading: () => const Center(
                         child: Padding(
                           padding: EdgeInsets.all(24.0),
-                          child: CircularProgressIndicator(),
+                          child: LoadingIndicator(),
                         ),
                       ),
                       error: (error, stack) => Container(

@@ -2,9 +2,15 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:developer' as developer;
 
+import 'package:firebase_auth/firebase_auth.dart';
+
+import '../auth/services/auth_service.dart';
 import 'connectivity_service.dart';
 import 'drift_service.dart';
+import 'rate_limiter.dart';
 import 'retry_handler.dart';
+import 'security/data_sanitizer.dart';
+import 'sync_metrics.dart';
 import 'sync_operation_processor.dart';
 import 'sync_status.dart';
 
@@ -18,6 +24,8 @@ class SyncConfig {
     this.operationTimeoutMs = 30000,
     this.maxOperationAgeHours = 72,
     this.batchSize = 50,
+    this.useBatchOperations = true, // Enable batch operations by default
+    this.batchThreshold = 10, // Use batch if >= 10 operations
   });
 
   final int maxRetryAttempts;
@@ -27,6 +35,8 @@ class SyncConfig {
   final int operationTimeoutMs;
   final int maxOperationAgeHours;
   final int batchSize;
+  final bool useBatchOperations;
+  final int batchThreshold; // Minimum operations to use batch
 }
 
 /// Complete SyncManager with Drift-based queue, auto sync, and retry.
@@ -36,23 +46,33 @@ class SyncManager {
     required ConnectivityService connectivityService,
     this.config = const SyncConfig(),
     this.syncHandler,
+    AuthService? authService,
   }) : _driftService = driftService,
        _connectivityService = connectivityService,
+       _authService = authService,
        _processor = SyncOperationProcessor(
          driftService: driftService,
          config: config,
          retryHandler: RetryHandler(config: config),
          syncHandler: syncHandler,
+       ),
+       _rateLimiter = RateLimiter(
+         maxOperationsPerSecond: 10,
+         maxConcurrentOperations: 5,
        );
 
   final DriftService _driftService;
   final ConnectivityService _connectivityService;
+  final AuthService? _authService;
   final SyncConfig config;
   final SyncOperationHandler? syncHandler;
   final SyncOperationProcessor _processor;
+  final RateLimiter _rateLimiter;
+  final SyncMetrics _metrics = SyncMetrics();
 
   final _syncStatusController = StreamController<SyncProgress>.broadcast();
   Timer? _autoSyncTimer;
+  StreamSubscription<ConnectivityStatus>? _connectivitySubscription;
   bool _isSyncing = false;
   bool _isInitialized = false;
 
@@ -67,7 +87,9 @@ class SyncManager {
     }
 
     await _cleanupOldOperations();
+    _rateLimiter.initialize();
     _startAutoSync();
+    _startConnectivityListener();
     _isInitialized = true;
 
     developer.log(
@@ -83,6 +105,37 @@ class SyncManager {
       return SyncResult(
         success: false,
         message: 'Sync already in progress',
+        syncedCount: 0,
+      );
+    }
+
+    // Vérifier si l'utilisateur est toujours authentifié
+    // Utiliser AuthService si disponible, sinon FirebaseAuth directement
+    bool isAuthenticated = true;
+    final authService = _authService;
+    if (authService != null) {
+      isAuthenticated = authService.isAuthenticated;
+    } else {
+      // Fallback: vérifier directement via FirebaseAuth
+      try {
+        isAuthenticated = FirebaseAuth.instance.currentUser != null;
+      } catch (e) {
+        developer.log(
+          'Error checking authentication status: $e. Continuing sync.',
+          name: 'offline.sync',
+        );
+        // En cas d'erreur, continuer la sync (meilleur que de bloquer)
+      }
+    }
+
+    if (!isAuthenticated) {
+      developer.log(
+        'User logged out during sync, stopping sync operations',
+        name: 'offline.sync',
+      );
+      return SyncResult(
+        success: false,
+        message: 'User logged out',
         syncedCount: 0,
       );
     }
@@ -132,13 +185,69 @@ class SyncManager {
           ),
         );
 
+        // Vérifier à nouveau l'authentification avant chaque opération
+        bool stillAuthenticated = true;
+        if (authService != null) {
+          stillAuthenticated = authService.isAuthenticated;
+        } else {
+          try {
+            stillAuthenticated = FirebaseAuth.instance.currentUser != null;
+          } catch (e) {
+            // En cas d'erreur, continuer (meilleur que de bloquer)
+            stillAuthenticated = true;
+          }
+        }
+
+        if (!stillAuthenticated) {
+          developer.log(
+            'User logged out during sync, stopping remaining operations',
+            name: 'offline.sync',
+          );
+          // Marquer les opérations restantes comme non traitées
+          break;
+        }
+
         try {
-          await _processOperation(operation);
+          final startTime = DateTime.now();
+          final payloadSize = operation.payload?.length ?? 0;
+
+          // Utiliser le rate limiter pour éviter trop de requêtes simultanées
+          await _rateLimiter.execute(() => _processOperation(operation));
+
+          final duration = DateTime.now().difference(startTime);
           syncedCount++;
+
+          // Enregistrer le succès dans les métriques
+          _metrics.recordSuccess(
+            operationType: operation.operationType,
+            collectionName: operation.collectionName,
+            priority: operation.priority.name,
+            payloadSize: payloadSize,
+            duration: duration,
+          );
         } catch (e) {
+          final startTime = DateTime.now();
+          final payloadSize = operation.payload?.length ?? 0;
+          final duration = DateTime.now().difference(startTime);
+
           failedCount++;
           final errorMsg = e.toString();
           errors.add(errorMsg);
+
+          // Extraire le type d'erreur
+          final errorType = _extractErrorType(e);
+
+          // Enregistrer l'échec dans les métriques
+          _metrics.recordFailure(
+            operationType: operation.operationType,
+            collectionName: operation.collectionName,
+            priority: operation.priority.name,
+            errorType: errorType,
+            payloadSize: payloadSize,
+            duration: duration,
+            retryCount: operation.retryCount,
+          );
+
           developer.log(
             'Failed to sync operation ${operation.id}: $errorMsg',
             name: 'offline.sync',
@@ -150,13 +259,25 @@ class SyncManager {
       _isSyncing = false;
       _syncStatusController.add(SyncProgress.completed(syncedCount));
 
-      return SyncResult(
+      final result = SyncResult(
         success: failedCount == 0,
         message: 'Synced $syncedCount operations, $failedCount failed',
         syncedCount: syncedCount,
         failedCount: failedCount,
         errors: errors,
       );
+
+      // Log des métriques périodiquement (toutes les 100 opérations)
+      if (_metrics.totalOperations % 100 == 0) {
+        _metrics.logSummary();
+      }
+
+      developer.log(
+        'Sync completed: ${result.syncedCount} synced, ${result.failedCount} failed',
+        name: 'offline.sync',
+      );
+
+      return result;
     } catch (e) {
       _isSyncing = false;
       final errorMsg = 'Sync failed: $e';
@@ -197,17 +318,29 @@ class SyncManager {
     required String localId,
     required Map<String, dynamic> data,
     String? enterpriseId,
+    SyncPriority? priority,
   }) async {
+    // Valider la taille du payload avant de le queue
+    final jsonPayload = jsonEncode(data);
+    try {
+      DataSanitizer.validateJsonSize(jsonPayload);
+    } on DataSizeException catch (e) {
+      throw SyncException(
+        'Données trop volumineuses pour $collectionName/$localId: ${e.message}',
+      );
+    }
+
     final operation = SyncOperation()
       ..operationType = 'create'
       ..collectionName = collectionName
       ..documentId = localId
       ..enterpriseId = enterpriseId ?? ''
-      ..payload = jsonEncode(data)
+      ..payload = jsonPayload
       ..retryCount = 0
       ..createdAt = DateTime.now()
       ..localUpdatedAt = DateTime.now()
-      ..status = 'pending';
+      ..status = 'pending'
+      ..priority = priority ?? SyncOperation.determinePriority(collectionName, 'create');
 
     await _driftService.syncOperations.insert(
       _driftService.syncOperations.fromEntity(operation),
@@ -232,16 +365,27 @@ class SyncManager {
     required Map<String, dynamic> data,
     String? enterpriseId,
   }) async {
+    // Valider la taille du payload avant de le queue
+    final jsonPayload = jsonEncode(data);
+    try {
+      DataSanitizer.validateJsonSize(jsonPayload);
+    } on DataSizeException catch (e) {
+      throw SyncException(
+        'Données trop volumineuses pour $collectionName/${remoteId.isNotEmpty ? remoteId : localId}: ${e.message}',
+      );
+    }
+
     final operation = SyncOperation()
       ..operationType = 'update'
       ..collectionName = collectionName
       ..documentId = remoteId.isNotEmpty ? remoteId : localId
       ..enterpriseId = enterpriseId ?? ''
-      ..payload = jsonEncode(data)
+      ..payload = jsonPayload
       ..retryCount = 0
       ..createdAt = DateTime.now()
       ..localUpdatedAt = DateTime.now()
-      ..status = 'pending';
+      ..status = 'pending'
+      ..priority = SyncOperation.determinePriority(collectionName, 'update');
 
     await _driftService.syncOperations.insert(
       _driftService.syncOperations.fromEntity(operation),
@@ -274,7 +418,8 @@ class SyncManager {
       ..retryCount = 0
       ..createdAt = DateTime.now()
       ..localUpdatedAt = DateTime.now()
-      ..status = 'pending';
+      ..status = 'pending'
+      ..priority = SyncOperation.determinePriority(collectionName, 'delete');
 
     await _driftService.syncOperations.insert(
       _driftService.syncOperations.fromEntity(operation),
@@ -329,6 +474,30 @@ class SyncManager {
     );
   }
 
+  /// Starts listening to connectivity changes to trigger sync when network comes back.
+  void _startConnectivityListener() {
+    _connectivitySubscription?.cancel();
+    _connectivitySubscription = _connectivityService.statusStream.listen(
+      (status) {
+        // Déclencher la synchronisation quand le réseau revient
+        if (status.isOnline && !_isSyncing) {
+          developer.log(
+            'Network came back, triggering sync',
+            name: 'offline.sync',
+          );
+          unawaited(syncPendingOperations());
+        }
+      },
+      onError: (error) {
+        developer.log(
+          'Error in connectivity listener: $error',
+          name: 'offline.sync',
+          error: error,
+        );
+      },
+    );
+  }
+
   /// Cleans up old synced operations.
   Future<void> _cleanupOldOperations() async {
     try {
@@ -347,11 +516,33 @@ class SyncManager {
     }
   }
 
+  /// Extrait le type d'erreur depuis une exception.
+  String _extractErrorType(dynamic error) {
+    if (error is SyncException) {
+      final message = error.toString();
+      if (message.contains('permission')) return 'permission-denied';
+      if (message.contains('timeout')) return 'timeout';
+      if (message.contains('quota')) return 'quota-exceeded';
+      if (message.contains('network')) return 'network-error';
+      return 'sync-error';
+    }
+    return error.runtimeType.toString();
+  }
+
+  /// Accès aux métriques de synchronisation.
+  SyncMetrics get metrics => _metrics;
+
   /// Disposes resources.
   Future<void> dispose() async {
     _autoSyncTimer?.cancel();
     _autoSyncTimer = null;
+    await _connectivitySubscription?.cancel();
+    _connectivitySubscription = null;
     await _syncStatusController.close();
+    
+    // Log des métriques finales avant de disposer
+    _metrics.logSummary();
+    
     _isInitialized = false;
     developer.log('SyncManager disposed', name: 'offline.sync');
   }

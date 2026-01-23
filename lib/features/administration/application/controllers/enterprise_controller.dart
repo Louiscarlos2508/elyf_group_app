@@ -1,8 +1,14 @@
+import 'dart:convert';
 import 'dart:developer' as developer;
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+import '../../../../core/offline/drift_service.dart';
+import '../../../../core/offline/offline_repository.dart';
 import '../../domain/entities/enterprise.dart';
 import '../../domain/repositories/enterprise_repository.dart';
 import '../../domain/repositories/user_repository.dart';
+import '../../domain/repositories/admin_repository.dart';
 import '../../domain/services/audit/audit_service.dart';
 import '../../domain/entities/audit_log.dart';
 import '../../data/services/firestore_sync_service.dart';
@@ -18,6 +24,7 @@ class EnterpriseController {
     this.firestoreSync,
     this.permissionValidator,
     this.userRepository,
+    this.adminRepository,
   });
 
   final EnterpriseRepository _repository;
@@ -25,9 +32,11 @@ class EnterpriseController {
   final FirestoreSyncService? firestoreSync;
   final PermissionValidatorService? permissionValidator;
   final UserRepository? userRepository;
+  final AdminRepository? adminRepository;
 
   /// Récupère toutes les entreprises.
   ///
+  /// Inclut les entreprises normales ET les points de vente (qui sont des sous-entreprises).
   /// Lit UNIQUEMENT depuis la base locale (Drift) pour éviter la lecture simultanée.
   /// La synchronisation avec Firestore est gérée par le RealtimeSyncService qui
   /// fait un pull initial au démarrage et écoute les changements en temps réel.
@@ -47,7 +56,255 @@ class EnterpriseController {
         }
       }
 
-      return uniqueEnterprises.values.toList();
+      // Récupérer aussi les points de vente
+      // Essayer d'abord depuis Drift, puis depuis Firestore si nécessaire
+      final driftService = (_repository as OfflineRepository<Enterprise>).driftService;
+      
+      developer.log(
+        'EnterpriseController.getAllEnterprises: Recherche des points de vente',
+        name: 'enterprise.controller',
+      );
+      
+      List<Map<String, dynamic>> posDataList = [];
+      
+      // 1. Essayer de récupérer depuis Drift
+      try {
+        final posRecords = await driftService.records.listForCollection(
+          collectionName: 'pointOfSale',
+          moduleType: 'gaz',
+        );
+        
+        developer.log(
+          'EnterpriseController.getAllEnterprises: ${posRecords.length} enregistrements pointOfSale trouvés dans Drift',
+          name: 'enterprise.controller',
+        );
+        
+        for (final record in posRecords) {
+          try {
+            final map = jsonDecode(record.dataJson) as Map<String, dynamic>;
+            posDataList.add(map);
+            developer.log(
+              'EnterpriseController.getAllEnterprises: POS depuis Drift - id=${map['id']}, name=${map['name']}, parentEnterpriseId=${map['parentEnterpriseId']}',
+              name: 'enterprise.controller',
+            );
+          } catch (e) {
+            developer.log(
+              'EnterpriseController.getAllEnterprises: Erreur parsing record Drift: $e',
+              name: 'enterprise.controller',
+            );
+          }
+        }
+      } catch (e, stackTrace) {
+        developer.log(
+          'EnterpriseController.getAllEnterprises: Erreur lors de la récupération depuis Drift: $e',
+          name: 'enterprise.controller',
+          error: e,
+          stackTrace: stackTrace,
+        );
+      }
+      
+      // 2. Si aucun point de vente dans Drift, récupérer depuis Firestore
+      // Récupérer tous les points de vente depuis toutes les entreprises
+      if (posDataList.isEmpty && firestoreSync != null) {
+        try {
+          developer.log(
+            'EnterpriseController.getAllEnterprises: Aucun point de vente dans Drift, récupération depuis Firestore',
+            name: 'enterprise.controller',
+          );
+          
+          // Récupérer toutes les entreprises pour connaître leurs IDs
+          final allEnterpriseIds = uniqueEnterprises.values.map((e) => e.id).toList();
+          
+          // Pour chaque entreprise, récupérer ses points de vente
+          for (final enterpriseId in allEnterpriseIds) {
+            try {
+              final posCollection = FirebaseFirestore.instance
+                  .collection('enterprises')
+                  .doc(enterpriseId)
+                  .collection('pointofsale');
+              
+              final posSnapshot = await posCollection.get();
+              
+              developer.log(
+                'EnterpriseController.getAllEnterprises: ${posSnapshot.docs.length} points de vente trouvés dans Firestore pour entreprise $enterpriseId',
+                name: 'enterprise.controller',
+              );
+              
+              for (final doc in posSnapshot.docs) {
+                try {
+                  final data = doc.data();
+                  final posData = Map<String, dynamic>.from(data)
+                    ..['id'] = doc.id
+                    ..['parentEnterpriseId'] = enterpriseId;
+                  
+                  posDataList.add(posData);
+                  
+                  developer.log(
+                    'EnterpriseController.getAllEnterprises: POS depuis Firestore - id=${doc.id}, name=${data['name']}, parentEnterpriseId=$enterpriseId',
+                    name: 'enterprise.controller',
+                  );
+                } catch (e) {
+                  developer.log(
+                    'EnterpriseController.getAllEnterprises: Erreur parsing doc Firestore: $e',
+                    name: 'enterprise.controller',
+                  );
+                }
+              }
+            } catch (e) {
+              developer.log(
+                'EnterpriseController.getAllEnterprises: Erreur récupération POS pour entreprise $enterpriseId: $e',
+                name: 'enterprise.controller',
+              );
+            }
+          }
+        } catch (e, stackTrace) {
+          developer.log(
+            'EnterpriseController.getAllEnterprises: Erreur lors de la récupération depuis Firestore: $e',
+            name: 'enterprise.controller',
+            error: e,
+            stackTrace: stackTrace,
+          );
+        }
+      }
+      
+      developer.log(
+        'EnterpriseController.getAllEnterprises: Total de ${posDataList.length} points de vente récupérés (Drift + Firestore)',
+        name: 'enterprise.controller',
+      );
+
+      // Créer une map des entreprises pour trouver les entreprises mères
+      final enterprisesMap = {for (var e in uniqueEnterprises.values) e.id: e};
+      
+      developer.log(
+        'EnterpriseController.getAllEnterprises: Map des entreprises créée avec ${enterprisesMap.length} entreprises (IDs: ${enterprisesMap.keys.toList()})',
+        name: 'enterprise.controller',
+      );
+
+      int posAdded = 0;
+      int posSkipped = 0;
+      int posErrors = 0;
+
+      // Convertir les points de vente en Enterprise et les ajouter
+      for (final map in posDataList) {
+        try {
+          final posId = map['id'] as String?;
+          
+          if (posId == null) {
+            developer.log(
+              'EnterpriseController.getAllEnterprises: Point de vente sans ID, ignoré',
+              name: 'enterprise.controller',
+            );
+            posSkipped++;
+            continue;
+          }
+          
+          developer.log(
+            'EnterpriseController.getAllEnterprises: Traitement point de vente: id=$posId, parentEnterpriseId=${map['parentEnterpriseId']}, enterpriseId=${map['enterpriseId']}',
+            name: 'enterprise.controller',
+          );
+          
+          // Vérifier si ce point de vente n'est pas déjà dans la liste (éviter doublons)
+          if (uniqueEnterprises.containsKey(posId)) {
+            developer.log(
+              'EnterpriseController.getAllEnterprises: Point de vente $posId déjà présent, ignoré',
+              name: 'enterprise.controller',
+            );
+            posSkipped++;
+            continue;
+          }
+
+          // Essayer plusieurs façons de trouver le parentEnterpriseId
+          final parentEnterpriseId = map['parentEnterpriseId'] as String? ?? 
+                                     map['enterpriseId'] as String?;
+          
+          if (parentEnterpriseId == null) {
+            developer.log(
+              'EnterpriseController.getAllEnterprises: ⚠️ Point de vente $posId sans parentEnterpriseId, ignoré',
+              name: 'enterprise.controller',
+            );
+            posSkipped++;
+            continue;
+          }
+          
+          developer.log(
+            'EnterpriseController.getAllEnterprises: parentEnterpriseId déterminé: $parentEnterpriseId',
+            name: 'enterprise.controller',
+          );
+          
+          // Trouver l'entreprise mère
+          final parentEnterprise = enterprisesMap[parentEnterpriseId];
+          
+          if (parentEnterprise == null) {
+            developer.log(
+              'EnterpriseController.getAllEnterprises: ⚠️ Entreprise mère non trouvée pour point de vente $posId (parentEnterpriseId=$parentEnterpriseId). Entreprises disponibles: ${enterprisesMap.keys.join(", ")}',
+              name: 'enterprise.controller',
+            );
+            posSkipped++;
+            continue;
+          }
+
+          // Convertir les Timestamp Firestore en DateTime si nécessaire
+          DateTime? createdAt;
+          DateTime? updatedAt;
+          
+          if (map['createdAt'] != null) {
+            if (map['createdAt'] is Timestamp) {
+              createdAt = (map['createdAt'] as Timestamp).toDate();
+            } else if (map['createdAt'] is String) {
+              createdAt = DateTime.tryParse(map['createdAt'] as String);
+            }
+          }
+          
+          if (map['updatedAt'] != null) {
+            if (map['updatedAt'] is Timestamp) {
+              updatedAt = (map['updatedAt'] as Timestamp).toDate();
+            } else if (map['updatedAt'] is String) {
+              updatedAt = DateTime.tryParse(map['updatedAt'] as String);
+            }
+          }
+
+          // Créer un Enterprise-like object pour le point de vente
+          final posEnterprise = Enterprise(
+            id: posId,
+            name: (map['name'] as String?) ?? 'Point de vente',
+            type: parentEnterprise.type,
+            description: 'Point de vente de ${parentEnterprise.name} - ${(map['address'] as String?) ?? ''}',
+            address: (map['address'] as String?) ?? '',
+            phone: (map['contact'] as String?) ?? '',
+            isActive: (map['isActive'] as bool?) ?? true,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+          );
+
+          uniqueEnterprises[posId] = posEnterprise;
+          posAdded++;
+          developer.log(
+            'EnterpriseController.getAllEnterprises: ✅ Point de vente ajouté: ${posEnterprise.name} (id: $posId, parent: ${parentEnterprise.name})',
+            name: 'enterprise.controller',
+          );
+        } catch (e, stackTrace) {
+          posErrors++;
+          developer.log(
+            'EnterpriseController.getAllEnterprises: ❌ Erreur lors de la conversion d\'un point de vente: $e',
+            name: 'enterprise.controller',
+            error: e,
+            stackTrace: stackTrace,
+          );
+        }
+      }
+      
+      developer.log(
+        'EnterpriseController.getAllEnterprises: Résumé points de vente - Ajoutés: $posAdded, Ignorés: $posSkipped, Erreurs: $posErrors',
+        name: 'enterprise.controller',
+      );
+
+      final result = uniqueEnterprises.values.toList();
+      developer.log(
+        'EnterpriseController.getAllEnterprises: Total de ${result.length} entreprises (dont $posAdded points de vente ajoutés, $posSkipped ignorés, $posErrors erreurs)',
+        name: 'enterprise.controller',
+      );
+
+      return result;
     } catch (e, stackTrace) {
       developer.log(
         'Error getting all enterprises from local database: $e',
@@ -201,7 +458,64 @@ class EnterpriseController {
         enterpriseData ?? await _repository.getEnterpriseById(enterpriseId);
     if (enterprise == null) return;
 
-    await _repository.deleteEnterprise(enterpriseId);
+    try {
+      // 1. Supprimer toutes les données liées à cette entreprise dans OfflineRecords
+      // et SyncOperations (cascade delete)
+      await DriftService.instance.clearEnterpriseData(enterpriseId);
+      developer.log(
+        'Données de l\'entreprise $enterpriseId supprimées de Drift',
+        name: 'enterprise.controller',
+      );
+
+      // 2. Supprimer les EnterpriseModuleUser liés à cette entreprise
+      if (adminRepository != null) {
+        try {
+          final assignments = await adminRepository!.getEnterpriseUsers(enterpriseId);
+          for (final assignment in assignments) {
+            await adminRepository!.removeUserFromEnterprise(
+              assignment.userId,
+              assignment.enterpriseId,
+              assignment.moduleId,
+            );
+          }
+          developer.log(
+            '${assignments.length} assignations supprimées pour l\'entreprise $enterpriseId',
+            name: 'enterprise.controller',
+          );
+        } catch (e) {
+          developer.log(
+            'Erreur lors de la suppression des assignations: $e',
+            name: 'enterprise.controller',
+            error: e,
+          );
+          // Continuer même si la suppression des assignations échoue
+        }
+      }
+
+      // 3. Supprimer l'entreprise elle-même
+      await _repository.deleteEnterprise(enterpriseId);
+      developer.log(
+        'Entreprise $enterpriseId supprimée avec succès',
+        name: 'enterprise.controller',
+      );
+    } catch (e, stackTrace) {
+      developer.log(
+        'Erreur lors de la suppression de l\'entreprise $enterpriseId: $e',
+        name: 'enterprise.controller',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      
+      // Fournir un message d'erreur plus clair
+      if (e.toString().contains('2067') || e.toString().contains('FOREIGN KEY')) {
+        throw Exception(
+          'Impossible de supprimer l\'entreprise "${enterprise.name}". '
+          'Elle contient encore des données liées (ventes, stocks, utilisateurs, etc.). '
+          'Veuillez supprimer toutes les données associées avant de supprimer l\'entreprise.',
+        );
+      }
+      rethrow;
+    }
 
     // Note: La synchronisation vers Firestore est gérée automatiquement par le repository
     // via la queue de sync (SyncManager). Pas besoin d'appel manuel ici.

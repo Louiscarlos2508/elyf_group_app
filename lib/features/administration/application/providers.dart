@@ -1,3 +1,7 @@
+import 'dart:convert';
+import 'dart:developer' as developer;
+
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/offline/providers.dart';
@@ -30,7 +34,6 @@ import 'controllers/admin_controller.dart';
 import 'controllers/user_controller.dart';
 import 'controllers/enterprise_controller.dart';
 import 'controllers/audit_controller.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../core/auth/services/auth_service.dart';
 import '../../../core/auth/providers.dart' show authServiceProvider;
 
@@ -200,6 +203,7 @@ final enterpriseControllerProvider = Provider<EnterpriseController>(
     firestoreSync: ref.watch(firestoreSyncServiceProvider),
     permissionValidator: ref.watch(permissionValidatorServiceProvider),
     userRepository: ref.watch(userRepositoryProvider),
+    adminRepository: ref.watch(adminRepositoryProvider),
   ),
 );
 
@@ -214,6 +218,307 @@ final auditControllerProvider = Provider<AuditController>(
 /// AutoDispose pour libérer la mémoire automatiquement.
 final enterprisesProvider = FutureProvider.autoDispose<List<Enterprise>>(
   (ref) => ref.watch(enterpriseControllerProvider).getAllEnterprises(),
+);
+
+/// Provider pour récupérer tous les points de vente depuis toutes les entreprises
+///
+/// Convertit les points de vente en Enterprise-like objects pour l'affichage dans la liste.
+final allPointsOfSaleProvider = FutureProvider.autoDispose<List<Enterprise>>(
+  (ref) async {
+    developer.log(
+      '🔵 allPointsOfSaleProvider: Début de la récupération des points de vente',
+      name: 'allPointsOfSaleProvider',
+    );
+    
+    // Récupérer toutes les entreprises pour mapper les parentEnterpriseId
+    final enterprises = await ref.watch(enterprisesProvider.future);
+    final enterprisesMap = {for (var e in enterprises) e.id: e};
+    
+    developer.log(
+      '🔵 allPointsOfSaleProvider: ${enterprises.length} entreprises récupérées',
+      name: 'allPointsOfSaleProvider',
+    );
+    
+    // Récupérer tous les points de vente
+    // Essayer d'abord depuis Drift, puis depuis Firestore si nécessaire
+    final driftService = ref.watch(driftServiceProvider);
+    final List<Map<String, dynamic>> posDataList = [];
+    
+    // 1. Essayer de récupérer depuis Drift
+    try {
+      final posRecords = await driftService.records.listForCollection(
+        collectionName: 'pointOfSale',
+        moduleType: 'gaz',
+      );
+      
+      developer.log(
+        '🔵 allPointsOfSaleProvider: ${posRecords.length} enregistrements de points de vente trouvés dans Drift',
+        name: 'allPointsOfSaleProvider',
+      );
+      
+      for (final record in posRecords) {
+        try {
+          final map = jsonDecode(record.dataJson) as Map<String, dynamic>;
+          posDataList.add(map);
+        } catch (e) {
+          developer.log(
+            '⚠️ allPointsOfSaleProvider: Erreur parsing record Drift: $e',
+            name: 'allPointsOfSaleProvider',
+          );
+        }
+      }
+    } catch (e, stackTrace) {
+      developer.log(
+        '⚠️ allPointsOfSaleProvider: Erreur lors de la récupération depuis Drift: $e',
+        name: 'allPointsOfSaleProvider',
+        error: e,
+        stackTrace: stackTrace,
+      );
+    }
+    
+    // 2. Si aucun point de vente dans Drift, récupérer depuis Firestore
+    if (posDataList.isEmpty) {
+      try {
+        developer.log(
+          '🔵 allPointsOfSaleProvider: Aucun point de vente dans Drift, récupération depuis Firestore',
+          name: 'allPointsOfSaleProvider',
+        );
+        
+        final firestore = FirebaseFirestore.instance;
+        
+        // Pour chaque entreprise, récupérer ses points de vente
+        for (final enterpriseId in enterprisesMap.keys) {
+          try {
+            final posCollection = firestore
+                .collection('enterprises')
+                .doc(enterpriseId)
+                .collection('pointofsale');
+            
+            final posSnapshot = await posCollection.get();
+            
+            developer.log(
+              '🔵 allPointsOfSaleProvider: ${posSnapshot.docs.length} points de vente trouvés dans Firestore pour entreprise $enterpriseId',
+              name: 'allPointsOfSaleProvider',
+            );
+            
+            for (final doc in posSnapshot.docs) {
+              try {
+                final data = doc.data();
+                final posData = Map<String, dynamic>.from(data)
+                  ..['id'] = doc.id
+                  ..['parentEnterpriseId'] = enterpriseId;
+                
+                posDataList.add(posData);
+              } catch (e) {
+                developer.log(
+                  '⚠️ allPointsOfSaleProvider: Erreur parsing doc Firestore: $e',
+                  name: 'allPointsOfSaleProvider',
+                );
+              }
+            }
+          } catch (e) {
+            developer.log(
+              '⚠️ allPointsOfSaleProvider: Erreur récupération POS pour entreprise $enterpriseId: $e',
+              name: 'allPointsOfSaleProvider',
+            );
+          }
+        }
+      } catch (e, stackTrace) {
+        developer.log(
+          '⚠️ allPointsOfSaleProvider: Erreur lors de la récupération depuis Firestore: $e',
+          name: 'allPointsOfSaleProvider',
+          error: e,
+          stackTrace: stackTrace,
+        );
+      }
+    }
+    
+    developer.log(
+      '🔵 allPointsOfSaleProvider: Total de ${posDataList.length} points de vente récupérés (Drift + Firestore)',
+      name: 'allPointsOfSaleProvider',
+    );
+    
+    final allPointsOfSale = <Enterprise>[];
+    
+    // Convertir les points de vente en Enterprise-like objects
+    for (final map in posDataList) {
+      try {
+        final posId = map['id'] as String?;
+        
+        if (posId == null) {
+          developer.log(
+            '⚠️ allPointsOfSaleProvider: Point de vente sans ID, ignoré',
+            name: 'allPointsOfSaleProvider',
+          );
+          continue;
+        }
+        
+        final parentEnterpriseId = map['parentEnterpriseId'] as String? ?? 
+                                   map['enterpriseId'] as String?;
+        
+        if (parentEnterpriseId == null) {
+          developer.log(
+            '⚠️ allPointsOfSaleProvider: Point de vente $posId sans parentEnterpriseId, ignoré',
+            name: 'allPointsOfSaleProvider',
+          );
+          continue;
+        }
+        
+        // Trouver l'entreprise mère
+        final parentEnterprise = enterprisesMap[parentEnterpriseId];
+        
+        if (parentEnterprise == null) {
+          developer.log(
+            '⚠️ allPointsOfSaleProvider: Entreprise mère non trouvée pour parentEnterpriseId=$parentEnterpriseId',
+            name: 'allPointsOfSaleProvider',
+          );
+          continue;
+        }
+        
+        developer.log(
+          '🔵 allPointsOfSaleProvider: Conversion point de vente: id=$posId, name=${map['name']}, parentEnterpriseId=$parentEnterpriseId',
+          name: 'allPointsOfSaleProvider',
+        );
+        
+        // Convertir les Timestamp Firestore en DateTime si nécessaire
+        DateTime? createdAt;
+        DateTime? updatedAt;
+        
+        if (map['createdAt'] != null) {
+          if (map['createdAt'] is Timestamp) {
+            createdAt = (map['createdAt'] as Timestamp).toDate();
+          } else if (map['createdAt'] is String) {
+            createdAt = DateTime.tryParse(map['createdAt'] as String);
+          }
+        }
+        
+        if (map['updatedAt'] != null) {
+          if (map['updatedAt'] is Timestamp) {
+            updatedAt = (map['updatedAt'] as Timestamp).toDate();
+          } else if (map['updatedAt'] is String) {
+            updatedAt = DateTime.tryParse(map['updatedAt'] as String);
+          }
+        }
+        
+        // Créer un Enterprise-like object pour le point de vente
+        final posEnterprise = Enterprise(
+          id: posId,
+          name: (map['name'] as String?) ?? 'Point de vente',
+          type: parentEnterprise.type,
+          description: 'Point de vente de ${parentEnterprise.name} - ${(map['address'] as String?) ?? ''}',
+          address: (map['address'] as String?) ?? '',
+          phone: (map['contact'] as String?) ?? '',
+          isActive: (map['isActive'] as bool?) ?? true,
+          createdAt: createdAt,
+          updatedAt: updatedAt,
+        );
+        
+        allPointsOfSale.add(posEnterprise);
+        developer.log(
+          '✅ allPointsOfSaleProvider: Point de vente ajouté: ${posEnterprise.name}',
+          name: 'allPointsOfSaleProvider',
+        );
+      } catch (e, stackTrace) {
+        developer.log(
+          '❌ Erreur lors de la conversion d\'un point de vente: $e',
+          name: 'allPointsOfSaleProvider',
+          error: e,
+          stackTrace: stackTrace,
+        );
+      }
+    }
+    
+    developer.log(
+      '🔵 allPointsOfSaleProvider: Total de ${allPointsOfSale.length} points de vente récupérés',
+      name: 'allPointsOfSaleProvider',
+    );
+    
+    return allPointsOfSale;
+  },
+);
+
+/// Provider combiné pour récupérer entreprises + points de vente
+///
+/// Retourne une liste combinée avec un flag pour distinguer les points de vente.
+/// Note: getAllEnterprises() inclut déjà les points de vente, donc on les extrait directement.
+final enterprisesWithPointsOfSaleProvider = FutureProvider.autoDispose<
+    List<({Enterprise enterprise, bool isPointOfSale})>>(
+  (ref) async {
+    developer.log(
+      '🔵 enterprisesWithPointsOfSaleProvider: Début de la combinaison',
+      name: 'enterprisesWithPointsOfSaleProvider',
+    );
+    
+    // getAllEnterprises() inclut déjà les points de vente, donc on les extrait directement
+    final allItems = await ref.watch(enterprisesProvider.future);
+    
+    // Identifier les points de vente en vérifiant s'ils ont un parentEnterpriseId dans leur description
+    // ou en vérifiant leur structure (les points de vente ont généralement une description qui contient "Point de vente")
+    final combined = <({Enterprise enterprise, bool isPointOfSale})>[];
+    
+    // Récupérer aussi les points de vente depuis Drift pour vérifier les IDs
+    final driftService = ref.watch(driftServiceProvider);
+    final Set<String> posIds = {};
+    
+    try {
+      final posRecords = await driftService.records.listForCollection(
+        collectionName: 'pointOfSale',
+        moduleType: 'gaz',
+      );
+      
+      for (final r in posRecords) {
+        try {
+          final map = jsonDecode(r.dataJson) as Map<String, dynamic>;
+          final posId = map['id'] as String? ?? r.localId;
+          posIds.add(posId);
+        } catch (e) {
+          // Si le parsing échoue, utiliser localId
+          posIds.add(r.localId);
+        }
+      }
+    } catch (e) {
+      developer.log(
+        '⚠️ enterprisesWithPointsOfSaleProvider: Erreur lors de la récupération des IDs depuis Drift: $e',
+        name: 'enterprisesWithPointsOfSaleProvider',
+      );
+    }
+    
+    developer.log(
+      '🔵 enterprisesWithPointsOfSaleProvider: ${allItems.length} éléments au total, ${posIds.length} IDs de points de vente trouvés dans Drift',
+      name: 'enterprisesWithPointsOfSaleProvider',
+    );
+    
+    // Séparer les entreprises normales des points de vente
+    for (final item in allItems) {
+      // Un point de vente est identifié par :
+      // 1. Son ID est dans la liste des points de vente de Drift
+      // 2. OU sa description contient "Point de vente" (fallback si Drift n'est pas encore synchronisé)
+      final description = item.description ?? '';
+      final isPointOfSale = posIds.contains(item.id) || 
+                           description.toLowerCase().contains('point de vente');
+      
+      if (isPointOfSale) {
+        developer.log(
+          '🔵 enterprisesWithPointsOfSaleProvider: Point de vente identifié: ${item.id} - ${item.name}',
+          name: 'enterprisesWithPointsOfSaleProvider',
+        );
+      }
+      
+      combined.add((enterprise: item, isPointOfSale: isPointOfSale));
+    }
+    
+    // Trier par nom
+    combined.sort((a, b) => 
+        a.enterprise.name.compareTo(b.enterprise.name));
+    
+    final posCount = combined.where((item) => item.isPointOfSale).length;
+    developer.log(
+      '🔵 enterprisesWithPointsOfSaleProvider: Total combiné: ${combined.length} éléments (dont $posCount points de vente)',
+      name: 'enterprisesWithPointsOfSaleProvider',
+    );
+    
+    return combined;
+  },
 );
 
 /// Provider pour récupérer les entreprises par type

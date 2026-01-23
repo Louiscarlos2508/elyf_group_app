@@ -1,3 +1,5 @@
+import 'dart:developer' as developer;
+
 import '../../../../core/permissions/services/permission_service.dart';
 import '../../../../core/permissions/entities/user_role.dart';
 import '../../../../core/permissions/entities/module_user.dart';
@@ -32,6 +34,10 @@ class RealPermissionService implements PermissionService {
       // Récupérer l'entreprise active
       final enterpriseId = getActiveEnterpriseId();
       if (enterpriseId == null) {
+        developer.log(
+          'hasPermission: enterpriseId is null',
+          name: 'RealPermissionService',
+        );
         return false;
       }
 
@@ -48,6 +54,10 @@ class RealPermissionService implements PermissionService {
       );
 
       if (!access.isActive) {
+        developer.log(
+          'hasPermission: access is not active for userId=$userId, moduleId=$moduleId',
+          name: 'RealPermissionService',
+        );
         return false;
       }
 
@@ -60,19 +70,45 @@ class RealPermissionService implements PermissionService {
 
       // Vérifier si le rôle a la permission wildcard
       if (role.hasPermission('*')) {
+        developer.log(
+          'hasPermission: role ${role.id} has wildcard permission (*) - granting access to $permissionId',
+          name: 'RealPermissionService',
+        );
         return true;
       }
 
       // Vérifier les permissions du rôle
-      if (role.hasPermission(permissionId)) {
+      final roleHasPermission = role.hasPermission(permissionId);
+      if (roleHasPermission) {
+        developer.log(
+          'hasPermission: role ${role.id} has permission $permissionId',
+          name: 'RealPermissionService',
+        );
         return true;
       }
 
       // Vérifier les permissions personnalisées
-      return access.customPermissions.contains(permissionId);
+      final hasCustomPermission = access.customPermissions.contains(permissionId);
+      developer.log(
+        'hasPermission: userId=$userId, moduleId=$moduleId, permissionId=$permissionId, '
+        'roleId=${role.id}, rolePermissions=${role.permissions}, '
+        'customPermissions=${access.customPermissions}, '
+        'result=$hasCustomPermission',
+        name: 'RealPermissionService',
+      );
+      return hasCustomPermission;
     } on _NoAccessException {
+      developer.log(
+        'hasPermission: NoAccessException for userId=$userId, moduleId=$moduleId, permissionId=$permissionId',
+        name: 'RealPermissionService',
+      );
       return false;
     } catch (e) {
+      developer.log(
+        'hasPermission: Error checking permission - userId=$userId, moduleId=$moduleId, permissionId=$permissionId, error=$e',
+        name: 'RealPermissionService',
+        error: e,
+      );
       // En cas d'erreur, retourner false (fail-safe)
       return false;
     }
