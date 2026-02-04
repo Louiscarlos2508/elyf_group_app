@@ -212,7 +212,7 @@ class _ProductionFinalizationDialogState
             PackagingStock? stockEmballage;
             try {
               stockEmballage = await packagingController.fetchByType(
-                'Pack 12 sachets',
+                'Pack 12 packs',
               );
             } catch (_) {
               // Si pas trouvé par type, utiliser le premier disponible ou créer

@@ -20,6 +20,10 @@ class ContractController {
     return await _contractRepository.getAllContracts();
   }
 
+  Stream<List<Contract>> watchContracts() {
+    return _contractRepository.watchContracts();
+  }
+
   Future<Contract?> getContract(String id) async {
     return await _contractRepository.getContractById(id);
   }

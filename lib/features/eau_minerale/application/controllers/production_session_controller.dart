@@ -3,6 +3,7 @@ import '../../domain/entities/bobine_usage.dart';
 import '../../domain/entities/bobine_stock_movement.dart';
 import '../../domain/entities/production_session.dart';
 import '../../domain/repositories/bobine_stock_quantity_repository.dart';
+import '../../domain/entities/production_session_status.dart';
 import '../../domain/repositories/production_session_repository.dart';
 import 'stock_controller.dart';
 
@@ -22,6 +23,13 @@ class ProductionSessionController {
     DateTime? endDate,
   }) async {
     return _repository.fetchSessions(startDate: startDate, endDate: endDate);
+  }
+
+  Stream<List<ProductionSession>> watchSessions({
+    DateTime? startDate,
+    DateTime? endDate,
+  }) {
+    return _repository.watchSessions(startDate: startDate, endDate: endDate);
   }
 
   Future<ProductionSession?> fetchSessionById(String id) async {
@@ -100,6 +108,10 @@ class ProductionSessionController {
     for (final session in sessionsTriees) {
       // Exclure la session actuelle de la vérification
       if (session.id == sessionId) continue;
+
+      // Note: On inclut les sessions annulées (cancelled) car une bobine installée
+      // reste physiquement sur la machine même si la session de travail est annulée.
+      // Cela permet de ne pas décompter le stock deux fois lors de la session suivante.
 
       for (final bobineUsage in session.bobinesUtilisees) {
         // Ajouter cette bobine à la liste des bobines déjà utilisées sur cette machine
@@ -392,5 +404,28 @@ class ProductionSessionController {
 
   Future<void> deleteSession(String id) async {
     return _repository.deleteSession(id);
+  }
+
+  /// Annule une session (soft delete) avec un motif.
+  /// Si la session avait des bobines installées, elles sont "rendues" au stock.
+  Future<void> cancelSession(ProductionSession session, String reason) async {
+    AppLogger.info(
+      'Annulation de la session ${session.id}. Motif: $reason',
+      name: 'eau_minerale.production',
+    );
+
+    final cancelledSession = session.copyWith(
+      status: ProductionSessionStatus.cancelled,
+      cancelReason: reason,
+      updatedAt: DateTime.now(),
+    );
+
+    await _repository.updateSession(cancelledSession);
+
+    // Note: On ne restaure PAS le stock ici.
+    // Selon la règle métier : une bobine installée reste sur la machine même si la session est annulée.
+    // Le système de détection de réutilisation (_decrementerStockBobinesNouvelles) continuera
+    // de voir cette bobine comme "sur la machine" pour les prochaines sessions,
+    // évitant ainsi un double décompte du stock.
   }
 }

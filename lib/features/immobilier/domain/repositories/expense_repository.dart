@@ -26,6 +26,9 @@ abstract class PropertyExpenseRepository {
   /// Met à jour une dépense existante.
   Future<PropertyExpense> updateExpense(PropertyExpense expense);
 
+  /// Observe les dépenses.
+  Stream<List<PropertyExpense>> watchExpenses();
+
   /// Supprime une dépense.
   Future<void> deleteExpense(String id);
 }

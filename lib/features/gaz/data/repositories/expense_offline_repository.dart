@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/logging/app_logger.dart';
@@ -57,7 +56,7 @@ class GazExpenseOfflineRepository extends OfflineRepository<GazExpense>
 
   @override
   String getLocalId(GazExpense entity) {
-    if (entity.id.startsWith('local_')) return entity.id;
+    if (entity.id.isNotEmpty) return entity.id;
     return LocalIdGenerator.generate();
   }
 
@@ -153,24 +152,34 @@ class GazExpenseOfflineRepository extends OfflineRepository<GazExpense>
   // GazExpenseRepository implementation
 
   @override
-  Future<List<GazExpense>> getExpenses({DateTime? from, DateTime? to}) async {
-    try {
-      final expenses = await getAllForEnterprise(enterpriseId);
-      return expenses.where((expense) {
-        if (from != null && expense.date.isBefore(from)) return false;
-        if (to != null && expense.date.isAfter(to)) return false;
-        return true;
-      }).toList();
-    } catch (error, stackTrace) {
-      final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      AppLogger.error(
-        'Error getting expenses: ${appException.message}',
-        name: 'GazExpenseOfflineRepository',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      throw appException;
-    }
+  Stream<List<GazExpense>> watchExpenses({DateTime? from, DateTime? to}) {
+    return driftService.records
+        .watchForEnterprise(
+          collectionName: collectionName,
+          enterpriseId: enterpriseId,
+          moduleType: moduleType,
+        )
+        .map((rows) {
+          final entities = rows
+              .map((r) {
+                try {
+                  final map = jsonDecode(r.dataJson) as Map<String, dynamic>;
+                  return fromMap(map);
+                } catch (e) {
+                  return null;
+                }
+              })
+              .whereType<GazExpense>()
+              .toList();
+
+          final deduplicated = deduplicateByRemoteId(entities);
+          return deduplicated.where((expense) {
+            if (from != null && expense.date.isBefore(from)) return false;
+            if (to != null && expense.date.isAfter(to)) return false;
+            return true;
+          }).toList()
+            ..sort((a, b) => b.date.compareTo(a.date));
+        });
   }
 
   @override

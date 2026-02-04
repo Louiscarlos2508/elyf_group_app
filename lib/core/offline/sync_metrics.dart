@@ -222,8 +222,8 @@ class SyncMetrics {
       'Failed: $failedOperations (${(failureRate * 100).toStringAsFixed(1)}%)\n'
       'Average Sync Time: ${averageSyncTime.inMilliseconds}ms\n'
       'Total Retries: $totalRetries\n'
-      'Batch Operations: $batchOperationsCount (${batchOperationsSize} ops)\n'
-      'Average Payload Size: ${averagePayloadSize} bytes\n'
+      'Batch Operations: $batchOperationsCount ($batchOperationsSize ops)\n'
+      'Average Payload Size: $averagePayloadSize bytes\n'
       'Top Errors: ${_getTopErrors(3)}\n'
       'Top Error Collections: ${_getTopErrorCollections(3)}',
       name: 'sync.metrics',

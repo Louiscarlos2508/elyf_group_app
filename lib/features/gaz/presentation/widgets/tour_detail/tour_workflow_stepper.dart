@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../domain/entities/tour.dart';
+import 'package:elyf_groupe_app/app/theme/app_colors.dart';
 
 /// Stepper du workflow du tour.
 class TourWorkflowStepper extends StatelessWidget {
@@ -37,19 +38,19 @@ class TourWorkflowStepper extends StatelessWidget {
           final isActive = index == currentIndex;
           final isPast = index < currentIndex;
 
-          // Couleurs selon le design Figma
+          // Couleurs selon le thème
           final circleColor = isPast
-              ? const Color(0xFF00A63E) // Vert pour complété
+              ? AppColors.success
               : isActive
-              ? const Color(0xFF155DFC) // Bleu pour actif
-              : const Color(0xFFE5E7EB); // Gris pour inactif
+                  ? theme.colorScheme.primary
+                  : theme.colorScheme.outlineVariant.withValues(alpha: 0.5);
           final textColor = isPast || isActive
-              ? Colors.white
-              : const Color(0xFF6A7282);
+              ? theme.colorScheme.onPrimary
+              : theme.colorScheme.onSurfaceVariant;
           // La ligne après une étape complétée doit être verte
           final lineColor = isPast
-              ? const Color(0xFF00A63E) // Vert pour complété
-              : const Color(0xFFE5E7EB); // Gris pour inactif
+              ? AppColors.success
+              : theme.colorScheme.outlineVariant.withValues(alpha: 0.3);
 
           return Expanded(
             child: Row(
@@ -58,38 +59,57 @@ class TourWorkflowStepper extends StatelessWidget {
                   child: Column(
                     children: [
                       Container(
-                        width: 40,
-                        height: 40,
+                        width: 36,
+                        height: 36,
                         decoration: BoxDecoration(
                           color: circleColor,
                           shape: BoxShape.circle,
                         ),
                         child: Center(
-                          child: Text(
-                            '${index + 1}',
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              color: textColor,
-                              fontSize: 12,
-                              fontWeight: FontWeight.normal,
-                            ),
-                          ),
+                          child: isPast
+                              ? Icon(
+                                  Icons.check,
+                                  size: 18,
+                                  color: textColor,
+                                )
+                              : Text(
+                                  '${index + 1}',
+                                  style: theme.textTheme.titleSmall?.copyWith(
+                                    color: textColor,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 8),
                       Text(
                         step.label,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          fontSize: 12,
-                          fontWeight: FontWeight.normal,
-                          color: const Color(0xFF4A5565),
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          fontSize: 11,
+                          fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+                          color: isActive
+                              ? theme.colorScheme.primary
+                              : theme.colorScheme.onSurfaceVariant,
                         ),
                         textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
                 ),
                 if (index < steps.length - 1)
-                  Expanded(child: Container(height: 4, color: lineColor)),
+                  Expanded(
+                    child: Container(
+                      height: 3,
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      decoration: BoxDecoration(
+                        color: lineColor,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
               ],
             ),
           );

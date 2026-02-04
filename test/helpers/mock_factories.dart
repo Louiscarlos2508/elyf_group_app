@@ -1,5 +1,5 @@
 /// Factories pour créer des mocks cohérents dans les tests.
-library mock_factories;
+library;
 
 import 'package:elyf_groupe_app/core/permissions/entities/user_role.dart';
 import 'package:elyf_groupe_app/core/auth/entities/enterprise_module_user.dart';

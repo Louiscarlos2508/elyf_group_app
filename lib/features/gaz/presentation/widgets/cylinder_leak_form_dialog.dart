@@ -1,8 +1,8 @@
-import '../../../../../shared/utils/notification_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/providers.dart';
+import 'package:elyf_groupe_app/shared.dart';
 
 /// Formulaire de déclaration d'une bouteille avec fuite.
 class CylinderLeakFormDialog extends ConsumerStatefulWidget {
@@ -105,9 +105,22 @@ class _CylinderLeakFormDialogState
     final availableWeights = _getAvailableWeights(ref);
 
     return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       child: Container(
         constraints: const BoxConstraints(maxWidth: 500),
         padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 15,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
         child: Form(
           key: _formKey,
           child: Column(
@@ -125,9 +138,11 @@ class _CylinderLeakFormDialogState
                 width: double.infinity,
                 child: TextFormField(
                   controller: _cylinderIdController,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'ID Bouteille',
-                    border: OutlineInputBorder(),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                     helperText: 'Identifiant de la bouteille',
                   ),
                   validator: (value) {
@@ -144,9 +159,11 @@ class _CylinderLeakFormDialogState
                 child: availableWeights.isEmpty
                     ? TextFormField(
                         initialValue: _selectedWeight?.toString(),
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'Poids (kg) *',
-                          border: OutlineInputBorder(),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
                           helperText:
                               'Aucune bouteille créée. Entrez le poids manuellement.',
                         ),
@@ -167,9 +184,11 @@ class _CylinderLeakFormDialogState
                       )
                     : DropdownButtonFormField<int>(
                         initialValue: _selectedWeight,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'Poids (kg) *',
-                          border: OutlineInputBorder(),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
                         ),
                         items: availableWeights.map((weight) {
                           return DropdownMenuItem(
@@ -193,9 +212,11 @@ class _CylinderLeakFormDialogState
                 width: double.infinity,
                 child: TextFormField(
                   controller: _notesController,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Notes (optionnel)',
-                    border: OutlineInputBorder(),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                     helperText: 'Détails sur la fuite détectée',
                   ),
                   maxLines: 3,
@@ -206,8 +227,9 @@ class _CylinderLeakFormDialogState
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   Flexible(
-                    child: TextButton(
+                    child: OutlinedButton(
                       onPressed: () => Navigator.of(context).pop(),
+                      style: GazButtonStyles.outlined(context),
                       child: const Text('Annuler'),
                     ),
                   ),
@@ -215,6 +237,7 @@ class _CylinderLeakFormDialogState
                   Flexible(
                     child: FilledButton(
                       onPressed: _submit,
+                      style: GazButtonStyles.filledPrimary(context),
                       child: const Text('Signaler'),
                     ),
                   ),

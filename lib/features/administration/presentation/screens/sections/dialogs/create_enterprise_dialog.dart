@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
-import '../../../../../../shared/utils/responsive_helper.dart';
 import '../../../../domain/entities/enterprise.dart';
-import 'package:elyf_groupe_app/shared/utils/form_helper_mixin.dart';
 
 /// Dialogue pour créer une nouvelle entreprise.
 class CreateEnterpriseDialog extends StatefulWidget {

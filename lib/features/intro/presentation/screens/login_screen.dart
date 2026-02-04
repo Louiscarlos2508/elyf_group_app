@@ -1,4 +1,5 @@
 import 'dart:developer' as developer;
+import 'dart:ui' as ui;
 
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/logging/app_logger.dart';
@@ -15,7 +16,6 @@ import 'package:elyf_groupe_app/core/auth/providers.dart';
 import '../../../../features/administration/application/providers.dart'
     show
         adminRepositoryProvider,
-        permissionServiceProvider,
         enterpriseRepositoryProvider;
 import '../../../../core/tenant/tenant_provider.dart'
     show activeEnterpriseIdProvider, userAccessibleEnterprisesProvider;
@@ -465,109 +465,152 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
             colors: colors,
           ),
           // Main content
-          SafeArea(
+          Center(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: AnimatedBuilder(
-                animation: _entryController,
-                builder: (context, child) {
-                  return FadeTransition(
-                    opacity: _fadeAnimation,
-                    child: SlideTransition(
-                      position: _slideAnimation,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          const SizedBox(height: 40),
-                          // Logo/Icon
-                          _AnimatedLogo(colors: colors),
-                          const SizedBox(height: 32),
-                          // Title
-                          Text(
-                            'Connexion Elyf',
-                            textAlign: TextAlign.center,
-                            style: textTheme.headlineMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: colors.onSurface,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          // Subtitle
-                          Text(
-                            'Connectez-vous avec votre email professionnel pour accéder aux modules.',
-                            textAlign: TextAlign.center,
-                            style: textTheme.bodyLarge?.copyWith(
-                              color: colors.onSurfaceVariant,
-                            ),
-                          ),
-                          const SizedBox(height: 48),
-                          // Form
-                          Form(
-                            key: _formKey,
-                            child: Column(
-                              children: [
-                                _AnimatedFormField(
-                                  controller: _emailController,
-                                  focusNode: _emailFocusNode,
-                                  label: 'Email professionnel',
-                                  icon: Icons.email_outlined,
-                                  keyboardType: TextInputType.emailAddress,
-                                  delay: 0.2,
-                                  animation: _fadeAnimation,
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return 'Email requis';
-                                    }
-                                    if (!value.contains('@')) {
-                                      return 'Email invalide';
-                                    }
-                                    return null;
-                                  },
-                                ),
-                                const SizedBox(height: 20),
-                                _AnimatedFormField(
-                                  controller: _passwordController,
-                                  focusNode: _passwordFocusNode,
-                                  label: 'Mot de passe',
-                                  icon: Icons.lock_outline,
-                                  obscureText: _obscurePassword,
-                                  delay: 0.3,
-                                  animation: _fadeAnimation,
-                                  suffixIcon: IconButton(
-                                    icon: Icon(
-                                      _obscurePassword
-                                          ? Icons.visibility_outlined
-                                          : Icons.visibility_off_outlined,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 450),
+                child: AnimatedBuilder(
+                  animation: _entryController,
+                  builder: (context, child) {
+                    return FadeTransition(
+                      opacity: _fadeAnimation,
+                      child: SlideTransition(
+                        position: _slideAnimation,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            // Logo/Icon
+                            _AnimatedLogo(colors: colors),
+                            const SizedBox(height: 48),
+                            // Glassmorphism Card
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(32),
+                              child: BackdropFilter(
+                                filter: ui.ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                                child: Container(
+                                  padding: const EdgeInsets.all(32),
+                                  decoration: BoxDecoration(
+                                    color: colors.surface.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(32),
+                                    border: Border.all(
+                                      color: colors.onSurface.withValues(alpha: 0.1),
+                                      width: 1.5,
                                     ),
-                                    onPressed: () {
-                                      setState(() {
-                                        _obscurePassword = !_obscurePassword;
-                                      });
-                                    },
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(alpha: 0.05),
+                                        blurRadius: 40,
+                                        spreadRadius: 0,
+                                      ),
+                                    ],
                                   ),
-                                  validator: (value) {
-                                    if (value == null || value.length < 6) {
-                                      return '6 caractères minimum';
-                                    }
-                                    return null;
-                                  },
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                    children: [
+                                      Text(
+                                        'Bienvenue sur Elyf',
+                                        textAlign: TextAlign.center,
+                                        style: textTheme.headlineSmall?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                          color: colors.onSurface,
+                                          letterSpacing: -0.5,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        'Connectez-vous pour continuer',
+                                        textAlign: TextAlign.center,
+                                        style: textTheme.bodyMedium?.copyWith(
+                                          color: colors.onSurfaceVariant.withValues(alpha: 0.8),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 40),
+                                      // Form
+                                      Form(
+                                        key: _formKey,
+                                        child: Column(
+                                          children: [
+                                            _AnimatedFormField(
+                                              controller: _emailController,
+                                              focusNode: _emailFocusNode,
+                                              label: 'Email professionnel',
+                                              icon: Icons.alternate_email_rounded,
+                                              keyboardType: TextInputType.emailAddress,
+                                              delay: 0.2,
+                                              animation: _fadeAnimation,
+                                              validator: (value) {
+                                                if (value == null || value.isEmpty) {
+                                                  return 'Email requis';
+                                                }
+                                                if (!value.contains('@')) {
+                                                  return 'Email invalide';
+                                                }
+                                                return null;
+                                              },
+                                            ),
+                                            const SizedBox(height: 20),
+                                            _AnimatedFormField(
+                                              controller: _passwordController,
+                                              focusNode: _passwordFocusNode,
+                                              label: 'Mot de passe',
+                                              icon: Icons.password_rounded,
+                                              obscureText: _obscurePassword,
+                                              delay: 0.3,
+                                              animation: _fadeAnimation,
+                                              suffixIcon: IconButton(
+                                                icon: Icon(
+                                                  _obscurePassword
+                                                      ? Icons.visibility_outlined
+                                                      : Icons.visibility_off_outlined,
+                                                  size: 20,
+                                                ),
+                                                onPressed: () {
+                                                  setState(() {
+                                                    _obscurePassword = !_obscurePassword;
+                                                  });
+                                                },
+                                              ),
+                                              validator: (value) {
+                                                if (value == null || value.length < 6) {
+                                                  return '6 caractères minimum';
+                                                }
+                                                return null;
+                                              },
+                                            ),
+                                            const SizedBox(height: 40),
+                                            // Login button
+                                            _AnimatedLoginButton(
+                                              onPressed: _isLoading ? null : _submit,
+                                              isLoading: _isLoading,
+                                              scaleAnimation: _buttonScale,
+                                              buttonController: _buttonController,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                                const SizedBox(height: 32),
-                                // Login button
-                                _AnimatedLoginButton(
-                                  onPressed: _isLoading ? null : _submit,
-                                  isLoading: _isLoading,
-                                  scaleAnimation: _buttonScale,
-                                  buttonController: _buttonController,
-                                ),
-                              ],
+                              ),
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: 40),
+                            // Footer info
+                            Text(
+                              'Powered by Scalario',
+                              textAlign: TextAlign.center,
+                              style: textTheme.labelSmall?.copyWith(
+                                color: colors.onSurface.withValues(alpha: 0.4),
+                                letterSpacing: 1.2,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
             ),
           ),
@@ -586,29 +629,36 @@ class _AnimatedLogo extends StatelessWidget {
   Widget build(BuildContext context) {
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0.0, end: 1.0),
-      duration: const Duration(milliseconds: 1000),
+      duration: const Duration(milliseconds: 1500),
       curve: Curves.easeOutBack,
       builder: (context, value, child) {
         return Transform.scale(
           scale: value,
           child: Container(
-            width: 80,
-            height: 80,
+            width: 100,
+            height: 100,
             decoration: BoxDecoration(
-              color: colors.primaryContainer,
               shape: BoxShape.circle,
+              gradient: LinearGradient(
+                colors: [
+                  colors.primary,
+                  colors.primary.withValues(alpha: 0.7),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
               boxShadow: [
                 BoxShadow(
-                  color: colors.primary.withValues(alpha: 0.2),
-                  blurRadius: 20,
-                  spreadRadius: 5,
+                  color: colors.primary.withValues(alpha: 0.3),
+                  blurRadius: 30,
+                  spreadRadius: 10,
                 ),
               ],
             ),
-            child: Icon(
-              Icons.layers,
-              size: 40,
-              color: colors.onPrimaryContainer,
+            child: const Icon(
+              Icons.business_rounded,
+              size: 50,
+              color: Colors.white,
             ),
           ),
         );
@@ -644,6 +694,8 @@ class _AnimatedFormField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    
     final fieldFade = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: animation,
@@ -668,12 +720,32 @@ class _AnimatedFormField extends StatelessWidget {
           focusNode: focusNode,
           obscureText: obscureText,
           keyboardType: keyboardType,
+          style: TextStyle(color: colors.onSurface, fontSize: 15),
           validator: validator,
           decoration: InputDecoration(
             labelText: label,
-            prefixIcon: Icon(icon),
+            labelStyle: TextStyle(color: colors.onSurface.withValues(alpha: 0.6)),
+            prefixIcon: Icon(icon, color: colors.primary.withValues(alpha: 0.7), size: 22),
             suffixIcon: suffixIcon,
             filled: true,
+            fillColor: colors.surface.withValues(alpha: 0.05),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(color: colors.onSurface.withValues(alpha: 0.1)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(color: colors.primary.withValues(alpha: 0.5), width: 2),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(color: colors.error.withValues(alpha: 0.5)),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(color: colors.error, width: 2),
+            ),
           ),
         ),
       ),
@@ -696,29 +768,59 @@ class _AnimatedLoginButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    
     return AnimatedBuilder(
       animation: scaleAnimation,
       builder: (context, child) {
         return Transform.scale(
           scale: scaleAnimation.value,
-          child: FilledButton(
-            onPressed: onPressed,
-            style: FilledButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Container(
+            height: 60,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              gradient: LinearGradient(
+                colors: [
+                  colors.primary,
+                  colors.primary.withValues(alpha: 0.8),
+                ],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: colors.primary.withValues(alpha: 0.3),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
             ),
-            child: isLoading
-                ? const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+            child: ElevatedButton(
+              onPressed: onPressed,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.transparent,
+                foregroundColor: Colors.white,
+                shadowColor: Colors.transparent,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              child: isLoading
+                  ? const SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : const Text(
+                      'Se connecter',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
                     ),
-                  )
-                : const Text(
-                    'Se connecter',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                  ),
+            ),
           ),
         );
       },
@@ -760,70 +862,40 @@ class _LoginBackgroundPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Gradient background
-    final gradient = LinearGradient(
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-      colors: [
-        colors.primary,
-        colors.primaryContainer,
-        colors.secondaryContainer,
-      ],
+    // Deep background
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, size.width, size.height),
+      Paint()..color = colors.surface,
     );
-    final rect = Rect.fromLTWH(0, 0, size.width, size.height);
-    final paint = Paint()..shader = gradient.createShader(rect);
-    canvas.drawRect(rect, paint);
 
-    // Animated circles
-    final circlePaint = Paint()
-      ..color = colors.onPrimary.withValues(alpha: 0.05)
-      ..style = PaintingStyle.fill;
+    // Soft animated blobs
+    final blob1Center = Offset(
+      size.width * 0.2 + math.sin(progress * 2 * math.pi) * 50,
+      size.height * 0.2 + math.cos(progress * 2 * math.pi) * 50,
+    );
+    _drawBlob(canvas, blob1Center, size.width * 0.6, colors.primary.withValues(alpha: 0.1));
 
-    for (int i = 0; i < 3; i++) {
-      final radius = 100.0 + (i * 80.0);
-      final x =
-          size.width * (0.2 + i * 0.3) +
-          math.sin(progress * 2 * math.pi + i) * 30;
-      final y =
-          size.height * (0.3 + i * 0.2) +
-          math.cos(progress * 2 * math.pi + i) * 30;
+    final blob2Center = Offset(
+      size.width * 0.8 + math.cos(progress * 2 * math.pi) * 60,
+      size.height * 0.8 + math.sin(progress * 2 * math.pi) * 60,
+    );
+    _drawBlob(canvas, blob2Center, size.width * 0.5, colors.secondaryContainer.withValues(alpha: 0.15));
 
-      canvas.drawCircle(
-        Offset(x, y),
-        radius * (0.8 + math.sin(progress * 2 * math.pi + i) * 0.2),
-        circlePaint,
-      );
-    }
+    final blob3Center = Offset(
+      size.width * 0.5 + math.sin(progress * 2 * math.pi * 0.5) * 80,
+      size.height * 0.5 + math.cos(progress * 2 * math.pi * 0.5) * 80,
+    );
+    _drawBlob(canvas, blob3Center, size.width * 0.7, colors.tertiaryContainer.withValues(alpha: 0.08));
+  }
 
-    // Animated geometric shapes
-    final shapePaint = Paint()
-      ..color = colors.onPrimary.withValues(alpha: 0.03)
-      ..style = PaintingStyle.fill;
-
-    for (int i = 0; i < 4; i++) {
-      final angle = progress * 2 * math.pi + (i * math.pi / 2);
-      final centerX = size.width * 0.5 + math.cos(angle) * 150;
-      final centerY = size.height * 0.5 + math.sin(angle) * 150;
-
-      final path = Path();
-      final sides = 6;
-      for (int j = 0; j < sides; j++) {
-        final angle2 = (j * 2 * math.pi / sides) + angle;
-        final x = centerX + math.cos(angle2) * 40;
-        final y = centerY + math.sin(angle2) * 40;
-        if (j == 0) {
-          path.moveTo(x, y);
-        } else {
-          path.lineTo(x, y);
-        }
-      }
-      path.close();
-      canvas.drawPath(path, shapePaint);
-    }
+  void _drawBlob(Canvas canvas, Offset center, double radius, Color color) {
+    final paint = Paint()
+      ..color = color
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 80);
+    canvas.drawCircle(center, radius, paint);
   }
 
   @override
-  bool shouldRepaint(_LoginBackgroundPainter oldDelegate) {
-    return oldDelegate.progress != progress;
-  }
+  bool shouldRepaint(covariant _LoginBackgroundPainter oldDelegate) => 
+      oldDelegate.progress != progress || oldDelegate.colors != colors;
 }

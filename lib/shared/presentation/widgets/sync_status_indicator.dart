@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:elyf_groupe_app/app/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/offline/providers.dart';
@@ -24,6 +25,7 @@ class SyncStatusIndicator extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
     final isOnline = ref.watch(isOnlineProvider);
     final pendingCountAsync = ref.watch(pendingSyncCountProvider);
     final syncProgress = ref.watch(syncProgressProvider);
@@ -43,15 +45,26 @@ class SyncStatusIndicator extends ConsumerWidget {
       orElse: () => 0,
     );
 
+    final statusColors = theme.extension<StatusColors>();
+    
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: theme.colorScheme.outline.withValues(alpha: 0.1),
+          ),
+        ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             _buildIcon(
+              theme: theme,
+              statusColors: statusColors,
               isOnline: isOnline,
               isSyncing: isSyncing,
               hasError: hasError,
@@ -61,6 +74,7 @@ class SyncStatusIndicator extends ConsumerWidget {
               const SizedBox(width: 8),
               _buildLabel(
                 context: context,
+                statusColors: statusColors,
                 isOnline: isOnline,
                 isSyncing: isSyncing,
                 hasError: hasError,
@@ -74,6 +88,8 @@ class SyncStatusIndicator extends ConsumerWidget {
   }
 
   Widget _buildIcon({
+    required ThemeData theme,
+    StatusColors? statusColors,
     required bool isOnline,
     required bool isSyncing,
     required bool hasError,
@@ -84,53 +100,63 @@ class SyncStatusIndicator extends ConsumerWidget {
     }
 
     if (hasError) {
-      return const Icon(Icons.cloud_off, color: Colors.red);
+      return Icon(Icons.cloud_off, color: theme.colorScheme.error, size: 18);
     }
 
     if (!isOnline) {
-      return const Icon(Icons.cloud_off, color: Colors.grey);
+      return Icon(Icons.cloud_off, color: theme.colorScheme.onSurfaceVariant, size: 18);
     }
 
     if (pendingCount > 0) {
       return Badge(
         label: Text('$pendingCount'),
-        child: const Icon(Icons.cloud_upload, color: Colors.blue),
+        backgroundColor: theme.colorScheme.primary,
+        child: Icon(Icons.cloud_upload, color: theme.colorScheme.primary, size: 18),
       );
     }
 
-    return const Icon(Icons.cloud_done, color: Colors.green);
+    return Icon(
+      Icons.cloud_done, 
+      color: statusColors?.success ?? Colors.green, 
+      size: 18,
+    );
   }
 
   Widget _buildLabel({
     required BuildContext context,
+    StatusColors? statusColors,
     required bool isOnline,
     required bool isSyncing,
     required bool hasError,
     required int pendingCount,
   }) {
+    final theme = Theme.of(context);
     String text;
     Color color;
 
     if (isSyncing) {
       text = 'Synchronisation...';
-      color = Colors.blue;
+      color = theme.colorScheme.primary;
     } else if (hasError) {
       text = 'Erreur de sync';
-      color = Colors.red;
+      color = theme.colorScheme.error;
     } else if (!isOnline) {
       text = 'Hors ligne';
-      color = Colors.grey;
+      color = theme.colorScheme.onSurfaceVariant;
     } else if (pendingCount > 0) {
       text = '$pendingCount en attente';
-      color = Colors.blue;
+      color = theme.colorScheme.primary;
     } else {
       text = 'Synchronisé';
-      color = Colors.green;
+      color = statusColors?.success ?? Colors.green;
     }
 
     return Text(
       text,
-      style: Theme.of(context).textTheme.bodySmall?.copyWith(color: color),
+      style: theme.textTheme.labelSmall?.copyWith(
+        color: color,
+        fontWeight: FontWeight.bold,
+      ),
     );
   }
 }
@@ -166,7 +192,7 @@ class _AnimatedSyncIconState extends State<_AnimatedSyncIcon>
   Widget build(BuildContext context) {
     return RotationTransition(
       turns: _controller,
-      child: const Icon(Icons.sync, color: Colors.blue),
+      child: Icon(Icons.sync, color: Theme.of(context).colorScheme.primary, size: 18),
     );
   }
 }
@@ -177,45 +203,94 @@ class SyncStatusCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
     final isOnline = ref.watch(isOnlineProvider);
     final pendingCountAsync = ref.watch(pendingSyncCountProvider);
     final syncProgress = ref.watch(syncProgressProvider);
 
-    return Card(
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.outline.withValues(alpha: 0.1),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
             Row(
               children: [
-                SyncStatusIndicator(showLabel: true),
+                const SyncStatusIndicator(showLabel: true),
                 const Spacer(),
                 if (isOnline)
-                  TextButton.icon(
-                    icon: const Icon(Icons.sync),
-                    label: const Text('Synchroniser'),
+                  FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: theme.colorScheme.primaryContainer,
+                      foregroundColor: theme.colorScheme.onPrimaryContainer,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      minimumSize: const Size(0, 36),
+                    ),
+                    icon: const Icon(Icons.sync, size: 16),
+                    label: const Text('Synchroniser', style: TextStyle(fontSize: 12)),
                     onPressed: () {
                       ref.read(syncActionsProvider.notifier).triggerSync();
                     },
                   ),
               ],
             ),
-            const Divider(),
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 16),
+              child: Divider(),
+            ),
             syncProgress.when(
               data: (progress) => _buildProgressInfo(context, progress),
-              loading: () => const LinearProgressIndicator(),
-              error: (error, _) => Text(
-                'Erreur: $error',
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              loading: () => LinearProgressIndicator(
+                backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              error: (error, _) => Row(
+                children: [
+                  Icon(Icons.error_outline, color: theme.colorScheme.error, size: 16),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Erreur: $error',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.error,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             pendingCountAsync.when(
-              data: (count) => Text(
-                '$count opération(s) en attente',
-                style: Theme.of(context).textTheme.bodySmall,
+              data: (count) => Row(
+                children: [
+                  Icon(
+                    Icons.pending_actions,
+                    size: 14,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '$count opération(s) en attente',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
               ),
               loading: () => const SizedBox.shrink(),
               error: (_, __) => const SizedBox.shrink(),
@@ -227,20 +302,50 @@ class SyncStatusCard extends ConsumerWidget {
   }
 
   Widget _buildProgressInfo(BuildContext context, SyncProgress progress) {
+    final theme = Theme.of(context);
+    final statusColors = theme.extension<StatusColors>();
+
     switch (progress.status) {
       case SyncStatus.idle:
-        return const Text('En attente');
+        return Text(
+          'En attente',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        );
 
       case SyncStatus.syncing:
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            LinearProgressIndicator(value: progress.progress),
-            const SizedBox(height: 4),
-            Text(
-              '${progress.current}/${progress.total} - '
-              '${progress.currentOperation ?? "..."}',
-              style: Theme.of(context).textTheme.bodySmall,
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: progress.progress,
+                minHeight: 6,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    progress.currentOperation ?? "Traitement...",
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Text(
+                  '${progress.current}/${progress.total}',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
             ),
           ],
         );
@@ -248,11 +353,18 @@ class SyncStatusCard extends ConsumerWidget {
       case SyncStatus.synced:
         return Row(
           children: [
-            const Icon(Icons.check_circle, color: Colors.green, size: 16),
+            Icon(
+              Icons.check_circle, 
+              color: statusColors?.success ?? Colors.green, 
+              size: 16,
+            ),
             const SizedBox(width: 8),
             Text(
               'Synchronisation terminée (${progress.total} éléments)',
-              style: Theme.of(context).textTheme.bodySmall,
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: statusColors?.success ?? Colors.green,
+              ),
             ),
           ],
         );
@@ -260,14 +372,14 @@ class SyncStatusCard extends ConsumerWidget {
       case SyncStatus.error:
         return Row(
           children: [
-            const Icon(Icons.error, color: Colors.red, size: 16),
+            Icon(Icons.error, color: theme.colorScheme.error, size: 16),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
                 progress.error ?? 'Erreur inconnue',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: Colors.red),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.error,
+                ),
               ),
             ),
           ],
@@ -290,21 +402,29 @@ class OfflineBanner extends ConsumerWidget {
       children: [
         AnimatedContainer(
           duration: const Duration(milliseconds: 300),
-          height: isOnline ? 0 : 32,
+          height: isOnline ? 0 : 36,
           child: isOnline
               ? const SizedBox.shrink()
               : Container(
-                  color: Colors.grey[800],
+                  color: Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.9),
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 6),
-                  child: const Row(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.cloud_off, color: Colors.white, size: 16),
-                      SizedBox(width: 8),
+                      Icon(
+                        Icons.cloud_off, 
+                        color: Theme.of(context).colorScheme.onErrorContainer, 
+                        size: 14,
+                      ),
+                      const SizedBox(width: 12),
                       Text(
-                        'Mode hors ligne - Les données seront synchronisées',
-                        style: TextStyle(color: Colors.white, fontSize: 12),
+                        'Mode hors ligne actif',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onErrorContainer,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ],
                   ),

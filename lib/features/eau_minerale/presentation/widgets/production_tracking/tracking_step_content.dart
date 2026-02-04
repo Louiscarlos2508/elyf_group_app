@@ -33,6 +33,8 @@ class TrackingStepContent extends ConsumerWidget {
         return SuspendedStep(session: session);
       case ProductionSessionStatus.completed:
         return CompletedStep(session: session);
+      case ProductionSessionStatus.cancelled:
+        return const Center(child: Text('Cette session a été annulée.'));
     }
   }
 }

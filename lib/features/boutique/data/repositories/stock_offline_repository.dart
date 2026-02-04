@@ -74,4 +74,23 @@ class StockOfflineRepository implements StockRepository {
       throw appException;
     }
   }
+
+  @override
+  Stream<int> watchStock(String productId) {
+    return productRepository.watchProducts().map((products) {
+      try {
+        final product = products.firstWhere((p) => p.id == productId);
+        return product.stock;
+      } catch (_) {
+        return 0;
+      }
+    });
+  }
+
+  @override
+  Stream<List<Product>> watchLowStockProducts({int threshold = 10}) {
+    return productRepository
+        .watchProducts()
+        .map((products) => products.where((p) => p.stock <= threshold).toList());
+  }
 }

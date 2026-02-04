@@ -56,12 +56,16 @@ class ReturnStepContent extends ConsumerWidget {
                     color: Color(0xFF0A0A0A),
                   ),
                   const SizedBox(width: 8),
-                  Text(
-                    'Encaissement et signalement des fuites',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontSize: 16,
-                      fontWeight: FontWeight.normal,
-                      color: const Color(0xFF0A0A0A),
+                  Expanded(
+                    child: Text(
+                      'Encaissement et signalement des fuites',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontSize: 16,
+                        fontWeight: FontWeight.normal,
+                        color: const Color(0xFF0A0A0A),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],

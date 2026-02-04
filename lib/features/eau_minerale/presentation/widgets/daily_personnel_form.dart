@@ -411,15 +411,32 @@ class _DailyPersonnelFormState extends ConsumerState<DailyPersonnelForm> {
                 color: theme.colorScheme.primaryContainer.withValues(
                   alpha: 0.3,
                 ),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.2),
+                ),
               ),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Nombre de personnes sélectionnées',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.people_outline,
+                      color: theme.colorScheme.primary,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Personnel sélectionné',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                   Text(
@@ -455,18 +472,37 @@ class _DailyPersonnelFormState extends ConsumerState<DailyPersonnelForm> {
                 color: theme.colorScheme.secondaryContainer.withValues(
                   alpha: 0.3,
                 ),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: theme.colorScheme.secondary.withValues(alpha: 0.2),
+                ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'Coût total du personnel',
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          fontWeight: FontWeight.w600,
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.secondary.withValues(
+                            alpha: 0.1,
+                          ),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.payments_outlined,
+                          color: theme.colorScheme.secondary,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Coût total du personnel',
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                       Text(
@@ -478,11 +514,15 @@ class _DailyPersonnelFormState extends ConsumerState<DailyPersonnelForm> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Calculé à partir du salaire journalier de chaque ouvrier.',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 40),
+                    child: Text(
+                      'Calculé automatiquement selon le salaire de chaque ouvrier.',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontStyle: FontStyle.italic,
+                      ),
                     ),
                   ),
                 ],
@@ -495,16 +535,18 @@ class _DailyPersonnelFormState extends ConsumerState<DailyPersonnelForm> {
             Row(
               children: [
                 Expanded(
-                  child: OutlinedButton(
+                  child: OutlinedButton.icon(
                     onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('Annuler'),
+                    icon: const Icon(Icons.close),
+                    label: const Text('Annuler'),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: FilledButton(
+                  child: FilledButton.icon(
                     onPressed: _submit,
-                    child: const Text('Enregistrer'),
+                    icon: const Icon(Icons.check),
+                    label: const Text('Enregistrer'),
                   ),
                 ),
               ],

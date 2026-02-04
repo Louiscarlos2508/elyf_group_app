@@ -79,7 +79,7 @@ class OptimisticUI<T> {
       // 4. En cas d'échec, restaurer l'état précédent (rollback)
       try {
         if (_previousState != null) {
-          await onRollback(_previousState!);
+          await onRollback(_previousState as T);
           developer.log(
             'Optimistic UI rollback completed',
             name: 'optimistic.ui',
@@ -144,7 +144,7 @@ class OptimisticUI<T> {
       // 4. En cas d'échec, restaurer l'état précédent (rollback)
       try {
         if (_previousState != null) {
-          await onRollback(_previousState!);
+          await onRollback(_previousState as T);
           developer.log(
             'Optimistic UI delete rollback completed',
             name: 'optimistic.ui',
@@ -238,18 +238,18 @@ class OptimisticUIHelper {
     Future<void> Function(T)? onSuccess,
     Future<void> Function(T, dynamic)? onError,
   }) {
-    T? _previousState;
+    T? previousState;
 
     return OptimisticUI<T>(
       onUpdate: (entity) async {
         // Sauvegarder l'état précédent
-        _previousState = getCurrentEntity();
+        previousState = getCurrentEntity();
         // Mettre à jour l'entité immédiatement
         updateEntity(entity);
       },
       onRollback: (entity) async {
         // Restaurer l'entité précédente
-        updateEntity(_previousState);
+        updateEntity(previousState);
       },
       onSuccess: onSuccess,
       onError: onError,

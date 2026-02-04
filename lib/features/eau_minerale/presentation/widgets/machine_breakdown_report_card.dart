@@ -29,14 +29,25 @@ class MachineBreakdownReportCard extends ConsumerWidget {
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
             Row(
               children: [
-                Icon(Icons.build, color: theme.colorScheme.error, size: 24),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.error.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    Icons.history_toggle_off_outlined,
+                    color: theme.colorScheme.error,
+                    size: 20,
+                  ),
+                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -48,9 +59,9 @@ class MachineBreakdownReportCard extends ConsumerWidget {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 2),
                       Text(
-                        'Signalez une panne de machine et retirez la bobine si nécessaire',
+                        'En dehors des sessions actives',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
@@ -102,78 +113,15 @@ class MachineBreakdownReportCard extends ConsumerWidget {
                           }
                         }
 
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 8),
-                          child: Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    CircleAvatar(
-                                      backgroundColor:
-                                          theme.colorScheme.primaryContainer,
-                                      radius: 20,
-                                      child: Icon(
-                                        Icons.precision_manufacturing,
-                                        color: theme
-                                            .colorScheme
-                                            .onPrimaryContainer,
-                                        size: 20,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            machine.nom,
-                                            style: theme.textTheme.titleSmall
-                                                ?.copyWith(
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                          const SizedBox(height: 2),
-                                          Text(
-                                            bobineNonFinie != null
-                                                ? 'Bobine ${bobineNonFinie.bobineType} en cours'
-                                                : 'Aucune bobine en cours',
-                                            style: theme.textTheme.bodySmall
-                                                ?.copyWith(
-                                                  color: theme
-                                                      .colorScheme
-                                                      .onSurfaceVariant,
-                                                ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 12),
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: OutlinedButton.icon(
-                                    onPressed: () => _showBreakdownDialog(
-                                      context,
-                                      ref,
-                                      machine,
-                                      bobineNonFinie,
-                                      sessionActive,
-                                    ),
-                                    icon: const Icon(Icons.build, size: 18),
-                                    label: const Text('Signaler panne'),
-                                    style: OutlinedButton.styleFrom(
-                                      foregroundColor: theme.colorScheme.error,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
+                        return _BreakdownMachineItem(
+                          machine: machine,
+                          bobine: bobineNonFinie,
+                          onTap: () => _showBreakdownDialog(
+                            context,
+                            ref,
+                            machine,
+                            bobineNonFinie,
+                            sessionActive,
                           ),
                         );
                       }).toList(),
@@ -232,6 +180,67 @@ class MachineBreakdownReportCard extends ConsumerWidget {
           }
           NotificationService.showInfo(context, 'Panne signalée avec succès');
         },
+      ),
+    );
+  }
+}
+
+class _BreakdownMachineItem extends StatelessWidget {
+  const _BreakdownMachineItem({
+    required this.machine,
+    this.bobine,
+    required this.onTap,
+  });
+
+  final Machine machine;
+  final BobineUsage? bobine;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: colors.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: ListTile(
+        onTap: onTap,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        leading: Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: colors.surface,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(
+            Icons.precision_manufacturing_outlined,
+            size: 20,
+            color: bobine != null ? colors.error : colors.primary,
+          ),
+        ),
+        title: Text(
+          machine.nom,
+          style: theme.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        subtitle: Text(
+          bobine != null ? 'Bobine ${bobine!.bobineType} en cours' : 'Prête',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: bobine != null ? colors.error : colors.onSurfaceVariant,
+            fontWeight: bobine != null ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+        trailing: Icon(
+          Icons.chevron_right,
+          size: 20,
+          color: colors.onSurfaceVariant.withValues(alpha: 0.5),
+        ),
       ),
     );
   }

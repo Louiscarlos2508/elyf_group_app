@@ -27,22 +27,27 @@ class CollectionStepHeader extends ConsumerWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Row(
-          children: [
-            const Icon(Icons.inventory_2, size: 20, color: Color(0xFF0A0A0A)),
-            const SizedBox(width: 8),
-            Text(
-              'Collecte des bouteilles vides',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontSize: 16,
-                fontWeight: FontWeight.normal,
-                color: const Color(0xFF0A0A0A),
+        Expanded(
+          child: Row(
+            children: [
+              const Icon(Icons.inventory_2, size: 20),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  'Collecte des bouteilles vides',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontSize: 16,
+                    fontWeight: FontWeight.normal,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
         FilledButton.icon(
-          style: GazButtonStyles.filledPrimaryIcon,
+          style: GazButtonStyles.filledPrimaryIcon(context),
           onPressed: () async {
             try {
               final result = await showDialog<bool>(

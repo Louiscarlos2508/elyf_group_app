@@ -68,6 +68,9 @@ class TourOfflineRepository extends OfflineRepository<Tour>
           ? DateTime.parse(map['cancelledDate'] as String)
           : null,
       notes: map['notes'] as String?,
+      updatedAt: map['updatedAt'] != null
+          ? DateTime.parse(map['updatedAt'] as String)
+          : null,
     );
   }
 
@@ -154,6 +157,7 @@ class TourOfflineRepository extends OfflineRepository<Tour>
       'closureDate': entity.closureDate?.toIso8601String(),
       'cancelledDate': entity.cancelledDate?.toIso8601String(),
       'notes': entity.notes,
+      'updatedAt': entity.updatedAt?.toIso8601String(),
     };
   }
 
@@ -188,7 +192,7 @@ class TourOfflineRepository extends OfflineRepository<Tour>
 
   @override
   String getLocalId(Tour entity) {
-    if (entity.id.startsWith('local_')) return entity.id;
+    if (entity.id.isNotEmpty) return entity.id;
     return LocalIdGenerator.generate();
   }
 
@@ -369,40 +373,67 @@ class TourOfflineRepository extends OfflineRepository<Tour>
     }
     
     developer.log(
-      'Tours récupérés: ${rows.length}, après déduplication: ${toursByLocalId.length}',
+      'Tours récupérés: ${rows.length}, après déduplication par ID: ${toursByLocalId.length}',
       name: 'TourOfflineRepository.getAllForEnterprise',
     );
     
-    return toursByLocalId.values.toList();
+    // Déduplication intelligente finale basée sur le contenu (tourDate, etc.)
+    return deduplicateIntelligently(toursByLocalId.values.toList());
   }
 
   // TourRepository implementation
 
   @override
-  Future<List<Tour>> getTours(
+  Stream<List<Tour>> watchTours(
     String enterpriseId, {
     TourStatus? status,
     DateTime? from,
     DateTime? to,
-  }) async {
-    try {
-      final tours = await getAllForEnterprise(enterpriseId);
-      return tours.where((tour) {
-        if (status != null && tour.status != status) return false;
-        if (from != null && tour.tourDate.isBefore(from)) return false;
-        if (to != null && tour.tourDate.isAfter(to)) return false;
-        return true;
-      }).toList();
-    } catch (error, stackTrace) {
-      final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      AppLogger.error(
-        'Error getting tours: ${appException.message}',
-        name: 'TourOfflineRepository',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      throw appException;
-    }
+  }) {
+    return driftService.records
+        .watchForEnterprise(
+          collectionName: collectionName,
+          enterpriseId: enterpriseId,
+          moduleType: moduleType,
+        )
+        .map((rows) {
+          final tours = rows
+              .map((r) {
+                try {
+                  final map = jsonDecode(r.dataJson) as Map<String, dynamic>;
+                  map['id'] = r.localId;
+                  map['localId'] = r.localId;
+                  return fromMap(map);
+                } catch (e) {
+                  return null;
+                }
+              })
+              .whereType<Tour>()
+              .toList();
+
+          final deduplicated = deduplicateByRemoteId(tours);
+          
+          final Map<String, Tour> toursByLocalId = {};
+          for (final tour in deduplicated) {
+            if (tour.id.startsWith('local_')) {
+              if (!toursByLocalId.containsKey(tour.id)) {
+                toursByLocalId[tour.id] = tour;
+              }
+            } else {
+              toursByLocalId[tour.id] = tour;
+            }
+          }
+
+          final intelligent = deduplicateIntelligently(toursByLocalId.values.toList());
+
+          return intelligent.where((tour) {
+            if (status != null && tour.status != status) return false;
+            if (from != null && tour.tourDate.isBefore(from)) return false;
+            if (to != null && tour.tourDate.isAfter(to)) return false;
+            return true;
+          }).toList()
+            ..sort((a, b) => b.tourDate.compareTo(a.tourDate));
+        });
   }
 
   @override
@@ -464,7 +495,10 @@ class TourOfflineRepository extends OfflineRepository<Tour>
   Future<String> createTour(Tour tour) async {
     try {
       final localId = getLocalId(tour);
-      final tourWithLocalId = tour.copyWith(id: localId);
+      final tourWithLocalId = tour.copyWith(
+        id: localId,
+        updatedAt: DateTime.now(),
+      );
       await save(tourWithLocalId);
       return localId;
     } catch (error, stackTrace) {
@@ -482,7 +516,8 @@ class TourOfflineRepository extends OfflineRepository<Tour>
   @override
   Future<void> updateTour(Tour tour) async {
     try {
-      await save(tour);
+      final updatedTour = tour.copyWith(updatedAt: DateTime.now());
+      await save(updatedTour);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       AppLogger.error(
@@ -548,6 +583,9 @@ class TourOfflineRepository extends OfflineRepository<Tour>
           );
           break;
       }
+      
+      // Update updatedAt
+      updated = updated.copyWith(updatedAt: DateTime.now());
       
       // Vérifier que les données sont préservées
       developer.log(

@@ -25,6 +25,7 @@ class ProductionSession {
     this.createdAt,
     this.updatedAt,
     this.status = ProductionSessionStatus.draft,
+    this.cancelReason,
     this.events = const [],
     this.productionDays = const [],
   });
@@ -54,6 +55,7 @@ class ProductionSession {
   final List<ProductionEvent> events; // Événements (pannes, coupures, arrêts)
   final List<ProductionDay>
   productionDays; // Jours de production avec personnel
+  final String? cancelReason;
 
   /// Calcule la durée de production en heures
   double get dureeHeures {
@@ -102,6 +104,10 @@ class ProductionSession {
   /// Le statut enregistré doit toujours être utilisé pour éviter les conflits.
   /// Si le statut est draft, on peut calculer le statut à partir des données.
   ProductionSessionStatus get effectiveStatus {
+    // Si annulée, on reste annulée
+    if (status == ProductionSessionStatus.cancelled) {
+      return ProductionSessionStatus.cancelled;
+    }
     // Utiliser le statut enregistré s'il existe et n'est pas draft
     // Cela garantit que le statut explicitement défini (notamment "completed") est toujours respecté
     if (status != ProductionSessionStatus.draft) {
@@ -177,6 +183,7 @@ class ProductionSession {
     DateTime? createdAt,
     DateTime? updatedAt,
     ProductionSessionStatus? status,
+    String? cancelReason,
     List<ProductionEvent>? events,
     List<ProductionDay>? productionDays,
   }) {
@@ -203,6 +210,7 @@ class ProductionSession {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       status: status ?? this.status,
+      cancelReason: cancelReason ?? this.cancelReason,
       events: events ?? this.events,
       productionDays: productionDays ?? this.productionDays,
     );

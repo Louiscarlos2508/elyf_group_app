@@ -43,40 +43,40 @@ class GazSettingsScreen extends ConsumerWidget {
         final isMobile = MediaQuery.of(context).size.width < 800;
 
         return Container(
-      color: const Color(0xFFF9FAFB),
-      child: CustomScrollView(
-        slivers: [
-          SliverPadding(
-            padding: const EdgeInsets.all(23.98),
-            sliver: SliverList(
-              delegate: SliverChildListDelegate([
-                // Section Configuration des prix
-                _buildPriceConfigurationSection(
-                  context: context,
-                  theme: theme,
-                  enterpriseId: effectiveEnterpriseId,
-                  moduleId: effectiveModuleId,
-                  isMobile: isMobile,
+          color: const Color(0xFFF9FAFB),
+          child: CustomScrollView(
+            slivers: [
+              SliverPadding(
+                padding: const EdgeInsets.all(24),
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate([
+                    // Section Configuration des prix
+                    _buildPriceConfigurationSection(
+                      context: context,
+                      theme: theme,
+                      enterpriseId: effectiveEnterpriseId,
+                      moduleId: effectiveModuleId,
+                      isMobile: isMobile,
+                    ),
+                    const SizedBox(height: 24),
+                    // Section Gestion des points de vente
+                    _buildPointOfSaleSection(
+                      context: context,
+                      ref: ref,
+                      theme: theme,
+                      enterpriseId: effectiveEnterpriseId,
+                      moduleId: effectiveModuleId,
+                      isMobile: isMobile,
+                    ),
+                  ]),
                 ),
-                const SizedBox(height: 23.98),
-                // Section Gestion des points de vente
-                _buildPointOfSaleSection(
-                  context: context,
-                  ref: ref,
-                  theme: theme,
-                  enterpriseId: effectiveEnterpriseId,
-                  moduleId: effectiveModuleId,
-                  isMobile: isMobile,
-                ),
-              ]),
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
-    );
+        );
       },
-      loading: () => const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+      loading: () => Scaffold(
+        body: AppShimmers.list(context),
       ),
       error: (error, _) => Scaffold(
         appBar: AppBar(title: const Text('Paramètres')),
@@ -95,123 +95,109 @@ class GazSettingsScreen extends ConsumerWidget {
     required String moduleId,
     required bool isMobile,
   }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // En-tête avec titre et bouton
-        isMobile
-            ? Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Column(
+    return Card(
+      elevation: 0,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF2F4F7),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    Icons.monetization_on_outlined,
+                    size: 20, // Slightly smaller icon on mobile
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         'Configuration des prix',
                         style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
                           fontSize: 16,
-                          fontWeight: FontWeight.normal,
-                          color: const Color(0xFF101828),
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Gérez les types de bouteilles et leurs tarifs',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontSize: 14,
-                          color: const Color(0xFF6A7282),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  FilledButton.icon(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFF030213),
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 11.99,
-                        vertical: 9.99,
-                      ),
-                      minimumSize: const Size(136.947, 36),
-                    ),
-                    onPressed: () {
-                      showDialog(
-                        context: context,
-                        builder: (context) => const CylinderFormDialog(),
-                      );
-                    },
-                    icon: const Icon(Icons.add, size: 16),
-                    label: const Text(
-                      'Nouveau type',
-                      style: TextStyle(fontSize: 14),
-                    ),
-                  ),
-                ],
-              )
-            : Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
+                      if (!isMobile) ...[
+                        const SizedBox(height: 2),
                         Text(
-                          'Configuration des prix',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontSize: 16,
-                            fontWeight: FontWeight.normal,
-                            color: const Color(0xFF101828),
+                          'Gérez les bouteilles et tarifs',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Gérez les types de bouteilles et leurs tarifs',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            fontSize: 14,
-                            color: const Color(0xFF6A7282),
-                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
-                    ),
+                    ],
                   ),
-                  const SizedBox(width: 16),
-                  Flexible(
-                    child: FilledButton.icon(
-                      style: FilledButton.styleFrom(
-                        backgroundColor: const Color(0xFF030213),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                ),
+                const SizedBox(width: 12),
+                isMobile
+                    ? IconButton.filled(
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (context) => const CylinderFormDialog(),
+                          );
+                        },
+                        style: IconButton.styleFrom(
+                          backgroundColor: const Color(0xFF030213),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 11.99,
-                          vertical: 9.99,
+                        icon: const Icon(Icons.add, size: 20),
+                      )
+                    : FilledButton.icon(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: const Color(0xFF030213),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
                         ),
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (context) => const CylinderFormDialog(),
+                          );
+                        },
+                        icon: const Icon(Icons.add, size: 18),
+                        label: const Text('Nouveau type'),
                       ),
-                      onPressed: () {
-                        showDialog(
-                          context: context,
-                          builder: (context) => const CylinderFormDialog(),
-                        );
-                      },
-                      icon: const Icon(Icons.add, size: 16),
-                      label: const Text(
-                        'Nouveau type',
-                        style: TextStyle(fontSize: 14),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-        const SizedBox(height: 23.98),
-        // Carte avec tableau des tarifs
-        BottlePriceTable(enterpriseId: enterpriseId, moduleId: moduleId),
-      ],
+              ],
+            ),
+            const SizedBox(height: 16),
+            const Divider(),
+            const SizedBox(height: 16),
+            // Carte avec tableau des tarifs
+            BottlePriceTable(enterpriseId: enterpriseId, moduleId: moduleId),
+          ],
+        ),
+      ),
     );
   }
 
@@ -224,199 +210,142 @@ class GazSettingsScreen extends ConsumerWidget {
     required String moduleId,
     required bool isMobile,
   }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // En-tête avec titre et bouton
-        isMobile
-            ? Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Column(
+    return Card(
+      elevation: 0,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF2F4F7),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    Icons.storefront_outlined,
+                    size: 20, // Slightly smaller on mobile
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         'Gestion des points de vente',
                         style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
                           fontSize: 16,
-                          fontWeight: FontWeight.normal,
-                          color: const Color(0xFF101828),
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Créez et gérez les différents points de vente',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontSize: 14,
-                          color: const Color(0xFF6A7282),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  FilledButton.icon(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFF030213),
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 11.99,
-                        vertical: 9.99,
-                      ),
-                      minimumSize: const Size(201.057, 36),
-                    ),
-                    onPressed: () async {
-                      developer.log(
-                        '🔵 [SETTINGS] Bouton "Nouveau point de vente" cliqué',
-                        name: 'GazSettingsScreen',
-                      );
-                      developer.log(
-                        '🔵 [SETTINGS] enterpriseId=$enterpriseId, moduleId=$moduleId',
-                        name: 'GazSettingsScreen',
-                      );
-                      
-                      final result = await showDialog<bool>(
-                        context: context,
-                        builder: (context) {
-                          developer.log(
-                            '🔵 [SETTINGS] showDialog builder appelé',
-                            name: 'GazSettingsScreen',
-                          );
-                          return PointOfSaleFormDialog(
-                            enterpriseId: enterpriseId,
-                            moduleId: moduleId,
-                          );
-                        },
-                      );
-                      
-                      developer.log(
-                        '🔵 [SETTINGS] Dialog fermé avec result=$result',
-                        name: 'GazSettingsScreen',
-                      );
-                      
-                      // Le provider sera rafraîchi dans le dialog
-                      if (result == true && context.mounted) {
-                        developer.log(
-                          '🔵 [SETTINGS] Invalidation du provider pointsOfSaleProvider',
-                          name: 'GazSettingsScreen',
-                        );
-                        // Forcer le rafraîchissement pour s'assurer que l'UI se met à jour
-                        ref.invalidate(
-                          pointsOfSaleProvider((
-                            enterpriseId: enterpriseId,
-                            moduleId: moduleId,
-                          )),
-                        );
-                      }
-                    },
-                    icon: const Icon(Icons.add, size: 16),
-                    label: const Text(
-                      'Nouveau point de vente',
-                      style: TextStyle(fontSize: 14),
-                    ),
-                  ),
-                ],
-              )
-            : Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
+                      if (!isMobile) ...[
+                        const SizedBox(height: 2),
                         Text(
-                          'Gestion des points de vente',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontSize: 16,
-                            fontWeight: FontWeight.normal,
-                            color: const Color(0xFF101828),
+                          'Gérez points de vente et stocks',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Créez et gérez les différents points de vente',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            fontSize: 14,
-                            color: const Color(0xFF6A7282),
-                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
-                    ),
+                    ],
                   ),
-                  const SizedBox(width: 16),
-                  Flexible(
-                    child: FilledButton.icon(
-                      style: FilledButton.styleFrom(
-                        backgroundColor: const Color(0xFF030213),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                ),
+                const SizedBox(width: 12),
+                isMobile
+                    ? IconButton.filled(
+                        style: IconButton.styleFrom(
+                          backgroundColor: const Color(0xFF030213),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 11.99,
-                          vertical: 9.99,
+                        onPressed: () async {
+                          final result = await showDialog<bool>(
+                            context: context,
+                            builder: (context) {
+                              return PointOfSaleFormDialog(
+                                enterpriseId: enterpriseId,
+                                moduleId: moduleId,
+                              );
+                            },
+                          );
+
+                          if (result == true && context.mounted) {
+                            ref.invalidate(
+                              pointsOfSaleProvider((
+                                enterpriseId: enterpriseId,
+                                moduleId: moduleId,
+                              )),
+                            );
+                          }
+                        },
+                        icon: const Icon(Icons.add, size: 20),
+                      )
+                    : FilledButton.icon(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: const Color(0xFF030213),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
                         ),
-                      ),
-                      onPressed: () async {
-                        developer.log(
-                          '🔵 [SETTINGS] Bouton "Nouveau point de vente" cliqué (desktop)',
-                          name: 'GazSettingsScreen',
-                        );
-                        developer.log(
-                          '🔵 [SETTINGS] enterpriseId=$enterpriseId, moduleId=$moduleId',
-                          name: 'GazSettingsScreen',
-                        );
-                        
-                        final result = await showDialog<bool>(
-                          context: context,
-                          builder: (context) {
-                            developer.log(
-                              '🔵 [SETTINGS] showDialog builder appelé (desktop)',
-                              name: 'GazSettingsScreen',
-                            );
-                            return PointOfSaleFormDialog(
-                              enterpriseId: enterpriseId,
-                              moduleId: moduleId,
-                            );
-                          },
-                        );
-                        
-                        developer.log(
-                          '🔵 [SETTINGS] Dialog fermé avec result=$result (desktop)',
-                          name: 'GazSettingsScreen',
-                        );
-                        
-                        // Le provider sera rafraîchi dans le dialog
-                        if (result == true && context.mounted) {
+                        onPressed: () async {
                           developer.log(
-                            '🔵 [SETTINGS] Invalidation du provider pointsOfSaleProvider (desktop)',
+                            '🔵 [SETTINGS] Bouton "Nouveau point de vente" cliqué',
                             name: 'GazSettingsScreen',
                           );
-                          // Forcer le rafraîchissement pour s'assurer que l'UI se met à jour
-                          ref.invalidate(
-                            pointsOfSaleProvider((
-                              enterpriseId: enterpriseId,
-                              moduleId: moduleId,
-                            )),
+
+                          final result = await showDialog<bool>(
+                            context: context,
+                            builder: (context) {
+                              return PointOfSaleFormDialog(
+                                enterpriseId: enterpriseId,
+                                moduleId: moduleId,
+                              );
+                            },
                           );
-                        }
-                      },
-                      icon: const Icon(Icons.add, size: 16),
-                      label: const Text(
-                        'Nouveau point de vente',
-                        style: TextStyle(fontSize: 14),
+
+                          if (result == true && context.mounted) {
+                            ref.invalidate(
+                              pointsOfSaleProvider((
+                                enterpriseId: enterpriseId,
+                                moduleId: moduleId,
+                              )),
+                            );
+                          }
+                        },
+                        icon: const Icon(Icons.add, size: 18),
+                        label: const Text('Nouveau point de vente'),
                       ),
-                    ),
-                  ),
-                ],
-              ),
-        const SizedBox(height: 23.98),
-        // Carte avec tableau des points de vente
-        PointOfSaleTable(enterpriseId: enterpriseId, moduleId: moduleId),
-      ],
+              ],
+            ),
+            const SizedBox(height: 16),
+            const Divider(),
+            const SizedBox(height: 16),
+            // Carte avec tableau des points de vente
+            PointOfSaleTable(enterpriseId: enterpriseId, moduleId: moduleId),
+          ],
+        ),
+      ),
     );
   }
 }

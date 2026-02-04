@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:elyf_groupe_app/app/theme/app_colors.dart';
 
 import '../../../../../core/errors/app_exceptions.dart';
 import 'package:elyf_groupe_app/core/permissions/modules/boutique_permissions.dart';
@@ -218,12 +219,13 @@ class _CheckoutDialogState extends ConsumerState<CheckoutDialog>
                   ),
                   const SizedBox(height: 24),
                   Container(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.primaryContainer.withValues(
-                        alpha: 0.3,
+                      color: theme.colorScheme.primary.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: theme.colorScheme.primary.withValues(alpha: 0.1),
                       ),
-                      borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -231,14 +233,16 @@ class _CheckoutDialogState extends ConsumerState<CheckoutDialog>
                         Text(
                           'Total à payer',
                           style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w500,
+                            color: theme.colorScheme.onSurfaceVariant,
                           ),
                         ),
                         Text(
                           CurrencyFormatter.formatFCFA(widget.total),
                           style: theme.textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w900,
                             color: theme.colorScheme.primary,
+                            letterSpacing: -0.5,
                           ),
                         ),
                       ],
@@ -336,21 +340,21 @@ class _CheckoutDialogState extends ConsumerState<CheckoutDialog>
                         children: [
                           Row(
                             children: [
-                              Icon(
-                                Icons.check_circle,
-                                color: Colors.green,
-                                size: 20,
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  'Vente enregistrée',
-                                  style: theme.textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.green,
+                                Icon(
+                                  Icons.check_circle_rounded,
+                                  color: AppColors.success,
+                                  size: 24,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    'Vente enregistrée avec succès',
+                                    style: theme.textTheme.titleMedium?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.success,
+                                    ),
                                   ),
                                 ),
-                              ),
                             ],
                           ),
                           const SizedBox(height: 16),

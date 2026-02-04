@@ -19,6 +19,7 @@ class CylinderLeak {
     this.tourId,
     this.exchangeDate,
     this.notes,
+    this.updatedAt,
   });
 
   final String id;
@@ -30,6 +31,7 @@ class CylinderLeak {
   tourId; // ID du tour d'approvisionnement où la fuite a été signalée
   final DateTime? exchangeDate;
   final String? notes;
+  final DateTime? updatedAt;
 
   CylinderLeak copyWith({
     String? id,
@@ -40,6 +42,7 @@ class CylinderLeak {
     String? tourId,
     DateTime? exchangeDate,
     String? notes,
+    DateTime? updatedAt,
   }) {
     return CylinderLeak(
       id: id ?? this.id,
@@ -50,6 +53,7 @@ class CylinderLeak {
       tourId: tourId ?? this.tourId,
       exchangeDate: exchangeDate ?? this.exchangeDate,
       notes: notes ?? this.notes,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 }

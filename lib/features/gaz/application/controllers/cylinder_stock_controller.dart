@@ -19,6 +19,19 @@ class CylinderStockController {
     return _repository.getStocksByStatus(enterpriseId, status, siteId: siteId);
   }
 
+  /// Observe les stocks en temps réel.
+  Stream<List<CylinderStock>> watchStocks(
+    String enterpriseId, {
+    CylinderStatus? status,
+    String? siteId,
+  }) {
+    return _repository.watchStocks(
+      enterpriseId,
+      status: status,
+      siteId: siteId,
+    );
+  }
+
   /// Récupère les stocks par poids.
   Future<List<CylinderStock>> getStocksByWeight(
     String enterpriseId,

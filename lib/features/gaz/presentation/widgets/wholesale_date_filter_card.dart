@@ -41,14 +41,21 @@ class WholesaleDateFilterCard extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Container(
-      padding: const EdgeInsets.all(25),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Colors.black.withValues(alpha: 0.1),
-          width: 1.3,
+          color: theme.colorScheme.outline.withValues(alpha: 0.1),
+          width: 1,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -57,22 +64,22 @@ class WholesaleDateFilterCard extends StatelessWidget {
           Row(
             children: [
               Icon(
-                Icons.calendar_today,
+                Icons.calendar_month,
                 size: 20,
-                color: const Color(0xFF0A0A0A),
+                color: theme.colorScheme.primary,
               ),
               const SizedBox(width: 8),
               Text(
                 'Filtrer par période',
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontSize: 16,
-                  fontWeight: FontWeight.normal,
-                  color: const Color(0xFF0A0A0A),
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 30),
+          const SizedBox(height: 24),
           // Date inputs
           Row(
             children: [
@@ -84,21 +91,20 @@ class WholesaleDateFilterCard extends StatelessWidget {
                       'Date de début',
                       style: theme.textTheme.bodySmall?.copyWith(
                         fontSize: 14,
-                        color: const Color(0xFF0A0A0A),
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 8),
                     InkWell(
                       onTap: () => _selectDate(context, true),
                       child: Container(
-                        height: 36,
+                        height: 48,
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF3F3F5),
-                          borderRadius: BorderRadius.circular(8),
+                          color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                          borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: Colors.transparent,
-                            width: 1.3,
+                            color: theme.colorScheme.outline.withValues(alpha: 0.05),
                           ),
                         ),
                         child: Row(
@@ -111,15 +117,15 @@ class WholesaleDateFilterCard extends StatelessWidget {
                                 style: theme.textTheme.bodyMedium?.copyWith(
                                   fontSize: 14,
                                   color: startDate != null
-                                      ? const Color(0xFF0A0A0A)
-                                      : const Color(0xFF6A7282),
+                                      ? theme.colorScheme.onSurface
+                                      : theme.colorScheme.onSurfaceVariant,
                                 ),
                               ),
                             ),
                             Icon(
                               Icons.calendar_today,
                               size: 16,
-                              color: const Color(0xFF6A7282),
+                              color: theme.colorScheme.onSurfaceVariant,
                             ),
                           ],
                         ),
@@ -137,21 +143,20 @@ class WholesaleDateFilterCard extends StatelessWidget {
                       'Date de fin',
                       style: theme.textTheme.bodySmall?.copyWith(
                         fontSize: 14,
-                        color: const Color(0xFF0A0A0A),
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 8),
                     InkWell(
                       onTap: () => _selectDate(context, false),
                       child: Container(
-                        height: 36,
+                        height: 48,
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF3F3F5),
-                          borderRadius: BorderRadius.circular(8),
+                          color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                          borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: Colors.transparent,
-                            width: 1.3,
+                            color: theme.colorScheme.outline.withValues(alpha: 0.05),
                           ),
                         ),
                         child: Row(
@@ -164,15 +169,15 @@ class WholesaleDateFilterCard extends StatelessWidget {
                                 style: theme.textTheme.bodyMedium?.copyWith(
                                   fontSize: 14,
                                   color: endDate != null
-                                      ? const Color(0xFF0A0A0A)
-                                      : const Color(0xFF6A7282),
+                                      ? theme.colorScheme.onSurface
+                                      : theme.colorScheme.onSurfaceVariant,
                                 ),
                               ),
                             ),
                             Icon(
                               Icons.calendar_today,
                               size: 16,
-                              color: const Color(0xFF6A7282),
+                              color: theme.colorScheme.onSurfaceVariant,
                             ),
                           ],
                         ),

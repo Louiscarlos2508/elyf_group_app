@@ -258,16 +258,16 @@ class UserAssignmentController {
     final userDisplayName = await _getUserDisplayName(currentUserId);
     final now = DateTime.now();
 
-    // Mapper module ID vers type d'entreprise
-    String? getEnterpriseTypeForModule(String moduleId) {
-      final moduleToTypeMap = {
-        'eau_minerale': 'eau_minerale',
-        'gaz': 'gaz',
-        'orange_money': 'orange_money',
-        'immobilier': 'immobilier',
-        'boutique': 'boutique',
+    // Mapper module ID vers types d'entreprise compatibles
+    List<String> getEnterpriseTypesForModule(String moduleId) {
+      final moduleToTypesMap = {
+        'eau_minerale': ['eau_minerale', 'boutique'],
+        'gaz': ['gaz', 'boutique'],
+        'orange_money': ['orange_money', 'boutique'],
+        'immobilier': ['immobilier'],
+        'boutique': ['boutique', 'gaz', 'eau_minerale', 'orange_money'],
       };
-      return moduleToTypeMap[moduleId];
+      return moduleToTypesMap[moduleId] ?? [];
     }
 
     // Récupérer les entreprises pour valider les types
@@ -278,10 +278,10 @@ class UserAssignmentController {
     // Créer uniquement les assignations valides (entreprise.type == module)
     final assignments = <EnterpriseModuleUser>[];
     for (final moduleId in moduleIds) {
-      final expectedEnterpriseType = getEnterpriseTypeForModule(moduleId);
-      if (expectedEnterpriseType == null) {
+      final expectedEnterpriseTypes = getEnterpriseTypesForModule(moduleId);
+      if (expectedEnterpriseTypes.isEmpty) {
         developer.log(
-          'Warning: Unknown module type $moduleId, skipping assignments',
+          'Warning: Unknown module type $moduleId or no compatible enterprise types, skipping assignments',
           name: 'user.assignment.controller',
         );
         continue;
@@ -293,7 +293,8 @@ class UserAssignmentController {
             .where((e) => e.id == enterpriseId)
             .firstOrNull;
 
-        if (enterprise != null && enterprise.type == expectedEnterpriseType) {
+        if (enterprise != null &&
+            expectedEnterpriseTypes.contains(enterprise.type)) {
           assignments.add(
             EnterpriseModuleUser(
               userId: userId,
@@ -307,7 +308,7 @@ class UserAssignmentController {
           );
         } else {
           developer.log(
-            'Warning: Skipping invalid assignment: enterprise $enterpriseId (type: ${enterprise?.type}) does not match module $moduleId (expected type: $expectedEnterpriseType)',
+            'Warning: Skipping invalid assignment: enterprise $enterpriseId (type: ${enterprise?.type}) does not match module $moduleId (allowed types: $expectedEnterpriseTypes)',
             name: 'user.assignment.controller',
           );
         }
@@ -534,5 +535,10 @@ class UserAssignmentController {
       enterpriseId: enterpriseId,
       userDisplayName: userDisplayName,
     );
+  }
+
+  /// Surveille tous les accès EnterpriseModuleUser (Stream).
+  Stream<List<EnterpriseModuleUser>> watchEnterpriseModuleUsers() {
+    return _repository.watchEnterpriseModuleUsers();
   }
 }

@@ -1,69 +1,31 @@
-# Documentation du Projet Elyf Group App
+# 📚 Documentation du Projet Elyf Group App
 
-Ce dossier contient toute la documentation du projet.
+Ce dossier centralise toute la documentation technique, fonctionnelle et organisationnelle du projet.
+Pour une présentation visuelle et un portfolio du projet, voir [Project Portfolio](../Project_Portfolio/README.md).
 
 **Dernière mise à jour** : Janvier 2026
 
-## Structure de la Documentation
+## 📂 Organisation
 
-Consultez [DOCUMENTATION_STRUCTURE.md](./DOCUMENTATION_STRUCTURE.md) pour une vue d'ensemble complète de l'organisation de la documentation.
+### [🚀 Guide d'Installation](./SETUP.md)
+Tout ce qu'il faut savoir pour configurer l'environnement, l'authentification et les variables `.env`.
 
-## Guides Disponibles
+### [🏗️ Architecture Globale](./ARCHITECTURE.md)
+Document détaillant la Clean Architecture, le système offline-first, la synchronisation Firestore et la gestion multi-tenant.
 
-### [Guide des Patterns](./PATTERNS_GUIDE.md)
+### [🛠️ Guide Technique & Qualité](./TECHNICAL_GUIDE.md)
+Synthèse des audits, standards UI/UX, et roadmap technique du projet.
 
-Guide complet des patterns et conventions utilisés dans le projet :
-- Architecture des modules
-- State Management avec Riverpod
-- Découpage des widgets
-- Gestion d'erreurs
-- Stockage sécurisé
-- Formatage
-- Multi-tenant
-- Conventions de nommage
+## 🔗 Liens Rapides
 
-### [Référence de l'API](./API_REFERENCE.md)
-
-Documentation complète des APIs publiques :
-- Services Core (Auth, Storage, Errors, Offline, Printing)
-- Controllers des features
-- Helpers de formatage
-- Patterns d'utilisation
-- Exemples de code
-
-## Structure de Documentation
-
-```
-docs/
-├── README.md              # Ce fichier
-├── PATTERNS_GUIDE.md      # Guide des patterns
-└── API_REFERENCE.md       # Référence de l'API
-
-lib/
-├── core/
-│   ├── README.md          # Documentation du core
-│   ├── auth/README.md     # Documentation de l'authentification
-│   ├── offline/README.md  # Documentation offline-first
-│   └── ...
-└── features/
-    ├── README.md          # Documentation des features
-    └── <module>/README.md # Documentation de chaque module
-```
+- [Wiki du Projet](../wiki/README.md)
+- [Code Source](../lib/)
 
 ## Principes de Documentation
 
-1. **Doc Comments** : Toutes les classes publiques doivent avoir des doc comments
-2. **Paramètres** : Toutes les méthodes publiques doivent documenter leurs paramètres
-3. **Exemples** : Inclure des exemples d'utilisation quand c'est pertinent
-4. **Mise à jour** : La documentation doit être mise à jour avec le code
-
-## Contribution
-
-Lors de l'ajout de nouvelles fonctionnalités :
-
-1. Ajouter des doc comments aux classes et méthodes publiques
-2. Mettre à jour les guides pertinents si nécessaire
-3. Ajouter des exemples d'utilisation dans la référence API
+1. **Doc Comments** : Toutes les classes publiques doivent avoir des doc comments.
+2. **Paramètres** : Toutes les méthodes publiques doivent documenter leurs paramètres.
+3. **Mise à jour** : La documentation doit être mise à jour en synchronisation avec le code.
 
 ## Ressources Externes
 

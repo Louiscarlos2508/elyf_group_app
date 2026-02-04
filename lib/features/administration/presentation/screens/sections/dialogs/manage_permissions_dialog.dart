@@ -5,7 +5,6 @@ import 'package:elyf_groupe_app/core.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
 import '../../../../application/providers.dart';
-import 'package:elyf_groupe_app/core/auth/entities/enterprise_module_user.dart';
 import '../../../../domain/services/permission_section_mapper.dart';
 import '../../../../domain/entities/module_sections_info.dart';
 import 'package:elyf_groupe_app/core/permissions/services/permission_registry.dart';

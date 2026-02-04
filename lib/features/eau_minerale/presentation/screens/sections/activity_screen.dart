@@ -36,13 +36,13 @@ class _ActivityContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final cards = [
       EnhancedKpiCard(
-        label: 'Production (sachets)',
+        label: 'Production (packs)',
         value: summary.totalProduction.toString(),
         icon: Icons.water_drop,
         color: Colors.blue,
       ),
       EnhancedKpiCard(
-        label: 'Ventes (sachets)',
+        label: 'Ventes (packs)',
         value: summary.totalSales.toString(),
         icon: Icons.point_of_sale,
         color: Colors.green,

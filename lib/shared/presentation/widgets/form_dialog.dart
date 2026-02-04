@@ -1,6 +1,5 @@
 import 'dart:developer' as developer;
 
-import 'dart:developer' as developer;
 
 import 'package:flutter/material.dart';
 
@@ -127,15 +126,15 @@ class _FormDialogState extends State<FormDialog> {
     // Hauteur disponible en tenant compte du clavier
     final availableHeight = screenHeight - keyboardHeight - 100;
 
-    // Largeur responsive : 90% de l'écran, min 320px, max 600px
-    final maxWidth = (screenWidth * 0.9).clamp(320.0, 600.0);
+    // Largeur responsive : 90% de l'écran, min 320px, max 900px pour supporter les layouts 2 colonnes
+    final maxWidth = (screenWidth * 0.9).clamp(320.0, 900.0);
 
     return Dialog(
       insetPadding: EdgeInsets.symmetric(
         horizontal: screenWidth < 600 ? 16 : 24,
         vertical: keyboardHeight > 0 ? 16 : 24,
       ),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: ConstrainedBox(
         constraints: BoxConstraints(
           maxWidth: maxWidth,

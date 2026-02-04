@@ -1,12 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import 'package:elyf_groupe_app/shared.dart';
 import '../../../../../core/tenant/tenant_provider.dart' show activeEnterpriseProvider;
-import '../../application/providers.dart';
 import '../../domain/entities/cylinder.dart';
-import 'cylinder_form/cylinder_form_header.dart';
 import 'cylinder_form/cylinder_submit_handler.dart';
 
 /// Dialogue pour créer ou modifier une bouteille de gaz.
@@ -23,7 +19,7 @@ class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
   final _formKey = GlobalKey<FormState>();
   final _weightController = TextEditingController();
   final _sellPriceController = TextEditingController();
-  final _wholesalePriceController = TextEditingController();
+  final _buyPriceController = TextEditingController();
 
   int? _selectedWeight;
   bool _isLoading = false;
@@ -39,13 +35,9 @@ class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
       _selectedWeight = widget.cylinder!.weight;
       _weightController.text = widget.cylinder!.weight.toString();
       _sellPriceController.text = widget.cylinder!.sellPrice.toStringAsFixed(0);
+      _buyPriceController.text = widget.cylinder!.buyPrice.toStringAsFixed(0);
       _enterpriseId = widget.cylinder!.enterpriseId;
       _moduleId = widget.cylinder!.moduleId;
-
-      // Charger le prix en gros depuis les settings
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _loadWholesalePrice();
-      });
     }
   }
 
@@ -53,29 +45,8 @@ class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
   void dispose() {
     _weightController.dispose();
     _sellPriceController.dispose();
-    _wholesalePriceController.dispose();
+    _buyPriceController.dispose();
     super.dispose();
-  }
-
-  Future<void> _loadWholesalePrice() async {
-    if (_enterpriseId == null || _moduleId == null || _selectedWeight == null) {
-      return;
-    }
-
-    try {
-      final settingsController = ref.read(gazSettingsControllerProvider);
-      final wholesalePrice = await settingsController.getWholesalePrice(
-        enterpriseId: _enterpriseId!,
-        moduleId: _moduleId!,
-        weight: _selectedWeight!,
-      );
-
-      if (wholesalePrice != null && wholesalePrice > 0 && mounted) {
-        _wholesalePriceController.text = wholesalePrice.toStringAsFixed(0);
-      }
-    } catch (e) {
-      // Ignorer les erreurs silencieusement
-    }
   }
 
   Future<void> _saveCylinder() async {
@@ -89,7 +60,7 @@ class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
       selectedWeight: _selectedWeight,
       weightText: _weightController.text,
       sellPriceText: _sellPriceController.text,
-      wholesalePriceText: _wholesalePriceController.text,
+      buyPriceText: _buyPriceController.text,
       enterpriseId: _enterpriseId,
       moduleId: _moduleId,
       existingCylinder: widget.cylinder,
@@ -102,10 +73,8 @@ class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
 
   @override
   Widget build(BuildContext context) {
-    // Récupérer l'entreprise active depuis le tenant provider
     final activeEnterpriseAsync = ref.watch(activeEnterpriseProvider);
     
-    // Initialiser enterpriseId et moduleId depuis l'entreprise active si pas déjà défini
     activeEnterpriseAsync.whenData((enterprise) {
       if (_enterpriseId == null && enterprise != null) {
         _enterpriseId = enterprise.id;
@@ -115,16 +84,25 @@ class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
     
     if (_enterpriseId == null) {
       return Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.error_outline, size: 48, color: Colors.red),
+              const Icon(Icons.error_outline, size: 48, color: Colors.amber),
               const SizedBox(height: 16),
-              const Text('Aucune entreprise active disponible'),
-              const SizedBox(height: 16),
-              TextButton(
+              const Text(
+                'Aucune entreprise active',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                "Veuillez sélectionner une entreprise avant de continuer.",
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              FilledButton(
                 onPressed: () => Navigator.of(context).pop(),
                 child: const Text('Fermer'),
               ),
@@ -133,32 +111,64 @@ class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
         ),
       );
     }
+
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 500),
-        child: Form(
-          key: _formKey,
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
+        constraints: const BoxConstraints(maxWidth: 480),
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Form(
+              key: _formKey,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  CylinderFormHeader(isEditing: widget.cylinder != null),
+                   Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primaryContainer,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          widget.cylinder == null 
+                              ? Icons.add_circle_outline 
+                              : Icons.edit_outlined,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Flexible(
+                        child: Text(
+                          widget.cylinder == null 
+                              ? 'Nouveau type de bouteille' 
+                              : 'Modifier le type de bouteille',
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 24),
-                  // Poids (saisie libre)
+                  
+                  // Poids
                   TextFormField(
                     controller: _weightController,
                     decoration: InputDecoration(
-                      labelText: 'Poids (kg) *',
+                      labelText: 'Poids de la bouteille',
+                      hintText: 'Ex: 6',
+                      suffixText: 'kg',
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      prefixIcon: const Icon(Icons.scale),
-                      hintText: 'Ex: 3, 6, 10, 12...',
-                      helperText: 'Entrez le poids de la bouteille en kg',
+                      prefixIcon: const Icon(Icons.scale_outlined),
+                      filled: true,
+                      fillColor: Colors.grey.withAlpha(10), // Using withAlpha instead of withOpacity
                     ),
                     keyboardType: TextInputType.number,
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
@@ -169,110 +179,98 @@ class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
                       });
                     },
                     validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Veuillez entrer un poids';
-                      }
+                      if (value == null || value.isEmpty) return 'Requis';
                       final weight = int.tryParse(value);
-                      if (weight == null || weight <= 0) {
-                        return 'Le poids doit être un nombre positif';
-                      }
+                      if (weight == null || weight <= 0) return 'Invalide';
                       return null;
                     },
                   ),
                   const SizedBox(height: 16),
+                  
                   // Prix détail
                   TextFormField(
                     controller: _sellPriceController,
                     decoration: InputDecoration(
-                      labelText: 'Prix détail (FCFA) *',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      prefixIcon: const Icon(Icons.attach_money),
+                      labelText: 'Prix de vente',
+                      hintText: '0',
                       suffixText: 'FCFA',
-                      helperText: 'Prix de vente au détail',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      prefixIcon: const Icon(Icons.sell_outlined),
+                      filled: true,
+                      fillColor: Colors.grey.withAlpha(10),
                     ),
                     keyboardType: TextInputType.number,
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Veuillez entrer un prix détail';
-                      }
+                      if (value == null || value.isEmpty) return 'Requis';
                       final price = double.tryParse(value);
-                      if (price == null || price < 0) {
-                        return 'Prix invalide';
-                      }
+                      if (price == null || price < 0) return 'Invalide';
                       return null;
                     },
                   ),
                   const SizedBox(height: 16),
-                  // Prix en gros (optionnel)
+                  
+                  // Prix d'achat
                   TextFormField(
-                    controller: _wholesalePriceController,
+                    controller: _buyPriceController,
                     decoration: InputDecoration(
-                      labelText: 'Prix en gros (FCFA)',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      prefixIcon: const Icon(Icons.store),
+                      labelText: "Prix d'achat",
+                      hintText: 'Optionnel',
                       suffixText: 'FCFA',
-                      helperText: 'Prix de vente en gros (optionnel)',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      prefixIcon: const Icon(Icons.shopping_cart_outlined),
+                      filled: true,
+                      fillColor: Colors.grey.withAlpha(10),
                     ),
                     keyboardType: TextInputType.number,
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     validator: (value) {
                       if (value != null && value.isNotEmpty) {
                         final price = double.tryParse(value);
-                        if (price == null || price < 0) {
-                          return 'Prix invalide';
-                        }
+                        if (price == null || price < 0) return 'Invalide';
                         if (_sellPriceController.text.isNotEmpty) {
-                          final sellPrice =
-                              double.tryParse(_sellPriceController.text) ?? 0;
+                          final sellPrice = double.tryParse(_sellPriceController.text) ?? 0;
                           if (price >= sellPrice) {
-                            return 'Le prix en gros doit être inférieur au prix détail';
+                            return "Doit être inférieur au prix de vente";
                           }
                         }
                       }
                       return null;
                     },
                   ),
-                  const SizedBox(height: 24),
-                  // Boutons d'action
+                  const SizedBox(height: 32),
+                  
+                  // Actions
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      Flexible(
-                        child: OutlinedButton(
-                          onPressed: _isLoading
-                              ? null
-                              : () => Navigator.of(context).pop(),
-                          style: GazButtonStyles.outlined,
-                          child: const Text('Annuler'),
-                        ),
+                      TextButton(
+                        onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
+                        child: const Text('Annuler'),
                       ),
-                      const SizedBox(width: 12),
-                      Flexible(
-                        child: FilledButton(
-                          onPressed: _isLoading ? null : _saveCylinder,
-                          style: GazButtonStyles.filledPrimary,
-                          child: _isLoading
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      Colors.white,
-                                    ),
-                                  ),
-                                )
-                              : Text(
-                                  widget.cylinder == null
-                                      ? 'Créer'
-                                      : 'Enregistrer',
-                                ),
+                      const SizedBox(width: 8),
+                      FilledButton(
+                        onPressed: _isLoading ? null : _saveCylinder,
+                        style: FilledButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
+                        child: _isLoading
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : Text(widget.cylinder == null ? 'Créer' : 'Enregistrer'),
                       ),
                     ],
                   ),

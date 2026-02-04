@@ -6,6 +6,7 @@ class SalaryHistoryItemData {
     required this.type,
     required this.label,
     this.period,
+    required this.originalPayment,
   });
 
   final DateTime date;
@@ -13,6 +14,7 @@ class SalaryHistoryItemData {
   final SalaryPaymentType type;
   final String label;
   final String? period;
+  final dynamic originalPayment;
 }
 
 enum SalaryPaymentType { monthly, production }

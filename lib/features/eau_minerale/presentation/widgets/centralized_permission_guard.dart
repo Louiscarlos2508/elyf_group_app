@@ -20,21 +20,15 @@ class CentralizedPermissionGuard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final adapter = ref.watch(eauMineralePermissionAdapterProvider);
+    final permissionAsync = ref.watch(hasPermissionProvider(permissionId));
 
-    return FutureBuilder<bool>(
-      future: adapter.hasPermission(permissionId),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const SizedBox.shrink();
-        }
-
-        if (snapshot.hasData && snapshot.data == true) {
-          return child;
-        }
-
+    return permissionAsync.when(
+      data: (hasPermission) {
+        if (hasPermission) return child;
         return fallback ?? const SizedBox.shrink();
       },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => fallback ?? const SizedBox.shrink(),
     );
   }
 }
@@ -54,21 +48,15 @@ class CentralizedPermissionGuardAny extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final adapter = ref.watch(eauMineralePermissionAdapterProvider);
+    final permissionAsync = ref.watch(hasAnyPermissionProvider(permissionIds));
 
-    return FutureBuilder<bool>(
-      future: adapter.hasAnyPermission(permissionIds),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const SizedBox.shrink();
-        }
-
-        if (snapshot.hasData && snapshot.data == true) {
-          return child;
-        }
-
+    return permissionAsync.when(
+      data: (hasPermission) {
+        if (hasPermission) return child;
         return fallback ?? const SizedBox.shrink();
       },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => fallback ?? const SizedBox.shrink(),
     );
   }
 }
@@ -88,21 +76,15 @@ class CentralizedPermissionGuardAll extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final adapter = ref.watch(eauMineralePermissionAdapterProvider);
+    final permissionAsync = ref.watch(hasAllPermissionsProvider(permissionIds));
 
-    return FutureBuilder<bool>(
-      future: adapter.hasAllPermissions(permissionIds),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const SizedBox.shrink();
-        }
-
-        if (snapshot.hasData && snapshot.data == true) {
-          return child;
-        }
-
+    return permissionAsync.when(
+      data: (hasPermission) {
+        if (hasPermission) return child;
         return fallback ?? const SizedBox.shrink();
       },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => fallback ?? const SizedBox.shrink(),
     );
   }
 }

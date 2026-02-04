@@ -28,17 +28,17 @@ class DashboardTodaySectionV2 extends StatelessWidget {
             value: CurrencyFormatter.formatFCFA(todayRevenue),
             subtitle: '$todayCount paiement(s)',
             icon: Icons.payments,
-            iconColor: Colors.blue,
-            backgroundColor: Colors.blue,
+            iconColor: const Color(0xFF3B82F6), // Blue
+            backgroundColor: const Color(0xFF3B82F6),
           ),
           DashboardKpiCardV2(
             label: 'Nombre de paiements',
             value: todayCount.toString(),
             subtitle: todayCount > 0 ? 'transactions' : 'aucun paiement',
             icon: Icons.receipt,
-            iconColor: Colors.green,
-            valueColor: Colors.green.shade700,
-            backgroundColor: Colors.green,
+            iconColor: const Color(0xFF10B981), // Emerald
+            valueColor: const Color(0xFF059669), // Darker emerald
+            backgroundColor: const Color(0xFF10B981),
           ),
         ];
 

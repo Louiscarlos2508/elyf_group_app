@@ -20,7 +20,7 @@ class ProfilePersonalInfoCard extends StatelessWidget {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: theme.colorScheme.outline.withValues(alpha: 0.2),
         ),

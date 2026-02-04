@@ -87,11 +87,6 @@ class InProgressStep extends ConsumerWidget {
               label: 'Bobines finies',
               value: '$bobinesFinies / ${session.bobinesUtilisees.length}',
             ),
-            InfoRow(
-              icon: Icons.access_time,
-              label: 'Durée de production',
-              value: '${session.dureeHeures.toStringAsFixed(1)} heures',
-            ),
             _buildConsumptionInfoRow(context, ref),
             const SizedBox(height: 24),
             OutlinedButton.icon(

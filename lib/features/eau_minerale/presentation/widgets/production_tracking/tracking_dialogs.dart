@@ -76,7 +76,6 @@ class TrackingDialogs {
     SessionDialogs.showEventDialog(context, ref, session);
   }
 
-  /// Affiche le dialog pour reprendre la production.
   static void showResumeDialog(
     BuildContext context,
     WidgetRef ref,

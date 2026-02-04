@@ -40,10 +40,17 @@ class GazExpensesReportContentV2 extends ConsumerWidget {
       padding: EdgeInsets.all(isWide ? 24 : 16),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: theme.colorScheme.outline.withValues(alpha: 0.2),
+          color: theme.colorScheme.outline.withValues(alpha: 0.1),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: reportDataAsync.when(
         data: (reportData) {
@@ -213,8 +220,11 @@ class GazExpensesReportContentV2 extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(12),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.outline.withValues(alpha: 0.1),
+        ),
       ),
       child: Row(
         children: [
@@ -251,7 +261,7 @@ class GazExpensesReportContentV2 extends ConsumerWidget {
                   CurrencyFormatter.formatDouble(analysis.totalAmount),
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: Colors.red,
+                    color: theme.colorScheme.error,
                   ),
                 ),
               ],
@@ -265,23 +275,23 @@ class GazExpensesReportContentV2 extends ConsumerWidget {
   Color _getCategoryColor(ExpenseCategory category) {
     switch (category) {
       case ExpenseCategory.transport:
-        return Colors.blue;
+        return const Color(0xFF3B82F6); // Blue
       case ExpenseCategory.maintenance:
-        return Colors.orange;
+        return const Color(0xFFF59E0B); // Amber
       case ExpenseCategory.salaries:
-        return Colors.purple;
+        return const Color(0xFF8B5CF6); // Violet
       case ExpenseCategory.rent:
-        return Colors.brown;
+        return const Color(0xFFEC4899); // Pink
       case ExpenseCategory.utilities:
-        return Colors.amber;
+        return const Color(0xFF10B981); // Emerald
       case ExpenseCategory.supplies:
-        return Colors.teal;
+        return const Color(0xFF06B6D4); // Cyan
       case ExpenseCategory.structureCharges:
-        return Colors.indigo;
+        return const Color(0xFF6366F1); // Indigo
       case ExpenseCategory.loadingEvents:
-        return Colors.cyan;
+        return const Color(0xFF14B8A6); // Teal
       case ExpenseCategory.other:
-        return Colors.grey;
+        return const Color(0xFF64748B); // Slate
     }
   }
 }

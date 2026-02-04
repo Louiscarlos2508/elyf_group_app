@@ -20,426 +20,413 @@ class CreditHistoryDialog extends ConsumerWidget {
   final String customerId;
   final String customerName;
 
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final historyAsync = ref.watch(customerCreditHistoryProvider(customerId));
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth > 800;
+        
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          clipBehavior: Clip.antiAlias,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: isWide ? 900 : 700,
+              maxHeight: isWide ? 850 : 700,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Header
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primaryContainer.withValues(
+                      alpha: 0.1,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.history,
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Historique des Crédits',
+                              style: theme.textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              customerName,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                // Content
+                Expanded(
+                  child: historyAsync.when(
+                    data: (historyItems) {
+                      if (historyItems.isEmpty) {
+                        return Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(48),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.credit_card_off,
+                                  size: 64,
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'Aucun historique de crédit',
+                                  style: theme.textTheme.titleMedium?.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }
+
+                      return ListView.separated(
+                        padding: const EdgeInsets.all(24),
+                        itemCount: historyItems.length,
+                        separatorBuilder: (context, index) => const SizedBox(height: 16),
+                        itemBuilder: (context, index) {
+                          final item = historyItems[index];
+                          return _CreditSaleItem(
+                            sale: item.sale,
+                            payments: item.payments,
+                            customerName: customerName,
+                          );
+                        },
+                      );
+                    },
+                    loading: () => const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(48),
+                        child: CircularProgressIndicator(),
+                      ),
+                    ),
+                    error: (error, stack) => Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.error_outline,
+                              size: 48,
+                              color: theme.colorScheme.error,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Erreur de chargement',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              error.toString(),
+                              textAlign: TextAlign.center,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                
+                // Footer
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      top: BorderSide(
+                        color: theme.colorScheme.outline.withValues(alpha: 0.2),
+                      ),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton.icon(
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: const Icon(Icons.close),
+                        label: const Text('Fermer'),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _CreditSaleItem extends StatelessWidget {
+  const _CreditSaleItem({
+    required this.sale,
+    required this.payments,
+    required this.customerName,
+  });
+
+  final Sale sale;
+  final List<CreditPayment> payments;
+  final String customerName;
+
   String _formatDate(DateTime date) {
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final creditRepo = ref.read(creditRepositoryProvider);
-
-    return FutureBuilder<List<Sale>>(
-      future: creditRepo.fetchCustomerCredits(customerId),
-      builder: (context, salesSnapshot) {
-        if (salesSnapshot.connectionState == ConnectionState.waiting) {
-          return Dialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(24),
-            ),
-            child: const Padding(
-              padding: EdgeInsets.all(48),
-              child: CircularProgressIndicator(),
-            ),
-          );
-        }
-
-        if (salesSnapshot.hasError) {
-          return Dialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(24),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.error_outline,
-                    size: 48,
-                    color: theme.colorScheme.error,
-                  ),
-                  const SizedBox(height: 16),
-                  Text('Erreur', style: theme.textTheme.titleLarge),
-                  const SizedBox(height: 8),
-                  Text(
-                    salesSnapshot.error.toString(),
-                    style: theme.textTheme.bodyMedium,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 24),
-                  FilledButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('Fermer'),
-                  ),
-                ],
-              ),
-            ),
-          );
-        }
-
-        final creditSales =
-            salesSnapshot.data?.where((s) => s.isCredit).toList() ?? [];
-
-        return FutureBuilder<Map<String, List<CreditPayment>>>(
-          future: Future.wait(
-            creditSales.map((sale) async {
-              final payments = await creditRepo.fetchSalePayments(sale.id);
-              return MapEntry(sale.id, payments);
-            }),
-          ).then((maps) => Map.fromEntries(maps)),
-          builder: (context, paymentsSnapshot) {
-            final paymentsMap = paymentsSnapshot.data ?? {};
-
-            return _buildDialogContent(
-              context,
-              theme,
-              creditSales,
-              paymentsMap,
-              paymentsSnapshot.connectionState == ConnectionState.waiting,
-            );
-          },
-        );
-      },
+    
+    // Calculate total paid from payments list
+    final totalPaid = payments.fold<int>(
+      0,
+      (sum, p) => sum + p.amount,
     );
-  }
 
-  Widget _buildDialogContent(
-    BuildContext context,
-    ThemeData theme,
-    List<Sale> creditSales,
-    Map<String, List<CreditPayment>> paymentsMap,
-    bool isLoadingPayments,
-  ) {
-    return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 800, maxHeight: 700),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Header
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primaryContainer.withValues(
-                  alpha: 0.1,
-                ),
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(24),
-                  topRight: Radius.circular(24),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      Icons.history,
-                      color: theme.colorScheme.primary,
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Historique des Crédits',
-                          style: theme.textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          customerName,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                ],
+    // Initial down payment is difference between total paid amount recorded on sale 
+    // and sum of individual payment records.
+    final initialPayment = sale.amountPaid - totalPaid;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: theme.colorScheme.outline.withValues(alpha: 0.2),
+        ),
+      ),
+      child: Column(
+        children: [
+          // Sale header
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(12),
+                topRight: Radius.circular(12),
               ),
             ),
-            // Content
-            Flexible(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (creditSales.isEmpty)
-                      Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(48),
-                          child: Column(
-                            children: [
-                              Icon(
-                                Icons.credit_card_off,
-                                size: 64,
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'Aucun crédit en cours',
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      )
-                    else ...[
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: sale.isFullyPaid 
+                        ? Colors.green.withValues(alpha: 0.1)
+                        : theme.colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    sale.isFullyPaid
+                        ? Icons.check_circle_outline
+                        : Icons.access_time,
+                    size: 20,
+                    color: sale.isFullyPaid
+                        ? Colors.green
+                        : theme.colorScheme.onPrimaryContainer,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                       Text(
-                        'Ventes en Crédit (${creditSales.length})',
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
+                        sale.productName,
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      ...creditSales.map((sale) {
-                        final payments = paymentsMap[sale.id] ?? [];
-                        final totalPaid = payments.fold<int>(
-                          0,
-                          (sum, p) => sum + p.amount,
-                        );
-
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 16),
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.surfaceContainerHighest,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: theme.colorScheme.outline.withValues(
-                                alpha: 0.2,
-                              ),
-                            ),
-                          ),
-                          child: Column(
-                            children: [
-                              // Sale header
-                              Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color:
-                                      theme.colorScheme.surfaceContainerHighest,
-                                  borderRadius: const BorderRadius.only(
-                                    topLeft: Radius.circular(12),
-                                    topRight: Radius.circular(12),
-                                  ),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.all(8),
-                                      decoration: BoxDecoration(
-                                        color:
-                                            theme.colorScheme.primaryContainer,
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: Icon(
-                                        Icons.shopping_cart,
-                                        size: 20,
-                                        color: theme
-                                            .colorScheme
-                                            .onPrimaryContainer,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    EauMineralePrintButton(sale: sale, compact: true),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            sale.productName,
-                                            style: theme.textTheme.bodyLarge
-                                                ?.copyWith(
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            '${_formatDate(sale.date)} • ${sale.quantity} unités',
-                                            style: theme.textTheme.bodySmall
-                                                ?.copyWith(
-                                                  color: theme
-                                                      .colorScheme
-                                                      .onSurfaceVariant,
-                                                ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.end,
-                                      children: [
-                                        Text(
-                                          CurrencyFormatter.formatFCFA(
-                                            sale.totalPrice,
-                                          ),
-                                          style: theme.textTheme.bodyLarge
-                                              ?.copyWith(
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                        ),
-                                        Text(
-                                          'Total',
-                                          style: theme.textTheme.labelSmall
-                                              ?.copyWith(
-                                                color: theme
-                                                    .colorScheme
-                                                    .onSurfaceVariant,
-                                              ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              // Payment summary
-                              Container(
-                                padding: const EdgeInsets.all(16),
-                                color: theme.colorScheme.surface,
-                                child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceAround,
-                                  children: [
-                                    _buildStatItem(
-                                      theme,
-                                      'Payé',
-                                      CurrencyFormatter.formatFCFA(sale.amountPaid),
-                                      Colors.green,
-                                    ),
-                                    Container(
-                                      width: 1,
-                                      height: 40,
-                                      color: theme.colorScheme.outline
-                                          .withValues(alpha: 0.2),
-                                    ),
-                                    _buildStatItem(
-                                      theme,
-                                      'Restant',
-                                      CurrencyFormatter.formatFCFA(
-                                        sale.remainingAmount,
-                                      ),
-                                      theme.colorScheme.error,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              // Payments list
-                              if (payments.isNotEmpty || (sale.amountPaid - totalPaid) > 0) ...[
-                                Divider(
-                                  height: 1,
-                                  color: theme.colorScheme.outline.withValues(
-                                    alpha: 0.2,
-                                  ),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.all(16),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'Paiements',
-                                        style: theme.textTheme.titleSmall
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                      ),
-                                      const SizedBox(height: 12),
-                                      // Initial payment (down payment)
-                                      if ((sale.amountPaid - totalPaid) > 0)
-                                        _buildPaymentItem(
-                                          context,
-                                          theme,
-                                          sale.amountPaid - totalPaid,
-                                          'Acompte initial',
-                                          sale.date,
-                                          onPrint: () => EauMineraleInvoiceService.instance.printCreditPaymentReceipt(
-                                            customerName: customerName,
-                                            sale: sale,
-                                            paymentAmount: sale.amountPaid - totalPaid,
-                                            remainingAfterPayment: sale.totalPrice - (sale.amountPaid - totalPaid),
-                                          ),
-                                        ),
-                                      // Subsequent payments
-                                      ...payments.map((payment) {
-                                        return _buildPaymentItem(
-                                          context,
-                                          theme,
-                                          payment.amount,
-                                          payment.notes ?? 'Versement',
-                                          payment.date,
-                                          onPrint: () => EauMineraleInvoiceService.instance.printCreditPaymentReceipt(
-                                            customerName: customerName,
-                                            sale: sale,
-                                            paymentAmount: payment.amount,
-                                            remainingAfterPayment: sale.totalPrice - (totalPaid), // Approximate, but good enough for receipt
-                                          ),
-                                        );
-                                      }),
-                                    ],
-                                  ),
-                                ),
-                              ] else if (!isLoadingPayments)
-                                Padding(
-                                  padding: const EdgeInsets.all(16),
-                                  child: Text(
-                                    'Aucun paiement enregistré',
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      color: theme.colorScheme.onSurfaceVariant,
-                                      fontStyle: FontStyle.italic,
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        );
-                      }),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${_formatDate(sale.date)} • ${sale.quantity} unités',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
                     ],
+                  ),
+                ),
+                EauMineralePrintButton(sale: sale, compact: true),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      CurrencyFormatter.formatFCFA(sale.totalPrice),
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      'Total',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
                   ],
                 ),
+              ],
+            ),
+          ),
+          
+          // Payment summary statistics
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            color: theme.colorScheme.surface,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildStatItem(
+                  theme,
+                  'Payé',
+                  CurrencyFormatter.formatFCFA(sale.amountPaid),
+                  Colors.green,
+                ),
+                Container(
+                  width: 1,
+                  height: 30,
+                  color: theme.colorScheme.outline.withValues(alpha: 0.2),
+                ),
+                _buildStatItem(
+                  theme,
+                  'Restant',
+                  CurrencyFormatter.formatFCFA(sale.remainingAmount),
+                  sale.remainingAmount > 0 ? theme.colorScheme.error : theme.colorScheme.onSurfaceVariant,
+                ),
+              ],
+            ),
+          ),
+          
+          // Payments Details List
+          if (payments.isNotEmpty || initialPayment > 0) ...[
+            Divider(
+              height: 1,
+              color: theme.colorScheme.outline.withValues(alpha: 0.2),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.receipt_long, size: 16, color: theme.colorScheme.primary),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Historique des versements',
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  
+                  // Initial payment (down payment)
+                  if (initialPayment > 0)
+                    _buildPaymentItem(
+                      context,
+                      theme,
+                      initialPayment,
+                      'Acompte initial',
+                      sale.date,
+                      cashAmount: sale.cashAmount,
+                      omAmount: sale.orangeMoneyAmount,
+                      onPrint: () => EauMineraleInvoiceService.instance
+                          .printCreditPaymentReceipt(
+                        customerName: customerName,
+                        sale: sale,
+                        paymentAmount: initialPayment,
+                        remainingAfterPayment:
+                            sale.totalPrice - initialPayment,
+                      ),
+                    ),
+                    
+                  // Subsequent payments
+                  ...payments.map((payment) {
+                    return _buildPaymentItem(
+                      context,
+                      theme,
+                      payment.amount,
+                      payment.notes ?? 'Versement',
+                      payment.date,
+                      cashAmount: payment.cashAmount,
+                      omAmount: payment.orangeMoneyAmount,
+                      onPrint: () => EauMineraleInvoiceService.instance
+                          .printCreditPaymentReceipt(
+                        customerName: customerName,
+                        sale: sale,
+                        paymentAmount: payment.amount,
+                        remainingAfterPayment: sale.totalPrice - sale.amountPaid, // Just an approximation for the receipt depending on time
+                        cashAmount: payment.cashAmount,
+                        omAmount: payment.orangeMoneyAmount,
+                      ),
+                    );
+                  }),
+                ],
               ),
             ),
-            // Footer
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                border: Border(
-                  top: BorderSide(
-                    color: theme.colorScheme.outline.withValues(alpha: 0.2),
+          ] else
+             Padding(
+              padding: const EdgeInsets.all(16),
+              child: Center(
+                child: Text(
+                  'Aucun versement',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    fontStyle: FontStyle.italic,
                   ),
                 ),
               ),
-              child: SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.close),
-                  label: const Text('Fermer'),
-                ),
-              ),
             ),
-          ],
-        ),
+        ],
       ),
     );
   }
@@ -451,46 +438,78 @@ class CreditHistoryDialog extends ConsumerWidget {
     String label,
     DateTime date, {
     VoidCallback? onPrint,
+    int cashAmount = 0,
+    int omAmount = 0,
   }) {
+    // Determine payment method label
+    final List<String> methods = [];
+    if (cashAmount > 0) methods.add('Esp: ${CurrencyFormatter.formatCFA(cashAmount)}');
+    if (omAmount > 0) methods.add('OM: ${CurrencyFormatter.formatCFA(omAmount)}');
+    final methodText = methods.isNotEmpty ? methods.join(' • ') : null;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.1)),
       ),
       child: Row(
         children: [
-          const Icon(
+          Icon(
             Icons.check_circle,
-            size: 20,
-            color: Colors.green,
+            size: 16,
+            color: theme.colorScheme.primary,
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  CurrencyFormatter.formatFCFA(amount),
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        CurrencyFormatter.formatFCFA(amount),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        _formatDate(date),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 4),
+                if (methodText != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    methodText,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      fontSize: 10,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 2),
                 Text(
                   label,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
-            ),
-          ),
-          Text(
-            _formatDate(date),
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
           if (onPrint != null) ...[
@@ -499,8 +518,7 @@ class CreditHistoryDialog extends ConsumerWidget {
               icon: const Icon(Icons.print, size: 18),
               onPressed: onPrint,
               visualDensity: VisualDensity.compact,
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
+              tooltip: 'Imprimer reçu',
             ),
           ],
         ],
@@ -523,7 +541,7 @@ class CreditHistoryDialog extends ConsumerWidget {
             color: color,
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 2),
         Text(
           label,
           style: theme.textTheme.labelSmall?.copyWith(

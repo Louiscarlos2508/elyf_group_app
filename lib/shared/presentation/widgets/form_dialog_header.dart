@@ -16,13 +16,16 @@ class FormDialogHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final textGray = const Color(0xFF717182);
 
     return Row(
       children: [
         if (icon != null) ...[
-          Icon(icon, size: 24, color: const Color(0xFF0A0A0A)),
-          const SizedBox(width: 8),
+          Icon(
+            icon,
+            size: 24,
+            color: theme.colorScheme.primary,
+          ),
+          const SizedBox(width: 12),
         ],
         Expanded(
           child: Column(
@@ -32,17 +35,14 @@ class FormDialogHeader extends StatelessWidget {
                 title,
                 style: theme.textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                  color: const Color(0xFF0A0A0A),
                 ),
               ),
               if (subtitle != null) ...[
-                const SizedBox(height: 8),
+                const SizedBox(height: 4),
                 Text(
                   subtitle!,
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    fontSize: 14,
-                    color: textGray,
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -50,9 +50,9 @@ class FormDialogHeader extends StatelessWidget {
           ),
         ),
         IconButton(
-          icon: const Icon(Icons.close, size: 16),
+          icon: const Icon(Icons.close, size: 20),
           onPressed: () => Navigator.of(context).pop(),
-          color: const Color(0xFF0A0A0A).withValues(alpha: 0.7),
+          color: theme.colorScheme.onSurfaceVariant,
         ),
       ],
     );

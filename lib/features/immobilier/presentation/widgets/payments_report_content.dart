@@ -38,16 +38,23 @@ class PaymentsReportContent extends ConsumerWidget {
         return Container(
           decoration: BoxDecoration(
             color: theme.colorScheme.surface,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: theme.colorScheme.outline.withValues(alpha: 0.2),
+              color: theme.colorScheme.outline.withValues(alpha: 0.1),
             ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.02),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: LayoutBuilder(
             builder: (context, constraints) {
               final isWide = constraints.maxWidth > 600;
               if (isWide) {
-                return _buildDataTable(theme, periodPayments);
+                return _buildDataTable(context, theme, periodPayments);
               }
               return _buildMobileList(theme, periodPayments);
             },
@@ -89,7 +96,7 @@ class PaymentsReportContent extends ConsumerWidget {
     );
   }
 
-  Widget _buildDataTable(ThemeData theme, List<Payment> payments) {
+  Widget _buildDataTable(BuildContext context, ThemeData theme, List<Payment> payments) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: DataTable(
@@ -104,7 +111,7 @@ class PaymentsReportContent extends ConsumerWidget {
           DataColumn(label: Text('Montant'), numeric: true),
         ],
         rows: payments.map((payment) {
-          final statusColor = _getStatusColor(payment.status);
+          final statusColor = _getStatusColor(context, payment.status);
           return DataRow(
             cells: [
               DataCell(Text(_formatDate(payment.paymentDate))),
@@ -134,10 +141,10 @@ class PaymentsReportContent extends ConsumerWidget {
                 Text(
                   CurrencyFormatter.formatFCFA(payment.amount),
                   style: TextStyle(
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w900,
                     color: payment.status == PaymentStatus.paid
-                        ? Colors.green.shade700
-                        : Colors.orange.shade700,
+                        ? const Color(0xFF10B981)
+                        : const Color(0xFFF59E0B),
                   ),
                 ),
               ),
@@ -156,7 +163,7 @@ class PaymentsReportContent extends ConsumerWidget {
       separatorBuilder: (_, __) => const Divider(height: 1),
       itemBuilder: (context, index) {
         final payment = payments[index];
-        final statusColor = _getStatusColor(payment.status);
+        final statusColor = _getStatusColor(context, payment.status);
 
         return ListTile(
           leading: Container(
@@ -225,16 +232,16 @@ class PaymentsReportContent extends ConsumerWidget {
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
   }
 
-  Color _getStatusColor(PaymentStatus status) {
+  Color _getStatusColor(BuildContext context, PaymentStatus status) {
     switch (status) {
       case PaymentStatus.paid:
-        return Colors.green;
+        return const Color(0xFF10B981);
       case PaymentStatus.pending:
-        return Colors.orange;
+        return const Color(0xFFF59E0B);
       case PaymentStatus.overdue:
-        return Colors.red;
+        return Theme.of(context).colorScheme.error;
       case PaymentStatus.cancelled:
-        return Colors.grey;
+        return Theme.of(context).colorScheme.outline;
     }
   }
 

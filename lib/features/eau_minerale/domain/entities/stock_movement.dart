@@ -11,6 +11,7 @@ class StockMovement {
     required this.unit,
     this.productionId,
     this.notes,
+    this.updatedAt,
   });
 
   final String id;
@@ -22,6 +23,7 @@ class StockMovement {
   final String unit;
   final String? productionId; // ID de la production si lié à une production
   final String? notes; // Notes additionnelles
+  final DateTime? updatedAt;
 
   factory StockMovement.sample(int index) {
     final reasons = [

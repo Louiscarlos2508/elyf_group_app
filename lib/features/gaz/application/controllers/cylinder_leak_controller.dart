@@ -18,6 +18,14 @@ class CylinderLeakController {
     return _leakRepository.getLeaks(enterpriseId, status: status);
   }
 
+  /// Observe les fuites en temps réel.
+  Stream<List<CylinderLeak>> watchLeaks(
+    String enterpriseId, {
+    LeakStatus? status,
+  }) {
+    return _leakRepository.watchLeaks(enterpriseId, status: status);
+  }
+
   /// Récupère une fuite par ID.
   Future<CylinderLeak?> getLeakById(String id) async {
     return _leakRepository.getLeakById(id);

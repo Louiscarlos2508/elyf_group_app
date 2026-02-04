@@ -37,10 +37,17 @@ class PurchasesReportContentV2 extends ConsumerWidget {
       padding: EdgeInsets.all(isWide ? 24 : 16),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: theme.colorScheme.outline.withValues(alpha: 0.2),
+          color: theme.colorScheme.outline.withValues(alpha: 0.1),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: purchasesReportAsync.when(
         data: (data) {
@@ -87,8 +94,8 @@ class PurchasesReportContentV2 extends ConsumerWidget {
                 Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(12),
+                    color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(16),
                   ),
                   child: Center(
                     child: Text(
@@ -106,7 +113,7 @@ class PurchasesReportContentV2 extends ConsumerWidget {
             ],
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const AppShimmers.list(count: 3),
         error: (_, __) => const SizedBox.shrink(),
       ),
     );
@@ -170,10 +177,10 @@ class PurchasesReportContentV2 extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Colors.orange.withValues(alpha: 0.2),
+              color: const Color(0xFFF59E0B).withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(Icons.store, color: Colors.orange, size: 20),
+            child: const Icon(Icons.store, color: Color(0xFFF59E0B), size: 20),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -199,8 +206,8 @@ class PurchasesReportContentV2 extends ConsumerWidget {
           Text(
             CurrencyFormatter.formatFCFA(supplier.totalAmount),
             style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: Colors.orange.shade700,
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFFF59E0B),
             ),
           ),
         ],

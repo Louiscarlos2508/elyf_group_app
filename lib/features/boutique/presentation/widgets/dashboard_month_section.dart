@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
+import 'package:elyf_groupe_app/app/theme/app_colors.dart';
 
 import 'dashboard_kpi_card.dart';
 
@@ -23,6 +24,7 @@ class DashboardMonthSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return LayoutBuilder(
       builder: (context, constraints) {
         final isWide = constraints.maxWidth > 900;
@@ -33,35 +35,35 @@ class DashboardMonthSection extends StatelessWidget {
             value: CurrencyFormatter.formatFCFA(monthRevenue),
             subtitle: '$monthSalesCount ventes',
             icon: Icons.trending_up,
-            iconColor: Colors.blue,
-            backgroundColor: Colors.blue,
+            iconColor: const Color(0xFF3B82F6),
+            backgroundColor: const Color(0xFF3B82F6),
           ),
           DashboardKpiCard(
             label: 'Achats',
             value: CurrencyFormatter.formatFCFA(monthPurchasesAmount),
             subtitle: 'Approvisionnements',
             icon: Icons.shopping_bag,
-            iconColor: Colors.orange,
-            backgroundColor: Colors.orange,
+            iconColor: const Color(0xFFF59E0B),
+            backgroundColor: const Color(0xFFF59E0B),
           ),
           DashboardKpiCard(
             label: 'Dépenses',
             value: CurrencyFormatter.formatFCFA(monthExpensesAmount),
             subtitle: 'Charges',
             icon: Icons.receipt_long,
-            iconColor: Colors.red,
-            backgroundColor: Colors.red,
+            iconColor: theme.colorScheme.error,
+            backgroundColor: theme.colorScheme.error,
           ),
           DashboardKpiCard(
             label: 'Bénéfice Net',
             value: CurrencyFormatter.formatFCFA(monthProfit),
             subtitle: monthProfit >= 0 ? 'Profit' : 'Déficit',
             icon: Icons.account_balance_wallet,
-            iconColor: monthProfit >= 0 ? Colors.green : Colors.red,
+            iconColor: monthProfit >= 0 ? AppColors.success : theme.colorScheme.error,
             valueColor: monthProfit >= 0
-                ? Colors.green.shade700
-                : Colors.red.shade700,
-            backgroundColor: monthProfit >= 0 ? Colors.green : Colors.red,
+                ? AppColors.success
+                : theme.colorScheme.error,
+            backgroundColor: monthProfit >= 0 ? AppColors.success : theme.colorScheme.error,
           ),
         ];
 

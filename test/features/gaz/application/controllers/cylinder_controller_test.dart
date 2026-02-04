@@ -4,7 +4,6 @@ import 'package:mockito/annotations.dart';
 
 import 'package:elyf_groupe_app/features/gaz/application/controllers/cylinder_controller.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/repositories/gas_repository.dart';
-import 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder.dart';
 import '../../../../helpers/test_helpers.dart';
 
 import 'cylinder_controller_test.mocks.dart';

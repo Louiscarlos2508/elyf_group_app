@@ -29,13 +29,13 @@ class PropertyCardHelpers {
   static Color getStatusColor(PropertyStatus status) {
     switch (status) {
       case PropertyStatus.available:
-        return Colors.green;
+        return const Color(0xFF10B981); // Emerald
       case PropertyStatus.rented:
-        return Colors.blue;
+        return const Color(0xFF3B82F6); // Blue
       case PropertyStatus.maintenance:
-        return Colors.orange;
+        return const Color(0xFFF59E0B); // Amber
       case PropertyStatus.sold:
-        return Colors.grey;
+        return const Color(0xFF94A3B8); // Slate/Grey
     }
   }
 

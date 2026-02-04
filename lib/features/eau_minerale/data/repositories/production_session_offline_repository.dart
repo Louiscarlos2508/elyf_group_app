@@ -78,6 +78,7 @@ class ProductionSessionOfflineRepository
           ? DateTime.parse(map['updatedAt'] as String)
           : null,
       status: _parseStatus(map['status'] as String? ?? 'draft'),
+      cancelReason: map['cancelReason'] as String?,
       events: events,
       productionDays: productionDays,
     );
@@ -105,6 +106,7 @@ class ProductionSessionOfflineRepository
       'coutElectricite': entity.coutElectricite,
       'notes': entity.notes,
       'status': entity.status.name,
+      'cancelReason': entity.cancelReason,
       'eventsJson': jsonEncode(
         entity.events.map((e) => _productionEventToJson(e)).toList(),
       ),
@@ -234,24 +236,44 @@ class ProductionSessionOfflineRepository
   Future<List<ProductionSession>> getAllForEnterprise(
     String enterpriseId,
   ) async {
+    developer.log(
+      'Fetching all production sessions for enterprise: $enterpriseId (module: eau_minerale)',
+      name: 'ProductionSessionOfflineRepository',
+    );
+
     final rows = await driftService.records.listForEnterprise(
       collectionName: collectionName,
       enterpriseId: enterpriseId,
       moduleType: 'eau_minerale',
     );
-    final entities = rows
-        .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+
+    developer.log(
+      'Found ${rows.length} records for $collectionName / $enterpriseId',
+      name: 'ProductionSessionOfflineRepository',
+    );
+
+    final sessions = rows
+        .map((row) => safeDecodeJson(row.dataJson, row.localId))
+        .where((map) => map != null)
+        .map((map) => fromMap(map!))
         .toList();
 
-    var deduped = deduplicateByRemoteId(entities);
+    developer.log(
+      'Successfully decoded ${sessions.length} sessions',
+      name: 'ProductionSessionOfflineRepository',
+    );
+
+    var deduped = deduplicateByRemoteId(sessions);
     deduped = _mergeLocalBobinesIntoSync(deduped);
-    return deduped;
+    // Couche de sécurité finale pour éviter les doublons logiques (date+heure identiques)
+    return deduplicateIntelligently(deduped);
   }
 
   /// Clé pour matcher deux enregistrements de la même session (date + heure début).
+  /// Utilise UTC pour éviter les décalages de fuseau horaire.
   static String _sessionKey(ProductionSession s) {
-    final d = s.date;
-    final h = s.heureDebut;
+    final d = s.date.toUtc();
+    final h = s.heureDebut.toUtc();
     return '${d.year}-${d.month}-${d.day}-${h.hour}-${h.minute}';
   }
 
@@ -288,10 +310,11 @@ class ProductionSessionOfflineRepository
         merged.add(
           sync.copyWith(bobinesUtilisees: local.bobinesUtilisees),
         );
-        localByKey.remove(key);
       } else {
         merged.add(sync);
       }
+      // Toujours retirer du map local si on a une session sync pour cette clé
+      localByKey.remove(key);
     }
     merged.addAll(localByKey.values);
     return merged;
@@ -347,6 +370,50 @@ class ProductionSessionOfflineRepository
   }
 
   @override
+  Stream<List<ProductionSession>> watchSessions({
+    DateTime? startDate,
+    DateTime? endDate,
+  }) {
+    return driftService.records
+        .watchForEnterprise(
+          collectionName: collectionName,
+          enterpriseId: enterpriseId,
+          moduleType: 'eau_minerale',
+        )
+        .map((rows) {
+          var sessions = rows
+              .map((row) => safeDecodeJson(row.dataJson, row.localId))
+              .where((map) => map != null)
+              .map((map) => fromMap(map!))
+              .toList();
+
+          if (startDate != null) {
+            sessions = sessions
+                .where(
+                  (s) =>
+                      s.date.isAfter(startDate) ||
+                      s.date.isAtSameMomentAs(startDate),
+                )
+                .toList();
+          }
+
+          if (endDate != null) {
+            sessions = sessions
+                .where(
+                  (s) =>
+                      s.date.isBefore(endDate) || s.date.isAtSameMomentAs(endDate),
+                )
+                .toList();
+          }
+
+          // Sort by date descending
+          sessions.sort((a, b) => b.date.compareTo(a.date));
+
+          return _mergeLocalBobinesIntoSync(sessions);
+        });
+  }
+
+  @override
   Future<ProductionSession?> fetchSessionById(String id) async {
     try {
       return await getByLocalId(id);
@@ -365,8 +432,26 @@ class ProductionSessionOfflineRepository
   @override
   Future<ProductionSession> createSession(ProductionSession session) async {
     try {
+      // Vérifier si une session avec la même date et heure existe déjà
+      final existingSessions = await getAllForEnterprise(enterpriseId);
+      final key = _sessionKey(session);
+      
+      for (final existing in existingSessions) {
+        if (_sessionKey(existing) == key) {
+          developer.log(
+            'Session déjà existante pour la clé $key. Retourne la session existante.',
+            name: 'ProductionSessionOfflineRepository',
+          );
+          return existing;
+        }
+      }
+
       final localId = getLocalId(session);
-      final sessionWithLocalId = session.copyWith(id: localId);
+      final sessionWithLocalId = session.copyWith(
+        id: localId,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
       await save(sessionWithLocalId);
       return sessionWithLocalId;
     } catch (error, stackTrace) {
@@ -384,8 +469,9 @@ class ProductionSessionOfflineRepository
   @override
   Future<ProductionSession> updateSession(ProductionSession session) async {
     try {
-      await save(session);
-      return session;
+      final updatedSession = session.copyWith(updatedAt: DateTime.now());
+      await save(updatedSession);
+      return updatedSession;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       AppLogger.error(
@@ -429,6 +515,8 @@ class ProductionSessionOfflineRepository
         return ProductionSessionStatus.suspended;
       case 'completed':
         return ProductionSessionStatus.completed;
+      case 'cancelled':
+        return ProductionSessionStatus.cancelled;
       default:
         return ProductionSessionStatus.draft;
     }

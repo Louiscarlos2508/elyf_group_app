@@ -12,10 +12,11 @@ class StockSummaryCard extends ConsumerWidget {
 
   final List<Cylinder> cylinders;
 
-  Color _getStockColor(int stock) {
-    if (stock <= 5) return Colors.red;
-    if (stock <= 15) return Colors.orange;
-    return Colors.green;
+  Color _getStockColor(BuildContext context, int stock) {
+    final statusColors = Theme.of(context).extension<StatusColors>();
+    if (stock <= 5) return statusColors?.danger ?? Theme.of(context).colorScheme.error;
+    if (stock <= 15) return Colors.orange; // Amber-like theme aware if possible
+    return statusColors?.success ?? Colors.green;
   }
 
   @override
@@ -48,12 +49,12 @@ class StockSummaryCard extends ConsumerWidget {
             color: theme.colorScheme.surface,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: theme.colorScheme.outline.withValues(alpha: 0.2),
+              color: theme.colorScheme.outline.withValues(alpha: 0.1),
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.08),
-                blurRadius: 12,
+                color: Colors.black.withValues(alpha: 0.02),
+                blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
             ],
@@ -73,7 +74,7 @@ class StockSummaryCard extends ConsumerWidget {
                     return _CylinderStockRow(
                       cylinder: cylinders[i],
                       fullStock: fullStock,
-                      stockColor: _getStockColor(fullStock),
+                      stockColor: _getStockColor(context, fullStock),
                     );
                   },
                 ),
@@ -118,12 +119,12 @@ class _CylinderStockRow extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.orange.withValues(alpha: 0.1),
+              color: theme.colorScheme.primaryContainer.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.local_fire_department,
-              color: Colors.orange,
+              color: theme.colorScheme.primary,
               size: 28,
             ),
           ),
@@ -151,8 +152,8 @@ class _CylinderStockRow extends StatelessWidget {
                     Text(
                       'Vente: ${CurrencyFormatter.formatDouble(cylinder.sellPrice)}',
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: Colors.green,
-                        fontWeight: FontWeight.w500,
+                        color: const Color(0xFF10B981),
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],

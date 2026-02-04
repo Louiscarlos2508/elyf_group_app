@@ -8,6 +8,11 @@ abstract class GazSettingsRepository {
     required String moduleId,
   });
 
+  Stream<GazSettings?> watchSettings({
+    required String enterpriseId,
+    required String moduleId,
+  });
+
   /// Sauvegarde les paramètres.
   Future<void> saveSettings(GazSettings settings);
 

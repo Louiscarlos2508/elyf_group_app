@@ -25,7 +25,10 @@ class ProfileLogoutCard extends ConsumerWidget {
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
             child: const Text('Déconnexion'),
           ),
         ],
@@ -55,7 +58,7 @@ class ProfileLogoutCard extends ConsumerWidget {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: theme.colorScheme.outline.withValues(alpha: 0.2),
         ),
@@ -97,8 +100,8 @@ class ProfileLogoutCard extends ConsumerWidget {
               icon: const Icon(Icons.logout),
               label: const Text('Se déconnecter'),
               style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.red,
-                side: BorderSide(color: Colors.red.withValues(alpha: 0.5)),
+                foregroundColor: theme.colorScheme.error,
+                side: BorderSide(color: theme.colorScheme.error.withValues(alpha: 0.5)),
                 padding: const EdgeInsets.symmetric(vertical: 16),
               ),
             ),

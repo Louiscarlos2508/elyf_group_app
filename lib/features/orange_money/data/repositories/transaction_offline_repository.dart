@@ -38,6 +38,9 @@ class TransactionOfflineRepository extends OfflineRepository<Transaction>
       reference: map['reference'] as String?,
       notes: map['notes'] as String?,
       createdBy: map['createdBy'] as String?,
+      updatedAt: map['updatedAt'] != null
+          ? DateTime.parse(map['updatedAt'] as String)
+          : null,
     );
   }
 
@@ -56,6 +59,7 @@ class TransactionOfflineRepository extends OfflineRepository<Transaction>
       'reference': entity.reference,
       'notes': entity.notes,
       'createdBy': entity.createdBy,
+      'updatedAt': entity.updatedAt?.toIso8601String(),
     };
   }
 
@@ -245,6 +249,7 @@ class TransactionOfflineRepository extends OfflineRepository<Transaction>
         reference: transaction.reference,
         notes: transaction.notes,
         createdBy: transaction.createdBy,
+        updatedAt: DateTime.now(),
       );
       await save(transactionWithLocalId);
       return localId;
@@ -281,6 +286,7 @@ class TransactionOfflineRepository extends OfflineRepository<Transaction>
           reference: transaction.reference,
           notes: transaction.notes,
           createdBy: transaction.createdBy,
+          updatedAt: DateTime.now(),
         );
         await save(updatedTransaction);
       }

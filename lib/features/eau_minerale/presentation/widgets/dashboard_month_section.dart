@@ -32,46 +32,42 @@ class DashboardMonthSection extends ConsumerWidget {
       data: (sales) => clientsState.when(
         data: (clients) => financesState.when(
           data: (finances) {
-            final calculationService = ref.read(
-              dashboardCalculationServiceProvider,
-            );
-            // Convert CustomerSummary to CustomerAccount for the calculation service
-            final customerAccounts = clients.customers
-                .map(
-                  (c) => CustomerAccount(
-                    id: c.id,
-                    name: c.name,
-                    outstandingCredit: c.totalCredit,
-                    lastOrderDate: c.lastPurchaseDate ?? DateTime.now(),
-                    phone: c.phone,
-                  ),
-                )
-                .toList();
-            // Use the method that accepts ExpenseRecord list
-            final metrics = calculationService
-                .calculateMonthlyMetricsFromRecords(
-                  sales: sales.sales,
-                  customers: customerAccounts,
-                  expenses: finances.expenses,
-                );
-
-            return LayoutBuilder(
-              builder: (context, constraints) {
-                final isWide = constraints.maxWidth > 900;
+            final calculationService = ref.read(dashboardCalculationServiceProvider);
+            final summaryAsync = ref.watch(monthlyDashboardSummaryProvider);
+            
+            return summaryAsync.when(
+              data: (summary) {
+                // Convert CustomerSummary to CustomerAccount for credit calculation
+                final customerAccounts = clients.customers
+                    .map(
+                      (c) => CustomerAccount(
+                        id: c.id,
+                        name: c.name,
+                        outstandingCredit: c.totalCredit,
+                        lastOrderDate: c.lastPurchaseDate ?? DateTime.now(),
+                        phone: c.phone,
+                      ),
+                    )
+                    .toList();
+                
+                final totalCredits = calculationService.calculateTotalCredits(customerAccounts);
+                final creditCustomersCount = calculationService.countCreditCustomers(customerAccounts);
 
                 final cards = [
                   DashboardKpiCard(
                     label: 'Chiffre d\'Affaires',
-                    value: CurrencyFormatter.formatCFA(metrics.revenue),
-                    subtitle: '${metrics.salesCount} ventes',
+                    value: CurrencyFormatter.formatCFA(summary.revenue),
+                    subtitle: '${summary.salesCount} ventes',
                     icon: Icons.trending_up,
                     iconColor: Colors.blue,
                     backgroundColor: Colors.blue,
                   ),
                   DashboardKpiCard(
                     label: 'Encaissé',
-                    value: CurrencyFormatter.formatCFA(metrics.collections),
-                    subtitle: '${metrics.collectionRate.toStringAsFixed(0)}%',
+                    value: CurrencyFormatter.formatCFA(summary.collections),
+                    subtitle: summary.revenue > 0 
+                        ? '${(summary.collections / summary.revenue * 100).toStringAsFixed(0)}%'
+                        : '0%',
                     icon: Icons.attach_money,
                     iconColor: Colors.green,
                     valueColor: Colors.green.shade700,
@@ -79,66 +75,77 @@ class DashboardMonthSection extends ConsumerWidget {
                   ),
                   DashboardKpiCard(
                     label: 'Crédits en Cours',
-                    value: CurrencyFormatter.formatCFA(metrics.totalCredits),
-                    subtitle: '${metrics.creditCustomersCount} client',
+                    value: CurrencyFormatter.formatCFA(totalCredits),
+                    subtitle: '$creditCustomersCount client${creditCustomersCount > 1 ? 's' : ''}',
                     icon: Icons.calendar_today,
                     iconColor: Colors.orange,
                     backgroundColor: Colors.orange,
                   ),
                   DashboardKpiCard(
                     label: 'Résultat',
-                    value: CurrencyFormatter.formatCFA(metrics.result),
-                    subtitle: metrics.isProfit ? 'Bénéfice' : 'Déficit',
+                    value: CurrencyFormatter.formatCFA(summary.result),
+                    subtitle: summary.result >= 0 ? 'Bénéfice' : 'Déficit',
                     icon: Icons.account_balance_wallet,
-                    iconColor: metrics.isProfit ? Colors.green : Colors.red,
-                    valueColor: metrics.isProfit
+                    iconColor: summary.result >= 0 ? Colors.green : Colors.red,
+                    valueColor: summary.result >= 0
                         ? Colors.green.shade700
                         : Colors.red.shade700,
-                    backgroundColor: metrics.isProfit
+                    backgroundColor: summary.result >= 0
                         ? Colors.green
                         : Colors.red,
                   ),
                 ];
 
-                if (isWide) {
-                  return IntrinsicHeight(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Expanded(child: cards[0]),
-                        const SizedBox(width: 16),
-                        Expanded(child: cards[1]),
-                        const SizedBox(width: 16),
-                        Expanded(child: cards[2]),
-                        const SizedBox(width: 16),
-                        Expanded(child: cards[3]),
-                      ],
-                    ),
-                  );
-                }
+                return LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isWide = constraints.maxWidth > 900;
+                    
+                    if (isWide) {
+                      return IntrinsicHeight(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Expanded(child: cards[0]),
+                            const SizedBox(width: 16),
+                            Expanded(child: cards[1]),
+                            const SizedBox(width: 16),
+                            Expanded(child: cards[2]),
+                            const SizedBox(width: 16),
+                            Expanded(child: cards[3]),
+                          ],
+                        ),
+                      );
+                    }
 
-                return Column(
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    return Column(
                       children: [
-                        Expanded(child: cards[0]),
-                        const SizedBox(width: 16),
-                        Expanded(child: cards[1]),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(child: cards[0]),
+                            const SizedBox(width: 16),
+                            Expanded(child: cards[1]),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(child: cards[2]),
+                            const SizedBox(width: 16),
+                            Expanded(child: cards[3]),
+                          ],
+                        ),
                       ],
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(child: cards[2]),
-                        const SizedBox(width: 16),
-                        Expanded(child: cards[3]),
-                      ],
-                    ),
-                  ],
+                    );
+                  },
                 );
               },
+              loading: () => const SizedBox(
+                height: 200,
+                child: Center(child: CircularProgressIndicator()),
+              ),
+              error: (_, __) => const SizedBox.shrink(),
             );
           },
           loading: () => const SizedBox(

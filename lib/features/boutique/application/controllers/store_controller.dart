@@ -200,4 +200,80 @@ class StoreController {
       endDate: endDate,
     );
   }
+
+  Stream<List<Product>> watchProducts() {
+    return _productRepository.watchProducts();
+  }
+
+  Stream<List<Sale>> watchRecentSales({int limit = 50}) {
+    return _saleRepository.watchRecentSales(limit: limit);
+  }
+
+  Stream<List<Purchase>> watchPurchases({int limit = 50}) {
+    return _purchaseRepository.watchPurchases(limit: limit);
+  }
+
+  Stream<List<Expense>> watchExpenses({int limit = 50}) {
+    return _expenseRepository.watchExpenses(limit: limit);
+  }
+
+  Stream<ReportData> watchReportData(
+    ReportPeriod period, {
+    DateTime? startDate,
+    DateTime? endDate,
+  }) {
+    return _reportRepository.watchReportData(
+      period,
+      startDate: startDate,
+      endDate: endDate,
+    );
+  }
+
+  Stream<SalesReportData> watchSalesReport(
+    ReportPeriod period, {
+    DateTime? startDate,
+    DateTime? endDate,
+  }) {
+    return _reportRepository.watchSalesReport(
+      period,
+      startDate: startDate,
+      endDate: endDate,
+    );
+  }
+
+  Stream<PurchasesReportData> watchPurchasesReport(
+    ReportPeriod period, {
+    DateTime? startDate,
+    DateTime? endDate,
+  }) {
+    return _reportRepository.watchPurchasesReport(
+      period,
+      startDate: startDate,
+      endDate: endDate,
+    );
+  }
+
+  Stream<ExpensesReportData> watchExpensesReport(
+    ReportPeriod period, {
+    DateTime? startDate,
+    DateTime? endDate,
+  }) {
+    return _reportRepository.watchExpensesReport(
+      period,
+      startDate: startDate,
+      endDate: endDate,
+    );
+  }
+
+  Stream<ProfitReportData> watchProfitReport(
+    ReportPeriod period, {
+    DateTime? startDate,
+    DateTime? endDate,
+  }) {
+    return _reportRepository.watchProfitReport(
+      period,
+      startDate: startDate,
+      endDate: endDate,
+    );
+  }
 }

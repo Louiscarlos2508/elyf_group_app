@@ -71,39 +71,42 @@ class AuthSessionService {
       // Migrer les données depuis SharedPreferences si nécessaire
       await _authStorageService.migrateFromSharedPreferences();
 
-      // Vérifier la cohérence entre SecureStorage et Firebase Auth
-      // Si SecureStorage dit "logged in" mais Firebase Auth n'a pas d'utilisateur,
-      // nettoyer SecureStorage pour éviter les conflits
       final isLoggedInLocal = await _authStorageService.isLoggedIn();
-      User? firebaseUser;
-      try {
-        // Utiliser un timeout court pour éviter d'attendre indéfiniment
-        firebaseUser = await Future<User?>.value(
-          _firebaseAuth.currentUser,
-        ).timeout(const Duration(milliseconds: 1000));
-      } catch (e, stackTrace) {
-        final appException = ErrorHandler.instance.handleError(e, stackTrace);
-        AppLogger.warning(
-          'Firebase Auth not ready or timeout, trying SecureStorage: ${appException.message}',
-          name: 'auth.session',
-          error: e,
-          stackTrace: stackTrace,
-        );
-        // Si Firebase Auth n'est pas prêt, charger depuis SecureStorage
-        await _loadUserFromStorage();
-        _isInitialized = true;
-        return;
+
+      // Attendre activement que Firebase Auth restaure l'état
+      User? firebaseUser = _firebaseAuth.currentUser;
+      
+      // Si l'utilisateur est null, attendre via authStateChanges().first avec timeout
+      if (firebaseUser == null) {
+        try {
+          firebaseUser = await _firebaseAuth.authStateChanges().first.timeout(
+            const Duration(seconds: 2),
+            onTimeout: () => null,
+          );
+          if (firebaseUser != null) {
+            developer.log(
+              'User restored from authStateChanges()',
+              name: 'auth.session',
+            );
+          }
+        } catch (e) {
+          developer.log(
+            'Timeout waiting for authStateChanges(): $e',
+            name: 'auth.session',
+          );
+        }
       }
 
       // Détecter les incohérences : SecureStorage dit "logged in" mais Firebase Auth n'a pas d'utilisateur
+      // ET nous avons attendu suffisamment.
       if (isLoggedInLocal && firebaseUser == null) {
+        // En mode offline, on ne nettoie PAS les données locales si l'utilisateur y est.
+        // On permet à l'app de fonctionner avec les données de SecureStorage.
         developer.log(
-          'Inconsistency detected: SecureStorage says logged in but Firebase Auth has no user. Clearing local auth data.',
+          'Firebase Auth has no user, but SecureStorage has data. Using SecureStorage as fallback.',
           name: 'auth.session',
         );
-        // Nettoyer les données d'authentification locales pour éviter les conflits
-        await _authStorageService.clearLocalAuthData();
-        _currentUser = null;
+        await _loadUserFromStorage();
       }
 
       if (firebaseUser != null) {
@@ -366,6 +369,8 @@ class AuthSessionService {
         isFirstAdmin = false;
       }
 
+      // Only set shouldBeAdmin for NEW users (first admin or admin email)
+      // For existing users, we'll use their Firestore isAdmin value
       final shouldBeAdmin = !isFirstAdmin || email == _adminEmail;
 
       // Créer ou mettre à jour le profil utilisateur dans Firestore
@@ -374,7 +379,18 @@ class AuthSessionService {
       // ⚠️ IMPORTANT: Ne pas passer firstName/lastName pour éviter d'écraser les vraies valeurs existantes
       // Si l'utilisateur existe déjà, ses firstName/lastName seront préservés
       // Si c'est un nouvel utilisateur, ils seront vides et pourront être mis à jour via l'admin
+      // ⚠️ CRITICAL: Only pass isAdmin for NEW users, not for updates
       try {
+        // Check if user already exists in Firestore
+        Map<String, dynamic>? existingUser;
+        try {
+          existingUser = await _firestoreUserService
+              .getUserById(firebaseUser.uid)
+              .timeout(const Duration(seconds: 2));
+        } catch (e) {
+          existingUser = null; // User doesn't exist or Firestore unavailable
+        }
+
         await _firestoreUserService
             .createOrUpdateUser(
               userId: firebaseUser.uid,
@@ -382,7 +398,11 @@ class AuthSessionService {
               // Ne pas passer firstName/lastName pour éviter d'écraser les valeurs existantes
               username: email.split('@').first,
               isActive: true,
-              isAdmin: shouldBeAdmin,
+              // CRITICAL FIX: Only set isAdmin for NEW users
+              // For existing users, preserve their current isAdmin value
+              isAdmin: existingUser != null 
+                  ? (existingUser['isAdmin'] as bool? ?? false)
+                  : shouldBeAdmin,
             )
             .timeout(const Duration(seconds: 5));
       } catch (e, stackTrace) {
@@ -428,7 +448,8 @@ class AuthSessionService {
               userData?['firstName'] != null && userData?['lastName'] != null
               ? '${userData!['firstName']} ${userData['lastName']}'
               : 'Administrateur',
-          isAdmin: userData?['isAdmin'] as bool? ?? shouldBeAdmin,
+          // CRITICAL FIX: Always use Firestore data if available, only fallback to shouldBeAdmin for new users
+          isAdmin: userData?['isAdmin'] as bool? ?? false,
         );
 
         // Sauvegarder dans le stockage sécurisé

@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../shared/utils/currency_formatter.dart';
+import '../../../../shared/utils/notification_service.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/cylinder.dart';
-import '../../../../../shared/utils/notification_service.dart';
-import 'bottle_price_table_header.dart';
-import 'bottle_price_table_row.dart';
+import 'package:elyf_groupe_app/shared/presentation/widgets/app_shimmers.dart';
+import 'cylinder_form_dialog.dart';
 
 /// Tableau des tarifs des bouteilles selon le design Figma.
 class BottlePriceTable extends ConsumerWidget {
@@ -37,7 +38,10 @@ class BottlePriceTable extends ConsumerWidget {
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
             child: const Text('Supprimer'),
           ),
         ],
@@ -75,102 +79,122 @@ class BottlePriceTable extends ConsumerWidget {
     return cylindersAsync.when(
       data: (cylinders) {
         if (cylinders.isEmpty) {
-          return Container(
-            padding: const EdgeInsets.fromLTRB(25.285, 25.285, 1.305, 1.305),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border.all(
-                color: Colors.black.withValues(alpha: 0.1),
-                width: 1.305,
-              ),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: const Center(
-              child: Padding(
-                padding: EdgeInsets.all(24),
-                child: Text('Aucune bouteille créée'),
-              ),
+          return Center(
+            child: Column(
+              children: [
+                Icon(
+                  Icons.inventory_2_outlined,
+                  size: 48,
+                  color: theme.colorScheme.outline,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Aucun type de bouteille configuré',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: theme.colorScheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Ajoutez un type de bouteille pour commencer',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
             ),
           );
         }
 
-        return Container(
-          padding: const EdgeInsets.fromLTRB(25.285, 25.285, 1.305, 1.305),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border.all(
-              color: Colors.black.withValues(alpha: 0.1),
-              width: 1.305,
-            ),
-            borderRadius: BorderRadius.circular(14),
+        return ListView.separated(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: cylinders.length,
+          separatorBuilder: (context, index) => Divider(
+            height: 1,
+            color: theme.colorScheme.outlineVariant,
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // En-tête de la carte
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.inventory_2,
-                        size: 20,
-                        color: Color(0xFF0A0A0A),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Tarifs des bouteilles',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontSize: 18,
-                          fontWeight: FontWeight.normal,
-                          color: const Color(0xFF0A0A0A),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox.shrink(),
-                ],
-              ),
-              const SizedBox(height: 42),
-              // Tableau
-              Container(
+          itemBuilder: (context, index) {
+            final cylinder = cylinders[index];
+            return ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Container(
+                padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  border: Border.all(
-                    color: Colors.black.withValues(alpha: 0.1),
-                    width: 1.305,
-                  ),
-                  borderRadius: BorderRadius.circular(10),
+                  color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      minWidth: MediaQuery.of(context).size.width - 100,
+                child: Icon(
+                  Icons.propane_tank,
+                  size: 24,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              title: Text(
+                '${cylinder.weight} kg',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+              subtitle: Text.rich(
+                TextSpan(
+                  children: [
+                    TextSpan(
+                      text: 'Vente: ${CurrencyFormatter.formatDouble(cylinder.sellPrice)} FCFA',
+                      style: const TextStyle(fontWeight: FontWeight.w500),
                     ),
-                    child: Column(
+                    const TextSpan(text: '  •  '),
+                    TextSpan(
+                      text: 'Achat: ${CurrencyFormatter.formatDouble(cylinder.buyPrice)} FCFA',
+                      style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+                    ),
+                  ],
+                ),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+              trailing: PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert),
+                onSelected: (value) {
+                  if (value == 'edit') {
+                    showDialog(
+                      context: context,
+                      builder: (context) => CylinderFormDialog(cylinder: cylinder),
+                    );
+                  } else if (value == 'delete') {
+                    _deleteCylinder(context, ref, cylinder);
+                  }
+                },
+                itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                  const PopupMenuItem<String>(
+                    value: 'edit',
+                    child: Row(
                       children: [
-                        const BottlePriceTableHeader(),
-                        ...cylinders.map(
-                          (cylinder) => BottlePriceTableRow(
-                            cylinder: cylinder,
-                            onDelete: () => _deleteCylinder(
-                              context,
-                              ref,
-                              cylinder,
-                            ),
-                          ),
-                        ),
+                        Icon(Icons.edit_outlined, size: 20),
+                        SizedBox(width: 12),
+                        Text('Modifier'),
                       ],
                     ),
                   ),
-                ),
+                  const PopupMenuItem<String>(
+                    value: 'delete',
+                    child: Row(
+                      children: [
+                        Icon(Icons.delete_outline, size: 20, color: Colors.red),
+                        SizedBox(width: 12),
+                        Text('Supprimer', style: TextStyle(color: Colors.red)),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            );
+          },
         );
       },
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => AppShimmers.table(context, rows: 3),
       error: (e, _) => Center(child: Text('Erreur: $e')),
     );
   }

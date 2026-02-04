@@ -55,7 +55,7 @@ class InventoryOfflineRepository extends OfflineRepository<StockItem>
 
   @override
   String getLocalId(StockItem entity) {
-    if (entity.id.startsWith('local_')) return entity.id;
+    if (entity.id.isNotEmpty) return entity.id;
     return LocalIdGenerator.generate();
   }
 

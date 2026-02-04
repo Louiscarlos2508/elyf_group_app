@@ -2,17 +2,21 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/auth/providers.dart';
+import '../../application/onboarding_service.dart';
+
 /// Animated splash screen with ELYF branding.
-class SplashScreen extends StatefulWidget {
+class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen>
+class _SplashScreenState extends ConsumerState<SplashScreen>
     with TickerProviderStateMixin {
   Timer? _timer;
   late AnimationController _logoController;
@@ -20,7 +24,6 @@ class _SplashScreenState extends State<SplashScreen>
   late AnimationController _glowController;
   late AnimationController _waveController;
   late Animation<double> _logoScale;
-  late Animation<double> _logoRotation;
   late Animation<double> _logoOpacity;
   late Animation<double> _textFade;
   late Animation<double> _glowAnimation;
@@ -35,13 +38,7 @@ class _SplashScreenState extends State<SplashScreen>
       vsync: this,
       duration: const Duration(milliseconds: 2000),
     );
-    _logoScale = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _logoController,
-        curve: const Interval(0.0, 0.7, curve: Curves.elasticOut),
-      ),
-    );
-    _logoRotation = Tween<double>(begin: -0.5, end: 0.0).animate(
+    _logoScale = Tween<double>(begin: 0.8, end: 1.0).animate(
       CurvedAnimation(
         parent: _logoController,
         curve: const Interval(0.0, 0.8, curve: Curves.easeOutCubic),
@@ -95,9 +92,39 @@ class _SplashScreenState extends State<SplashScreen>
     // On ajoute 2.5 secondes supplémentaires pour laisser le temps d'apprécier
     _timer = Timer(const Duration(milliseconds: 7000), () {
       if (mounted) {
-        context.go('/onboarding');
+        _navigateToNextScreen();
       }
     });
+  }
+
+  /// Navigate to the appropriate screen based on authentication status
+  void _navigateToNextScreen() {
+    ref.read(currentUserProvider).when(
+      data: (user) async {
+        if (user != null) {
+          if (mounted) context.go('/modules');
+        } else {
+          // Check if onboarding is completed
+          final isOnboardingCompleted = 
+              await ref.read(onboardingServiceProvider).isCompleted();
+          
+          if (mounted) {
+            if (isOnboardingCompleted) {
+              context.go('/login');
+            } else {
+              context.go('/onboarding');
+            }
+          }
+        }
+      },
+      loading: () async {
+        // Fallback to onboarding if auth is taking too long
+        if (mounted) context.go('/onboarding');
+      },
+      error: (error, stack) {
+        if (mounted) context.go('/login');
+      },
+    );
   }
 
   @override
@@ -119,8 +146,12 @@ class _SplashScreenState extends State<SplashScreen>
       backgroundColor: colors.primary,
       body: Stack(
         children: [
-          // Animated background waves
-          _AnimatedBackground(waveAnimation: _waveAnimation, colors: colors),
+          // Animated background blobs (White blobs on Primary for high contrast)
+          _AnimatedSplashBackground(
+            animation: _waveAnimation,
+            colors: colors,
+            useContrast: true,
+          ),
           // Main content
           Center(
             child: AnimatedBuilder(
@@ -133,61 +164,53 @@ class _SplashScreenState extends State<SplashScreen>
                 return Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Animated logo container with more effects
+                    // Animated logo container (White background for logo on Primary background)
                     Opacity(
                       opacity: _logoOpacity.value,
                       child: Transform.scale(
                         scale: _logoScale.value,
-                        child: Transform.rotate(
-                          angle: _logoRotation.value * math.pi,
-                          child: Container(
-                            padding: const EdgeInsets.all(28),
-                            decoration: BoxDecoration(
-                              color: colors.onPrimary,
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: colors.onPrimary.withValues(
-                                    alpha: _glowAnimation.value * 0.6,
-                                  ),
-                                  blurRadius: 40 * _glowAnimation.value,
-                                  spreadRadius: 15 * _glowAnimation.value,
+                        child: Container(
+                          padding: const EdgeInsets.all(32),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.white.withValues(
+                                  alpha: _glowAnimation.value * 0.4,
                                 ),
-                                BoxShadow(
-                                  color: colors.onPrimary.withValues(
-                                    alpha: _glowAnimation.value * 0.3,
-                                  ),
-                                  blurRadius: 60 * _glowAnimation.value,
-                                  spreadRadius: 20 * _glowAnimation.value,
-                                ),
-                              ],
-                            ),
-                            child: Icon(
-                              Icons.layers,
-                              size: 72,
-                              color: colors.primary,
-                            ),
+                                blurRadius: 40 * _glowAnimation.value,
+                                spreadRadius: 10 * _glowAnimation.value,
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            Icons.business_rounded,
+                            size: 80,
+                            color: colors.primary,
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 48),
-                    // Animated ELYF text with enhanced effects
+                    const SizedBox(height: 60),
+                    // Animated ELYF text (White on Primary)
                     _AnimatedElyfText(
                       fadeAnimation: _textFade,
                       glowAnimation: _glowAnimation,
                       colors: colors,
                       textTheme: textTheme,
+                      useContrast: true,
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 16),
                     // Subtitle with fade
                     Opacity(
-                      opacity: _textFade.value * 0.9,
+                      opacity: _textFade.value * 0.7,
                       child: Text(
-                        'Multi-entreprises, multi-modules',
-                        style: textTheme.titleMedium?.copyWith(
-                          color: colors.onPrimary.withValues(alpha: 0.85),
-                          letterSpacing: 0.5,
+                        'GROUPE ELYF',
+                        style: textTheme.titleSmall?.copyWith(
+                          color: Colors.white.withValues(alpha: 0.6),
+                          letterSpacing: 4.0,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
@@ -202,25 +225,28 @@ class _SplashScreenState extends State<SplashScreen>
   }
 }
 
-class _AnimatedBackground extends StatelessWidget {
-  const _AnimatedBackground({
-    required this.waveAnimation,
+class _AnimatedSplashBackground extends StatelessWidget {
+  const _AnimatedSplashBackground({
+    required this.animation,
     required this.colors,
+    this.useContrast = false,
   });
 
-  final Animation<double> waveAnimation;
+  final Animation<double> animation;
   final ColorScheme colors;
+  final bool useContrast;
 
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: waveAnimation,
+      animation: animation,
       builder: (context, child) {
         return CustomPaint(
           size: Size.infinite,
-          painter: _WavePainter(
-            progress: waveAnimation.value,
-            color: colors.onPrimary.withValues(alpha: 0.05),
+          painter: _SplashBackgroundPainter(
+            progress: animation.value,
+            colors: colors,
+            useContrast: useContrast,
           ),
         );
       },
@@ -228,43 +254,60 @@ class _AnimatedBackground extends StatelessWidget {
   }
 }
 
-class _WavePainter extends CustomPainter {
-  _WavePainter({required this.progress, required this.color});
+class _SplashBackgroundPainter extends CustomPainter {
+  _SplashBackgroundPainter({
+    required this.progress,
+    required this.colors,
+    this.useContrast = false,
+  });
 
   final double progress;
-  final Color color;
+  final ColorScheme colors;
+  final bool useContrast;
 
   @override
   void paint(Canvas canvas, Size size) {
+    final bgColor = useContrast ? colors.primary : colors.surface;
+    final blobColor = useContrast ? Colors.white : colors.primary;
+
+    // Deep background
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, size.width, size.height),
+      Paint()..color = bgColor,
+    );
+
+    // Soft animated blobs
+    final blob1Center = Offset(
+      size.width * 0.3 + math.sin(progress * 2 * math.pi) * 80,
+      size.height * 0.3 + math.cos(progress * 2 * math.pi) * 80,
+    );
+    _drawBlob(canvas, blob1Center, size.width * 0.7, blobColor.withValues(alpha: 0.08));
+
+    final blob2Center = Offset(
+      size.width * 0.7 + math.cos(progress * 2 * math.pi) * 90,
+      size.height * 0.7 + math.sin(progress * 2 * math.pi) * 90,
+    );
+    _drawBlob(canvas, blob2Center, size.width * 0.6, blobColor.withValues(alpha: 0.1));
+
+    final blob3Center = Offset(
+      size.width * 0.5 + math.sin(progress * 2 * math.pi * 0.5) * 120,
+      size.height * 0.5 + math.cos(progress * 2 * math.pi * 0.5) * 120,
+    );
+    _drawBlob(canvas, blob3Center, size.width * 0.8, blobColor.withValues(alpha: 0.05));
+  }
+
+  void _drawBlob(Canvas canvas, Offset center, double radius, Color color) {
     final paint = Paint()
       ..color = color
-      ..style = PaintingStyle.fill;
-
-    final path = Path();
-    final waveHeight = 30.0;
-    final waveLength = size.width / 2;
-
-    path.moveTo(0, size.height * 0.7);
-
-    for (double x = 0; x <= size.width; x++) {
-      final y =
-          size.height * 0.7 +
-          waveHeight *
-              math.sin((x / waveLength + progress * 2 * math.pi) * 2 * math.pi);
-      path.lineTo(x, y);
-    }
-
-    path.lineTo(size.width, size.height);
-    path.lineTo(0, size.height);
-    path.close();
-
-    canvas.drawPath(path, paint);
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 100);
+    canvas.drawCircle(center, radius, paint);
   }
 
   @override
-  bool shouldRepaint(_WavePainter oldDelegate) {
-    return oldDelegate.progress != progress;
-  }
+  bool shouldRepaint(covariant _SplashBackgroundPainter oldDelegate) =>
+      oldDelegate.progress != progress ||
+      oldDelegate.colors != colors ||
+      oldDelegate.useContrast != useContrast;
 }
 
 class _AnimatedElyfText extends StatelessWidget {
@@ -273,144 +316,35 @@ class _AnimatedElyfText extends StatelessWidget {
     required this.glowAnimation,
     required this.colors,
     required this.textTheme,
+    this.useContrast = false,
   });
 
   final Animation<double> fadeAnimation;
   final Animation<double> glowAnimation;
   final ColorScheme colors;
   final TextTheme textTheme;
+  final bool useContrast;
 
   @override
   Widget build(BuildContext context) {
-    const letters = ['E', 'L', 'Y', 'F'];
-    const delays = [0.0, 0.15, 0.3, 0.45];
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      mainAxisSize: MainAxisSize.min,
-      children: List.generate(letters.length, (index) {
-        final delay = delays[index];
-
-        final letterFade = Tween<double>(begin: 0.0, end: 1.0).animate(
-          CurvedAnimation(
-            parent: fadeAnimation,
-            curve: Interval(
-              delay,
-              math.min(delay + 0.4, 1.0),
-              curve: Curves.easeOut,
+    return FadeTransition(
+      opacity: fadeAnimation,
+      child: Text(
+        'ELYF',
+        style: textTheme.displayLarge?.copyWith(
+          color: useContrast ? Colors.white : colors.primary,
+          fontWeight: FontWeight.w900,
+          fontSize: 84,
+          letterSpacing: 8,
+          shadows: [
+            Shadow(
+              color: (useContrast ? Colors.white : colors.primary).withValues(alpha: 0.1),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
             ),
-          ),
-        );
-
-        final letterScale = Tween<double>(begin: 0.3, end: 1.0).animate(
-          CurvedAnimation(
-            parent: fadeAnimation,
-            curve: Interval(
-              delay,
-              math.min(delay + 0.4, 1.0),
-              curve: Curves.elasticOut,
-            ),
-          ),
-        );
-
-        final letterSlide = Tween<double>(begin: 50.0, end: 0.0).animate(
-          CurvedAnimation(
-            parent: fadeAnimation,
-            curve: Interval(
-              delay,
-              math.min(delay + 0.4, 1.0),
-              curve: Curves.easeOutCubic,
-            ),
-          ),
-        );
-
-        final letterRotation = Tween<double>(begin: 0.3, end: 0.0).animate(
-          CurvedAnimation(
-            parent: fadeAnimation,
-            curve: Interval(
-              delay,
-              math.min(delay + 0.4, 1.0),
-              curve: Curves.easeOutBack,
-            ),
-          ),
-        );
-
-        return AnimatedBuilder(
-          animation: Listenable.merge([
-            letterFade,
-            letterScale,
-            letterSlide,
-            letterRotation,
-            glowAnimation,
-          ]),
-          builder: (context, child) {
-            return Transform.translate(
-              offset: Offset(0, letterSlide.value),
-              child: Transform.rotate(
-                angle: letterRotation.value,
-                child: Transform.scale(
-                  scale: letterScale.value,
-                  child: Opacity(
-                    opacity: letterFade.value,
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 6),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            colors.onPrimary,
-                            colors.onPrimary.withValues(
-                              alpha: 0.9 + (glowAnimation.value * 0.1),
-                            ),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: colors.onPrimary.withValues(
-                              alpha: glowAnimation.value * 0.4,
-                            ),
-                            blurRadius: 20 * glowAnimation.value,
-                            spreadRadius: 3 * glowAnimation.value,
-                          ),
-                          BoxShadow(
-                            color: colors.onPrimary.withValues(
-                              alpha: glowAnimation.value * 0.2,
-                            ),
-                            blurRadius: 40 * glowAnimation.value,
-                            spreadRadius: 5 * glowAnimation.value,
-                          ),
-                        ],
-                      ),
-                      child: Text(
-                        letters[index],
-                        style: textTheme.headlineLarge?.copyWith(
-                          color: colors.primary,
-                          fontWeight: FontWeight.w900,
-                          fontSize: 56,
-                          letterSpacing: 0,
-                          shadows: [
-                            Shadow(
-                              color: colors.primary.withValues(alpha: 0.3),
-                              blurRadius: 10,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      }),
+          ],
+        ),
+      ),
     );
   }
 }

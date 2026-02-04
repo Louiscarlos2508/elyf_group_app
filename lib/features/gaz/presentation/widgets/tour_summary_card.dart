@@ -19,7 +19,12 @@ class TourSummaryCard extends StatelessWidget {
       children: [
         // Total encaissé
         Card(
-          color: Colors.green.withValues(alpha: 0.1),
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: const Color(0xFF10B981).withValues(alpha: 0.1)),
+          ),
+          color: const Color(0xFF10B981).withValues(alpha: 0.05),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
@@ -34,8 +39,8 @@ class TourSummaryCard extends StatelessWidget {
                 Text(
                   CurrencyFormatter.formatDouble(tour.totalCollected),
                   style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green,
+                    fontWeight: FontWeight.w900,
+                    color: const Color(0xFF059669),
                   ),
                 ),
               ],
@@ -45,7 +50,12 @@ class TourSummaryCard extends StatelessWidget {
         const SizedBox(height: 12),
         // Total dépenses
         Card(
-          color: Colors.red.withValues(alpha: 0.1),
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: theme.colorScheme.error.withValues(alpha: 0.1)),
+          ),
+          color: theme.colorScheme.error.withValues(alpha: 0.05),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
@@ -60,8 +70,8 @@ class TourSummaryCard extends StatelessWidget {
                 Text(
                   CurrencyFormatter.formatDouble(tour.totalExpenses),
                   style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.red,
+                    fontWeight: FontWeight.w900,
+                    color: theme.colorScheme.error,
                   ),
                 ),
               ],
@@ -71,7 +81,16 @@ class TourSummaryCard extends StatelessWidget {
         const SizedBox(height: 12),
         // Bénéfice net
         Card(
-          color: theme.colorScheme.primaryContainer,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(
+              color: (tour.netProfit >= 0 ? const Color(0xFF10B981) : theme.colorScheme.error)
+                  .withValues(alpha: 0.15),
+            ),
+          ),
+          color: (tour.netProfit >= 0 ? const Color(0xFF10B981) : theme.colorScheme.error)
+              .withValues(alpha: 0.05),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
@@ -86,8 +105,8 @@ class TourSummaryCard extends StatelessWidget {
                 Text(
                   CurrencyFormatter.formatDouble(tour.netProfit),
                   style: theme.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: tour.netProfit >= 0 ? Colors.green : Colors.red,
+                    fontWeight: FontWeight.w900,
+                    color: tour.netProfit >= 0 ? const Color(0xFF059669) : theme.colorScheme.error,
                   ),
                 ),
               ],
@@ -97,6 +116,11 @@ class TourSummaryCard extends StatelessWidget {
         const SizedBox(height: 16),
         // Récapitulatif
         Card(
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: theme.colorScheme.outline.withValues(alpha: 0.1)),
+          ),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(

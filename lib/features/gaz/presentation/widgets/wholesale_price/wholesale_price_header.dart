@@ -15,7 +15,7 @@ class WholesalePriceHeader extends StatelessWidget {
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
             color: colors.primaryContainer,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(
             Icons.price_check,

@@ -29,6 +29,17 @@ class PointOfSaleController {
     return result;
   }
 
+  /// Observe les points de vente en temps réel.
+  Stream<List<PointOfSale>> watchPointsOfSale({
+    required String enterpriseId,
+    required String moduleId,
+  }) {
+    return _repository.watchPointsOfSale(
+      enterpriseId: enterpriseId,
+      moduleId: moduleId,
+    );
+  }
+
   /// Récupère un point de vente par son ID.
   Future<PointOfSale?> getPointOfSaleById(String id) async {
     return _repository.getPointOfSaleById(id);

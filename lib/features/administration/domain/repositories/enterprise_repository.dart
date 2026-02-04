@@ -5,6 +5,9 @@ abstract class EnterpriseRepository {
   /// Récupère toutes les entreprises
   Future<List<Enterprise>> getAllEnterprises();
 
+  /// Surveille toutes les entreprises (Stream)
+  Stream<List<Enterprise>> watchAllEnterprises();
+
   /// Récupère les entreprises avec pagination (LIMIT/OFFSET au niveau Drift).
   ///
   /// Returns a paginated list of enterprises and the total count.

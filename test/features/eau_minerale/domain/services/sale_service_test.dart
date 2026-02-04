@@ -1,9 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:elyf_groupe_app/features/eau_minerale/domain/services/sale_service.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/adapters/pack_stock_adapter.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/domain/repositories/stock_repository.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/domain/repositories/customer_repository.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/sale.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/stock_movement.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/services/sale_service.dart';
 
 // Mock implementations
 class MockStockRepository implements StockRepository {
@@ -41,6 +42,11 @@ class MockStockRepository implements StockRepository {
   Future<List<String>> getLowStockAlerts(int thresholdPercent) async {
     return [];
   }
+}
+
+class MockPackStockAdapter implements PackStockAdapter {
+  @override
+  Future<int> getPackStock({String? productId}) async => 0;
 }
 
 class MockCustomerRepository implements CustomerRepository {
@@ -81,41 +87,35 @@ void main() {
       service = SaleService(
         stockRepository: mockStockRepository,
         customerRepository: mockCustomerRepository,
+        packStockAdapter: MockPackStockAdapter(),
       );
     });
 
-    group('validateStockAvailability', () {
-      test('should return true when stock is sufficient', () async {
+    group('validateSale', () {
+      test('should return null when stock is sufficient', () async {
         mockStockRepository.setStock('product1', 100);
 
-        final result = await service.validateStockAvailability(
+        final result = await service.validateSale(
           productId: 'product1',
           quantity: 50,
+          totalPrice: 1000,
+          amountPaid: 1000,
         );
 
-        expect(result, isTrue);
+        expect(result, isNull);
       });
 
-      test('should return false when stock is insufficient', () async {
+      test('should return error when stock is insufficient', () async {
         mockStockRepository.setStock('product1', 10);
 
-        final result = await service.validateStockAvailability(
+        final result = await service.validateSale(
           productId: 'product1',
           quantity: 50,
+          totalPrice: 1000,
+          amountPaid: 1000,
         );
 
-        expect(result, isFalse);
-      });
-
-      test('should return true when quantity equals stock', () async {
-        mockStockRepository.setStock('product1', 50);
-
-        final result = await service.validateStockAvailability(
-          productId: 'product1',
-          quantity: 50,
-        );
-
-        expect(result, isTrue);
+        expect(result, contains('Stock insuffisant'));
       });
     });
 

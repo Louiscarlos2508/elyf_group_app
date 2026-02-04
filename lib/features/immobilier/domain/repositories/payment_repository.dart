@@ -20,6 +20,9 @@ abstract class PaymentRepository {
   /// Met à jour un paiement existant.
   Future<Payment> updatePayment(Payment payment);
 
+  /// Observe les paiements.
+  Stream<List<Payment>> watchPayments();
+
   /// Supprime un paiement.
   Future<void> deletePayment(String id);
 }

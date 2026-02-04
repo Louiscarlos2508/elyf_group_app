@@ -5,10 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../domain/entities/daily_worker.dart';
-import '../../domain/entities/production_session.dart';
 import '../../domain/entities/production_payment.dart';
 import '../../domain/entities/production_payment_person.dart';
-import '../../domain/entities/payment_status.dart';
+import '../../domain/entities/weekly_salary_info.dart';
 import 'payment_signature_dialog.dart';
 
 /// Widget pour calculer et afficher les salaires hebdomadaires des ouvriers journaliers.
@@ -37,102 +36,23 @@ class _WeeklySalaryCalculatorState
     return date.subtract(Duration(days: date.weekday - 1));
   }
 
-  /// Calcule les salaires hebdomadaires à partir des ProductionDay
-  Map<String, WeeklySalaryInfo> _calculateWeeklySalaries(
-    List<DailyWorker> workers,
-    List<ProductionSession> sessions,
-  ) {
-    final salaries = <String, WeeklySalaryInfo>{};
-    final debutSemaine = _getStartOfWeek(_selectedWeek);
-    final finSemaine = debutSemaine.add(const Duration(days: 6));
-
-    // Créer une map pour accéder rapidement aux ouvriers par ID
-    final workersMap = {for (var w in workers) w.id: w};
-
-    for (final session in sessions) {
-      for (final day in session.productionDays) {
-        // Vérifier si le jour est dans la semaine sélectionnée
-        if (day.date.isAfter(debutSemaine.subtract(const Duration(days: 1))) &&
-            day.date.isBefore(finSemaine.add(const Duration(days: 1)))) {
-          
-          // Ignorer les jours déjà payés
-          if (day.paymentStatus == PaymentStatus.paid || 
-              day.paymentStatus == PaymentStatus.verified) {
-            continue;
-          }
-
-          // Pour chaque personne dans le jour de production
-          for (final workerId in day.personnelIds) {
-            final worker = workersMap[workerId];
-            final workerName = worker?.name ?? 'Ouvrier $workerId';
-            final tauxJour =
-                worker?.salaireJournalier ?? day.salaireJournalierParPersonne;
-
-            if (!salaries.containsKey(workerId)) {
-              salaries[workerId] = WeeklySalaryInfo(
-                workerId: workerId,
-                workerName: workerName,
-                daysWorked: 0,
-                dailySalary: tauxJour,
-                totalSalary: 0,
-                productionDayIds: [],
-              );
-            }
-
-            final info = salaries[workerId]!;
-            salaries[workerId] = WeeklySalaryInfo(
-              workerId: workerId,
-              workerName: workerName,
-              daysWorked: info.daysWorked + 1,
-              dailySalary: tauxJour,
-              totalSalary: info.totalSalary + tauxJour,
-              productionDayIds: [...info.productionDayIds, day.id],
-            );
-          }
-        }
-      }
-    }
-
-    return salaries;
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final debutSemaine = _getStartOfWeek(_selectedWeek);
-    final finSemaine = debutSemaine.add(const Duration(days: 6));
 
-    // Utiliser ref.watch pour que le widget se reconstruise quand les données changent
-    final workersAsync = ref.watch(allDailyWorkersProvider);
-    final sessionsAsync = ref.watch(productionSessionsInPeriodProvider((
-      start: debutSemaine,
-      end: finSemaine,
-    )));
+    // Utiliser le nouveau provider qui gère la résolution asynchrone des ouvriers
+    final salariesAsync = ref.watch(weeklySalariesProvider(_selectedWeek));
 
-    return workersAsync.when(
-      data: (workers) {
-        return sessionsAsync.when(
-          data: (sessions) {
-            final salaries = _calculateWeeklySalaries(workers, sessions);
-            final total = salaries.values.fold<int>(
-              0,
-              (sum, info) => sum + info.totalSalary,
-            );
-            return _buildContent(context, theme, salaries, total);
-          },
-          loading: () => Card(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: const Center(child: CircularProgressIndicator()),
-            ),
-          ),
-          error: (error, stack) => Card(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Center(child: Text('Erreur (sessions): $error')),
-            ),
-          ),
+    return salariesAsync.when(
+      data: (salariesList) {
+        // Convert to map for compatibility if needed, but list is fine
+        final Map<String, WeeklySalaryInfo> salaries = { for (var s in salariesList) s.workerId : s };
+        
+        final total = salaries.values.fold<int>(
+          0,
+          (sum, info) => sum + info.totalSalary,
         );
+        return _buildContent(context, theme, salaries, total);
       },
       loading: () => Card(
         child: Padding(
@@ -143,7 +63,7 @@ class _WeeklySalaryCalculatorState
       error: (error, stack) => Card(
         child: Padding(
           padding: const EdgeInsets.all(24),
-          child: Center(child: Text('Erreur (workers): $error')),
+          child: Center(child: Text('Erreur: $error')),
         ),
       ),
     );
@@ -204,7 +124,7 @@ class _WeeklySalaryCalculatorState
                   Icon(
                     Icons.work_outline,
                     size: 64,
-                    color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5),
+                    color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
                   ),
                   const SizedBox(height: 16),
                   Text(
@@ -228,10 +148,10 @@ class _WeeklySalaryCalculatorState
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+              color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                  color: theme.colorScheme.primaryContainer.withOpacity(0.5)),
+                  color: theme.colorScheme.primaryContainer.withValues(alpha: 0.5)),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -288,6 +208,13 @@ class _WeeklySalaryCalculatorState
   }
 
   void _showPaymentDialog(BuildContext context, WeeklySalaryInfo info) {
+    // Check if worker name is unknown/missing
+    if (info.workerName.startsWith('Ouvrier inconnu') || 
+       (info.workerName.startsWith('Ouvrier ') && info.workerName.contains(info.workerId))) {
+       _showNameCorrectionDialog(context, info);
+       return;
+    }
+
     showDialog(
       context: context,
       builder: (dialogContext) => PaymentSignatureDialog(
@@ -305,6 +232,7 @@ class _WeeklySalaryCalculatorState
             paymentDate: DateTime.now(),
             persons: [
               ProductionPaymentPerson(
+                workerId: info.workerId,
                 name: info.workerName,
                 pricePerDay: info.dailySalary,
                 daysWorked: info.daysWorked,
@@ -369,6 +297,7 @@ class _WeeklySalaryCalculatorState
               .toList();
               
           final persons = salaries.map((s) => ProductionPaymentPerson(
+            workerId: s.workerId,
             name: s.workerName,
             pricePerDay: s.dailySalary,
             daysWorked: s.daysWorked,
@@ -416,6 +345,87 @@ class _WeeklySalaryCalculatorState
     );
   }
 
+  void _showNameCorrectionDialog(BuildContext context, WeeklySalaryInfo info) {
+    final nameController = TextEditingController();
+    final phoneController = TextEditingController();
+    
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Informations ouvrier manquantes'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('ID: ${info.workerId}', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+            const SizedBox(height: 8),
+            const Text('Veuillez entrer les informations pour continuer le paiement.'),
+            const SizedBox(height: 16),
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(
+                labelText: 'Nom complet',
+                border: OutlineInputBorder(),
+              ),
+              autofocus: true,
+              textCapitalization: TextCapitalization.words,
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: phoneController,
+              decoration: const InputDecoration(
+                labelText: 'Téléphone',
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.phone,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Annuler'),
+          ),
+          FilledButton(
+            onPressed: () async {
+               final name = nameController.text.trim();
+               final phone = phoneController.text.trim();
+               
+               if (name.isEmpty) return;
+               Navigator.pop(dialogContext);
+               
+               try {
+                 final worker = DailyWorker(
+                    id: info.workerId,
+                    name: name,
+                    phone: phone, 
+                    salaireJournalier: info.dailySalary,
+                    joursTravailles: [],
+                 );
+                 
+                 await ref.read(dailyWorkerRepositoryProvider).createWorker(worker);
+                 
+                 ref.invalidate(allDailyWorkersProvider);
+                 ref.invalidate(weeklySalariesProvider(_selectedWeek));
+                 ref.invalidate(salaryStateProvider);
+                 ref.invalidate(productionSessionsStateProvider);
+
+                 if (mounted) {
+                   NotificationService.showSuccess(context, 'Informations enregistrées avec succès');
+                 }
+               } catch (e) {
+                 if (mounted) {
+                   NotificationService.showError(context, 'Erreur: $e');
+                 }
+               }
+            },
+            child: const Text('Enregistrer'),
+          ),
+        ],
+      ),
+    );
+  }
+
   String _formatWeek(DateTime date) {
     final debut = _getStartOfWeek(date);
     final fin = debut.add(const Duration(days: 6));
@@ -429,24 +439,6 @@ class _WeeklySalaryCalculatorState
   }
 }
 
-/// Informations sur le salaire hebdomadaire d'un ouvrier
-class WeeklySalaryInfo {
-  const WeeklySalaryInfo({
-    required this.workerId,
-    required this.workerName,
-    required this.daysWorked,
-    required this.dailySalary,
-    required this.totalSalary,
-    required this.productionDayIds,
-  });
-
-  final String workerId;
-  final String workerName;
-  final int daysWorked;
-  final int dailySalary;
-  final int totalSalary;
-  final List<String> productionDayIds;
-}
 
 class _SalaryCard extends StatelessWidget {
   const _SalaryCard({required this.info, required this.onPay});

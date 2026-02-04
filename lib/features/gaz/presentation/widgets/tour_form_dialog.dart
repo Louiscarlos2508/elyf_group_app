@@ -21,9 +21,10 @@ class _TourFormDialogState extends ConsumerState<TourFormDialog>
     with FormHelperMixin {
   final _formKey = GlobalKey<FormState>();
   DateTime _selectedDate = DateTime.now();
-  final _loadingFeeController = TextEditingController(text: '200');
-  final _unloadingFeeController = TextEditingController(text: '25');
+  final _loadingFeeController = TextEditingController();
+  final _unloadingFeeController = TextEditingController();
   String? _enterpriseId;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -41,8 +42,7 @@ class _TourFormDialogState extends ConsumerState<TourFormDialog>
     await handleFormSubmit(
       context: context,
       formKey: _formKey,
-      onLoadingChanged:
-          (_) {}, // Pas besoin de gestion d'état de chargement séparée
+      onLoadingChanged: (loading) => setState(() => _isLoading = loading),
       onSubmit: () async {
         final controller = ref.read(tourControllerProvider);
 
@@ -167,7 +167,7 @@ class _TourFormDialogState extends ConsumerState<TourFormDialog>
                     Expanded(
                       child: OutlinedButton(
                         onPressed: () => Navigator.of(context).pop(),
-                        style: GazButtonStyles.outlined,
+                        style: GazButtonStyles.outlined(context),
                         child: const Text(
                           'Annuler',
                           style: TextStyle(fontSize: 14),
@@ -177,12 +177,21 @@ class _TourFormDialogState extends ConsumerState<TourFormDialog>
                     const SizedBox(width: 8),
                     Expanded(
                       child: FilledButton(
-                        onPressed: _submit,
-                        style: GazButtonStyles.filledPrimary,
-                        child: const Text(
-                          'Créer',
-                          style: TextStyle(fontSize: 14),
-                        ),
+                        onPressed: _isLoading ? null : _submit,
+                        style: GazButtonStyles.filledPrimary(context),
+                        child: _isLoading
+                            ? const SizedBox(
+                                height: 16,
+                                width: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Text(
+                                'Créer',
+                                style: TextStyle(fontSize: 14),
+                              ),
                       ),
                     ),
                   ],

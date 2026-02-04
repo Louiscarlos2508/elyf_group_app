@@ -66,8 +66,8 @@ class RetailNewSaleTab extends ConsumerWidget {
               enterpriseId: enterpriseId,
               onCylinderTap: onCylinderTap,
             ),
-            loading: () => const SliverFillRemaining(
-              child: Center(child: CircularProgressIndicator()),
+            loading: () => SliverFillRemaining(
+              child: AppShimmers.list(context),
             ),
             error: (e, _) =>
                 SliverFillRemaining(child: Center(child: Text('Erreur: $e'))),

@@ -27,17 +27,42 @@ class ProductTile extends StatelessWidget {
 
     return Card(
       clipBehavior: Clip.antiAlias,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: theme.colorScheme.outline.withValues(alpha: 0.1),
+        ),
+      ),
       child: InkWell(
         onTap: product.stock > 0 ? onTap : null,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Expanded(
-              child: Container(
-                color: theme.colorScheme.surfaceContainerHighest,
-                child: product.imageUrl != null
-                    ? _buildProductImage(product.imageUrl!, theme)
-                    : _buildPlaceholder(theme),
+              child: Stack(
+                children: [
+                  Container(
+                    width: double.infinity,
+                    color: theme.colorScheme.surfaceContainerHighest,
+                    child: product.imageUrl != null
+                        ? _buildProductImage(product.imageUrl!, theme)
+                        : _buildPlaceholder(theme),
+                  ),
+                  if (product.stock == 0)
+                    Container(
+                      color: Colors.black.withValues(alpha: 0.5),
+                      child: Center(
+                        child: Text(
+                          'RUPTURE',
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
             Padding(
@@ -50,51 +75,56 @@ class ProductTile extends StatelessWidget {
                     style: theme.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
-                    maxLines: 2,
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
                   Text(
                     CurrencyFormatter.formatFCFA(product.price),
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
                       color: theme.colorScheme.primary,
+                      fontSize: 16,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 8),
                   Row(
                     children: [
                       Icon(
-                        Icons.inventory_2,
+                        Icons.inventory_2_outlined,
                         size: 14,
                         color: isLowStock
-                            ? Colors.orange
+                            ? const Color(0xFFF59E0B)
                             : theme.colorScheme.onSurfaceVariant,
                       ),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
                           'Stock: ${product.stock}',
-                          style: theme.textTheme.bodySmall?.copyWith(
+                          style: theme.textTheme.labelSmall?.copyWith(
                             color: isLowStock
-                                ? Colors.orange
+                                ? const Color(0xFFF59E0B)
                                 : theme.colorScheme.onSurfaceVariant,
                             fontWeight: isLowStock
-                                ? FontWeight.w600
+                                ? FontWeight.w700
                                 : FontWeight.normal,
                           ),
                         ),
                       ),
                       if (showRestockButton && onRestock != null)
-                        InkWell(
-                          onTap: onRestock,
-                          borderRadius: BorderRadius.circular(4),
-                          child: Padding(
-                            padding: const EdgeInsets.all(4),
-                            child: Icon(
-                              Icons.add_shopping_cart,
-                              size: 18,
-                              color: theme.colorScheme.primary,
+                        Material(
+                          color: theme.colorScheme.primaryContainer,
+                          borderRadius: BorderRadius.circular(8),
+                          child: InkWell(
+                            onTap: onRestock,
+                            borderRadius: BorderRadius.circular(8),
+                            child: Padding(
+                              padding: const EdgeInsets.all(6),
+                              child: Icon(
+                                Icons.add_shopping_cart_rounded,
+                                size: 16,
+                                color: theme.colorScheme.onPrimaryContainer,
+                              ),
                             ),
                           ),
                         ),

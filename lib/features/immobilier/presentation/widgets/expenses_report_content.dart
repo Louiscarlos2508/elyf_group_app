@@ -38,16 +38,23 @@ class ExpensesReportContent extends ConsumerWidget {
         return Container(
           decoration: BoxDecoration(
             color: theme.colorScheme.surface,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: theme.colorScheme.outline.withValues(alpha: 0.2),
+              color: theme.colorScheme.outline.withValues(alpha: 0.1),
             ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.02),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: LayoutBuilder(
             builder: (context, constraints) {
               final isWide = constraints.maxWidth > 600;
               if (isWide) {
-                return _buildDataTable(theme, periodExpenses);
+                return _buildDataTable(context, theme, periodExpenses);
               }
               return _buildMobileList(theme, periodExpenses);
             },
@@ -89,7 +96,7 @@ class ExpensesReportContent extends ConsumerWidget {
     );
   }
 
-  Widget _buildDataTable(ThemeData theme, List<PropertyExpense> expenses) {
+  Widget _buildDataTable(BuildContext context, ThemeData theme, List<PropertyExpense> expenses) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: DataTable(
@@ -104,7 +111,7 @@ class ExpensesReportContent extends ConsumerWidget {
           DataColumn(label: Text('Montant'), numeric: true),
         ],
         rows: expenses.map((expense) {
-          final color = _getCategoryColor(expense.category);
+          final color = _getCategoryColor(context, expense.category);
           return DataRow(
             cells: [
               DataCell(Text(_formatDate(expense.expenseDate))),
@@ -134,8 +141,8 @@ class ExpensesReportContent extends ConsumerWidget {
                 Text(
                   CurrencyFormatter.formatFCFA(expense.amount),
                   style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: Colors.red.shade700,
+                    fontWeight: FontWeight.w900,
+                    color: theme.colorScheme.error,
                   ),
                 ),
               ),
@@ -154,7 +161,7 @@ class ExpensesReportContent extends ConsumerWidget {
       separatorBuilder: (_, __) => const Divider(height: 1),
       itemBuilder: (context, index) {
         final expense = expenses[index];
-        final color = _getCategoryColor(expense.category);
+        final color = _getCategoryColor(context, expense.category);
 
         return ListTile(
           leading: Container(
@@ -244,22 +251,22 @@ class ExpensesReportContent extends ConsumerWidget {
     }
   }
 
-  Color _getCategoryColor(ExpenseCategory category) {
+  Color _getCategoryColor(BuildContext context, ExpenseCategory category) {
     switch (category) {
       case ExpenseCategory.maintenance:
-        return Colors.orange;
+        return const Color(0xFFF59E0B);
       case ExpenseCategory.repair:
-        return Colors.red;
+        return Theme.of(context).colorScheme.error;
       case ExpenseCategory.utilities:
-        return Colors.blue;
+        return const Color(0xFF3B82F6);
       case ExpenseCategory.insurance:
-        return Colors.green;
+        return const Color(0xFF10B981);
       case ExpenseCategory.taxes:
-        return Colors.purple;
+        return const Color(0xFF8B5CF6);
       case ExpenseCategory.cleaning:
-        return Colors.teal;
+        return const Color(0xFF14B8A6);
       case ExpenseCategory.other:
-        return Colors.grey;
+        return Theme.of(context).colorScheme.outline;
     }
   }
 }

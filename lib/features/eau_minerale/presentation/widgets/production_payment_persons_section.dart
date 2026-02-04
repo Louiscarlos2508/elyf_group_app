@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../domain/entities/production_day.dart';
+import '../../domain/entities/payment_status.dart';
 import '../../domain/entities/production_payment_person.dart';
 import 'production_payment_person_row.dart';
 import 'production_period_formatter.dart';
@@ -68,18 +69,34 @@ class ProductionPaymentPersonsSection extends ConsumerWidget {
         return;
       }
 
-      // Extraire tous les ProductionDay
+      // Extraire tous les ProductionDay non payés
       final productionDays = <ProductionDay>[];
+      var alreadyPaidCount = 0;
+      
       for (final session in sessionsInPeriod) {
-        productionDays.addAll(session.productionDays);
+        for (final day in session.productionDays) {
+          if (day.paymentStatus == PaymentStatus.paid || 
+              day.paymentStatus == PaymentStatus.verified) {
+            alreadyPaidCount++;
+          } else {
+            productionDays.add(day);
+          }
+        }
       }
 
       if (productionDays.isEmpty) {
         if (context.mounted) {
-          NotificationService.showWarning(
-            context,
-            'Aucun personnel journalier enregistré pour cette période.',
-          );
+          if (alreadyPaidCount > 0) {
+            NotificationService.showWarning(
+              context,
+              'Tous les jours de cette période ont déjà été payés ($alreadyPaidCount jours ignorer).',
+            );
+          } else {
+            NotificationService.showWarning(
+              context,
+              'Aucun personnel journalier enregistré pour cette période.',
+            );
+          }
         }
         return;
       }
@@ -104,6 +121,7 @@ class ProductionPaymentPersonsSection extends ConsumerWidget {
         if (worker != null) {
           personsToPay.add(
             ProductionPaymentPerson(
+              workerId: entry.key,
               name: worker.name,
               pricePerDay: worker.salaireJournalier,
               daysWorked: entry.value,
@@ -135,9 +153,13 @@ class ProductionPaymentPersonsSection extends ConsumerWidget {
       onSourceDaysLoaded?.call(sourceDayIds);
 
       if (context.mounted) {
+        final message = alreadyPaidCount > 0
+            ? '${personsToPay.length} personne(s) chargée(s). $alreadyPaidCount jour(s) déjà payé(s) ont été ignorés.'
+            : '${personsToPay.length} personne(s) chargée(s) depuis les sessions de production.';
+            
         NotificationService.showSuccess(
           context,
-          '${personsToPay.length} personne(s) chargée(s) depuis les sessions de production.',
+          message,
         );
       }
     } catch (e) {

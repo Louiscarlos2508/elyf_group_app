@@ -23,6 +23,9 @@ abstract class ContractRepository {
   /// Met à jour un contrat existant.
   Future<Contract> updateContract(Contract contract);
 
+  /// Observe les contrats.
+  Stream<List<Contract>> watchContracts();
+
   /// Supprime un contrat.
   Future<void> deleteContract(String id);
 }

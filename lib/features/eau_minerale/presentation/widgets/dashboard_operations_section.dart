@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/controllers/finances_controller.dart'
     show FinancesState;
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
+import '../../domain/entities/production_session_status.dart';
 import 'dashboard_kpi_card.dart';
 
 /// Section displaying operations KPIs.
@@ -35,28 +36,32 @@ class DashboardOperationsSection extends ConsumerWidget {
                 final now = DateTime.now();
                 final monthStart = calculationService.getMonthStart(now);
 
-                // Calculer la production du mois avec les sessions
+                // Calculer la production du mois avec les sessions (exclut les annulées)
+                final monthProduction = calculationService.calculateMonthlyProduction(
+                  sessions,
+                  monthStart,
+                );
                 final monthSessions = sessions
-                    .where((s) => s.date.isAfter(monthStart))
+                    .where((s) =>
+                        (s.date.isAfter(monthStart) ||
+                            s.date.isAtSameMomentAs(monthStart)) &&
+                        s.status != ProductionSessionStatus.cancelled)
                     .toList();
-                final monthProduction = monthSessions.fold<int>(
-                  0,
-                  (sum, s) => sum + s.quantiteProduite,
+
+                // Calculer les dépenses du mois (inclut les salaires pour le total)
+                final monthExpenses = calculationService.calculateMonthlyExpensesFromRecords(
+                  expenses: finances.expenses,
+                  salaryPayments: salaryState.monthlySalaryPayments,
+                  productionPayments: salaryState.productionPayments,
+                  sessions: sessions, // Added validation logic
+                  monthStart: monthStart,
+                );
+                final expensesCount = calculationService.countMonthlyExpensesFromRecords(
+                  finances.expenses,
+                  monthStart,
                 );
 
-                // Calculer les dépenses du mois
-                final monthExpenses = calculationService
-                    .calculateMonthlyExpensesFromRecords(
-                      finances.expenses,
-                      monthStart,
-                    );
-                final expensesCount = calculationService
-                    .countMonthlyExpensesFromRecords(
-                      finances.expenses,
-                      monthStart,
-                    );
-
-                // Calculer les salaires du mois
+                // Calculer les salaires du mois séparément pour l'affichage spécifique
                 final monthSalaryPayments = salaryState.monthlySalaryPayments
                     .where((p) => p.date.isAfter(monthStart))
                     .toList();

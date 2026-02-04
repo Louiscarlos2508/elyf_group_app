@@ -10,6 +10,13 @@ abstract class TourRepository {
     DateTime? to,
   });
 
+  Stream<List<Tour>> watchTours(
+    String enterpriseId, {
+    TourStatus? status,
+    DateTime? from,
+    DateTime? to,
+  });
+
   /// Récupère un tour par son ID.
   Future<Tour?> getTourById(String id);
 

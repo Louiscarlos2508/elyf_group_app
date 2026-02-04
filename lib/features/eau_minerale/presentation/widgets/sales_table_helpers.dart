@@ -2,11 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:open_file/open_file.dart';
 
 import '../../domain/entities/sale.dart';
-import 'invoice_print/invoice_print_button.dart';
 import 'invoice_print/invoice_print_service.dart';
-import 'sale_detail_dialog.dart';
-import 'sale_form.dart';
-import 'package:elyf_groupe_app/shared.dart';
 
 /// Helper widgets for sales table.
 class SalesTableHelpers {
@@ -118,7 +114,7 @@ class _PrintOptionsSheet extends StatefulWidget {
 
 class _PrintOptionsSheetState extends State<_PrintOptionsSheet> {
   bool _isSunmiAvailable = false;
-  bool _isPrinting = false;
+  final bool _isPrinting = false;
 
   @override
   void initState() {

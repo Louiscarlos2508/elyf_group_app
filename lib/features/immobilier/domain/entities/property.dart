@@ -29,6 +29,37 @@ class Property {
   final List<String>? amenities;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  Property copyWith({
+    String? id,
+    String? address,
+    String? city,
+    PropertyType? propertyType,
+    int? rooms,
+    int? area,
+    int? price,
+    PropertyStatus? status,
+    String? description,
+    List<String>? images,
+    List<String>? amenities,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return Property(
+      id: id ?? this.id,
+      address: address ?? this.address,
+      city: city ?? this.city,
+      propertyType: propertyType ?? this.propertyType,
+      rooms: rooms ?? this.rooms,
+      area: area ?? this.area,
+      price: price ?? this.price,
+      status: status ?? this.status,
+      description: description ?? this.description,
+      images: images ?? this.images,
+      amenities: amenities ?? this.amenities,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
 }
 
 enum PropertyType { house, apartment, studio, villa, commercial }

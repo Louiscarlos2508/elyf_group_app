@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:elyf_groupe_app/shared.dart' hide ProfileScreen;
 
 import 'package:elyf_groupe_app/features/administration/application/providers.dart'
     show permissionServiceProvider;
@@ -49,6 +50,28 @@ final eauMineralePermissionAdapterProvider =
         userId: ref.watch(currentUserIdProvider),
       ),
     );
+
+/// Provider to check a specific permission.
+/// Results are cached and properly handled via AsyncValue.
+final hasPermissionProvider =
+    FutureProvider.family<bool, String>((ref, permissionId) async {
+      final adapter = ref.watch(eauMineralePermissionAdapterProvider);
+      return await adapter.hasPermission(permissionId);
+    });
+
+/// Provider to check if user has any of the specified permissions.
+final hasAnyPermissionProvider =
+    FutureProvider.family<bool, Set<String>>((ref, permissionIds) async {
+      final adapter = ref.watch(eauMineralePermissionAdapterProvider);
+      return await adapter.hasAnyPermission(permissionIds);
+    });
+
+/// Provider to check if user has all specified permissions.
+final hasAllPermissionsProvider =
+    FutureProvider.family<bool, Set<String>>((ref, permissionIds) async {
+      final adapter = ref.watch(eauMineralePermissionAdapterProvider);
+      return await adapter.hasAllPermissions(permissionIds);
+    });
 
 /// Configuration for a section in the module shell.
 class EauMineraleSectionConfig {
@@ -153,3 +176,36 @@ final accessibleSectionsProvider =
 
       return accessible;
     });
+
+/// Provider for navigation sections used in the shell.
+/// Memoizes the conversion from EauMineraleSectionConfig to NavigationSection.
+final navigationSectionsProvider = Provider.family<
+  List<NavigationSection>,
+  ({String enterpriseId, String moduleId})
+>((ref, params) {
+  final sectionsAsync = ref.watch(accessibleSectionsProvider);
+
+  return sectionsAsync.maybeWhen(
+    data: (configs) {
+      final primarySectionIds = {
+        EauMineraleSection.activity,
+        EauMineraleSection.production,
+        EauMineraleSection.sales,
+        EauMineraleSection.stock,
+        EauMineraleSection.clients,
+      };
+
+      return configs.map((config) {
+        return NavigationSection(
+          label: config.label,
+          icon: config.icon,
+          builder: config.builder,
+          isPrimary: primarySectionIds.contains(config.id),
+          enterpriseId: params.enterpriseId,
+          moduleId: params.moduleId,
+        );
+      }).toList();
+    },
+    orElse: () => [],
+  );
+});

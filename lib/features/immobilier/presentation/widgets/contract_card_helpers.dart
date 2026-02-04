@@ -34,13 +34,13 @@ class ContractCardHelpers {
   static Color getStatusColor(ContractStatus status) {
     switch (status) {
       case ContractStatus.active:
-        return Colors.green;
+        return const Color(0xFF10B981); // Emerald
       case ContractStatus.expired:
-        return Colors.red;
+        return const Color(0xFFEF4444); // Red
       case ContractStatus.terminated:
-        return Colors.grey;
+        return const Color(0xFF94A3B8); // Slate/Grey
       case ContractStatus.pending:
-        return Colors.orange;
+        return const Color(0xFFF59E0B); // Amber
     }
   }
 }

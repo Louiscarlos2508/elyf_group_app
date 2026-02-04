@@ -19,7 +19,10 @@ class Sale {
     this.cashAmount = 0,
     this.orangeMoneyAmount = 0,
     this.productionSessionId,
+    this.updatedAt,
   });
+
+  final DateTime? updatedAt;
 
   final String id;
   final String productId;

@@ -384,4 +384,9 @@ class UserController {
       );
     }
   }
+
+  /// Surveille tous les utilisateurs (Stream).
+  Stream<List<User>> watchAllUsers() {
+    return _repository.watchAllUsers();
+  }
 }

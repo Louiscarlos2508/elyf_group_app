@@ -25,6 +25,11 @@ class GazExpenseController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Observe les dépenses en temps réel.
+  Stream<List<GazExpense>> watchExpenses({DateTime? from, DateTime? to}) {
+    return _repository.watchExpenses(from: from, to: to);
+  }
+
   Future<void> addExpense(GazExpense expense) async {
     await _repository.addExpense(expense);
     await loadExpenses();

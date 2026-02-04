@@ -41,8 +41,8 @@ class BottlePriceTableRow extends ConsumerWidget {
           decoration: BoxDecoration(
             border: Border(
               bottom: BorderSide(
-                color: Colors.black.withValues(alpha: 0.1),
-                width: 1.305,
+                color: theme.colorScheme.outline.withValues(alpha: 0.1),
+                width: 1,
               ),
             ),
           ),
@@ -52,10 +52,10 @@ class BottlePriceTableRow extends ConsumerWidget {
                 width: 180,
                 child: Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.inventory_2,
                       size: 16,
-                      color: Color(0xFF0A0A0A),
+                      color: theme.colorScheme.onSurface,
                     ),
                     const SizedBox(width: 8),
                     Flexible(
@@ -63,7 +63,7 @@ class BottlePriceTableRow extends ConsumerWidget {
                         '${cylinder.weight}kg',
                         style: theme.textTheme.bodyMedium?.copyWith(
                           fontSize: 14,
-                          color: const Color(0xFF0A0A0A),
+                          color: theme.colorScheme.onSurface,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -78,7 +78,7 @@ class BottlePriceTableRow extends ConsumerWidget {
                   textAlign: TextAlign.right,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     fontSize: 14,
-                    color: const Color(0xFF101828),
+                    color: theme.colorScheme.onSurface,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -92,7 +92,7 @@ class BottlePriceTableRow extends ConsumerWidget {
                   textAlign: TextAlign.right,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     fontSize: 14,
-                    color: const Color(0xFF101828),
+                    color: theme.colorScheme.onSurface,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -106,14 +106,14 @@ class BottlePriceTableRow extends ConsumerWidget {
                       vertical: 3,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF030213),
+                      color: theme.colorScheme.primary,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
                       'Actif',
                       style: theme.textTheme.bodySmall?.copyWith(
                         fontSize: 12,
-                        color: Colors.white,
+                        color: theme.colorScheme.onPrimary,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -129,10 +129,10 @@ class BottlePriceTableRow extends ConsumerWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       IconButton(
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.edit,
                           size: 16,
-                          color: Color(0xFF0A0A0A),
+                          color: theme.colorScheme.onSurface,
                         ),
                         onPressed: () {
                           showDialog(
@@ -151,10 +151,10 @@ class BottlePriceTableRow extends ConsumerWidget {
                       ),
                       const SizedBox(width: 2),
                       IconButton(
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.delete_outline,
                           size: 16,
-                          color: Color(0xFFE7000B),
+                          color: theme.colorScheme.error,
                         ),
                         onPressed: onDelete,
                         padding: EdgeInsets.zero,

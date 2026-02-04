@@ -38,6 +38,14 @@ class _TrashScreenState extends ConsumerState<TrashScreen>
 
     return BoutiquePermissionGuard(
       permission: BoutiquePermissions.viewTrash,
+      fallback: Center(
+        child: Text(
+          'Vous n\'avez pas la permission de voir la corbeille.',
+          style: theme.textTheme.bodyLarge?.copyWith(
+            color: theme.colorScheme.error,
+          ),
+        ),
+      ),
       child: Scaffold(
         body: Column(
           children: [
@@ -74,14 +82,6 @@ class _TrashScreenState extends ConsumerState<TrashScreen>
               ),
             ),
           ],
-        ),
-      ),
-      fallback: Center(
-        child: Text(
-          'Vous n\'avez pas la permission de voir la corbeille.',
-          style: theme.textTheme.bodyLarge?.copyWith(
-            color: theme.colorScheme.error,
-          ),
         ),
       ),
     );
@@ -132,7 +132,7 @@ class _DeletedProductsTab extends ConsumerWidget {
           },
         );
       },
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const AppShimmers.list(count: 5),
       error: (error, stack) => Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

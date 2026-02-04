@@ -90,148 +90,156 @@ class _PaymentSignatureDialogState extends State<PaymentSignatureDialog> {
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       title: const Text('Signature de paiement'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Informations du paiement
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    widget.workerName,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  if (widget.daysWorked != null)
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Jours travaillés:',
-                          style: theme.textTheme.bodyMedium,
-                        ),
-                        Text(
-                          '${widget.daysWorked} jour(s)',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  if (widget.period != null)
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('Période:', style: theme.textTheme.bodyMedium),
-                        Text(
-                          widget.period!,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  const SizedBox(height: 4),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('Montant:', style: theme.textTheme.bodyMedium),
-                      Text(
-                        '${widget.amount} CFA',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.primary,
-                        ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Informations du paiement (Scrollable if needed)
+          Flexible(
+            child: SingleChildScrollView(
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.workerName,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
                       ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Signature du bénéficiaire',
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Container(
-              height: 200,
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: theme.colorScheme.outline.withValues(alpha: 0.3),
+                    ),
+                    const SizedBox(height: 8),
+                    if (widget.daysWorked != null)
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Jours travaillés:',
+                            style: theme.textTheme.bodyMedium,
+                          ),
+                          Text(
+                            '${widget.daysWorked} jour(s)',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    if (widget.period != null)
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Période:', style: theme.textTheme.bodyMedium),
+                          Text(
+                            widget.period!,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    const SizedBox(height: 4),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Montant:', style: theme.textTheme.bodyMedium),
+                        Text(
+                          '${widget.amount} CFA',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-                borderRadius: BorderRadius.circular(8),
-                color: Colors.white,
-              ),
-              child: RepaintBoundary(
-                key: _signatureKey,
-                child: GestureDetector(
-                  onPanUpdate: (details) {
-                    final RenderBox box =
-                        context.findRenderObject() as RenderBox;
-                    final localPosition = box.globalToLocal(
-                      details.globalPosition,
-                    );
-                    _addPoint(localPosition);
-                  },
-                  onPanEnd: (details) {
-                    _addPoint(const Offset(-1, -1)); // Marqueur de fin de trait
-                  },
-                  child: CustomPaint(
-                    painter: _SignaturePainter(_points),
-                    size: Size.infinite,
-                  ),
-                ),
               ),
             ),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
+          ),
+          const SizedBox(height: 12), // Reduced spacing
+          Text(
+            'Signature du bénéficiaire',
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            height: 200,
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: theme.colorScheme.outline.withValues(alpha: 0.3),
+              ),
+              borderRadius: BorderRadius.circular(8),
+              color: Colors.white,
+            ),
+            child: RepaintBoundary(
+              key: _signatureKey,
+              child: Builder(
+                builder: (context) {
+                  return GestureDetector(
+                    onPanStart: (details) {
+                      final renderBox = context.findRenderObject() as RenderBox;
+                      final localPosition = renderBox.globalToLocal(details.globalPosition);
+                      _addPoint(localPosition);
+                    },
+                    onPanUpdate: (details) {
+                      final renderBox = context.findRenderObject() as RenderBox;
+                      final localPosition = renderBox.globalToLocal(details.globalPosition);
+                      _addPoint(localPosition);
+                    },
+                    onPanEnd: (details) {
+                      _addPoint(const Offset(-1, -1)); 
+                    },
+                    child: CustomPaint(
+                      painter: _SignaturePainter(_points),
+                      size: Size.infinite,
+                    ),
+                  );
+                }
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: _clearSignature,
+                child: const Text('Effacer'),
+              ),
+            ],
+          ),
+          // Shortened info text to save space
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.orange.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
               children: [
-                TextButton(
-                  onPressed: _clearSignature,
-                  child: const Text('Effacer'),
+                Icon(
+                  Icons.info_outline,
+                  size: 16,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Signez pour valider.',
+                    style: theme.textTheme.bodySmall,
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.orange.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.info_outline,
-                    size: 20,
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Veuillez signer dans la zone ci-dessus pour confirmer le paiement.',
-                      style: theme.textTheme.bodySmall,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
       actions: [
         TextButton(

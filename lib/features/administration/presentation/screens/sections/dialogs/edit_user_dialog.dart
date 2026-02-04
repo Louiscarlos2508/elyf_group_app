@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../../domain/entities/user.dart';
-import 'package:elyf_groupe_app/shared/utils/form_helper_mixin.dart';
 
 /// Dialogue pour modifier un utilisateur existant.
 class EditUserDialog extends StatefulWidget {

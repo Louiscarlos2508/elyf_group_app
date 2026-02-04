@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/core/logging/app_logger.dart';
-import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
 import '../../../../../core/tenant/tenant_provider.dart';
 import '../../../domain/entities/tour.dart';
 import '../../widgets/tour_form_dialog.dart';
@@ -137,9 +136,7 @@ class _ApprovisionnementScreenState
       },
       loading: () => Container(
         color: const Color(0xFFF9FAFB),
-        child: const Center(
-          child: const LoadingIndicator(),
-        ),
+        child: AppShimmers.list(context),
       ),
       error: (error, stack) => Container(
         color: const Color(0xFFF9FAFB),

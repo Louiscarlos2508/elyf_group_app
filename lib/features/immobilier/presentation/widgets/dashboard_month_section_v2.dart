@@ -23,6 +23,7 @@ class DashboardMonthSectionV2 extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return LayoutBuilder(
       builder: (context, constraints) {
         final isWide = constraints.maxWidth > 900;
@@ -33,35 +34,35 @@ class DashboardMonthSectionV2 extends StatelessWidget {
             value: CurrencyFormatter.formatFCFA(monthRevenue),
             subtitle: '$monthPaymentsCount paiements',
             icon: Icons.trending_up,
-            iconColor: Colors.blue,
-            backgroundColor: Colors.blue,
+            iconColor: const Color(0xFF3B82F6), // Blue
+            backgroundColor: const Color(0xFF3B82F6),
           ),
           DashboardKpiCardV2(
             label: 'Dépenses',
             value: CurrencyFormatter.formatFCFA(monthExpensesAmount),
             subtitle: 'Charges',
             icon: Icons.receipt_long,
-            iconColor: Colors.red,
-            backgroundColor: Colors.red,
+            iconColor: theme.colorScheme.error,
+            backgroundColor: theme.colorScheme.error,
           ),
           DashboardKpiCardV2(
             label: 'Bénéfice Net',
             value: CurrencyFormatter.formatFCFA(monthProfit),
             subtitle: monthProfit >= 0 ? 'Profit' : 'Déficit',
             icon: Icons.account_balance_wallet,
-            iconColor: monthProfit >= 0 ? Colors.green : Colors.red,
+            iconColor: monthProfit >= 0 ? const Color(0xFF10B981) : theme.colorScheme.error,
             valueColor: monthProfit >= 0
-                ? Colors.green.shade700
-                : Colors.red.shade700,
-            backgroundColor: monthProfit >= 0 ? Colors.green : Colors.red,
+                ? const Color(0xFF059669)
+                : theme.colorScheme.error,
+            backgroundColor: monthProfit >= 0 ? const Color(0xFF10B981) : theme.colorScheme.error,
           ),
           DashboardKpiCardV2(
             label: "Taux d'Occupation",
             value: '${occupancyRate.toStringAsFixed(0)}%',
             subtitle: 'propriétés louées',
             icon: Icons.home,
-            iconColor: Colors.indigo,
-            backgroundColor: Colors.indigo,
+            iconColor: const Color(0xFF6366F1), // Indigo
+            backgroundColor: const Color(0xFF6366F1),
           ),
         ];
 

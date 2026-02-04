@@ -10,4 +10,5 @@ abstract class ProductRepository {
   Future<void> deleteProduct(String id, {String? deletedBy});
   Future<void> restoreProduct(String id);
   Future<List<Product>> getDeletedProducts();
+  Stream<List<Product>> watchProducts();
 }

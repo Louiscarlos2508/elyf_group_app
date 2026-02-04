@@ -1,5 +1,6 @@
 import 'dart:developer' as developer;
 
+import 'package:rxdart/rxdart.dart';
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/logging/app_logger.dart';
 import '../../domain/entities/report_data.dart';
@@ -360,5 +361,206 @@ class ReportOfflineRepository implements ReportRepository {
       );
       throw appException;
     }
+  }
+
+  @override
+  Stream<ReportData> watchReportData(
+    ReportPeriod period, {
+    DateTime? startDate,
+    DateTime? endDate,
+  }) {
+    return CombineLatestStream.combine3(
+      saleRepository.watchRecentSales(limit: 1000),
+      purchaseRepository.watchPurchases(limit: 1000),
+      expenseRepository.watchExpenses(limit: 1000),
+      (sales, purchases, expenses) {
+        final start = _getStartDate(period, startDate: startDate);
+        final end = _getEndDate(period, endDate: endDate);
+
+        final periodSales = sales.where((s) => _isInPeriod(s.date, start, end)).toList();
+        final periodPurchases = purchases.where((p) => _isInPeriod(p.date, start, end)).toList();
+        final periodExpenses = expenses.where((e) => _isInPeriod(e.date, start, end)).toList();
+
+        final salesRevenue = periodSales.fold<int>(0, (sum, s) => sum + s.totalAmount);
+        final purchasesAmount = periodPurchases.fold<int>(0, (sum, p) => sum + p.totalAmount);
+        final expensesAmount = periodExpenses.fold<int>(0, (sum, e) => sum + e.amountCfa);
+
+        return ReportData(
+          period: period,
+          salesRevenue: salesRevenue,
+          purchasesAmount: purchasesAmount,
+          expensesAmount: expensesAmount,
+          profit: salesRevenue - purchasesAmount - expensesAmount,
+          salesCount: periodSales.length,
+          purchasesCount: periodPurchases.length,
+          expensesCount: periodExpenses.length,
+        );
+      },
+    );
+  }
+
+  @override
+  Stream<SalesReportData> watchSalesReport(
+    ReportPeriod period, {
+    DateTime? startDate,
+    DateTime? endDate,
+  }) {
+    return saleRepository.watchRecentSales(limit: 1000).map((sales) {
+      final start = _getStartDate(period, startDate: startDate);
+      final end = _getEndDate(period, endDate: endDate);
+
+      final periodSales = sales.where((s) => _isInPeriod(s.date, start, end)).toList();
+
+      final totalRevenue = periodSales.fold<int>(0, (sum, s) => sum + s.totalAmount);
+      final totalItemsSold = periodSales.fold<int>(0, (sum, s) => sum + s.items.fold<int>(0, (is_, i) => is_ + i.quantity));
+
+      final productSales = <String, ProductSalesSummary>{};
+      for (final sale in periodSales) {
+        for (final item in sale.items) {
+          final existing = productSales[item.productId];
+          if (existing != null) {
+            productSales[item.productId] = ProductSalesSummary(
+              productId: item.productId,
+              productName: item.productName,
+              quantitySold: existing.quantitySold + item.quantity,
+              revenue: existing.revenue + item.totalPrice,
+            );
+          } else {
+            productSales[item.productId] = ProductSalesSummary(
+              productId: item.productId,
+              productName: item.productName,
+              quantitySold: item.quantity,
+              revenue: item.totalPrice,
+            );
+          }
+        }
+      }
+
+      final topProducts = productSales.values.toList()..sort((a, b) => b.revenue.compareTo(a.revenue));
+
+      return SalesReportData(
+        totalRevenue: totalRevenue,
+        totalItemsSold: totalItemsSold,
+        averageSaleAmount: periodSales.isEmpty ? 0 : totalRevenue ~/ periodSales.length,
+        salesCount: periodSales.length,
+        topProducts: topProducts.take(10).toList(),
+      );
+    });
+  }
+
+  @override
+  Stream<PurchasesReportData> watchPurchasesReport(
+    ReportPeriod period, {
+    DateTime? startDate,
+    DateTime? endDate,
+  }) {
+    return purchaseRepository.watchPurchases(limit: 1000).map((purchases) {
+      final start = _getStartDate(period, startDate: startDate);
+      final end = _getEndDate(period, endDate: endDate);
+
+      final periodPurchases = purchases.where((p) => _isInPeriod(p.date, start, end)).toList();
+
+      final totalAmount = periodPurchases.fold<int>(0, (sum, p) => sum + p.totalAmount);
+      final totalItemsPurchased = periodPurchases.fold<int>(0, (sum, p) => sum + p.items.fold<int>(0, (is_, i) => is_ + i.quantity));
+
+      final supplierTotals = <String, SupplierSummary>{};
+      for (final purchase in periodPurchases) {
+        final supplier = purchase.supplier ?? 'Non spécifié';
+        final existing = supplierTotals[supplier];
+        if (existing != null) {
+          supplierTotals[supplier] = SupplierSummary(
+            supplierName: supplier,
+            totalAmount: existing.totalAmount + purchase.totalAmount,
+            purchasesCount: existing.purchasesCount + 1,
+          );
+        } else {
+          supplierTotals[supplier] = SupplierSummary(
+            supplierName: supplier,
+            totalAmount: purchase.totalAmount,
+            purchasesCount: 1,
+          );
+        }
+      }
+
+      final topSuppliers = supplierTotals.values.toList()..sort((a, b) => b.totalAmount.compareTo(a.totalAmount));
+
+      return PurchasesReportData(
+        totalAmount: totalAmount,
+        totalItemsPurchased: totalItemsPurchased,
+        averagePurchaseAmount: periodPurchases.isEmpty ? 0 : totalAmount ~/ periodPurchases.length,
+        purchasesCount: periodPurchases.length,
+        topSuppliers: topSuppliers.take(10).toList(),
+      );
+    });
+  }
+
+  @override
+  Stream<ExpensesReportData> watchExpensesReport(
+    ReportPeriod period, {
+    DateTime? startDate,
+    DateTime? endDate,
+  }) {
+    return expenseRepository.watchExpenses(limit: 1000).map((expenses) {
+      final start = _getStartDate(period, startDate: startDate);
+      final end = _getEndDate(period, endDate: endDate);
+
+      final periodExpenses = expenses.where((e) => _isInPeriod(e.date, start, end)).toList();
+
+      final totalAmount = periodExpenses.fold<int>(0, (sum, e) => sum + e.amountCfa);
+
+      final byCategory = <String, int>{};
+      for (final expense in periodExpenses) {
+        final categoryLabel = expense.category.name;
+        byCategory[categoryLabel] = (byCategory[categoryLabel] ?? 0) + expense.amountCfa;
+      }
+
+      return ExpensesReportData(
+        totalAmount: totalAmount,
+        expensesCount: periodExpenses.length,
+        averageExpenseAmount: periodExpenses.isEmpty ? 0 : totalAmount ~/ periodExpenses.length,
+        byCategory: byCategory,
+      );
+    });
+  }
+
+  @override
+  Stream<ProfitReportData> watchProfitReport(
+    ReportPeriod period, {
+    DateTime? startDate,
+    DateTime? endDate,
+  }) {
+    return CombineLatestStream.combine3(
+      saleRepository.watchRecentSales(limit: 1000),
+      purchaseRepository.watchPurchases(limit: 1000),
+      expenseRepository.watchExpenses(limit: 1000),
+      (sales, purchases, expenses) {
+        final start = _getStartDate(period, startDate: startDate);
+        final end = _getEndDate(period, endDate: endDate);
+
+        final periodSales = sales.where((s) => _isInPeriod(s.date, start, end)).toList();
+        final periodPurchases = purchases.where((p) => _isInPeriod(p.date, start, end)).toList();
+        final periodExpenses = expenses.where((e) => _isInPeriod(e.date, start, end)).toList();
+
+        final totalRevenue = periodSales.fold<int>(0, (sum, s) => sum + s.totalAmount);
+        final totalCostOfGoodsSold = periodPurchases.fold<int>(0, (sum, p) => sum + p.totalAmount);
+        final totalExpenses = periodExpenses.fold<int>(0, (sum, e) => sum + e.amountCfa);
+
+        final grossProfit = totalRevenue - totalCostOfGoodsSold;
+        final netProfit = grossProfit - totalExpenses;
+
+        final grossMarginPercentage = totalRevenue == 0 ? 0.0 : (grossProfit / totalRevenue) * 100;
+        final netMarginPercentage = totalRevenue == 0 ? 0.0 : (netProfit / totalRevenue) * 100;
+
+        return ProfitReportData(
+          totalRevenue: totalRevenue,
+          totalCostOfGoodsSold: totalCostOfGoodsSold,
+          totalExpenses: totalExpenses,
+          grossProfit: grossProfit,
+          netProfit: netProfit,
+          grossMarginPercentage: grossMarginPercentage,
+          netMarginPercentage: netMarginPercentage,
+        );
+      },
+    );
   }
 }

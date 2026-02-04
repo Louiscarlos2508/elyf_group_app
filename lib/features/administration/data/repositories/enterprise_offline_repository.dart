@@ -147,6 +147,9 @@ class EnterpriseOfflineRepository extends OfflineRepository<Enterprise>
   }
 
   // EnterpriseRepository implementation
+    }
+  }
+
   @override
   Future<List<Enterprise>> getAllEnterprises() async {
     try {
@@ -156,51 +159,39 @@ class EnterpriseOfflineRepository extends OfflineRepository<Enterprise>
         moduleType: 'administration',
       );
       
-      developer.log(
-        'Récupération de ${records.length} entreprises depuis Drift',
-        name: 'EnterpriseOfflineRepository.getAllEnterprises',
-      );
-      
-      final enterprises = records.map((record) {
+      return records.map((record) {
         try {
           final map = jsonDecode(record.dataJson) as Map<String, dynamic>;
-          // S'assurer que localId est dans le map pour fromMap
           map['localId'] = record.localId;
-          final enterprise = fromMap(map);
-          final isPointOfSale = enterprise.id.startsWith('pos_');
-          developer.log(
-            'Enterprise récupérée: id=${enterprise.id}, name=${enterprise.name}, type=${enterprise.type}, isPointOfSale=$isPointOfSale',
-            name: 'EnterpriseOfflineRepository.getAllEnterprises',
-          );
-          return enterprise;
-        } catch (e, stackTrace) {
-          final appException = ErrorHandler.instance.handleError(e, stackTrace);
-          AppLogger.warning(
-            'Erreur lors du parsing d\'une entreprise: ${appException.message}',
-            name: 'EnterpriseOfflineRepository.getAllEnterprises',
-            error: e,
-            stackTrace: stackTrace,
-          );
+          return fromMap(map);
+        } catch (e) {
           return null;
         }
       }).whereType<Enterprise>().toList();
-      
-      final pointOfSaleCount = enterprises.where((e) => e.id.startsWith('pos_')).length;
-      developer.log(
-        '${enterprises.length} entreprises parsées avec succès (dont $pointOfSaleCount points de vente)',
-        name: 'EnterpriseOfflineRepository.getAllEnterprises',
-      );
-      
-      return enterprises;
-    } catch (e, stackTrace) {
-      developer.log(
-        'Error fetching enterprises from offline storage',
-        name: 'admin.enterprise.repository',
-        error: e,
-        stackTrace: stackTrace,
-      );
+    } catch (e) {
       return [];
     }
+  }
+
+  @override
+  Stream<List<Enterprise>> watchAllEnterprises() {
+    return driftService.records
+        .watchForEnterprise(
+          collectionName: collectionName,
+          enterpriseId: 'global',
+          moduleType: 'administration',
+        )
+        .map((records) {
+      return records.map((record) {
+        try {
+          final map = jsonDecode(record.dataJson) as Map<String, dynamic>;
+          map['localId'] = record.localId;
+          return fromMap(map);
+        } catch (e) {
+          return null;
+        }
+      }).whereType<Enterprise>().toList();
+    });
   }
 
   @override

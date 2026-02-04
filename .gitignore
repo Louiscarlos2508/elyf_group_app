@@ -34,6 +34,7 @@ migrate_working_dir/
 .pub/
 /build/
 /coverage/
+/Project_Portfolio/
 
 # Generated files (Drift, Freezed, etc.)
 *.g.dart

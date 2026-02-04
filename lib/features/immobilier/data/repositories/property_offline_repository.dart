@@ -163,23 +163,21 @@ class PropertyOfflineRepository extends OfflineRepository<Property>
   // PropertyRepository interface implementation
 
   @override
-  Future<List<Property>> getAllProperties() async {
-    try {
-      AppLogger.debug(
-        'Fetching properties for enterprise: $enterpriseId',
-        name: 'PropertyOfflineRepository',
-      );
-      return await getAllForEnterprise(enterpriseId);
-    } catch (error, stackTrace) {
-      final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      AppLogger.error(
-        'Error fetching properties: ${appException.message}',
-        name: 'PropertyOfflineRepository',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      throw appException;
-    }
+  Stream<List<Property>> watchProperties() {
+    return driftService.records
+        .watchForEnterprise(
+          collectionName: collectionName,
+          enterpriseId: enterpriseId,
+          moduleType: 'immobilier',
+        )
+        .map((rows) {
+          final entities = rows
+              .map(
+                (r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>),
+              )
+              .toList();
+          return deduplicateByRemoteId(entities);
+        });
   }
 
   @override
@@ -249,7 +247,7 @@ class PropertyOfflineRepository extends OfflineRepository<Property>
         images: property.images,
         amenities: property.amenities,
         createdAt: property.createdAt,
-        updatedAt: property.updatedAt,
+        updatedAt: DateTime.now(),
       );
       await save(propertyWithLocalId);
       return propertyWithLocalId;
@@ -268,8 +266,9 @@ class PropertyOfflineRepository extends OfflineRepository<Property>
   @override
   Future<Property> updateProperty(Property property) async {
     try {
-      await save(property);
-      return property;
+      final updatedProperty = property.copyWith(updatedAt: DateTime.now());
+      await save(updatedProperty);
+      return updatedProperty;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(

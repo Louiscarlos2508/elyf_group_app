@@ -53,10 +53,17 @@ class ProfitReportContent extends ConsumerWidget {
             return Container(
               decoration: BoxDecoration(
                 color: theme.colorScheme.surface,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: theme.colorScheme.outline.withValues(alpha: 0.2),
+                  color: theme.colorScheme.outline.withValues(alpha: 0.1),
                 ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.02),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
               padding: const EdgeInsets.all(20),
               child: Column(
@@ -77,7 +84,7 @@ class ProfitReportContent extends ConsumerWidget {
                     value: totalRevenue,
                     count: periodPayments.length,
                     countLabel: 'paiements',
-                    color: Colors.green,
+                    color: const Color(0xFF10B981),
                     icon: Icons.trending_up,
                   ),
 
@@ -93,7 +100,7 @@ class ProfitReportContent extends ConsumerWidget {
                     value: totalExpenses,
                     count: periodExpenses.length,
                     countLabel: 'charges',
-                    color: Colors.red,
+                    color: theme.colorScheme.error,
                     icon: Icons.trending_down,
                     isExpense: true,
                   ),
@@ -107,12 +114,12 @@ class ProfitReportContent extends ConsumerWidget {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: (profit >= 0 ? Colors.green : Colors.red)
-                          .withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
+                      color: (profit >= 0 ? const Color(0xFF10B981) : theme.colorScheme.error)
+                          .withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: (profit >= 0 ? Colors.green : Colors.red)
-                            .withValues(alpha: 0.3),
+                        color: (profit >= 0 ? const Color(0xFF10B981) : theme.colorScheme.error)
+                            .withValues(alpha: 0.15),
                       ),
                     ),
                     child: Row(
@@ -149,10 +156,10 @@ class ProfitReportContent extends ConsumerWidget {
                         Text(
                           CurrencyFormatter.formatFCFA(profit),
                           style: theme.textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w900,
                             color: profit >= 0
-                                ? Colors.green.shade700
-                                : Colors.red.shade700,
+                                ? const Color(0xFF059669)
+                                : theme.colorScheme.error,
                           ),
                         ),
                       ],

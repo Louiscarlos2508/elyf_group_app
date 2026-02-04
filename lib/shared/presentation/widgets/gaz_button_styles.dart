@@ -4,39 +4,44 @@ import 'package:flutter/material.dart';
 class GazButtonStyles {
   GazButtonStyles._();
 
-  /// Style pour le bouton FilledButton principal (noir).
-  static ButtonStyle get filledPrimary => FilledButton.styleFrom(
-    backgroundColor: const Color(0xFF030213),
-    foregroundColor: Colors.white,
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-    minimumSize: const Size(0, 36),
+  /// Style pour le bouton FilledButton principal.
+  static ButtonStyle filledPrimary(BuildContext context) => FilledButton.styleFrom(
+    backgroundColor: Theme.of(context).colorScheme.primary,
+    foregroundColor: Theme.of(context).colorScheme.onPrimary,
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+    minimumSize: const Size(0, 48),
+    elevation: 0,
   );
 
-  /// Style pour le bouton FilledButton avec icône (noir, padding réduit).
-  static ButtonStyle get filledPrimaryIcon => FilledButton.styleFrom(
-    backgroundColor: const Color(0xFF030213),
-    foregroundColor: Colors.white,
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-    padding: const EdgeInsets.symmetric(horizontal: 9.99, vertical: 7.99),
-    minimumSize: const Size(0, 32),
+  /// Style pour le bouton FilledButton avec icône.
+  static ButtonStyle filledPrimaryIcon(BuildContext context) => FilledButton.styleFrom(
+    backgroundColor: Theme.of(context).colorScheme.primary,
+    foregroundColor: Theme.of(context).colorScheme.onPrimary,
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+    minimumSize: const Size(0, 40),
+    elevation: 0,
   );
 
   /// Style pour le bouton OutlinedButton standard.
-  static ButtonStyle get outlined => OutlinedButton.styleFrom(
-    side: BorderSide(color: Colors.black.withValues(alpha: 0.1), width: 1.305),
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-    padding: const EdgeInsets.symmetric(horizontal: 17.305, vertical: 9.305),
-    minimumSize: const Size(0, 36),
+  static ButtonStyle outlined(BuildContext context) => OutlinedButton.styleFrom(
+    side: BorderSide(color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2), width: 1.5),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+    minimumSize: const Size(0, 48),
+    foregroundColor: Theme.of(context).colorScheme.onSurface,
   );
 
   /// Style pour le bouton OutlinedButton avec taille minimale personnalisée.
   static ButtonStyle outlinedWithMinSize(
+    BuildContext context,
     double minWidth,
   ) => OutlinedButton.styleFrom(
-    side: BorderSide(color: Colors.black.withValues(alpha: 0.1), width: 1.305),
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-    padding: const EdgeInsets.symmetric(horizontal: 17.305, vertical: 9.305),
-    minimumSize: Size(minWidth, 36),
+    side: BorderSide(color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2), width: 1.5),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+    minimumSize: Size(minWidth, 48),
+    foregroundColor: Theme.of(context).colorScheme.onSurface,
   );
 }

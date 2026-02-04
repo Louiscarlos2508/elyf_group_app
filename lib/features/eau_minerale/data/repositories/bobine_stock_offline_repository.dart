@@ -63,7 +63,7 @@ class BobineStockOfflineRepository extends OfflineRepository<BobineStock>
 
   @override
   String getLocalId(BobineStock entity) {
-    if (entity.id.startsWith('local_')) return entity.id;
+    if (entity.id.isNotEmpty) return entity.id;
     return LocalIdGenerator.generate();
   }
 
@@ -252,6 +252,7 @@ class BobineStockOfflineRepository extends OfflineRepository<BobineStock>
         'machineId': movement.machineId,
         'notes': movement.notes,
         'createdAt': movement.createdAt?.toIso8601String(),
+        'updatedAt': DateTime.now().toIso8601String(),
       };
 
       await driftService.records.upsert(
@@ -327,8 +328,10 @@ class BobineStockOfflineRepository extends OfflineRepository<BobineStock>
           productionId: map['productionId'] as String?,
           machineId: map['machineId'] as String?,
           notes: map['notes'] as String?,
-          createdAt: map['createdAt'] != null
               ? DateTime.parse(map['createdAt'] as String)
+              : null,
+          updatedAt: map['updatedAt'] != null
+              ? DateTime.parse(map['updatedAt'] as String)
               : null,
         );
       }).toList();

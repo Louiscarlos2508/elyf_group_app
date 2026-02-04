@@ -11,6 +11,7 @@ abstract class SalaryRepository {
 
   Future<List<ProductionPayment>> fetchProductionPayments();
   Future<String> createProductionPayment(ProductionPayment payment);
+  Future<void> deleteProductionPayment(String paymentId);
 
   Future<List<SalaryPayment>> fetchMonthlySalaryPayments();
   Future<String> createMonthlySalaryPayment(SalaryPayment payment);

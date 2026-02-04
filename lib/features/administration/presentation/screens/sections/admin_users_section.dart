@@ -9,6 +9,7 @@ import 'widgets/user_filters_bar.dart';
 import 'widgets/user_list_item.dart';
 import 'widgets/user_empty_state.dart';
 import 'widgets/user_action_handlers.dart';
+import '../../presentation/widgets/admin_shimmers.dart';
 
 /// Section pour gérer les utilisateurs.
 class AdminUsersSection extends ConsumerStatefulWidget {
@@ -102,16 +103,16 @@ class _AdminUsersSectionState extends ConsumerState<AdminUsersSection> {
                   }, childCount: filteredUsers.length),
                 );
               },
-              loading: () => const SliverToBoxAdapter(
-                child: Center(child: CircularProgressIndicator()),
+              loading: () => SliverToBoxAdapter(
+                child: AdminShimmers.enterpriseListShimmer(context),
               ),
               error: (error, stack) => SliverToBoxAdapter(
                 child: Center(child: Text('Erreur: $error')),
               ),
             );
           },
-          loading: () => const SliverToBoxAdapter(
-            child: Center(child: CircularProgressIndicator()),
+          loading: () => SliverToBoxAdapter(
+            child: AdminShimmers.enterpriseListShimmer(context),
           ),
           error: (error, stack) => SliverToBoxAdapter(
             child: Center(

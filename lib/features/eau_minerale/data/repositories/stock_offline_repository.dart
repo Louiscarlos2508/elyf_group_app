@@ -46,6 +46,9 @@ class StockOfflineRepository extends OfflineRepository<StockMovement>
       unit: map['unit'] as String? ?? 'unité',
       productionId: map['productionId'] as String?,
       notes: map['notes'] as String?,
+      updatedAt: map['updatedAt'] != null
+          ? DateTime.parse(map['updatedAt'] as String)
+          : null,
     );
   }
 
@@ -61,12 +64,13 @@ class StockOfflineRepository extends OfflineRepository<StockMovement>
       'unit': entity.unit,
       if (entity.productionId != null) 'productionId': entity.productionId,
       if (entity.notes != null) 'notes': entity.notes,
+      'updatedAt': entity.updatedAt?.toIso8601String(),
     };
   }
 
   @override
   String getLocalId(StockMovement entity) {
-    if (entity.id.startsWith('local_')) return entity.id;
+    if (entity.id.isNotEmpty) return entity.id;
     return LocalIdGenerator.generate();
   }
 
@@ -202,7 +206,22 @@ class StockOfflineRepository extends OfflineRepository<StockMovement>
   @override
   Future<void> recordMovement(StockMovement movement) async {
     try {
-      await save(movement);
+      // Create copy with updatedAt if not present
+      final movementToSave = movement.updatedAt != null
+          ? movement
+          : StockMovement(
+              id: movement.id,
+              date: movement.date,
+              productName: movement.productName,
+              type: movement.type,
+              reason: movement.reason,
+              quantity: movement.quantity,
+              unit: movement.unit,
+              productionId: movement.productionId,
+              notes: movement.notes,
+              updatedAt: DateTime.now(),
+            );
+      await save(movementToSave);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       AppLogger.error(

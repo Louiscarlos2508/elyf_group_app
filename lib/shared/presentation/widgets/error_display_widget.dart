@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'gaz_button_styles.dart';
 
 /// Widget réutilisable pour afficher les erreurs de manière cohérente.
 ///
@@ -27,45 +28,65 @@ class ErrorDisplayWidget extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: theme.colorScheme.error,
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.errorContainer.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.error_outline,
+                size: 48,
+                color: theme.colorScheme.error,
+              ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
             Text(
               title ?? 'Erreur de chargement',
-              style: theme.textTheme.titleLarge?.copyWith(
+              textAlign: TextAlign.center,
+              style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: theme.colorScheme.error,
               ),
             ),
+            const SizedBox(height: 8),
             if (message != null) ...[
-              const SizedBox(height: 8),
               Text(
                 message!,
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+                  color: theme.colorScheme.onSurface,
                 ),
               ),
+              const SizedBox(height: 12),
             ],
-            const SizedBox(height: 8),
-            Text(
-              error.toString(),
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerLow,
+                borderRadius: BorderRadius.circular(12),
               ),
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
+              child: Text(
+                error.toString(),
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontFamily: 'monospace',
+                ),
+                maxLines: 4,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
             if (onRetry != null) ...[
-              const SizedBox(height: 24),
-              FilledButton.icon(
-                onPressed: onRetry,
-                icon: const Icon(Icons.refresh),
-                label: const Text('Réessayer'),
+              const SizedBox(height: 32),
+              SizedBox(
+                width: 200,
+                child: FilledButton.icon(
+                  onPressed: onRetry,
+                  style: GazButtonStyles.filledPrimary(context),
+                  icon: const Icon(Icons.refresh, size: 18),
+                  label: const Text('Réessayer'),
+                ),
               ),
             ],
           ],

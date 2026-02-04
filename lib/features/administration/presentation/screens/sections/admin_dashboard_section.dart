@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/administration/application/providers.dart';
-import '../../../domain/entities/enterprise.dart';
+import '../../domain/entities/enterprise.dart';
+import '../../presentation/widgets/admin_shimmers.dart';
 
 /// Dashboard avec statistiques et vue d'ensemble
 class AdminDashboardSection extends ConsumerWidget {
@@ -13,6 +14,7 @@ class AdminDashboardSection extends ConsumerWidget {
     final theme = Theme.of(context);
     final statsAsync = ref.watch(adminStatsProvider);
     final enterprisesAsync = ref.watch(enterprisesProvider);
+    final isSyncing = ref.watch(isAdminSyncingProvider).asData?.value ?? false;
 
     return CustomScrollView(
       slivers: [
@@ -28,6 +30,29 @@ class AdminDashboardSection extends ConsumerWidget {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
+                if (isSyncing) ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      SizedBox(
+                        width: 12,
+                        height: 12,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Synchronisation en direct...',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.primary,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
                 const SizedBox(height: 8),
                 Text(
                   'Vue d\'ensemble du système d\'administration',
@@ -96,8 +121,8 @@ class AdminDashboardSection extends ConsumerWidget {
               ),
             ),
           ),
-          loading: () => const SliverToBoxAdapter(
-            child: Center(child: CircularProgressIndicator()),
+          loading: () => SliverToBoxAdapter(
+            child: AdminShimmers.statsShimmer(context),
           ),
           error: (error, stack) =>
               SliverToBoxAdapter(child: Center(child: Text('Erreur: $error'))),
@@ -170,8 +195,8 @@ class AdminDashboardSection extends ConsumerWidget {
               }, childCount: byType.length),
             );
           },
-          loading: () => const SliverToBoxAdapter(
-            child: Center(child: CircularProgressIndicator()),
+          loading: () => SliverToBoxAdapter(
+            child: AdminShimmers.enterpriseListShimmer(context),
           ),
           error: (error, stack) =>
               SliverToBoxAdapter(child: Center(child: Text('Erreur: $error'))),

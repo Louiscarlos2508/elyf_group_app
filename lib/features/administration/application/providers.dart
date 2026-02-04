@@ -3,6 +3,7 @@ import 'dart:developer' as developer;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:rxdart/rxdart.dart';
 
 import '../../../core/offline/providers.dart';
 import '../../../core/permissions/services/permission_service.dart'
@@ -166,6 +167,11 @@ final realtimeSyncServiceProvider = Provider<RealtimeSyncService>(
   ),
 );
 
+/// Provider pour surveiller si une synchronisation administrative est en cours.
+final isAdminSyncingProvider = StreamProvider.autoDispose<bool>(
+  (ref) => ref.watch(realtimeSyncServiceProvider).syncStatusStream,
+);
+
 /// Provider for admin controller
 ///
 /// Includes audit trail, Firestore sync and permission validation for roles and assignments.
@@ -212,12 +218,11 @@ final auditControllerProvider = Provider<AuditController>(
   (ref) => AuditController(ref.watch(auditServiceProvider)),
 );
 
-/// Provider pour récupérer toutes les entreprises
+/// Provider pour surveiller toutes les entreprises (Stream)
 ///
 /// Utilise le controller pour respecter l'architecture.
-/// AutoDispose pour libérer la mémoire automatiquement.
-final enterprisesProvider = FutureProvider.autoDispose<List<Enterprise>>(
-  (ref) => ref.watch(enterpriseControllerProvider).getAllEnterprises(),
+final enterprisesProvider = StreamProvider.autoDispose<List<Enterprise>>(
+  (ref) => ref.watch(enterpriseControllerProvider).watchAllEnterprises(),
 );
 
 /// Provider pour récupérer tous les points de vente depuis toutes les entreprises
@@ -517,14 +522,11 @@ final enterpriseByIdProvider = FutureProvider.autoDispose
           .getEnterpriseById(enterpriseId),
     );
 
-/// Provider pour récupérer tous les utilisateurs
+/// Provider pour surveiller tous les utilisateurs (Stream)
 ///
 /// Utilise le controller pour respecter l'architecture.
-///
-/// ⚠️ Note: Pour de meilleures performances, utilisez paginatedUsersProvider
-/// pour les grandes listes.
-final usersProvider = FutureProvider.autoDispose<List<User>>(
-  (ref) => ref.watch(userControllerProvider).getAllUsers(),
+final usersProvider = StreamProvider.autoDispose<List<User>>(
+  (ref) => ref.watch(userControllerProvider).watchAllUsers(),
 );
 
 /// Provider pour rechercher des utilisateurs
@@ -537,14 +539,13 @@ final searchUsersProvider = FutureProvider.autoDispose
       (ref, query) => ref.watch(userControllerProvider).searchUsers(query),
     );
 
-/// Provider pour récupérer les accès EnterpriseModuleUser
+/// Provider pour surveiller les accès EnterpriseModuleUser (Stream)
 ///
 /// Utilise le controller pour respecter l'architecture.
-/// AutoDispose pour libérer la mémoire automatiquement.
 final enterpriseModuleUsersProvider =
-    FutureProvider.autoDispose<List<EnterpriseModuleUser>>(
-      (ref) => ref.watch(adminControllerProvider).getEnterpriseModuleUsers(),
-    );
+    StreamProvider.autoDispose<List<EnterpriseModuleUser>>(
+  (ref) => ref.watch(adminControllerProvider).watchEnterpriseModuleUsers(),
+);
 
 /// Provider pour récupérer les accès d'un utilisateur
 ///
@@ -557,32 +558,56 @@ final userEnterpriseModuleUsersProvider = FutureProvider.autoDispose
           .getUserEnterpriseModuleUsers(userId),
     );
 
-/// Provider pour récupérer tous les rôles
+/// Provider pour surveiller tous les rôles (Stream)
 ///
 /// Utilise le controller pour respecter l'architecture.
-/// AutoDispose pour libérer la mémoire automatiquement.
-final rolesProvider = FutureProvider.autoDispose<List<UserRole>>(
-  (ref) => ref.watch(adminControllerProvider).getAllRoles(),
+final rolesProvider = StreamProvider.autoDispose<List<UserRole>>(
+  (ref) => ref.watch(adminControllerProvider).watchAllRoles(),
 );
 
-/// Provider pour les statistiques d'administration
+/// Provider pour les statistiques d'administration (Stream)
 ///
-/// Utilise les controllers pour respecter l'architecture.
-/// AutoDispose pour libérer la mémoire automatiquement.
-/// Optimisé avec Future.wait pour charger en parallèle.
-final adminStatsProvider = FutureProvider.autoDispose<AdminStats>((ref) async {
-  // Load in parallel for better performance
-  final results = await Future.wait<List<dynamic>>([
-    ref.watch(enterprisesProvider.future),
-    ref.watch(usersProvider.future),
-    ref.watch(adminControllerProvider).getAllRoles(),
-    ref.watch(enterpriseModuleUsersProvider.future),
-  ]);
+/// Se met à jour automatiquement quand les données changent.
+final adminStatsProvider = StreamProvider.autoDispose<AdminStats>((ref) async* {
+  final enterprisesStream = ref.watch(enterprisesProvider.stream);
+  final usersStream = ref.watch(usersProvider.stream);
+  final rolesStream = ref.watch(rolesProvider.stream);
+  final assignmentsStream = ref.watch(enterpriseModuleUsersProvider.stream);
 
-  final enterprises = results[0] as List<Enterprise>;
-  final users = results[1] as List<User>;
-  final roles = results[2] as List<UserRole>;
-  final enterpriseModuleUsers = results[3] as List<EnterpriseModuleUser>;
+  yield* CombineLatestStream.combine4(
+    enterprisesStream,
+    usersStream,
+    rolesStream,
+    assignmentsStream,
+    (enterprises, users, roles, enterpriseModuleUsers) {
+      // Memoize calculations
+      final activeEnterprises = enterprises.where((e) => e.isActive).length;
+      final activeUsers = users.where((u) => u.isActive).length;
+
+      final enterprisesByType = <String, int>{};
+      for (final type in [
+        'eau_minerale',
+        'gaz',
+        'orange_money',
+        'immobilier',
+        'boutique',
+      ]) {
+        enterprisesByType[type] =
+            enterprises.where((e) => e.type == type).length;
+      }
+
+      return AdminStats(
+        totalEnterprises: enterprises.length,
+        activeEnterprises: activeEnterprises,
+        enterprisesByType: enterprisesByType,
+        totalRoles: roles.length,
+        totalUsers: users.length,
+        activeUsers: activeUsers,
+        totalAssignments: enterpriseModuleUsers.length,
+      );
+    },
+  );
+});
 
   // Memoize calculations
   final activeEnterprises = enterprises.where((e) => e.isActive).length;
@@ -600,13 +625,13 @@ final adminStatsProvider = FutureProvider.autoDispose<AdminStats>((ref) async {
   }
 
   return AdminStats(
-    totalEnterprises: enterprises.length,
-    activeEnterprises: activeEnterprises,
-    enterprisesByType: enterprisesByType,
-    totalRoles: roles.length,
-    totalUsers: users.length,
-    activeUsers: activeUsers,
-    totalAssignments: enterpriseModuleUsers.length,
+    totalEnterprises = enterprises.length,
+    activeEnterprises = activeEnterprises,
+    enterprisesByType = enterprisesByType,
+    totalRoles = roles.length,
+    totalUsers = users.length,
+    activeUsers = activeUsers,
+    totalAssignments = enterpriseModuleUsers.length,
   );
 });
 

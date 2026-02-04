@@ -12,16 +12,26 @@ class AppTheme {
 
   static ThemeData light(AppBootStatus status) {
     final scheme = ColorScheme.fromSeed(
-      seedColor: AppColors.seed,
+      seedColor: AppColors.primary,
       brightness: Brightness.light,
+      surface: AppColors.bgLight,
+      onSurface: AppColors.textDisplayLight,
+      primary: AppColors.primary,
+      secondary: AppColors.accent,
+      outline: AppColors.borderLight,
     );
     return _buildTheme(scheme, status);
   }
 
   static ThemeData dark(AppBootStatus status) {
     final scheme = ColorScheme.fromSeed(
-      seedColor: AppColors.seed,
+      seedColor: AppColors.primary,
       brightness: Brightness.dark,
+      surface: AppColors.bgDark,
+      onSurface: AppColors.textDisplayDark,
+      primary: AppColors.primaryLight,
+      secondary: AppColors.accentLight,
+      outline: AppColors.borderDark,
     );
     return _buildTheme(scheme, status);
   }
@@ -31,29 +41,49 @@ class AppTheme {
     final base = ThemeData(
       useMaterial3: true,
       colorScheme: colors,
+      scaffoldBackgroundColor: colors.surface,
       textTheme: textTheme,
       cardTheme: buildCardTheme(colors),
       filledButtonTheme: buildFilledButtonTheme(colors),
       outlinedButtonTheme: buildOutlinedButtonTheme(colors),
       textButtonTheme: buildTextButtonTheme(colors),
-      inputDecorationTheme: buildInputTheme(colors),
+      inputDecorationTheme: buildInputTheme(colors).copyWith(
+        filled: true,
+        fillColor: colors.brightness == Brightness.light
+            ? colors.surfaceContainerLowest
+            : colors.surfaceContainerLow,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: colors.outline),
+        ),
+      ),
       appBarTheme: AppBarTheme(
         elevation: 0,
+        centerTitle: false,
         backgroundColor: colors.surface,
         foregroundColor: colors.onSurface,
         titleTextStyle: textTheme.titleLarge?.copyWith(
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w700,
+          color: colors.onSurface,
         ),
+      ),
+      dividerTheme: DividerThemeData(
+        color: colors.outline.withValues(alpha: 0.5),
+        space: 1,
       ),
       chipTheme: ChipThemeData(
         backgroundColor: colors.surfaceContainerHighest,
         selectedColor: colors.primary.withValues(alpha: 0.15),
         labelStyle: textTheme.labelLarge!,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        side: BorderSide.none,
       ),
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
+        backgroundColor: colors.surface,
         selectedItemColor: colors.primary,
         unselectedItemColor: colors.onSurfaceVariant,
+        type: BottomNavigationBarType.fixed,
+        elevation: 8,
       ),
     );
 

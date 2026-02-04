@@ -5,7 +5,6 @@ import 'package:mockito/annotations.dart';
 import 'package:elyf_groupe_app/features/immobilier/application/controllers/tenant_controller.dart';
 import 'package:elyf_groupe_app/features/immobilier/domain/repositories/tenant_repository.dart';
 import 'package:elyf_groupe_app/features/immobilier/domain/services/immobilier_validation_service.dart';
-import 'package:elyf_groupe_app/features/immobilier/domain/entities/tenant.dart';
 import '../../../../helpers/test_helpers.dart';
 
 import 'tenant_controller_test.mocks.dart';

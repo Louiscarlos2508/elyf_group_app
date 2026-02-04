@@ -16,12 +16,28 @@ class PaymentCard extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Card(
-      elevation: 2,
+      elevation: 0,
       margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: InkWell(
-        onTap: onTap,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: theme.colorScheme.outline.withValues(alpha: 0.1),
+        ),
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.02),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(

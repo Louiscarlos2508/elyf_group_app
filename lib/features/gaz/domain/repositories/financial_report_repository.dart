@@ -10,6 +10,14 @@ abstract class FinancialReportRepository {
     ReportStatus? status,
   });
 
+  Stream<List<FinancialReport>> watchReports(
+    String enterpriseId, {
+    ReportPeriod? period,
+    DateTime? from,
+    DateTime? to,
+    ReportStatus? status,
+  });
+
   Future<FinancialReport?> getReportById(String id);
 
   Future<String> generateReport(FinancialReport report);

@@ -7,9 +7,14 @@ import '../../widgets/production_session_form_steps.dart';
 
 /// Écran de formulaire de session de production avec progression.
 class ProductionSessionFormScreen extends ConsumerStatefulWidget {
-  const ProductionSessionFormScreen({super.key, this.session});
+  const ProductionSessionFormScreen({
+    super.key,
+    this.session,
+    this.initialStep = 0,
+  });
 
   final ProductionSession? session;
+  final int initialStep;
 
   @override
   ConsumerState<ProductionSessionFormScreen> createState() =>
@@ -18,13 +23,14 @@ class ProductionSessionFormScreen extends ConsumerStatefulWidget {
 
 class _ProductionSessionFormScreenState
     extends ConsumerState<ProductionSessionFormScreen> {
-  int _currentStep = 0;
+  late int _currentStep;
   final _formStepsKey = GlobalKey<ProductionSessionFormStepsState>();
   ProviderContainer? _container;
 
   @override
   void initState() {
     super.initState();
+    _currentStep = widget.initialStep;
     _container = ProviderScope.containerOf(context, listen: false);
   }
 

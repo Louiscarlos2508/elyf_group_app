@@ -46,6 +46,9 @@ class GasSaleOfflineRepository extends OfflineRepository<GasSale>
       tourId: map['tourId'] as String?,
       wholesalerId: map['wholesalerId'] as String?,
       wholesalerName: map['wholesalerName'] as String?,
+      updatedAt: map['updatedAt'] != null
+          ? DateTime.parse(map['updatedAt'] as String)
+          : null,
     );
   }
 
@@ -65,12 +68,13 @@ class GasSaleOfflineRepository extends OfflineRepository<GasSale>
       'tourId': entity.tourId,
       'wholesalerId': entity.wholesalerId,
       'wholesalerName': entity.wholesalerName,
+      'updatedAt': entity.updatedAt?.toIso8601String(),
     };
   }
 
   @override
   String getLocalId(GasSale entity) {
-    if (entity.id.startsWith('local_')) return entity.id;
+    if (entity.id.isNotEmpty) return entity.id;
     return LocalIdGenerator.generate();
   }
 
@@ -201,7 +205,10 @@ class GasSaleOfflineRepository extends OfflineRepository<GasSale>
   Future<void> addSale(GasSale sale) async {
     try {
       final localId = getLocalId(sale);
-      final saleWithLocalId = sale.copyWith(id: localId);
+      final saleWithLocalId = sale.copyWith(
+        id: localId,
+        updatedAt: DateTime.now(),
+      );
       await save(saleWithLocalId);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
@@ -218,7 +225,8 @@ class GasSaleOfflineRepository extends OfflineRepository<GasSale>
   @override
   Future<void> updateSale(GasSale sale) async {
     try {
-      await save(sale);
+      final updatedSale = sale.copyWith(updatedAt: DateTime.now());
+      await save(updatedSale);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       AppLogger.error(
@@ -342,7 +350,7 @@ class GasSaleOfflineRepository extends OfflineRepository<GasSale>
   @override
   Future<void> addCylinder(Cylinder cylinder) async {
     try {
-      final localId = cylinder.id.startsWith('local_')
+      final localId = cylinder.id.isNotEmpty
           ? cylinder.id
           : LocalIdGenerator.generate();
       final map = _cylinderToMap(cylinder)..['localId'] = localId;

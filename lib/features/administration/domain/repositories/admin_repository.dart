@@ -6,6 +6,9 @@ abstract class AdminRepository {
   /// Get all enterprise module users (all accesses)
   Future<List<EnterpriseModuleUser>> getEnterpriseModuleUsers();
 
+  /// Watch all enterprise module users (Stream)
+  Stream<List<EnterpriseModuleUser>> watchEnterpriseModuleUsers();
+
   /// Get enterprise module users for a specific user
   Future<List<EnterpriseModuleUser>> getUserEnterpriseModuleUsers(
     String userId,
@@ -51,6 +54,9 @@ abstract class AdminRepository {
 
   /// Get all roles
   Future<List<UserRole>> getAllRoles();
+
+  /// Watch all roles (Stream)
+  Stream<List<UserRole>> watchAllRoles();
 
   /// Get roles with pagination (LIMIT/OFFSET au niveau Drift).
   ///

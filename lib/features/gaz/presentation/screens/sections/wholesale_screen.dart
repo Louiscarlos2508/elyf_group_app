@@ -92,10 +92,7 @@ class _GazWholesaleScreenState extends ConsumerState<GazWholesaleScreen> {
 
                 return _WholesaleKpiGrid(metrics: metrics);
               },
-              loading: () => const SizedBox(
-                height: 115,
-                child: Center(child: CircularProgressIndicator()),
-              ),
+              loading: () => AppShimmers.statsGrid(context),
               error: (_, __) => const SizedBox.shrink(),
             ),
           ),
@@ -119,10 +116,7 @@ class _GazWholesaleScreenState extends ConsumerState<GazWholesaleScreen> {
 
                 return _WholesaleSalesList(sales: metrics.sales, theme: theme);
               },
-              loading: () => const SizedBox(
-                height: 163,
-                child: Center(child: CircularProgressIndicator()),
-              ),
+              loading: () => AppShimmers.list(context),
               error: (_, __) => const SizedBox.shrink(),
             ),
           ),

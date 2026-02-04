@@ -20,6 +20,8 @@ class CreditPaymentPrintHelper {
     required int paymentAmount,
     required int remainingAfterPayment,
     required String? notes,
+    int cashAmount = 0,
+    int omAmount = 0,
   }) async {
     final result = await showDialog<String>(
       context: context,
@@ -64,6 +66,8 @@ class CreditPaymentPrintHelper {
               paymentAmount: paymentAmount,
               remainingAfterPayment: remainingAfterPayment,
               notes: notes,
+              cashAmount: cashAmount,
+              omAmount: omAmount,
             );
         if (!context.mounted) return;
         await OpenFile.open(file.path);
@@ -74,6 +78,8 @@ class CreditPaymentPrintHelper {
           paymentAmount: paymentAmount,
           remainingAfterPayment: remainingAfterPayment,
           notes: notes,
+          cashAmount: cashAmount,
+          omAmount: omAmount,
         );
       }
     } catch (e) {

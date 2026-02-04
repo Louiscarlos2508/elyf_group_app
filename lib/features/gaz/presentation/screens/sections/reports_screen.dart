@@ -80,7 +80,7 @@ class _GazReportsScreenState extends ConsumerState<GazReportsScreen> {
         ),
       );
 
-      final reportData = await reportDataAsync.when(
+      final reportData = reportDataAsync.when(
         data: (data) => data,
         loading: () => throw Exception('Chargement des données en cours'),
         error: (error, _) => throw Exception('Erreur: $error'),
@@ -246,7 +246,7 @@ class _GazReportsScreenState extends ConsumerState<GazReportsScreen> {
             endDate: _endDate,
             totalRevenue: reportData.salesRevenue,
           ),
-          loading: () => const Center(child: CircularProgressIndicator()),
+          loading: () => AppShimmers.list(context),
           error: (_, __) => const SizedBox.shrink(),
         );
       default:

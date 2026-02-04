@@ -7,7 +7,6 @@ import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
 import '../../../../domain/entities/user.dart';
 import 'package:elyf_groupe_app/core.dart';
 import '../../../../application/providers.dart';
-import 'package:elyf_groupe_app/core/permissions/services/permission_registry.dart';
 import 'widgets/module_selection_widget.dart';
 import 'widgets/multiple_module_enterprise_selection_widget.dart';
 

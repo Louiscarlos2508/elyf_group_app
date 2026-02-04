@@ -36,13 +36,21 @@ class WholesalerPaymentCard extends StatelessWidget {
     final statusColor = const Color(0xFF0A0A0A);
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(17.292, 17.292, 17.292, 1.305),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
       decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Colors.black.withValues(alpha: 0.1),
-          width: 1.305,
+          color: theme.colorScheme.outline.withValues(alpha: 0.1),
+          width: 1,
         ),
-        borderRadius: BorderRadius.circular(10),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -58,8 +66,8 @@ class WholesalerPaymentCard extends StatelessWidget {
                     collection.clientName,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontSize: 16,
-                      fontWeight: FontWeight.normal,
-                      color: const Color(0xFF0A0A0A),
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -67,7 +75,7 @@ class WholesalerPaymentCard extends StatelessWidget {
                     collection.clientPhone,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       fontSize: 14,
-                      color: const Color(0xFF4A5565),
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -79,8 +87,8 @@ class WholesalerPaymentCard extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   border: Border.all(
-                    color: Colors.black.withValues(alpha: 0.1),
-                    width: 1.305,
+                    color: theme.colorScheme.outline.withValues(alpha: 0.1),
+                    width: 1,
                   ),
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -89,7 +97,7 @@ class WholesalerPaymentCard extends StatelessWidget {
                   style: theme.textTheme.bodySmall?.copyWith(
                     fontSize: 12,
                     fontWeight: FontWeight.normal,
-                    color: statusColor,
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
               ),
@@ -107,8 +115,8 @@ class WholesalerPaymentCard extends StatelessWidget {
               margin: const EdgeInsets.only(bottom: 7.993),
               padding: const EdgeInsets.fromLTRB(7.993, 7.993, 7.993, 0),
               decoration: BoxDecoration(
-                color: const Color(0xFFF9FAFB),
-                borderRadius: BorderRadius.circular(4),
+                color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -117,26 +125,25 @@ class WholesalerPaymentCard extends StatelessWidget {
                     '${weight}kg',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       fontSize: 14,
-                      fontWeight: FontWeight.normal,
-                      color: const Color(0xFF101828),
-                    ),
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onSurface,
+                  ),
                   ),
                   Text(
                     '$qty × ${numberFormat.format(pricePerBottle.toInt())} F',
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      fontSize: 14,
-                      color: const Color(0xFF4A5565),
-                    ),
+                    fontSize: 14,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                   ),
                 ],
               ),
             );
           }),
           // Divider
-          Container(
-            margin: const EdgeInsets.symmetric(vertical: 7.993),
-            height: 0.999,
-            color: Colors.black.withValues(alpha: 0.1),
+          Divider(
+            height: 1,
+            color: theme.colorScheme.outline.withValues(alpha: 0.1),
           ),
           // Montant dû
           Row(
@@ -146,15 +153,15 @@ class WholesalerPaymentCard extends StatelessWidget {
                 'Montant dû:',
                 style: theme.textTheme.bodyMedium?.copyWith(
                   fontSize: 14,
-                  color: const Color(0xFF4A5565),
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
               Text(
                 '${numberFormat.format(collection.amountDue.toInt())} FCFA',
                 style: theme.textTheme.bodyMedium?.copyWith(
                   fontSize: 14,
-                  fontWeight: FontWeight.normal,
-                  color: const Color(0xFF0A0A0A),
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface,
                 ),
               ),
             ],
@@ -168,14 +175,14 @@ class WholesalerPaymentCard extends StatelessWidget {
                 'Déjà payé:',
                 style: theme.textTheme.bodyMedium?.copyWith(
                   fontSize: 14,
-                  color: const Color(0xFF00A63E),
+                  color: const Color(0xFF10B981), // Emerald
                 ),
               ),
               Text(
                 '${numberFormat.format(collection.amountPaid.toInt())} FCFA',
                 style: theme.textTheme.bodyMedium?.copyWith(
                   fontSize: 14,
-                  color: const Color(0xFF00A63E),
+                  color: const Color(0xFF10B981), // Emerald
                 ),
               ),
             ],
@@ -189,16 +196,16 @@ class WholesalerPaymentCard extends StatelessWidget {
                 'Reste:',
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontSize: 18,
-                  fontWeight: FontWeight.normal,
-                  color: const Color(0xFF0A0A0A),
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface,
                 ),
               ),
               Text(
                 '${numberFormat.format(collection.remainingAmount.toInt())} FCFA',
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontSize: 18,
-                  fontWeight: FontWeight.normal,
-                  color: const Color(0xFFE7000B),
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.error,
                 ),
               ),
             ],
@@ -209,10 +216,10 @@ class WholesalerPaymentCard extends StatelessWidget {
             width: double.infinity,
             child: FilledButton(
               style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFF030213),
-                foregroundColor: Colors.white,
+                backgroundColor: theme.colorScheme.primary,
+                foregroundColor: theme.colorScheme.onPrimary,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 minimumSize: const Size(0, 32),

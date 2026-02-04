@@ -31,4 +31,34 @@ abstract class ReportRepository {
     DateTime? startDate,
     DateTime? endDate,
   });
+  
+  Stream<ReportData> watchReportData(
+    ReportPeriod period, {
+    DateTime? startDate,
+    DateTime? endDate,
+  });
+
+  Stream<SalesReportData> watchSalesReport(
+    ReportPeriod period, {
+    DateTime? startDate,
+    DateTime? endDate,
+  });
+
+  Stream<PurchasesReportData> watchPurchasesReport(
+    ReportPeriod period, {
+    DateTime? startDate,
+    DateTime? endDate,
+  });
+
+  Stream<ExpensesReportData> watchExpensesReport(
+    ReportPeriod period, {
+    DateTime? startDate,
+    DateTime? endDate,
+  });
+
+  Stream<ProfitReportData> watchProfitReport(
+    ReportPeriod period, {
+    DateTime? startDate,
+    DateTime? endDate,
+  });
 }

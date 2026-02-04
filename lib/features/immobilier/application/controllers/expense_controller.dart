@@ -10,6 +10,10 @@ class PropertyExpenseController {
     return await _expenseRepository.getAllExpenses();
   }
 
+  Stream<List<PropertyExpense>> watchExpenses() {
+    return _expenseRepository.watchExpenses();
+  }
+
   Future<PropertyExpense?> getExpense(String id) async {
     return await _expenseRepository.getExpenseById(id);
   }

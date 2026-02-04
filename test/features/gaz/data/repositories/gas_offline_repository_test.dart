@@ -1,13 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
 
 import 'package:elyf_groupe_app/core/offline/drift_service.dart';
 import 'package:elyf_groupe_app/core/offline/sync_manager.dart';
 import 'package:elyf_groupe_app/core/offline/connectivity_service.dart';
 import 'package:elyf_groupe_app/features/gaz/data/repositories/gas_offline_repository.dart';
-import 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder.dart';
-import 'package:elyf_groupe_app/features/gaz/domain/entities/gas_sale.dart';
 import '../../../../helpers/test_helpers.dart';
 
 import 'gas_offline_repository_test.mocks.dart';

@@ -1,4 +1,3 @@
-import 'dart:developer' as developer;
 import 'dart:convert';
 
 import '../../../../core/errors/error_handler.dart';

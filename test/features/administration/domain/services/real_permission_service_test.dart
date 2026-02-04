@@ -4,8 +4,6 @@ import 'package:mockito/annotations.dart';
 
 import 'package:elyf_groupe_app/features/administration/domain/services/real_permission_service.dart';
 import 'package:elyf_groupe_app/features/administration/application/controllers/admin_controller.dart';
-import 'package:elyf_groupe_app/core/permissions/entities/user_role.dart';
-import 'package:elyf_groupe_app/core/auth/entities/enterprise_module_user.dart';
 import '../../../../helpers/test_helpers.dart';
 import '../../../../helpers/mock_factories.dart';
 

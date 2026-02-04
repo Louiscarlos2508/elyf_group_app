@@ -22,13 +22,15 @@ class ClosureExpenseItem extends StatelessWidget {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      padding: EdgeInsets.fromLTRB(7.993, 7.993, 7.993, isTotal ? 1.305 : 0),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: isTotal ? const Color(0xFFFEF2F2) : const Color(0xFFF9FAFB),
+        color: isTotal
+            ? theme.colorScheme.errorContainer.withValues(alpha: 0.2)
+            : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
         border: isTotal
-            ? Border.all(color: const Color(0xFFFFC9C9), width: 1.305)
+            ? Border.all(color: theme.colorScheme.errorContainer.withValues(alpha: 0.5))
             : null,
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -36,17 +38,17 @@ class ClosureExpenseItem extends StatelessWidget {
           Text(
             label,
             style: theme.textTheme.bodyMedium?.copyWith(
-              fontSize: 14,
+              fontWeight: isTotal ? FontWeight.w700 : FontWeight.w500,
               color: isTotal
-                  ? const Color(0xFF82181A)
-                  : const Color(0xFF364153),
+                  ? theme.colorScheme.error
+                  : theme.colorScheme.onSurfaceVariant,
             ),
           ),
           Text(
             CurrencyFormatter.formatDouble(amount),
             style: theme.textTheme.bodyMedium?.copyWith(
-              fontSize: 14,
-              color: const Color(0xFFE7000B),
+              fontWeight: FontWeight.w700,
+              color: isTotal ? theme.colorScheme.error : theme.colorScheme.primary,
             ),
           ),
         ],

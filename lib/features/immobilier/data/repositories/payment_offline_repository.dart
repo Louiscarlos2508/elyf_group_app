@@ -175,23 +175,21 @@ class PaymentOfflineRepository extends OfflineRepository<Payment>
   // PaymentRepository interface implementation
 
   @override
-  Future<List<Payment>> getAllPayments() async {
-    try {
-      AppLogger.debug(
-        'Fetching payments for enterprise: $enterpriseId',
-        name: 'PaymentOfflineRepository',
-      );
-      return await getAllForEnterprise(enterpriseId);
-    } catch (error, stackTrace) {
-      final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      AppLogger.error(
-        'Error fetching payments: ${appException.message}',
-        name: 'PaymentOfflineRepository',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      throw appException;
-    }
+  Stream<List<Payment>> watchPayments() {
+    return driftService.records
+        .watchForEnterprise(
+          collectionName: collectionName,
+          enterpriseId: enterpriseId,
+          moduleType: 'immobilier',
+        )
+        .map((rows) {
+          final entities = rows
+              .map(
+                (r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>),
+              )
+              .toList();
+          return deduplicateByRemoteId(entities);
+        });
   }
 
   @override
@@ -272,7 +270,7 @@ class PaymentOfflineRepository extends OfflineRepository<Payment>
         cashAmount: payment.cashAmount,
         mobileMoneyAmount: payment.mobileMoneyAmount,
         createdAt: payment.createdAt,
-        updatedAt: payment.updatedAt,
+        updatedAt: DateTime.now(),
       );
       await save(paymentWithLocalId);
       return paymentWithLocalId;
@@ -291,8 +289,9 @@ class PaymentOfflineRepository extends OfflineRepository<Payment>
   @override
   Future<Payment> updatePayment(Payment payment) async {
     try {
-      await save(payment);
-      return payment;
+      final updatedPayment = payment.copyWith(updatedAt: DateTime.now());
+      await save(updatedPayment);
+      return updatedPayment;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       AppLogger.error(

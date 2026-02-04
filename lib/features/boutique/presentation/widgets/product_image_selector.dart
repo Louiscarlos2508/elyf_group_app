@@ -128,13 +128,13 @@ class _ProductImageSelectorState extends State<ProductImageSelector> {
             height: 150,
             width: double.infinity,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: theme.colorScheme.outline.withValues(alpha: 0.3),
+                color: theme.colorScheme.outline.withValues(alpha: 0.15),
               ),
             ),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(16),
               child: _selectedImage != null
                   ? Image.file(_selectedImage!, fit: BoxFit.cover)
                   : widget.initialImageUrl != null

@@ -255,7 +255,7 @@ class ExpensesScreen extends ConsumerWidget {
             },
           );
         },
-        loading: () => const LoadingIndicator(),
+        loading: () => const AppShimmers.table(),
         error: (error, stackTrace) => ErrorDisplayWidget(
           error: error,
           title: 'Erreur de chargement',

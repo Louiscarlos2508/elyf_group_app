@@ -37,6 +37,9 @@ class ExpenseOfflineRepository extends OfflineRepository<Expense>
           : (map['expenseDate'] != null
                 ? DateTime.parse(map['expenseDate'] as String)
                 : DateTime.now()),
+      updatedAt: map['updatedAt'] != null
+          ? DateTime.parse(map['updatedAt'] as String)
+          : null,
     );
   }
 
@@ -51,7 +54,9 @@ class ExpenseOfflineRepository extends OfflineRepository<Expense>
       'category': entity.category.name,
       'date': entity.date.toIso8601String(),
       'expenseDate': entity.date.toIso8601String(),
+      'expenseDate': entity.date.toIso8601String(),
       'deletedAt': entity.deletedAt?.toIso8601String(),
+      'updatedAt': entity.updatedAt?.toIso8601String(),
     };
   }
 
@@ -205,6 +210,7 @@ class ExpenseOfflineRepository extends OfflineRepository<Expense>
       amountCfa: expense.amountCfa,
       category: expense.category,
       date: expense.date,
+      updatedAt: DateTime.now(),
     );
     await save(expenseWithLocalId);
     return localId;
@@ -224,6 +230,7 @@ class ExpenseOfflineRepository extends OfflineRepository<Expense>
         notes: expense.notes,
         deletedAt: DateTime.now(),
         deletedBy: deletedBy,
+        updatedAt: DateTime.now(),
       );
       await save(deletedExpense);
     }
@@ -243,6 +250,7 @@ class ExpenseOfflineRepository extends OfflineRepository<Expense>
         notes: expense.notes,
         deletedAt: null,
         deletedBy: null,
+        updatedAt: DateTime.now(),
       );
       await save(restoredExpense);
     }
@@ -266,5 +274,26 @@ class ExpenseOfflineRepository extends OfflineRepository<Expense>
       ),
     );
     return expenses;
+  }
+
+  @override
+  Stream<List<Expense>> watchExpenses({int limit = 50}) {
+    return driftService.records
+        .watchForEnterprise(
+          collectionName: collectionName,
+          enterpriseId: enterpriseId,
+          moduleType: moduleType,
+        )
+        .map((rows) {
+      final expenses = rows
+          .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+          .toList();
+      final deduplicatedExpenses = deduplicateByRemoteId(expenses);
+      final filteredExpenses = deduplicatedExpenses
+          .where((expense) => !expense.isDeleted)
+          .toList();
+      filteredExpenses.sort((a, b) => b.date.compareTo(a.date));
+      return filteredExpenses.take(limit).toList();
+    });
   }
 }

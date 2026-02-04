@@ -13,7 +13,6 @@ import '../../widgets/property_search_bar.dart';
 import '../../widgets/tenant_card.dart';
 import '../../widgets/tenant_detail_dialog.dart';
 import '../../widgets/tenant_form_dialog.dart';
-import 'package:elyf_groupe_app/shared/presentation/widgets/refresh_button.dart';
 
 class TenantsScreen extends ConsumerStatefulWidget {
   const TenantsScreen({super.key});

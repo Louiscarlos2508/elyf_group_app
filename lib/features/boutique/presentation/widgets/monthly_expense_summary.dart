@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
+import 'package:elyf_groupe_app/app/theme/app_colors.dart';
 
 import '../../domain/entities/expense.dart';
 import '../../domain/services/dashboard_calculation_service.dart';
@@ -21,20 +22,21 @@ class MonthlyExpenseSummary extends StatelessWidget {
   /// Service for getting category labels.
   final BoutiqueDashboardCalculationService calculationService;
 
-  Color _getCategoryColor(ExpenseCategory category) {
+  Color _getCategoryColor(BuildContext context, ExpenseCategory category) {
+    final theme = Theme.of(context);
     switch (category) {
       case ExpenseCategory.stock:
-        return Colors.green;
+        return AppColors.success;
       case ExpenseCategory.rent:
-        return Colors.blue;
+        return const Color(0xFF3B82F6); // Blue
       case ExpenseCategory.utilities:
-        return Colors.orange;
+        return const Color(0xFFF59E0B); // Amber
       case ExpenseCategory.maintenance:
-        return Colors.purple;
+        return const Color(0xFF8B5CF6); // Purple
       case ExpenseCategory.marketing:
-        return Colors.teal;
+        return const Color(0xFF10B981); // Emerald
       case ExpenseCategory.other:
-        return Colors.grey;
+        return theme.colorScheme.outline;
     }
   }
 
@@ -47,10 +49,17 @@ class MonthlyExpenseSummary extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: theme.colorScheme.outline.withValues(alpha: 0.2),
+          color: theme.colorScheme.outline.withValues(alpha: 0.1),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -72,8 +81,9 @@ class MonthlyExpenseSummary extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.red.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
+              color: theme.colorScheme.error.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: theme.colorScheme.error.withValues(alpha: 0.1)),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -82,8 +92,8 @@ class MonthlyExpenseSummary extends StatelessWidget {
                 Text(
                   CurrencyFormatter.formatFCFA(monthlyTotal),
                   style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.red.shade700,
+                    fontWeight: FontWeight.w900,
+                    color: theme.colorScheme.error,
                   ),
                 ),
               ],
@@ -103,7 +113,7 @@ class MonthlyExpenseSummary extends StatelessWidget {
               final percent = monthlyTotal > 0
                   ? (entry.value / monthlyTotal * 100).toStringAsFixed(0)
                   : '0';
-              final color = _getCategoryColor(entry.key);
+              final color = _getCategoryColor(context, entry.key);
               return Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Row(

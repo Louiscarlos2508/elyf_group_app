@@ -39,6 +39,44 @@ class Payment {
   mobileMoneyAmount; // Montant payé en mobile money (si paymentMethod == both)
   final DateTime? createdAt;
   final DateTime? updatedAt;
+
+  Payment copyWith({
+    String? id,
+    String? contractId,
+    int? amount,
+    DateTime? paymentDate,
+    PaymentMethod? paymentMethod,
+    PaymentStatus? status,
+    Contract? contract,
+    int? month,
+    int? year,
+    String? receiptNumber,
+    String? notes,
+    PaymentType? paymentType,
+    int? cashAmount,
+    int? mobileMoneyAmount,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return Payment(
+      id: id ?? this.id,
+      contractId: contractId ?? this.contractId,
+      amount: amount ?? this.amount,
+      paymentDate: paymentDate ?? this.paymentDate,
+      paymentMethod: paymentMethod ?? this.paymentMethod,
+      status: status ?? this.status,
+      contract: contract ?? this.contract,
+      month: month ?? this.month,
+      year: year ?? this.year,
+      receiptNumber: receiptNumber ?? this.receiptNumber,
+      notes: notes ?? this.notes,
+      paymentType: paymentType ?? this.paymentType,
+      cashAmount: cashAmount ?? this.cashAmount,
+      mobileMoneyAmount: mobileMoneyAmount ?? this.mobileMoneyAmount,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
 }
 
 enum PaymentType {

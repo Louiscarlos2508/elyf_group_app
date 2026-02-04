@@ -99,80 +99,27 @@ class GasOfflineRepository implements GasRepository {
   // Implémentation de GasRepository - Cylinders
 
   @override
-  Future<List<Cylinder>> getCylinders() async {
-    try {
-      final rows = await driftService.records.listForEnterprise(
-        collectionName: _cylindersCollection,
-        enterpriseId: enterpriseId,
-        moduleType: 'gaz',
-      );
-
-      final cylinders = rows
-          .map((row) {
-            try {
-              final map = jsonDecode(row.dataJson) as Map<String, dynamic>;
-              // S'assurer que l'ID dans le JSON correspond au localId de la base
-              final cylinder = _cylinderFromMap(map);
-              // Utiliser le localId de la base de données comme ID principal
-              return cylinder.copyWith(id: row.localId);
-            } catch (e, stackTrace) {
-              final appException = ErrorHandler.instance.handleError(e, stackTrace);
-              AppLogger.warning(
-                'Error parsing cylinder: ${appException.message}',
-                name: 'GasOfflineRepository',
-                error: e,
-                stackTrace: stackTrace,
-              );
-              return null;
-            }
-          })
-          .whereType<Cylinder>()
-          .toList();
-
-      // Dédupliquer par weight + enterpriseId (un cylinder est unique par cette combinaison)
-      final deduplicated = <String, Cylinder>{};
-
-      for (final cylinder in cylinders) {
-        // Un cylinder est unique par weight + enterpriseId
-        final uniqueKey = '${cylinder.weight}_${cylinder.enterpriseId}';
-        
-        if (!deduplicated.containsKey(uniqueKey)) {
-          deduplicated[uniqueKey] = cylinder;
-        } else {
-          // Si on trouve un doublon, garder celui avec le localId le plus récent
-          final existing = deduplicated[uniqueKey]!;
-          // Préférer celui qui a un localId (plus récent) ou celui avec l'ID le plus long (plus spécifique)
-          if (cylinder.id.startsWith('local_') && 
-              !existing.id.startsWith('local_')) {
-            deduplicated[uniqueKey] = cylinder;
-          } else if (cylinder.id.length > existing.id.length) {
-            // Si les deux ont le même préfixe, garder celui avec l'ID le plus long
-            deduplicated[uniqueKey] = cylinder;
-          }
-        }
-      }
-
-      final result = deduplicated.values.toList();
-      
-      // Trier par poids
-      result.sort((a, b) => a.weight.compareTo(b.weight));
-      
-      developer.log(
-        'Cylinders récupérés: ${result.length} (après déduplication de ${cylinders.length})',
-        name: 'GasOfflineRepository.getCylinders',
-      );
-      
-      return result;
-    } catch (error, stackTrace) {
-      final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      AppLogger.error(
-        'Error fetching cylinders: ${appException.message}',
-        name: 'GasOfflineRepository',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      return [];
-    }
+  Stream<List<Cylinder>> watchCylinders() {
+    return driftService.records
+        .watchForEnterprise(
+          collectionName: _cylindersCollection,
+          enterpriseId: enterpriseId,
+          moduleType: 'gaz',
+        )
+        .map((rows) {
+          return rows
+              .map((row) {
+                try {
+                  final map = jsonDecode(row.dataJson) as Map<String, dynamic>;
+                  return _cylinderFromMap(map).copyWith(id: row.localId);
+                } catch (e) {
+                  return null;
+                }
+              })
+              .whereType<Cylinder>()
+              .toList()
+            ..sort((a, b) => a.weight.compareTo(b.weight));
+        });
   }
 
   @override
@@ -469,63 +416,35 @@ class GasOfflineRepository implements GasRepository {
   // Implémentation de GasRepository - Sales
 
   @override
-  Future<List<GasSale>> getSales({DateTime? from, DateTime? to}) async {
-    try {
-      final rows = await driftService.records.listForEnterprise(
-        collectionName: _salesCollection,
-        enterpriseId: enterpriseId,
-        moduleType: 'gaz',
-      );
+  Stream<List<GasSale>> watchSales({DateTime? from, DateTime? to}) {
+    return driftService.records
+        .watchForEnterprise(
+          collectionName: _salesCollection,
+          enterpriseId: enterpriseId,
+          moduleType: 'gaz',
+        )
+        .map((rows) {
+          var sales = rows
+              .map((row) {
+                try {
+                  final map = jsonDecode(row.dataJson) as Map<String, dynamic>;
+                  return _gasSaleFromMap(map);
+                } catch (e) {
+                  return null;
+                }
+              })
+              .whereType<GasSale>()
+              .toList();
 
-      var sales = rows
-          .map((row) {
-            try {
-              final map = jsonDecode(row.dataJson) as Map<String, dynamic>;
-              return _gasSaleFromMap(map);
-            } catch (e, stackTrace) {
-              final appException = ErrorHandler.instance.handleError(e, stackTrace);
-              AppLogger.warning(
-                'Error parsing gas sale: ${appException.message}',
-                name: 'GasOfflineRepository',
-                error: e,
-                stackTrace: stackTrace,
-              );
-              return null;
-            }
-          })
-          .whereType<GasSale>()
-          .toList();
+          if (from != null) {
+            sales = sales.where((s) => s.saleDate.isAfter(from)).toList();
+          }
+          if (to != null) {
+            sales = sales.where((s) => s.saleDate.isBefore(to)).toList();
+          }
 
-      // Filtrer par date
-      if (from != null) {
-        sales = sales
-            .where(
-              (s) =>
-                  s.saleDate.isAfter(from) || s.saleDate.isAtSameMomentAs(from),
-            )
-            .toList();
-      }
-
-      if (to != null) {
-        sales = sales
-            .where(
-              (s) => s.saleDate.isBefore(to) || s.saleDate.isAtSameMomentAs(to),
-            )
-            .toList();
-      }
-
-      sales.sort((a, b) => b.saleDate.compareTo(a.saleDate));
-      return sales;
-    } catch (error, stackTrace) {
-      final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      AppLogger.error(
-        'Error fetching sales: ${appException.message}',
-        name: 'GasOfflineRepository',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      return [];
-    }
+          return sales..sort((a, b) => b.saleDate.compareTo(a.saleDate));
+        });
   }
 
   @override

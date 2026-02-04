@@ -39,14 +39,16 @@ class ApprovisionnementTabBar extends StatelessWidget {
                         ? Border.all(color: Colors.transparent, width: 1.3)
                         : null,
                   ),
-                  child: Text(
-                    'Tours en cours',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontSize: 14,
-                      color: const Color(0xFF0A0A0A),
+                    child: Text(
+                      'Tours en cours',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontSize: 14,
+                        color: const Color(0xFF0A0A0A),
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    textAlign: TextAlign.center,
-                  ),
                 ),
               ),
             ),
@@ -66,14 +68,16 @@ class ApprovisionnementTabBar extends StatelessWidget {
                         : Colors.transparent,
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: Text(
-                    'Historique',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontSize: 14,
-                      color: const Color(0xFF0A0A0A),
+                    child: Text(
+                      'Historique',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontSize: 14,
+                        color: const Color(0xFF0A0A0A),
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    textAlign: TextAlign.center,
-                  ),
                 ),
               ),
             ),

@@ -5,7 +5,6 @@ import 'package:mockito/annotations.dart';
 import 'package:elyf_groupe_app/features/gaz/application/controllers/gas_controller.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/repositories/gas_repository.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder.dart';
-import 'package:elyf_groupe_app/features/gaz/domain/entities/gas_sale.dart';
 import '../../../../helpers/test_helpers.dart';
 
 import 'gas_controller_test.mocks.dart';

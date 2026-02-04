@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/providers.dart';
 import '../../domain/entities/report_data.dart';
+import '../../../../app/theme/app_colors.dart';
 
 /// Content widget for sales report tab - style eau_minerale.
 class SalesReportContentV2 extends ConsumerWidget {
@@ -35,10 +36,17 @@ class SalesReportContentV2 extends ConsumerWidget {
       padding: EdgeInsets.all(isWide ? 24 : 16),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: theme.colorScheme.outline.withValues(alpha: 0.2),
+          color: theme.colorScheme.outline.withValues(alpha: 0.1),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: salesReportAsync.when(
         data: (data) {
@@ -73,8 +81,8 @@ class SalesReportContentV2 extends ConsumerWidget {
                 Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(12),
+                    color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(16),
                   ),
                   child: Center(
                     child: Text(
@@ -104,7 +112,7 @@ class SalesReportContentV2 extends ConsumerWidget {
             ],
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const AppShimmers.list(count: 3),
         error: (_, __) => const SizedBox.shrink(),
       ),
     );
@@ -115,8 +123,11 @@ class SalesReportContentV2 extends ConsumerWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(12),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.outline.withValues(alpha: 0.05),
+        ),
       ),
       child: Row(
         children: [
@@ -143,8 +154,8 @@ class SalesReportContentV2 extends ConsumerWidget {
           Text(
             CurrencyFormatter.formatFCFA(product.revenue),
             style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: Colors.green.shade700,
+              fontWeight: FontWeight.w800,
+              color: AppColors.success,
             ),
           ),
         ],
@@ -156,8 +167,11 @@ class SalesReportContentV2 extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(12),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.outline.withValues(alpha: 0.05),
+        ),
       ),
       child: Column(
         children: [

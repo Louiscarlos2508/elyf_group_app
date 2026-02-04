@@ -1,4 +1,4 @@
-import 'dart:developer' as developer;
+
 
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/logging/app_logger.dart';
@@ -27,18 +27,12 @@ class ActivityOfflineRepository implements ActivityRepository {
     try {
       final today = DateTime.now();
       final startOfDay = DateTime(today.year, today.month, today.day);
-      final endOfDay = DateTime(today.year, today.month, today.day, 23, 59, 59);
+      final endOfDay = DateTime(today.year, today.month, today.day, 23, 59, 59, 999);
 
-      final sales = await saleRepository.fetchRecentSales(limit: 1000);
-      final todaySales = sales
-          .where(
-            (s) =>
-                s.date.isAfter(
-                  startOfDay.subtract(const Duration(seconds: 1)),
-                ) &&
-                s.date.isBefore(endOfDay.add(const Duration(seconds: 1))),
-          )
-          .toList();
+      final todaySales = await saleRepository.fetchSales(
+        startDate: startOfDay,
+        endDate: endOfDay,
+      );
 
       final sessions = await productionSessionRepository.fetchSessions(
         startDate: startOfDay,
@@ -78,18 +72,12 @@ class ActivityOfflineRepository implements ActivityRepository {
   Future<ActivitySummary> fetchMonthlySummary(DateTime month) async {
     try {
       final startOfMonth = DateTime(month.year, month.month, 1);
-      final endOfMonth = DateTime(month.year, month.month + 1, 0, 23, 59, 59);
+      final endOfMonth = DateTime(month.year, month.month + 1, 0, 23, 59, 59, 999);
 
-      final sales = await saleRepository.fetchRecentSales(limit: 5000);
-      final monthlySales = sales
-          .where(
-            (s) =>
-                s.date.isAfter(
-                  startOfMonth.subtract(const Duration(seconds: 1)),
-                ) &&
-                s.date.isBefore(endOfMonth.add(const Duration(seconds: 1))),
-          )
-          .toList();
+      final monthlySales = await saleRepository.fetchSales(
+        startDate: startOfMonth,
+        endDate: endOfMonth,
+      );
 
       final sessions = await productionSessionRepository.fetchSessions(
         startDate: startOfMonth,

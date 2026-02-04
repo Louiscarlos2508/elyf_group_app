@@ -14,6 +14,7 @@ class GasSale {
     this.tourId, // ID du tour d'approvisionnement (pour ventes en gros)
     this.wholesalerId, // ID du grossiste (pour ventes en gros)
     this.wholesalerName, // Nom du grossiste (pour ventes en gros)
+    this.updatedAt,
   });
 
   final String id;
@@ -29,6 +30,7 @@ class GasSale {
   final String? tourId; // ID du tour d'approvisionnement (pour ventes en gros)
   final String? wholesalerId; // ID du grossiste (pour ventes en gros)
   final String? wholesalerName; // Nom du grossiste (pour ventes en gros)
+  final DateTime? updatedAt;
 
   GasSale copyWith({
     String? id,
@@ -44,6 +46,7 @@ class GasSale {
     String? tourId,
     String? wholesalerId,
     String? wholesalerName,
+    DateTime? updatedAt,
   }) {
     return GasSale(
       id: id ?? this.id,
@@ -59,6 +62,7 @@ class GasSale {
       tourId: tourId ?? this.tourId,
       wholesalerId: wholesalerId ?? this.wholesalerId,
       wholesalerName: wholesalerName ?? this.wholesalerName,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 }

@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
-import 'package:flutter/foundation.dart';
 
 import '../logging/app_logger.dart';
 import 'package:sunmi_flutter_plugin_printer/bean/printer.dart';

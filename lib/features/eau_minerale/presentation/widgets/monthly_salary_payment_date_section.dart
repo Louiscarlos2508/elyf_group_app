@@ -31,49 +31,52 @@ class MonthlySalaryPaymentDateSection extends StatelessWidget {
     final theme = Theme.of(context);
     return Column(
       children: [
-        InkWell(
-          onTap: () => _selectDate(context),
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: theme.colorScheme.outline.withValues(alpha: 0.3),
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => _selectDate(context),
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: theme.colorScheme.outline.withValues(alpha: 0.3),
+                ),
+                borderRadius: BorderRadius.circular(12),
               ),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.calendar_today_outlined,
-                  color: theme.colorScheme.primary,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Date du Paiement',
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        DateFormatter.formatDate(paymentDate),
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.calendar_today_outlined,
+                    color: theme.colorScheme.primary,
                   ),
-                ),
-                Icon(
-                  Icons.arrow_drop_down,
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ],
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Date du Paiement',
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          DateFormatter.formatDate(paymentDate),
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    Icons.arrow_drop_down,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ],
+              ),
             ),
           ),
         ),

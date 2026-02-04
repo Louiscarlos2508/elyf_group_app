@@ -49,9 +49,20 @@ class _CylinderManagementCardState
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: colors.outline.withValues(alpha: 0.2)),
+        side: BorderSide(color: colors.outline.withValues(alpha: 0.1)),
       ),
-      child: Padding(
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.02),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -226,7 +237,10 @@ class _CylinderManagementCardState
               Navigator.of(context).pop();
               await _deleteCylinder(cylinder.id);
             },
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
             child: const Text('Supprimer'),
           ),
         ],

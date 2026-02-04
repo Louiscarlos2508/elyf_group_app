@@ -63,7 +63,7 @@ class FinanceOfflineRepository extends OfflineRepository<ExpenseRecord>
 
   @override
   String getLocalId(ExpenseRecord entity) {
-    if (entity.id.startsWith('local_')) return entity.id;
+    if (entity.id.isNotEmpty) return entity.id;
     return LocalIdGenerator.generate();
   }
 
@@ -161,10 +161,20 @@ class FinanceOfflineRepository extends OfflineRepository<ExpenseRecord>
 
   @override
   Future<List<ExpenseRecord>> getAllForEnterprise(String enterpriseId) async {
+    developer.log(
+      'Fetching all expenses for enterprise: $enterpriseId (module: $moduleType)',
+      name: 'FinanceOfflineRepository',
+    );
+
     final rows = await driftService.records.listForEnterprise(
       collectionName: collectionName,
       enterpriseId: enterpriseId,
       moduleType: moduleType,
+    );
+
+    developer.log(
+      'Found ${rows.length} records for $collectionName / $enterpriseId',
+      name: 'FinanceOfflineRepository',
     );
     
     // Décoder et parser de manière sécurisée, en ignorant les données corrompues
@@ -187,8 +197,18 @@ class FinanceOfflineRepository extends OfflineRepository<ExpenseRecord>
       }
     }
     
+    developer.log(
+      'Successfully decoded ${expenses.length} expenses',
+      name: 'FinanceOfflineRepository',
+    );
+
     // Dédupliquer par remoteId pour éviter les doublons
     final deduplicatedExpenses = deduplicateByRemoteId(expenses);
+
+    developer.log(
+      'Final list has ${deduplicatedExpenses.length} expenses after deduplication',
+      name: 'FinanceOfflineRepository',
+    );
     
     // Trier par date décroissante
     deduplicatedExpenses.sort((a, b) => b.date.compareTo(a.date));
@@ -212,6 +232,93 @@ class FinanceOfflineRepository extends OfflineRepository<ExpenseRecord>
       );
       throw appException;
     }
+  }
+
+  @override
+  Future<List<ExpenseRecord>> fetchExpenses({
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    try {
+      var all = await getAllForEnterprise(enterpriseId);
+
+      if (startDate != null) {
+        all = all
+            .where(
+              (e) =>
+                  e.date.isAfter(startDate) || e.date.isAtSameMomentAs(startDate),
+            )
+            .toList();
+      }
+
+      if (endDate != null) {
+        all = all
+            .where(
+              (e) => e.date.isBefore(endDate) || e.date.isAtSameMomentAs(endDate),
+            )
+            .toList();
+      }
+
+      return all;
+    } catch (error, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
+      AppLogger.error(
+        'Error fetching expenses for period: ${appException.message}',
+        name: 'FinanceOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      throw appException;
+    }
+  }
+
+  @override
+  Stream<List<ExpenseRecord>> watchExpenses({
+    DateTime? startDate,
+    DateTime? endDate,
+  }) {
+    return driftService.records
+        .watchForEnterprise(
+          collectionName: collectionName,
+          enterpriseId: enterpriseId,
+          moduleType: moduleType,
+        )
+        .map((rows) {
+          var expenses = rows
+              .map((row) => safeDecodeJson(row.dataJson, row.localId))
+              .where((map) => map != null)
+              .map((map) {
+                try {
+                  return fromMap(map!);
+                } catch (e) {
+                  return null;
+                }
+              })
+              .whereType<ExpenseRecord>()
+              .toList();
+
+          if (startDate != null) {
+            expenses = expenses
+                .where(
+                  (e) =>
+                      e.date.isAfter(startDate) ||
+                      e.date.isAtSameMomentAs(startDate),
+                )
+                .toList();
+          }
+
+          if (endDate != null) {
+            expenses = expenses
+                .where(
+                  (e) =>
+                      e.date.isBefore(endDate) ||
+                      e.date.isAtSameMomentAs(endDate),
+                )
+                .toList();
+          }
+
+          return expenses;
+        });
   }
 
   @override

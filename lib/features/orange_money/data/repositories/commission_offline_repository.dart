@@ -73,7 +73,7 @@ class CommissionOfflineRepository extends OfflineRepository<Commission>
 
   @override
   String getLocalId(Commission entity) {
-    if (entity.id.startsWith('local_')) return entity.id;
+    if (entity.id.isNotEmpty) return entity.id;
     return LocalIdGenerator.generate();
   }
 

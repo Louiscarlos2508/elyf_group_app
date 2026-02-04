@@ -23,4 +23,30 @@ class Tenant {
   final String? notes;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+
+  Tenant copyWith({
+    String? id,
+    String? fullName,
+    String? phone,
+    String? email,
+    String? address,
+    String? idNumber,
+    String? emergencyContact,
+    String? notes,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return Tenant(
+      id: id ?? this.id,
+      fullName: fullName ?? this.fullName,
+      phone: phone ?? this.phone,
+      email: email ?? this.email,
+      address: address ?? this.address,
+      idNumber: idNumber ?? this.idNumber,
+      emergencyContact: emergencyContact ?? this.emergencyContact,
+      notes: notes ?? this.notes,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
 }

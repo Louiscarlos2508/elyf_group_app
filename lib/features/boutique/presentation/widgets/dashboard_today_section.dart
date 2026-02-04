@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
+import 'package:elyf_groupe_app/app/theme/app_colors.dart';
 
 import '../../domain/services/dashboard_calculation_service.dart';
 import 'dashboard_kpi_card.dart';
@@ -29,17 +30,17 @@ class DashboardTodaySection extends StatelessWidget {
             value: CurrencyFormatter.formatFCFA(todayRevenue),
             subtitle: '$todayCount vente(s)',
             icon: Icons.trending_up,
-            iconColor: Colors.blue,
-            backgroundColor: Colors.blue,
+            iconColor: const Color(0xFF3B82F6),
+            backgroundColor: const Color(0xFF3B82F6),
           ),
           DashboardKpiCard(
             label: 'Ticket Moyen',
             value: CurrencyFormatter.formatFCFA(avgTicket),
             subtitle: todayCount > 0 ? 'par transaction' : 'aucune vente',
             icon: Icons.receipt,
-            iconColor: Colors.green,
-            valueColor: Colors.green.shade700,
-            backgroundColor: Colors.green,
+            iconColor: AppColors.success,
+            valueColor: AppColors.success,
+            backgroundColor: AppColors.success,
           ),
         ];
 

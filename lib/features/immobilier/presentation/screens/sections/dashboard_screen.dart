@@ -161,7 +161,7 @@ class _DashboardTodayKpis extends StatelessWidget {
             .toList();
         return DashboardTodaySectionV2(todayPayments: todayPayments);
       },
-      loading: () => const LoadingIndicator(),
+      loading: () => AppShimmers.statsGrid(count: 3),
       error: (error, stackTrace) => ErrorDisplayWidget(
         error: error,
         onRetry: () => ref.refresh(paymentsProvider),
@@ -219,38 +219,23 @@ class _DashboardMonthKpis extends StatelessWidget {
                           occupancyRate: metrics.occupancyRate,
                         );
                       },
-                      loading: () => const SizedBox(
-                        height: 200,
-                        child: LoadingIndicator(),
-                      ),
+                      loading: () => AppShimmers.statsGrid(count: 5),
                       error: (error, stackTrace) => const SizedBox.shrink(),
                     );
                   },
-                  loading: () => const SizedBox(
-                    height: 200,
-                    child: Center(child: CircularProgressIndicator()),
-                  ),
+                  loading: () => AppShimmers.statsGrid(count: 5),
                   error: (_, __) => const SizedBox.shrink(),
                 );
               },
-              loading: () => const SizedBox(
-                height: 200,
-                child: Center(child: CircularProgressIndicator()),
-              ),
+              loading: () => AppShimmers.statsGrid(count: 5),
               error: (_, __) => const SizedBox.shrink(),
             );
           },
-          loading: () => const SizedBox(
-            height: 200,
-            child: Center(child: CircularProgressIndicator()),
-          ),
+          loading: () => AppShimmers.statsGrid(count: 5),
           error: (_, __) => const SizedBox.shrink(),
         );
       },
-      loading: () => const SizedBox(
-        height: 200,
-        child: LoadingIndicator(),
-      ),
+      loading: () => AppShimmers.statsGrid(count: 5),
       error: (error, stackTrace) => const SizedBox.shrink(),
     );
   }
@@ -291,7 +276,7 @@ class _DashboardAlerts extends StatelessWidget {
           expiringContracts: expiringContracts,
         );
       },
-      loading: () => const LoadingIndicator(height: 100),
+      loading: () => AppShimmers.list(count: 2),
       error: (error, stackTrace) => ErrorDisplayWidget(
         error: error,
         title: 'Erreur de chargement des alertes',

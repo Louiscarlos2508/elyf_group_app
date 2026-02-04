@@ -90,14 +90,21 @@ class _StatCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    // Modern Flat Design
+    // Modern Flat Design - Refined
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: theme.colorScheme.shadow.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
         border: Border.all(
-          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
         ),
       ),
       child: Column(
@@ -106,29 +113,31 @@ class _StatCard extends StatelessWidget {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
+                  color: color.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(icon, size: 20, color: color),
+                child: Icon(icon, size: 22, color: color),
               ),
               const Spacer(),
               Text(
                 value,
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
                   color: theme.colorScheme.onSurface,
+                  letterSpacing: -0.5,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Text(
-            label,
-            style: theme.textTheme.bodyMedium?.copyWith(
+            label.toUpperCase(),
+            style: theme.textTheme.labelSmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.1,
             ),
           ),
         ],

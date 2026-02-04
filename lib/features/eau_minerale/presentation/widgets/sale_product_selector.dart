@@ -51,88 +51,154 @@ class SaleProductSelector extends ConsumerWidget {
     final selected = await showDialog<Product>(
       context: context,
       builder: (_) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: Container(
-          constraints: const BoxConstraints(maxWidth: 400, maxHeight: 500),
+          constraints: const BoxConstraints(maxWidth: 450, maxHeight: 600),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Padding(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                 child: Row(
                   children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.inventory_2_outlined,
+                        color: theme.colorScheme.primary,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
                     Expanded(
                       child: Text(
                         'Sélectionner le produit',
                         style: theme.textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
-                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     IconButton(
                       icon: const Icon(Icons.close),
                       onPressed: () => Navigator.of(context).pop(),
+                      tooltip: 'Fermer',
                     ),
                   ],
                 ),
               ),
               const Divider(height: 1),
               Flexible(
-                child: ListView(
+                child: ListView.separated(
+                  padding: const EdgeInsets.all(16),
                   shrinkWrap: true,
-                  children: list.map((product) {
+                  itemCount: list.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  itemBuilder: (context, index) {
+                    final product = list[index];
                     final isOutOfStock = packStock <= 0;
-                    return ListTile(
-                      enabled: true,
-                      leading: Icon(
-                        Icons.inventory_2_outlined,
-                        color: isOutOfStock
-                            ? theme.colorScheme.error
-                            : theme.colorScheme.primary,
-                      ),
-                      title: Text(product.name),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('${product.unitPrice} CFA/${product.unit}'),
-                          const SizedBox(height: 4),
-                          Row(
+                    return Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () => Navigator.of(context).pop(product),
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: isOutOfStock
+                                  ? theme.colorScheme.error.withValues(alpha: 0.3)
+                                  : theme.colorScheme.outline.withValues(alpha: 0.2),
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                            color: isOutOfStock
+                                ? theme.colorScheme.errorContainer.withValues(alpha: 0.1)
+                                : null,
+                          ),
+                          child: Row(
                             children: [
-                              Icon(
-                                Icons.store_outlined,
-                                size: 14,
-                                color: isOutOfStock
-                                    ? theme.colorScheme.error
-                                    : theme.colorScheme.onSurfaceVariant,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                'Stock: $packStock ${product.unit}',
-                                style: theme.textTheme.bodySmall?.copyWith(
+                              Container(
+                                width: 48,
+                                height: 48,
+                                decoration: BoxDecoration(
+                                  color: isOutOfStock
+                                      ? theme.colorScheme.errorContainer
+                                      : theme.colorScheme.secondaryContainer.withValues(alpha: 0.5),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Icon(
+                                  isOutOfStock ? Icons.production_quantity_limits : Icons.local_drink,
                                   color: isOutOfStock
                                       ? theme.colorScheme.error
-                                      : theme.colorScheme.onSurfaceVariant,
-                                  fontWeight: FontWeight.w500,
+                                      : theme.colorScheme.secondary,
                                 ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      product.name,
+                                      style: theme.textTheme.titleMedium?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                        decoration: isOutOfStock ? TextDecoration.lineThrough : null,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '${product.unitPrice} CFA / ${product.unit}',
+                                      style: theme.textTheme.bodyMedium?.copyWith(
+                                        color: theme.colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  if (isOutOfStock)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: theme.colorScheme.error,
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Text(
+                                        'RUPTURE',
+                                        style: theme.textTheme.labelSmall?.copyWith(
+                                          color: theme.colorScheme.onError,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    )
+                                  else ...[
+                                    Text(
+                                      '$packStock',
+                                      style: theme.textTheme.titleLarge?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: theme.colorScheme.primary,
+                                      ),
+                                    ),
+                                    Text(
+                                      'en stock',
+                                      style: theme.textTheme.labelSmall?.copyWith(
+                                        color: theme.colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
+                                ],
                               ),
                             ],
                           ),
-                        ],
+                        ),
                       ),
-                      trailing: isOutOfStock
-                          ? Chip(
-                              label: const Text('Rupture'),
-                              backgroundColor:
-                                  theme.colorScheme.errorContainer,
-                              labelStyle: TextStyle(
-                                color: theme.colorScheme.onErrorContainer,
-                                fontSize: 11,
-                              ),
-                            )
-                          : null,
-                      onTap: () => Navigator.of(context).pop(product),
                     );
-                  }).toList(),
+                  },
                 ),
               ),
             ],

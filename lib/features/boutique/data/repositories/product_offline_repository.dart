@@ -47,6 +47,9 @@ class ProductOfflineRepository extends OfflineRepository<Product>
       purchasePrice: (map['purchasePrice'] as num?)?.toInt(),
       deletedAt: deletedAt,
       deletedBy: map['deletedBy'] as String?,
+      updatedAt: map['updatedAt'] != null
+          ? DateTime.parse(map['updatedAt'] as String)
+          : null,
     );
   }
 
@@ -66,6 +69,7 @@ class ProductOfflineRepository extends OfflineRepository<Product>
       'isActive': true,
       'deletedAt': entity.deletedAt?.toIso8601String(),
       'deletedBy': entity.deletedBy,
+      'updatedAt': entity.updatedAt?.toIso8601String(),
     };
   }
 
@@ -235,7 +239,10 @@ class ProductOfflineRepository extends OfflineRepository<Product>
   Future<String> createProduct(Product product) async {
     try {
       final localId = getLocalId(product);
-      final productWithLocalId = product.copyWith(id: localId);
+      final productWithLocalId = product.copyWith(
+        id: localId,
+        updatedAt: DateTime.now(),
+      );
       await save(productWithLocalId);
       return localId;
     } catch (error, stackTrace) {
@@ -253,7 +260,8 @@ class ProductOfflineRepository extends OfflineRepository<Product>
   @override
   Future<void> updateProduct(Product product) async {
     try {
-      await save(product);
+      final updatedProduct = product.copyWith(updatedAt: DateTime.now());
+      await save(updatedProduct);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       AppLogger.error(
@@ -275,6 +283,7 @@ class ProductOfflineRepository extends OfflineRepository<Product>
         final deletedProduct = product.copyWith(
           deletedAt: DateTime.now(),
           deletedBy: deletedBy,
+          updatedAt: DateTime.now(),
         );
         await save(deletedProduct);
       }
@@ -299,6 +308,7 @@ class ProductOfflineRepository extends OfflineRepository<Product>
         final restoredProduct = product.copyWith(
           deletedAt: null,
           deletedBy: null,
+          updatedAt: DateTime.now(),
         );
         await save(restoredProduct);
       }
@@ -343,5 +353,23 @@ class ProductOfflineRepository extends OfflineRepository<Product>
       );
       throw appException;
     }
+  }
+
+  @override
+  Stream<List<Product>> watchProducts() {
+    return driftService.records
+        .watchForEnterprise(
+          collectionName: collectionName,
+          enterpriseId: enterpriseId,
+          moduleType: moduleType,
+        )
+        .map((rows) {
+      final products = rows
+          .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+          .toList();
+      return deduplicateByRemoteId(products)
+          .where((p) => !p.isDeleted)
+          .toList();
+    });
   }
 }

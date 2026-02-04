@@ -4,7 +4,6 @@ import 'dart:developer' as developer;
 import '../../../../core/logging/app_logger.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
 
 import '../../../../core/errors/app_exceptions.dart';
 import '../../../../core/errors/error_handler.dart';
@@ -675,5 +674,10 @@ class EnterpriseController {
         userDisplayName: userDisplayName,
       );
     }
+  }
+
+  /// Surveille toutes les entreprises (Stream).
+  Stream<List<Enterprise>> watchAllEnterprises() {
+    return _repository.watchAllEnterprises();
   }
 }

@@ -7,7 +7,6 @@ import 'package:elyf_groupe_app/features/immobilier/domain/repositories/payment_
 import 'package:elyf_groupe_app/features/immobilier/domain/services/immobilier_validation_service.dart';
 import 'package:elyf_groupe_app/features/immobilier/domain/entities/payment.dart';
 import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
-import '../../../../helpers/test_helpers.dart';
 
 import 'payment_controller_test.mocks.dart';
 

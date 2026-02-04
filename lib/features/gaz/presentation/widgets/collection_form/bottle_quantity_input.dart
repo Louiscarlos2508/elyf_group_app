@@ -32,7 +32,9 @@ class BottleQuantityInput extends StatelessWidget {
         // Type dropdown
         Text(
           'Type',
-          style: TextStyle(fontSize: 12, color: const Color(0xFF0A0A0A)),
+          style: theme.textTheme.labelLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
         ),
         const SizedBox(height: 8),
         availableWeights.isEmpty
@@ -40,9 +42,9 @@ class BottleQuantityInput extends StatelessWidget {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: theme.colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: theme.colorScheme.outline.withValues(alpha: 0.2),
+                    color: theme.colorScheme.outline.withValues(alpha: 0.1),
                   ),
                 ),
                 child: Row(
@@ -67,31 +69,32 @@ class BottleQuantityInput extends StatelessWidget {
             : PopupMenuButton<int>(
                 onSelected: onWeightSelected,
                 child: Container(
-                  height: 36,
+                  height: 48,
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 13,
-                    vertical: 1,
+                    horizontal: 16,
                   ),
                   decoration: BoxDecoration(
-                    color: lightGray,
-                    borderRadius: BorderRadius.circular(8),
+                    color: theme.colorScheme.surfaceContainerLow,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: theme.colorScheme.outline.withValues(alpha: 0.1),
+                    ),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
                         selectedWeight == null ? 'Type' : '${selectedWeight}kg',
-                        style: TextStyle(
-                          fontSize: 14,
+                        style: theme.textTheme.bodyMedium?.copyWith(
                           color: selectedWeight == null
-                              ? textGray
-                              : const Color(0xFF0A0A0A),
+                              ? theme.colorScheme.onSurfaceVariant
+                              : theme.colorScheme.onSurface,
                         ),
                       ),
-                      const Icon(
+                      Icon(
                         Icons.arrow_drop_down,
-                        size: 16,
-                        color: Color(0xFF717182),
+                        size: 20,
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ],
                   ),
@@ -109,38 +112,48 @@ class BottleQuantityInput extends StatelessWidget {
         // Quantité
         Text(
           'Quantité',
-          style: TextStyle(fontSize: 12, color: const Color(0xFF0A0A0A)),
+          style: theme.textTheme.labelLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
         ),
         const SizedBox(height: 8),
         SizedBox(
-          width: 80,
+          width: 100,
           child: TextFormField(
             controller: quantityController,
             decoration: InputDecoration(
               filled: true,
-              fillColor: lightGray,
+              fillColor: theme.colorScheme.surfaceContainerLow,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide.none,
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: theme.colorScheme.outline.withValues(alpha: 0.1),
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: theme.colorScheme.outline.withValues(alpha: 0.1),
+                ),
               ),
               contentPadding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 4,
+                horizontal: 16,
+                vertical: 12,
               ),
             ),
-            style: TextStyle(fontSize: 14, color: textGray),
+            style: theme.textTheme.bodyMedium,
             keyboardType: TextInputType.number,
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 24),
         // Bouton Ajouter
         SizedBox(
           width: double.infinity,
-          height: 32,
+          height: 48,
           child: FilledButton(
             onPressed: onAdd,
-            style: GazButtonStyles.filledPrimaryIcon,
-            child: const Icon(Icons.add, size: 16),
+            style: GazButtonStyles.filledPrimaryIcon(context),
+            child: const Icon(Icons.add, size: 20),
           ),
         ),
       ],

@@ -62,13 +62,13 @@ class DriftService {
 
   static const int currentVersion = 1;
 
-  Future<void> initialize() async {
+  Future<void> initialize({QueryExecutor? connection}) async {
     if (_initialized) {
       developer.log('DriftService already initialized', name: 'offline.drift');
       return;
     }
 
-    _db = AppDatabase();
+    _db = AppDatabase(connection);
     _records = OfflineRecordDao(_db!);
     _syncOperations = SyncOperationDao(_db!);
     _initialized = true;

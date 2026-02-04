@@ -36,12 +36,16 @@ class CollectionTotalCard extends StatelessWidget {
             children: [
               const Icon(Icons.analytics, size: 20, color: Color(0xFF1C398E)),
               const SizedBox(width: 8),
-              const Text(
-                '📊 TOTAL GÉNÉRAL DU CHARGEMENT',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1C398E),
+              const Expanded(
+                child: Text(
+                  '📊 TOTAL GÉNÉRAL DU CHARGEMENT',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1C398E),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
@@ -122,10 +126,15 @@ class CollectionTotalCard extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      'Total vides :',
-                      style: TextStyle(fontSize: 16, color: Color(0xFF1E2939)),
+                    const Expanded(
+                      child: Text(
+                        'Total vides :',
+                        style: TextStyle(fontSize: 16, color: Color(0xFF1E2939)),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
+                    const SizedBox(width: 8),
                     Text(
                       '$totalBottles',
                       style: const TextStyle(
@@ -147,18 +156,23 @@ class CollectionTotalCard extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        'TOTAL À CHARGER :',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF1C398E),
+                      const Expanded(
+                        child: Text(
+                          'TOTAL À CHARGER :',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF1C398E),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
+                      const SizedBox(width: 8),
                       Text(
                         '$totalBottles',
                         style: const TextStyle(
-                          fontSize: 30,
+                          fontSize: 26,
                           fontWeight: FontWeight.bold,
                           color: Color(0xFF1C398E),
                         ),

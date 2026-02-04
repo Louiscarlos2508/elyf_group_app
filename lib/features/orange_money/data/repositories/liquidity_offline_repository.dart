@@ -76,7 +76,7 @@ class LiquidityOfflineRepository extends OfflineRepository<LiquidityCheckpoint>
 
   @override
   String getLocalId(LiquidityCheckpoint entity) {
-    if (entity.id.startsWith('local_')) return entity.id;
+    if (entity.id.isNotEmpty) return entity.id;
     return LocalIdGenerator.generate();
   }
 

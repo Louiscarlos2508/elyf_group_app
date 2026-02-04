@@ -20,6 +20,9 @@ abstract class PropertyRepository {
   /// Met à jour une propriété existante.
   Future<Property> updateProperty(Property property);
 
+  /// Observe les propriétés.
+  Stream<List<Property>> watchProperties();
+
   /// Supprime une propriété.
   Future<void> deleteProperty(String id);
 }

@@ -6,7 +6,6 @@ import 'package:elyf_groupe_app/features/gaz/application/point_of_sale_stock_pro
 import '../../application/providers.dart';
 import '../../domain/entities/collection.dart';
 import '../../domain/entities/tour.dart';
-import '../../../../shared/presentation/widgets/form_dialog_actions.dart';
 import 'collection_form/bottle_list_display.dart';
 import 'collection_form/bottle_manager.dart';
 import 'collection_form/bottle_quantity_input.dart';

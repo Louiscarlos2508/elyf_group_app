@@ -13,6 +13,7 @@ class Transaction {
     this.reference,
     this.notes,
     this.createdBy,
+    this.updatedAt,
   });
 
   final String id;
@@ -27,6 +28,7 @@ class Transaction {
   final String? reference; // Transaction reference from Orange Money
   final String? notes;
   final String? createdBy;
+  final DateTime? updatedAt;
 
   bool get isCashIn => type == TransactionType.cashIn;
   bool get isCashOut => type == TransactionType.cashOut;

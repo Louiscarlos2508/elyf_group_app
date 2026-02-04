@@ -6,7 +6,7 @@ import '../../../../core/errors/app_exceptions.dart';
 import 'package:elyf_groupe_app/shared.dart'
     show NavigationSection, ProfileScreen, AdaptiveNavigationScaffold;
 import '../../application/providers.dart'
-    show userControllerProvider, usersProvider;
+    show userControllerProvider, usersProvider, isAdminSyncingProvider;
 import '../../domain/entities/user.dart' show User;
 import 'sections/admin_dashboard_section.dart';
 import 'sections/admin_enterprises_section.dart';
@@ -130,6 +130,7 @@ class _AdminHomeScreenState extends ConsumerState<AdminHomeScreen> {
   @override
   Widget build(BuildContext context) {
     final sections = _buildSections();
+    final isSyncing = ref.watch(isAdminSyncingProvider).asData?.value ?? false;
 
     return AdaptiveNavigationScaffold(
       sections: sections,
@@ -139,6 +140,18 @@ class _AdminHomeScreenState extends ConsumerState<AdminHomeScreen> {
         setState(() => _selectedIndex = index);
       },
       appBarActions: [
+        if (isSyncing)
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: Tooltip(
+              message: 'Synchronisation en cours...',
+              child: Icon(
+                Icons.sync,
+                size: 18,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+          ),
         IconButton(
           icon: const Icon(Icons.person_outline),
           onPressed: () => _navigateToProfile(context),

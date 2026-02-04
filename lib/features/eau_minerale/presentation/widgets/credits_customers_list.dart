@@ -31,6 +31,7 @@ class CreditsCustomersList extends StatelessWidget {
       final credits = getCredits(customer);
       final totalCreditFromCredits =
           CreditCalculationService.calculateTotalCredit(credits);
+      
       // Garder seulement ceux qui ont un crédit restant > 0
       return totalCreditFromCredits > 0;
     }).toList();

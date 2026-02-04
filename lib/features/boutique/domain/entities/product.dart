@@ -12,6 +12,7 @@ class Product {
     this.purchasePrice, // Prix d'achat en CFA
     this.deletedAt, // Date de suppression (soft delete)
     this.deletedBy, // ID de l'utilisateur qui a supprimé
+    this.updatedAt,
   });
 
   final String id;
@@ -25,6 +26,7 @@ class Product {
   final int? purchasePrice; // Prix d'achat en CFA
   final DateTime? deletedAt; // Date de suppression (soft delete)
   final String? deletedBy; // ID de l'utilisateur qui a supprimé
+  final DateTime? updatedAt;
 
   /// Indique si le produit est supprimé (soft delete)
   bool get isDeleted => deletedAt != null;
@@ -53,6 +55,7 @@ class Product {
     int? purchasePrice,
     DateTime? deletedAt,
     String? deletedBy,
+    DateTime? updatedAt,
   }) {
     return Product(
       id: id ?? this.id,
@@ -66,6 +69,7 @@ class Product {
       purchasePrice: purchasePrice ?? this.purchasePrice,
       deletedAt: deletedAt ?? this.deletedAt,
       deletedBy: deletedBy ?? this.deletedBy,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 }

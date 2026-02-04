@@ -27,23 +27,48 @@ class GazDashboardScreen extends ConsumerWidget {
         appBar: AppBar(
           title: const Text('Tableau de bord'),
         ),
-        body: const Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.lock_outline, size: 64, color: Colors.grey),
-              SizedBox(height: 16),
-              Text(
-                'Accès refusé',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              SizedBox(height: 8),
-              Text(
-                'Vous n\'avez pas la permission de voir le tableau de bord.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey),
-              ),
-            ],
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.lock_person_outlined,
+                    size: 64,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                ),
+                const SizedBox(height: 32),
+                Text(
+                  'Accès restreint',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Vous n\'avez pas les autorisations nécessaires pour consulter ce tableau de bord.',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 32),
+                FilledButton.icon(
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: const Icon(Icons.arrow_back),
+                  label: const Text('Retour'),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -115,7 +140,7 @@ class _DashboardContent extends ConsumerWidget {
             AppSpacing.lg,
           ),
           sliver: SliverToBoxAdapter(
-            child: _buildKpiSection(ref, dashboardDataAsync),
+            child: _buildKpiSection(context, ref, dashboardDataAsync),
           ),
         ),
 
@@ -141,7 +166,7 @@ class _DashboardContent extends ConsumerWidget {
             AppSpacing.lg,
           ),
           sliver: SliverToBoxAdapter(
-            child: _buildPerformanceSection(ref, dashboardDataAsync),
+            child: _buildPerformanceSection(context, ref, dashboardDataAsync),
           ),
         ),
 
@@ -156,7 +181,7 @@ class _DashboardContent extends ConsumerWidget {
           sliver: SliverToBoxAdapter(
             child: dashboardDataAsync.when(
               data: (data) => DashboardPosPerformanceSection(sales: data.sales),
-              loading: () => const LoadingIndicator(height: 262),
+              loading: () => AppShimmers.table(context, rows: 4),
               error: (error, stackTrace) => ErrorDisplayWidget(
                 error: error,
                 title: 'Erreur de chargement',
@@ -171,6 +196,7 @@ class _DashboardContent extends ConsumerWidget {
   }
 
   Widget _buildKpiSection(
+    BuildContext context,
     WidgetRef ref,
     AsyncValue<
         ({List<GasSale> sales, List<GazExpense> expenses, List<Cylinder> cylinders})>
@@ -182,7 +208,7 @@ class _DashboardContent extends ConsumerWidget {
         expenses: data.expenses,
         cylinders: data.cylinders,
       ),
-      loading: () => const LoadingIndicator(height: 155),
+      loading: () => AppShimmers.statsGrid(context),
       error: (error, stackTrace) => ErrorDisplayWidget(
         error: error,
         title: 'Erreur de chargement des données',
@@ -192,6 +218,7 @@ class _DashboardContent extends ConsumerWidget {
   }
 
   Widget _buildPerformanceSection(
+    BuildContext context,
     WidgetRef ref,
     AsyncValue<
         ({List<GasSale> sales, List<GazExpense> expenses, List<Cylinder> cylinders})>
@@ -202,7 +229,7 @@ class _DashboardContent extends ConsumerWidget {
         sales: data.sales,
         expenses: data.expenses,
       ),
-      loading: () => const LoadingIndicator(height: 397),
+      loading: () => AppShimmers.chart(context),
       error: (error, stackTrace) => ErrorDisplayWidget(
         error: error,
         title: 'Erreur de chargement des performances',

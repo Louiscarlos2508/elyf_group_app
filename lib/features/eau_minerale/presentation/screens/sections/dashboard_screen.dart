@@ -9,9 +9,9 @@ import '../../widgets/dashboard_header.dart';
 import '../../widgets/dashboard_month_kpis.dart';
 import '../../widgets/dashboard_stock_list.dart';
 import '../../widgets/dashboard_today_section.dart';
+
 import '../../widgets/dashboard_trends_chart.dart';
 import '../../widgets/stock_alert_banner.dart';
-import 'package:elyf_groupe_app/shared/presentation/widgets/refresh_button.dart';
 
 /// Professional dashboard screen with organized sections and responsive layout.
 class DashboardScreen extends ConsumerWidget {
@@ -19,9 +19,6 @@ class DashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final salesState = ref.watch(salesStateProvider);
-    final stockState = ref.watch(stockStateProvider);
-
     return Scaffold(
       body: CustomScrollView(
         slivers: [
@@ -68,57 +65,33 @@ class DashboardScreen extends ConsumerWidget {
           ),
 
           // Stock alerts
-          SliverToBoxAdapter(
-            child: stockState.when(
-              data: (data) {
-                final lowStockItems = data.items
-                    .where(
-                      (item) =>
-                          item.type == StockType.finishedGoods &&
-                          item.quantity < 100,
-                    )
-                    .toList();
-                if (lowStockItems.isEmpty) return const SizedBox.shrink();
-                return StockAlertBanner(
-                  productName: lowStockItems.first.name,
-                  onTap: () {
-                    // Navigate to stock screen
-                  },
-                );
-              },
-              loading: () => const SizedBox.shrink(),
-              error: (_, __) => const SizedBox.shrink(),
-            ),
+          const SliverToBoxAdapter(
+            child: DashboardStockAlerts(),
           ),
 
           // Today section
-          SectionHeader(
+          const SectionHeader(
             title: "AUJOURD'HUI",
             top: AppSpacing.lg,
             bottom: AppSpacing.md,
           ),
-          SliverPadding(
+          const SliverPadding(
             padding: AppSpacing.sectionPadding,
             sliver: SliverToBoxAdapter(
-              child: salesState.when(
-                data: (data) => DashboardTodaySection(salesState: data),
-                loading: () => const LoadingIndicator(),
-                error: (error, stackTrace) => ErrorDisplayWidget(
-                  error: error,
-                  onRetry: () => ref.refresh(salesStateProvider),
-                ),
-              ),
+              child: DashboardTodaySection(),
             ),
           ),
+
+
 
           // Month KPIs section
           const SectionHeader(
             title: 'CE MOIS',
             bottom: AppSpacing.sm,
           ),
-          SliverPadding(
+          const SliverPadding(
             padding: AppSpacing.sectionPadding,
-            sliver: const SliverToBoxAdapter(
+            sliver: SliverToBoxAdapter(
               child: DashboardMonthKpis(),
             ),
           ),
@@ -128,9 +101,9 @@ class DashboardScreen extends ConsumerWidget {
             title: 'TENDANCES',
             bottom: AppSpacing.sm,
           ),
-          SliverPadding(
+          const SliverPadding(
             padding: AppSpacing.sectionPadding,
-            sliver: const SliverToBoxAdapter(
+            sliver: SliverToBoxAdapter(
               child: DashboardTrendsChart(),
             ),
           ),
@@ -140,7 +113,7 @@ class DashboardScreen extends ConsumerWidget {
             title: 'Stock Produits Finis',
             bottom: AppSpacing.sm,
           ),
-          SliverPadding(
+          const SliverPadding(
             padding: EdgeInsets.fromLTRB(
               AppSpacing.lg,
               AppSpacing.sm,
@@ -148,21 +121,41 @@ class DashboardScreen extends ConsumerWidget {
               AppSpacing.xl,
             ),
             sliver: SliverToBoxAdapter(
-              child: stockState.when(
-                data: (data) => DashboardStockList(stockState: data),
-                loading: () => const LoadingIndicator(height: 100),
-                error: (error, stackTrace) => ErrorDisplayWidget(
-                  error: error,
-                  title: 'Stock indisponible',
-                  message: 'Impossible de charger le stock.',
-                  onRetry: () => ref.refresh(stockStateProvider),
-                ),
-              ),
+              child: DashboardStockList(),
             ),
           ),
         ],
       ),
     );
   }
+}
 
+/// Extracted widget for stock alerts to minimize DashboardScreen rebuilds.
+class DashboardStockAlerts extends ConsumerWidget {
+  const DashboardStockAlerts({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final stockState = ref.watch(stockStateProvider);
+    return stockState.when(
+      data: (data) {
+        final lowStockItems = data.items
+            .where(
+              (item) =>
+                  item.type == StockType.finishedGoods &&
+                  item.quantity < 100,
+            )
+            .toList();
+        if (lowStockItems.isEmpty) return const SizedBox.shrink();
+        return StockAlertBanner(
+          productName: lowStockItems.first.name,
+          onTap: () {
+            // Navigate to stock screen
+          },
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+    );
+  }
 }

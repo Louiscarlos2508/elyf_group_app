@@ -5,6 +5,7 @@ import '../entities/gas_sale.dart';
 abstract class GasRepository {
   // Cylinders
   Future<List<Cylinder>> getCylinders();
+  Stream<List<Cylinder>> watchCylinders();
   Future<Cylinder?> getCylinderById(String id);
   Future<void> addCylinder(Cylinder cylinder);
   Future<void> updateCylinder(Cylinder cylinder);
@@ -12,6 +13,7 @@ abstract class GasRepository {
 
   // Sales
   Future<List<GasSale>> getSales({DateTime? from, DateTime? to});
+  Stream<List<GasSale>> watchSales({DateTime? from, DateTime? to});
   Future<GasSale?> getSaleById(String id);
   Future<void> addSale(GasSale sale);
   Future<void> updateSale(GasSale sale);

@@ -55,6 +55,7 @@ class CustomerOfflineRepository implements CustomerRepository {
       'phone': phone,
       'phoneNumber': phone,
       'cnib': cnib,
+      'updatedAt': DateTime.now().toIso8601String(),
     };
 
     await driftService.records.upsert(
@@ -205,7 +206,12 @@ class CustomerOfflineRepository implements CustomerRepository {
       await syncManager.queueCreate(
         collectionName: collectionName,
         localId: localId,
-        data: {'name': name, 'phoneNumber': phone, 'cnib': cnib},
+        data: {
+          'name': name,
+          'phoneNumber': phone,
+          'cnib': cnib,
+          'updatedAt': DateTime.now().toIso8601String()
+        },
         enterpriseId: enterpriseId,
       );
 

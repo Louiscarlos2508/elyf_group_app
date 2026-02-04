@@ -7,6 +7,11 @@ abstract class CylinderLeakRepository {
     LeakStatus? status,
   });
 
+  Stream<List<CylinderLeak>> watchLeaks(
+    String enterpriseId, {
+    LeakStatus? status,
+  });
+
   Future<CylinderLeak?> getLeakById(String id);
 
   Future<String> reportLeak(CylinderLeak leak);

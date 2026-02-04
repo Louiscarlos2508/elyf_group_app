@@ -218,23 +218,28 @@ class PropertyExpenseOfflineRepository
   // PropertyExpenseRepository interface implementation
 
   @override
-  Future<List<PropertyExpense>> getAllExpenses() async {
-    try {
-      AppLogger.debug(
-        'Fetching all property expenses for enterprise: $enterpriseId',
-        name: 'PropertyExpenseOfflineRepository',
-      );
-      return await getAllForEnterprise(enterpriseId);
-    } catch (error, stackTrace) {
-      final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      AppLogger.error(
-        'Error fetching all expenses: ${appException.message}',
-        name: 'PropertyExpenseOfflineRepository',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      throw appException;
-    }
+  Stream<List<PropertyExpense>> watchExpenses() {
+    return driftService.records
+        .watchForEnterprise(
+          collectionName: collectionName,
+          enterpriseId: enterpriseId,
+          moduleType: 'immobilier',
+        )
+        .map((rows) {
+          final expenses = <PropertyExpense>[];
+          for (final row in rows) {
+            final map = safeDecodeJson(row.dataJson, row.localId);
+            if (map == null) continue;
+            try {
+              expenses.add(fromMap(map));
+            } catch (e) {
+              // Ignore corrupt data
+            }
+          }
+          final deduplicated = deduplicateByRemoteId(expenses);
+          deduplicated.sort((a, b) => b.expenseDate.compareTo(a.expenseDate));
+          return deduplicated;
+        });
   }
 
   @override

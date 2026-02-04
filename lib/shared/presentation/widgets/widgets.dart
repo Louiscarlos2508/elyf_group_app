@@ -47,6 +47,7 @@ export 'gaz_button_styles.dart';
 export 'module_loading_animation.dart';
 
 // State widgets (loading, error, empty)
+export 'app_shimmers.dart';
 export 'error_display_widget.dart';
 export 'loading_indicator.dart';
 export 'empty_state.dart';

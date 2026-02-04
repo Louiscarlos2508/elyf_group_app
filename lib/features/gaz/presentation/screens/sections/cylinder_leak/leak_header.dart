@@ -19,7 +19,7 @@ class LeakHeader extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Container(
-      color: const Color(0xFFF9FAFB),
+      color: theme.colorScheme.surface,
       padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
       child: isMobile
           ? Column(
@@ -29,16 +29,15 @@ class LeakHeader extends StatelessWidget {
                   'Bouteilles avec Fuites',
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontSize: 16,
-                    fontWeight: FontWeight.normal,
-                    color: const Color(0xFF101828),
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   'Gérez les bouteilles avec fuites signalées',
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    fontSize: 14,
-                    color: const Color(0xFF4A5565),
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -48,7 +47,7 @@ class LeakHeader extends StatelessWidget {
                     onPressed: onReportLeak,
                     icon: const Icon(Icons.add, size: 16),
                     label: const Text('Signaler une fuite'),
-                    style: GazButtonStyles.filledPrimary,
+                    style: GazButtonStyles.filledPrimary(context),
                   ),
                 ),
               ],
@@ -64,16 +63,15 @@ class LeakHeader extends StatelessWidget {
                         'Bouteilles avec Fuites',
                         style: theme.textTheme.titleLarge?.copyWith(
                           fontSize: 16,
-                          fontWeight: FontWeight.normal,
-                          color: const Color(0xFF101828),
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.onSurface,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         'Gérez les bouteilles avec fuites signalées',
                         style: theme.textTheme.bodyMedium?.copyWith(
-                          fontSize: 14,
-                          color: const Color(0xFF4A5565),
+                          color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -85,7 +83,7 @@ class LeakHeader extends StatelessWidget {
                     onPressed: onReportLeak,
                     icon: const Icon(Icons.add, size: 16),
                     label: const Text('Signaler une fuite'),
-                    style: GazButtonStyles.filledPrimary,
+                    style: GazButtonStyles.filledPrimary(context),
                   ),
                 ),
               ],

@@ -129,8 +129,15 @@ class _WholesalePriceRowState extends ConsumerState<WholesalePriceRow> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: colors.surfaceContainerHighest.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: colors.outline.withValues(alpha: 0.1)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         children: [
@@ -139,7 +146,7 @@ class _WholesalePriceRowState extends ConsumerState<WholesalePriceRow> {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
               color: colors.primaryContainer,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
               '${widget.weight}kg',
@@ -182,9 +189,9 @@ class _WholesalePriceRowState extends ConsumerState<WholesalePriceRow> {
                       ),
                       decoration: BoxDecoration(
                         color: colors.surface,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: colors.outline.withValues(alpha: 0.2),
+                          color: colors.outline.withValues(alpha: 0.1),
                         ),
                       ),
                       child: Row(
@@ -224,7 +231,7 @@ class _WholesalePriceRowState extends ConsumerState<WholesalePriceRow> {
             const SizedBox(width: 8),
             IconButton(
               icon: const Icon(Icons.check),
-              color: Colors.green,
+              color: const Color(0xFF10B981), // Emerald
               onPressed: _savePrice,
               tooltip: 'Enregistrer',
             ),

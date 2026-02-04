@@ -46,6 +46,25 @@ class RealtimeSyncService {
   bool _isListening = false;
   bool _initialPullCompleted = false;
   final Completer<void> _initialPullCompleter = Completer<void>();
+  final _syncStatusController = StreamController<bool>.broadcast();
+  bool _isSyncing = false;
+
+  /// Stream indiquant si une synchronisation est en cours.
+  Stream<bool> get syncStatusStream => _syncStatusController.stream;
+
+  void _pulseSync() {
+    _syncStatusController.add(true);
+    Future.delayed(const Duration(milliseconds: 1000), () {
+      if (!_isSyncing) {
+        _syncStatusController.add(false);
+      }
+    });
+  }
+
+  void _setSyncing(bool value) {
+    _isSyncing = value;
+    _syncStatusController.add(value);
+  }
 
   /// Démarre l'écoute en temps réel de toutes les collections.
   ///
@@ -59,6 +78,8 @@ class RealtimeSyncService {
       );
       return;
     }
+
+    _setSyncing(true);
 
     try {
       // 1. Pull initial : charger toutes les données depuis Firestore vers Drift
@@ -76,11 +97,13 @@ class RealtimeSyncService {
       await _listenToPointsOfSale();
 
       _isListening = true;
+      _setSyncing(false);
       developer.log(
         'RealtimeSyncService started - initial pull completed, listening to all collections',
         name: 'admin.realtime.sync',
       );
     } catch (e, stackTrace) {
+      _setSyncing(false);
       final appException = ErrorHandler.instance.handleError(e, stackTrace);
       AppLogger.error(
         'Error starting realtime sync: ${appException.message}',
@@ -343,6 +366,7 @@ class RealtimeSyncService {
                       );
                       break;
                   }
+                  _pulseSync();
                 } catch (e, stackTrace) {
                   final appException = ErrorHandler.instance.handleError(e, stackTrace);
                   AppLogger.warning(
@@ -422,6 +446,7 @@ class RealtimeSyncService {
                       );
                       break;
                   }
+                  _pulseSync();
                 } catch (e, stackTrace) {
                   final appException = ErrorHandler.instance.handleError(e, stackTrace);
                   AppLogger.warning(
@@ -517,6 +542,7 @@ class RealtimeSyncService {
                       );
                       break;
                   }
+                  _pulseSync();
                 } catch (e, stackTrace) {
                   final appException = ErrorHandler.instance.handleError(e, stackTrace);
                   AppLogger.warning(
@@ -585,6 +611,7 @@ class RealtimeSyncService {
                       );
                       break;
                   }
+                  _pulseSync();
                 } catch (e, stackTrace) {
                   final appException = ErrorHandler.instance.handleError(e, stackTrace);
                   AppLogger.warning(
@@ -1002,6 +1029,7 @@ class RealtimeSyncService {
                   );
                   break;
               }
+              _pulseSync();
             } catch (e, stackTrace) {
               final appException = ErrorHandler.instance.handleError(e, stackTrace);
               AppLogger.warning(

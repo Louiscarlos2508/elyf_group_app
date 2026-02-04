@@ -13,6 +13,10 @@ class TenantController {
     return await _tenantRepository.getAllTenants();
   }
 
+  Stream<List<Tenant>> watchTenants() {
+    return _tenantRepository.watchTenants();
+  }
+
   Future<Tenant?> getTenant(String id) async {
     return await _tenantRepository.getTenantById(id);
   }

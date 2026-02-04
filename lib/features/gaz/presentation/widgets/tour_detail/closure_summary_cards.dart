@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
+import 'package:elyf_groupe_app/app/theme/app_colors.dart';
 
 /// Cartes de résumé pour l'étape de clôture.
 class ClosureSummaryCards extends StatelessWidget {
@@ -28,21 +29,21 @@ class ClosureSummaryCards extends StatelessWidget {
               _SummaryCard(
                 title: 'Total encaissé',
                 amount: totalCollected,
-                color: const Color(0xFF00A63E),
+                color: AppColors.success,
                 theme: theme,
               ),
               const SizedBox(height: 16),
               _SummaryCard(
                 title: 'Total dépenses',
                 amount: totalExpenses,
-                color: const Color(0xFFE7000B),
+                color: theme.colorScheme.error,
                 theme: theme,
               ),
               const SizedBox(height: 16),
               _SummaryCard(
                 title: 'Bénéfice net',
                 amount: netProfit,
-                color: const Color(0xFF00A63E),
+                color: AppColors.success,
                 theme: theme,
               ),
             ],
@@ -53,7 +54,7 @@ class ClosureSummaryCards extends StatelessWidget {
                 child: _SummaryCard(
                   title: 'Total encaissé',
                   amount: totalCollected,
-                  color: const Color(0xFF00A63E),
+                  color: AppColors.success,
                   theme: theme,
                 ),
               ),
@@ -62,7 +63,7 @@ class ClosureSummaryCards extends StatelessWidget {
                 child: _SummaryCard(
                   title: 'Total dépenses',
                   amount: totalExpenses,
-                  color: const Color(0xFFE7000B),
+                  color: theme.colorScheme.error,
                   theme: theme,
                 ),
               ),
@@ -71,7 +72,7 @@ class ClosureSummaryCards extends StatelessWidget {
                 child: _SummaryCard(
                   title: 'Bénéfice net',
                   amount: netProfit,
-                  color: const Color(0xFF00A63E),
+                  color: AppColors.success,
                   theme: theme,
                 ),
               ),
@@ -96,14 +97,20 @@ class _SummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(25.285, 25.285, 1.305, 1.305),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Colors.black.withValues(alpha: 0.1),
-          width: 1.305,
+          color: theme.colorScheme.outline.withValues(alpha: 0.1),
         ),
-        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -112,17 +119,18 @@ class _SummaryCard extends StatelessWidget {
             title,
             style: theme.textTheme.bodyMedium?.copyWith(
               fontSize: 14,
-              color: const Color(0xFF4A5565),
-            ),
+            fontWeight: FontWeight.w500,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
           ),
           const SizedBox(height: 42),
           Text(
             CurrencyFormatter.formatDouble(amount),
             style: theme.textTheme.titleLarge?.copyWith(
               fontSize: 24,
-              fontWeight: FontWeight.normal,
-              color: color,
-            ),
+            fontWeight: FontWeight.w700,
+            color: color,
+          ),
           ),
         ],
       ),

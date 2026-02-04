@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/logging/app_logger.dart';
@@ -133,23 +132,26 @@ class GazSettingsOfflineRepository extends OfflineRepository<GazSettings>
   // GazSettingsRepository implementation
 
   @override
-  Future<GazSettings?> getSettings({
+  Stream<GazSettings?> watchSettings({
     required String enterpriseId,
     required String moduleId,
-  }) async {
-    try {
-      final settingsId = _getSettingsId(enterpriseId, moduleId);
-      return await getByLocalId(settingsId);
-    } catch (error, stackTrace) {
-      final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      AppLogger.error(
-        'Error getting settings: ${appException.message}',
-        name: 'GazSettingsOfflineRepository',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      throw appException;
-    }
+  }) {
+    final settingsId = _getSettingsId(enterpriseId, moduleId);
+    return driftService.records
+        .watchForEnterprise(
+          collectionName: collectionName,
+          enterpriseId: enterpriseId,
+          moduleType: moduleType,
+        )
+        .map((rows) {
+          final row = rows.where((r) => r.localId == settingsId).firstOrNull;
+          if (row == null) return null;
+          try {
+            return fromMap(jsonDecode(row.dataJson) as Map<String, dynamic>);
+          } catch (e) {
+            return null;
+          }
+        });
   }
 
   @override

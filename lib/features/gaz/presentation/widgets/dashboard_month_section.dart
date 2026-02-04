@@ -33,8 +33,8 @@ class GazDashboardMonthSection extends StatelessWidget {
             ).replaceAll(' FCFA', ' F'),
             subtitle: '$monthSalesCount ventes',
             icon: Icons.trending_up,
-            iconColor: Colors.blue,
-            backgroundColor: Colors.blue,
+            iconColor: const Color(0xFF3B82F6), // Blue
+            backgroundColor: const Color(0xFF3B82F6),
           ),
           GazDashboardKpiCard(
             label: 'Dépenses',
@@ -43,8 +43,8 @@ class GazDashboardMonthSection extends StatelessWidget {
             ).replaceAll(' FCFA', ' F'),
             subtitle: 'Charges du mois',
             icon: Icons.receipt_long,
-            iconColor: Colors.red,
-            backgroundColor: Colors.red,
+            iconColor: Theme.of(context).colorScheme.error,
+            backgroundColor: Theme.of(context).colorScheme.error,
           ),
           GazDashboardKpiCard(
             label: 'Bénéfice Net',
@@ -53,11 +53,11 @@ class GazDashboardMonthSection extends StatelessWidget {
             ).replaceAll(' FCFA', ' F'),
             subtitle: monthProfit >= 0 ? 'Profit' : 'Déficit',
             icon: Icons.account_balance_wallet,
-            iconColor: monthProfit >= 0 ? Colors.green : Colors.red,
+            iconColor: monthProfit >= 0 ? const Color(0xFF10B981) : Theme.of(context).colorScheme.error,
             valueColor: monthProfit >= 0
-                ? Colors.green.shade700
-                : Colors.red.shade700,
-            backgroundColor: monthProfit >= 0 ? Colors.green : Colors.red,
+                ? const Color(0xFF059669)
+                : Theme.of(context).colorScheme.error,
+            backgroundColor: monthProfit >= 0 ? const Color(0xFF10B981) : Theme.of(context).colorScheme.error,
           ),
         ];
 

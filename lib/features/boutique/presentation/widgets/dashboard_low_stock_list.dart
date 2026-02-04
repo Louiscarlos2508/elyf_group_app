@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import 'package:elyf_groupe_app/app/theme/app_colors.dart';
 import '../../domain/entities/product.dart';
 
 /// Section displaying low stock products.
@@ -21,18 +21,20 @@ class DashboardLowStockList extends StatelessWidget {
       return Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: Colors.green.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(12),
+          color: AppColors.success.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.success.withValues(alpha: 0.1)),
         ),
         child: Row(
           children: [
-            const Icon(Icons.check_circle, color: Colors.green),
+            Icon(Icons.check_circle_rounded, color: AppColors.success),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 'Tous les produits ont un stock suffisant',
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: Colors.green.shade700,
+                  color: AppColors.success,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
@@ -44,12 +46,13 @@ class DashboardLowStockList extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.1)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -58,20 +61,20 @@ class DashboardLowStockList extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.orange.withValues(alpha: 0.1),
+              color: const Color(0xFFF59E0B).withValues(alpha: 0.08),
               borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(12),
+                top: Radius.circular(16),
               ),
             ),
             child: Row(
               children: [
-                const Icon(Icons.warning_amber, color: Colors.orange),
+                Icon(Icons.warning_rounded, color: const Color(0xFFF59E0B), size: 18),
                 const SizedBox(width: 12),
                 Text(
                   '${products.length} produit(s) en stock faible',
                   style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: Colors.orange.shade700,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFFF59E0B),
                   ),
                 ),
               ],
@@ -86,11 +89,11 @@ class DashboardLowStockList extends StatelessWidget {
               final product = products[index];
               return ListTile(
                 leading: CircleAvatar(
-                  backgroundColor: Colors.orange.withValues(alpha: 0.2),
+                  backgroundColor: const Color(0xFFF59E0B).withValues(alpha: 0.1),
                   child: Text(
                     '${product.stock}',
-                    style: TextStyle(
-                      color: Colors.orange.shade700,
+                    style: const TextStyle(
+                      color: Color(0xFFF59E0B),
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -104,9 +107,10 @@ class DashboardLowStockList extends StatelessWidget {
                 subtitle: product.category != null
                     ? Text(product.category!)
                     : null,
-                trailing: const Icon(
-                  Icons.add_shopping_cart,
-                  color: Colors.orange,
+                trailing: Icon(
+                  Icons.add_shopping_cart_rounded,
+                  color: const Color(0xFFF59E0B).withValues(alpha: 0.7),
+                  size: 20,
                 ),
                 onTap: () => onProductTap?.call(product),
               );

@@ -1,6 +1,5 @@
 import 'dart:developer' as developer;
 
-import 'dart:developer' as developer;
 
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/logging/app_logger.dart';

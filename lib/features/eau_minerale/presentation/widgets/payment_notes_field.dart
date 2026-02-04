@@ -8,14 +8,17 @@ class PaymentNotesField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TextFormField(
-      controller: controller,
-      decoration: const InputDecoration(
-        labelText: 'Notes (optionnel)',
-        prefixIcon: Icon(Icons.note),
-        hintText: 'Ex: Paiement complet, Acompte, etc.',
+    return Material(
+      type: MaterialType.transparency,
+      child: TextFormField(
+        controller: controller,
+        decoration: const InputDecoration(
+          labelText: 'Notes (optionnel)',
+          prefixIcon: Icon(Icons.note),
+          hintText: 'Ex: Paiement complet, Acompte, etc.',
+        ),
+        maxLines: 3,
       ),
-      maxLines: 3,
     );
   }
 }

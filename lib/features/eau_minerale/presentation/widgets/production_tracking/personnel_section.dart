@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../domain/entities/production_day.dart';
 import '../../../domain/entities/production_session.dart';
+import '../../../domain/entities/production_session_status.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../daily_personnel_form.dart';
 import 'personnel_day_card.dart';
@@ -16,9 +17,14 @@ import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
 
 /// Widget pour la section personnel et production journalière.
 class PersonnelSection extends ConsumerWidget {
-  const PersonnelSection({super.key, required this.session});
+  const PersonnelSection({
+    super.key,
+    required this.session,
+    this.isReadOnly = false,
+  });
 
   final ProductionSession session;
+  final bool isReadOnly;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -33,6 +39,8 @@ class PersonnelSection extends ConsumerWidget {
         );
 
     final hasTodayProduction = existingForToday != null;
+    final isCompleted = session.status == ProductionSessionStatus.completed;
+    final readOnly = isReadOnly || isCompleted;
 
     return Card(
       child: Padding(
@@ -41,7 +49,8 @@ class PersonnelSection extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             PersonnelHeader(
-              onAddDay: hasTodayProduction
+              isReadOnly: readOnly,
+              onAddDay: (hasTodayProduction || readOnly)
                   ? null
                   : () {
                       _showPersonnelForm(context, ref, today, null);
@@ -55,7 +64,9 @@ class PersonnelSection extends ConsumerWidget {
                 (day) => PersonnelDayCard(
                   session: session,
                   day: day,
-                  onDelete: () => _deleteDay(context, ref, day),
+                  onDelete: isCompleted
+                      ? null
+                      : () => _deleteDay(context, ref, day),
                 ),
               ),
             if (session.productionDays.isNotEmpty) ...[
@@ -92,7 +103,15 @@ class PersonnelSection extends ConsumerWidget {
     final updatedDays = List<ProductionDay>.from(session.productionDays)
       ..removeWhere((d) => d.id == day.id);
 
-    final updatedSession = session.copyWith(productionDays: updatedDays);
+    // Recalculate totals
+    final newTotalPacks = updatedDays.fold<int>(0, (sum, d) => sum + d.packsProduits);
+    final newTotalEmballages = updatedDays.fold<int>(0, (sum, d) => sum + d.emballagesUtilises);
+
+    final updatedSession = session.copyWith(
+      productionDays: updatedDays,
+      quantiteProduite: newTotalPacks,
+      emballagesUtilises: newTotalEmballages,
+    );
 
     final controller = ref.read(productionSessionControllerProvider);
     await controller.updateSession(updatedSession);
@@ -156,8 +175,14 @@ class PersonnelSection extends ConsumerWidget {
                 updatedDays.add(productionDay);
               }
 
+              // Recalculate totals
+              final newTotalPacks = updatedDays.fold<int>(0, (sum, d) => sum + d.packsProduits);
+              final newTotalEmballages = updatedDays.fold<int>(0, (sum, d) => sum + d.emballagesUtilises);
+
               final updatedSession = session.copyWith(
                 productionDays: updatedDays,
+                quantiteProduite: newTotalPacks,
+                emballagesUtilises: newTotalEmballages,
               );
 
               final controller = ref.read(productionSessionControllerProvider);

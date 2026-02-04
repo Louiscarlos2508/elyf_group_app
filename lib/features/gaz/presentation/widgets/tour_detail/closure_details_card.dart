@@ -32,14 +32,20 @@ class ClosureDetailsCard extends ConsumerWidget {
     final theme = Theme.of(context);
 
     return Container(
-      padding: const EdgeInsets.all(23.98),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Colors.black.withValues(alpha: 0.1),
-          width: 1.305,
+          color: theme.colorScheme.outline.withValues(alpha: 0.1),
         ),
-        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -49,8 +55,8 @@ class ClosureDetailsCard extends ConsumerWidget {
             'Récapitulatif',
             style: theme.textTheme.titleMedium?.copyWith(
               fontSize: 16,
-              fontWeight: FontWeight.normal,
-              color: const Color(0xFF0A0A0A),
+              fontWeight: FontWeight.w700,
+              color: theme.colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 46),
@@ -62,7 +68,7 @@ class ClosureDetailsCard extends ConsumerWidget {
           ),
           const SizedBox(height: 16),
           // Divider
-          Container(height: 1, color: Colors.black.withValues(alpha: 0.1)),
+          Divider(color: theme.colorScheme.outline.withValues(alpha: 0.1)),
           const SizedBox(height: 16),
           // Détail des dépenses
           _ExpensesDetailSection(
@@ -74,7 +80,7 @@ class ClosureDetailsCard extends ConsumerWidget {
           ),
           const SizedBox(height: 16),
           // Divider
-          Container(height: 1, color: Colors.black.withValues(alpha: 0.1)),
+          Divider(color: theme.colorScheme.outline.withValues(alpha: 0.1)),
           const SizedBox(height: 16),
           // Boutons d'action
           _ClosureActionButtons(
@@ -118,7 +124,8 @@ class _DetailSection extends StatelessWidget {
           title,
           style: theme.textTheme.bodyMedium?.copyWith(
             fontSize: 14,
-            color: const Color(0xFF364153),
+            fontWeight: FontWeight.w500,
+            color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
         const SizedBox(height: 8),
@@ -126,8 +133,8 @@ class _DetailSection extends StatelessWidget {
           value,
           style: theme.textTheme.titleLarge?.copyWith(
             fontSize: 24,
-            fontWeight: FontWeight.normal,
-            color: const Color(0xFF0A0A0A),
+            fontWeight: FontWeight.w700,
+            color: theme.colorScheme.onSurface,
           ),
         ),
       ],
@@ -159,7 +166,8 @@ class _ExpensesDetailSection extends StatelessWidget {
           'Détail des dépenses',
           style: theme.textTheme.bodyMedium?.copyWith(
             fontSize: 14,
-            color: const Color(0xFF364153),
+            fontWeight: FontWeight.w500,
+            color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
         const SizedBox(height: 8),
@@ -214,43 +222,47 @@ class _ClosureActionButtons extends ConsumerWidget {
     final isAlreadyClosed = tour.status == TourStatus.closure;
 
     return Row(
-      mainAxisAlignment: MainAxisAlignment.end,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        OutlinedButton(
-          style: GazButtonStyles.outlinedWithMinSize(78.71),
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text(
-            'Retour',
-            style: TextStyle(fontSize: 14, color: Color(0xFF0A0A0A)),
+        Flexible(
+          child: OutlinedButton(
+            style: GazButtonStyles.outlinedWithMinSize(context, 78.71),
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text(
+              'Retour',
+              style: TextStyle(fontSize: 14),
+            ),
           ),
         ),
         if (!isAlreadyClosed) ...[
           const SizedBox(width: 8),
-          FilledButton.icon(
-            style: GazButtonStyles.filledPrimaryIcon.copyWith(
-              minimumSize: const WidgetStatePropertyAll(Size(147.286, 36)),
-            ),
-            onPressed: () async {
-              try {
-                final controller = ref.read(tourControllerProvider);
-                await controller.moveToNextStep(tour.id);
-                onTourClosed();
-                if (context.mounted) {
-                  NotificationService.showSuccess(
-                    context,
-                    'Tour clôturé avec succès',
-                  );
+          Flexible(
+            child: FilledButton.icon(
+              style: GazButtonStyles.filledPrimaryIcon(context).copyWith(
+                minimumSize: const WidgetStatePropertyAll(Size(147.286, 36)),
+              ),
+              onPressed: () async {
+                try {
+                  final controller = ref.read(tourControllerProvider);
+                  await controller.moveToNextStep(tour.id);
+                  onTourClosed();
+                  if (context.mounted) {
+                    NotificationService.showSuccess(
+                      context,
+                      'Tour clôturé avec succès',
+                    );
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    NotificationService.showError(context, 'Erreur: $e');
+                  }
                 }
-              } catch (e) {
-                if (context.mounted) {
-                  NotificationService.showError(context, 'Erreur: $e');
-                }
-              }
-            },
-            icon: const Icon(Icons.check, size: 16),
-            label: const Text(
-              'Clôturer le tour',
-              style: TextStyle(fontSize: 14),
+              },
+              icon: const Icon(Icons.check, size: 16),
+              label: const Text(
+                'Clôturer le tour',
+                style: TextStyle(fontSize: 14),
+              ),
             ),
           ),
         ],

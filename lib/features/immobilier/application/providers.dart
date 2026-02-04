@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:rxdart/rxdart.dart';
 
 export 'providers/permission_providers.dart';
 export 'providers/section_providers.dart';
@@ -150,10 +151,7 @@ final immobilierDashboardCalculationServiceProvider =
     );
 
 /// Provider combiné pour les métriques mensuelles du dashboard immobilier.
-///
-/// Simplifie l'utilisation en combinant toutes les données nécessaires
-/// en un seul AsyncValue.
-final immobilierMonthlyMetricsProvider = FutureProvider.autoDispose<
+final immobilierMonthlyMetricsProvider = StreamProvider.autoDispose<
     ({
       List<Property> properties,
       List<Tenant> tenants,
@@ -161,35 +159,35 @@ final immobilierMonthlyMetricsProvider = FutureProvider.autoDispose<
       List<Payment> payments,
       List<PropertyExpense> expenses,
     })>(
-  (ref) async {
-    final properties = await ref.watch(propertiesProvider.future);
-    final tenants = await ref.watch(tenantsProvider.future);
-    final contracts = await ref.watch(contractsProvider.future);
-    final payments = await ref.watch(paymentsProvider.future);
-    final expenses = await ref.watch(expensesProvider.future);
-
-    return (
-      properties: properties,
-      tenants: tenants as List<Tenant>,
-      contracts: contracts,
-      payments: payments,
-      expenses: expenses as List<PropertyExpense>,
+  (ref) {
+    return CombineLatestStream.combine5(
+      ref.watch(propertiesProvider.stream),
+      ref.watch(tenantsProvider.stream),
+      ref.watch(contractsProvider.stream),
+      ref.watch(paymentsProvider.stream),
+      ref.watch(expensesProvider.stream),
+      (properties, tenants, contracts, payments, expenses) => (
+        properties: properties,
+        tenants: tenants,
+        contracts: contracts,
+        payments: payments,
+        expenses: expenses,
+      ),
     );
   },
 );
 
 /// Provider combiné pour les alertes du dashboard immobilier.
-///
-/// Combine payments et contracts pour les alertes.
-final immobilierAlertsProvider = FutureProvider.autoDispose<
+final immobilierAlertsProvider = StreamProvider.autoDispose<
     ({List<Payment> payments, List<Contract> contracts})>(
-  (ref) async {
-    final payments = await ref.watch(paymentsProvider.future);
-    final contracts = await ref.watch(contractsProvider.future);
-
-    return (
-      payments: payments,
-      contracts: contracts,
+  (ref) {
+    return CombineLatestStream.combine2(
+      ref.watch(paymentsProvider.stream),
+      ref.watch(contractsProvider.stream),
+      (payments, contracts) => (
+        payments: payments,
+        contracts: contracts,
+      ),
     );
   },
 );
@@ -229,85 +227,92 @@ final expenseControllerProvider = Provider<PropertyExpenseController>(
 );
 
 // Data Providers
-final propertiesProvider = FutureProvider.autoDispose<List<Property>>((
-  ref,
-) async {
+final propertiesProvider = StreamProvider.autoDispose<List<Property>>((ref) {
   final controller = ref.watch(propertyControllerProvider);
-  return await controller.fetchProperties();
+  return controller.watchProperties();
 });
 
-final tenantsProvider = FutureProvider.autoDispose<List<Tenant>>((ref) async {
+final tenantsProvider = StreamProvider.autoDispose<List<Tenant>>((ref) {
   final controller = ref.watch(tenantControllerProvider);
-  return await controller.fetchTenants();
+  return controller.watchTenants();
 });
 
-final contractsProvider = FutureProvider.autoDispose<List<Contract>>((
-  ref,
-) async {
+final contractsProvider = StreamProvider.autoDispose<List<Contract>>((ref) {
   final controller = ref.watch(contractControllerProvider);
-  return await controller.fetchContracts();
+  return controller.watchContracts();
 });
 
-final paymentsProvider = FutureProvider.autoDispose<List<Payment>>((ref) async {
+final paymentsProvider = StreamProvider.autoDispose<List<Payment>>((ref) {
   final controller = ref.watch(paymentControllerProvider);
-  return await controller.fetchPayments();
+  return controller.watchPayments();
 });
 
-final expensesProvider = FutureProvider.autoDispose<List<PropertyExpense>>((
+final expensesProvider = StreamProvider.autoDispose<List<PropertyExpense>>((
   ref,
-) async {
+) {
   final controller = ref.watch(expenseControllerProvider);
-  return await controller.fetchExpenses();
+  return controller.watchExpenses();
 });
 
 /// Provider pour le bilan des dépenses Immobilier.
 final immobilierExpenseBalanceProvider =
-    FutureProvider.autoDispose<List<ExpenseBalanceData>>((ref) async {
-      final expenses = await ref
-          .watch(expenseControllerProvider)
-          .fetchExpenses();
-      final adapter = ImmobilierExpenseBalanceAdapter();
-      return adapter.convertToBalanceData(expenses);
+    StreamProvider.autoDispose<List<ExpenseBalanceData>>((ref) {
+      return ref.watch(expensesProvider.stream).map((expenses) {
+        final adapter = ImmobilierExpenseBalanceAdapter();
+        return adapter.convertToBalanceData(expenses);
+      });
     });
 
 /// Provider pour les contrats d'un locataire spécifique.
-final contractsByTenantProvider = FutureProvider.autoDispose
-    .family<List<Contract>, String>((ref, tenantId) async {
-      final repository = ref.watch(contractRepositoryProvider);
-      return await repository.getContractsByTenant(tenantId);
+final contractsByTenantProvider = StreamProvider.autoDispose
+    .family<List<Contract>, String>((ref, tenantId) {
+      return ref
+          .watch(contractsProvider.stream)
+          .map(
+            (contracts) =>
+                contracts.where((c) => c.tenantId == tenantId).toList(),
+          );
     });
 
 /// Provider pour les paiements d'un contrat spécifique.
-final paymentsByContractProvider = FutureProvider.autoDispose
-    .family<List<Payment>, String>((ref, contractId) async {
-      final repository = ref.watch(paymentRepositoryProvider);
-      return await repository.getPaymentsByContract(contractId);
+final paymentsByContractProvider = StreamProvider.autoDispose
+    .family<List<Payment>, String>((ref, contractId) {
+      return ref
+          .watch(paymentsProvider.stream)
+          .map(
+            (payments) =>
+                payments.where((p) => p.contractId == contractId).toList(),
+          );
     });
 
 /// Provider pour les contrats d'une propriété spécifique.
-final contractsByPropertyProvider = FutureProvider.autoDispose
-    .family<List<Contract>, String>((ref, propertyId) async {
-      final repository = ref.watch(contractRepositoryProvider);
-      return await repository.getContractsByProperty(propertyId);
+final contractsByPropertyProvider = StreamProvider.autoDispose
+    .family<List<Contract>, String>((ref, propertyId) {
+      return ref
+          .watch(contractsProvider.stream)
+          .map(
+            (contracts) =>
+                contracts.where((c) => c.propertyId == propertyId).toList(),
+          );
     });
 
 /// Provider pour tous les paiements d'un locataire (via ses contrats).
-final paymentsByTenantProvider = FutureProvider.autoDispose
-    .family<List<Payment>, String>((ref, tenantId) async {
-      final contracts = await ref.watch(
-        contractsByTenantProvider((tenantId)).future,
+final paymentsByTenantProvider = StreamProvider.autoDispose
+    .family<List<Payment>, String>((ref, tenantId) {
+      return CombineLatestStream.combine2(
+        ref.watch(contractsByTenantProvider(tenantId).stream),
+        ref.watch(paymentsProvider.stream),
+        (contracts, payments) {
+          final contractIds = contracts.map((c) => c.id).toSet();
+          final filtered =
+              payments
+                  .where((p) => contractIds.contains(p.contractId))
+                  .toList();
+          // Trier par date décroissante
+          filtered.sort((a, b) => b.paymentDate.compareTo(a.paymentDate));
+          return filtered;
+        },
       );
-      final paymentRepository = ref.watch(paymentRepositoryProvider);
-      final allPayments = <Payment>[];
-      for (final contract in contracts) {
-        final payments = await paymentRepository.getPaymentsByContract(
-          contract.id,
-        );
-        allPayments.addAll(payments);
-      }
-      // Trier par date décroissante
-      allPayments.sort((a, b) => b.paymentDate.compareTo(a.paymentDate));
-      return allPayments;
     });
 
 // Filter Services

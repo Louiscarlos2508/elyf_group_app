@@ -18,6 +18,17 @@ class GazSettingsController {
     );
   }
 
+  /// Observe les paramètres en temps réel.
+  Stream<GazSettings?> watchSettings({
+    required String enterpriseId,
+    required String moduleId,
+  }) {
+    return repository.watchSettings(
+      enterpriseId: enterpriseId,
+      moduleId: moduleId,
+    );
+  }
+
   /// Crée ou met à jour les paramètres.
   Future<void> saveSettings(GazSettings settings) async {
     await repository.saveSettings(settings);

@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/logging/app_logger.dart';
@@ -40,6 +39,9 @@ class CylinderLeakOfflineRepository extends OfflineRepository<CylinderLeak>
           ? DateTime.parse(map['exchangeDate'] as String)
           : null,
       notes: map['notes'] as String?,
+      updatedAt: map['updatedAt'] != null
+          ? DateTime.parse(map['updatedAt'] as String)
+          : null,
     );
   }
 
@@ -53,13 +55,15 @@ class CylinderLeakOfflineRepository extends OfflineRepository<CylinderLeak>
       'status': entity.status.name,
       'tourId': entity.tourId,
       'exchangeDate': entity.exchangeDate?.toIso8601String(),
+      'exchangeDate': entity.exchangeDate?.toIso8601String(),
       'notes': entity.notes,
+      'updatedAt': entity.updatedAt?.toIso8601String(),
     };
   }
 
   @override
   String getLocalId(CylinderLeak entity) {
-    if (entity.id.startsWith('local_')) return entity.id;
+    if (entity.id.isNotEmpty) return entity.id;
     return LocalIdGenerator.generate();
   }
 
@@ -155,24 +159,33 @@ class CylinderLeakOfflineRepository extends OfflineRepository<CylinderLeak>
   // CylinderLeakRepository implementation
 
   @override
-  Future<List<CylinderLeak>> getLeaks(
+  Stream<List<CylinderLeak>> watchLeaks(
     String enterpriseId, {
     LeakStatus? status,
-  }) async {
-    try {
-      final leaks = await getAllForEnterprise(enterpriseId);
-      if (status == null) return leaks;
-      return leaks.where((leak) => leak.status == status).toList();
-    } catch (error, stackTrace) {
-      final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      AppLogger.error(
-        'Error getting leaks: ${appException.message}',
-        name: 'CylinderLeakOfflineRepository',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      throw appException;
-    }
+  }) {
+    return driftService.records
+        .watchForEnterprise(
+          collectionName: collectionName,
+          enterpriseId: enterpriseId,
+          moduleType: moduleType,
+        )
+        .map((rows) {
+          final entities = rows
+              .map((r) {
+                try {
+                  final map = jsonDecode(r.dataJson) as Map<String, dynamic>;
+                  return fromMap(map);
+                } catch (e) {
+                  return null;
+                }
+              })
+              .whereType<CylinderLeak>()
+              .toList();
+
+          final deduplicated = deduplicateByRemoteId(entities);
+          if (status == null) return deduplicated;
+          return deduplicated.where((leak) => leak.status == status).toList();
+        });
   }
 
   @override
@@ -195,7 +208,10 @@ class CylinderLeakOfflineRepository extends OfflineRepository<CylinderLeak>
   Future<String> reportLeak(CylinderLeak leak) async {
     try {
       final localId = getLocalId(leak);
-      final leakWithLocalId = leak.copyWith(id: localId);
+      final leakWithLocalId = leak.copyWith(
+        id: localId,
+        updatedAt: DateTime.now(),
+      );
       await save(leakWithLocalId);
       return localId;
     } catch (error, stackTrace) {
@@ -213,7 +229,8 @@ class CylinderLeakOfflineRepository extends OfflineRepository<CylinderLeak>
   @override
   Future<void> updateLeak(CylinderLeak leak) async {
     try {
-      await save(leak);
+      final updatedLeak = leak.copyWith(updatedAt: DateTime.now());
+      await save(updatedLeak);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       AppLogger.error(
@@ -231,7 +248,10 @@ class CylinderLeakOfflineRepository extends OfflineRepository<CylinderLeak>
     try {
       final leak = await getLeakById(leakId);
       if (leak != null) {
-        final updated = leak.copyWith(status: LeakStatus.sentForExchange);
+        final updated = leak.copyWith(
+          status: LeakStatus.sentForExchange,
+          updatedAt: DateTime.now(),
+        );
         await save(updated);
       }
     } catch (error, stackTrace) {
@@ -254,6 +274,7 @@ class CylinderLeakOfflineRepository extends OfflineRepository<CylinderLeak>
         final updated = leak.copyWith(
           status: LeakStatus.exchanged,
           exchangeDate: exchangeDate,
+          updatedAt: DateTime.now(),
         );
         await save(updated);
       }

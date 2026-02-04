@@ -19,12 +19,19 @@ class WholesaleSaleCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Colors.black.withValues(alpha: 0.1),
-          width: 1.3,
+          color: theme.colorScheme.outline.withValues(alpha: 0.1),
+          width: 1,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -51,15 +58,15 @@ class WholesaleSaleCard extends StatelessWidget {
                           Icon(
                             Icons.business,
                             size: 16,
-                            color: const Color(0xFF0EA5E9),
+                            color: const Color(0xFF3B82F6), // Blue
                           ),
                           const SizedBox(width: 4),
                           Text(
                             sale.wholesalerName!,
                             style: theme.textTheme.titleMedium?.copyWith(
                               fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: const Color(0xFF101828),
+                              fontWeight: FontWeight.bold,
+                              color: theme.colorScheme.onSurface,
                             ),
                           ),
                         ],
@@ -72,7 +79,7 @@ class WholesaleSaleCard extends StatelessWidget {
                           Icon(
                             Icons.local_shipping,
                             size: 16,
-                            color: const Color(0xFF10B981),
+                            color: const Color(0xFF10B981), // Emerald
                           ),
                           const SizedBox(width: 4),
                           Text(
@@ -101,7 +108,7 @@ class WholesaleSaleCard extends StatelessWidget {
                   CurrencyFormatter.formatDouble(sale.totalAmount),
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontSize: 16,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.bold,
                     color: const Color(0xFF10B981),
                   ),
                 ),
@@ -113,8 +120,11 @@ class WholesaleSaleCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFFF9FAFB),
-              borderRadius: BorderRadius.circular(8),
+              color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: theme.colorScheme.outline.withValues(alpha: 0.05),
+              ),
             ),
             child: Row(
               children: [
@@ -141,16 +151,16 @@ class WholesaleSaleCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFFF0F9FF),
-                borderRadius: BorderRadius.circular(8),
+                color: const Color(0xFF3B82F6).withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: const Color(0xFF0EA5E9).withValues(alpha: 0.3),
+                  color: const Color(0xFF3B82F6).withValues(alpha: 0.2),
                 ),
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.note, size: 16, color: const Color(0xFF0EA5E9)),
+                  Icon(Icons.note, size: 16, color: const Color(0xFF3B82F6)),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(

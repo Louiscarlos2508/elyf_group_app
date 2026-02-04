@@ -153,23 +153,21 @@ class TenantOfflineRepository extends OfflineRepository<Tenant>
   // TenantRepository interface implementation
 
   @override
-  Future<List<Tenant>> getAllTenants() async {
-    try {
-      AppLogger.debug(
-        'Fetching tenants for enterprise: $enterpriseId',
-        name: 'TenantOfflineRepository',
-      );
-      return await getAllForEnterprise(enterpriseId);
-    } catch (error, stackTrace) {
-      final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      AppLogger.error(
-        'Error fetching tenants: ${appException.message}',
-        name: 'TenantOfflineRepository',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      throw appException;
-    }
+  Stream<List<Tenant>> watchTenants() {
+    return driftService.records
+        .watchForEnterprise(
+          collectionName: collectionName,
+          enterpriseId: enterpriseId,
+          moduleType: 'immobilier',
+        )
+        .map((rows) {
+          final entities = rows
+              .map(
+                (r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>),
+              )
+              .toList();
+          return deduplicateByRemoteId(entities);
+        });
   }
 
   @override
@@ -224,7 +222,7 @@ class TenantOfflineRepository extends OfflineRepository<Tenant>
         emergencyContact: tenant.emergencyContact,
         notes: tenant.notes,
         createdAt: tenant.createdAt,
-        updatedAt: tenant.updatedAt,
+        updatedAt: DateTime.now(),
       );
       await save(tenantWithLocalId);
       return tenantWithLocalId;
@@ -243,8 +241,9 @@ class TenantOfflineRepository extends OfflineRepository<Tenant>
   @override
   Future<Tenant> updateTenant(Tenant tenant) async {
     try {
-      await save(tenant);
-      return tenant;
+      final updatedTenant = tenant.copyWith(updatedAt: DateTime.now());
+      await save(updatedTenant);
+      return updatedTenant;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       developer.log(

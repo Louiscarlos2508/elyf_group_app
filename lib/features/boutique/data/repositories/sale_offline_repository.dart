@@ -1,4 +1,3 @@
-import 'dart:developer' as developer;
 import 'dart:convert';
 
 import '../../../../core/errors/error_handler.dart';
@@ -70,6 +69,9 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
       notes: map['notes'] as String?,
       cashAmount: (map['cashAmount'] as num?)?.toInt() ?? 0,
       mobileMoneyAmount: (map['mobileMoneyAmount'] as num?)?.toInt() ?? 0,
+      updatedAt: map['updatedAt'] != null
+          ? DateTime.parse(map['updatedAt'] as String)
+          : null,
     );
   }
 
@@ -99,6 +101,7 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
       'cashAmount': entity.cashAmount.toDouble(),
       'mobileMoneyAmount': entity.mobileMoneyAmount.toDouble(),
       'isComplete': entity.amountPaid >= entity.totalAmount,
+      'updatedAt': entity.updatedAt?.toIso8601String(),
     };
   }
 
@@ -238,6 +241,7 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
         notes: sale.notes,
         cashAmount: sale.cashAmount,
         mobileMoneyAmount: sale.mobileMoneyAmount,
+        updatedAt: DateTime.now(),
       );
       await save(saleWithLocalId);
       return localId;
@@ -267,5 +271,23 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
       );
       throw appException;
     }
+  }
+
+  @override
+  Stream<List<Sale>> watchRecentSales({int limit = 50}) {
+    return driftService.records
+        .watchForEnterprise(
+          collectionName: collectionName,
+          enterpriseId: enterpriseId,
+          moduleType: moduleType,
+        )
+        .map((rows) {
+      final sales = rows
+          .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+          .toList();
+      final deduplicatedSales = deduplicateByRemoteId(sales);
+      deduplicatedSales.sort((a, b) => b.date.compareTo(a.date));
+      return deduplicatedSales.take(limit).toList();
+    });
   }
 }

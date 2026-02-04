@@ -69,7 +69,7 @@ class FinancialReportOfflineRepository
 
   @override
   String getLocalId(FinancialReport entity) {
-    if (entity.id.startsWith('local_')) return entity.id;
+    if (entity.id.isNotEmpty) return entity.id;
     return LocalIdGenerator.generate();
   }
 
@@ -165,32 +165,42 @@ class FinancialReportOfflineRepository
   // FinancialReportRepository implementation
 
   @override
-  Future<List<FinancialReport>> getReports(
+  Stream<List<FinancialReport>> watchReports(
     String enterpriseId, {
     ReportPeriod? period,
     DateTime? from,
     DateTime? to,
     ReportStatus? status,
-  }) async {
-    try {
-      final reports = await getAllForEnterprise(enterpriseId);
-      return reports.where((report) {
-        if (period != null && report.period != period) return false;
-        if (status != null && report.status != status) return false;
-        if (from != null && report.reportDate.isBefore(from)) return false;
-        if (to != null && report.reportDate.isAfter(to)) return false;
-        return true;
-      }).toList();
-    } catch (error, stackTrace) {
-      final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      AppLogger.error(
-        'Error getting reports: ${appException.message}',
-        name: 'FinancialReportOfflineRepository',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      throw appException;
-    }
+  }) {
+    return driftService.records
+        .watchForEnterprise(
+          collectionName: collectionName,
+          enterpriseId: enterpriseId,
+          moduleType: moduleType,
+        )
+        .map((rows) {
+          final entities = rows
+              .map((r) {
+                try {
+                  final map = jsonDecode(r.dataJson) as Map<String, dynamic>;
+                  return fromMap(map);
+                } catch (e) {
+                  return null;
+                }
+              })
+              .whereType<FinancialReport>()
+              .toList();
+
+          final deduplicated = deduplicateByRemoteId(entities);
+          return deduplicated.where((report) {
+            if (period != null && report.period != period) return false;
+            if (status != null && report.status != status) return false;
+            if (from != null && report.reportDate.isBefore(from)) return false;
+            if (to != null && report.reportDate.isAfter(to)) return false;
+            return true;
+          }).toList()
+            ..sort((a, b) => b.reportDate.compareTo(a.reportDate));
+        });
   }
 
   @override

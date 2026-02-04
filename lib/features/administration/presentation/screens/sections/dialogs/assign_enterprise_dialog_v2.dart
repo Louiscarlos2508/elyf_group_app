@@ -7,8 +7,6 @@ import '../../../../domain/entities/user.dart';
 import 'package:elyf_groupe_app/core.dart';
 import '../../../../application/providers.dart';
 import '../../../../domain/entities/admin_module.dart';
-import '../../../../domain/entities/enterprise.dart';
-import 'package:elyf_groupe_app/core/auth/entities/enterprise_module_user.dart';
 import 'package:elyf_groupe_app/core/permissions/services/permission_registry.dart';
 import 'widgets/enterprise_selection_widget.dart';
 
@@ -87,7 +85,7 @@ class _AssignEnterpriseDialogState
                   children: [
                     // Sélection du Module
                     DropdownButtonFormField<String>(
-                      value: _selectedModuleId,
+                      initialValue: _selectedModuleId,
                       decoration: const InputDecoration(
                         labelText: 'Module *',
                         helperText: 'Sélectionnez d\'abord le module',
@@ -189,7 +187,7 @@ class _AssignEnterpriseDialogState
                                 ),
                               ),
                               DropdownButtonFormField<String>(
-                                value: _selectedRoleId,
+                                initialValue: _selectedRoleId,
                                 decoration: const InputDecoration(
                                   labelText: 'Rôle *',
                                   helperText:

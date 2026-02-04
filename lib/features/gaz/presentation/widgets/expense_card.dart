@@ -44,23 +44,23 @@ class GazExpenseCard extends StatelessWidget {
   Color _getCategoryColor() {
     switch (expense.category) {
       case ExpenseCategory.transport:
-        return Colors.blue;
+        return const Color(0xFF3B82F6); // Blue
       case ExpenseCategory.maintenance:
-        return Colors.orange;
+        return const Color(0xFFF59E0B); // Amber
       case ExpenseCategory.salaries:
-        return Colors.purple;
+        return const Color(0xFF8B5CF6); // Violet
       case ExpenseCategory.rent:
-        return Colors.brown;
+        return const Color(0xFFEC4899); // Pink
       case ExpenseCategory.utilities:
-        return Colors.amber;
+        return const Color(0xFF10B981); // Emerald
       case ExpenseCategory.supplies:
-        return Colors.teal;
+        return const Color(0xFF06B6D4); // Cyan
       case ExpenseCategory.structureCharges:
-        return Colors.indigo;
+        return const Color(0xFF6366F1); // Indigo
       case ExpenseCategory.loadingEvents:
-        return Colors.cyan;
+        return const Color(0xFF14B8A6); // Teal
       case ExpenseCategory.other:
-        return Colors.grey;
+        return const Color(0xFF64748B); // Slate
     }
   }
 
@@ -70,12 +70,24 @@ class GazExpenseCard extends StatelessWidget {
     final categoryColor = _getCategoryColor();
 
     return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: theme.colorScheme.outline.withValues(alpha: 0.1),
+        ),
+      ),
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
           border: Border(left: BorderSide(color: categoryColor, width: 4)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.02),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -147,9 +159,9 @@ class GazExpenseCard extends StatelessWidget {
                     CurrencyFormatter.formatDouble(
                       expense.amount,
                     ).replaceAll(' FCFA', ' F'),
-                    style: theme.textTheme.titleLarge?.copyWith(
+                    style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: Colors.red,
+                      color: theme.colorScheme.error,
                     ),
                   ),
                   const SizedBox(height: 8),

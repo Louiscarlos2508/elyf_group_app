@@ -22,23 +22,25 @@ class FormDialogActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
     return Row(
       children: [
         Expanded(
           child: OutlinedButton(
             onPressed: isLoading ? null : onCancel,
-            style: GazButtonStyles.outlined,
+            style: GazButtonStyles.outlined(context),
             child: Text(
               cancelLabel,
-              style: const TextStyle(fontSize: 14, color: Color(0xFF0A0A0A)),
+              style: const TextStyle(fontSize: 14),
             ),
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 12),
         Expanded(
           child: FilledButton(
             onPressed: (isLoading || !submitEnabled) ? null : onSubmit,
-            style: GazButtonStyles.filledPrimary,
+            style: GazButtonStyles.filledPrimary(context),
             child: isLoading
                 ? const SizedBox(
                     width: 16,
@@ -48,7 +50,10 @@ class FormDialogActions extends StatelessWidget {
                       valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                     ),
                   )
-                : Text(submitLabel, style: const TextStyle(fontSize: 14)),
+                : Text(
+                    submitLabel,
+                    style: const TextStyle(fontSize: 14),
+                  ),
           ),
         ),
       ],

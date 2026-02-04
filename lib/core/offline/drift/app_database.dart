@@ -58,7 +58,7 @@ class SyncOperations extends Table {
 
 @DriftDatabase(tables: [OfflineRecords, SyncOperations])
 class AppDatabase extends _$AppDatabase {
-  AppDatabase() : super(openDriftConnection());
+  AppDatabase([QueryExecutor? e]) : super(e ?? openDriftConnection());
 
   @override
   int get schemaVersion => 3;

@@ -11,6 +11,7 @@ class Sale {
     this.notes,
     this.cashAmount = 0,
     this.mobileMoneyAmount = 0,
+    this.updatedAt,
   });
 
   final String id;
@@ -24,6 +25,7 @@ class Sale {
   final int cashAmount; // Montant payé en espèces (pour paiement mixte)
   final int
   mobileMoneyAmount; // Montant payé en Mobile Money (pour paiement mixte)
+  final DateTime? updatedAt;
 
   int get change => amountPaid > totalAmount ? amountPaid - totalAmount : 0;
 

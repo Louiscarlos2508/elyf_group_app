@@ -53,6 +53,11 @@ class ProductionSessionsCardComponents {
         textColor = statusColors?.success ?? Colors.green;
         icon = Icons.check_circle;
         break;
+      case ProductionSessionStatus.cancelled:
+        backgroundColor = theme.colorScheme.errorContainer;
+        textColor = theme.colorScheme.onErrorContainer;
+        icon = Icons.cancel_outlined;
+        break;
     }
 
     return Chip(

@@ -101,7 +101,7 @@ class SalaryOfflineRepository extends OfflineRepository<Employee>
 
   @override
   String getLocalId(Employee entity) {
-    if (entity.id.startsWith('local_')) return entity.id;
+    if (entity.id.isNotEmpty) return entity.id;
     return LocalIdGenerator.generate();
   }
 
@@ -303,6 +303,7 @@ class SalaryOfflineRepository extends OfflineRepository<Employee>
     final persons = personsRaw.map((p) {
       final pm = p as Map<String, dynamic>;
       return ProductionPaymentPerson(
+        workerId: pm['workerId'] as String?,
         name: pm['name'] as String,
         pricePerDay:
             (pm['pricePerDay'] as num?)?.toInt() ??
@@ -334,11 +335,34 @@ class SalaryOfflineRepository extends OfflineRepository<Employee>
   }
 
   @override
+  Future<void> deleteProductionPayment(String paymentId) async {
+    try {
+      // Pour annuler une transaction locale récente, l'ID est forcément local
+      await driftService.records.deleteByLocalId(
+        collectionName: productionPaymentsCollection,
+        localId: paymentId,
+        enterpriseId: enterpriseId,
+        moduleType: moduleType,
+      );
+    } catch (error, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
+      AppLogger.error(
+        'Error deleting production payment: $paymentId - ${appException.message}',
+        name: 'SalaryOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      throw appException;
+    }
+  }
+
+  @override
   Future<String> createProductionPayment(ProductionPayment payment) async {
     try {
-      final localId = payment.id.startsWith('local_')
+      final localId = payment.id.isNotEmpty
           ? payment.id
           : LocalIdGenerator.generate();
+      
       final map = {
         'id': localId,
         'localId': localId,
@@ -347,6 +371,7 @@ class SalaryOfflineRepository extends OfflineRepository<Employee>
         'persons': payment.persons
             .map(
               (p) => {
+                'workerId': p.workerId,
                 'name': p.name,
                 'pricePerDay': p.pricePerDay,
                 'daysWorked': p.daysWorked,
@@ -362,15 +387,29 @@ class SalaryOfflineRepository extends OfflineRepository<Employee>
         'signature': payment.signature?.toList(),
       };
 
-      await driftService.records.upsert(
-        collectionName: productionPaymentsCollection,
-        localId: localId,
-        remoteId: null,
-        enterpriseId: enterpriseId,
-        moduleType: moduleType,
-        dataJson: jsonEncode(map),
-        localUpdatedAt: DateTime.now(),
-      );
+      await driftService.db.transaction(() async {
+        // 1. Sauvegarder localement
+        await driftService.records.upsert(
+          collectionName: productionPaymentsCollection,
+          localId: localId,
+          remoteId: null,
+          enterpriseId: enterpriseId,
+          moduleType: moduleType,
+          dataJson: jsonEncode(map),
+          localUpdatedAt: DateTime.now(),
+        );
+
+        // 2. File d'attente de synchronisation
+        if (enableAutoSync) {
+          await syncManager.queueCreate(
+            collectionName: productionPaymentsCollection,
+            localId: localId,
+            data: map,
+            enterpriseId: enterpriseId,
+          );
+        }
+      });
+
       return localId;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
@@ -411,21 +450,35 @@ class SalaryOfflineRepository extends OfflineRepository<Employee>
   @override
   Future<String> createMonthlySalaryPayment(SalaryPayment payment) async {
     try {
-      final localId = payment.id.startsWith('local_')
+      final localId = payment.id.isNotEmpty
           ? payment.id
           : LocalIdGenerator.generate();
       final map = _salaryPaymentToMap(payment)..['localId'] = localId;
       map['id'] = localId;
 
-      await driftService.records.upsert(
-        collectionName: salaryPaymentsCollection,
-        localId: localId,
-        remoteId: null,
-        enterpriseId: enterpriseId,
-        moduleType: moduleType,
-        dataJson: jsonEncode(map),
-        localUpdatedAt: DateTime.now(),
-      );
+      await driftService.db.transaction(() async {
+        // 1. Sauvegarder localement
+        await driftService.records.upsert(
+          collectionName: salaryPaymentsCollection,
+          localId: localId,
+          remoteId: null,
+          enterpriseId: enterpriseId,
+          moduleType: moduleType,
+          dataJson: jsonEncode(map),
+          localUpdatedAt: DateTime.now(),
+        );
+
+        // 2. File d'attente de synchronisation
+        if (enableAutoSync) {
+          await syncManager.queueCreate(
+            collectionName: salaryPaymentsCollection,
+            localId: localId,
+            data: map,
+            enterpriseId: enterpriseId,
+          );
+        }
+      });
+
       return localId;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);

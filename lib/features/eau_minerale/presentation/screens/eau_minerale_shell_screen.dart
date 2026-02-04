@@ -23,42 +23,20 @@ class _EauMineraleShellScreenState
     extends ConsumerState<EauMineraleShellScreen> {
   int _index = 0;
 
-  /// Convertit EauMineraleSectionConfig en NavigationSection
-  /// et marque les sections principales
-  List<NavigationSection> _convertToNavigationSections(
-    List<EauMineraleSectionConfig> configs,
-  ) {
-    // Sections principales (les plus utilisées)
-    final primarySectionIds = {
-      EauMineraleSection.activity,
-      EauMineraleSection.production,
-      EauMineraleSection.sales,
-      EauMineraleSection.stock,
-      EauMineraleSection.clients,
-    };
-
-    return configs
-        .map(
-          (config) => NavigationSection(
-            label: config.label,
-            icon: config.icon,
-            builder: config.builder,
-            isPrimary: primarySectionIds.contains(config.id),
-            enterpriseId: widget.enterpriseId,
-            moduleId: widget.moduleId,
-          ),
-        )
-        .toList();
-  }
-
   @override
   Widget build(BuildContext context) {
     final sectionsAsync = ref.watch(accessibleSectionsProvider);
+    final navigationSections = ref.watch(
+      navigationSectionsProvider((
+        enterpriseId: widget.enterpriseId,
+        moduleId: widget.moduleId,
+      )),
+    );
 
     return sectionsAsync.when(
       data: (accessibleSections) {
         // Adjust index if current section is not accessible
-        if (_index >= accessibleSections.length) {
+        if (_index >= accessibleSections.length && accessibleSections.isNotEmpty) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) {
               setState(() => _index = 0);
@@ -99,11 +77,6 @@ class _EauMineraleShellScreenState
             ),
           );
         }
-
-        // Convertir en NavigationSection
-        final navigationSections = _convertToNavigationSections(
-          accessibleSections,
-        );
 
         // Show navigation only if 2+ sections
         if (navigationSections.length < 2) {

@@ -1,4 +1,3 @@
-import 'dart:developer' as developer;
 
 import '../../../../core/errors/app_exceptions.dart';
 import '../../../../core/errors/error_handler.dart';
@@ -332,5 +331,10 @@ class RoleController {
         'ROLE_DELETE_ERROR',
       );
     }
+  }
+
+  /// Surveille tous les rôles (Stream).
+  Stream<List<UserRole>> watchAllRoles() {
+    return _repository.watchAllRoles();
   }
 }

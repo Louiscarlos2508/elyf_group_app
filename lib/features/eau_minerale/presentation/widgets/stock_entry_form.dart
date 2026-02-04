@@ -169,8 +169,8 @@ class StockEntryFormState extends ConsumerState<StockEntryForm> {
       ref.invalidate(stockMovementsProvider);
       
       final message = _selectedType == _StockEntryType.bobine
-          ? '${quantite} bobine(s) ajoutée(s)'
-          : '${quantite} emballage(s) ajouté(s)';
+          ? '$quantite bobine(s) ajoutée(s)'
+          : '$quantite emballage(s) ajouté(s)';
       developer.log('Showing success message: $message', name: 'StockEntryForm');
       NotificationService.showSuccess(context, message);
       

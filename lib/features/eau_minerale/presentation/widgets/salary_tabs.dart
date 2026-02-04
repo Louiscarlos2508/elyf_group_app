@@ -14,87 +14,50 @@ class SalaryTabs extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _SalaryTab(
-              label: 'Employés Fixes',
-              index: 0,
-              isSelected: selectedTab == 0,
-              onTap: () => onTabChanged(0),
-            ),
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: SegmentedButton<int>(
+        segments: const [
+          ButtonSegment<int>(
+            value: 0,
+            label: Text('Fixes'),
+            icon: Icon(Icons.people_outline_rounded, size: 18),
           ),
-          Expanded(
-            child: _SalaryTab(
-              label: 'Paiements Production',
-              index: 1,
-              isSelected: selectedTab == 1,
-              onTap: () => onTabChanged(1),
-            ),
+          ButtonSegment<int>(
+            value: 1,
+            label: Text('Produit'),
+            icon: Icon(Icons.factory_outlined, size: 18),
           ),
-          Expanded(
-            child: _SalaryTab(
-              label: 'Historique',
-              index: 2,
-              isSelected: selectedTab == 2,
-              onTap: () => onTabChanged(2),
-            ),
+          ButtonSegment<int>(
+            value: 2,
+            label: Text('Histo'),
+            icon: Icon(Icons.history_rounded, size: 18),
           ),
-          Expanded(
-            child: _SalaryTab(
-              label: 'Analyses',
-              index: 3,
-              isSelected: selectedTab == 3,
-              onTap: () => onTabChanged(3),
-            ),
+          ButtonSegment<int>(
+            value: 3,
+            label: Text('Stats'),
+            icon: Icon(Icons.analytics_outlined, size: 18),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _SalaryTab extends StatelessWidget {
-  const _SalaryTab({
-    required this.label,
-    required this.index,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  final String label;
-  final int index;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          color: isSelected ? theme.colorScheme.surface : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Center(
-          child: Text(
-            label,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-              color: isSelected
-                  ? theme.colorScheme.onSurface
-                  : theme.colorScheme.onSurfaceVariant,
-            ),
+        selected: {selectedTab},
+        onSelectionChanged: (Set<int> newSelection) {
+          onTabChanged(newSelection.first);
+        },
+        style: SegmentedButton.styleFrom(
+          backgroundColor: isDark 
+              ? theme.colorScheme.surfaceContainerHigh 
+              : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+          selectedBackgroundColor: theme.colorScheme.primary,
+          selectedForegroundColor: theme.colorScheme.onPrimary,
+          side: BorderSide.none,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
           ),
+          visualDensity: VisualDensity.comfortable,
         ),
+        showSelectedIcon: false,
       ),
     );
   }

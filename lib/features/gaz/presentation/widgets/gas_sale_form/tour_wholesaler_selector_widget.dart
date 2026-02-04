@@ -75,7 +75,7 @@ class _TourWholesalerSelectorWidgetState
                 .toList();
 
             return DropdownButtonFormField<Tour?>(
-              value: widget.selectedTour,
+              initialValue: widget.selectedTour,
               decoration: const InputDecoration(
                 labelText: 'Tour d\'approvisionnement *',
                 prefixIcon: Icon(Icons.local_shipping),
@@ -178,7 +178,7 @@ class _TourWholesalerSelectorWidgetState
               children: [
                 Expanded(
                   child: DropdownButtonFormField<String>(
-                    value: widget.selectedWholesalerId,
+                    initialValue: widget.selectedWholesalerId,
                     decoration: const InputDecoration(
                       labelText: 'Grossiste *',
                       prefixIcon: Icon(Icons.business),

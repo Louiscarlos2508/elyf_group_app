@@ -74,7 +74,7 @@ class DailyWorkerOfflineRepository extends OfflineRepository<DailyWorker>
 
   @override
   String getLocalId(DailyWorker entity) {
-    if (entity.id.startsWith('local_')) return entity.id;
+    if (entity.id.isNotEmpty) return entity.id;
     return LocalIdGenerator.generate();
   }
 

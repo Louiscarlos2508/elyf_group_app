@@ -51,6 +51,7 @@ abstract class OfflineRepository<T> with OptimisticUIRepositoryMixin<T> {
   /// Ne lance pas d'exception si la sauvegarde locale échoue (erreur SQLite),
   /// pour permettre à l'opération de continuer. L'entité sera récupérée depuis
   /// Firestore lors de la prochaine synchronisation.
+  @override
   Future<void> save(T entity) async {
     final localId = getLocalId(entity);
     final remoteId = getRemoteId(entity);
@@ -163,16 +164,11 @@ abstract class OfflineRepository<T> with OptimisticUIRepositoryMixin<T> {
     T entity, {
     required String moduleType,
   }) async {
-    final entityId = getLocalId(entity);
     final remoteId = getRemoteId(entity);
     final enterpriseId = getEnterpriseId(entity);
     
-    // Si l'ID commence par 'local_', c'est déjà un localId
-    if (entityId.startsWith('local_')) {
-      return entityId;
-    }
-    
-    // Chercher d'abord par remoteId si disponible
+    // 1. Chercher d'abord par remoteId si disponible
+    // C'est le moyen le plus sûr d'identifier une même entité provenant du serveur
     if (remoteId != null && remoteId.isNotEmpty) {
       final byRemote = await driftService.records.findByRemoteId(
         collectionName: collectionName,
@@ -187,6 +183,13 @@ abstract class OfflineRepository<T> with OptimisticUIRepositoryMixin<T> {
         );
         return byRemote.localId;
       }
+    }
+
+    final entityId = getLocalId(entity);
+    
+    // 2. Si l'ID commence par 'local_', c'est déjà un localId
+    if (entityId.startsWith('local_')) {
+      return entityId;
     }
     
     // Chercher par l'ID de l'entité (peut être un localId ou autre)
@@ -232,6 +235,7 @@ abstract class OfflineRepository<T> with OptimisticUIRepositoryMixin<T> {
   }
 
   /// Deletes an entity from local storage and queues delete for sync.
+  @override
   Future<void> delete(T entity) async {
     final localId = getLocalId(entity);
     final remoteId = getRemoteId(entity);

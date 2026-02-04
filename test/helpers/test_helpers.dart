@@ -1,8 +1,6 @@
 /// Helpers pour faciliter l'écriture de tests.
-library test_helpers;
+library;
 
-import 'package:drift/drift.dart';
-import 'package:drift/native.dart';
 import 'package:elyf_groupe_app/core/offline/drift/app_database.dart';
 import 'package:elyf_groupe_app/core/offline/drift/offline_record_dao.dart';
 import 'package:elyf_groupe_app/core/offline/drift/sync_operation_dao.dart';

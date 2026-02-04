@@ -12,6 +12,7 @@ class BobineStockMovement {
     this.machineId,
     this.notes,
     this.createdAt,
+    this.updatedAt,
   });
 
   final String id;
@@ -26,6 +27,7 @@ class BobineStockMovement {
   final String? machineId; // ID de la machine si lié à une installation
   final String? notes;
   final DateTime? createdAt;
+  final DateTime? updatedAt;
 
   BobineStockMovement copyWith({
     String? id,
@@ -39,6 +41,7 @@ class BobineStockMovement {
     String? machineId,
     String? notes,
     DateTime? createdAt,
+    DateTime? updatedAt,
   }) {
     return BobineStockMovement(
       id: id ?? this.id,
@@ -52,6 +55,7 @@ class BobineStockMovement {
       machineId: machineId ?? this.machineId,
       notes: notes ?? this.notes,
       createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 }

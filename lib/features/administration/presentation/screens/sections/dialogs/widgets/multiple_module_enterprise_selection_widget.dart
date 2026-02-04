@@ -22,17 +22,16 @@ class MultipleModuleEnterpriseSelection extends StatelessWidget {
 
   /// Obtient les types d'entreprises correspondant aux modules.
   Set<String> _getEnterpriseTypesForModules(Set<String> moduleIds) {
-    final moduleToTypeMap = {
-      'eau_minerale': 'eau_minerale',
-      'gaz': 'gaz',
-      'orange_money': 'orange_money',
-      'immobilier': 'immobilier',
-      'boutique': 'boutique',
+    final moduleToTypesMap = {
+      'eau_minerale': ['eau_minerale', 'boutique'],
+      'gaz': ['gaz', 'boutique'],
+      'orange_money': ['orange_money', 'boutique'],
+      'immobilier': ['immobilier'],
+      'boutique': ['boutique', 'gaz', 'eau_minerale', 'orange_money'],
     };
 
     return moduleIds
-        .map((moduleId) => moduleToTypeMap[moduleId])
-        .whereType<String>()
+        .expand((moduleId) => moduleToTypesMap[moduleId] ?? <String>[])
         .toSet();
   }
 

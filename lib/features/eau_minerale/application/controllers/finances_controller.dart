@@ -8,8 +8,18 @@ class FinancesController {
 
   Future<FinancesState> fetchRecentExpenses() async {
     // Fetch more expenses to support monthly summary
-    final expenses = await _repository.fetchRecentExpenses(limit: 50);
+    final expenses = await _repository.fetchRecentExpenses(limit: 500);
     return FinancesState(expenses: expenses);
+  }
+
+  Stream<FinancesState> watchRecentExpenses() {
+    // Watch all expenses (filtered by recent if needed, but for dashboard monthly, we need current month)
+    // The repo watch methods usually fetch ALL unless filtered.
+    // fetchRecentExpenses uses getAllForEnterprise which is ALL.
+    return _repository.watchExpenses().map((expenses) {
+      expenses.sort((a, b) => b.date.compareTo(a.date));
+      return FinancesState(expenses: expenses);
+    });
   }
 
   Future<String> createExpense(ExpenseRecord expense) async {

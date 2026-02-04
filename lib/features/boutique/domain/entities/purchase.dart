@@ -10,6 +10,7 @@ class Purchase {
     this.supplier,
     this.notes,
     this.attachedFiles,
+    this.updatedAt,
   });
 
   final String id;
@@ -20,6 +21,7 @@ class Purchase {
   final String? notes; // Notes additionnelles
   final List<AttachedFile>?
   attachedFiles; // Fichiers joints (factures, photos, etc.)
+  final DateTime? updatedAt;
 }
 
 /// Represents an item in a purchase.

@@ -72,7 +72,7 @@ class PointOfSaleOfflineRepository extends OfflineRepository<PointOfSale>
 
   @override
   String getLocalId(PointOfSale entity) {
-    if (entity.id.startsWith('local_')) return entity.id;
+    if (entity.id.isNotEmpty) return entity.id;
     return LocalIdGenerator.generate();
   }
 
@@ -258,36 +258,33 @@ class PointOfSaleOfflineRepository extends OfflineRepository<PointOfSale>
   // PointOfSaleRepository implementation
 
   @override
-  Future<List<PointOfSale>> getPointsOfSale({
+  Stream<List<PointOfSale>> watchPointsOfSale({
     required String enterpriseId,
     required String moduleId,
-  }) async {
-    try {
-      developer.log(
-        'PointOfSaleOfflineRepository.getPointsOfSale: enterpriseId=$enterpriseId, moduleId=$moduleId',
-        name: 'PointOfSaleOfflineRepository.getPointsOfSale',
-      );
-      final all = await getAllForEnterprise(enterpriseId);
-      developer.log(
-        'PointOfSaleOfflineRepository.getPointsOfSale: ${all.length} points de vente trouvés avant filtrage par moduleId',
-        name: 'PointOfSaleOfflineRepository.getPointsOfSale',
-      );
-      final filtered = all.where((pos) => pos.moduleId == moduleId).toList();
-      developer.log(
-        'PointOfSaleOfflineRepository.getPointsOfSale: ${filtered.length} points de vente après filtrage par moduleId=$moduleId',
-        name: 'PointOfSaleOfflineRepository.getPointsOfSale',
-      );
-      return filtered;
-    } catch (error, stackTrace) {
-      final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      AppLogger.error(
-        'Error getting points of sale: ${appException.message}',
-        name: 'PointOfSaleOfflineRepository',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      throw appException;
-    }
+  }) {
+    return driftService.records
+        .watchForEnterprise(
+          collectionName: collectionName,
+          enterpriseId: enterpriseId,
+          moduleType: moduleType,
+        )
+        .map((rows) {
+          final entities = rows
+              .map((r) {
+                try {
+                  final map = jsonDecode(r.dataJson) as Map<String, dynamic>;
+                  return fromMap(map);
+                } catch (e) {
+                  return null;
+                }
+              })
+              .whereType<PointOfSale>()
+              .toList();
+
+          final deduplicated = deduplicateByRemoteId(entities);
+          return deduplicated.where((pos) => pos.moduleId == moduleId).toList()
+            ..sort((a, b) => a.name.compareTo(b.name));
+        });
   }
 
   @override

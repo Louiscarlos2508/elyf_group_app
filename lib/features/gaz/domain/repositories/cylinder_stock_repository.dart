@@ -9,6 +9,12 @@ abstract class CylinderStockRepository {
     String? siteId,
   });
 
+  Stream<List<CylinderStock>> watchStocks(
+    String enterpriseId, {
+    CylinderStatus? status,
+    String? siteId,
+  });
+
   Future<List<CylinderStock>> getStocksByWeight(
     String enterpriseId,
     int weight, {

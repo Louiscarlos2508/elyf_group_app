@@ -41,12 +41,14 @@ class DashboardPointOfSalePerformance extends StatelessWidget {
             children: [
               Icon(Icons.store, size: 20, color: const Color(0xFF0A0A0A)),
               const SizedBox(width: 8),
-              Text(
-                "Performance par point de vente (aujourd'hui)",
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontSize: 16,
-                  fontWeight: FontWeight.normal,
-                  color: const Color(0xFF0A0A0A),
+              Expanded(
+                child: Text(
+                  "Performance par point de vente (aujourd'hui)",
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontSize: 16,
+                    fontWeight: FontWeight.normal,
+                    color: const Color(0xFF0A0A0A),
+                  ),
                 ),
               ),
             ],

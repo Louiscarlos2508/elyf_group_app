@@ -102,6 +102,9 @@ class AdminOfflineRepository implements AdminRepository {
     return null;
   }
 
+    }
+  }
+
   @override
   Future<List<EnterpriseModuleUser>> getEnterpriseModuleUsers() async {
     try {
@@ -111,15 +114,11 @@ class AdminOfflineRepository implements AdminRepository {
         moduleType: 'administration',
       );
       
-      // Convertir les enregistrements en EnterpriseModuleUser
       final assignments = records.map((record) {
         final map = jsonDecode(record.dataJson) as Map<String, dynamic>;
         return _enterpriseModuleUserFromMap(map);
       }).toList();
       
-      // Dédupliquer par documentId (userId_enterpriseId_moduleId)
-      // Si plusieurs enregistrements existent pour le même documentId,
-      // garder le plus récent (basé sur updatedAt ou createdAt)
       final uniqueAssignments = <String, EnterpriseModuleUser>{};
       for (final assignment in assignments) {
         final documentId = assignment.documentId;
@@ -128,7 +127,6 @@ class AdminOfflineRepository implements AdminRepository {
         if (existing == null) {
           uniqueAssignments[documentId] = assignment;
         } else {
-          // Garder le plus récent (priorité à updatedAt, puis createdAt)
           final existingDate = existing.updatedAt ?? existing.createdAt;
           final currentDate = assignment.updatedAt ?? assignment.createdAt;
           
@@ -140,16 +138,49 @@ class AdminOfflineRepository implements AdminRepository {
       }
       
       return uniqueAssignments.values.toList();
-    } catch (e, stackTrace) {
-      final appException = ErrorHandler.instance.handleError(e, stackTrace);
-      AppLogger.error(
-        'Error fetching enterprise module users from offline storage: ${appException.message}',
-        name: 'admin.repository',
-        error: e,
-        stackTrace: stackTrace,
-      );
+    } catch (e) {
       return [];
     }
+  }
+
+  @override
+  Stream<List<EnterpriseModuleUser>> watchEnterpriseModuleUsers() {
+    return driftService.records
+        .watchForEnterprise(
+          collectionName: _enterpriseModuleUsersCollection,
+          enterpriseId: 'global',
+          moduleType: 'administration',
+        )
+        .map((records) {
+      final assignments = records.map((record) {
+        try {
+          final map = jsonDecode(record.dataJson) as Map<String, dynamic>;
+          return _enterpriseModuleUserFromMap(map);
+        } catch (e) {
+          return null;
+        }
+      }).whereType<EnterpriseModuleUser>().toList();
+
+      final uniqueAssignments = <String, EnterpriseModuleUser>{};
+      for (final assignment in assignments) {
+        final documentId = assignment.documentId;
+        final existing = uniqueAssignments[documentId];
+
+        if (existing == null) {
+          uniqueAssignments[documentId] = assignment;
+        } else {
+          final existingDate = existing.updatedAt ?? existing.createdAt;
+          final currentDate = assignment.updatedAt ?? assignment.createdAt;
+
+          if (currentDate != null &&
+              (existingDate == null || currentDate.isAfter(existingDate))) {
+            uniqueAssignments[documentId] = assignment;
+          }
+        }
+      }
+
+      return uniqueAssignments.values.toList();
+    });
   }
 
   @override
@@ -309,6 +340,9 @@ class AdminOfflineRepository implements AdminRepository {
     });
   }
 
+    }
+  }
+
   @override
   Future<List<UserRole>> getAllRoles() async {
     try {
@@ -321,16 +355,29 @@ class AdminOfflineRepository implements AdminRepository {
         final map = jsonDecode(record.dataJson) as Map<String, dynamic>;
         return _userRoleFromMap(map);
       }).toList();
-    } catch (e, stackTrace) {
-      final appException = ErrorHandler.instance.handleError(e, stackTrace);
-      AppLogger.error(
-        'Error fetching roles from offline storage: ${appException.message}',
-        name: 'admin.repository',
-        error: e,
-        stackTrace: stackTrace,
-      );
+    } catch (e) {
       return [];
     }
+  }
+
+  @override
+  Stream<List<UserRole>> watchAllRoles() {
+    return driftService.records
+        .watchForEnterprise(
+          collectionName: _rolesCollection,
+          enterpriseId: 'global',
+          moduleType: 'administration',
+        )
+        .map((records) {
+      return records.map((record) {
+        try {
+          final map = jsonDecode(record.dataJson) as Map<String, dynamic>;
+          return _userRoleFromMap(map);
+        } catch (e) {
+          return null;
+        }
+      }).whereType<UserRole>().toList();
+    });
   }
 
   @override

@@ -93,11 +93,40 @@ final activeEnterpriseProvider = FutureProvider<Enterprise?>((ref) async {
 final userAccessibleEnterprisesProvider = FutureProvider<List<Enterprise>>((
   ref,
 ) async {
+  // Add timeout to prevent infinite loading
+  try {
+    return await Future.any([
+      _fetchUserAccessibleEnterprises(ref),
+      Future.delayed(const Duration(seconds: 10)).then((_) {
+        developer.log(
+          '⚠️ userAccessibleEnterprisesProvider: Timeout after 10 seconds',
+          name: 'userAccessibleEnterprisesProvider',
+        );
+        return <Enterprise>[];
+      }),
+    ]);
+  } catch (e, stackTrace) {
+    developer.log(
+      '❌ userAccessibleEnterprisesProvider: Error - $e',
+      name: 'userAccessibleEnterprisesProvider',
+      error: e,
+      stackTrace: stackTrace,
+    );
+    return <Enterprise>[];
+  }
+});
+
+/// Internal function to fetch user accessible enterprises
+Future<List<Enterprise>> _fetchUserAccessibleEnterprises(Ref ref) async {
   // Récupérer l'ID de l'utilisateur connecté depuis l'auth
   final currentUserId = ref.watch(currentUserIdProvider);
 
   // Si aucun utilisateur n'est connecté, retourner une liste vide
   if (currentUserId == null) {
+    developer.log(
+      '⚠️ userAccessibleEnterprisesProvider: No current user ID',
+      name: 'userAccessibleEnterprisesProvider',
+    );
     return [];
   }
 
@@ -191,7 +220,7 @@ final userAccessibleEnterprisesProvider = FutureProvider<List<Enterprise>>((
   }
 
   return uniqueEnterprises.values.toList();
-});
+}
 
 /// Provider pour récupérer les modules accessibles à l'utilisateur pour l'entreprise active
 ///

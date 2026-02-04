@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 
-import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/salary_payment.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/production_payment.dart';
+import '../../application/services/payment_receipt_generator.dart';
 
 import 'salary_history_item_data.dart';
 
-/// Item widget for displaying a payment in history.
+/// Item widget for displaying a payment in history with print option.
 class SalaryHistoryItem extends StatelessWidget {
   const SalaryHistoryItem({super.key, required this.payment});
 
@@ -29,6 +32,20 @@ class SalaryHistoryItem extends StatelessWidget {
         return Colors.blue;
       case SalaryPaymentType.production:
         return Colors.purple;
+    }
+  }
+
+  Future<void> _printReceipt(BuildContext context) async {
+    try {
+      if (payment.originalPayment is SalaryPayment) {
+        await PaymentReceiptGenerator.generateMonthlyReceipt(payment.originalPayment as SalaryPayment);
+      } else if (payment.originalPayment is ProductionPayment) {
+        await PaymentReceiptGenerator.generateProductionReceipt(payment.originalPayment as ProductionPayment);
+      }
+    } catch (e) {
+      if (context.mounted) {
+        NotificationService.showError(context, 'Erreur lors de la génération du reçu: $e');
+      }
     }
   }
 
@@ -60,12 +77,26 @@ class SalaryHistoryItem extends StatelessWidget {
             ),
           ],
         ),
-        trailing: Text(
-          CurrencyFormatter.formatFCFA(payment.amount),
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: color,
-          ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              CurrencyFormatter.formatFCFA(payment.amount),
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+            const SizedBox(width: 8),
+            IconButton(
+              icon: const Icon(Icons.print_rounded),
+              onPressed: () => _printReceipt(context),
+              tooltip: 'Imprimer le reçu',
+              style: IconButton.styleFrom(
+                foregroundColor: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
         ),
       ),
     );

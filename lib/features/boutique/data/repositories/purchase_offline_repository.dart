@@ -78,6 +78,9 @@ class PurchaseOfflineRepository extends OfflineRepository<Purchase>
       supplier: map['supplier'] as String?,
       notes: map['notes'] as String?,
       attachedFiles: attachedFiles,
+      updatedAt: map['updatedAt'] != null
+          ? DateTime.parse(map['updatedAt'] as String)
+          : null,
     );
   }
 
@@ -112,12 +115,13 @@ class PurchaseOfflineRepository extends OfflineRepository<Purchase>
             },
           )
           .toList(),
+      'updatedAt': entity.updatedAt?.toIso8601String(),
     };
   }
 
   @override
   String getLocalId(Purchase entity) {
-    if (entity.id.startsWith('local_')) return entity.id;
+    if (entity.id.isNotEmpty) return entity.id;
     return LocalIdGenerator.generate();
   }
 
@@ -300,6 +304,7 @@ class PurchaseOfflineRepository extends OfflineRepository<Purchase>
         supplier: purchase.supplier,
         notes: purchase.notes,
         attachedFiles: purchase.attachedFiles,
+        updatedAt: DateTime.now(),
       );
       await save(purchaseWithLocalId);
       return localId;
@@ -313,5 +318,28 @@ class PurchaseOfflineRepository extends OfflineRepository<Purchase>
       );
       throw appException;
     }
+  }
+
+  @override
+  Stream<List<Purchase>> watchPurchases({int limit = 50}) {
+    return driftService.records
+        .watchForEnterprise(
+          collectionName: collectionName,
+          enterpriseId: enterpriseId,
+          moduleType: moduleType,
+        )
+        .map((rows) {
+      final purchases = <Purchase>[];
+      for (final row in rows) {
+        final map = safeDecodeJson(row.dataJson, row.localId);
+        if (map == null) continue;
+        try {
+          purchases.add(fromMap(map));
+        } catch (_) {}
+      }
+      final deduplicatedPurchases = deduplicateByRemoteId(purchases);
+      deduplicatedPurchases.sort((a, b) => b.date.compareTo(a.date));
+      return deduplicatedPurchases.take(limit).toList();
+    });
   }
 }

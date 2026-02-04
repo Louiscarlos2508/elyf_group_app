@@ -23,70 +23,38 @@ class SalaryHistoryContent extends ConsumerWidget {
           data.productionPayments,
         );
 
-        if (allPayments.isEmpty) {
-          return Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: theme.colorScheme.outline.withValues(alpha: 0.2),
-              ),
-            ),
-            child: Center(
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 16),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(
-                    Icons.history_outlined,
-                    size: 64,
-                    color: theme.colorScheme.onSurfaceVariant.withValues(
-                      alpha: 0.5,
+                  Text(
+                    'Historique Global',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.5,
                     ),
                   ),
-                  const SizedBox(height: 16),
                   Text(
-                    'Aucun paiement enregistré',
-                    style: theme.textTheme.bodyLarge?.copyWith(
+                    'Tous les flux de salaires et de production',
+                    style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
               ),
             ),
-          );
-        }
-
-        return Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: theme.colorScheme.outline.withValues(alpha: 0.2),
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Historique des Paiements',
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Tous les paiements de salaires et de production',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(height: 24),
+            if (allPayments.isEmpty)
+              _EmptyHistoryPlaceholder()
+            else
               ...allPayments.map(
                 (payment) => SalaryHistoryItem(payment: payment),
               ),
-            ],
-          ),
+          ],
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -108,23 +76,65 @@ class SalaryHistoryContent extends ConsumerWidget {
           type: SalaryPaymentType.monthly,
           label: payment.employeeName,
           period: payment.period,
+          originalPayment: payment,
         ),
       );
     }
 
     for (final payment in productionPayments) {
+      String label;
+      if (payment.persons.isEmpty) {
+        label = 'Paiement Production';
+      } else if (payment.persons.length == 1) {
+        label = payment.persons.first.name;
+      } else {
+        final first = payment.persons.first.name;
+        final count = payment.persons.length - 1;
+        label = '$first + $count autre(s)';
+      }
+
       items.add(
         SalaryHistoryItemData(
           date: payment.paymentDate,
           amount: payment.totalAmount,
           type: SalaryPaymentType.production,
-          label: 'Paiement Production',
+          label: label,
           period: payment.period,
+          originalPayment: payment,
         ),
       );
     }
 
     items.sort((a, b) => b.date.compareTo(a.date));
     return items;
+  }
+}
+
+class _EmptyHistoryPlaceholder extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 60),
+        child: Column(
+          children: [
+            Icon(
+              Icons.history_rounded,
+              size: 64,
+              color: theme.colorScheme.outlineVariant,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Aucun historique disponible',
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

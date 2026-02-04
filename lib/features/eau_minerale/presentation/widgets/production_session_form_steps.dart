@@ -401,6 +401,7 @@ class ProductionSessionFormStepsState
                 session: widget.session,
                 machinesSelectionnees: _machinesSelectionnees,
                 bobinesUtilisees: _bobinesUtilisees,
+                machinesAvecBobineNonFinie: _machinesAvecBobineNonFinie,
                 onProductionDayAdded: (day) {
                   setState(() {
                     final existingIndex = _productionDays.indexWhere(
@@ -417,6 +418,38 @@ class ProductionSessionFormStepsState
                   setState(
                     () => _productionDays.removeWhere((d) => d.id == day.id),
                   );
+                },
+                onMachinesChanged: (machines) async {
+                  setState(() => _machinesSelectionnees = machines);
+                  await _chargerBobinesNonFinies();
+                },
+                onBobinesChanged: (bobines) =>
+                    setState(() => _bobinesUtilisees = bobines),
+                onInstallerBobine: () =>
+                    ProductionSessionFormDialogs.showBobineInstallation(
+                  context: context,
+                  ref: ref,
+                  machinesSelectionnees: _machinesSelectionnees,
+                  bobinesUtilisees: _bobinesUtilisees,
+                  onBobinesChanged: (bobines) =>
+                      setState(() => _bobinesUtilisees = bobines),
+                ),
+                onSignalerPanne: (context, bobine, index) =>
+                    ProductionSessionFormDialogs.showMachineBreakdown(
+                  context: context,
+                  ref: ref,
+                  session: widget.session,
+                  selectedDate: _selectedDate,
+                  heureDebut: _heureDebut,
+                  machinesUtilisees: _machinesSelectionnees,
+                  bobinesUtilisees: _bobinesUtilisees,
+                  bobine: bobine,
+                  bobineIndex: index,
+                  onBobineRemoved: () =>
+                      setState(() => _bobinesUtilisees.removeAt(index)),
+                ),
+                onRetirerBobine: (index) {
+                  setState(() => _bobinesUtilisees.removeAt(index));
                 },
               )
             : const SizedBox.shrink();

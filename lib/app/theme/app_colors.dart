@@ -8,53 +8,55 @@ class AppColors {
   const AppColors._();
 
   // ============================================================================
-  // COULEURS PRIMITIVES (Seed colors)
+  // BRAND COLORS
   // ============================================================================
 
-  /// Couleur primaire (seed) - Bleu principal de l'application
-  /// Hex: #1B5E8D
-  static const Color seed = Color(0xFF1B5E8D);
+  /// Principal Blue - Professional & Trustworthy
+  static const Color primary = Color(0xFF1B5E8D);
+  static const Color primaryLight = Color(0xFF4B8AB8);
+  static const Color primaryDark = Color(0xFF0F3D5E);
 
-  /// Couleur d'accent - Jaune doré
-  /// Hex: #FCCF4D
+  /// Golden Accent - Premium & Quality
   static const Color accent = Color(0xFFFCCF4D);
+  static const Color accentLight = Color(0xFFFDE08A);
+  static const Color accentDark = Color(0xFFC7A13B);
 
   // ============================================================================
-  // COULEURS SÉMANTIQUES (States)
+  // SEMANTIC COLORS
   // ============================================================================
 
-  /// Couleur de succès - Vert
-  /// Hex: #1BB57B
   static const Color success = Color(0xFF1BB57B);
-
-  /// Couleur de danger/erreur - Rouge/Rose
-  /// Hex: #E94E77
-  static const Color danger = Color(0xFFE94E77);
-
-  /// Couleur d'avertissement - Orange (si nécessaire)
-  /// Hex: #FF9800
   static const Color warning = Color(0xFFFF9800);
-
-  /// Couleur d'information - Bleu clair (si nécessaire)
-  /// Hex: #2196F3
+  static const Color danger = Color(0xFFE94E77);
   static const Color info = Color(0xFF2196F3);
 
   // ============================================================================
-  // COULEURS NEUTRES (si nécessaire pour les thèmes personnalisés)
+  // NEUTRAL COLORS (Light Theme)
   // ============================================================================
 
-  /// Gris très clair (backgrounds)
+  static const Color bgLight = Color(0xFFF8FAFC);
+  static const Color surfaceLight = Colors.white;
+  static const Color textBodyLight = Color(0xFF334155);
+  static const Color textDisplayLight = Color(0xFF0F172A);
+  static const Color borderLight = Color(0xFFE2E8F0);
+
+  // ============================================================================
+  // NEUTRAL COLORS (Dark Theme)
+  // ============================================================================
+
+  static const Color bgDark = Color(0xFF0F172A);
+  static const Color surfaceDark = Color(0xFF1E293B);
+  static const Color textBodyDark = Color(0xFF94A3B8);
+  static const Color textDisplayDark = Color(0xFFF8FAFC);
+  static const Color borderDark = Color(0xFF334155);
+
+  // ============================================================================
+  // DEPRECATED / LEGACY (Keep for compatibility during refactoring)
+  // ============================================================================
+  static const Color seed = primary;
   static const Color neutral50 = Color(0xFFFAFAFA);
-
-  /// Gris clair (dividers)
   static const Color neutral100 = Color(0xFFF5F5F5);
-
-  /// Gris moyen (borders)
   static const Color neutral200 = Color(0xFFE0E0E0);
-
-  /// Gris foncé (textes secondaires)
   static const Color neutral600 = Color(0xFF757575);
-
-  /// Gris très foncé (textes principaux)
   static const Color neutral900 = Color(0xFF212121);
 }

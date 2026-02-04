@@ -92,6 +92,22 @@ class OfflineRecordDao {
         .get();
   }
 
+  Stream<List<OfflineRecord>> watchForEnterprise({
+    required String collectionName,
+    required String enterpriseId,
+    required String moduleType,
+  }) {
+    return (_db.select(_db.offlineRecords)
+          ..where(
+            (t) =>
+                t.collectionName.equals(collectionName) &
+                t.enterpriseId.equals(enterpriseId) &
+                t.moduleType.equals(moduleType),
+          )
+          ..orderBy([(t) => OrderingTerm.desc(t.localUpdatedAt)]))
+        .watch();
+  }
+
   /// List records for an enterprise with pagination support (LIMIT/OFFSET).
   ///
   /// Returns a paginated list of records ordered by localUpdatedAt descending.

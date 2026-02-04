@@ -12,6 +12,11 @@ class CylinderController {
     return _repository.getCylinders();
   }
 
+  /// Observe les bouteilles en temps réel.
+  Stream<List<Cylinder>> watchCylinders() {
+    return _repository.watchCylinders();
+  }
+
   /// Récupère une bouteille par son ID.
   Future<Cylinder?> getCylinderById(String id) async {
     return _repository.getCylinderById(id);

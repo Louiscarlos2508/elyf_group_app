@@ -30,14 +30,21 @@ class GazKpiCard extends StatelessWidget {
     return Container(
       padding: layout == GazKpiCardLayout.vertical
           ? const EdgeInsets.all(16)
-          : const EdgeInsets.all(17),
+          : const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Colors.black.withValues(alpha: 0.1),
-          width: 1.3,
+          color: theme.colorScheme.outline.withValues(alpha: 0.1),
+          width: 1,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: layout == GazKpiCardLayout.vertical
           ? _buildVerticalLayout(theme)
@@ -56,9 +63,9 @@ class GazKpiCard extends StatelessWidget {
             Expanded(
               child: Text(
                 title,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontSize: 14,
-                  color: const Color(0xFF4A5565),
+                style: theme.textTheme.labelMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
             ),
@@ -68,7 +75,7 @@ class GazKpiCard extends StatelessWidget {
               child: Icon(
                 icon,
                 size: iconSize,
-                color: iconColor ?? const Color(0xFF4A5565),
+                color: iconColor ?? theme.colorScheme.primary,
               ),
             ),
           ],
@@ -80,10 +87,9 @@ class GazKpiCard extends StatelessWidget {
           children: [
             Text(
               value,
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontSize: 24,
-                fontWeight: FontWeight.normal,
-                color: valueColor ?? const Color(0xFF101828),
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: valueColor ?? theme.colorScheme.onSurface,
               ),
             ),
             if (subtitle != null) ...[
@@ -92,7 +98,7 @@ class GazKpiCard extends StatelessWidget {
                 subtitle!,
                 style: theme.textTheme.bodySmall?.copyWith(
                   fontSize: 12,
-                  color: const Color(0xFF6A7282),
+                  color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
                 ),
               ),
             ],
@@ -113,18 +119,17 @@ class GazKpiCard extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontSize: 14,
-                  color: const Color(0xFF4A5565),
+                style: theme.textTheme.labelMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 value,
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontSize: 24,
-                  fontWeight: FontWeight.normal,
-                  color: valueColor ?? const Color(0xFF101828),
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: valueColor ?? theme.colorScheme.onSurface,
                 ),
               ),
               if (subtitle != null) ...[
@@ -133,20 +138,23 @@ class GazKpiCard extends StatelessWidget {
                   subtitle!,
                   style: theme.textTheme.bodySmall?.copyWith(
                     fontSize: 12,
-                    color: const Color(0xFF6A7282),
+                    color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
                   ),
                 ),
               ],
             ],
           ),
         ),
-        SizedBox(
-          width: iconSize + 16,
-          height: iconSize + 16,
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: (iconColor ?? theme.colorScheme.primary).withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
           child: Icon(
             icon,
             size: iconSize,
-            color: iconColor ?? const Color(0xFF3B82F6),
+            color: iconColor ?? theme.colorScheme.primary,
           ),
         ),
       ],

@@ -18,79 +18,116 @@ class SalarySummaryCards extends ConsumerWidget {
       data: (data) {
         return LayoutBuilder(
           builder: (context, constraints) {
-            final isWide = constraints.maxWidth > 600;
+            final isWide = constraints.maxWidth > 700;
+            final isTablet = constraints.maxWidth > 450 && constraints.maxWidth <= 700;
 
-            return isWide
-                ? Row(
+            if (isWide) {
+              return Row(
+                children: [
+                  Expanded(
+                    child: _SalarySummaryCard(
+                      label: 'Employés Fixes',
+                      value: '${data.fixedEmployeesCount}',
+                      icon: Icons.people_alt_rounded,
+                      color: Colors.blueAccent,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _SalarySummaryCard(
+                      label: 'Paiements Production',
+                      value: '${data.productionPaymentsCount}',
+                      icon: Icons.receipt_long_rounded,
+                      color: Colors.deepPurpleAccent,
+                      subtitle:
+                          '${data.uniqueProductionWorkers} intervenant(s)',
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _SalarySummaryCard(
+                      label: 'Total du Mois',
+                      value: CurrencyFormatter.formatFCFA(
+                        data.currentMonthTotal,
+                      ),
+                      icon: Icons.payments_rounded,
+                      color: Colors.green,
+                      subtitle: 'Budget Salarial',
+                    ),
+                  ),
+                ],
+              );
+            }
+
+            if (isTablet) {
+              return Column(
+                children: [
+                   Row(
                     children: [
                       Expanded(
                         child: _SalarySummaryCard(
-                          label: 'Employés Fixes',
+                          label: 'Employés',
                           value: '${data.fixedEmployeesCount}',
-                          icon: Icons.business_center,
-                          color: Colors.blue,
+                          icon: Icons.people_alt_rounded,
+                          color: Colors.blueAccent,
                         ),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
                         child: _SalarySummaryCard(
-                          label: 'Paiements Production',
+                          label: 'Paiements',
                           value: '${data.productionPaymentsCount}',
-                          icon: Icons.factory,
-                          color: Colors.purple,
-                          subtitle:
-                              '${data.uniqueProductionWorkers} personne(s) unique(s)',
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: _SalarySummaryCard(
-                          label: 'Total Mois en Cours',
-                          value: CurrencyFormatter.formatFCFA(
-                            data.currentMonthTotal,
-                          ),
-                          icon: Icons.trending_up,
-                          color: Colors.green,
-                          subtitle: 'FCFA',
-                          valueColor: Colors.green,
+                          icon: Icons.receipt_long_rounded,
+                          color: Colors.deepPurpleAccent,
                         ),
                       ),
                     ],
-                  )
-                : Column(
-                    children: [
-                      _SalarySummaryCard(
-                        label: 'Employés Fixes',
-                        value: '${data.fixedEmployeesCount}',
-                        icon: Icons.business_center,
-                        color: Colors.blue,
-                      ),
-                      const SizedBox(height: 16),
-                      _SalarySummaryCard(
-                        label: 'Paiements Production',
-                        value: '${data.productionPaymentsCount}',
-                        icon: Icons.factory,
-                        color: Colors.purple,
-                        subtitle:
-                            '${data.uniqueProductionWorkers} personne(s) unique(s)',
-                      ),
-                      const SizedBox(height: 16),
-                      _SalarySummaryCard(
-                        label: 'Total Mois en Cours',
-                        value: CurrencyFormatter.formatFCFA(
-                          data.currentMonthTotal,
-                        ),
-                        icon: Icons.trending_up,
-                        color: Colors.green,
-                        subtitle: 'FCFA',
-                        valueColor: Colors.green,
-                      ),
-                    ],
-                  );
+                  ),
+                  const SizedBox(height: 16),
+                  _SalarySummaryCard(
+                    label: 'Total Mois en Cours',
+                    value: CurrencyFormatter.formatFCFA(
+                      data.currentMonthTotal,
+                    ),
+                    icon: Icons.payments_rounded,
+                    color: Colors.green,
+                    subtitle: 'Budget Salarial',
+                  ),
+                ],
+              );
+            }
+
+            return Column(
+              children: [
+                _SalarySummaryCard(
+                  label: 'Employés Fixes',
+                  value: '${data.fixedEmployeesCount}',
+                  icon: Icons.people_alt_rounded,
+                  color: Colors.blueAccent,
+                ),
+                const SizedBox(height: 12),
+                _SalarySummaryCard(
+                  label: 'Paiements Production',
+                  value: '${data.productionPaymentsCount}',
+                  icon: Icons.receipt_long_rounded,
+                  color: Colors.deepPurpleAccent,
+                ),
+                const SizedBox(height: 12),
+                _SalarySummaryCard(
+                  label: 'Total Mois en Cours',
+                  value: CurrencyFormatter.formatFCFA(
+                    data.currentMonthTotal,
+                  ),
+                  icon: Icons.payments_rounded,
+                  color: Colors.green,
+                  subtitle: 'Budget Salarial',
+                ),
+              ],
+            );
           },
         );
       },
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const _LoadingSummary(),
       error: (_, __) => const SizedBox.shrink(),
     );
   }
@@ -103,7 +140,6 @@ class _SalarySummaryCard extends StatelessWidget {
     required this.icon,
     required this.color,
     this.subtitle,
-    this.valueColor,
   });
 
   final String label;
@@ -111,75 +147,102 @@ class _SalarySummaryCard extends StatelessWidget {
   final IconData icon;
   final Color color;
   final String? subtitle;
-  final Color? valueColor;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
-      padding: const EdgeInsets.all(16),
-      height: 150, // Fixed height for consistent dashboard look
+      padding: const EdgeInsets.all(20),
+      height: 140,
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+        color: isDark ? theme.colorScheme.surface : Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: isDark ? 0.1 : 0.5),
+        ),
         boxShadow: [
           BoxShadow(
-            color: theme.colorScheme.shadow.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: color.withValues(alpha: 0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Positioned(
+            right: -10,
+            bottom: -10,
+            child: Icon(
+              icon,
+              size: 80,
+              color: color.withValues(alpha: 0.05),
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(icon, color: color, size: 20),
-              ),
-              if (subtitle != null)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    subtitle!,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w500,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(16),
                     ),
+                    child: Icon(icon, color: color, size: 22),
                   ),
+                  if (subtitle != null)
+                    Text(
+                      subtitle!,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                ],
+              ),
+              const Spacer(),
+              Text(
+                value,
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: theme.colorScheme.onSurface,
+                  letterSpacing: -1,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 2),
+              Text(
+                label.toUpperCase(),
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.5,
+                ),
+              ),
             ],
           ),
-          const Spacer(),
-          Text(
-            value,
-            style: theme.textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: valueColor ?? theme.colorScheme.onSurface,
-              letterSpacing: -0.5,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
         ],
+      ),
+    );
+  }
+}
+
+class _LoadingSummary extends StatelessWidget {
+  const _LoadingSummary();
+
+  @override
+  Widget build(BuildContext context) {
+    return const SizedBox(
+      height: 140,
+      child: Center(
+        child: CircularProgressIndicator(strokeWidth: 2),
       ),
     );
   }

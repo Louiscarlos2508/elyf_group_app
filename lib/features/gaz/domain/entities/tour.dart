@@ -30,6 +30,7 @@ class Tour {
     this.closureDate,
     this.cancelledDate,
     this.notes,
+    this.updatedAt,
   });
 
   final String id;
@@ -46,6 +47,7 @@ class Tour {
   final DateTime? closureDate;
   final DateTime? cancelledDate;
   final String? notes;
+  final DateTime? updatedAt;
 
   Tour copyWith({
     String? id,
@@ -62,6 +64,7 @@ class Tour {
     DateTime? closureDate,
     DateTime? cancelledDate,
     String? notes,
+    DateTime? updatedAt,
   }) {
     return Tour(
       id: id ?? this.id,
@@ -81,6 +84,7 @@ class Tour {
       closureDate: closureDate ?? this.closureDate,
       cancelledDate: cancelledDate ?? this.cancelledDate,
       notes: notes ?? this.notes,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 

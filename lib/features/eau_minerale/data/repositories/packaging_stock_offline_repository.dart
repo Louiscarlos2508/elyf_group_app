@@ -416,6 +416,7 @@ class PackagingStockOfflineRepository extends OfflineRepository<PackagingStock>
         'fournisseur': movement.fournisseur,
         'notes': movement.notes,
         'createdAt': movement.createdAt?.toIso8601String(),
+        'updatedAt': DateTime.now().toIso8601String(),
       };
 
       await driftService.records.upsert(
@@ -552,7 +553,7 @@ class PackagingStockOfflineRepository extends OfflineRepository<PackagingStock>
       
       // Log pour déboguer
       AppLogger.info(
-        'Fetched ${rows.length} packaging movement records from collection ${movementsCollection}',
+        'Fetched ${rows.length} packaging movement records from collection $movementsCollection',
         name: 'PackagingStockOfflineRepository.fetchMovements',
       );
       
@@ -580,6 +581,9 @@ class PackagingStockOfflineRepository extends OfflineRepository<PackagingStock>
             notes: map['notes'] as String?,
             createdAt: map['createdAt'] != null
                 ? DateTime.parse(map['createdAt'] as String)
+                : null,
+            updatedAt: map['updatedAt'] != null
+                ? DateTime.parse(map['updatedAt'] as String)
                 : null,
           );
         } catch (e, stackTrace) {

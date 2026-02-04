@@ -8,6 +8,13 @@ abstract class SaleRepository {
     SaleStatus? status,
     String? customerId,
   });
+  
+  Stream<List<Sale>> watchSales({
+    DateTime? startDate,
+    DateTime? endDate,
+    SaleStatus? status,
+    String? customerId,
+  });
 
   /// Fetches recent sales (last N sales, sorted by date descending).
   Future<List<Sale>> fetchRecentSales({int limit = 50});

@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import '../../../domain/entities/cylinder.dart';
-import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
 
 /// Handler pour la soumission du formulaire de bouteille.
@@ -16,7 +15,7 @@ class CylinderSubmitHandler {
     required int? selectedWeight,
     required String weightText,
     required String sellPriceText,
-    required String wholesalePriceText,
+    required String buyPriceText,
     required String? enterpriseId,
     required String? moduleId,
     required Cylinder? existingCylinder,
@@ -35,13 +34,14 @@ class CylinderSubmitHandler {
       final controller = ref.read(cylinderControllerProvider);
       final weight = int.tryParse(weightText) ?? selectedWeight;
       final sellPrice = double.tryParse(sellPriceText) ?? 0.0;
+      final buyPrice = double.tryParse(buyPriceText) ?? 0.0;
 
       final cylinder = Cylinder(
         id:
             existingCylinder?.id ??
             'cyl-${DateTime.now().millisecondsSinceEpoch}',
         weight: weight,
-        buyPrice: 0.0, // Prix d'achat non utilisé, mis à 0
+        buyPrice: buyPrice,
         sellPrice: sellPrice,
         enterpriseId: enterpriseId,
         moduleId: moduleId,
@@ -53,36 +53,11 @@ class CylinderSubmitHandler {
         await controller.updateCylinder(cylinder);
       }
 
-      // Sauvegarder ou supprimer le prix en gros
-      final settingsController = ref.read(gazSettingsControllerProvider);
-      if (wholesalePriceText.isNotEmpty) {
-        final wholesalePrice = double.tryParse(wholesalePriceText);
-        if (wholesalePrice != null && wholesalePrice > 0) {
-          await settingsController.setWholesalePrice(
-            enterpriseId: enterpriseId,
-            moduleId: moduleId,
-            weight: weight,
-            price: wholesalePrice,
-          );
-        }
-      } else {
-        // Supprimer le prix en gros si le champ est vide
-        await settingsController.removeWholesalePrice(
-          enterpriseId: enterpriseId,
-          moduleId: moduleId,
-          weight: weight,
-        );
-      }
-
       if (!context.mounted) return false;
 
       // Invalider les providers pour forcer le rafraîchissement
       ref.invalidate(cylindersProvider);
 
-      // Invalider le provider spécifique avec les bons paramètres
-      ref.invalidate(
-        gazSettingsProvider((enterpriseId: enterpriseId, moduleId: moduleId)),
-      );
       Navigator.of(context).pop();
 
       if (context.mounted) {

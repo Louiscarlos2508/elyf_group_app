@@ -19,12 +19,15 @@ class PersonnelTotalCost extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            'Coût total personnel',
-            style: theme.textTheme.bodyLarge?.copyWith(
-              fontWeight: FontWeight.w600,
+          Expanded(
+            child: Text(
+              'Coût total personnel',
+              style: theme.textTheme.bodyLarge?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
+          const SizedBox(width: 8),
           Text(
             '$totalCost CFA',
             style: theme.textTheme.titleLarge?.copyWith(

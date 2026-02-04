@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:rxdart/rxdart.dart';
 
 export 'providers/permission_providers.dart';
 export 'providers/section_providers.dart';
@@ -11,7 +12,7 @@ import '../../../core/offline/providers.dart';
 import '../../../../core/tenant/tenant_provider.dart';
 import '../data/repositories/expense_offline_repository.dart';
 import '../data/repositories/purchase_offline_repository.dart';
-import '../data/repositories/mock_report_repository.dart';
+import '../data/repositories/report_offline_repository.dart';
 import '../data/repositories/stock_offline_repository.dart';
 import '../data/repositories/product_offline_repository.dart';
 import '../data/repositories/sale_offline_repository.dart';
@@ -150,14 +151,19 @@ final expenseRepositoryProvider = Provider<ExpenseRepository>((ref) {
   );
 });
 
-final reportRepositoryProvider = Provider<ReportRepository>(
-  (ref) => MockReportRepository(
-    ref.watch(saleRepositoryProvider),
-    ref.watch(purchaseRepositoryProvider),
-    ref.watch(expenseRepositoryProvider),
-    ref.watch(productRepositoryProvider),
-  ),
-);
+final reportRepositoryProvider = Provider<ReportRepository>((ref) {
+  final enterpriseId =
+      ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+  final driftService = DriftService.instance;
+  final syncManager = ref.watch(syncManagerProvider);
+  final connectivityService = ref.watch(connectivityServiceProvider);
+
+  return ReportOfflineRepository(
+    saleRepository: ref.watch(saleRepositoryProvider),
+    purchaseRepository: ref.watch(purchaseRepositoryProvider),
+    expenseRepository: ref.watch(expenseRepositoryProvider),
+  );
+});
 
 final storeControllerProvider = Provider<StoreController>(
   (ref) => StoreController(
@@ -171,118 +177,120 @@ final storeControllerProvider = Provider<StoreController>(
   ),
 );
 
-final productsProvider = FutureProvider.autoDispose(
-  (ref) async => ref.watch(storeControllerProvider).fetchProducts(),
+final productsProvider = StreamProvider.autoDispose(
+  (ref) => ref.watch(storeControllerProvider).watchProducts(),
 );
 
-final recentSalesProvider = FutureProvider.autoDispose(
-  (ref) async => ref.watch(storeControllerProvider).fetchRecentSales(),
+final recentSalesProvider = StreamProvider.autoDispose(
+  (ref) => ref.watch(storeControllerProvider).watchRecentSales(),
 );
 
-final lowStockProductsProvider = FutureProvider.autoDispose(
-  (ref) async => ref.watch(storeControllerProvider).getLowStockProducts(),
+final lowStockProductsProvider = StreamProvider.autoDispose(
+  (ref) => ref.watch(storeControllerProvider).watchLowStockProducts(),
 );
 
-final purchasesProvider = FutureProvider.autoDispose(
-  (ref) async => ref.watch(storeControllerProvider).fetchPurchases(),
+final purchasesProvider = StreamProvider.autoDispose(
+  (ref) => ref.watch(storeControllerProvider).watchPurchases(),
 );
 
-final expensesProvider = FutureProvider.autoDispose(
-  (ref) async => ref.watch(storeControllerProvider).fetchExpenses(),
+final expensesProvider = StreamProvider.autoDispose(
+  (ref) => ref.watch(storeControllerProvider).watchExpenses(),
 );
 
 /// Provider combiné pour les métriques mensuelles du dashboard boutique.
 ///
 /// Simplifie l'utilisation en combinant sales, purchases et expenses
 /// en un seul AsyncValue.
-final boutiqueMonthlyMetricsProvider = FutureProvider.autoDispose<
+final boutiqueMonthlyMetricsProvider = StreamProvider.autoDispose<
     ({List<Sale> sales, List<Purchase> purchases, List<Expense> expenses})>(
-  (ref) async {
-    final sales = await ref.watch(storeControllerProvider).fetchRecentSales();
-    final purchases =
-        await ref.watch(storeControllerProvider).fetchPurchases();
-    final expenses = await ref.watch(storeControllerProvider).fetchExpenses();
-
-    return (
-      sales: sales,
-      purchases: purchases,
-      expenses: expenses,
+  (ref) {
+    final controller = ref.watch(storeControllerProvider);
+    return CombineLatestStream.combine3(
+      controller.watchRecentSales(),
+      controller.watchPurchases(),
+      controller.watchExpenses(),
+      (sales, purchases, expenses) => (
+        sales: sales,
+        purchases: purchases,
+        expenses: expenses,
+      ),
     );
   },
 );
 
 /// Provider pour le bilan des dépenses Boutique.
 final boutiqueExpenseBalanceProvider =
-    FutureProvider.autoDispose<List<ExpenseBalanceData>>((ref) async {
-      final expenses = await ref.watch(storeControllerProvider).fetchExpenses();
-      final adapter = BoutiqueExpenseBalanceAdapter();
-      return adapter.convertToBalanceData(expenses);
+    StreamProvider.autoDispose<List<ExpenseBalanceData>>((ref) {
+      return ref.watch(storeControllerProvider).watchExpenses().map((expenses) {
+        final adapter = BoutiqueExpenseBalanceAdapter();
+        return adapter.convertToBalanceData(expenses);
+      });
     });
 
-final reportDataProvider = FutureProvider.family
+final reportDataProvider = StreamProvider.family
     .autoDispose<
       ReportData,
       ({ReportPeriod period, DateTime? startDate, DateTime? endDate})
-    >((ref, params) async {
+    >((ref, params) {
       return ref
           .watch(storeControllerProvider)
-          .getReportData(
+          .watchReportData(
             params.period,
             startDate: params.startDate,
             endDate: params.endDate,
           );
     });
 
-final salesReportProvider = FutureProvider.family
+final salesReportProvider = StreamProvider.family
     .autoDispose<
       SalesReportData,
       ({ReportPeriod period, DateTime? startDate, DateTime? endDate})
-    >((ref, params) async {
+    >((ref, params) {
       return ref
           .watch(storeControllerProvider)
-          .getSalesReport(
+          .watchSalesReport(
             params.period,
             startDate: params.startDate,
             endDate: params.endDate,
           );
     });
 
-final purchasesReportProvider = FutureProvider.family
+final purchasesReportProvider = StreamProvider.family
     .autoDispose<
       PurchasesReportData,
       ({ReportPeriod period, DateTime? startDate, DateTime? endDate})
-    >((ref, params) async {
+    >((ref, params) {
       return ref
           .watch(storeControllerProvider)
-          .getPurchasesReport(
+          .watchPurchasesReport(
             params.period,
             startDate: params.startDate,
             endDate: params.endDate,
           );
     });
 
-final expensesReportProvider = FutureProvider.family
+final expensesReportProvider = StreamProvider.family
     .autoDispose<
       ExpensesReportData,
       ({ReportPeriod period, DateTime? startDate, DateTime? endDate})
-    >((ref, params) async {
+    >((ref, params) {
       return ref
           .watch(storeControllerProvider)
-          .getExpensesReport(
+          .watchExpensesReport(
             params.period,
             startDate: params.startDate,
             endDate: params.endDate,
           );
     });
 
-final profitReportProvider = FutureProvider.family
+final profitReportProvider = StreamProvider.family
     .autoDispose<
       ProfitReportData,
       ({ReportPeriod period, DateTime? startDate, DateTime? endDate})
-    >((ref, params) async {
+    >((ref, params) {
       return ref
           .watch(storeControllerProvider)
-          .getProfitReport(
+          .watchProfitReport(
             params.period,
             startDate: params.startDate,
             endDate: params.endDate,

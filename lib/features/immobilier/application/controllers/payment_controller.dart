@@ -13,6 +13,10 @@ class PaymentController {
     return await _paymentRepository.getAllPayments();
   }
 
+  Stream<List<Payment>> watchPayments() {
+    return _paymentRepository.watchPayments();
+  }
+
   Future<Payment?> getPayment(String id) async {
     return await _paymentRepository.getPaymentById(id);
   }

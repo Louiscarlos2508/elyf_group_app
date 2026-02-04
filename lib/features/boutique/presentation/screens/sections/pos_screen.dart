@@ -316,8 +316,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                               },
                             );
                           },
-                          loading: () =>
-                              const Center(child: CircularProgressIndicator()),
+                          loading: () => const AppShimmers.grid(count: 8),
                           error: (_, __) => Center(
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -366,6 +365,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                     BoutiquePermissions.usePos,
                     BoutiquePermissions.createSale,
                   ],
+                  fallback: const SizedBox.shrink(),
                   child: FloatingActionButton.extended(
                     onPressed: () => _showCartBottomSheet(context),
                     icon: Badge(
@@ -376,7 +376,6 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                     backgroundColor: theme.colorScheme.primary,
                     foregroundColor: theme.colorScheme.onPrimary,
                   ),
-                  fallback: const SizedBox.shrink(),
                 ),
               ),
           ],

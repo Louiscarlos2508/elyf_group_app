@@ -419,31 +419,50 @@ try {
 - `amount` : Validation montant
 - `email` : Validation email
 
-## Bonnes Pratiques
+## 7. Synchronisation Avancée & Performance
 
-### Taille des Fichiers
+### Stratégie de Synchronisation (SyncManager)
+L'application utilise un système de synchronisation sophistiqué pour garantir l'intégrité des données multi-tenant :
+- **Queue Persistante** : Les opérations sont stockées localement dans Drift et synchronisées avec un mécanisme de retry (exponential backoff).
+- **Batch Operations** : Jusqu'à 500 opérations sont regroupées en une seule transaction Firestore pour optimiser les coûts et le réseau.
+- **Delta Sync** : Utilisation de `lastSyncAt` pour ne récupérer que les modifications récentes au démarrage.
+- **Priorisation** : Les ventes et paiements sont synchronisés avant les logs ou métriques.
 
-- **Objectif** : < 200 lignes par fichier
-- **Maximum** : 500 lignes (à éviter)
-- **Critique** : > 1000 lignes (à découper immédiatement)
+### Résolution de Conflits
+Le système suit une approche **Last-Write-Wins** basée sur le champ `updated_at`. En cas de conflit :
+1. Le document avec le timestamp le plus récent est conservé.
+2. Les données locales en attente de synchronisation sont prioritaires sur les données distantes plus anciennes.
 
-### Découpage
+---
 
-- Extraire les sections complexes en widgets séparés
-- Extraire la logique métier vers des services
-- Utiliser des widgets privés au lieu de méthodes helper
+## 8. Intégrité des Stocks
 
-### Imports
+Le module `StockIntegrityService` assure la cohérence entre les quantités affichées et l'historique des opérations.
 
-- Éviter les imports très profonds (4+ niveaux de `../`)
-- Utiliser des imports absolus quand possible
-- Organiser les imports : dart, package, relative
+### Diagnostic & Réparation
+- **Vérification** : Compare la quantité stockée avec `Somme(entrées) - Somme(sorties)`.
+- **Réparation** : Recalcule automatiquement la quantité stockée à partir des mouvements (source de vérité absolue).
+- **Architecture des Mouvements** : Utilisation d'un document Firestore par mouvement (pas de tableau géant) pour garantir la scalabilité et éviter les limites de taille de document (1MB).
 
-### Tests
+---
 
-- Tests unitaires pour la logique métier
-- Tests d'intégration pour la synchronisation
-- Tests widget pour les composants critiques
+## 📊 9. Métriques et Monitoring
+- **AppLogger** : Système de logging centralisé pour le debug et l'audit.
+- **SyncMetrics** : Collecte des statistiques de succès/échec de synchronisation.
+- **Performance** : Temps de chargement moyen < 500ms pour les données locales.
+
+---
+
+## 💡 10. Bonnes Pratiques de Développement
+1.  **Fichiers < 200 lignes** : Séparez les widgets et la logique métier.
+2.  **Const Constructors** : Optimisez le rebuild des widgets Flutter.
+3.  **Audit Trail** : Enregistrez systématiquement les actions critiques.
+
+---
+
+## 🔗 Ressources
+- [Guide d'Installation (SETUP.md)](./SETUP.md)
+- [Guide Technique Portfolio](../Project_Portfolio/eau_minerale/docs/guide_technique.md)
 
 ## Dépendances entre Modules
 
@@ -616,4 +635,3 @@ dart scripts/check_architecture.dart
 3. **Documentation** : Améliorer la documentation des APIs
 4. **Performance** : Optimiser les requêtes locales (Drift/SQLite)
 5. **Sécurité** : Migration vers Firebase Auth
-

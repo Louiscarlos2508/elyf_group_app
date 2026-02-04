@@ -13,6 +13,10 @@ class PropertyController {
     return await _propertyRepository.getAllProperties();
   }
 
+  Stream<List<Property>> watchProperties() {
+    return _propertyRepository.watchProperties();
+  }
+
   Future<Property?> getProperty(String id) async {
     return await _propertyRepository.getPropertyById(id);
   }

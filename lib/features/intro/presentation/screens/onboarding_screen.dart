@@ -1,39 +1,41 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../application/onboarding_service.dart';
 
-class OnboardingScreen extends StatefulWidget {
+class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
 
   @override
-  State<OnboardingScreen> createState() => _OnboardingScreenState();
+  ConsumerState<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
-class _OnboardingScreenState extends State<OnboardingScreen> {
+class _OnboardingScreenState extends ConsumerState<OnboardingScreen> with SingleTickerProviderStateMixin {
   final _controller = PageController();
   int _page = 0;
 
   static const _slides = [
     OnboardingSlideData(
-      title: 'Entreprises connectées',
+      title: 'Écosystème de Gestion',
       description:
-          'Gérez chaque entité Elyf depuis une seule application, avec un '
-          'design cohérent et premium.',
+          'Centralisez toutes les activités du Groupe Elyf dans une '
+          'interface unique, connectée et performante.',
       animationType: OnboardingAnimationType.connected,
     ),
     OnboardingSlideData(
-      title: 'Offline-first',
+      title: 'Continuité Opérationnelle',
       description:
-          'Drift garde vos données critiques disponibles et se synchronise '
-          'automatiquement avec Firestore.',
+          'Travaillez sans interruption. Vos données se synchronisent '
+          'intelligemment, même dans les zones sans couverture réseau.',
       animationType: OnboardingAnimationType.sync,
     ),
     OnboardingSlideData(
-      title: 'Impression Sunmi V3',
+      title: 'Performance & Rapports',
       description:
-          'Imprimez vos tickets et reçus thermiques directement depuis les '
-          'modules métiers.',
+          'Optimisez votre productivité avec des outils de terrain précis '
+          'et des suivis financiers en temps réel.',
       animationType: OnboardingAnimationType.print,
     ),
   ];
@@ -69,25 +71,49 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               child: Column(
                 children: [
                   _DotsIndicator(total: _slides.length, index: _page),
-                  const SizedBox(height: 16),
-                  FilledButton(
-                    onPressed: () {
-                      if (_page < _slides.length - 1) {
-                        _controller.nextPage(
-                          duration: const Duration(milliseconds: 400),
-                          curve: Curves.easeOut,
-                        );
-                      } else {
-                        context.go('/login');
-                      }
-                    },
-                    child: Text(
-                      _page < _slides.length - 1 ? 'Continuer' : 'Commencer',
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: FilledButton(
+                      onPressed: () {
+                        if (_page < _slides.length - 1) {
+                          _controller.nextPage(
+                            duration: const Duration(milliseconds: 600),
+                            curve: Curves.easeInOutCubic,
+                          );
+                        } else {
+                          ref.read(onboardingServiceProvider).markCompleted();
+                          if (mounted) context.go('/login');
+                        }
+                      },
+                      style: FilledButton.styleFrom(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: Text(
+                        _page < _slides.length - 1 ? 'Continuer' : 'Démarrer l\'Expérience',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
                     ),
                   ),
+                  const SizedBox(height: 8),
                   TextButton(
-                    onPressed: () => context.go('/login'),
-                    child: const Text('Passer'),
+                    onPressed: () {
+                      ref.read(onboardingServiceProvider).markCompleted();
+                      if (mounted) context.go('/login');
+                    },
+                    child: Text(
+                      'Passer l\'introduction',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -160,15 +186,19 @@ class _OnboardingSlideState extends State<OnboardingSlide>
             widget.slide.title,
             textAlign: TextAlign.center,
             style: textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w800,
+              color: colors.primary,
+              letterSpacing: -0.5,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           Text(
             widget.slide.description,
             textAlign: TextAlign.center,
             style: textTheme.bodyLarge?.copyWith(
               color: colors.onSurfaceVariant,
+              height: 1.6,
+              letterSpacing: 0.2,
             ),
           ),
         ],

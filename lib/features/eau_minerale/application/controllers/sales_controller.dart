@@ -19,7 +19,16 @@ class SalesController {
   Future<SalesState> fetchRecentSales() async {
     final sales = await _saleRepository.fetchSales();
     sales.sort((a, b) => b.date.compareTo(a.date));
-    return SalesState(sales: sales.take(50).toList());
+    return SalesState(sales: sales);
+  }
+
+  Stream<SalesState> watchRecentSales() {
+    return _saleRepository.watchSales().map((sales) {
+      // _saleRepository.watchSales() already sorts, but we can ensure it?
+      // It returns parsed sales.
+      // Filter logic is inside repo if args provided, here no args = All.
+      return SalesState(sales: sales);
+    });
   }
 
   /// Crée une vente et décrémente le stock Pack si produit fini.
@@ -75,6 +84,20 @@ class SalesState {
 
   final List<Sale> sales;
 
-  int get todayRevenue =>
-      sales.fold(0, (value, sale) => value + sale.amountPaid);
+  bool _isToday(DateTime date) {
+    final now = DateTime.now();
+    return date.year == now.year &&
+        date.month == now.month &&
+        date.day == now.day;
+  }
+
+  int get todayRevenue => sales
+      .where((sale) => _isToday(sale.date))
+      .fold(0, (value, sale) => value + sale.totalPrice);
+
+  int get todaySalesCount => sales.where((sale) => _isToday(sale.date)).length;
+
+  int get todayCollections => sales
+      .where((sale) => _isToday(sale.date))
+      .fold(0, (value, sale) => value + sale.amountPaid);
 }

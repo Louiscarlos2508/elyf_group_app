@@ -228,10 +228,24 @@ class _PointOfSaleFormDialogState extends ConsumerState<PointOfSaleFormDialog>
     });
 
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 500),
-        child: Form(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      child: Container(
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 15,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 500),
+          child: Form(
           key: _formKey,
           child: SingleChildScrollView(
             child: Padding(
@@ -265,7 +279,7 @@ class _PointOfSaleFormDialogState extends ConsumerState<PointOfSaleFormDialog>
                     decoration: InputDecoration(
                       labelText: 'Nom du point de vente *',
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(16),
                       ),
                       prefixIcon: const Icon(Icons.store),
                     ),
@@ -283,7 +297,7 @@ class _PointOfSaleFormDialogState extends ConsumerState<PointOfSaleFormDialog>
                     decoration: InputDecoration(
                       labelText: 'Adresse *',
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(16),
                       ),
                       prefixIcon: const Icon(Icons.location_on),
                     ),
@@ -302,7 +316,7 @@ class _PointOfSaleFormDialogState extends ConsumerState<PointOfSaleFormDialog>
                     decoration: InputDecoration(
                       labelText: 'Contact (Téléphone) *',
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(16),
                       ),
                       prefixIcon: const Icon(Icons.phone),
                     ),
@@ -328,7 +342,7 @@ class _PointOfSaleFormDialogState extends ConsumerState<PointOfSaleFormDialog>
                           onPressed: _isLoading
                               ? null
                               : () => Navigator.of(context).pop(),
-                          style: GazButtonStyles.outlined,
+                          style: GazButtonStyles.outlined(context),
                           child: const Text('Annuler'),
                         ),
                       ),
@@ -336,7 +350,7 @@ class _PointOfSaleFormDialogState extends ConsumerState<PointOfSaleFormDialog>
                       Flexible(
                         child: FilledButton(
                           onPressed: _isLoading ? null : _savePointOfSale,
-                          style: GazButtonStyles.filledPrimary,
+                          style: GazButtonStyles.filledPrimary(context),
                           child: _isLoading
                               ? const SizedBox(
                                   width: 20,

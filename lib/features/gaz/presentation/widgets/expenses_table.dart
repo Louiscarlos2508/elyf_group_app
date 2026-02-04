@@ -45,23 +45,23 @@ class GazExpensesTable extends StatelessWidget {
   Color _getCategoryColor(ExpenseCategory category) {
     switch (category) {
       case ExpenseCategory.transport:
-        return Colors.blue;
+        return const Color(0xFF3B82F6); // Blue
       case ExpenseCategory.maintenance:
-        return Colors.orange;
+        return const Color(0xFFF59E0B); // Amber
       case ExpenseCategory.salaries:
-        return Colors.purple;
+        return const Color(0xFF8B5CF6); // Violet
       case ExpenseCategory.rent:
-        return Colors.brown;
+        return const Color(0xFFEC4899); // Pink
       case ExpenseCategory.utilities:
-        return Colors.amber;
+        return const Color(0xFF10B981); // Emerald
       case ExpenseCategory.supplies:
-        return Colors.teal;
+        return const Color(0xFF06B6D4); // Cyan
       case ExpenseCategory.structureCharges:
-        return Colors.indigo;
+        return const Color(0xFF6366F1); // Indigo
       case ExpenseCategory.loadingEvents:
-        return Colors.cyan;
+        return const Color(0xFF14B8A6); // Teal
       case ExpenseCategory.other:
-        return Colors.grey;
+        return const Color(0xFF64748B); // Slate
     }
   }
 
@@ -162,7 +162,7 @@ class GazExpensesTable extends StatelessWidget {
                   formatCurrency(expense.amount),
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
-                    color: Colors.red.shade700,
+                    color: theme.colorScheme.error,
                   ),
                 ),
               ),
@@ -179,7 +179,7 @@ class GazExpensesTable extends StatelessWidget {
                       icon: const Icon(Icons.delete, size: 18),
                       onPressed: () => onActionTap?.call(expense, 'delete'),
                       tooltip: 'Supprimer',
-                      color: Colors.red,
+                      color: theme.colorScheme.error,
                     ),
                   ],
                 ),
@@ -228,7 +228,7 @@ class GazExpensesTable extends StatelessWidget {
             formatCurrency(expense.amount),
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.bold,
-              color: Colors.red.shade700,
+              color: theme.colorScheme.error,
             ),
           ),
           onTap: () => onActionTap?.call(expense, 'view'),

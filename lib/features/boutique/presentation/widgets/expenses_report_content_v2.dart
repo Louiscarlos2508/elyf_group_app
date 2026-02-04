@@ -35,10 +35,17 @@ class ExpensesReportContentV2 extends ConsumerWidget {
       padding: EdgeInsets.all(isWide ? 24 : 16),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: theme.colorScheme.outline.withValues(alpha: 0.2),
+          color: theme.colorScheme.outline.withValues(alpha: 0.1),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: expensesReportAsync.when(
         data: (data) {
@@ -85,7 +92,7 @@ class ExpensesReportContentV2 extends ConsumerWidget {
             ],
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const AppShimmers.list(count: 3),
         error: (_, __) => const SizedBox.shrink(),
       ),
     );
@@ -102,12 +109,15 @@ class ExpensesReportContentV2 extends ConsumerWidget {
       children: data.byCategory.entries.map((entry) {
         // entry.key is String, we need to convert to category
         final categoryStr = entry.key;
-        final color = _getCategoryColorFromString(categoryStr);
+        final color = _getCategoryColorFromString(theme, categoryStr);
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(12),
+            color: color.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: color.withValues(alpha: 0.15),
+            ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -134,22 +144,22 @@ class ExpensesReportContentV2 extends ConsumerWidget {
     );
   }
 
-  Color _getCategoryColorFromString(String category) {
+  Color _getCategoryColorFromString(ThemeData theme, String category) {
     switch (category.toLowerCase()) {
       case 'loyer':
-        return Colors.blue;
+        return const Color(0xFF3B82F6); // Blue
       case 'services':
-        return Colors.orange;
+        return const Color(0xFFF59E0B); // Amber
       case 'salaires':
-        return Colors.purple;
+        return const Color(0xFF8B5CF6); // Purple
       case 'transport':
-        return Colors.teal;
+        return const Color(0xFF10B981); // Emerald
       case 'entretien':
-        return Colors.brown;
+        return const Color(0xFFD97706); // Brown-ish
       case 'fournitures':
-        return Colors.indigo;
+        return const Color(0xFF6366F1); // Indigo
       default:
-        return Colors.grey;
+        return theme.colorScheme.outline;
     }
   }
 
@@ -157,8 +167,11 @@ class ExpensesReportContentV2 extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(12),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.outline.withValues(alpha: 0.05),
+        ),
       ),
       child: Column(
         children: [

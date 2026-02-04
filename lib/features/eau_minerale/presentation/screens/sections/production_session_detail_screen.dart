@@ -4,9 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../app/theme/app_theme.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../../domain/entities/production_session.dart';
+import '../../../domain/entities/production_session_status.dart';
 import '../../../domain/entities/sale.dart';
 import '../../../domain/services/production_margin_calculator.dart';
-import '../../../domain/entities/machine.dart';
 import '../../widgets/production_detail_report.dart';
 import '../../widgets/section_placeholder.dart';
 // Removed: ventesParSessionProvider is imported from providers.dart
@@ -61,10 +61,16 @@ class _ProductionSessionDetailScreenState
         ),
         actions: [
           sessionAsync.when(
-            data: (session) => IconButton(
-              icon: const Icon(Icons.edit),
-              onPressed: () => _showEditForm(context, ref, session),
-            ),
+            data: (session) {
+              if (session.status == ProductionSessionStatus.completed) {
+                return const SizedBox.shrink();
+              }
+              return IconButton(
+                icon: const Icon(Icons.edit),
+                tooltip: 'Modifier',
+                onPressed: () => _showEditForm(context, ref, session),
+              );
+            },
             loading: () => const SizedBox.shrink(),
             error: (_, __) => const SizedBox.shrink(),
           ),
@@ -96,6 +102,7 @@ class _ProductionSessionDetailScreenState
       ),
     );
   }
+
 
   void _showEditForm(
     BuildContext context,
@@ -149,7 +156,10 @@ class _ProductionSessionDetailContent extends ConsumerWidget {
               const SizedBox(height: 16),
               _buildBobinesCard(context, session),
               const SizedBox(height: 16),
-              PersonnelSection(session: session),
+              PersonnelSection(
+                session: session,
+                isReadOnly: true,
+              ),
               const SizedBox(height: 16),
               ventesAsync.when(
                 data: (ventes) => _buildMarginCard(context, session, ventes),
@@ -573,6 +583,12 @@ class _ProductionSessionDetailContent extends ConsumerWidget {
               context,
               'Coût électricité',
               '${marge.coutElectricite} CFA',
+            ),
+            const SizedBox(height: 8),
+            _buildInfoRow(
+              context,
+              'Coût personnel',
+              '${marge.coutPersonnel} CFA',
             ),
             const SizedBox(height: 8),
             _buildInfoRow(context, 'Coût total', '${marge.coutTotal} CFA'),

@@ -14,12 +14,18 @@ class MonthlyExpenseSummary extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     // Utiliser le service de calcul pour extraire la logique métier
-    final calculationService = ref.read(dashboardCalculationServiceProvider);
+    final calculationService = ref.watch(dashboardCalculationServiceProvider);
     final now = DateTime.now();
     final monthStart = calculationService.getMonthStart(now);
+    final salaryState = ref.watch(salaryStateProvider);
+    final sessions = ref.watch(productionSessionsStateProvider).value ?? [];
+
     final monthlyTotal = calculationService.calculateMonthlyExpensesFromRecords(
-      expenses,
-      monthStart,
+      expenses: expenses,
+      salaryPayments: salaryState.value?.monthlySalaryPayments ?? [],
+      productionPayments: salaryState.value?.productionPayments ?? [],
+      sessions: sessions, // Include session costs (bobines + elec)
+      monthStart: monthStart,
     );
 
     return Container(

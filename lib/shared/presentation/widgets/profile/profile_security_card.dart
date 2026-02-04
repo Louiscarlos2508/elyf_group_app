@@ -13,7 +13,7 @@ class ProfileSecurityCard extends StatelessWidget {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: theme.colorScheme.outline.withValues(alpha: 0.2),
         ),
@@ -23,7 +23,7 @@ class ProfileSecurityCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.lock_outline, color: Colors.blue.shade300, size: 24),
+              Icon(Icons.lock_outline, color: theme.colorScheme.primary.withValues(alpha: 0.7), size: 24),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(

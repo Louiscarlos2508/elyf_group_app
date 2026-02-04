@@ -63,6 +63,43 @@ class Contract {
   bool get isExpired {
     return DateTime.now().isAfter(endDate);
   }
+  Contract copyWith({
+    String? id,
+    String? propertyId,
+    String? tenantId,
+    DateTime? startDate,
+    DateTime? endDate,
+    int? monthlyRent,
+    int? deposit,
+    ContractStatus? status,
+    Property? property,
+    Tenant? tenant,
+    int? paymentDay,
+    String? notes,
+    int? depositInMonths,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    List<AttachedFile>? attachedFiles,
+  }) {
+    return Contract(
+      id: id ?? this.id,
+      propertyId: propertyId ?? this.propertyId,
+      tenantId: tenantId ?? this.tenantId,
+      startDate: startDate ?? this.startDate,
+      endDate: endDate ?? this.endDate,
+      monthlyRent: monthlyRent ?? this.monthlyRent,
+      deposit: deposit ?? this.deposit,
+      status: status ?? this.status,
+      property: property ?? this.property,
+      tenant: tenant ?? this.tenant,
+      paymentDay: paymentDay ?? this.paymentDay,
+      notes: notes ?? this.notes,
+      depositInMonths: depositInMonths ?? this.depositInMonths,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      attachedFiles: attachedFiles ?? this.attachedFiles,
+    );
+  }
 }
 
 enum ContractStatus { active, expired, terminated, pending }

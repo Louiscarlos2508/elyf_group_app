@@ -26,6 +26,23 @@ class FinancialReportController {
     );
   }
 
+  /// Observe les rapports en temps réel.
+  Stream<List<FinancialReport>> watchReports(
+    String enterpriseId, {
+    ReportPeriod? period,
+    DateTime? from,
+    DateTime? to,
+    ReportStatus? status,
+  }) {
+    return _repository.watchReports(
+      enterpriseId,
+      period: period,
+      from: from,
+      to: to,
+      status: status,
+    );
+  }
+
   /// Récupère un rapport par ID.
   Future<FinancialReport?> getReportById(String id) async {
     return _repository.getReportById(id);

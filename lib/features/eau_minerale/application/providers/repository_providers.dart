@@ -1,17 +1,18 @@
+import 'dart:developer' as developer;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/offline/drift_service.dart';
 import '../../../../core/offline/providers.dart';
 import '../../../../core/tenant/tenant_provider.dart';
-import '../../data/repositories/customer_offline_repository.dart';
-import '../../data/repositories/mock_activity_repository.dart';
+import '../../data/repositories/activity_offline_repository.dart';
 import '../../data/repositories/bobine_stock_quantity_offline_repository.dart';
-import '../../data/repositories/mock_credit_repository.dart';
+import '../../data/repositories/credit_offline_repository.dart';
+import '../../data/repositories/customer_offline_repository.dart';
 import '../../data/repositories/daily_worker_offline_repository.dart';
 import '../../data/repositories/finance_offline_repository.dart';
 import '../../data/repositories/inventory_offline_repository.dart';
 import '../../data/repositories/packaging_stock_offline_repository.dart';
-import '../../data/repositories/mock_report_repository.dart';
+import '../../data/repositories/report_offline_repository.dart';
 import '../../data/repositories/salary_offline_repository.dart';
 import '../../data/repositories/stock_offline_repository.dart';
 import '../../data/repositories/machine_offline_repository.dart';
@@ -36,8 +37,13 @@ import '../../domain/repositories/stock_repository.dart';
 
 // Repository Providers
 final saleRepositoryProvider = Provider<SaleRepository>((ref) {
-  final enterpriseId =
-      ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+  final enterpriseIdValue = ref.watch(activeEnterpriseIdProvider);
+  final enterpriseId = enterpriseIdValue.value ?? 'default';
+  
+  developer.log(
+    'Creating SaleRepository with enterpriseId: $enterpriseId (state: ${enterpriseIdValue.isLoading ? "loading" : "ready"})',
+    name: 'repository_providers',
+  );
   final driftService = DriftService.instance;
   final syncManager = ref.watch(syncManagerProvider);
   final connectivityService = ref.watch(connectivityServiceProvider);
@@ -52,7 +58,7 @@ final saleRepositoryProvider = Provider<SaleRepository>((ref) {
 
 final stockRepositoryProvider = Provider<StockRepository>((ref) {
   final enterpriseId =
-      ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+      ref.watch(activeEnterpriseIdProvider).value ?? 'default';
   final driftService = DriftService.instance;
   final syncManager = ref.watch(syncManagerProvider);
   final connectivityService = ref.watch(connectivityServiceProvider);
@@ -67,13 +73,27 @@ final stockRepositoryProvider = Provider<StockRepository>((ref) {
   );
 });
 
-final creditRepositoryProvider = Provider<CreditRepository>(
-  (ref) => MockCreditRepository(ref.watch(saleRepositoryProvider)),
-);
+final creditRepositoryProvider = Provider<CreditRepository>((ref) {
+  final enterpriseId =
+      ref.watch(activeEnterpriseIdProvider).value ?? 'default';
+  final driftService = DriftService.instance;
+  final syncManager = ref.watch(syncManagerProvider);
+  final connectivityService = ref.watch(connectivityServiceProvider);
+  final saleRepo = ref.watch(saleRepositoryProvider);
+
+  return CreditOfflineRepository(
+    driftService: driftService,
+    syncManager: syncManager,
+    connectivityService: connectivityService,
+    enterpriseId: enterpriseId,
+    moduleType: 'eau_minerale',
+    saleRepository: saleRepo,
+  );
+});
 
 final inventoryRepositoryProvider = Provider<InventoryRepository>((ref) {
   final enterpriseId =
-      ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+      ref.watch(activeEnterpriseIdProvider).value ?? 'default';
   final driftService = DriftService.instance;
   final syncManager = ref.watch(syncManagerProvider);
   final connectivityService = ref.watch(connectivityServiceProvider);
@@ -89,7 +109,7 @@ final inventoryRepositoryProvider = Provider<InventoryRepository>((ref) {
 
 final customerRepositoryProvider = Provider<CustomerRepository>((ref) {
   final enterpriseId =
-      ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+      ref.watch(activeEnterpriseIdProvider).value ?? 'default';
   final driftService = DriftService.instance;
   final syncManager = ref.watch(syncManagerProvider);
   final connectivityService = ref.watch(connectivityServiceProvider);
@@ -105,8 +125,13 @@ final customerRepositoryProvider = Provider<CustomerRepository>((ref) {
 });
 
 final financeRepositoryProvider = Provider<FinanceRepository>((ref) {
-  final enterpriseId =
-      ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+  final enterpriseIdValue = ref.watch(activeEnterpriseIdProvider);
+  final enterpriseId = enterpriseIdValue.value ?? 'default';
+
+  developer.log(
+    'Creating FinanceRepository with enterpriseId: $enterpriseId',
+    name: 'repository_providers',
+  );
   final driftService = DriftService.instance;
   final syncManager = ref.watch(syncManagerProvider);
   final connectivityService = ref.watch(connectivityServiceProvider);
@@ -125,7 +150,7 @@ final financeRepositoryProvider = Provider<FinanceRepository>((ref) {
 final eauMineraleProductRepositoryProvider =
     Provider<ProductRepository>((ref) {
   final enterpriseId =
-      ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+      ref.watch(activeEnterpriseIdProvider).value ?? 'default';
   final driftService = DriftService.instance;
   final syncManager = ref.watch(syncManagerProvider);
   final connectivityService = ref.watch(connectivityServiceProvider);
@@ -139,14 +164,27 @@ final eauMineraleProductRepositoryProvider =
 });
 
 
-final activityRepositoryProvider = Provider<ActivityRepository>(
-  (ref) => MockActivityRepository(),
-);
+final activityRepositoryProvider = Provider<ActivityRepository>((ref) {
+  final saleRepo = ref.watch(saleRepositoryProvider);
+  final sessionRepo = ref.watch(productionSessionRepositoryProvider);
+  final creditRepo = ref.watch(creditRepositoryProvider);
+
+  return ActivityOfflineRepository(
+    saleRepository: saleRepo,
+    productionSessionRepository: sessionRepo,
+    creditRepository: creditRepo,
+  );
+});
 
 final productionSessionRepositoryProvider =
     Provider<ProductionSessionRepository>((ref) {
-      final enterpriseId =
-          ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+      final enterpriseIdValue = ref.watch(activeEnterpriseIdProvider);
+      final enterpriseId = enterpriseIdValue.value ?? 'default';
+
+      developer.log(
+        'Creating ProductionSessionRepository with enterpriseId: $enterpriseId',
+        name: 'repository_providers',
+      );
       final driftService = DriftService.instance;
       final syncManager = ref.watch(syncManagerProvider);
       final connectivityService = ref.watch(connectivityServiceProvider);
@@ -161,7 +199,7 @@ final productionSessionRepositoryProvider =
 
 final machineRepositoryProvider = Provider<MachineRepository>((ref) {
   final enterpriseId =
-      ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+      ref.watch(activeEnterpriseIdProvider).value ?? 'default';
   final driftService = DriftService.instance;
   final syncManager = ref.watch(syncManagerProvider);
   final connectivityService = ref.watch(connectivityServiceProvider);
@@ -177,7 +215,7 @@ final machineRepositoryProvider = Provider<MachineRepository>((ref) {
 final bobineStockQuantityRepositoryProvider =
     Provider<BobineStockQuantityRepository>((ref) {
       final enterpriseId =
-          ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+          ref.watch(activeEnterpriseIdProvider).value ?? 'default';
       final driftService = DriftService.instance;
       final syncManager = ref.watch(syncManagerProvider);
       final connectivityService = ref.watch(connectivityServiceProvider);
@@ -194,7 +232,7 @@ final packagingStockRepositoryProvider = Provider<PackagingStockRepository>((
   ref,
 ) {
   final enterpriseId =
-      ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+      ref.watch(activeEnterpriseIdProvider).value ?? 'default';
   final driftService = DriftService.instance;
   final syncManager = ref.watch(syncManagerProvider);
   final connectivityService = ref.watch(connectivityServiceProvider);
@@ -210,7 +248,7 @@ final packagingStockRepositoryProvider = Provider<PackagingStockRepository>((
 
 final dailyWorkerRepositoryProvider = Provider<DailyWorkerRepository>((ref) {
   final enterpriseId =
-      ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+      ref.watch(activeEnterpriseIdProvider).value ?? 'default';
   final driftService = DriftService.instance;
   final syncManager = ref.watch(syncManagerProvider);
   final connectivityService = ref.watch(connectivityServiceProvider);
@@ -226,7 +264,7 @@ final dailyWorkerRepositoryProvider = Provider<DailyWorkerRepository>((ref) {
 
 final salaryRepositoryProvider = Provider<SalaryRepository>((ref) {
   final enterpriseId =
-      ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+      ref.watch(activeEnterpriseIdProvider).value ?? 'default';
   final driftService = DriftService.instance;
   final syncManager = ref.watch(syncManagerProvider);
   final connectivityService = ref.watch(connectivityServiceProvider);
@@ -240,11 +278,18 @@ final salaryRepositoryProvider = Provider<SalaryRepository>((ref) {
   );
 });
 
-final reportRepositoryProvider = Provider<ReportRepository>(
-  (ref) => MockReportRepository(
-    salesRepository: ref.watch(saleRepositoryProvider),
-    financeRepository: ref.watch(financeRepositoryProvider),
-    salaryRepository: ref.watch(salaryRepositoryProvider),
-    productionSessionRepository: ref.watch(productionSessionRepositoryProvider),
-  ),
-);
+final reportRepositoryProvider = Provider<ReportRepository>((ref) {
+  final saleRepo = ref.watch(saleRepositoryProvider);
+  final sessionRepo = ref.watch(productionSessionRepositoryProvider);
+  final financeRepo = ref.watch(financeRepositoryProvider);
+  final salaryRepo = ref.watch(salaryRepositoryProvider);
+  final creditRepo = ref.watch(creditRepositoryProvider);
+
+  return ReportOfflineRepository(
+    saleRepository: saleRepo,
+    productionSessionRepository: sessionRepo,
+    financeRepository: financeRepo,
+    salaryRepository: salaryRepo,
+    creditRepository: creditRepo,
+  );
+});

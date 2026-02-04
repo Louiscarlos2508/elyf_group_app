@@ -36,6 +36,11 @@ class CreditOfflineRepository extends OfflineRepository<CreditPayment>
       amount: (map['amount'] as num).toInt(),
       date: DateTime.parse(map['date'] as String),
       notes: map['notes'] as String?,
+      cashAmount: (map['cashAmount'] as num?)?.toInt() ?? 0,
+      orangeMoneyAmount: (map['orangeMoneyAmount'] as num?)?.toInt() ?? 0,
+      updatedAt: map['updatedAt'] != null
+          ? DateTime.tryParse(map['updatedAt'] as String)
+          : null,
     );
   }
 
@@ -47,12 +52,15 @@ class CreditOfflineRepository extends OfflineRepository<CreditPayment>
       'amount': entity.amount,
       'date': entity.date.toIso8601String(),
       'notes': entity.notes,
+      'cashAmount': entity.cashAmount,
+      'orangeMoneyAmount': entity.orangeMoneyAmount,
+      'updatedAt': entity.updatedAt?.toIso8601String(),
     };
   }
 
   @override
   String getLocalId(CreditPayment entity) {
-    if (entity.id.startsWith('local_')) return entity.id;
+    if (entity.id.isNotEmpty) return entity.id;
     return LocalIdGenerator.generate();
   }
 
@@ -180,6 +188,68 @@ class CreditOfflineRepository extends OfflineRepository<CreditPayment>
   }
 
   @override
+  Future<List<Sale>> fetchCustomerAllCredits(String customerId) async {
+    try {
+      // Fetch all sales directly from repository, filtering by customerId and isCredit (which means it WAS a credit sale)
+      // Note: isCredit is determined by paymentMethod == 'credit' in Sale entity, so it remains true even if fully paid.
+      final allSales = await saleRepository.fetchRecentSales(limit: 1000);
+      // Return ALL sales for this customer (history)
+      // We can't easily distinguish "was credit" vs "cash" if fully paid, so we show all.
+      return allSales
+          .where((s) => s.customerId == customerId)
+          .toList();
+    } catch (error, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
+      AppLogger.error(
+        'Error fetching customer all credits: $customerId - ${appException.message}',
+        name: 'CreditOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      throw appException;
+    }
+  }
+
+  @override
+  Future<List<CreditPayment>> fetchPayments({
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    try {
+      final allPayments = await getAllForEnterprise(enterpriseId);
+      var filteredPayments = allPayments;
+
+      if (startDate != null) {
+        filteredPayments = filteredPayments
+            .where(
+              (p) =>
+                  p.date.isAfter(startDate) || p.date.isAtSameMomentAs(startDate),
+            )
+            .toList();
+      }
+
+      if (endDate != null) {
+        filteredPayments = filteredPayments
+            .where(
+              (p) => p.date.isBefore(endDate) || p.date.isAtSameMomentAs(endDate),
+            )
+            .toList();
+      }
+
+      return filteredPayments;
+    } catch (error, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
+      AppLogger.error(
+        'Error fetching credit payments: ${appException.message}',
+        name: 'CreditOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      throw appException;
+    }
+  }
+
+  @override
   Future<List<CreditPayment>> fetchSalePayments(String saleId) async {
     try {
       final allPayments = await getAllForEnterprise(enterpriseId);
@@ -206,8 +276,21 @@ class CreditOfflineRepository extends OfflineRepository<CreditPayment>
         amount: payment.amount,
         date: payment.date,
         notes: payment.notes,
+        cashAmount: payment.cashAmount,
+        orangeMoneyAmount: payment.orangeMoneyAmount,
+        updatedAt: DateTime.now(),
       );
-      await save(paymentWithLocalId);
+      
+      // Enregistrer localement
+      await saveToLocal(paymentWithLocalId);
+      
+      // Mettre en file d'attente pour la synchronisation
+      await syncManager.queueCreate(
+        collectionName: collectionName,
+        localId: localId,
+        data: toMap(paymentWithLocalId),
+        enterpriseId: enterpriseId,
+      );
       return localId;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);

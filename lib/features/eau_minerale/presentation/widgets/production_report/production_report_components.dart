@@ -175,6 +175,8 @@ class ProductionReportComponents {
         return Colors.orange;
       case ProductionSessionStatus.completed:
         return Colors.green.shade700;
+      case ProductionSessionStatus.cancelled:
+        return Colors.red;
     }
   }
 
@@ -190,6 +192,8 @@ class ProductionReportComponents {
         return Icons.pause_circle_outline;
       case ProductionSessionStatus.completed:
         return Icons.check_circle;
+      case ProductionSessionStatus.cancelled:
+        return Icons.cancel_outlined;
     }
   }
 }

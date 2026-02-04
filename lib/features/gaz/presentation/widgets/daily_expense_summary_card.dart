@@ -16,9 +16,16 @@ class GazDailyExpenseSummaryCard extends StatelessWidget {
     final theme = Theme.of(context);
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF0F0),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.red.withValues(alpha: 0.2)),
+        color: theme.colorScheme.errorContainer.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: theme.colorScheme.error.withValues(alpha: 0.1)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       padding: const EdgeInsets.all(20),
       child: Row(
@@ -26,10 +33,10 @@ class GazDailyExpenseSummaryCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Colors.red.withValues(alpha: 0.2),
+              color: theme.colorScheme.error.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Icon(Icons.trending_down, size: 24, color: Colors.red),
+            child: Icon(Icons.trending_down, size: 24, color: theme.colorScheme.error),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -46,7 +53,7 @@ class GazDailyExpenseSummaryCard extends StatelessWidget {
                   formatCurrency(total),
                   style: theme.textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: Colors.red.shade700,
+                    color: theme.colorScheme.error,
                   ),
                 ),
               ],

@@ -26,6 +26,8 @@ class ProductionSessionBuilder {
     String? notes,
     ProductionSessionStatus? status,
     List<ProductionDay>? productionDays,
+    int? coutBobines,
+    int? coutElectricite,
     required int period,
   }) {
     // Calculate status if not provided
@@ -53,6 +55,8 @@ class ProductionSessionBuilder {
       quantiteProduite: quantiteProduite,
       quantiteProduiteUnite: 'pack',
       emballagesUtilises: emballagesUtilises,
+      coutBobines: coutBobines,
+      coutElectricite: coutElectricite,
       notes: notes,
       status: calculatedStatus,
       productionDays: productionDays ?? const [],
@@ -69,6 +73,8 @@ class ProductionSessionBuilder {
     required int period,
     double consommationCourant = 0.0,
     int quantiteProduite = 0,
+    int? coutBobines,
+    int? coutElectricite,
   }) {
     return buildFromForm(
       sessionId: sessionId,
@@ -82,6 +88,8 @@ class ProductionSessionBuilder {
       bobinesUtilisees: bobinesUtilisees,
       quantiteProduite: quantiteProduite,
       emballagesUtilises: null,
+      coutBobines: coutBobines,
+      coutElectricite: coutElectricite,
       notes: null,
       status: null, // Will be calculated
       productionDays: null, // Will default to empty list

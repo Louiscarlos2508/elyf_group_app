@@ -5,4 +5,5 @@ abstract class PurchaseRepository {
   Future<List<Purchase>> fetchPurchases({int limit = 50});
   Future<Purchase?> getPurchase(String id);
   Future<String> createPurchase(Purchase purchase);
+  Stream<List<Purchase>> watchPurchases({int limit = 50});
 }

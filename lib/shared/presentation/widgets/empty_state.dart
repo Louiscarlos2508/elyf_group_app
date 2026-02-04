@@ -23,21 +23,29 @@ class EmptyState extends StatelessWidget {
     
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              size: 64,
-              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                icon,
+                size: 40,
+                color: theme.colorScheme.primary,
+              ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
             Text(
               title,
-              style: theme.textTheme.titleLarge?.copyWith(
+              textAlign: TextAlign.center,
+              style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: theme.colorScheme.onSurfaceVariant,
+                color: theme.colorScheme.onSurface,
               ),
             ),
             if (message != null) ...[
@@ -51,7 +59,7 @@ class EmptyState extends StatelessWidget {
               ),
             ],
             if (action != null) ...[
-              const SizedBox(height: 24),
+              const SizedBox(height: 32),
               action!,
             ],
           ],

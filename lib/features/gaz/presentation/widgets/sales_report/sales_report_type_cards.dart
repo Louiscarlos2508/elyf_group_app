@@ -46,7 +46,7 @@ class SalesReportTypeCards extends ConsumerWidget {
                 type: 'Détail',
                 count: retailSales.length,
                 total: reportService.calculateRetailTotal(retailSales),
-                color: Colors.orange,
+                color: const Color(0xFFF59E0B),
               ),
             ),
             const SizedBox(width: 16),
@@ -56,7 +56,7 @@ class SalesReportTypeCards extends ConsumerWidget {
                 type: 'Gros',
                 count: wholesaleSales.length,
                 total: reportService.calculateWholesaleTotal(wholesaleSales),
-                color: Colors.purple,
+                color: const Color(0xFF8B5CF6),
               ),
             ),
           ],
@@ -86,9 +86,9 @@ class _TypeCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
+        color: color.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

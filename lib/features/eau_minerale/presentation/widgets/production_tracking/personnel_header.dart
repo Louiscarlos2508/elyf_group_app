@@ -2,9 +2,14 @@ import 'package:flutter/material.dart';
 
 /// En-tête de la section personnel avec bouton d'ajout.
 class PersonnelHeader extends StatelessWidget {
-  const PersonnelHeader({super.key, required this.onAddDay});
+  const PersonnelHeader({
+    super.key,
+    required this.onAddDay,
+    this.isReadOnly = false,
+  });
 
   final VoidCallback? onAddDay;
+  final bool isReadOnly;
 
   @override
   Widget build(BuildContext context) {
@@ -17,14 +22,18 @@ class PersonnelHeader extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Personnel et production journalière',
+                isReadOnly 
+                    ? 'Détail du personnel' 
+                    : 'Personnel et production journalière',
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
-                'Enregistrez le personnel et la production pour chaque jour',
+                isReadOnly
+                    ? 'Liste du personnel ayant travaillé sur cette session'
+                    : 'Enregistrez le personnel et la production pour chaque jour',
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -32,13 +41,16 @@ class PersonnelHeader extends StatelessWidget {
             ],
           ),
         ),
-        IntrinsicWidth(
-          child: FilledButton.icon(
-            onPressed: onAddDay,
-            icon: const Icon(Icons.add, size: 18),
-            label: const Text('Ajouter jour'),
+        if (!isReadOnly) ...[
+          const SizedBox(width: 16), // Espace avant le bouton
+          IntrinsicWidth(
+            child: FilledButton.icon(
+              onPressed: onAddDay,
+              icon: const Icon(Icons.add, size: 18),
+              label: const Text('Ajouter jour'),
+            ),
           ),
-        ),
+        ],
       ],
     );
   }

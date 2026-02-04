@@ -26,7 +26,8 @@ class ProductionMarginCalculator {
     final coutElectricite =
         session.coutElectricite ??
         _calculerCoutElectricite(session.consommationCourant, prixKwh);
-    final coutTotal = coutBobines + coutElectricite;
+    final coutPersonnel = session.coutTotalPersonnel;
+    final coutTotal = coutBobines + coutElectricite + coutPersonnel;
 
     // Calculer la marge brute
     final margeBrute = revenusTotaux - coutTotal;
@@ -40,6 +41,7 @@ class ProductionMarginCalculator {
       revenusTotaux: revenusTotaux,
       coutTotal: coutTotal,
       coutBobines: coutBobines,
+      coutPersonnel: coutPersonnel,
       coutElectricite: coutElectricite,
       margeBrute: margeBrute,
       pourcentageMarge: pourcentageMarge,
@@ -61,6 +63,7 @@ class ProductionMargin {
     required this.revenusTotaux,
     required this.coutTotal,
     required this.coutBobines,
+    required this.coutPersonnel,
     required this.coutElectricite,
     required this.margeBrute,
     required this.pourcentageMarge,
@@ -69,8 +72,9 @@ class ProductionMargin {
   });
 
   final int revenusTotaux; // Revenus totaux des ventes liées
-  final int coutTotal; // Coût total (bobines + électricité)
+  final int coutTotal; // Coût total (bobines + électricité + personnel)
   final int coutBobines; // Coût des bobines
+  final int coutPersonnel; // Coût du personnel
   final int coutElectricite; // Coût de l'électricité
   final int margeBrute; // Marge brute (revenus - coûts)
   final double pourcentageMarge; // Pourcentage de marge (%)

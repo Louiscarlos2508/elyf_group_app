@@ -3,11 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../application/controllers/clients_controller.dart';
-import '../../application/controllers/finances_controller.dart';
-import '../../application/controllers/sales_controller.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
-import '../../domain/entities/production_session.dart';
 import 'dashboard_kpi_card.dart';
 
 /// Section displaying monthly KPIs with production sessions data.
@@ -16,26 +12,10 @@ class DashboardMonthKpis extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final salesState = ref.watch(salesStateProvider);
-    final clientsState = ref.watch(clientsStateProvider);
-    final financesState = ref.watch(financesStateProvider);
-    final productionState = ref.watch(productionSessionsStateProvider);
+    final summaryAsync = ref.watch(monthlyDashboardSummaryProvider);
 
-    return salesState.when(
-      data: (sales) => clientsState.when(
-        data: (clients) => financesState.when(
-          data: (finances) => productionState.when(
-            data: (sessions) =>
-                _buildKpis(context, sales, clients, finances, sessions, ref),
-            loading: () => _buildLoadingState(),
-            error: (_, __) => const SizedBox.shrink(),
-          ),
-          loading: () => _buildLoadingState(),
-          error: (_, __) => const SizedBox.shrink(),
-        ),
-        loading: () => _buildLoadingState(),
-        error: (_, __) => const SizedBox.shrink(),
-      ),
+    return summaryAsync.when(
+      data: (summary) => _buildKpis(context, summary),
       loading: () => _buildLoadingState(),
       error: (_, __) => const SizedBox.shrink(),
     );
@@ -50,49 +30,8 @@ class DashboardMonthKpis extends ConsumerWidget {
 
   Widget _buildKpis(
     BuildContext context,
-    SalesState sales,
-    ClientsState clients,
-    FinancesState finances,
-    List<ProductionSession> sessions,
-    WidgetRef ref,
+    MonthlyDashboardSummary summary,
   ) {
-    // Utiliser le service de calcul pour extraire la logique métier
-    final calculationService = ref.read(dashboardCalculationServiceProvider);
-    final now = DateTime.now();
-    final monthStart = calculationService.getMonthStart(now);
-
-    // Ventes du mois
-    final monthRevenue = calculationService.calculateMonthlyRevenue(
-      sales.sales,
-      monthStart,
-    );
-    final monthCollections = calculationService.calculateMonthlyCollections(
-      sales.sales,
-      monthStart,
-    );
-
-    // Production du mois
-    final monthSessions = sessions
-        .where((s) => s.date.isAfter(monthStart))
-        .toList();
-    final monthProduction = monthSessions.fold<int>(
-      0,
-      (sum, s) => sum + s.quantiteProduite,
-    );
-
-    // Dépenses du mois
-    final monthExpenses = calculationService
-        .calculateMonthlyExpensesFromRecords(finances.expenses, monthStart);
-
-    // Résultat net
-    final monthResult = calculationService.calculateMonthlyResult(
-      monthCollections,
-      monthExpenses,
-    );
-    final monthSales = sales.sales
-        .where((s) => s.date.isAfter(monthStart))
-        .toList();
-
     return LayoutBuilder(
       builder: (context, constraints) {
         final isWide = constraints.maxWidth > 900;
@@ -100,39 +39,38 @@ class DashboardMonthKpis extends ConsumerWidget {
         final cards = [
           DashboardKpiCard(
             label: 'Chiffre d\'Affaires',
-            value: CurrencyFormatter.formatFCFA(monthRevenue),
-            subtitle: '${monthSales.length} ventes',
+            value: CurrencyFormatter.formatFCFA(summary.revenue),
+            subtitle: '${summary.salesCount} ventes',
             icon: Icons.trending_up,
             iconColor: Colors.blue,
             backgroundColor: Colors.blue,
           ),
           DashboardKpiCard(
             label: 'Production',
-            value: '$monthProduction sachets',
-            subtitle: '${monthSessions.length} sessions',
+            value: '${summary.production} packs',
+            subtitle: '${summary.sessionsCount} sessions',
             icon: Icons.factory,
             iconColor: Colors.purple,
             backgroundColor: Colors.purple,
           ),
           DashboardKpiCard(
             label: 'Dépenses',
-            value: CurrencyFormatter.formatFCFA(monthExpenses),
-            subtitle:
-                '${finances.expenses.where((e) => e.date.isAfter(monthStart)).length} transactions',
+            value: CurrencyFormatter.formatFCFA(summary.expenses),
+            subtitle: '${summary.transactionsCount} transactions',
             icon: Icons.receipt_long,
             iconColor: Colors.red,
             backgroundColor: Colors.red,
           ),
           DashboardKpiCard(
             label: 'Résultat Net',
-            value: CurrencyFormatter.formatFCFA(monthResult),
-            subtitle: monthResult >= 0 ? 'Bénéfice' : 'Déficit',
+            value: CurrencyFormatter.formatFCFA(summary.result),
+            subtitle: summary.result >= 0 ? 'Bénéfice' : 'Déficit',
             icon: Icons.account_balance_wallet,
-            iconColor: monthResult >= 0 ? Colors.green : Colors.red,
-            valueColor: monthResult >= 0
+            iconColor: summary.result >= 0 ? Colors.green : Colors.red,
+            valueColor: summary.result >= 0
                 ? Colors.green.shade700
                 : Colors.red.shade700,
-            backgroundColor: monthResult >= 0 ? Colors.green : Colors.red,
+            backgroundColor: summary.result >= 0 ? Colors.green : Colors.red,
           ),
         ];
 

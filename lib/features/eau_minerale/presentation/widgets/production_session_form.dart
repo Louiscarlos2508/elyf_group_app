@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
+import '../../domain/services/electricity_meter_config_service.dart';
 import '../../domain/entities/bobine_usage.dart';
+import '../../domain/entities/production_day.dart';
 import '../../domain/entities/production_session.dart';
+import '../../domain/entities/production_session_status.dart';
 import '../../domain/services/production_session_builder.dart';
 import '../../domain/services/production_session_validation_service.dart';
 import 'bobine_usage_form_field.dart';
@@ -25,6 +28,8 @@ class ProductionSessionForm extends ConsumerStatefulWidget {
 class ProductionSessionFormState extends ConsumerState<ProductionSessionForm> {
   final _formKey = GlobalKey<FormState>();
   final _consommationController = TextEditingController();
+  final _coutElectriciteController = TextEditingController();
+  final _coutBobinesController = TextEditingController();
   final _quantiteController = TextEditingController();
   final _emballagesController = TextEditingController();
   final _notesController = TextEditingController();
@@ -34,31 +39,98 @@ class ProductionSessionFormState extends ConsumerState<ProductionSessionForm> {
   DateTime _heureFin = DateTime.now().add(const Duration(hours: 2));
   List<String> _machinesSelectionnees = [];
   List<BobineUsage> _bobinesUtilisees = [];
+  List<ProductionDay> _existingProductionDays = [];
   bool _isLoading = false;
+  bool _isTermine = false;
+
+  // Configuration (valeurs par défaut, à récupérer depuis les configs)
+  double _electricityRate = 125.0; // CFA par kWh
+  Map<String, int> _bobineUnitPrices = {}; // Prix unitaire par type de bobine
 
   @override
   void initState() {
     super.initState();
+    _loadConfigurations();
     if (widget.session != null) {
       _initialiserAvecSession(widget.session!);
     }
+    
+    // Auto-calcul coût électricité lors du changement de consommation
+    _consommationController.addListener(_updateElectricityCost);
   }
+
+  Future<void> _loadConfigurations() async {
+    try {
+      final configService = ElectricityMeterConfigService.instance;
+      final rate = await configService.getElectricityRate();
+      
+      final stocks = await ref.read(stockStateProvider.future);
+      final prices = <String, int>{};
+      for (final stock in stocks.bobineStocks) {
+        if (stock.prixUnitaire != null) {
+          prices[stock.type] = stock.prixUnitaire!;
+        }
+      }
+      
+      if (mounted) {
+        setState(() {
+          _electricityRate = rate;
+          _bobineUnitPrices = prices;
+        });
+        
+        // Si c'est une nouvelle session, calculer le coût initial des bobines si déjà sélectionnées
+        if (widget.session == null && _bobinesUtilisees.isNotEmpty) {
+          _updateBobineCost();
+        }
+      }
+    } catch (e) {
+      debugPrint('Erreur lors du chargement des configs: $e');
+    }
+  }
+
 
   void _initialiserAvecSession(ProductionSession session) {
     _selectedDate = session.date;
     _heureDebut = session.heureDebut;
     _heureFin = session.heureFin ?? DateTime.now();
     _consommationController.text = session.consommationCourant.toString();
+    _coutElectriciteController.text = (session.coutElectricite ?? 0).toString();
+    _coutBobinesController.text = (session.coutBobines ?? 0).toString();
     _quantiteController.text = session.quantiteProduite.toString();
     _emballagesController.text = session.emballagesUtilises?.toString() ?? '';
     _notesController.text = session.notes ?? '';
     _machinesSelectionnees = List.from(session.machinesUtilisees);
     _bobinesUtilisees = List.from(session.bobinesUtilisees);
+    // Préserver les jours de production existants
+    _existingProductionDays = List.from(session.productionDays);
+    _isTermine = session.status == ProductionSessionStatus.completed;
+  }
+
+  void _updateElectricityCost() {
+    final kwh = double.tryParse(_consommationController.text) ?? 0.0;
+    final cost = (kwh * _electricityRate).round();
+    if (_coutElectriciteController.text != cost.toString()) {
+       _coutElectriciteController.text = cost.toString();
+    }
+  }
+
+  void _updateBobineCost() {
+    int totalCost = 0;
+    for (final bobine in _bobinesUtilisees) {
+      // Chercher le prix pour ce type de bobine
+      // TODO: Gérer les types de manière plus robuste (normalisation des noms)
+      final price = _bobineUnitPrices[bobine.bobineType] ?? 0;
+      totalCost += price;
+    }
+    _coutBobinesController.text = totalCost.toString();
   }
 
   @override
   void dispose() {
+    _consommationController.removeListener(_updateElectricityCost);
     _consommationController.dispose();
+    _coutElectriciteController.dispose();
+    _coutBobinesController.dispose();
     _quantiteController.dispose();
     _emballagesController.dispose();
     _notesController.dispose();
@@ -82,11 +154,15 @@ class ProductionSessionFormState extends ConsumerState<ProductionSessionForm> {
     setState(() => _isLoading = true);
     try {
       final config = await ref.read(productionPeriodConfigProvider.future);
+      
+      final coutElec = int.tryParse(_coutElectriciteController.text.replaceAll(RegExp(r'[^0-9]'), ''));
+      final coutBob = int.tryParse(_coutBobinesController.text.replaceAll(RegExp(r'[^0-9]'), ''));
+
       final session = ProductionSessionBuilder.buildFromForm(
         sessionId: widget.session?.id,
         selectedDate: _selectedDate,
         heureDebut: _heureDebut,
-        heureFin: null, // Sera défini lors de la finalisation
+        heureFin: widget.session?.heureFin, // Préserver l'heure de fin si elle existe
         indexCompteurInitialKwh: null,
         indexCompteurFinalKwh: null,
         consommationCourant: double.parse(_consommationController.text),
@@ -96,9 +172,15 @@ class ProductionSessionFormState extends ConsumerState<ProductionSessionForm> {
         emballagesUtilises: _emballagesController.text.isNotEmpty
             ? int.tryParse(_emballagesController.text)
             : null,
+        coutBobines: coutBob,
+        coutElectricite: coutElec,
         notes: _notesController.text.isEmpty ? null : _notesController.text,
-        status: null, // Will be calculated
-        productionDays: null, // Will default to empty list
+        status: _isTermine 
+            ? ProductionSessionStatus.completed 
+            : (widget.session?.status == ProductionSessionStatus.completed 
+                ? ProductionSessionStatus.inProgress 
+                : widget.session?.status),
+        productionDays: _existingProductionDays, // Préserver les données existantes
         period: config.getPeriodForDate(_selectedDate),
       );
 
@@ -139,7 +221,6 @@ class ProductionSessionFormState extends ConsumerState<ProductionSessionForm> {
             const SizedBox(height: 16),
             _buildTimeFields(),
             const SizedBox(height: 16),
-            const SizedBox(height: 16),
             MachineSelectorField(
               machinesSelectionnees: _machinesSelectionnees,
               onMachinesChanged: (machines) {
@@ -151,15 +232,104 @@ class ProductionSessionFormState extends ConsumerState<ProductionSessionForm> {
               bobinesUtilisees: _bobinesUtilisees,
               machinesDisponibles: _machinesSelectionnees,
               onBobinesChanged: (bobines) {
-                setState(() => _bobinesUtilisees = bobines);
+                setState(() {
+                  _bobinesUtilisees = bobines;
+                  _updateBobineCost(); // Mettre à jour le coût quand les bobines changent
+                });
               },
             ),
+            const SizedBox(height: 16),
+            
+            // Section Consommation & Coûts
+            Card(
+              margin: EdgeInsets.zero,
+              elevation: 0,
+              color: const Color(0xFFF5F5F5), // Colors.grey[100]
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+                side: const BorderSide(color: Color(0xFFE0E0E0)), // Colors.grey[300]
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Énergie & Coûts',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _consommationController,
+                            decoration: const InputDecoration(
+                              labelText: 'Conso. (kWh)',
+                              isDense: true,
+                              suffixText: 'kWh',
+                            ),
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            onChanged: (_) => _updateElectricityCost(),
+                            validator: (value) {
+                                if (value == null || value.isEmpty) return 'Requis';
+                                return null;
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        const SizedBox(width: 8),
+                        Tooltip(
+                          message: 'Le taux de $_electricityRate FCFA/kWh est configuré dans les paramètres',
+                          child: const Icon(Icons.info_outline, size: 20, color: Colors.blue),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextFormField(
+                            controller: _coutElectriciteController,
+                            decoration: const InputDecoration(
+                              labelText: 'Coût Élec.',
+                              isDense: true,
+                              suffixText: 'FCFA',
+                            ),
+                            keyboardType: TextInputType.number,
+                            validator: (value) {
+                                if (value == null || value.isEmpty) return 'Requis';
+                                return null;
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _coutBobinesController,
+                      decoration: const InputDecoration(
+                        labelText: 'Coût Bobines',
+                        isDense: true,
+                        suffixText: 'FCFA',
+                        helperText: 'Calculé selon les prix unitaires en stock',
+                      ),
+                      keyboardType: TextInputType.number,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            
             const SizedBox(height: 16),
             _buildQuantiteField(),
             const SizedBox(height: 16),
             _buildEmballagesField(),
             const SizedBox(height: 16),
             _buildNotesField(),
+            const SizedBox(height: 16),
+            _buildStatusSwitch(),
+            const SizedBox(height: 24),
+            _buildSubmitButton(),
           ],
         ),
       ),
@@ -262,6 +432,85 @@ class ProductionSessionFormState extends ConsumerState<ProductionSessionForm> {
         helperText: 'Optionnel',
       ),
       maxLines: 3,
+    );
+  }
+
+  Widget _buildStatusSwitch() {
+    final theme = Theme.of(context);
+    final isCompleted = _isTermine;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      decoration: BoxDecoration(
+        color: isCompleted
+            ? theme.colorScheme.primaryContainer.withValues(alpha: 0.2)
+            : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isCompleted
+              ? theme.colorScheme.primary
+              : theme.colorScheme.outline.withValues(alpha: 0.3),
+          width: isCompleted ? 2 : 1,
+        ),
+      ),
+      child: Column(
+        children: [
+          SwitchListTile(
+            value: _isTermine,
+            onChanged: (val) => setState(() => _isTermine = val),
+            activeThumbColor: theme.colorScheme.primary,
+            title: Row(
+              children: [
+                Icon(
+                  isCompleted ? Icons.lock_outline : Icons.lock_open,
+                  color: isCompleted
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Finaliser la production',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: isCompleted
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.onSurface,
+                  ),
+                ),
+              ],
+            ),
+            subtitle: Padding(
+              padding: const EdgeInsets.only(top: 4.0),
+              child: Text(
+                isCompleted
+                    ? 'La session sera verrouillée et marquée comme terminée.'
+                    : 'La session reste modifiable (En cours).',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 8,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildSubmitButton() {
+    return ElevatedButton(
+      onPressed: _isLoading ? null : submit,
+      style: ElevatedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+      ),
+      child: _isLoading
+          ? const CircularProgressIndicator()
+          : Text(
+              widget.session == null ? 'Créer la session' : 'Mettre à jour',
+            ),
     );
   }
 

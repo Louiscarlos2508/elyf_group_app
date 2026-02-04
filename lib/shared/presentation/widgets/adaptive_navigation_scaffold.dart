@@ -299,20 +299,19 @@ class _AdaptiveNavigationScaffoldState
 
   Widget _buildDrawer(ThemeData theme) {
     return Drawer(
+      backgroundColor: theme.colorScheme.surface,
       child: SafeArea(
         child: Column(
           children: [
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(32),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    theme.colorScheme.primaryContainer,
-                    theme.colorScheme.primary.withValues(alpha: 0.3),
-                  ],
+                color: theme.colorScheme.primaryContainer.withValues(alpha: 0.2),
+                border: Border(
+                  bottom: BorderSide(
+                    color: theme.colorScheme.outline.withValues(alpha: 0.1),
+                  ),
                 ),
               ),
               child: Column(
@@ -321,53 +320,66 @@ class _AdaptiveNavigationScaffoldState
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.surface,
+                      color: theme.colorScheme.primary,
                       borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
                     child: Icon(
                       Icons.business,
-                      size: 32,
-                      color: theme.colorScheme.primary,
+                      size: 28,
+                      color: theme.colorScheme.onPrimary,
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
                   Text(
                     widget.appTitle,
                     style: theme.textTheme.titleLarge?.copyWith(
-                      color: theme.colorScheme.onPrimaryContainer,
+                      color: theme.colorScheme.primary,
                       fontWeight: FontWeight.bold,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Système de Gestion Intégré',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
                 ],
               ),
             ),
+            const SizedBox(height: 12),
             Expanded(
               child: ListView.builder(
-                padding: const EdgeInsets.symmetric(vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
                 itemCount: widget.sections.length,
                 itemBuilder: (context, index) {
                   final section = widget.sections[index];
                   final isSelected = _selectedIndex == index;
-
+ 
                   return Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 2,
-                    ),
+                    padding: const EdgeInsets.only(bottom: 4),
                     child: Material(
                       color: isSelected
-                          ? theme.colorScheme.primaryContainer
+                          ? theme.colorScheme.primaryContainer.withValues(alpha: 0.4)
                           : Colors.transparent,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(16),
                       child: InkWell(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(16),
                         onTap: () => _onDestinationSelected(index),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
+                            horizontal: 20,
+                            vertical: 14,
                           ),
                           child: Row(
                             children: [
@@ -382,20 +394,20 @@ class _AdaptiveNavigationScaffoldState
                               Expanded(
                                 child: Text(
                                   section.label,
-                                  style: theme.textTheme.bodyLarge?.copyWith(
+                                  style: theme.textTheme.titleSmall?.copyWith(
                                     color: isSelected
                                         ? theme.colorScheme.primary
                                         : theme.colorScheme.onSurface,
                                     fontWeight: isSelected
-                                        ? FontWeight.w600
-                                        : FontWeight.normal,
+                                        ? FontWeight.bold
+                                        : FontWeight.w500,
                                   ),
                                 ),
                               ),
                               if (isSelected)
                                 Container(
-                                  width: 6,
-                                  height: 6,
+                                  width: 4,
+                                  height: 4,
                                   decoration: BoxDecoration(
                                     color: theme.colorScheme.primary,
                                     shape: BoxShape.circle,

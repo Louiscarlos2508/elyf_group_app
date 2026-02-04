@@ -9,7 +9,6 @@ import '../../widgets/dashboard_low_stock_list.dart';
 import '../../widgets/dashboard_month_section.dart';
 import '../../widgets/dashboard_today_section.dart';
 import '../../widgets/restock_dialog.dart';
-import 'package:elyf_groupe_app/shared/presentation/widgets/refresh_button.dart';
 
 /// Professional dashboard screen for boutique module.
 class DashboardScreen extends ConsumerWidget {
@@ -82,7 +81,7 @@ class DashboardScreen extends ConsumerWidget {
                   );
                   return DashboardTodaySection(metrics: metrics);
                 },
-                loading: () => const LoadingIndicator(),
+                loading: () => const AppShimmers.statsGrid(count: 3),
                 error: (error, stackTrace) => ErrorDisplayWidget(
                   error: error,
                   onRetry: () => ref.refresh(recentSalesProvider),
@@ -139,7 +138,7 @@ class DashboardScreen extends ConsumerWidget {
                     },
                   );
                 },
-                loading: () => const LoadingIndicator(height: 100),
+                loading: () => const AppShimmers.list(count: 3),
                 error: (error, stackTrace) => ErrorDisplayWidget(
                   error: error,
                   title: 'Erreur de chargement',
@@ -178,7 +177,7 @@ class DashboardScreen extends ConsumerWidget {
           monthProfit: metrics.profit,
         );
       },
-      loading: () => const LoadingIndicator(height: 200),
+      loading: () => const AppShimmers.statsGrid(count: 5),
       error: (error, stackTrace) => ErrorDisplayWidget(
         error: error,
         title: 'Erreur de chargement des métriques mensuelles',

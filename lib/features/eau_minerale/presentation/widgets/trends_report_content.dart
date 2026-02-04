@@ -148,8 +148,8 @@ class TrendsReportContent extends ConsumerWidget {
               ),
               _ComparisonItem(
                 label: 'Production',
-                currentValue: '$currentProduction sachets',
-                previousValue: '$previousProduction sachets',
+                currentValue: '$currentProduction packs',
+                previousValue: '$previousProduction packs',
                 changePercent: productionChange,
                 icon: Icons.factory,
               ),
@@ -506,10 +506,13 @@ class _PeriodBadge extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              Text(
-                label,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  fontWeight: FontWeight.w600,
+              Expanded(
+                child: Text(
+                  label,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],

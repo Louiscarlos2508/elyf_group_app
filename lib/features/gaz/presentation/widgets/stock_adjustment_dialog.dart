@@ -315,7 +315,7 @@ class _StockAdjustmentDialogState extends ConsumerState<StockAdjustmentDialog> {
                       Expanded(
                         child: OutlinedButton(
                           onPressed: () => Navigator.of(context).pop(),
-                          style: GazButtonStyles.outlined,
+                          style: GazButtonStyles.outlined(context),
                           child: const Text('Annuler'),
                         ),
                       ),
@@ -323,7 +323,7 @@ class _StockAdjustmentDialogState extends ConsumerState<StockAdjustmentDialog> {
                       Expanded(
                         child: FilledButton.icon(
                           onPressed: _isLoading ? null : _submit,
-                          style: GazButtonStyles.filledPrimary,
+                          style: GazButtonStyles.filledPrimary(context),
                           icon: _isLoading
                               ? const SizedBox(
                                   width: 16,

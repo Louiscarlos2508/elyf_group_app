@@ -8,6 +8,11 @@ abstract class PointOfSaleRepository {
     required String moduleId,
   });
 
+  Stream<List<PointOfSale>> watchPointsOfSale({
+    required String enterpriseId,
+    required String moduleId,
+  });
+
   /// Récupère un point de vente par son ID.
   Future<PointOfSale?> getPointOfSaleById(String id);
 

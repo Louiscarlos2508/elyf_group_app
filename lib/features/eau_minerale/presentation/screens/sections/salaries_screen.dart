@@ -66,38 +66,50 @@ class _SalariesScreenState extends ConsumerState<SalariesScreen> {
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          SliverAppBar.large(
-            title: Text(
-              'Gestion Salaires',
-              style: theme.textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                letterSpacing: -0.5,
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Gestion Salaires',
+                      style: theme.textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const PaymentReconciliationScreen(),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.account_balance_wallet_rounded),
+                    tooltip: 'Réconciliation',
+                    style: IconButton.styleFrom(
+                      backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
+                      foregroundColor: theme.colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    onPressed: () => ref.invalidate(salaryStateProvider),
+                    icon: const Icon(Icons.refresh_rounded),
+                    tooltip: 'Actualiser',
+                    style: IconButton.styleFrom(
+                      backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                    ),
+                  ),
+                ],
               ),
             ),
-            centerTitle: false,
-            actions: [
-              IconButton(
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const PaymentReconciliationScreen(),
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.account_balance_wallet_outlined),
-                tooltip: 'Réconciliation',
-              ),
-              IconButton(
-                onPressed: () => ref.invalidate(salaryStateProvider),
-                icon: const Icon(Icons.refresh),
-                tooltip: 'Actualiser',
-              ),
-              const SizedBox(width: 8),
-            ],
           ),
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
               child: SalarySummaryCards(
                 onNewPayment: () => _showProductionPaymentForm(context),
               ),
@@ -115,23 +127,50 @@ class _SalariesScreenState extends ConsumerState<SalariesScreen> {
           SliverPadding(
             padding: const EdgeInsets.all(16),
             sliver: SliverToBoxAdapter(
-              child: _selectedTab == 0
-                  ? FixedEmployeesContent(
-                      onNewEmployee: () => _showEmployeeForm(context),
-                    )
-                  : _selectedTab == 1
-                      ? ProductionPaymentsContent(
-                          onNewPayment: () => _showProductionPaymentForm(context),
-                        )
-                      : _selectedTab == 2
-                          ? const SalaryHistoryContent()
-                          : const SalaryAnalysisContent(),
+              child: _SalariesTabContent(
+                selectedTab: _selectedTab,
+                onNewEmployee: () => _showEmployeeForm(context),
+                onNewPayment: () => _showProductionPaymentForm(context),
+              ),
             ),
           ),
           const SliverPadding(padding: EdgeInsets.only(bottom: 80)),
         ],
       ),
     );
+  }
+}
+
+/// Isolated widget for tab content to avoid rebuilding everything on tab switch.
+class _SalariesTabContent extends StatelessWidget {
+  const _SalariesTabContent({
+    required this.selectedTab,
+    required this.onNewEmployee,
+    required this.onNewPayment,
+  });
+
+  final int selectedTab;
+  final VoidCallback onNewEmployee;
+  final VoidCallback onNewPayment;
+
+  @override
+  Widget build(BuildContext context) {
+    switch (selectedTab) {
+      case 0:
+        return FixedEmployeesContent(
+          onNewEmployee: onNewEmployee,
+        );
+      case 1:
+        return ProductionPaymentsContent(
+          onNewPayment: onNewPayment,
+        );
+      case 2:
+        return const SalaryHistoryContent();
+      case 3:
+        return const SalaryAnalysisContent();
+      default:
+        return const SizedBox.shrink();
+    }
   }
 }
 

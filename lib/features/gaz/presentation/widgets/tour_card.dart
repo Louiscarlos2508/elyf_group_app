@@ -10,39 +10,50 @@ class TourCard extends StatelessWidget {
   final Tour tour;
   final VoidCallback onTap;
 
-  Color _getStatusColor(TourStatus status) {
+  Color _getStatusColor(BuildContext context, TourStatus status) {
     switch (status) {
       case TourStatus.collection:
-        return Colors.blue;
+        return const Color(0xFF3B82F6); // Blue
       case TourStatus.transport:
-        return Colors.orange;
+        return const Color(0xFFF59E0B); // Amber
       case TourStatus.return_:
-        return Colors.purple;
+        return const Color(0xFF8B5CF6); // Violet
       case TourStatus.closure:
-        return Colors.green;
+        return const Color(0xFF10B981); // Emerald
       case TourStatus.cancelled:
-        return Colors.red;
+        return Theme.of(context).colorScheme.error;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final statusColor = _getStatusColor(tour.status);
+    final statusColor = _getStatusColor(context, tour.status);
     final dateFormat = DateFormat('dd/MM/yyyy');
     final dateStr = dateFormat.format(tour.tourDate);
 
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         side: BorderSide(
-          color: theme.colorScheme.outline.withValues(alpha: 0.2),
+          color: theme.colorScheme.outline.withValues(alpha: 0.1),
         ),
       ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.02),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
@@ -65,13 +76,17 @@ class TourCard extends StatelessWidget {
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${tour.totalBottlesToLoad} bouteilles collectées • Étape: ${tour.status.label}',
+                      '${tour.totalBottlesToLoad} collectées • Étape: ${tour.status.label}',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),

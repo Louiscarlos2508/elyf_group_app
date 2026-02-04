@@ -23,6 +23,21 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
   String get collectionName => 'sales';
 
   @override
+  String getLocalId(Sale entity) {
+    if (entity.id.isNotEmpty) return entity.id;
+    return LocalIdGenerator.generate();
+  }
+
+  @override
+  String? getRemoteId(Sale entity) {
+    if (!entity.id.startsWith('local_')) return entity.id;
+    return null;
+  }
+
+  @override
+  String? getEnterpriseId(Sale entity) => enterpriseId;
+
+  @override
   Sale fromMap(Map<String, dynamic> map) {
     // Extract metadata if stored in a dedicated key or notes (legacy)
     Map<String, dynamic>? metadata;
@@ -85,7 +100,7 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
                 : DateTime.now()),
       status: _parseSaleStatus(
         map['status'] as String? ??
-            (map['isComplete'] == true ? 'validated' : 'validated'),
+            (map['isComplete'] == true ? 'fullyPaid' : 'validated'),
       ),
       createdBy: map['createdBy'] as String? ?? map['soldBy'] as String? ?? '',
       customerCnib:
@@ -95,6 +110,9 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
       cashAmount: (metadata?['cashAmount'] as int?) ?? 0,
       orangeMoneyAmount: (metadata?['orangeMoneyAmount'] as int?) ?? 0,
       productionSessionId: metadata?['productionSessionId'] as String?,
+      updatedAt: map['updatedAt'] != null
+          ? DateTime.tryParse(map['updatedAt'] as String)
+          : null,
     );
   }
 
@@ -136,27 +154,10 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
       'productName': entity.productName,
       'quantity': entity.quantity,
       'unitPrice': entity.unitPrice,
+      'updatedAt': entity.updatedAt?.toIso8601String(),
     };
   }
 
-  @override
-  String getLocalId(Sale entity) {
-    if (entity.id.startsWith('local_')) {
-      return entity.id;
-    }
-    return LocalIdGenerator.generate();
-  }
-
-  @override
-  String? getRemoteId(Sale entity) {
-    if (!entity.id.startsWith('local_')) {
-      return entity.id;
-    }
-    return null;
-  }
-
-  @override
-  String? getEnterpriseId(Sale entity) => enterpriseId;
 
   @override
   Future<void> saveToLocal(Sale entity) async {
@@ -227,16 +228,33 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
 
   @override
   Future<List<Sale>> getAllForEnterprise(String enterpriseId) async {
+    developer.log(
+      'Fetching all sales for enterprise: $enterpriseId (module: eau_minerale)',
+      name: 'SaleOfflineRepository',
+    );
+
     final rows = await driftService.records.listForEnterprise(
       collectionName: collectionName,
       enterpriseId: enterpriseId,
       moduleType: 'eau_minerale',
     );
+
+    developer.log(
+      'Found ${rows.length} records for $collectionName / $enterpriseId',
+      name: 'SaleOfflineRepository',
+    );
+
     final sales = rows
-        .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+        .map((row) => safeDecodeJson(row.dataJson, row.localId))
+        .where((map) => map != null)
+        .map((map) => fromMap(map!))
         .toList();
-    
-    // Dédupliquer par remoteId pour éviter les doublons
+
+    developer.log(
+        'Successfully decoded ${sales.length} sales',
+        name: 'SaleOfflineRepository',
+    );
+
     return deduplicateByRemoteId(sales);
   }
 
@@ -296,9 +314,68 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
         stackTrace: stackTrace,
       );
       throw appException;
+      throw appException;
     }
   }
 
+  @override
+  Stream<List<Sale>> watchSales({
+    DateTime? startDate,
+    DateTime? endDate,
+    SaleStatus? status,
+    String? customerId,
+  }) {
+    developer.log(
+      'Watching sales for enterprise: $enterpriseId',
+      name: 'SaleOfflineRepository',
+    );
+
+    return driftService.records
+        .watchForEnterprise(
+          collectionName: collectionName,
+          enterpriseId: enterpriseId,
+          moduleType: 'eau_minerale',
+        )
+        .map((rows) {
+          var sales = rows
+              .map((row) => safeDecodeJson(row.dataJson, row.localId))
+              .where((map) => map != null)
+              .map((map) => fromMap(map!))
+              .toList();
+
+          if (startDate != null) {
+            sales = sales
+                .where(
+                  (s) =>
+                      s.date.isAfter(startDate) ||
+                      s.date.isAtSameMomentAs(startDate),
+                )
+                .toList();
+          }
+
+          if (endDate != null) {
+            sales = sales
+                .where(
+                  (s) =>
+                      s.date.isBefore(endDate) || s.date.isAtSameMomentAs(endDate),
+                )
+                .toList();
+          }
+
+          if (status != null) {
+            sales = sales.where((s) => s.status == status).toList();
+          }
+
+          if (customerId != null) {
+            sales = sales.where((s) => s.customerId == customerId).toList();
+          }
+
+          // Sort by date descending
+          sales.sort((a, b) => b.date.compareTo(a.date));
+
+          return sales;
+        });
+  }
   @override
   Future<Sale?> getSale(String id) async {
     try {
@@ -338,6 +415,7 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
         cashAmount: sale.cashAmount,
         orangeMoneyAmount: sale.orangeMoneyAmount,
         productionSessionId: sale.productionSessionId,
+        updatedAt: DateTime.now(),
       );
       await save(saleWithLocalId);
       return localId;
@@ -398,7 +476,9 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
           cashAmount: sale.cashAmount,
           orangeMoneyAmount: sale.orangeMoneyAmount,
           productionSessionId: sale.productionSessionId,
+          updatedAt: DateTime.now(),
         );
+        // Utiliser la méthode save de la classe de base pour gérer la sync correctement
         await save(updatedSale);
       }
     } catch (error, stackTrace) {

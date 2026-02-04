@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../domain/entities/production_day.dart';
+import '../../../domain/entities/production_session_status.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../daily_personnel_form.dart';
 import '../../../domain/entities/production_session.dart';
@@ -16,17 +17,18 @@ class PersonnelDayCard extends ConsumerWidget {
     super.key,
     required this.session,
     required this.day,
-    required this.onDelete,
+    this.onDelete,
   });
 
   final ProductionSession session;
   final ProductionDay day;
-  final VoidCallback onDelete;
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final hasProduction = day.packsProduits > 0 || day.emballagesUtilises > 0;
+    final isCompleted = session.status == ProductionSessionStatus.completed;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
@@ -118,12 +120,18 @@ class PersonnelDayCard extends ConsumerWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    if (!hasProduction)
+                      if (!hasProduction)
                       Padding(
                         padding: const EdgeInsets.only(right: 8),
                         child: OutlinedButton.icon(
-                          onPressed: () =>
-                              _showPersonnelForm(context, ref, day.date, day),
+                          onPressed: isCompleted
+                              ? null
+                              : () => _showPersonnelForm(
+                                    context,
+                                    ref,
+                                    day.date,
+                                    day,
+                                  ),
                           icon: const Icon(Icons.inventory_2, size: 18),
                           label: const Text('Production'),
                           style: OutlinedButton.styleFrom(
@@ -138,8 +146,14 @@ class PersonnelDayCard extends ConsumerWidget {
                       IconButton(
                         icon: const Icon(Icons.edit),
                         tooltip: 'Modifier',
-                        onPressed: () =>
-                            _showPersonnelForm(context, ref, day.date, day),
+                        onPressed: isCompleted
+                            ? null
+                            : () => _showPersonnelForm(
+                                  context,
+                                  ref,
+                                  day.date,
+                                  day,
+                                ),
                       ),
                     IconButton(
                       icon: const Icon(Icons.delete_outline),

@@ -29,9 +29,16 @@ class DashboardKpiCardV2 extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(isMobile ? 12 : 20),
       decoration: BoxDecoration(
-        color: backgroundColor.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: backgroundColor.withValues(alpha: 0.2)),
+        color: backgroundColor.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: backgroundColor.withValues(alpha: 0.15)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,

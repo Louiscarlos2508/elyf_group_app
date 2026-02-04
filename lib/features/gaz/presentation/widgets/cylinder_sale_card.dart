@@ -53,12 +53,19 @@ class CylinderSaleCard extends StatelessWidget {
     return Container(
       width: 325,
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Colors.black.withValues(alpha: 0.1),
-          width: 1.3,
+          color: theme.colorScheme.outline.withValues(alpha: 0.1),
+          width: 1,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -108,7 +115,7 @@ class CylinderSaleCard extends StatelessWidget {
                 Container(
                   height: 192,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(16),
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
@@ -130,7 +137,7 @@ class CylinderSaleCard extends StatelessWidget {
                           width: 96,
                           height: 96,
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.3),
+                            color: theme.colorScheme.surface.withValues(alpha: 0.3),
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
@@ -144,8 +151,8 @@ class CylinderSaleCard extends StatelessWidget {
                       if (!hasStock)
                         Container(
                           decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.4),
-                            borderRadius: BorderRadius.circular(14),
+                            color: Colors.black.withValues(alpha: 0.5),
+                            borderRadius: BorderRadius.circular(16),
                           ),
                           child: Center(
                             child: Icon(
@@ -163,8 +170,8 @@ class CylinderSaleCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFEFF6FF),
-                    borderRadius: BorderRadius.circular(10),
+                    color: theme.colorScheme.primary.withValues(alpha: 0.05),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   child: Column(
                     children: [
@@ -182,8 +189,8 @@ class CylinderSaleCard extends StatelessWidget {
                         ).replaceAll(' FCFA', ''),
                         style: theme.textTheme.headlineSmall?.copyWith(
                           fontSize: 30,
-                          fontWeight: FontWeight.normal,
-                          color: const Color(0xFF155DFC),
+                          fontWeight: FontWeight.w900,
+                          color: theme.colorScheme.primary,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -205,19 +212,19 @@ class CylinderSaleCard extends StatelessWidget {
                     height: 48,
                     decoration: BoxDecoration(
                       color: hasStock
-                          ? const Color(0xFF030213)
-                          : const Color(0xFFECEEF2).withValues(alpha: 0.5),
-                      borderRadius: BorderRadius.circular(8),
+                          ? theme.colorScheme.primary
+                          : theme.colorScheme.outline.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     child: Center(
                       child: Text(
                         hasStock ? 'Vendre' : 'Rupture de stock',
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontSize: 18,
-                          fontWeight: FontWeight.normal,
+                          fontWeight: FontWeight.bold,
                           color: hasStock
-                              ? Colors.white
-                              : const Color(0xFF030213).withValues(alpha: 0.5),
+                              ? theme.colorScheme.onPrimary
+                              : theme.colorScheme.onSurface.withValues(alpha: 0.4),
                         ),
                       ),
                     ),

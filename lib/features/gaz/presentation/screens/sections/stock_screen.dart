@@ -101,10 +101,7 @@ class _GazStockScreenState extends ConsumerState<GazStockScreen> {
                     activePointsOfSale: activePointsOfSale,
                     pointsOfSale: pointsOfSale,
                   ),
-                  loading: () => const SizedBox(
-                    height: 169,
-                    child: LoadingIndicator(),
-                  ),
+                  loading: () => AppShimmers.statsGrid(context),
                   error: (error, stackTrace) => const SizedBox.shrink(),
                 ),
               ),
@@ -159,8 +156,8 @@ class _GazStockScreenState extends ConsumerState<GazStockScreen> {
                   activePointsOfSale: activePointsOfSale,
                   allStocks: allStocks,
                 ),
-                loading: () => const SliverFillRemaining(
-                  child: LoadingIndicator(),
+                loading: () => SliverFillRemaining(
+                  child: AppShimmers.list(context),
                 ),
                 error: (error, stackTrace) => SliverFillRemaining(
                   child: ErrorDisplayWidget(
@@ -181,7 +178,7 @@ class _GazStockScreenState extends ConsumerState<GazStockScreen> {
           ],
         );
       },
-      loading: () => const LoadingIndicator(),
+      loading: () => AppShimmers.list(context),
       error: (error, stackTrace) => ErrorDisplayWidget(
         error: error,
         title: 'Erreur de chargement',

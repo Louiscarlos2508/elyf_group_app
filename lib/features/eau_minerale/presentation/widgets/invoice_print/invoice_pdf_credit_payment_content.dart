@@ -11,6 +11,8 @@ pw.Widget buildCreditPaymentPdfContent({
   required int paymentAmount,
   required int remainingAfterPayment,
   String? notes,
+  int cashAmount = 0,
+  int omAmount = 0,
 }) {
   final now = DateTime.now();
 
@@ -41,7 +43,7 @@ pw.Widget buildCreditPaymentPdfContent({
       pw.SizedBox(height: 20),
 
       // Paiement
-      _buildPaymentSection(sale, paymentAmount),
+      _buildPaymentSection(sale, paymentAmount, cashAmount: cashAmount, omAmount: omAmount),
       pw.SizedBox(height: 20),
 
       // Reste à payer
@@ -92,7 +94,7 @@ pw.Widget _buildSaleReferenceSection(Sale sale) {
 }
 
 /// Construit la section de paiement.
-pw.Widget _buildPaymentSection(Sale sale, int paymentAmount) {
+pw.Widget _buildPaymentSection(Sale sale, int paymentAmount, {int cashAmount = 0, int omAmount = 0}) {
   return pw.Container(
     padding: const pw.EdgeInsets.all(15),
     decoration: pw.BoxDecoration(
@@ -115,6 +117,20 @@ pw.Widget _buildPaymentSection(Sale sale, int paymentAmount) {
             color: PdfColors.green900,
           ),
         ),
+        if (cashAmount > 0) ...[
+          pw.SizedBox(height: 5),
+          pw.Text(
+            'Cash: ${InvoicePrintHelpers.formatCurrency(cashAmount)}',
+            style: pw.TextStyle(fontSize: 10, color: PdfColors.green900),
+          ),
+        ],
+        if (omAmount > 0) ...[
+          pw.SizedBox(height: 5),
+          pw.Text(
+            'OM: ${InvoicePrintHelpers.formatCurrency(omAmount)}',
+            style: pw.TextStyle(fontSize: 10, color: PdfColors.green900),
+          ),
+        ],
         pw.SizedBox(height: 10),
         pw.Text(
           'Total payé: '

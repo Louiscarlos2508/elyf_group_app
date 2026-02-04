@@ -167,23 +167,21 @@ class ContractOfflineRepository extends OfflineRepository<Contract>
   // ContractRepository interface implementation
 
   @override
-  Future<List<Contract>> getAllContracts() async {
-    try {
-      AppLogger.debug(
-        'Fetching contracts for enterprise: $enterpriseId',
-        name: 'ContractOfflineRepository',
-      );
-      return await getAllForEnterprise(enterpriseId);
-    } catch (error, stackTrace) {
-      final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      AppLogger.error(
-        'Error fetching contracts: ${appException.message}',
-        name: 'ContractOfflineRepository',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      throw appException;
-    }
+  Stream<List<Contract>> watchContracts() {
+    return driftService.records
+        .watchForEnterprise(
+          collectionName: collectionName,
+          enterpriseId: enterpriseId,
+          moduleType: 'immobilier',
+        )
+        .map((rows) {
+          final entities = rows
+              .map(
+                (r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>),
+              )
+              .toList();
+          return deduplicateByRemoteId(entities);
+        });
   }
 
   @override
@@ -272,7 +270,7 @@ class ContractOfflineRepository extends OfflineRepository<Contract>
         notes: contract.notes,
         depositInMonths: contract.depositInMonths,
         createdAt: contract.createdAt,
-        updatedAt: contract.updatedAt,
+        updatedAt: DateTime.now(),
         attachedFiles: contract.attachedFiles,
       );
       await save(contractWithLocalId);
@@ -292,8 +290,9 @@ class ContractOfflineRepository extends OfflineRepository<Contract>
   @override
   Future<Contract> updateContract(Contract contract) async {
     try {
-      await save(contract);
-      return contract;
+      final updatedContract = contract.copyWith(updatedAt: DateTime.now());
+      await save(updatedContract);
+      return updatedContract;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       AppLogger.error(

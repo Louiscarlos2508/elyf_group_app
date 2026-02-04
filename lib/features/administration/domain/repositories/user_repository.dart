@@ -5,6 +5,9 @@ abstract class UserRepository {
   /// Récupère tous les utilisateurs.
   Future<List<User>> getAllUsers();
 
+  /// Surveille tous les utilisateurs (Stream).
+  Stream<List<User>> watchAllUsers();
+
   /// Récupère les utilisateurs avec pagination (LIMIT/OFFSET au niveau Drift).
   ///
   /// Returns a paginated list of users and the total count.

@@ -199,4 +199,14 @@ class AdminController {
     currentUserId: currentUserId,
     oldAssignment: oldAssignment,
   );
+
+  /// Surveille tous les rôles (Stream).
+  Stream<List<UserRole>> watchAllRoles() => _roleController.watchAllRoles();
+
+  /// Surveille tous les accès EnterpriseModuleUser (Stream).
+  Stream<List<EnterpriseModuleUser>> watchEnterpriseModuleUsers() =>
+      _userAssignmentController.watchEnterpriseModuleUsers();
+
+  /// Surveille le statut de synchronisation (Stream).
+  Stream<bool> watchSyncStatus() => _roleController.watchSyncStatus();
 }

@@ -35,20 +35,29 @@ class _MachineManagementCardState extends ConsumerState<MachineManagementCard> {
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Flexible(
-                  flex: 1,
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    Icons.settings_input_component_outlined,
+                    color: theme.colorScheme.primary,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
                         'Gestion des Machines',
@@ -56,9 +65,9 @@ class _MachineManagementCardState extends ConsumerState<MachineManagementCard> {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 2),
                       Text(
-                        'Configurez les machines de production',
+                        'Configurez le parc de production',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
@@ -66,38 +75,58 @@ class _MachineManagementCardState extends ConsumerState<MachineManagementCard> {
                     ],
                   ),
                 ),
-                const SizedBox(width: 16),
                 EauMineralePermissionGuard(
                   permission: EauMineralePermissions.manageProducts,
-                  child: IntrinsicWidth(
-                    child: FilledButton.icon(
-                      onPressed: () => _showAddMachineDialog(context),
-                      icon: const Icon(Icons.add, size: 18),
-                      label: const Text('Ajouter'),
+                  child: FilledButton.icon(
+                    onPressed: () => _showAddMachineDialog(context),
+                    icon: const Icon(Icons.add, size: 18),
+                    label: const Text('Nouveau'),
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size(100, 40),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
                     ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
             machinesAsync.when(
               data: (machines) {
                 if (machines.isEmpty) {
-                  return const Center(
+                  return Center(
                     child: Padding(
-                      padding: EdgeInsets.all(24),
-                      child: Text('Aucune machine'),
+                      padding: const EdgeInsets.all(32),
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.precision_manufacturing_outlined,
+                            size: 40,
+                            color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Aucune machine configurée',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   );
                 }
-                return Column(
-                  children: machines.map<Widget>((machine) {
+                return ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: machines.length,
+                  itemBuilder: (context, index) {
+                    final machine = machines[index];
                     return MachineListItem(
                       machine: machine,
                       onEdit: () => _showEditMachineDialog(context, machine),
                       onDelete: () => _showDeleteConfirm(context, machine),
                     );
-                  }).toList(),
+                  },
                 );
               },
               loading: () => const Center(

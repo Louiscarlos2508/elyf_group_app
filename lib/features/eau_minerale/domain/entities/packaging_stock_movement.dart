@@ -12,6 +12,7 @@ class PackagingStockMovement {
     this.fournisseur,
     this.notes,
     this.createdAt,
+    this.updatedAt,
   });
 
   final String id;
@@ -26,6 +27,7 @@ class PackagingStockMovement {
   final String? fournisseur; // Fournisseur si entrée
   final String? notes;
   final DateTime? createdAt;
+  final DateTime? updatedAt;
 
   PackagingStockMovement copyWith({
     String? id,
@@ -39,6 +41,7 @@ class PackagingStockMovement {
     String? fournisseur,
     String? notes,
     DateTime? createdAt,
+    DateTime? updatedAt,
   }) {
     return PackagingStockMovement(
       id: id ?? this.id,
@@ -52,6 +55,7 @@ class PackagingStockMovement {
       fournisseur: fournisseur ?? this.fournisseur,
       notes: notes ?? this.notes,
       createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 }

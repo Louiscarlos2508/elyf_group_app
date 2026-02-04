@@ -20,40 +20,59 @@ class FinancialSummaryCard extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Résumé Financier',
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 24),
-            _FinancialRow(
-              label: 'Revenus',
-              amount: totalRevenue,
-              color: Colors.green,
-              formatCurrency: CurrencyFormatter.formatDouble,
-            ),
-            const SizedBox(height: 12),
-            _FinancialRow(
-              label: 'Dépenses',
-              amount: totalExpenses,
-              color: Colors.red,
-              formatCurrency: CurrencyFormatter.formatDouble,
-            ),
-            const Divider(height: 32),
-            _FinancialRow(
-              label: 'Reliquat Net (Siège)',
-              amount: netAmount,
-              color: netAmount >= 0 ? Colors.green : Colors.red,
-              formatCurrency: CurrencyFormatter.formatDouble,
-              isBold: true,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: theme.colorScheme.outline.withValues(alpha: 0.1),
+        ),
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.02),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
           ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Résumé Financier',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 24),
+              _FinancialRow(
+                label: 'Revenus',
+                amount: totalRevenue,
+                color: const Color(0xFF10B981), // Emerald
+                formatCurrency: CurrencyFormatter.formatDouble,
+              ),
+              const SizedBox(height: 12),
+              _FinancialRow(
+                label: 'Dépenses',
+                amount: totalExpenses,
+                color: theme.colorScheme.error,
+                formatCurrency: CurrencyFormatter.formatDouble,
+              ),
+              const Divider(height: 32),
+              _FinancialRow(
+                label: 'Reliquat Net (Siège)',
+                amount: netAmount,
+                color: netAmount >= 0 ? const Color(0xFF10B981) : theme.colorScheme.error,
+                formatCurrency: CurrencyFormatter.formatDouble,
+                isBold: true,
+              ),
+            ],
+          ),
         ),
       ),
     );

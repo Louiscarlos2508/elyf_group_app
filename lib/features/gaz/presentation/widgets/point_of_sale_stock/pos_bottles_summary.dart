@@ -42,26 +42,30 @@ class PosBottlesSummary extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Bouteilles pleines',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        fontSize: 12,
-                        color: const Color(0xFF4A5565),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Bouteilles pleines',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontSize: 12,
+                          color: const Color(0xFF4A5565),
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '$fullBottles',
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontSize: 24,
-                        fontWeight: FontWeight.normal,
-                        color: const Color(0xFF00A63E),
+                      const SizedBox(height: 4),
+                      Text(
+                        '$fullBottles',
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontSize: 24,
+                          fontWeight: FontWeight.normal,
+                          color: const Color(0xFF00A63E),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -93,26 +97,30 @@ class PosBottlesSummary extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Bouteilles vides',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        fontSize: 12,
-                        color: const Color(0xFF4A5565),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Bouteilles vides',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontSize: 12,
+                          color: const Color(0xFF4A5565),
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '$emptyBottles',
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontSize: 24,
-                        fontWeight: FontWeight.normal,
-                        color: const Color(0xFFF54900),
+                      const SizedBox(height: 4),
+                      Text(
+                        '$emptyBottles',
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontSize: 24,
+                          fontWeight: FontWeight.normal,
+                          color: const Color(0xFFF54900),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ],
             ),

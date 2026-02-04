@@ -14,6 +14,9 @@ enum ProductionSessionStatus {
 
   /// Production terminée (heure fin et quantité enregistrées)
   completed,
+
+  /// Session annulée (soft delete)
+  cancelled,
 }
 
 extension ProductionSessionStatusExtension on ProductionSessionStatus {
@@ -30,6 +33,8 @@ extension ProductionSessionStatusExtension on ProductionSessionStatus {
         return 'Suspendue';
       case ProductionSessionStatus.completed:
         return 'Terminée';
+      case ProductionSessionStatus.cancelled:
+        return 'Annulée';
     }
   }
 
@@ -46,6 +51,8 @@ extension ProductionSessionStatusExtension on ProductionSessionStatus {
         return 2; // Même niveau que inProgress
       case ProductionSessionStatus.completed:
         return 4;
+      case ProductionSessionStatus.cancelled:
+        return -1; // Ne fait plus partie du flux
     }
   }
 

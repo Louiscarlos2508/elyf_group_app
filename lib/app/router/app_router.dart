@@ -17,7 +17,6 @@ enum AppRoute {
   login,
   moduleMenu,
   dashboard,
-  tenantSelection,
   admin,
   homeEauSachet,
   homeGaz,
@@ -95,17 +94,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: AppRoute.homeBoutique.name,
         builder: (context, state) =>
             const AuthGuard(child: BoutiqueRouteWrapper()),
-      ),
-      GoRoute(
-        path: '/tenants',
-        name: AppRoute.tenantSelection.name,
-        pageBuilder: (context, state) => _buildTransitionPage(
-          const PlaceholderScreen(
-            title: "Sélection de l'entreprise",
-            message:
-                "Écran pour choisir l'entreprise active et charger ses modules.",
-          ),
-        ),
       ),
     ],
   );

@@ -3,10 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../application/providers.dart';
 import '../../../../../../core/logging/app_logger.dart';
-import '../../../../../../core/logging/app_logger.dart';
 import '../../../../domain/entities/tour.dart';
 import '../../../widgets/tour_card.dart';
-import '../../../widgets/tours_empty_state.dart';
 import '../tour_detail_screen.dart';
 
 /// Onglet affichant une liste de tours.
@@ -54,43 +52,58 @@ class ToursListTab extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                title,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontSize: 16,
-                  fontWeight: FontWeight.normal,
-                  color: const Color(0xFF0A0A0A),
+                Text(
+                  title,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontSize: 16,
+                    fontWeight: FontWeight.normal,
+                    color: const Color(0xFF0A0A0A),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
               const SizedBox(height: 30),
               Expanded(
                 child: filteredTours.isEmpty
-                    ? (tourStatus == null
-                          ? ToursEmptyState(onNewTourPressed: onNewTour)
-                          : Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.history,
-                                    size: 48,
-                                    color: const Color(
-                                      0xFF6A7282,
-                                    ).withValues(alpha: 0.5),
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Text(
-                                    emptyStateMessage ??
-                                        'Aucun tour dans l\'historique',
-                                    style: theme.textTheme.titleMedium
-                                        ?.copyWith(
-                                          fontSize: 16,
-                                          color: const Color(0xFF6A7282),
-                                        ),
-                                  ),
-                                ],
+                    ? SingleChildScrollView(
+                        child: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                tourStatus == null
+                                    ? Icons.local_shipping_outlined
+                                    : Icons.history,
+                                size: 48,
+                                color: const Color(0xFF6A7282).withValues(alpha: 0.5),
                               ),
-                            ))
+                              const SizedBox(height: 16),
+                              Text(
+                                tourStatus == null
+                                    ? 'Aucun tour en cours'
+                                    : (emptyStateMessage ?? 'Aucun tour dans l\'historique'),
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.normal,
+                                  color: const Color(0xFF6A7282),
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              if (tourStatus == null) ...[
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Accédez à l\'historique ou créez-en un nouveau',
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    fontSize: 14,
+                                    color: const Color(0xFF99A1AF),
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      )
                     : ListView.builder(
                         itemCount: filteredTours.length,
                         itemBuilder: (context, index) {

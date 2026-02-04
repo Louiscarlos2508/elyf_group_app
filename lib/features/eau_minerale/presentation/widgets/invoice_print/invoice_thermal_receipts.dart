@@ -72,6 +72,8 @@ String generateCreditPaymentReceipt({
   required int paymentAmount,
   required int remainingAfterPayment,
   String? notes,
+  int cashAmount = 0,
+  int omAmount = 0,
 }) {
   final buffer = StringBuffer();
   const width = 32;
@@ -104,6 +106,14 @@ String generateCreditPaymentReceipt({
   // Info Paiement
   buffer.writeln('Deja paye:  ${InvoicePrintHelpers.formatCurrency(sale.amountPaid)}');
   buffer.writeln('PAIEMENT:   ${InvoicePrintHelpers.formatCurrency(paymentAmount)}');
+  
+  if (cashAmount > 0) {
+    buffer.writeln('  Cash: ${InvoicePrintHelpers.formatCurrency(cashAmount)}');
+  }
+  if (omAmount > 0) {
+    buffer.writeln('  OM:   ${InvoicePrintHelpers.formatCurrency(omAmount)}');
+  }
+
   buffer.writeln('Total paye: ${InvoicePrintHelpers.formatCurrency(newAmountPaid)}');
   
   if (remainingAfterPayment > 0) {

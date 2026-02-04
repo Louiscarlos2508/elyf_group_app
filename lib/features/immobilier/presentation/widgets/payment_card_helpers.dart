@@ -52,13 +52,13 @@ class PaymentCardHelpers {
   static Color getStatusColor(PaymentStatus status) {
     switch (status) {
       case PaymentStatus.paid:
-        return Colors.green;
+        return const Color(0xFF10B981); // Emerald
       case PaymentStatus.pending:
-        return Colors.orange;
+        return const Color(0xFFF59E0B); // Amber
       case PaymentStatus.overdue:
-        return Colors.red;
+        return const Color(0xFFEF4444); // Red
       case PaymentStatus.cancelled:
-        return Colors.grey;
+        return const Color(0xFF94A3B8); // Slate/Grey
     }
   }
 

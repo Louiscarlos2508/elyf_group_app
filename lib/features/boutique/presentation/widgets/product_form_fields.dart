@@ -138,8 +138,9 @@ class _ProductFormFieldsState extends State<ProductFormFields> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: theme.colorScheme.primaryContainer.withValues(alpha: 0.5),
-              borderRadius: BorderRadius.circular(8),
+              color: theme.colorScheme.primary.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.1)),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,

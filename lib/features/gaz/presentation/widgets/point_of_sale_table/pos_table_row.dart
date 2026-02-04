@@ -56,6 +56,7 @@ class PosTableRow extends ConsumerWidget {
   }
 
   Future<void> _deletePointOfSale(BuildContext context, WidgetRef ref) async {
+    final theme = Theme.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -70,7 +71,10 @@ class PosTableRow extends ConsumerWidget {
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            style: FilledButton.styleFrom(
+              backgroundColor: theme.colorScheme.error,
+              foregroundColor: theme.colorScheme.onError,
+            ),
             child: const Text('Supprimer'),
           ),
         ],
@@ -106,165 +110,126 @@ class PosTableRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7.99, vertical: 14.64),
-      decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(
-            color: Colors.black.withValues(alpha: 0.1),
-            width: 1.305,
-          ),
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Icon(
+          Icons.storefront_outlined,
+          size: 24,
+          color: theme.colorScheme.onSurfaceVariant,
         ),
       ),
-      child: Row(
+      title: Row(
         children: [
-          SizedBox(
-            width: 200,
-            child: Row(
-              children: [
-                const Icon(Icons.store, size: 16, color: Color(0xFF0A0A0A)),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    pointOfSale.name,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontSize: 14,
-                      color: const Color(0xFF0A0A0A),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
           Expanded(
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.location_on,
-                  size: 12,
-                  color: Color(0xFF4A5565),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    pointOfSale.address,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontSize: 14,
-                      color: const Color(0xFF4A5565),
-                    ),
-                  ),
-                ),
-              ],
+            child: Text(
+              pointOfSale.name,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.onSurface,
+              ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
-          SizedBox(
-            width: 260,
-            child: Row(
-              children: [
-                const Icon(Icons.phone, size: 12, color: Color(0xFF4A5565)),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    pointOfSale.contact,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontSize: 14,
-                      color: const Color(0xFF4A5565),
-                    ),
-                  ),
-                ),
-              ],
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: pointOfSale.isActive ? theme.colorScheme.primary : theme.colorScheme.outline,
+              borderRadius: BorderRadius.circular(8),
             ),
-          ),
-          SizedBox(
-            width: 100,
-            child: Center(
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: pointOfSale.isActive
-                      ? const Color(0xFF030213)
-                      : Colors.grey,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  pointOfSale.isActive ? 'Actif' : 'Inactif',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    fontSize: 12,
-                    color: Colors.white,
-                  ),
-                ),
+            child: Text(
+              pointOfSale.isActive ? 'Actif' : 'Inactif',
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontSize: 10,
+                color: pointOfSale.isActive ? theme.colorScheme.onPrimary : theme.colorScheme.onSurface,
+                fontWeight: FontWeight.bold,
               ),
             ),
           ),
-          Expanded(
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  OutlinedButton.icon(
-                    style: GazButtonStyles.outlined.copyWith(
-                      padding: const WidgetStatePropertyAll(
-                        EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-                      ),
-                      minimumSize: const WidgetStatePropertyAll(Size(60, 28)),
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                    onPressed: () => _showStockDialog(context, ref),
-                    icon: const Icon(Icons.inventory_2, size: 14),
-                    label: const Text(
-                      'Stock',
-                      style: TextStyle(fontSize: 11, color: Color(0xFF0A0A0A)),
-                    ),
-                  ),
-                  const SizedBox(width: 3),
-                  OutlinedButton.icon(
-                    style: GazButtonStyles.outlined.copyWith(
-                      padding: const WidgetStatePropertyAll(
-                        EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-                      ),
-                      minimumSize: const WidgetStatePropertyAll(Size(60, 28)),
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                    onPressed: () => _showTypesDialog(context, ref),
-                    icon: const Icon(Icons.settings, size: 14),
-                    label: const Text(
-                      'Types',
-                      style: TextStyle(fontSize: 11, color: Color(0xFF0A0A0A)),
-                    ),
-                  ),
-                  const SizedBox(width: 3),
-                  IconButton(
-                    icon: const Icon(
-                      Icons.edit,
-                      size: 16,
-                      color: Color(0xFF0A0A0A),
-                    ),
-                    onPressed: () => _editPointOfSale(context),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(
-                      minWidth: 28,
-                      minHeight: 28,
-                    ),
-                    tooltip: 'Modifier',
-                  ),
-                  const SizedBox(width: 3),
-                  IconButton(
-                    icon: const Icon(
-                      Icons.delete_outline,
-                      size: 16,
-                      color: Color(0xFFE7000B),
-                    ),
-                    onPressed: () => _deletePointOfSale(context, ref),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(
-                      minWidth: 28,
-                      minHeight: 28,
-                    ),
-                    tooltip: 'Supprimer',
-                  ),
-                ],
-              ),
+        ],
+      ),
+      subtitle: Text.rich(
+        TextSpan(
+          children: [
+            TextSpan(
+              text: pointOfSale.address,
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
+            const TextSpan(text: '  •  '),
+            TextSpan(
+              text: pointOfSale.contact,
+              style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+            ),
+          ],
+        ),
+        style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      trailing: PopupMenuButton<String>(
+        icon: const Icon(Icons.more_vert),
+        onSelected: (value) {
+          switch (value) {
+            case 'stock':
+              _showStockDialog(context, ref);
+              break;
+            case 'types':
+              _showTypesDialog(context, ref);
+              break;
+            case 'edit':
+              _editPointOfSale(context);
+              break;
+            case 'delete':
+              _deletePointOfSale(context, ref);
+              break;
+          }
+        },
+        itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+          const PopupMenuItem<String>(
+            value: 'stock',
+            child: Row(
+              children: [
+                Icon(Icons.inventory_2_outlined, size: 20),
+                SizedBox(width: 12),
+                Text('Stock'),
+              ],
+            ),
+          ),
+          const PopupMenuItem<String>(
+            value: 'types',
+            child: Row(
+              children: [
+                Icon(Icons.settings_outlined, size: 20),
+                SizedBox(width: 12),
+                Text('Types Bouteilles'),
+              ],
+            ),
+          ),
+          const PopupMenuDivider(),
+          const PopupMenuItem<String>(
+            value: 'edit',
+            child: Row(
+              children: [
+                Icon(Icons.edit_outlined, size: 20),
+                SizedBox(width: 12),
+                Text('Modifier'),
+              ],
+            ),
+          ),
+          PopupMenuItem<String>(
+            value: 'delete',
+            child: Row(
+              children: [
+                Icon(Icons.delete_outline, size: 20, color: theme.colorScheme.error),
+                const SizedBox(width: 12),
+                Text('Supprimer', style: TextStyle(color: theme.colorScheme.error)),
+              ],
             ),
           ),
         ],

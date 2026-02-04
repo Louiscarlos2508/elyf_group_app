@@ -1,8 +1,6 @@
-import 'dart:developer' as developer;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/errors/app_exceptions.dart';
 
 export 'providers/permission_providers.dart';
 export 'providers/section_providers.dart';
@@ -22,7 +20,7 @@ import 'controllers/tour_controller.dart';
 import '../data/repositories/cylinder_leak_offline_repository.dart';
 import '../data/repositories/cylinder_stock_offline_repository.dart';
 import '../data/repositories/expense_offline_repository.dart';
-import '../data/repositories/mock_financial_report_repository.dart';
+import '../data/repositories/financial_report_offline_repository.dart';
 import '../data/repositories/gas_offline_repository.dart';
 import '../data/repositories/gaz_settings_offline_repository.dart';
 import '../data/repositories/point_of_sale_offline_repository.dart';
@@ -215,7 +213,19 @@ final pointOfSaleRepositoryProvider = Provider<PointOfSaleRepository>((ref) {
 final financialReportRepositoryProvider = Provider<FinancialReportRepository>((
   ref,
 ) {
-  return MockFinancialReportRepository();
+  final enterpriseId =
+      ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+  final driftService = DriftService.instance;
+  final syncManager = ref.watch(syncManagerProvider);
+  final connectivityService = ref.watch(connectivityServiceProvider);
+
+  return FinancialReportOfflineRepository(
+    driftService: driftService,
+    syncManager: syncManager,
+    connectivityService: connectivityService,
+    enterpriseId: enterpriseId,
+    moduleType: 'gaz',
+  );
 });
 
 // Services
@@ -334,19 +344,19 @@ final pointOfSaleServiceProvider = Provider<PointOfSaleService>((ref) {
 });
 
 // Cylinders
-final cylindersProvider = FutureProvider.autoDispose<List<Cylinder>>((ref) async {
-  final repo = ref.watch(gasRepositoryProvider);
-  return repo.getCylinders();
+final cylindersProvider = StreamProvider.autoDispose<List<Cylinder>>((ref) {
+  final controller = ref.watch(cylinderControllerProvider);
+  return controller.watchCylinders();
 });
 
 /// Provider pour obtenir les types de bouteilles d'un point de vente spécifique.
 /// Retourne tous les types de bouteilles associés au point de vente via cylinderIds.
 final pointOfSaleCylindersProvider =
-    FutureProvider.family<
+    StreamProvider.family<
       List<Cylinder>,
       ({String pointOfSaleId, String enterpriseId, String moduleId})
-    >((ref, params) async {
-      final allCylinders = await ref.watch(cylindersProvider.future);
+    >((ref, params) {
+      final allCylindersAsync = ref.watch(cylindersProvider);
 
       // Récupérer le point de vente depuis le provider
       final pointsOfSaleAsync = ref.watch(
@@ -356,98 +366,101 @@ final pointOfSaleCylindersProvider =
         )),
       );
 
-      final pointOfSale = pointsOfSaleAsync.when(
-        data: (pointsOfSale) => pointsOfSale.firstWhere(
-          (pos) => pos.id == params.pointOfSaleId,
-          orElse: () => throw NotFoundException(
-            'Point de vente non trouvé',
-            'POINT_OF_SALE_NOT_FOUND',
-          ),
-        ),
-        loading: () => throw SyncException(
-          'Chargement en cours',
-          'LOADING_IN_PROGRESS',
-        ),
-        error: (e, _) => throw UnknownException(
-          'Erreur lors du chargement: $e',
-          'PROVIDER_ERROR',
-        ),
-      );
+      final allCylinders = allCylindersAsync.value ?? [];
+      final pointsOfSale = pointsOfSaleAsync.value ?? [];
+
+      final pointOfSale = pointsOfSale.where((pos) => pos.id == params.pointOfSaleId).firstOrNull;
+
+      if (pointOfSale == null) {
+        return Stream.value([]);
+      }
 
       // Filtrer les cylinders selon les IDs associés au point de vente
-      return allCylinders
-          .where((c) => pointOfSale.cylinderIds.contains(c.id))
-          .toList();
+      return Stream.value(
+        allCylinders.where((c) => pointOfSale.cylinderIds.contains(c.id)).toList()
+      );
     });
 
 // Points of Sale
-final pointsOfSaleProvider = FutureProvider.family
+final pointsOfSaleProvider = StreamProvider.family
     .autoDispose<List<PointOfSale>, ({String enterpriseId, String moduleId})>((
       ref,
       params,
-    ) async {
-      developer.log(
-        'pointsOfSaleProvider: enterpriseId=${params.enterpriseId}, moduleId=${params.moduleId}',
-        name: 'pointsOfSaleProvider',
-      );
+    ) {
       final controller = ref.watch(pointOfSaleControllerProvider);
-      final result = await controller.getPointsOfSale(
+      return controller.watchPointsOfSale(
         enterpriseId: params.enterpriseId,
         moduleId: params.moduleId,
       );
-      developer.log(
-        'pointsOfSaleProvider: ${result.length} points de vente retournés',
-        name: 'pointsOfSaleProvider',
-      );
-      return result;
     });
 
 // Sales
-final gasSalesProvider = FutureProvider<List<GasSale>>((ref) async {
-  final repo = ref.watch(gasRepositoryProvider);
-  return repo.getSales();
+final gasSalesProvider = StreamProvider<List<GasSale>>((ref) {
+  final controller = ref.watch(gasControllerProvider);
+  return controller.watchSales();
 });
 
 // Expenses
-final gazExpensesProvider = FutureProvider<List<GazExpense>>((ref) async {
-  final repo = ref.watch(gazExpenseRepositoryProvider);
-  return repo.getExpenses();
+final gazExpensesProvider = StreamProvider<List<GazExpense>>((ref) {
+  final controller = ref.watch(expenseControllerProvider);
+  return controller.watchExpenses();
 });
 
 /// Provider combiné pour les données du dashboard gaz.
 ///
 /// Simplifie l'utilisation en combinant sales, expenses et cylinders
 /// en un seul AsyncValue.
-final gazDashboardDataProvider = FutureProvider<
+final gazDashboardDataProvider = StreamProvider<
     ({List<GasSale> sales, List<GazExpense> expenses, List<Cylinder> cylinders})>(
-  (ref) async {
-    final sales = await ref.watch(gasSalesProvider.future);
-    final expenses = await ref.watch(gazExpensesProvider.future);
-    final cylinders = await ref.watch(cylindersProvider.future);
+  (ref) {
+    final salesAsync = ref.watch(gasSalesProvider);
+    final expensesAsync = ref.watch(gazExpensesProvider);
+    final cylindersAsync = ref.watch(cylindersProvider);
 
-    return (
+    final sales = salesAsync.value ?? [];
+    final expenses = expensesAsync.value ?? [];
+    final cylinders = cylindersAsync.value ?? [];
+
+    return Stream.value((
       sales: sales,
       expenses: expenses,
       cylinders: cylinders,
-    );
+    ));
   },
 );
 
 // KPIs
-final gazTotalSalesProvider = FutureProvider<double>((ref) async {
-  final sales = await ref.watch(gasSalesProvider.future);
-  return sales.fold<double>(0.0, (sum, s) => sum + s.totalAmount);
+final gazTotalSalesProvider = StreamProvider<double>((ref) {
+  final salesAsync = ref.watch(gasSalesProvider);
+  return Stream.value(
+    salesAsync.when(
+      data: (sales) => sales.fold<double>(0.0, (sum, s) => sum + s.totalAmount),
+      loading: () => 0.0,
+      error: (_, __) => 0.0,
+    ),
+  );
 });
 
-final gazTotalExpensesProvider = FutureProvider<double>((ref) async {
-  final repo = ref.watch(gazExpenseRepositoryProvider);
-  return repo.getTotalExpenses();
+final gazTotalExpensesProvider = StreamProvider<double>((ref) {
+  final expensesAsync = ref.watch(gazExpensesProvider);
+  return Stream.value(
+    expensesAsync.when(
+      data: (expenses) =>
+          expenses.fold<double>(0.0, (sum, e) => sum + e.amount),
+      loading: () => 0.0,
+      error: (_, __) => 0.0,
+    ),
+  );
 });
 
-final gazProfitProvider = FutureProvider<double>((ref) async {
-  final totalSales = await ref.watch(gazTotalSalesProvider.future);
-  final totalExpenses = await ref.watch(gazTotalExpensesProvider.future);
-  return totalSales - totalExpenses;
+final gazProfitProvider = StreamProvider<double>((ref) {
+  final totalSalesAsync = ref.watch(gazTotalSalesProvider);
+  final totalExpensesAsync = ref.watch(gazTotalExpensesProvider);
+
+  final totalSales = totalSalesAsync.value ?? 0.0;
+  final totalExpenses = totalExpensesAsync.value ?? 0.0;
+
+  return Stream.value(totalSales - totalExpenses);
 });
 
 // Report Data Provider
@@ -544,49 +557,36 @@ final gazReportDataProvider = FutureProvider.family
 
 // Cylinder Stocks
 final cylinderStocksProvider =
-    FutureProvider.family<
+    StreamProvider.family<
       List<CylinderStock>,
       ({String enterpriseId, CylinderStatus? status, String? siteId})
-    >((ref, params) async {
-      final repo = ref.watch(cylinderStockRepositoryProvider);
-      if (params.status != null) {
-        return repo.getStocksByStatus(
-          params.enterpriseId,
-          params.status!,
-          siteId: params.siteId,
-        );
-      }
-      // Si pas de statut spécifié, retourner tous les stocks
-      final allStocks = <CylinderStock>[];
-      for (final status in CylinderStatus.values) {
-        final stocks = await repo.getStocksByStatus(
-          params.enterpriseId,
-          status,
-          siteId: params.siteId,
-        );
-        allStocks.addAll(stocks);
-      }
-      return allStocks;
+    >((ref, params) {
+      final controller = ref.watch(cylinderStockControllerProvider);
+      return controller.watchStocks(
+        params.enterpriseId,
+        status: params.status,
+        siteId: params.siteId,
+      );
     });
 
 // Cylinder Leaks
 final cylinderLeaksProvider =
-    FutureProvider.family<
+    StreamProvider.family<
       List<CylinderLeak>,
       ({String enterpriseId, LeakStatus? status})
-    >((ref, params) async {
-      final repo = ref.watch(cylinderLeakRepositoryProvider);
-      return repo.getLeaks(params.enterpriseId, status: params.status);
+    >((ref, params) {
+      final controller = ref.watch(cylinderLeakControllerProvider);
+      return controller.watchLeaks(params.enterpriseId, status: params.status);
     });
 
 // Financial Reports
 final financialReportsProvider =
-    FutureProvider.family<
+    StreamProvider.family<
       List<FinancialReport>,
       ({String enterpriseId, ReportPeriod? period, ReportStatus? status})
-    >((ref, params) async {
-      final repo = ref.watch(financialReportRepositoryProvider);
-      return repo.getReports(
+    >((ref, params) {
+      final controller = ref.watch(financialReportControllerProvider);
+      return controller.watchReports(
         params.enterpriseId,
         period: params.period,
         status: params.status,
@@ -635,37 +635,42 @@ final financialNetAmountProvider =
 
 /// Provider pour récupérer tous les grossistes.
 final allWholesalersProvider =
-    FutureProvider.family<List<Wholesaler>, String>((ref, enterpriseId) async {
+    StreamProvider.family<List<Wholesaler>, String>((ref, enterpriseId) {
       final service = ref.watch(wholesalerServiceProvider);
-      return service.getAllWholesalers(enterpriseId);
+      return Stream.fromFuture(service.getAllWholesalers(enterpriseId));
     });
 
 /// Provider pour récupérer un tour spécifique par son ID.
-final tourProvider = FutureProvider.autoDispose.family<Tour?, String>(
-  (ref, tourId) async {
+final tourProvider = StreamProvider.autoDispose.family<Tour?, String>(
+  (ref, tourId) {
     final controller = ref.watch(tourControllerProvider);
-    return controller.getTourById(tourId);
+    // tourProvider ne devrait généralement pas avoir besoin de watch ici,
+    // mais pour la cohérence et au cas où le tour est mis à jour localement:
+    final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? '';
+    return controller.watchTours(enterpriseId).map(
+      (tours) => tours.where((t) => t.id == tourId).firstOrNull,
+    );
   },
 );
 
 // Tours
 final toursProvider =
-    FutureProvider.family<
+    StreamProvider.family<
       List<Tour>,
       ({String enterpriseId, TourStatus? status})
-    >((ref, params) async {
+    >((ref, params) {
       final controller = ref.watch(tourControllerProvider);
-      return controller.getTours(params.enterpriseId, status: params.status);
+      return controller.watchTours(params.enterpriseId, status: params.status);
     });
 
 // Gaz Settings
 final gazSettingsProvider =
-    FutureProvider.family<
+    StreamProvider.family<
       GazSettings?,
       ({String enterpriseId, String moduleId})
-    >((ref, params) async {
+    >((ref, params) {
       final controller = ref.watch(gazSettingsControllerProvider);
-      return controller.getSettings(
+      return controller.watchSettings(
         enterpriseId: params.enterpriseId,
         moduleId: params.moduleId,
       );

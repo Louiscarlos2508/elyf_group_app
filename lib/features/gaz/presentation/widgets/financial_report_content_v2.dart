@@ -7,6 +7,7 @@ import '../../domain/entities/expense.dart';
 import '../../domain/services/gaz_report_calculation_service.dart';
 import 'financial_summary_card.dart';
 import 'package:elyf_groupe_app/shared.dart';
+import '../../../../app/theme/app_colors.dart';
 
 /// Contenu de rapport financier avec charges fixes/variables et reliquat siège.
 class GazFinancialReportContentV2 extends ConsumerWidget {
@@ -60,10 +61,17 @@ class GazFinancialReportContentV2 extends ConsumerWidget {
       padding: EdgeInsets.all(isWide ? 24 : 16),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: theme.colorScheme.outline.withValues(alpha: 0.2),
+          color: theme.colorScheme.outline.withValues(alpha: 0.1),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: chargesFuture.when(
         data: (charges) {
@@ -148,8 +156,11 @@ class GazFinancialReportContentV2 extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(12),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.outline.withValues(alpha: 0.1),
+        ),
       ),
       child: Column(
         children: [
@@ -157,30 +168,30 @@ class GazFinancialReportContentV2 extends ConsumerWidget {
             theme,
             'Charges fixes',
             charges.fixedCharges,
-            Colors.blue,
+            const Color(0xFF3B82F6), // Blue
           ),
           const Divider(),
           _buildChargeRow(
             theme,
             'Charges variables',
             charges.variableCharges,
-            Colors.orange,
+            const Color(0xFFF59E0B), // Amber
           ),
           const Divider(),
-          _buildChargeRow(theme, 'Salaires', charges.salaries, Colors.purple),
+          _buildChargeRow(theme, 'Salaires', charges.salaries, const Color(0xFF8B5CF6)), // Violet
           const Divider(),
           _buildChargeRow(
             theme,
             'Frais de chargement',
             charges.loadingEventExpenses,
-            Colors.amber,
+            const Color(0xFF14B8A6), // Teal
           ),
           const Divider(),
           _buildChargeRow(
             theme,
             'Total charges',
             charges.totalExpenses,
-            Colors.red,
+            theme.colorScheme.error,
             isBold: true,
           ),
         ],
@@ -230,13 +241,13 @@ class GazFinancialReportContentV2 extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: canTransfer
-            ? Colors.green.withValues(alpha: 0.1)
-            : Colors.red.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
+        color: (canTransfer ? AppColors.success : theme.colorScheme.error)
+            .withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: canTransfer ? Colors.green : Colors.red,
-          width: 2,
+          color: (canTransfer ? AppColors.success : theme.colorScheme.error)
+              .withValues(alpha: 0.3),
+          width: 1.5,
         ),
       ),
       child: Column(
@@ -245,17 +256,19 @@ class GazFinancialReportContentV2 extends ConsumerWidget {
           Row(
             children: [
               Icon(
-                canTransfer ? Icons.check_circle : Icons.error,
-                color: canTransfer ? Colors.green : Colors.red,
+                canTransfer ? Icons.check_circle : Icons.error_outline,
+                color: canTransfer ? AppColors.success : theme.colorScheme.error,
               ),
               const SizedBox(width: 8),
-              Text(
-                canTransfer
-                    ? 'Reliquat disponible pour versement'
-                    : 'Déficit - Pas de versement possible',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: canTransfer ? Colors.green : Colors.red,
+              Expanded(
+                child: Text(
+                  canTransfer
+                      ? 'Reliquat disponible pour versement'
+                      : 'Déficit - Pas de versement possible',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: canTransfer ? AppColors.success : theme.colorScheme.error,
+                  ),
                 ),
               ),
             ],
@@ -270,7 +283,7 @@ class GazFinancialReportContentV2 extends ConsumerWidget {
             CurrencyFormatter.formatDouble(netAmount),
             style: theme.textTheme.headlineMedium?.copyWith(
               fontWeight: FontWeight.bold,
-              color: canTransfer ? Colors.green : Colors.red,
+              color: canTransfer ? AppColors.success : theme.colorScheme.error,
             ),
           ),
           if (canTransfer) ...[
@@ -304,8 +317,11 @@ class GazFinancialReportContentV2 extends ConsumerWidget {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(12),
+            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: theme.colorScheme.outline.withValues(alpha: 0.1),
+            ),
           ),
           child: Column(
             children: [
@@ -314,7 +330,7 @@ class GazFinancialReportContentV2 extends ConsumerWidget {
                 'Ventes au Détail',
                 analysis.retailSales.length,
                 analysis.retailTotal,
-                Colors.orange,
+                const Color(0xFFF59E0B), // Amber
               ),
               const Divider(),
               _buildSalesTypeRow(
@@ -322,7 +338,7 @@ class GazFinancialReportContentV2 extends ConsumerWidget {
                 'Ventes en Gros',
                 analysis.wholesaleSales.length,
                 analysis.wholesaleTotal,
-                Colors.purple,
+                const Color(0xFF8B5CF6), // Violet
               ),
             ],
           ),
@@ -343,8 +359,8 @@ class GazFinancialReportContentV2 extends ConsumerWidget {
               margin: const EdgeInsets.only(bottom: 8),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(8),
+                color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: theme.colorScheme.outline.withValues(alpha: 0.1),
                 ),
@@ -357,7 +373,7 @@ class GazFinancialReportContentV2 extends ConsumerWidget {
                       Icon(
                         Icons.local_shipping,
                         size: 16,
-                        color: Colors.purple,
+                        color: const Color(0xFF8B5CF6), // Violet
                       ),
                       const SizedBox(width: 8),
                       Text(
@@ -471,7 +487,7 @@ class GazFinancialReportContentV2 extends ConsumerWidget {
               CurrencyFormatter.formatDouble(amount),
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: Colors.green,
+                    color: AppColors.success,
                   ),
             ),
             const SizedBox(height: 16),

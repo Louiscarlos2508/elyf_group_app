@@ -96,7 +96,7 @@ class ProfitReportContentV2 extends ConsumerWidget {
             ],
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const AppShimmers.statsGrid(count: 2),
         error: (_, __) => const SizedBox.shrink(),
       ),
     );

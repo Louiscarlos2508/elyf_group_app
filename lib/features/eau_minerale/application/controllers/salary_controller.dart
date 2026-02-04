@@ -1,4 +1,5 @@
 import '../../../../core/logging/app_logger.dart';
+import '../../domain/entities/daily_worker.dart';
 import '../../domain/entities/employee.dart';
 import '../../domain/entities/payment_status.dart';
 import '../../domain/entities/production_payment.dart';
@@ -45,16 +46,36 @@ class SalaryController {
   }
 
   Future<String> createProductionPayment(ProductionPayment payment) async {
-    // Créer le paiement
+    // 1. Créer le paiement (Source de vérité financière)
     final paymentId = await _repository.createProductionPayment(payment);
 
-    // Si des jours sources sont spécifiés, les marquer comme payés
-    if (payment.sourceProductionDayIds.isNotEmpty) {
-      await _markProductionDaysAsPaid(
-        payment.sourceProductionDayIds,
-        paymentId,
-        payment.paymentDate,
+    try {
+      // 2. Tenter de mettre à jour les jours de production (Source de vérité opérationnelle)
+      if (payment.sourceProductionDayIds.isNotEmpty) {
+        await _markProductionDaysAsPaid(
+          payment.sourceProductionDayIds,
+          paymentId,
+          payment.paymentDate,
+        );
+      }
+    } catch (e, st) {
+      // ROLLBACK: Si la mise à jour des jours échoue, on annule le paiement pour éviter l'incohérence.
+      AppLogger.error(
+        'Erreur lors de la mise à jour des statuts. Annulation du paiement $paymentId.',
+        error: e,
+        stackTrace: st,
       );
+      
+      try {
+        await _repository.deleteProductionPayment(paymentId);
+      } catch (rollbackError) {
+        AppLogger.error(
+          'CRITIQUE: Echec du rollback pour le paiement $paymentId',
+          error: rollbackError,
+        );
+      }
+      
+      rethrow;
     }
 
     return paymentId;
@@ -66,40 +87,31 @@ class SalaryController {
     String paymentId,
     DateTime paymentDate,
   ) async {
-    try {
-      // Récupérer toutes les sessions
-      final sessions = await _productionSessionRepository.fetchSessions();
+    // Récupérer toutes les sessions
+    final sessions = await _productionSessionRepository.fetchSessions();
 
-      // Pour chaque session, vérifier si elle contient des jours à marquer
-      for (final session in sessions) {
-        var hasChanges = false;
-        final updatedDays = session.productionDays.map((day) {
-          if (dayIds.contains(day.id)) {
-            hasChanges = true;
-            return day.copyWith(
-              paymentStatus: PaymentStatus.paid,
-              paymentId: paymentId,
-              datePaiement: paymentDate,
-            );
-          }
-          return day;
-        }).toList();
-
-        // Si la session a été modifiée, la mettre à jour
-        if (hasChanges) {
-          final updatedSession = session.copyWith(
-            productionDays: updatedDays,
+    // Pour chaque session, vérifier si elle contient des jours à marquer
+    for (final session in sessions) {
+      var hasChanges = false;
+      final updatedDays = session.productionDays.map((day) {
+        if (dayIds.contains(day.id)) {
+          hasChanges = true;
+          return day.copyWith(
+            paymentStatus: PaymentStatus.paid,
+            paymentId: paymentId,
+            datePaiement: paymentDate,
           );
-          await _productionSessionRepository.updateSession(updatedSession);
         }
+        return day;
+      }).toList();
+
+      // Si la session a été modifiée, la mettre à jour
+      if (hasChanges) {
+        final updatedSession = session.copyWith(
+          productionDays: updatedDays,
+        );
+        await _productionSessionRepository.updateSession(updatedSession);
       }
-    } catch (e, st) {
-      // Log l'erreur mais ne bloque pas la création du paiement
-      AppLogger.error(
-        'Erreur lors de la mise à jour des statuts de paiement: $e',
-        error: e,
-        stackTrace: st,
-      );
     }
   }
 
@@ -126,19 +138,49 @@ class SalaryController {
     final allWorkers = await _dailyWorkerRepository.fetchAllWorkers();
     final workerMap = {for (var w in allWorkers) w.id: w};
 
-    // 4. Agréger les données par ouvrier
+    // 3. Récupérer tous les paiements de production
+    final allPayments = await _repository.fetchProductionPayments();
+    
+    // 4. Construire un mapping des paiements effectués par ouvrier et par jour
+    // Key: id_{workerId}_{dayId} ou name_{workerName}_{dayId}
+    final paidWorkerDayKeys = <String>{};
+    for (final payment in allPayments) {
+      final dayIds = payment.sourceProductionDayIds;
+      for (final person in payment.persons) {
+        for (final dayId in dayIds) {
+          if (person.workerId != null) {
+            paidWorkerDayKeys.add('id_${person.workerId}_$dayId');
+          } else {
+            paidWorkerDayKeys.add('name_${person.name}_$dayId');
+          }
+        }
+      }
+    }
+
+    // 6. Agréger les données par ouvrier
     final statsMap = <String, WorkerMonthlyStat>{};
 
     for (final day in daysInMonth) {
       for (final workerId in day.personnelIds) {
-        final worker = workerMap[workerId];
-        final workerName = worker?.name ?? 'Ouvrier inconnu ($workerId)';
+        DailyWorker? worker = workerMap[workerId];
         
         // Le coût par personne pour ce jour (stocké dans le jour)
         final dailyEarned = day.salaireJournalierParPersonne;
         
-        final isPaid = day.paymentStatus == PaymentStatus.paid || 
-                       day.paymentStatus == PaymentStatus.verified;
+        // Tenter de résoudre le worker s'il n'est pas dans la map initiale
+        if (worker == null) {
+           worker = await _dailyWorkerRepository.fetchWorkerById(workerId);
+           if (worker != null) {
+             workerMap[workerId] = worker;
+           }
+        }
+        
+        final workerName = worker?.name ?? 'Ouvrier inconnu ($workerId)';
+
+        // VÉRIFICATION DU PAIEMENT INDIVIDUEL
+        final isPaidById = paidWorkerDayKeys.contains('id_${workerId}_${day.id}');
+        final isPaidByName = paidWorkerDayKeys.contains('name_${workerName}_${day.id}');
+        final isStatutoryPaid = isPaidById || isPaidByName;
 
         if (!statsMap.containsKey(workerId)) {
           statsMap[workerId] = WorkerMonthlyStat(
@@ -158,9 +200,9 @@ class SalaryController {
           workerName: current.workerName,
           daysWorked: current.daysWorked + 1,
           totalEarned: current.totalEarned + dailyEarned,
-          daysPaid: current.daysPaid + (isPaid ? 1 : 0),
-          amountPaid: current.amountPaid + (isPaid ? dailyEarned : 0),
-          dailyRate: current.dailyRate, // Garder le dernier connu
+          daysPaid: current.daysPaid + (isStatutoryPaid ? 1 : 0),
+          amountPaid: current.amountPaid + (isStatutoryPaid ? dailyEarned : 0),
+          dailyRate: current.dailyRate,
         );
       }
     }

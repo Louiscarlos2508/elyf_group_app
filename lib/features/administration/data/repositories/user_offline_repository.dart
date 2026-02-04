@@ -154,7 +154,6 @@ class UserOfflineRepository extends OfflineRepository<User>
     return getAllUsers();
   }
 
-  // UserRepository implementation
   @override
   Future<List<User>> getAllUsers() async {
     try {
@@ -167,16 +166,29 @@ class UserOfflineRepository extends OfflineRepository<User>
         final map = jsonDecode(record.dataJson) as Map<String, dynamic>;
         return fromMap(map);
       }).toList();
-    } catch (e, stackTrace) {
-      final appException = ErrorHandler.instance.handleError(e, stackTrace);
-      AppLogger.error(
-        'Error fetching users from offline storage: ${appException.message}',
-        name: 'admin.user.repository',
-        error: e,
-        stackTrace: stackTrace,
-      );
+    } catch (e) {
       return [];
     }
+  }
+
+  @override
+  Stream<List<User>> watchAllUsers() {
+    return driftService.records
+        .watchForEnterprise(
+          collectionName: collectionName,
+          enterpriseId: 'global',
+          moduleType: 'administration',
+        )
+        .map((records) {
+      return records.map((record) {
+        try {
+          final map = jsonDecode(record.dataJson) as Map<String, dynamic>;
+          return fromMap(map);
+        } catch (e) {
+          return null;
+        }
+      }).whereType<User>().toList();
+    });
   }
 
   @override

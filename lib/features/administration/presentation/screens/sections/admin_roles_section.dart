@@ -9,6 +9,7 @@ import 'package:elyf_groupe_app/shared.dart';
 import '../../../../../shared/utils/notification_service.dart';
 import 'package:elyf_groupe_app/core/auth/providers.dart'
     show currentUserIdProvider;
+import '../../presentation/widgets/admin_shimmers.dart';
 
 /// Section pour gérer les rôles.
 class AdminRolesSection extends ConsumerWidget {
@@ -272,11 +273,11 @@ class AdminRolesSection extends ConsumerWidget {
               ],
             );
           },
-          loading: () => const Center(child: CircularProgressIndicator()),
+          loading: () => AdminShimmers.enterpriseListShimmer(context),
           error: (error, stack) => Center(child: Text('Erreur: $error')),
         );
       },
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => AdminShimmers.enterpriseListShimmer(context),
       error: (error, stack) => Center(
         child: Padding(
           padding: const EdgeInsets.all(24),

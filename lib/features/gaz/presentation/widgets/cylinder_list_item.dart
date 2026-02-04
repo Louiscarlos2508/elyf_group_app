@@ -19,10 +19,10 @@ class CylinderListItem extends ConsumerWidget {
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
-  Color _getStockColor(int stock) {
-    if (stock <= 5) return Colors.red;
-    if (stock <= 15) return Colors.orange;
-    return Colors.green;
+  Color _getStockColor(BuildContext context, int stock) {
+    if (stock <= 5) return Theme.of(context).colorScheme.error;
+    if (stock <= 15) return const Color(0xFFF59E0B); // Amber
+    return const Color(0xFF10B981); // Emerald
   }
 
   @override
@@ -51,22 +51,33 @@ class CylinderListItem extends ConsumerWidget {
         final fullStock = allStocks
             .where((s) => s.weight == cylinder.weight)
             .fold<int>(0, (sum, stock) => sum + stock.quantity);
-        final stockColor = _getStockColor(fullStock);
+        final stockColor = _getStockColor(context, fullStock);
 
         return settingsAsync.when(
           data: (settings) {
             final wholesalePrice = settings?.getWholesalePrice(cylinder.weight);
 
             return Card(
-              margin: const EdgeInsets.only(bottom: 8),
+              margin: const EdgeInsets.only(bottom: 12),
               elevation: 0,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(16),
                 side: BorderSide(
                   color: theme.colorScheme.outline.withValues(alpha: 0.1),
                 ),
               ),
-              child: Padding(
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.02),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Row(
                   children: [

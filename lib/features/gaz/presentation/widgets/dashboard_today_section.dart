@@ -31,8 +31,8 @@ class GazDashboardTodaySection extends StatelessWidget {
             ).replaceAll(' FCFA', ' F'),
             subtitle: '$todayCount vente(s)',
             icon: Icons.trending_up,
-            iconColor: Colors.blue,
-            backgroundColor: Colors.blue,
+            iconColor: const Color(0xFF3B82F6), // Blue
+            backgroundColor: const Color(0xFF3B82F6),
           ),
           GazDashboardKpiCard(
             label: 'Ticket Moyen',
@@ -41,9 +41,9 @@ class GazDashboardTodaySection extends StatelessWidget {
             ).replaceAll(' FCFA', ' F'),
             subtitle: todayCount > 0 ? 'par transaction' : 'aucune vente',
             icon: Icons.receipt,
-            iconColor: Colors.green,
-            valueColor: Colors.green.shade700,
-            backgroundColor: Colors.green,
+            iconColor: const Color(0xFF10B981), // Emerald
+            valueColor: const Color(0xFF059669), // Darker emerald
+            backgroundColor: const Color(0xFF10B981),
           ),
         ];
 

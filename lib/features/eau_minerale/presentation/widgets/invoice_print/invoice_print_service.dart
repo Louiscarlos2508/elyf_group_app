@@ -27,24 +27,6 @@ class EauMineraleInvoiceService {
     return await _sunmi.printReceipt(content);
   }
 
-  /// Imprime un reçu de paiement crédit via Sunmi.
-  Future<bool> printCreditPaymentReceipt({
-    required String customerName,
-    required Sale sale,
-    required int paymentAmount,
-    required int remainingAfterPayment,
-    String? notes,
-  }) async {
-    final content = generateCreditPaymentReceipt(
-      customerName: customerName,
-      sale: sale,
-      paymentAmount: paymentAmount,
-      remainingAfterPayment: remainingAfterPayment,
-      notes: notes,
-    );
-    return await _sunmi.printReceipt(content);
-  }
-
   /// Génère et ouvre un PDF de facture de vente.
   Future<File> generateSalePdf(Sale sale) async {
     final pdf = pw.Document();
@@ -64,6 +46,28 @@ class EauMineraleInvoiceService {
     return file;
   }
 
+  /// Imprime un reçu de paiement crédit via Sunmi.
+  Future<bool> printCreditPaymentReceipt({
+    required String customerName,
+    required Sale sale,
+    required int paymentAmount,
+    required int remainingAfterPayment,
+    String? notes,
+    int cashAmount = 0,
+    int omAmount = 0,
+  }) async {
+    final content = generateCreditPaymentReceipt(
+      customerName: customerName,
+      sale: sale,
+      paymentAmount: paymentAmount,
+      remainingAfterPayment: remainingAfterPayment,
+      notes: notes,
+      cashAmount: cashAmount,
+      omAmount: omAmount,
+    );
+    return await _sunmi.printReceipt(content);
+  }
+
   /// Génère et ouvre un PDF de reçu de paiement crédit.
   Future<File> generateCreditPaymentPdf({
     required String customerName,
@@ -71,6 +75,8 @@ class EauMineraleInvoiceService {
     required int paymentAmount,
     required int remainingAfterPayment,
     String? notes,
+    int cashAmount = 0,
+    int omAmount = 0,
   }) async {
     final pdf = pw.Document();
 
@@ -83,6 +89,8 @@ class EauMineraleInvoiceService {
           paymentAmount: paymentAmount,
           remainingAfterPayment: remainingAfterPayment,
           notes: notes,
+          cashAmount: cashAmount,
+          omAmount: omAmount,
         ),
       ),
     );

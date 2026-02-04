@@ -83,32 +83,52 @@ class CartSummary extends ConsumerWidget {
                       final item = cartItems[index];
                       return Card(
                         margin: const EdgeInsets.only(bottom: 8),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: BorderSide(
+                            color: theme.colorScheme.outline.withValues(alpha: 0.1),
+                          ),
+                        ),
                         child: ListTile(
-                          title: Text(item.product.name),
+                          title: Text(
+                            item.product.name,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                           subtitle: Text(
                             CurrencyFormatter.formatFCFA(item.product.price),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
                           ),
                           trailing: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               IconButton(
-                                icon: const Icon(Icons.remove_circle_outline),
+                                icon: const Icon(Icons.remove_circle_outline, size: 20),
                                 onPressed: () =>
                                     onUpdateQuantity(index, item.quantity - 1),
+                                color: theme.colorScheme.primary,
                               ),
                               Text(
                                 '${item.quantity}',
-                                style: theme.textTheme.titleMedium,
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                               IconButton(
-                                icon: const Icon(Icons.add_circle_outline),
+                                icon: const Icon(Icons.add_circle_outline, size: 20),
                                 onPressed: () =>
                                     onUpdateQuantity(index, item.quantity + 1),
+                                color: theme.colorScheme.primary,
                               ),
+                              const SizedBox(width: 4),
                               IconButton(
-                                icon: const Icon(Icons.delete_outline),
+                                icon: const Icon(Icons.delete_outline, size: 20),
                                 onPressed: () => onRemove(index),
-                                color: Colors.red,
+                                color: theme.colorScheme.error,
                               ),
                             ],
                           ),

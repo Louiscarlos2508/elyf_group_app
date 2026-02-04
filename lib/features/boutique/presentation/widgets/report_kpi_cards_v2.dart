@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
+import 'package:elyf_groupe_app/app/theme/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/providers.dart';
@@ -28,6 +29,7 @@ class ReportKpiCardsV2 extends ConsumerWidget {
       )),
     );
 
+    final theme = Theme.of(context);
     return reportDataAsync.when(
       data: (data) {
         return LayoutBuilder(
@@ -44,8 +46,8 @@ class ReportKpiCardsV2 extends ConsumerWidget {
                               '${CurrencyFormatter.formatFCFA(data.salesRevenue)} FCFA',
                           subtitle: '${data.salesCount} ventes',
                           icon: Icons.trending_up,
-                          iconColor: Colors.blue,
-                          backgroundColor: Colors.blue,
+                          iconColor: const Color(0xFF3B82F6),
+                          backgroundColor: const Color(0xFF3B82F6),
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -56,8 +58,8 @@ class ReportKpiCardsV2 extends ConsumerWidget {
                               '${CurrencyFormatter.formatFCFA(data.purchasesAmount)} FCFA',
                           subtitle: '${data.purchasesCount} appros',
                           icon: Icons.shopping_bag,
-                          iconColor: Colors.orange,
-                          backgroundColor: Colors.orange,
+                          iconColor: const Color(0xFFF59E0B),
+                          backgroundColor: const Color(0xFFF59E0B),
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -68,9 +70,9 @@ class ReportKpiCardsV2 extends ConsumerWidget {
                               '${CurrencyFormatter.formatFCFA(data.expensesAmount)} FCFA',
                           subtitle: '${data.expensesCount} charges',
                           icon: Icons.receipt_long,
-                          iconColor: Colors.red,
-                          valueColor: Colors.red.shade700,
-                          backgroundColor: Colors.red,
+                          iconColor: theme.colorScheme.error,
+                          valueColor: theme.colorScheme.error,
+                          backgroundColor: theme.colorScheme.error,
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -82,14 +84,14 @@ class ReportKpiCardsV2 extends ConsumerWidget {
                           subtitle: data.profit >= 0 ? 'Profit' : 'Déficit',
                           icon: Icons.account_balance_wallet,
                           iconColor: data.profit >= 0
-                              ? Colors.green
-                              : Colors.red,
+                              ? AppColors.success
+                              : theme.colorScheme.error,
                           valueColor: data.profit >= 0
-                              ? Colors.green.shade700
-                              : Colors.red.shade700,
+                              ? AppColors.success
+                              : theme.colorScheme.error,
                           backgroundColor: data.profit >= 0
-                              ? Colors.green
-                              : Colors.red,
+                              ? AppColors.success
+                              : theme.colorScheme.error,
                         ),
                       ),
                     ],
@@ -105,8 +107,8 @@ class ReportKpiCardsV2 extends ConsumerWidget {
                                   '${CurrencyFormatter.formatFCFA(data.salesRevenue)} FCFA',
                               subtitle: '${data.salesCount} ventes',
                               icon: Icons.trending_up,
-                              iconColor: Colors.blue,
-                              backgroundColor: Colors.blue,
+                              iconColor: const Color(0xFF3B82F6),
+                              backgroundColor: const Color(0xFF3B82F6),
                             ),
                           ),
                           const SizedBox(width: 16),
@@ -117,8 +119,8 @@ class ReportKpiCardsV2 extends ConsumerWidget {
                                   '${CurrencyFormatter.formatFCFA(data.purchasesAmount)} FCFA',
                               subtitle: '${data.purchasesCount} appros',
                               icon: Icons.shopping_bag,
-                              iconColor: Colors.orange,
-                              backgroundColor: Colors.orange,
+                              iconColor: const Color(0xFFF59E0B),
+                              backgroundColor: const Color(0xFFF59E0B),
                             ),
                           ),
                         ],
@@ -133,9 +135,9 @@ class ReportKpiCardsV2 extends ConsumerWidget {
                                   '${CurrencyFormatter.formatFCFA(data.expensesAmount)} FCFA',
                               subtitle: '${data.expensesCount} charges',
                               icon: Icons.receipt_long,
-                              iconColor: Colors.red,
-                              valueColor: Colors.red.shade700,
-                              backgroundColor: Colors.red,
+                              iconColor: theme.colorScheme.error,
+                              valueColor: theme.colorScheme.error,
+                              backgroundColor: theme.colorScheme.error,
                             ),
                           ),
                           const SizedBox(width: 16),
@@ -147,14 +149,14 @@ class ReportKpiCardsV2 extends ConsumerWidget {
                               subtitle: data.profit >= 0 ? 'Profit' : 'Déficit',
                               icon: Icons.account_balance_wallet,
                               iconColor: data.profit >= 0
-                                  ? Colors.green
-                                  : Colors.red,
+                                  ? AppColors.success
+                                  : theme.colorScheme.error,
                               valueColor: data.profit >= 0
-                                  ? Colors.green.shade700
-                                  : Colors.red.shade700,
+                                  ? AppColors.success
+                                  : theme.colorScheme.error,
                               backgroundColor: data.profit >= 0
-                                  ? Colors.green
-                                  : Colors.red,
+                                  ? AppColors.success
+                                  : theme.colorScheme.error,
                             ),
                           ),
                         ],
@@ -164,7 +166,7 @@ class ReportKpiCardsV2 extends ConsumerWidget {
           },
         );
       },
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const AppShimmers.statsGrid(count: 4),
       error: (_, __) => const SizedBox.shrink(),
     );
   }

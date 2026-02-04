@@ -133,7 +133,7 @@ class _GazExpensesScreenState extends ConsumerState<GazExpensesScreen>
             ],
           );
         },
-        loading: () => const LoadingIndicator(),
+        loading: () => AppShimmers.list(context),
         error: (error, stackTrace) => ErrorDisplayWidget(
           error: error,
           title: 'Erreur de chargement',

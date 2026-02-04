@@ -19,6 +19,7 @@ class ApprovisionnementHeader extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Container(
+      color: theme.colorScheme.surface,
       padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
       child: isMobile
           ? Column(
@@ -28,17 +29,20 @@ class ApprovisionnementHeader extends StatelessWidget {
                   'Tours d\'approvisionnement',
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontSize: 16,
-                    fontWeight: FontWeight.normal,
-                    color: const Color(0xFF101828),
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onSurface,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Gestion des cycles de collecte et rechargement des bouteilles',
+                  'Gestion des cycles de collecte et rechargement',
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    fontSize: 14,
-                    color: const Color(0xFF6A7282),
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 16),
                 SizedBox(
@@ -47,7 +51,7 @@ class ApprovisionnementHeader extends StatelessWidget {
                     onPressed: onNewTour,
                     icon: const Icon(Icons.add, size: 16),
                     label: const Text('Nouveau tour'),
-                    style: GazButtonStyles.filledPrimary,
+                    style: GazButtonStyles.filledPrimary(context),
                   ),
                 ),
               ],
@@ -63,16 +67,15 @@ class ApprovisionnementHeader extends StatelessWidget {
                         'Tours d\'approvisionnement',
                         style: theme.textTheme.titleLarge?.copyWith(
                           fontSize: 16,
-                          fontWeight: FontWeight.normal,
-                          color: const Color(0xFF101828),
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.onSurface,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         'Gestion des cycles de collecte et rechargement des bouteilles',
                         style: theme.textTheme.bodyMedium?.copyWith(
-                          fontSize: 14,
-                          color: const Color(0xFF6A7282),
+                          color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -84,7 +87,7 @@ class ApprovisionnementHeader extends StatelessWidget {
                     onPressed: onNewTour,
                     icon: const Icon(Icons.add, size: 16),
                     label: const Text('Nouveau tour'),
-                    style: GazButtonStyles.filledPrimary,
+                    style: GazButtonStyles.filledPrimary(context),
                   ),
                 ),
               ],

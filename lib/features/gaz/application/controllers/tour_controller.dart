@@ -24,6 +24,21 @@ class TourController {
     );
   }
 
+  /// Observe les tours en temps réel.
+  Stream<List<Tour>> watchTours(
+    String enterpriseId, {
+    TourStatus? status,
+    DateTime? from,
+    DateTime? to,
+  }) {
+    return repository.watchTours(
+      enterpriseId,
+      status: status,
+      from: from,
+      to: to,
+    );
+  }
+
   /// Récupère un tour par ID.
   Future<Tour?> getTourById(String id) async {
     return await repository.getTourById(id);

@@ -148,7 +148,7 @@ class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
                       alignment: Alignment.centerRight,
                       child: IntrinsicWidth(
                         child: FilledButton(
-                          style: GazButtonStyles.filledPrimary,
+                          style: GazButtonStyles.filledPrimary(context),
                           onPressed: () async {
                             try {
                               final controller = ref.read(
@@ -191,21 +191,20 @@ class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
                       children: [
                         Flexible(
                           child: OutlinedButton(
-                            style: GazButtonStyles.outlined,
+                            style: GazButtonStyles.outlined(context),
                             onPressed: () => Navigator.of(context).pop(),
                             child: const Text(
                               'Retour',
                               style: TextStyle(
                                 fontSize: 14,
-                                color: Color(0xFF0A0A0A),
                               ),
                             ),
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 12),
                         Flexible(
                           child: FilledButton(
-                            style: GazButtonStyles.filledPrimary,
+                            style: GazButtonStyles.filledPrimary(context),
                             onPressed: () async {
                               try {
                                 final controller = ref.read(
@@ -227,7 +226,7 @@ class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text('Erreur: $e'),
-                                    backgroundColor: Colors.red,
+                                    backgroundColor: theme.colorScheme.error,
                                   ),
                                 );
                               }

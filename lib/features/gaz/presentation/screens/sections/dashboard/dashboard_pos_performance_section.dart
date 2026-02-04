@@ -3,8 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../../../core/tenant/tenant_provider.dart' show activeEnterpriseProvider;
 import '../../../../application/providers.dart';
-import '../../../../domain/entities/cylinder.dart';
-import '../../../../domain/entities/cylinder_stock.dart';
 import '../../../../domain/entities/gas_sale.dart';
 import '../../../../domain/services/gaz_calculation_service.dart';
 import '../../../widgets/dashboard_point_of_sale_performance.dart';
@@ -90,6 +88,16 @@ class DashboardPosPerformanceSection extends ConsumerWidget {
             ),
           ],
         ),
+      ),
+    );
+      },
+      loading: () => const SizedBox(
+        height: 200,
+        child: Center(child: CircularProgressIndicator()),
+      ),
+      error: (error, _) => SizedBox(
+        height: 200,
+        child: Center(child: Text('Erreur: $error')),
       ),
     );
   }

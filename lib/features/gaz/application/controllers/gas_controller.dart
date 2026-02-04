@@ -9,14 +9,21 @@ class GasController extends ChangeNotifier {
   GasController(this._repository);
 
   final GasRepository _repository;
-
+  bool _isLoading = false;
   List<Cylinder> _cylinders = [];
   List<GasSale> _sales = [];
-  bool _isLoading = false;
 
+  bool get isLoading => _isLoading;
   List<Cylinder> get cylinders => _cylinders;
   List<GasSale> get sales => _sales;
-  bool get isLoading => _isLoading;
+
+  Stream<List<Cylinder>> watchCylinders() {
+    return _repository.watchCylinders();
+  }
+
+  Stream<List<GasSale>> watchSales({DateTime? from, DateTime? to}) {
+    return _repository.watchSales(from: from, to: to);
+  }
 
   Future<void> loadCylinders() async {
     _isLoading = true;

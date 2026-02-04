@@ -240,15 +240,33 @@ class EnterpriseSelectorWidget extends ConsumerWidget {
   }) {
     return InkWell(
       onTap: enabled ? () => _showEnterpriseSelector(context, ref) : null,
-      borderRadius: BorderRadius.circular(8),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: theme.colorScheme.outline.withValues(alpha: 0.1),
+          ),
+          borderRadius: BorderRadius.circular(16),
+          color: theme.colorScheme.surfaceContainerLow,
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 20),
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primaryContainer.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                icon,
+                size: 18,
+                color: theme.colorScheme.primary,
+              ),
+            ),
             if (label != null || enterpriseName != null) ...[
-              const SizedBox(width: 8),
+              const SizedBox(width: 12),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
@@ -256,25 +274,27 @@ class EnterpriseSelectorWidget extends ConsumerWidget {
                   if (label != null)
                     Text(
                       label,
-                      style: theme.textTheme.bodySmall?.copyWith(
+                      style: theme.textTheme.labelSmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   if (enterpriseName != null)
                     Text(
                       enterpriseName,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w500,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
                 ],
               ),
             ],
             if (enabled) ...[
-              const SizedBox(width: 4),
+              const SizedBox(width: 8),
               Icon(
-                Icons.arrow_drop_down,
-                size: 20,
+                Icons.unfold_more,
+                size: 18,
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ],
@@ -300,83 +320,166 @@ class _EnterpriseSelectorDialog extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 400, maxHeight: 600),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(24),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.business_outlined,
-                    color: theme.colorScheme.primary,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'Sélectionner une entreprise',
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                ],
-              ),
-            ),
-            const Divider(height: 1),
-            Flexible(
-              child: ListView.separated(
-                padding: const EdgeInsets.all(16),
-                shrinkWrap: true,
-                itemCount: enterprises.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 8),
-                itemBuilder: (context, index) {
-                  final enterprise = enterprises[index];
-                  final isSelected = enterprise.id == selectedEnterpriseId;
-
-                  return Card(
-                    elevation: isSelected ? 2 : 0,
-                    color: isSelected
-                        ? theme.colorScheme.primaryContainer
-                        : null,
-                    child: ListTile(
-                      leading: Icon(
-                        Icons.business,
-                        color: isSelected
-                            ? theme.colorScheme.onPrimaryContainer
-                            : theme.colorScheme.primary,
-                      ),
-                      title: Text(
-                        enterprise.name,
-                        style: TextStyle(
-                          fontWeight: isSelected
-                              ? FontWeight.bold
-                              : FontWeight.normal,
-                        ),
-                      ),
-                      subtitle: enterprise.description != null
-                          ? Text(enterprise.description!)
-                          : null,
-                      trailing: isSelected
-                          ? Icon(
-                              Icons.check_circle,
-                              color: theme.colorScheme.primary,
-                            )
-                          : null,
-                      onTap: () => Navigator.of(context).pop(enterprise),
-                    ),
-                  );
-                },
-              ),
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+      child: Container(
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
             ),
           ],
+        ),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 400, maxHeight: 600),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Use standardized header pattern
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        Icons.business_outlined,
+                        color: theme.colorScheme.primary,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Entreprise',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: theme.colorScheme.onSurface,
+                            ),
+                          ),
+                          Text(
+                            'Sélectionner l\'entreprise active',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, size: 20),
+                      onPressed: () => Navigator.of(context).pop(),
+                      style: IconButton.styleFrom(
+                        backgroundColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 24),
+                child: Divider(),
+              ),
+              Flexible(
+                child: ListView.separated(
+                  padding: const EdgeInsets.all(24),
+                  shrinkWrap: true,
+                  itemCount: enterprises.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  itemBuilder: (context, index) {
+                    final enterprise = enterprises[index];
+                    final isSelected = enterprise.id == selectedEnterpriseId;
+                    
+                    return InkWell(
+                      onTap: () => Navigator.of(context).pop(enterprise),
+                      borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: isSelected 
+                              ? theme.colorScheme.primaryContainer.withValues(alpha: 0.2)
+                              : theme.colorScheme.surface,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: isSelected
+                                ? theme.colorScheme.primary.withValues(alpha: 0.5)
+                                : theme.colorScheme.outline.withValues(alpha: 0.1),
+                            width: isSelected ? 1.5 : 1,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? theme.colorScheme.primary
+                                    : theme.colorScheme.surfaceContainerHighest,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Icon(
+                                Icons.business,
+                                size: 20,
+                                color: isSelected
+                                    ? theme.colorScheme.onPrimary
+                                    : theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    enterprise.name,
+                                    style: theme.textTheme.titleSmall?.copyWith(
+                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                                      color: isSelected 
+                                          ? theme.colorScheme.primary
+                                          : theme.colorScheme.onSurface,
+                                    ),
+                                  ),
+                                  if (enterprise.description != null) ...[
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      enterprise.description!,
+                                      style: theme.textTheme.bodySmall?.copyWith(
+                                        color: theme.colorScheme.onSurfaceVariant,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                            if (isSelected)
+                              Icon(
+                                Icons.check_circle,
+                                color: theme.colorScheme.primary,
+                                size: 20,
+                              ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
         ),
       ),
     );

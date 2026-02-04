@@ -10,6 +10,7 @@ import '../../../domain/entities/enterprise.dart';
 import '../../widgets/enterprises/enterprise_actions.dart';
 import '../../widgets/enterprises/enterprise_list_item.dart';
 import '../../widgets/enterprises/enterprise_empty_state.dart';
+import '../../widgets/admin_shimmers.dart';
 
 /// Section pour gérer les entreprises
 class AdminEnterprisesSection extends ConsumerWidget {
@@ -45,8 +46,8 @@ class AdminEnterprisesSection extends ConsumerWidget {
             );
             return _buildEnterprisesList(context, ref, combined);
           },
-          loading: () => const SliverToBoxAdapter(
-            child: Center(child: CircularProgressIndicator()),
+          loading: () => SliverToBoxAdapter(
+            child: AdminShimmers.enterpriseListShimmer(context),
           ),
           error: (error, stack) {
             developer.log(

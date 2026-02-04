@@ -8,6 +8,12 @@ abstract class ProductionSessionRepository {
     DateTime? endDate,
   });
 
+  /// Observe les sessions de production.
+  Stream<List<ProductionSession>> watchSessions({
+    DateTime? startDate,
+    DateTime? endDate,
+  });
+
   /// Récupère une session par son ID.
   Future<ProductionSession?> fetchSessionById(String id);
 

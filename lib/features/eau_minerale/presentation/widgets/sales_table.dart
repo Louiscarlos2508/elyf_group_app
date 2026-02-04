@@ -16,19 +16,12 @@ class SalesTable extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final today = DateTime.now();
-    final todayStart = DateTime(today.year, today.month, today.day);
-    final todaySales = sales.where((sale) {
-      final saleDate = DateTime(sale.date.year, sale.date.month, sale.date.day);
-      return saleDate.isAtSameMomentAs(todayStart);
-    }).toList();
-
-    if (todaySales.isEmpty) {
+    if (sales.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(48),
         alignment: Alignment.center,
         child: Text(
-          'Aucune vente aujourd\'hui',
+          'Aucune vente enregistrée',
           style: theme.textTheme.bodyLarge?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -42,13 +35,13 @@ class SalesTable extends StatelessWidget {
 
         if (isWide) {
           return SalesTableDesktop(
-            sales: todaySales,
+            sales: sales,
             formatCurrency: CurrencyFormatter.formatFCFA,
             onActionTap: onActionTap,
           );
         } else {
           return SalesTableMobile(
-            sales: todaySales,
+            sales: sales,
             formatCurrency: CurrencyFormatter.formatFCFA,
             onActionTap: onActionTap,
           );
