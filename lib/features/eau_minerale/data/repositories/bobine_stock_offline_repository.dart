@@ -328,6 +328,7 @@ class BobineStockOfflineRepository extends OfflineRepository<BobineStock>
           productionId: map['productionId'] as String?,
           machineId: map['machineId'] as String?,
           notes: map['notes'] as String?,
+          createdAt: map['createdAt'] != null
               ? DateTime.parse(map['createdAt'] as String)
               : null,
           updatedAt: map['updatedAt'] != null

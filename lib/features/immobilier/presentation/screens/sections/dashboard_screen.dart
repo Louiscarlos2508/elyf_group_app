@@ -161,7 +161,7 @@ class _DashboardTodayKpis extends StatelessWidget {
             .toList();
         return DashboardTodaySectionV2(todayPayments: todayPayments);
       },
-      loading: () => AppShimmers.statsGrid(count: 3),
+      loading: () => AppShimmers.statsGrid(context),
       error: (error, stackTrace) => ErrorDisplayWidget(
         error: error,
         onRetry: () => ref.refresh(paymentsProvider),
@@ -219,23 +219,23 @@ class _DashboardMonthKpis extends StatelessWidget {
                           occupancyRate: metrics.occupancyRate,
                         );
                       },
-                      loading: () => AppShimmers.statsGrid(count: 5),
+                      loading: () => AppShimmers.statsGrid(context),
                       error: (error, stackTrace) => const SizedBox.shrink(),
                     );
                   },
-                  loading: () => AppShimmers.statsGrid(count: 5),
+                  loading: () => AppShimmers.statsGrid(context),
                   error: (_, __) => const SizedBox.shrink(),
                 );
               },
-              loading: () => AppShimmers.statsGrid(count: 5),
+              loading: () => AppShimmers.statsGrid(context),
               error: (_, __) => const SizedBox.shrink(),
             );
           },
-          loading: () => AppShimmers.statsGrid(count: 5),
+          loading: () => AppShimmers.statsGrid(context),
           error: (_, __) => const SizedBox.shrink(),
         );
       },
-      loading: () => AppShimmers.statsGrid(count: 5),
+      loading: () => AppShimmers.statsGrid(context),
       error: (error, stackTrace) => const SizedBox.shrink(),
     );
   }
@@ -276,7 +276,7 @@ class _DashboardAlerts extends StatelessWidget {
           expiringContracts: expiringContracts,
         );
       },
-      loading: () => AppShimmers.list(count: 2),
+      loading: () => AppShimmers.list(context, itemCount: 2),
       error: (error, stackTrace) => ErrorDisplayWidget(
         error: error,
         title: 'Erreur de chargement des alertes',

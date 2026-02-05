@@ -170,8 +170,9 @@ class ContractCard extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 class _InfoItem extends StatelessWidget {

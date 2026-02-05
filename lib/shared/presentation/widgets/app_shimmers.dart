@@ -80,6 +80,22 @@ class AppShimmers {
     );
   }
 
+  static Widget grid(BuildContext context, {int count = 4}) {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        childAspectRatio: 1.5,
+        mainAxisSpacing: 16,
+        crossAxisSpacing: 16,
+      ),
+      padding: const EdgeInsets.all(16),
+      itemCount: count,
+      itemBuilder: (context, index) => card(context),
+    );
+  }
+
   static Widget table(BuildContext context, {int rows = 5}) {
     return Column(
       children: List.generate(

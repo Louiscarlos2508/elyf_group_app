@@ -62,7 +62,7 @@ class TransportStepHeader extends ConsumerWidget {
                   toursProvider((enterpriseId: enterpriseId, status: null)),
                 );
                 // Invalider le provider du tour pour forcer le rafraîchissement
-                ref.refresh(tourProvider(tour.id));
+                await ref.refresh(tourProvider(tour.id).future);
               }
             } catch (e) {
               AppLogger.error(

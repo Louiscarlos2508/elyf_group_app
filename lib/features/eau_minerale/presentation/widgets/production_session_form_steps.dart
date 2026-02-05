@@ -52,7 +52,6 @@ class ProductionSessionFormStepsState
   List<String> _machinesSelectionnees = [];
   List<BobineUsage> _bobinesUtilisees = [];
   List<ProductionDay> _productionDays = [];
-  bool _isLoading = false;
   bool _isSavingDraft =
       false; // Flag pour éviter les appels multiples simultanés
   String?
@@ -145,7 +144,6 @@ class ProductionSessionFormStepsState
       return;
     }
 
-    setState(() => _isLoading = true);
     try {
       final config = await ref.read(productionPeriodConfigProvider.future);
 
@@ -223,8 +221,6 @@ class ProductionSessionFormStepsState
     } catch (e) {
       if (!mounted) return;
       NotificationService.showError(context, e.toString());
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
     }
   }
 

@@ -23,7 +23,6 @@ import 'auth_storage_service.dart';
 class AuthService {
   final AuthSessionService _sessionService;
   final AuthUserService _userService;
-  final AuthStorageService _storageService;
 
   AuthService({
     FirebaseAuth? firebaseAuth,
@@ -32,8 +31,7 @@ class AuthService {
     AuthStorageService? authStorageService,
     AuthSessionService? authSessionService,
     AuthUserService? authUserService,
-  })  : _storageService = authStorageService ?? AuthStorageService(),
-        _sessionService = authSessionService ??
+  })  : _sessionService = authSessionService ??
             AuthSessionService(
               firebaseAuth: firebaseAuth,
               firestoreUserService: firestoreUserService,

@@ -22,8 +22,6 @@ class BottleQuantityInput extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final lightGray = const Color(0xFFF3F3F5);
-    final textGray = const Color(0xFF717182);
     final theme = Theme.of(context);
 
     return Column(

@@ -18,7 +18,6 @@ class CustomerFormState extends ConsumerState<CustomerForm>
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _cnibController = TextEditingController();
-  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -32,7 +31,7 @@ class CustomerFormState extends ConsumerState<CustomerForm>
     await handleFormSubmit(
       context: context,
       formKey: _formKey,
-      onLoadingChanged: (isLoading) => setState(() => _isLoading = isLoading),
+      onLoadingChanged: (_) {},
       onSubmit: () async {
         final rawPhone = _phoneController.text.trim();
         final phone = PhoneUtils.normalizeBurkina(rawPhone) ?? rawPhone;

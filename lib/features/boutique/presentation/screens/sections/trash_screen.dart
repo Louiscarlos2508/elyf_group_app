@@ -132,7 +132,7 @@ class _DeletedProductsTab extends ConsumerWidget {
           },
         );
       },
-      loading: () => const AppShimmers.list(count: 5),
+      loading: () => AppShimmers.list(context, itemCount: 5),
       error: (error, stack) => Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

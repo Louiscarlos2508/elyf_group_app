@@ -146,6 +146,11 @@ class PropertyOfflineRepository extends OfflineRepository<Property>
   }
 
   @override
+  Future<List<Property>> getAllProperties() async {
+    return getAllForEnterprise(enterpriseId);
+  }
+
+  @override
   Future<List<Property>> getAllForEnterprise(String enterpriseId) async {
     final rows = await driftService.records.listForEnterprise(
       collectionName: collectionName,
@@ -199,7 +204,7 @@ class PropertyOfflineRepository extends OfflineRepository<Property>
   @override
   Future<List<Property>> getPropertiesByStatus(PropertyStatus status) async {
     try {
-      final allProperties = await getAllForEnterprise(enterpriseId);
+      final allProperties = await getAllProperties();
       return allProperties.where((p) => p.status == status).toList();
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
@@ -216,7 +221,7 @@ class PropertyOfflineRepository extends OfflineRepository<Property>
   @override
   Future<List<Property>> getPropertiesByType(PropertyType type) async {
     try {
-      final allProperties = await getAllForEnterprise(enterpriseId);
+      final allProperties = await getAllProperties();
       return allProperties.where((p) => p.propertyType == type).toList();
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);

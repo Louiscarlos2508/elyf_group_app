@@ -22,7 +22,6 @@ class FixedEmployeeFormState extends ConsumerState<FixedEmployeeForm> {
   final _lastNameController = TextEditingController();
   final _positionController = TextEditingController();
   final _monthlySalaryController = TextEditingController();
-  bool _isLoading = false;
 
   @override
   void initState() {
@@ -50,7 +49,6 @@ class FixedEmployeeFormState extends ConsumerState<FixedEmployeeForm> {
   Future<void> submit() async {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() => _isLoading = true);
     try {
       final employee = Employee(
         id:
@@ -83,8 +81,6 @@ class FixedEmployeeFormState extends ConsumerState<FixedEmployeeForm> {
     } catch (e) {
       if (!mounted) return;
       NotificationService.showError(context, e.toString());
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
     }
   }
 

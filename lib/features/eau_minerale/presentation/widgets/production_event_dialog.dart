@@ -100,22 +100,26 @@ class _ProductionEventDialogState extends State<ProductionEventDialog> {
                 ),
               ),
               const SizedBox(height: 8),
-              ...ProductionEventType.values.map((type) {
-                return RadioListTile<ProductionEventType>(
-                  title: Row(
-                    children: [
-                      Text(type.icon),
-                      const SizedBox(width: 8),
-                      Text(type.label),
-                    ],
-                  ),
-                  value: type,
-                  groupValue: _selectedType,
-                  onChanged: (value) {
-                    setState(() => _selectedType = value);
-                  },
-                );
-              }),
+              RadioGroup<ProductionEventType>(
+                groupValue: _selectedType,
+                onChanged: (value) {
+                  setState(() => _selectedType = value);
+                },
+                child: Column(
+                  children: ProductionEventType.values.map((type) {
+                    return RadioListTile<ProductionEventType>(
+                      title: Row(
+                        children: [
+                          Text(type.icon),
+                          const SizedBox(width: 8),
+                          Text(type.label),
+                        ],
+                      ),
+                      value: type,
+                    );
+                  }).toList(),
+                ),
+              ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _motifController,

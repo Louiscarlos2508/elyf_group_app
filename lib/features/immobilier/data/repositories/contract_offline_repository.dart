@@ -145,6 +145,11 @@ class ContractOfflineRepository extends OfflineRepository<Contract>
   }
 
   @override
+  Future<List<Contract>> getAllContracts() async {
+    return getAllForEnterprise(enterpriseId);
+  }
+
+  @override
   Future<List<Contract>> getAllForEnterprise(String enterpriseId) async {
     final rows = await driftService.records.listForEnterprise(
       collectionName: collectionName,

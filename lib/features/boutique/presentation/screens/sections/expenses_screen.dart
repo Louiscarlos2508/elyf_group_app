@@ -255,7 +255,7 @@ class ExpensesScreen extends ConsumerWidget {
             },
           );
         },
-        loading: () => const AppShimmers.table(),
+        loading: () => AppShimmers.table(context),
         error: (error, stackTrace) => ErrorDisplayWidget(
           error: error,
           title: 'Erreur de chargement',
@@ -268,41 +268,43 @@ class ExpensesScreen extends ConsumerWidget {
 
   void _showExpenseDetail(BuildContext context, Expense expense) {
     final theme = Theme.of(context);
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(expense.label),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildDetailRow(
-              theme,
-              'Montant',
-              CurrencyFormatter.formatFCFA(expense.amountCfa),
+    if (context.mounted) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(expense.label),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildDetailRow(
+                theme,
+                'Montant',
+                CurrencyFormatter.formatFCFA(expense.amountCfa),
+              ),
+              _buildDetailRow(
+                theme,
+                'Cat\u00e9gorie',
+                _getCategoryLabel(expense.category),
+              ),
+              _buildDetailRow(
+                theme,
+                'Date',
+                '${expense.date.day}/${expense.date.month}/${expense.date.year}',
+              ),
+              if (expense.notes != null)
+                _buildDetailRow(theme, 'Notes', expense.notes!),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Fermer'),
             ),
-            _buildDetailRow(
-              theme,
-              'Catégorie',
-              _getCategoryLabel(expense.category),
-            ),
-            _buildDetailRow(
-              theme,
-              'Date',
-              '${expense.date.day}/${expense.date.month}/${expense.date.year}',
-            ),
-            if (expense.notes != null)
-              _buildDetailRow(theme, 'Notes', expense.notes!),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Fermer'),
-          ),
-        ],
-      ),
-    );
+      );
+    }
   }
 
   Widget _buildDetailRow(ThemeData theme, String label, String value) {
@@ -369,8 +371,9 @@ class ExpensesScreen extends ConsumerWidget {
       return;
     }
 
-    showDialog(
-      context: context,
+    if (context.mounted) {
+      showDialog(
+        context: context,
       builder: (context) => AlertDialog(
         title: const Text('Supprimer la dépense ?'),
         content: Text('Voulez-vous vraiment supprimer "${expense.label}" ?'),
@@ -393,6 +396,7 @@ class ExpensesScreen extends ConsumerWidget {
           ),
         ],
       ),
-    );
+      );
+    }
   }
 }

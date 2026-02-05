@@ -200,7 +200,6 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
     // Trier par date décroissante
     deduplicatedSales.sort((a, b) => b.date.compareTo(a.date));
     return deduplicatedSales;
-    return sales;
   }
 
   // SaleRepository interface implementation

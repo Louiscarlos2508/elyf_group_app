@@ -275,8 +275,8 @@ class _TenantsScreenState extends ConsumerState<TenantsScreen> {
           title: 'Erreur de chargement',
           message: 'Impossible de charger les locataires.',
           onRetry: () {
-            ref.refresh(tenantsProvider);
-            ref.refresh(contractsProvider);
+            ref.invalidate(tenantsProvider);
+            ref.invalidate(contractsProvider);
           },
         ),
       ),

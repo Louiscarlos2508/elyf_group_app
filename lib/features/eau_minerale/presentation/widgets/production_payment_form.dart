@@ -28,7 +28,6 @@ class ProductionPaymentFormState extends ConsumerState<ProductionPaymentForm> {
   String _period = '';
   final List<ProductionPaymentPerson> _persons = [];
   List<String> _sourceProductionDayIds = [];
-  bool _isLoading = false;
 
   @override
   void initState() {
@@ -90,7 +89,6 @@ class ProductionPaymentFormState extends ConsumerState<ProductionPaymentForm> {
       return;
     }
 
-    setState(() => _isLoading = true);
     try {
       final payment = ProductionPayment(
         id: 'payment-${DateTime.now().millisecondsSinceEpoch}',
@@ -112,8 +110,6 @@ class ProductionPaymentFormState extends ConsumerState<ProductionPaymentForm> {
     } catch (e) {
       if (!mounted) return;
       NotificationService.showError(context, e.toString());
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
     }
   }
 

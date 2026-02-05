@@ -81,7 +81,7 @@ class DashboardScreen extends ConsumerWidget {
                   );
                   return DashboardTodaySection(metrics: metrics);
                 },
-                loading: () => const AppShimmers.statsGrid(count: 3),
+                loading: () => AppShimmers.statsGrid(context),
                 error: (error, stackTrace) => ErrorDisplayWidget(
                   error: error,
                   onRetry: () => ref.refresh(recentSalesProvider),
@@ -100,7 +100,7 @@ class DashboardScreen extends ConsumerWidget {
           SliverPadding(
             padding: AppSpacing.sectionPadding,
             sliver: SliverToBoxAdapter(
-              child: _buildMonthKpis(ref),
+              child: _buildMonthKpis(context, ref),
             ),
           ),
 
@@ -138,7 +138,7 @@ class DashboardScreen extends ConsumerWidget {
                     },
                   );
                 },
-                loading: () => const AppShimmers.list(count: 3),
+                loading: () => AppShimmers.list(context, itemCount: 3),
                 error: (error, stackTrace) => ErrorDisplayWidget(
                   error: error,
                   title: 'Erreur de chargement',
@@ -153,7 +153,7 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildMonthKpis(WidgetRef ref) {
+  Widget _buildMonthKpis(BuildContext context, WidgetRef ref) {
     final metricsAsync = ref.watch(boutiqueMonthlyMetricsProvider);
 
     return metricsAsync.when(
@@ -177,7 +177,7 @@ class DashboardScreen extends ConsumerWidget {
           monthProfit: metrics.profit,
         );
       },
-      loading: () => const AppShimmers.statsGrid(count: 5),
+      loading: () => AppShimmers.statsGrid(context),
       error: (error, stackTrace) => ErrorDisplayWidget(
         error: error,
         title: 'Erreur de chargement des métriques mensuelles',

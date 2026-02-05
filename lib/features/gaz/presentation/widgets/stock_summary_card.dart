@@ -23,7 +23,6 @@ class StockSummaryCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     if (cylinders.isEmpty) {
       return const SizedBox.shrink();

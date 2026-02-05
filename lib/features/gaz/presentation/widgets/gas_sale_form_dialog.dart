@@ -34,7 +34,6 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
   Cylinder? _selectedCylinder;
   int _availableStock = 0;
   bool _isLoading = false;
-  String? _enterpriseId;
   Tour? _selectedTour;
   String? _selectedWholesalerId;
   String? _selectedWholesalerName;

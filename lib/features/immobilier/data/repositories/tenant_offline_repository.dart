@@ -136,6 +136,11 @@ class TenantOfflineRepository extends OfflineRepository<Tenant>
   }
 
   @override
+  Future<List<Tenant>> getAllTenants() async {
+    return getAllForEnterprise(enterpriseId);
+  }
+
+  @override
   Future<List<Tenant>> getAllForEnterprise(String enterpriseId) async {
     final rows = await driftService.records.listForEnterprise(
       collectionName: collectionName,
@@ -189,7 +194,7 @@ class TenantOfflineRepository extends OfflineRepository<Tenant>
   @override
   Future<List<Tenant>> searchTenants(String query) async {
     try {
-      final allTenants = await getAllForEnterprise(enterpriseId);
+      final allTenants = await getAllTenants();
       final lowerQuery = query.toLowerCase();
       return allTenants.where((tenant) {
         return tenant.fullName.toLowerCase().contains(lowerQuery) ||

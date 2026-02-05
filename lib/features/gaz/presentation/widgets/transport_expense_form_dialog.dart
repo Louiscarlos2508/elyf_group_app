@@ -71,7 +71,7 @@ class _TransportExpenseFormDialogState
           )),
         );
         // Forcer le rechargement du tour
-        ref.refresh(tourProvider(widget.tour.id));
+        await ref.refresh(tourProvider(widget.tour.id).future);
         
         Navigator.of(context).pop(true);
       }

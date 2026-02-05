@@ -1,3 +1,4 @@
+import 'package:rxdart/rxdart.dart';
 import '../../../../core/errors/app_exceptions.dart';
 import '../../../../shared/domain/entities/payment_method.dart';
 import '../../domain/entities/payment.dart';
@@ -5,6 +6,7 @@ import '../../domain/repositories/payment_repository.dart';
 
 class MockPaymentRepository implements PaymentRepository {
   final _payments = <String, Payment>{};
+  final _subject = BehaviorSubject<List<Payment>>();
 
   MockPaymentRepository() {
     _initMockData();
@@ -42,6 +44,7 @@ class MockPaymentRepository implements PaymentRepository {
     for (final payment in payments) {
       _payments[payment.id] = payment;
     }
+    _subject.add(_payments.values.toList());
   }
 
   @override
@@ -72,6 +75,9 @@ class MockPaymentRepository implements PaymentRepository {
   }
 
   @override
+  Stream<List<Payment>> watchPayments() => _subject.stream;
+
+  @override
   Future<Payment> createPayment(Payment payment) async {
     final now = DateTime.now();
     final newPayment = Payment(
@@ -90,6 +96,7 @@ class MockPaymentRepository implements PaymentRepository {
       updatedAt: now,
     );
     _payments[payment.id] = newPayment;
+    _subject.add(_payments.values.toList());
     return newPayment;
   }
 
@@ -118,11 +125,13 @@ class MockPaymentRepository implements PaymentRepository {
       updatedAt: DateTime.now(),
     );
     _payments[payment.id] = updated;
+    _subject.add(_payments.values.toList());
     return updated;
   }
 
   @override
   Future<void> deletePayment(String id) async {
     _payments.remove(id);
+    _subject.add(_payments.values.toList());
   }
 }

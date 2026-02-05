@@ -452,13 +452,13 @@ class _TourWholesalerSelectorWidgetState
       await controller.updateTour(updatedTour);
 
       // Invalider le provider pour rafraîchir la liste
-      if (!context.mounted) return;
+      if (!mounted) return;
       ref.invalidate(allWholesalersProvider(widget.enterpriseId));
       ref.invalidate(
         toursProvider((enterpriseId: widget.enterpriseId, status: null)),
       );
     } catch (e) {
-      if (!context.mounted) return;
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Erreur lors de l\'ajout au tour: $e'),

@@ -114,7 +114,6 @@ class _PrintOptionsSheet extends StatefulWidget {
 
 class _PrintOptionsSheetState extends State<_PrintOptionsSheet> {
   bool _isSunmiAvailable = false;
-  final bool _isPrinting = false;
 
   @override
   void initState() {

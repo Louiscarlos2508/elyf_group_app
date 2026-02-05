@@ -457,11 +457,12 @@ class _CollectionFormDialogState extends ConsumerState<CollectionFormDialog> {
                     _wholesalerAddressController.clear();
                   });
 
-                  if (!context.mounted) return;
-                  NotificationService.showSuccess(
-                    context,
-                    'Grossiste "$name" ajouté avec succès',
-                  );
+                  if (context.mounted) {
+                    NotificationService.showSuccess(
+                      context,
+                      'Grossiste "$name" ajouté avec succès',
+                    );
+                  }
                 },
                 child: const Text('Ajouter'),
               ),
@@ -502,13 +503,13 @@ class _CollectionFormDialogState extends ConsumerState<CollectionFormDialog> {
       await controller.updateTour(updatedTour);
 
       // Invalider le provider pour rafraîchir la liste
-      if (!context.mounted) return;
+      if (!mounted) return;
       ref.invalidate(allWholesalersProvider(widget.tour.enterpriseId));
       ref.invalidate(
         toursProvider((enterpriseId: widget.tour.enterpriseId, status: null)),
       );
     } catch (e) {
-      if (!context.mounted) return;
+      if (!mounted) return;
       NotificationService.showError(
         context,
         'Erreur lors de l\'ajout au tour: $e',

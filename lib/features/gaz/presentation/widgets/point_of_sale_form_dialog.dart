@@ -134,11 +134,7 @@ class _PointOfSaleFormDialogState extends ConsumerState<PointOfSaleFormDialog>
     final activeEnterpriseAsync = ref.watch(activeEnterpriseProvider);
     
     activeEnterpriseAsync.whenData((enterprise) {
-      if (_enterpriseId == null && enterprise != null) {
-        _enterpriseId = widget.enterpriseId ?? enterprise.id;
-        _moduleId = widget.moduleId ?? 'gaz';
-      } else if (_enterpriseId == null) {
-        _enterpriseId = widget.enterpriseId;
+      if (_moduleId == null) {
         _moduleId = widget.moduleId ?? 'gaz';
       }
     });
@@ -153,7 +149,7 @@ class _PointOfSaleFormDialogState extends ConsumerState<PointOfSaleFormDialog>
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 15,
               offset: const Offset(0, 5),
             ),

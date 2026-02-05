@@ -1,9 +1,11 @@
+import 'package:rxdart/rxdart.dart';
 import '../../../../core/errors/app_exceptions.dart';
 import '../../domain/entities/property.dart';
 import '../../domain/repositories/property_repository.dart';
 
 class MockPropertyRepository implements PropertyRepository {
   final _properties = <String, Property>{};
+  final _subject = BehaviorSubject<List<Property>>();
 
   MockPropertyRepository() {
     _initMockData();
@@ -55,6 +57,7 @@ class MockPropertyRepository implements PropertyRepository {
     for (final property in properties) {
       _properties[property.id] = property;
     }
+    _subject.add(_properties.values.toList());
   }
 
   @override
@@ -78,6 +81,9 @@ class MockPropertyRepository implements PropertyRepository {
   }
 
   @override
+  Stream<List<Property>> watchProperties() => _subject.stream;
+
+  @override
   Future<Property> createProperty(Property property) async {
     final now = DateTime.now();
     final newProperty = Property(
@@ -96,6 +102,7 @@ class MockPropertyRepository implements PropertyRepository {
       updatedAt: now,
     );
     _properties[property.id] = newProperty;
+    _subject.add(_properties.values.toList());
     return newProperty;
   }
 
@@ -124,11 +131,13 @@ class MockPropertyRepository implements PropertyRepository {
       updatedAt: DateTime.now(),
     );
     _properties[property.id] = updated;
+    _subject.add(_properties.values.toList());
     return updated;
   }
 
   @override
   Future<void> deleteProperty(String id) async {
     _properties.remove(id);
+    _subject.add(_properties.values.toList());
   }
 }

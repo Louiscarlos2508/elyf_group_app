@@ -218,8 +218,8 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
                 },
               );
             },
-            loading: () => const SliverFillRemaining(
-                child: AppShimmers.grid(count: 8),
+            loading: () => SliverFillRemaining(
+                child: AppShimmers.grid(context, count: 8),
             ),
             error: (error, stackTrace) => SliverFillRemaining(
               child: ErrorDisplayWidget(

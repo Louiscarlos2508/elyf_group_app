@@ -109,7 +109,6 @@ class _SalaryAnalysisContentState extends ConsumerState<SalaryAnalysisContent> {
 
             // Calcul des totaux
             final totalAmount = stats.fold(0, (sum, s) => sum + s.totalEarned);
-            final totalPaid = stats.fold(0, (sum, s) => sum + s.amountPaid);
             final totalRemaining = stats.fold(0, (sum, s) => sum + s.remainingAmount);
 
             return Column(
@@ -190,7 +189,7 @@ class _SalaryAnalysisContentState extends ConsumerState<SalaryAnalysisContent> {
       }
     } catch (_) {}
 
-    if (!mounted) return;
+    if (!context.mounted) return;
 
     await showDialog(
       context: context,

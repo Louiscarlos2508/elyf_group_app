@@ -1,9 +1,11 @@
+import 'package:rxdart/rxdart.dart';
 import '../../../../core/errors/app_exceptions.dart';
 import '../../domain/entities/expense.dart';
 import '../../domain/repositories/expense_repository.dart';
 
 class MockPropertyExpenseRepository implements PropertyExpenseRepository {
   final _expenses = <String, PropertyExpense>{};
+  final _subject = BehaviorSubject<List<PropertyExpense>>();
 
   MockPropertyExpenseRepository() {
     _initMockData();
@@ -35,6 +37,7 @@ class MockPropertyExpenseRepository implements PropertyExpenseRepository {
     for (final expense in expenses) {
       _expenses[expense.id] = expense;
     }
+    _subject.add(_expenses.values.toList());
   }
 
   @override
@@ -74,6 +77,9 @@ class MockPropertyExpenseRepository implements PropertyExpenseRepository {
   }
 
   @override
+  Stream<List<PropertyExpense>> watchExpenses() => _subject.stream;
+
+  @override
   Future<PropertyExpense> createExpense(PropertyExpense expense) async {
     final now = DateTime.now();
     final newExpense = PropertyExpense(
@@ -89,6 +95,7 @@ class MockPropertyExpenseRepository implements PropertyExpenseRepository {
       updatedAt: now,
     );
     _expenses[expense.id] = newExpense;
+    _subject.add(_expenses.values.toList());
     return newExpense;
   }
 
@@ -114,11 +121,13 @@ class MockPropertyExpenseRepository implements PropertyExpenseRepository {
       updatedAt: DateTime.now(),
     );
     _expenses[expense.id] = updated;
+    _subject.add(_expenses.values.toList());
     return updated;
   }
 
   @override
   Future<void> deleteExpense(String id) async {
     _expenses.remove(id);
+    _subject.add(_expenses.values.toList());
   }
 }

@@ -26,7 +26,6 @@ class _AgentFormDialogState extends ConsumerState<AgentFormDialog>
   late TextEditingController _commissionRateController;
   late MobileOperator _selectedOperator;
   late AgentStatus _selectedStatus;
-  String? _enterpriseId;
 
   @override
   void initState() {

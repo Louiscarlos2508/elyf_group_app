@@ -178,8 +178,9 @@ class PaymentCard extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 class _LinkedEntityRow extends StatelessWidget {

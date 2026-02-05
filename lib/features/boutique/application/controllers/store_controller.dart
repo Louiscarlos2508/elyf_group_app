@@ -276,4 +276,8 @@ class StoreController {
       endDate: endDate,
     );
   }
+
+  Stream<List<Product>> watchLowStockProducts({int threshold = 10}) {
+    return _stockRepository.watchLowStockProducts(threshold: threshold);
+  }
 }

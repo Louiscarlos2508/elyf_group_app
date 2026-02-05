@@ -180,6 +180,11 @@ class PropertyExpenseOfflineRepository
   }
 
   @override
+  Future<List<PropertyExpense>> getAllExpenses() async {
+    return getAllForEnterprise(enterpriseId);
+  }
+
+  @override
   Future<List<PropertyExpense>> getAllForEnterprise(String enterpriseId) async {
     final rows = await driftService.records.listForEnterprise(
       collectionName: collectionName,
@@ -261,7 +266,7 @@ class PropertyExpenseOfflineRepository
   @override
   Future<List<PropertyExpense>> getExpensesByProperty(String propertyId) async {
     try {
-      final all = await getAllForEnterprise(enterpriseId);
+      final all = await getAllExpenses();
       final filtered = all.where((e) => e.propertyId == propertyId).toList()
         ..sort((a, b) => b.expenseDate.compareTo(a.expenseDate));
       return filtered;
@@ -282,7 +287,7 @@ class PropertyExpenseOfflineRepository
     ExpenseCategory category,
   ) async {
     try {
-      final all = await getAllForEnterprise(enterpriseId);
+      final all = await getAllExpenses();
       final filtered = all.where((e) => e.category == category).toList()
         ..sort((a, b) => b.expenseDate.compareTo(a.expenseDate));
       return filtered;
@@ -304,7 +309,7 @@ class PropertyExpenseOfflineRepository
     DateTime end,
   ) async {
     try {
-      final all = await getAllForEnterprise(enterpriseId);
+      final all = await getAllExpenses();
       final filtered = all.where((e) {
         return (e.expenseDate.isAfter(start) ||
                 e.expenseDate.isAtSameMomentAs(start)) &&

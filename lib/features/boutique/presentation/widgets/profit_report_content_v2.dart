@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:elyf_groupe_app/shared.dart';
 
 import '../../application/providers.dart';
 import '../../domain/entities/report_data.dart';
@@ -96,7 +96,7 @@ class ProfitReportContentV2 extends ConsumerWidget {
             ],
           );
         },
-        loading: () => const AppShimmers.statsGrid(count: 2),
+        loading: () => AppShimmers.statsGrid(context),
         error: (_, __) => const SizedBox.shrink(),
       ),
     );

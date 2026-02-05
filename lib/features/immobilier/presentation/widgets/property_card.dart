@@ -177,8 +177,9 @@ class PropertyCard extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 class _InfoChip extends StatelessWidget {

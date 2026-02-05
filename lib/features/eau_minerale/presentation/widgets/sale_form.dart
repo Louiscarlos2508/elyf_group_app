@@ -319,7 +319,6 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final isWide = MediaQuery.of(context).size.width >= 700;
 
     return Form(

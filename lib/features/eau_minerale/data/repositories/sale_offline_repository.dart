@@ -314,7 +314,6 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
         stackTrace: stackTrace,
       );
       throw appException;
-      throw appException;
     }
   }
 

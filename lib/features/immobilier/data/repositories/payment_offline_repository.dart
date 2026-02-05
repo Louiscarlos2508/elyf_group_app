@@ -153,6 +153,11 @@ class PaymentOfflineRepository extends OfflineRepository<Payment>
   }
 
   @override
+  Future<List<Payment>> getAllPayments() async {
+    return getAllForEnterprise(enterpriseId);
+  }
+
+  @override
   Future<List<Payment>> getAllForEnterprise(String enterpriseId) async {
     final rows = await driftService.records.listForEnterprise(
       collectionName: collectionName,

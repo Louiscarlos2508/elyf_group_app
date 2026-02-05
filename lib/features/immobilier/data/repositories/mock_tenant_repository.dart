@@ -1,9 +1,11 @@
+import 'package:rxdart/rxdart.dart';
 import '../../../../core/errors/app_exceptions.dart';
 import '../../domain/entities/tenant.dart';
 import '../../domain/repositories/tenant_repository.dart';
 
 class MockTenantRepository implements TenantRepository {
   final _tenants = <String, Tenant>{};
+  final _subject = BehaviorSubject<List<Tenant>>();
 
   MockTenantRepository() {
     _initMockData();
@@ -44,6 +46,7 @@ class MockTenantRepository implements TenantRepository {
     for (final tenant in tenants) {
       _tenants[tenant.id] = tenant;
     }
+    _subject.add(_tenants.values.toList());
   }
 
   @override
@@ -67,6 +70,9 @@ class MockTenantRepository implements TenantRepository {
   }
 
   @override
+  Stream<List<Tenant>> watchTenants() => _subject.stream;
+
+  @override
   Future<Tenant> createTenant(Tenant tenant) async {
     final now = DateTime.now();
     final newTenant = Tenant(
@@ -82,6 +88,7 @@ class MockTenantRepository implements TenantRepository {
       updatedAt: now,
     );
     _tenants[tenant.id] = newTenant;
+    _subject.add(_tenants.values.toList());
     return newTenant;
   }
 
@@ -107,11 +114,13 @@ class MockTenantRepository implements TenantRepository {
       updatedAt: DateTime.now(),
     );
     _tenants[tenant.id] = updated;
+    _subject.add(_tenants.values.toList());
     return updated;
   }
 
   @override
   Future<void> deleteTenant(String id) async {
     _tenants.remove(id);
+    _subject.add(_tenants.values.toList());
   }
 }

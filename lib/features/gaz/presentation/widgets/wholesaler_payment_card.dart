@@ -33,7 +33,6 @@ class WholesalerPaymentCard extends StatelessWidget {
 
     // Statut du paiement selon le design Figma
     final paymentStatus = collection.isPaymentComplete ? 'Payé' : 'En attente';
-    final statusColor = const Color(0xFF0A0A0A);
 
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),

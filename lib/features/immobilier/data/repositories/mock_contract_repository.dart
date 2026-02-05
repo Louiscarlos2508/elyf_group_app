@@ -1,9 +1,11 @@
+import 'package:rxdart/rxdart.dart';
 import '../../../../core/errors/app_exceptions.dart';
 import '../../domain/entities/contract.dart';
 import '../../domain/repositories/contract_repository.dart';
 
 class MockContractRepository implements ContractRepository {
   final _contracts = <String, Contract>{};
+  final _subject = BehaviorSubject<List<Contract>>();
 
   MockContractRepository() {
     _initMockData();
@@ -29,6 +31,7 @@ class MockContractRepository implements ContractRepository {
     for (final contract in contracts) {
       _contracts[contract.id] = contract;
     }
+    _subject.add(_contracts.values.toList());
   }
 
   @override
@@ -59,6 +62,9 @@ class MockContractRepository implements ContractRepository {
   }
 
   @override
+  Stream<List<Contract>> watchContracts() => _subject.stream;
+
+  @override
   Future<Contract> createContract(Contract contract) async {
     final now = DateTime.now();
     final newContract = Contract(
@@ -78,6 +84,7 @@ class MockContractRepository implements ContractRepository {
       updatedAt: now,
     );
     _contracts[contract.id] = newContract;
+    _subject.add(_contracts.values.toList());
     return newContract;
   }
 
@@ -107,11 +114,13 @@ class MockContractRepository implements ContractRepository {
       updatedAt: DateTime.now(),
     );
     _contracts[contract.id] = updated;
+    _subject.add(_contracts.values.toList());
     return updated;
   }
 
   @override
   Future<void> deleteContract(String id) async {
     _contracts.remove(id);
+    _subject.add(_contracts.values.toList());
   }
 }

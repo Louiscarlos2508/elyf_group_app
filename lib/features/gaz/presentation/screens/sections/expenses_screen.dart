@@ -75,7 +75,6 @@ class _GazExpensesScreenState extends ConsumerState<GazExpensesScreen>
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final isMobile = MediaQuery.of(context).size.width < 600;
     final expensesAsync = ref.watch(gazExpensesProvider);
 

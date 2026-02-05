@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import 'package:elyf_groupe_app/app/theme/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:elyf_groupe_app/shared.dart';
 
 import '../../application/providers.dart';
 import '../../domain/entities/report_data.dart';
@@ -166,7 +166,7 @@ class ReportKpiCardsV2 extends ConsumerWidget {
           },
         );
       },
-      loading: () => const AppShimmers.statsGrid(count: 4),
+      loading: () => AppShimmers.statsGrid(context),
       error: (_, __) => const SizedBox.shrink(),
     );
   }

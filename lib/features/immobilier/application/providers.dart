@@ -38,13 +38,40 @@ import '../domain/services/property_calculation_service.dart';
 import '../domain/services/property_validation_service.dart';
 import '../domain/services/validation/contract_validation_service.dart';
 
-// Report Calculation Service
+// --- Services ---
+
 final immobilierReportCalculationServiceProvider =
     Provider<ImmobilierReportCalculationService>(
       (ref) => ImmobilierReportCalculationService(),
     );
 
-// Repositories
+final immobilierDashboardCalculationServiceProvider =
+    Provider<ImmobilierDashboardCalculationService>(
+      (ref) => ImmobilierDashboardCalculationService(),
+    );
+
+final propertyCalculationServiceProvider = Provider<PropertyCalculationService>(
+  (ref) => PropertyCalculationService(),
+);
+
+final propertyValidationServiceProvider = Provider<PropertyValidationService>(
+  (ref) => PropertyValidationService(),
+);
+
+final contractValidationServiceProvider = Provider<ContractValidationService>(
+  (ref) => ContractValidationService(),
+);
+
+final paymentFilterServiceProvider = Provider<PaymentFilterService>(
+  (ref) => PaymentFilterService(),
+);
+
+final expenseFilterServiceProvider = Provider<ExpenseFilterService>(
+  (ref) => ExpenseFilterService(),
+);
+
+// --- Repositories ---
+
 final propertyRepositoryProvider = Provider<PropertyRepository>((ref) {
   final enterpriseId =
       ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
@@ -120,7 +147,6 @@ final expenseRepositoryProvider = Provider<PropertyExpenseRepository>((ref) {
   );
 });
 
-// Validation Service
 final immobilierValidationServiceProvider =
     Provider<ImmobilierValidationService>(
       (ref) => ImmobilierValidationService(
@@ -130,69 +156,8 @@ final immobilierValidationServiceProvider =
       ),
     );
 
-final contractValidationServiceProvider = Provider<ContractValidationService>(
-  (ref) => ContractValidationService(),
-);
+// --- Controllers ---
 
-/// Provider for PropertyCalculationService.
-final propertyCalculationServiceProvider = Provider<PropertyCalculationService>(
-  (ref) => PropertyCalculationService(),
-);
-
-/// Provider for PropertyValidationService.
-final propertyValidationServiceProvider = Provider<PropertyValidationService>(
-  (ref) => PropertyValidationService(),
-);
-
-// Dashboard Calculation Service
-final immobilierDashboardCalculationServiceProvider =
-    Provider<ImmobilierDashboardCalculationService>(
-      (ref) => ImmobilierDashboardCalculationService(),
-    );
-
-/// Provider combiné pour les métriques mensuelles du dashboard immobilier.
-final immobilierMonthlyMetricsProvider = StreamProvider.autoDispose<
-    ({
-      List<Property> properties,
-      List<Tenant> tenants,
-      List<Contract> contracts,
-      List<Payment> payments,
-      List<PropertyExpense> expenses,
-    })>(
-  (ref) {
-    return CombineLatestStream.combine5(
-      ref.watch(propertiesProvider.stream),
-      ref.watch(tenantsProvider.stream),
-      ref.watch(contractsProvider.stream),
-      ref.watch(paymentsProvider.stream),
-      ref.watch(expensesProvider.stream),
-      (properties, tenants, contracts, payments, expenses) => (
-        properties: properties,
-        tenants: tenants,
-        contracts: contracts,
-        payments: payments,
-        expenses: expenses,
-      ),
-    );
-  },
-);
-
-/// Provider combiné pour les alertes du dashboard immobilier.
-final immobilierAlertsProvider = StreamProvider.autoDispose<
-    ({List<Payment> payments, List<Contract> contracts})>(
-  (ref) {
-    return CombineLatestStream.combine2(
-      ref.watch(paymentsProvider.stream),
-      ref.watch(contractsProvider.stream),
-      (payments, contracts) => (
-        payments: payments,
-        contracts: contracts,
-      ),
-    );
-  },
-);
-
-// Controllers
 final propertyControllerProvider = Provider<PropertyController>(
   (ref) => PropertyController(
     ref.watch(propertyRepositoryProvider),
@@ -226,7 +191,8 @@ final expenseControllerProvider = Provider<PropertyExpenseController>(
   (ref) => PropertyExpenseController(ref.watch(expenseRepositoryProvider)),
 );
 
-// Data Providers
+// --- Basic Data Providers ---
+
 final propertiesProvider = StreamProvider.autoDispose<List<Property>>((ref) {
   final controller = ref.watch(propertyControllerProvider);
   return controller.watchProperties();
@@ -254,72 +220,92 @@ final expensesProvider = StreamProvider.autoDispose<List<PropertyExpense>>((
   return controller.watchExpenses();
 });
 
-/// Provider pour le bilan des dépenses Immobilier.
+// --- Combined & Derived Providers ---
+
+final immobilierMonthlyMetricsProvider = StreamProvider.autoDispose<
+    ({
+      List<Property> properties,
+      List<Tenant> tenants,
+      List<Contract> contracts,
+      List<Payment> payments,
+      List<PropertyExpense> expenses,
+    })>(
+  (ref) {
+    return CombineLatestStream.combine5(
+      ref.watch(propertyControllerProvider).watchProperties(),
+      ref.watch(tenantControllerProvider).watchTenants(),
+      ref.watch(contractControllerProvider).watchContracts(),
+      ref.watch(paymentControllerProvider).watchPayments(),
+      ref.watch(expenseControllerProvider).watchExpenses(),
+      (properties, tenants, contracts, payments, expenses) => (
+        properties: properties,
+        tenants: tenants,
+        contracts: contracts,
+        payments: payments,
+        expenses: expenses,
+      ),
+    );
+  },
+);
+
+final immobilierAlertsProvider = StreamProvider.autoDispose<
+    ({List<Payment> payments, List<Contract> contracts})>(
+  (ref) {
+    return CombineLatestStream.combine2(
+      ref.watch(paymentControllerProvider).watchPayments(),
+      ref.watch(contractControllerProvider).watchContracts(),
+      (payments, contracts) => (
+        payments: payments,
+        contracts: contracts,
+      ),
+    );
+  },
+);
+
 final immobilierExpenseBalanceProvider =
     StreamProvider.autoDispose<List<ExpenseBalanceData>>((ref) {
-      return ref.watch(expensesProvider.stream).map((expenses) {
+      return ref.watch(expenseControllerProvider).watchExpenses().map((expenses) {
         final adapter = ImmobilierExpenseBalanceAdapter();
         return adapter.convertToBalanceData(expenses);
       });
     });
 
-/// Provider pour les contrats d'un locataire spécifique.
 final contractsByTenantProvider = StreamProvider.autoDispose
     .family<List<Contract>, String>((ref, tenantId) {
-      return ref
-          .watch(contractsProvider.stream)
-          .map(
-            (contracts) =>
-                contracts.where((c) => c.tenantId == tenantId).toList(),
-          );
+      return ref.watch(contractControllerProvider).watchContracts().map(
+        (contracts) => contracts.where((c) => c.tenantId == tenantId).toList(),
+      );
     });
 
-/// Provider pour les paiements d'un contrat spécifique.
 final paymentsByContractProvider = StreamProvider.autoDispose
     .family<List<Payment>, String>((ref, contractId) {
-      return ref
-          .watch(paymentsProvider.stream)
-          .map(
-            (payments) =>
-                payments.where((p) => p.contractId == contractId).toList(),
-          );
+      return ref.watch(paymentControllerProvider).watchPayments().map(
+        (payments) => payments.where((p) => p.contractId == contractId).toList(),
+      );
     });
 
-/// Provider pour les contrats d'une propriété spécifique.
 final contractsByPropertyProvider = StreamProvider.autoDispose
     .family<List<Contract>, String>((ref, propertyId) {
-      return ref
-          .watch(contractsProvider.stream)
-          .map(
-            (contracts) =>
-                contracts.where((c) => c.propertyId == propertyId).toList(),
-          );
+      return ref.watch(contractControllerProvider).watchContracts().map(
+        (contracts) => contracts.where((c) => c.propertyId == propertyId).toList(),
+      );
     });
 
-/// Provider pour tous les paiements d'un locataire (via ses contrats).
 final paymentsByTenantProvider = StreamProvider.autoDispose
     .family<List<Payment>, String>((ref, tenantId) {
       return CombineLatestStream.combine2(
-        ref.watch(contractsByTenantProvider(tenantId).stream),
-        ref.watch(paymentsProvider.stream),
+        ref.watch(contractControllerProvider).watchContracts().map(
+          (contracts) => contracts.where((c) => c.tenantId == tenantId).toList(),
+        ),
+        ref.watch(paymentControllerProvider).watchPayments(),
         (contracts, payments) {
           final contractIds = contracts.map((c) => c.id).toSet();
           final filtered =
               payments
                   .where((p) => contractIds.contains(p.contractId))
                   .toList();
-          // Trier par date décroissante
           filtered.sort((a, b) => b.paymentDate.compareTo(a.paymentDate));
           return filtered;
         },
       );
     });
-
-// Filter Services
-final paymentFilterServiceProvider = Provider<PaymentFilterService>(
-  (ref) => PaymentFilterService(),
-);
-
-final expenseFilterServiceProvider = Provider<ExpenseFilterService>(
-  (ref) => ExpenseFilterService(),
-);

@@ -121,7 +121,7 @@ class ReturnStepContent extends ConsumerWidget {
                               )),
                             );
                             // Forcer le rechargement du tour en utilisant refresh
-                            ref.refresh(tourProvider(tour.id));
+                            await ref.refresh(tourProvider(tour.id).future);
                           }
                         } catch (e) {
                           AppLogger.error(

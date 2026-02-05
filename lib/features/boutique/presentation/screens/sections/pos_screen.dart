@@ -88,7 +88,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
       return;
     }
 
-    // Vérifier les permissions avant d'ouvrir le checkout
+    // V\u00e9rifier les permissions avant d'ouvrir le checkout
     final adapter = ref.read(boutiquePermissionAdapterProvider);
     final hasUsePos = await adapter.hasPermission(
       BoutiquePermissions.usePos.id,
@@ -98,26 +98,30 @@ class _PosScreenState extends ConsumerState<PosScreen> {
     );
 
     if (!hasUsePos && !hasCreateSale) {
-      NotificationService.showError(
-        context,
-        'Vous n\'avez pas la permission d\'utiliser la caisse ou de créer une vente.',
-      );
+      if (context.mounted) {
+        NotificationService.showError(
+          context,
+          'Vous n\'avez pas la permission d\'utiliser la caisse ou de cr\u00e9er une vente.',
+        );
+      }
       return;
     }
 
     final total = ref
         .read(storeControllerProvider)
         .calculateCartTotal(_cartItems);
-    showDialog(
-      context: context,
-      builder: (context) => CheckoutDialog(
-        cartItems: _cartItems,
-        total: total,
-        onSuccess: () {
-          _clearCart();
-        },
-      ),
-    );
+    if (context.mounted) {
+      showDialog(
+        context: context,
+        builder: (context) => CheckoutDialog(
+          cartItems: _cartItems,
+          total: total,
+          onSuccess: () {
+            _clearCart();
+          },
+        ),
+      );
+    }
   }
 
   void _showCartBottomSheet(BuildContext context) {
@@ -316,7 +320,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                               },
                             );
                           },
-                          loading: () => const AppShimmers.grid(count: 8),
+                          loading: () => AppShimmers.grid(context, count: 8),
                           error: (_, __) => Center(
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,

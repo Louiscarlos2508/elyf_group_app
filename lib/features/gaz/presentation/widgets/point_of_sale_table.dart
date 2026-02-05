@@ -1,10 +1,8 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/logging/app_logger.dart';
 
-import '../../../../../../core/offline/drift_service.dart';
 import '../../application/providers.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'point_of_sale_table/pos_table_row.dart';

@@ -2,18 +2,12 @@ import '../../entities/contract.dart';
 import '../../entities/expense.dart' show PropertyExpense;
 import '../../entities/payment.dart';
 import '../../entities/property.dart';
-import '../dashboard_calculation_service.dart';
 
 /// Service for calculating report metrics for the Immobilier module.
 ///
 /// Extracts business logic from UI widgets to make it testable and reusable.
 class ImmobilierReportCalculationService {
-  ImmobilierReportCalculationService({
-    ImmobilierDashboardCalculationService? dashboardService,
-  }) : _dashboardService =
-           dashboardService ?? ImmobilierDashboardCalculationService();
-
-  final ImmobilierDashboardCalculationService _dashboardService;
+  ImmobilierReportCalculationService();
 
   /// Filters paid payments from a list.
   List<Payment> filterPaidPayments(List<Payment> payments) {

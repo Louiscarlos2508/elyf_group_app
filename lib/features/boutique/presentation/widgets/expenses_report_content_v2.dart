@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:elyf_groupe_app/shared.dart';
 
 import '../../application/providers.dart';
 import '../../domain/entities/report_data.dart';
@@ -92,7 +92,7 @@ class ExpensesReportContentV2 extends ConsumerWidget {
             ],
           );
         },
-        loading: () => const AppShimmers.list(count: 3),
+        loading: () => AppShimmers.list(context, itemCount: 3),
         error: (_, __) => const SizedBox.shrink(),
       ),
     );

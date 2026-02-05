@@ -92,7 +92,7 @@ class _ModuleMenuScreenState extends ConsumerState<ModuleMenuScreen> {
 
                             // Rediriger directement vers le module correspondant au type de l'entreprise
                             final route = _moduleRoutes[enterprise.type];
-                            if (route != null && mounted) {
+                            if (context.mounted && route != null) {
                               context.go(route);
                             }
                           },

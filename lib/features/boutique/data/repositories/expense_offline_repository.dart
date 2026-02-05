@@ -54,7 +54,6 @@ class ExpenseOfflineRepository extends OfflineRepository<Expense>
       'category': entity.category.name,
       'date': entity.date.toIso8601String(),
       'expenseDate': entity.date.toIso8601String(),
-      'expenseDate': entity.date.toIso8601String(),
       'deletedAt': entity.deletedAt?.toIso8601String(),
       'updatedAt': entity.updatedAt?.toIso8601String(),
     };

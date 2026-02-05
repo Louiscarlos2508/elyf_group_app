@@ -97,15 +97,6 @@ class _CheckoutDialogState extends ConsumerState<CheckoutDialog>
   }
 
   int? get _amountPaid => int.tryParse(_amountPaidController.text);
-  int get _change {
-    if (_amountPaid == null) return 0;
-    // Utiliser le service de calcul pour extraire la logique métier
-    final cartService = ref.read(cartCalculationServiceProvider);
-    return cartService.calculateChange(
-      amountPaid: _amountPaid!,
-      total: widget.total,
-    );
-  }
 
   Future<void> _processPayment() async {
     // Vérifier les permissions avant de traiter le paiement

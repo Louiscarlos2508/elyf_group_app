@@ -248,7 +248,7 @@ class _WeeklySalaryCalculatorState
           try {
             await ref.read(salaryControllerProvider).createProductionPayment(payment);
             
-            if (mounted) {
+            if (context.mounted) {
               Navigator.of(context).pop();
               NotificationService.showSuccess(
                 context,
@@ -267,7 +267,7 @@ class _WeeklySalaryCalculatorState
               ref.invalidate(productionSessionsStateProvider);
             }
           } catch (e) {
-            if (mounted) {
+            if (context.mounted) {
               NotificationService.showError(context, 'Erreur lors du paiement: $e');
             }
           }
@@ -318,7 +318,7 @@ class _WeeklySalaryCalculatorState
           try {
             await ref.read(salaryControllerProvider).createProductionPayment(payment);
             
-            if (mounted) {
+            if (context.mounted) {
               Navigator.of(context).pop();
               NotificationService.showSuccess(
                 context,
@@ -336,7 +336,7 @@ class _WeeklySalaryCalculatorState
               ref.invalidate(productionSessionsStateProvider);
             }
           } catch (e) {
-            if (mounted) {
+            if (context.mounted) {
               NotificationService.showError(context, 'Erreur lors du paiement groupé: $e');
             }
           }
@@ -410,11 +410,11 @@ class _WeeklySalaryCalculatorState
                  ref.invalidate(salaryStateProvider);
                  ref.invalidate(productionSessionsStateProvider);
 
-                 if (mounted) {
+                 if (context.mounted) {
                    NotificationService.showSuccess(context, 'Informations enregistrées avec succès');
                  }
                } catch (e) {
-                 if (mounted) {
+                 if (context.mounted) {
                    NotificationService.showError(context, 'Erreur: $e');
                  }
                }

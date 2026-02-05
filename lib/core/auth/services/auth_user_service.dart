@@ -2,7 +2,7 @@ import 'dart:developer' as developer;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart'
-    show FirebaseAuth, User, EmailAuthProvider, FirebaseAuthException;
+    show FirebaseAuth, EmailAuthProvider, FirebaseAuthException;
 
 import '../../errors/app_exceptions.dart';
 import '../../errors/error_handler.dart';
