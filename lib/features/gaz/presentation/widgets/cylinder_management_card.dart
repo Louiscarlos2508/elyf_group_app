@@ -63,124 +63,125 @@ class _CylinderManagementCardState
           ],
         ),
         child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Flexible(
-                  flex: 1,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: colors.primaryContainer,
-                              borderRadius: BorderRadius.circular(8),
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Flexible(
+                    flex: 1,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: colors.primaryContainer,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Icon(
+                                Icons.local_fire_department,
+                                color: colors.onPrimaryContainer,
+                                size: 24,
+                              ),
                             ),
-                            child: Icon(
-                              Icons.local_fire_department,
-                              color: colors.onPrimaryContainer,
-                              size: 24,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Gestion des Bouteilles',
-                                  style: theme.textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Gestion des Bouteilles',
+                                    style: theme.textTheme.titleMedium?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Configurez les types de bouteilles de gaz',
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: colors.onSurfaceVariant,
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Configurez les types de bouteilles de gaz',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: colors.onSurfaceVariant,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 16),
-                IntrinsicWidth(
-                  child: FilledButton.icon(
-                    onPressed: () => _showAddCylinderDialog(context),
-                    icon: const Icon(Icons.add, size: 18),
-                    label: const Text('Ajouter'),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            cylindersAsync.when(
-              data: (cylinders) {
-                if (cylinders.isEmpty) {
-                  return const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(24),
-                      child: Text('Aucune bouteille'),
-                    ),
-                  );
-                }
-                return Column(
-                  children: cylinders.map<Widget>((cylinder) {
-                    return CylinderListItem(
-                      cylinder: cylinder,
-                      onEdit: () => _showEditCylinderDialog(context, cylinder),
-                      onDelete: () => _showDeleteConfirm(context, cylinder),
-                    );
-                  }).toList(),
-                );
-              },
-              loading: () => const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(24),
-                  child: CircularProgressIndicator(),
-                ),
-              ),
-              error: (error, _) => Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.error_outline, size: 48, color: colors.error),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Erreur lors du chargement',
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          color: colors.error,
+                          ],
                         ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  IntrinsicWidth(
+                    child: FilledButton.icon(
+                      onPressed: () => _showAddCylinderDialog(context),
+                      icon: const Icon(Icons.add, size: 18),
+                      label: const Text('Ajouter'),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              cylindersAsync.when(
+                data: (cylinders) {
+                  if (cylinders.isEmpty) {
+                    return const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(24),
+                        child: Text('Aucune bouteille'),
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        error.toString(),
-                        style: theme.textTheme.bodySmall,
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
+                    );
+                  }
+                  return Column(
+                    children: cylinders.map<Widget>((cylinder) {
+                      return CylinderListItem(
+                        cylinder: cylinder,
+                        onEdit: () => _showEditCylinderDialog(context, cylinder),
+                        onDelete: () => _showDeleteConfirm(context, cylinder),
+                      );
+                    }).toList(),
+                  );
+                },
+                loading: () => const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(24),
+                    child: CircularProgressIndicator(),
+                  ),
+                ),
+                error: (error, _) => Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.error_outline, size: 48, color: colors.error),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Erreur lors du chargement',
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            color: colors.error,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          error.toString(),
+                          style: theme.textTheme.bodySmall,
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

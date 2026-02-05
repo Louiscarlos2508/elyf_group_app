@@ -47,6 +47,16 @@ class MockStockRepository implements StockRepository {
 class MockPackStockAdapter implements PackStockAdapter {
   @override
   Future<int> getPackStock({String? productId}) async => 0;
+
+  @override
+  Future<void> recordPackExit(
+    int quantity, {
+    String? productId,
+    String? reason,
+    String? notes,
+  }) async {
+    // Mock implementation
+  }
 }
 
 class MockCustomerRepository implements CustomerRepository {

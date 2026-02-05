@@ -152,12 +152,6 @@ final expenseRepositoryProvider = Provider<ExpenseRepository>((ref) {
 });
 
 final reportRepositoryProvider = Provider<ReportRepository>((ref) {
-  final enterpriseId =
-      ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
-  final driftService = DriftService.instance;
-  final syncManager = ref.watch(syncManagerProvider);
-  final connectivityService = ref.watch(connectivityServiceProvider);
-
   return ReportOfflineRepository(
     saleRepository: ref.watch(saleRepositoryProvider),
     purchaseRepository: ref.watch(purchaseRepositoryProvider),

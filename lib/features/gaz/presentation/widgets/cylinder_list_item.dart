@@ -158,8 +158,9 @@ class CylinderListItem extends ConsumerWidget {
                   ],
                 ),
               ),
-            );
-          },
+            ),
+          );
+        },
           loading: () => Card(
             child: Padding(
               padding: const EdgeInsets.all(16),

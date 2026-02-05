@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:elyf_groupe_app/shared.dart';
 
 import '../../../../../../core/tenant/tenant_provider.dart';
 import '../../../../application/providers.dart';

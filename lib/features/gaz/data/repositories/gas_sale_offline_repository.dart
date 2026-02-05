@@ -417,4 +417,45 @@ class GasSaleOfflineRepository extends OfflineRepository<GasSale>
       throw appException;
     }
   }
+
+  @override
+  Stream<List<Cylinder>> watchCylinders() {
+    return driftService.records
+        .watchForEnterprise(
+          collectionName: cylindersCollectionName,
+          enterpriseId: enterpriseId,
+          moduleType: moduleType,
+        )
+        .map(
+          (rows) => rows
+              .map(
+                (r) => _cylinderFromMap(
+                  jsonDecode(r.dataJson) as Map<String, dynamic>,
+                ),
+              )
+              .toList(),
+        );
+  }
+
+  @override
+  Stream<List<GasSale>> watchSales({DateTime? from, DateTime? to}) {
+    return driftService.records
+        .watchForEnterprise(
+          collectionName: collectionName,
+          enterpriseId: enterpriseId,
+          moduleType: moduleType,
+        )
+        .map((rows) {
+          final sales = rows
+              .map(
+                (r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>),
+              )
+              .toList();
+          return sales.where((sale) {
+            if (from != null && sale.saleDate.isBefore(from)) return false;
+            if (to != null && sale.saleDate.isAfter(to)) return false;
+            return true;
+          }).toList();
+        });
+  }
 }

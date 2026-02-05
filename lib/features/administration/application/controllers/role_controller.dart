@@ -337,4 +337,9 @@ class RoleController {
   Stream<List<UserRole>> watchAllRoles() {
     return _repository.watchAllRoles();
   }
+
+  /// Surveille le statut de synchronisation (Stream).
+  Stream<bool> watchSyncStatus() {
+    return _repository.watchSyncStatus();
+  }
 }

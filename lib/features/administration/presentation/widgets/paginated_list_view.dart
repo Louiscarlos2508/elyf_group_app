@@ -61,7 +61,6 @@ class _PaginatedListViewState<T> extends ConsumerState<PaginatedListView<T>> {
   bool _isLoading = false;
   bool _hasMore = true;
   int _currentPage = 0;
-  int _totalCount = 0;
   Object? _error;
 
   @override
@@ -110,7 +109,6 @@ class _PaginatedListViewState<T> extends ConsumerState<PaginatedListView<T>> {
         }
         _currentPage = page;
         _hasMore = result.hasMore;
-        _totalCount = result.totalCount;
         _isLoading = false;
       });
     } catch (e) {
@@ -126,7 +124,6 @@ class _PaginatedListViewState<T> extends ConsumerState<PaginatedListView<T>> {
       _items = [];
       _currentPage = 0;
       _hasMore = true;
-      _totalCount = 0;
       _error = null;
     });
     await _loadPage(0);

@@ -115,8 +115,9 @@ class WholesalePriceConfigCard extends ConsumerWidget {
               ],
             ),
           ),
-        );
-      },
+        ),
+      );
+    },
       loading: () => Card(
         child: Padding(
           padding: const EdgeInsets.all(20),

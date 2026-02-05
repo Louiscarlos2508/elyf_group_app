@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:elyf_groupe_app/shared/utils/accessibility_helpers.dart';
@@ -126,7 +125,7 @@ void main() {
       expect(semantics, isNotNull);
       expect(semantics.label, 'Bouton de test');
       expect(semantics.hint, 'Appuyez pour continuer');
-      expect(semantics.hasFlag(SemanticsFlag.isButton), isTrue);
+      expect(semantics.getSemanticsData().isButton, isTrue);
     });
 
     testWidgets('accessibleTextField ajoute les semantics correctes', (
@@ -207,7 +206,7 @@ void main() {
 
       final semantics = tester.getSemantics(find.text('Titre principal'));
       expect(semantics, isNotNull);
-      expect(semantics.hasFlag(SemanticsFlag.isHeader), isTrue);
+      expect(semantics.isHeader, isTrue);
       expect(semantics.headingLevel, 1);
     });
   });

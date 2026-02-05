@@ -382,16 +382,10 @@ class _ManagePermissionsDialogState
   ) {
     final moduleId = moduleData.moduleId;
     final sections = moduleData.sections;
-    final moduleSections = ModuleSectionsRegistry.getSectionsForModule(
-      moduleId,
-    );
     final modulePermissionIds = sections.values
         .expand((perms) => perms.map((p) => p.id))
         .toSet();
     final allModuleSelected = modulePermissionIds.every(
-      (id) => _customPermissions.contains(id),
-    );
-    final someModuleSelected = modulePermissionIds.any(
       (id) => _customPermissions.contains(id),
     );
 

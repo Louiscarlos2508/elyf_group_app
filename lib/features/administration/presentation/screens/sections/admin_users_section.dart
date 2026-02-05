@@ -9,7 +9,7 @@ import 'widgets/user_filters_bar.dart';
 import 'widgets/user_list_item.dart';
 import 'widgets/user_empty_state.dart';
 import 'widgets/user_action_handlers.dart';
-import '../../presentation/widgets/admin_shimmers.dart';
+import '../../widgets/admin_shimmers.dart';
 
 /// Section pour gérer les utilisateurs.
 class AdminUsersSection extends ConsumerStatefulWidget {

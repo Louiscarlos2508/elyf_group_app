@@ -132,6 +132,26 @@ class GazSettingsOfflineRepository extends OfflineRepository<GazSettings>
   // GazSettingsRepository implementation
 
   @override
+  Future<GazSettings?> getSettings({
+    required String enterpriseId,
+    required String moduleId,
+  }) async {
+    final settingsId = _getSettingsId(enterpriseId, moduleId);
+    try {
+      return await getByLocalId(settingsId);
+    } catch (error, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
+      AppLogger.error(
+        'Error getting settings: ${appException.message}',
+        name: 'GazSettingsOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return null;
+    }
+  }
+
+  @override
   Stream<GazSettings?> watchSettings({
     required String enterpriseId,
     required String moduleId,

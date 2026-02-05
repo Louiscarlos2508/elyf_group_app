@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
+import 'package:elyf_groupe_app/shared.dart';
 import '../../../domain/services/gaz_calculation_service.dart';
 import '../../widgets/wholesale_date_filter_card.dart';
 import '../../widgets/wholesale_empty_state.dart';

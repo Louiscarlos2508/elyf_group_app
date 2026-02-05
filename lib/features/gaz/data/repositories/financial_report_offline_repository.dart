@@ -162,6 +162,36 @@ class FinancialReportOfflineRepository
     return deduplicateByRemoteId(entities);
   }
 
+  @override
+  Future<List<FinancialReport>> getReports(
+    String enterpriseId, {
+    ReportPeriod? period,
+    DateTime? from,
+    DateTime? to,
+    ReportStatus? status,
+  }) async {
+    try {
+      final all = await getAllForEnterprise(enterpriseId);
+      return all.where((report) {
+        if (period != null && report.period != period) return false;
+        if (status != null && report.status != status) return false;
+        if (from != null && report.reportDate.isBefore(from)) return false;
+        if (to != null && report.reportDate.isAfter(to)) return false;
+        return true;
+      }).toList()
+        ..sort((a, b) => b.reportDate.compareTo(a.reportDate));
+    } catch (error, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
+      AppLogger.error(
+        'Error getting reports: ${appException.message}',
+        name: 'FinancialReportOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return [];
+    }
+  }
+
   // FinancialReportRepository implementation
 
   @override

@@ -6,6 +6,7 @@ import '../../../../core/logging/app_logger.dart';
 
 import '../../../../../../core/offline/drift_service.dart';
 import '../../application/providers.dart';
+import 'package:elyf_groupe_app/shared.dart';
 import 'point_of_sale_table/pos_table_row.dart';
 
 /// Tableau des points de vente selon le design Figma.

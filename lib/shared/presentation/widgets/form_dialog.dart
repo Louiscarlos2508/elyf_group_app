@@ -98,10 +98,9 @@ class _FormDialogState extends State<FormDialog> {
         // Utiliser NotificationService si disponible
         try {
           // Import dynamique pour éviter les dépendances circulaires
-          final notificationService = 
-              await Future(() => 
-                  // Utiliser un import conditionnel ou un service global
-                  null);
+          await Future(() => 
+              // Utiliser un import conditionnel ou un service global
+              null);
         } catch (_) {
           // Si NotificationService n'est pas disponible, au moins log l'erreur
         }

@@ -40,7 +40,6 @@ class FixedEmployeesContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final salaryState = ref.watch(salaryStateProvider);
     final dailyWorkersState = ref.watch(allDailyWorkersProvider);
 

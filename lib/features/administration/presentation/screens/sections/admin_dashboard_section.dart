@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/administration/application/providers.dart';
-import '../../domain/entities/enterprise.dart';
-import '../../presentation/widgets/admin_shimmers.dart';
+import '../../../domain/entities/enterprise.dart';
+import '../../widgets/admin_shimmers.dart';
 
 /// Dashboard avec statistiques et vue d'ensemble
 class AdminDashboardSection extends ConsumerWidget {

@@ -149,6 +149,28 @@ class GazExpenseOfflineRepository extends OfflineRepository<GazExpense>
     return deduplicateByRemoteId(entities);
   }
 
+  @override
+  Future<List<GazExpense>> getExpenses({DateTime? from, DateTime? to}) async {
+    try {
+      final all = await getAllForEnterprise(enterpriseId);
+      return all.where((expense) {
+        if (from != null && expense.date.isBefore(from)) return false;
+        if (to != null && expense.date.isAfter(to)) return false;
+        return true;
+      }).toList()
+        ..sort((a, b) => b.date.compareTo(a.date));
+    } catch (error, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
+      AppLogger.error(
+        'Error getting expenses: ${appException.message}',
+        name: 'GazExpenseOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return [];
+    }
+  }
+
   // GazExpenseRepository implementation
 
   @override

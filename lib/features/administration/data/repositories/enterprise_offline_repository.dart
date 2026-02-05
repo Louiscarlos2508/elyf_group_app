@@ -146,9 +146,6 @@ class EnterpriseOfflineRepository extends OfflineRepository<Enterprise>
     return getAllEnterprises();
   }
 
-  // EnterpriseRepository implementation
-    }
-  }
 
   @override
   Future<List<Enterprise>> getAllEnterprises() async {

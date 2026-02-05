@@ -3,7 +3,6 @@ import 'package:shimmer/shimmer.dart';
 
 class AdminShimmers {
   static Widget statsShimmer(BuildContext context) {
-    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(

@@ -154,6 +154,31 @@ class CylinderStockOfflineRepository extends OfflineRepository<CylinderStock>
   // CylinderStockRepository implementation
 
   @override
+  Future<List<CylinderStock>> getStocksByStatus(
+    String enterpriseId,
+    CylinderStatus status, {
+    String? siteId,
+  }) async {
+    try {
+      final stocks = await getAllForEnterprise(enterpriseId);
+      return stocks.where((stock) {
+        if (stock.status != status) return false;
+        if (siteId != null && stock.siteId != siteId) return false;
+        return true;
+      }).toList();
+    } catch (error, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
+      AppLogger.error(
+        'Error getting stocks by status: ${appException.message}',
+        name: 'CylinderStockOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return [];
+    }
+  }
+
+  @override
   Stream<List<CylinderStock>> watchStocks(
     String enterpriseId, {
     CylinderStatus? status,

@@ -55,7 +55,6 @@ class CylinderLeakOfflineRepository extends OfflineRepository<CylinderLeak>
       'status': entity.status.name,
       'tourId': entity.tourId,
       'exchangeDate': entity.exchangeDate?.toIso8601String(),
-      'exchangeDate': entity.exchangeDate?.toIso8601String(),
       'notes': entity.notes,
       'updatedAt': entity.updatedAt?.toIso8601String(),
     };
@@ -154,6 +153,27 @@ class CylinderLeakOfflineRepository extends OfflineRepository<CylinderLeak>
     // Dédupliquer par remoteId pour éviter les doublons
 
     return deduplicateByRemoteId(entities);
+  }
+
+  @override
+  Future<List<CylinderLeak>> getLeaks(
+    String enterpriseId, {
+    LeakStatus? status,
+  }) async {
+    try {
+      final all = await getAllForEnterprise(enterpriseId);
+      if (status == null) return all;
+      return all.where((leak) => leak.status == status).toList();
+    } catch (error, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
+      AppLogger.error(
+        'Error getting leaks: ${appException.message}',
+        name: 'CylinderLeakOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return [];
+    }
   }
 
   // CylinderLeakRepository implementation

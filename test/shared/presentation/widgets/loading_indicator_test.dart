@@ -78,8 +78,8 @@ void main() {
       );
 
       // Vérifier qu'il n'y a qu'un seul Text widget (probablement dans MaterialApp)
-      final textWidgets = find.byType(Text);
       // Le message ne devrait pas être affiché
+      expect(find.byType(Text), findsNothing);
     });
 
     testWidgets('uses theme primary color', (tester) async {

@@ -261,8 +261,9 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
             ),
           ),
         ),
-      );
-    } catch (e) {
+      ),
+    );
+  } catch (e) {
       return Dialog(
         child: Padding(
           padding: const EdgeInsets.all(24),

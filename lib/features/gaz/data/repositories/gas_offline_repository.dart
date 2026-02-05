@@ -99,6 +99,39 @@ class GasOfflineRepository implements GasRepository {
   // Implémentation de GasRepository - Cylinders
 
   @override
+  Future<List<Cylinder>> getCylinders() async {
+    try {
+      final rows = await driftService.records.listForEnterprise(
+        collectionName: _cylindersCollection,
+        enterpriseId: enterpriseId,
+        moduleType: 'gaz',
+      );
+
+      return rows
+          .map((row) {
+            try {
+              final map = jsonDecode(row.dataJson) as Map<String, dynamic>;
+              return _cylinderFromMap(map).copyWith(id: row.localId);
+            } catch (e) {
+              return null;
+            }
+          })
+          .whereType<Cylinder>()
+          .toList()
+        ..sort((a, b) => a.weight.compareTo(b.weight));
+    } catch (error, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
+      AppLogger.error(
+        'Error getting cylinders: ${appException.message}',
+        name: 'GasOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return [];
+    }
+  }
+
+  @override
   Stream<List<Cylinder>> watchCylinders() {
     return driftService.records
         .watchForEnterprise(
@@ -414,6 +447,47 @@ class GasOfflineRepository implements GasRepository {
   }
 
   // Implémentation de GasRepository - Sales
+
+  @override
+  Future<List<GasSale>> getSales({DateTime? from, DateTime? to}) async {
+    try {
+      final rows = await driftService.records.listForEnterprise(
+        collectionName: _salesCollection,
+        enterpriseId: enterpriseId,
+        moduleType: 'gaz',
+      );
+
+      var sales = rows
+          .map((row) {
+            try {
+              final map = jsonDecode(row.dataJson) as Map<String, dynamic>;
+              return _gasSaleFromMap(map);
+            } catch (e) {
+              return null;
+            }
+          })
+          .whereType<GasSale>()
+          .toList();
+
+      if (from != null) {
+        sales = sales.where((s) => s.saleDate.isAfter(from)).toList();
+      }
+      if (to != null) {
+        sales = sales.where((s) => s.saleDate.isBefore(to)).toList();
+      }
+
+      return sales..sort((a, b) => b.saleDate.compareTo(a.saleDate));
+    } catch (error, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
+      AppLogger.error(
+        'Error getting sales: ${appException.message}',
+        name: 'GasOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return [];
+    }
+  }
 
   @override
   Stream<List<GasSale>> watchSales({DateTime? from, DateTime? to}) {

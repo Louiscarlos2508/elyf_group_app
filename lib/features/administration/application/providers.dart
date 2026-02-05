@@ -568,18 +568,25 @@ final rolesProvider = StreamProvider.autoDispose<List<UserRole>>(
 /// Provider pour les statistiques d'administration (Stream)
 ///
 /// Se met à jour automatiquement quand les données changent.
-final adminStatsProvider = StreamProvider.autoDispose<AdminStats>((ref) async* {
-  final enterprisesStream = ref.watch(enterprisesProvider.stream);
-  final usersStream = ref.watch(usersProvider.stream);
-  final rolesStream = ref.watch(rolesProvider.stream);
-  final assignmentsStream = ref.watch(enterpriseModuleUsersProvider.stream);
+final adminStatsProvider = StreamProvider.autoDispose<AdminStats>((ref) {
+  final enterprisesStream =
+      ref.watch(enterpriseControllerProvider).watchAllEnterprises();
+  final usersStream = ref.watch(userControllerProvider).watchAllUsers();
+  final rolesStream = ref.watch(adminControllerProvider).watchAllRoles();
+  final assignmentsStream =
+      ref.watch(adminControllerProvider).watchEnterpriseModuleUsers();
 
-  yield* CombineLatestStream.combine4(
+  return CombineLatestStream.combine4(
     enterprisesStream,
     usersStream,
     rolesStream,
     assignmentsStream,
-    (enterprises, users, roles, enterpriseModuleUsers) {
+    (
+      List<Enterprise> enterprises,
+      List<User> users,
+      List<UserRole> roles,
+      List<EnterpriseModuleUser> enterpriseModuleUsers,
+    ) {
       // Memoize calculations
       final activeEnterprises = enterprises.where((e) => e.isActive).length;
       final activeUsers = users.where((u) => u.isActive).length;
@@ -606,32 +613,6 @@ final adminStatsProvider = StreamProvider.autoDispose<AdminStats>((ref) async* {
         totalAssignments: enterpriseModuleUsers.length,
       );
     },
-  );
-});
-
-  // Memoize calculations
-  final activeEnterprises = enterprises.where((e) => e.isActive).length;
-  final activeUsers = users.where((u) => u.isActive).length;
-
-  final enterprisesByType = <String, int>{};
-  for (final type in [
-    'eau_minerale',
-    'gaz',
-    'orange_money',
-    'immobilier',
-    'boutique',
-  ]) {
-    enterprisesByType[type] = enterprises.where((e) => e.type == type).length;
-  }
-
-  return AdminStats(
-    totalEnterprises = enterprises.length,
-    activeEnterprises = activeEnterprises,
-    enterprisesByType = enterprisesByType,
-    totalRoles = roles.length,
-    totalUsers = users.length,
-    activeUsers = activeUsers,
-    totalAssignments = enterpriseModuleUsers.length,
   );
 });
 

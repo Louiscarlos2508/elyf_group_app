@@ -9,7 +9,7 @@ import 'package:elyf_groupe_app/shared.dart';
 import '../../../../../shared/utils/notification_service.dart';
 import 'package:elyf_groupe_app/core/auth/providers.dart'
     show currentUserIdProvider;
-import '../../presentation/widgets/admin_shimmers.dart';
+import '../../widgets/admin_shimmers.dart';
 
 /// Section pour gérer les rôles.
 class AdminRolesSection extends ConsumerWidget {

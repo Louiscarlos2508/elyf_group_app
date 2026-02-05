@@ -339,6 +339,23 @@ class TourOfflineRepository extends OfflineRepository<Tour>
   }
 
   @override
+  Future<List<Tour>> getTours(
+    String enterpriseId, {
+    TourStatus? status,
+    DateTime? from,
+    DateTime? to,
+  }) async {
+    final allTours = await getAllForEnterprise(enterpriseId);
+    return allTours.where((tour) {
+      if (status != null && tour.status != status) return false;
+      if (from != null && tour.tourDate.isBefore(from)) return false;
+      if (to != null && tour.tourDate.isAfter(to)) return false;
+      return true;
+    }).toList()
+      ..sort((a, b) => b.tourDate.compareTo(a.tourDate));
+  }
+
+  @override
   Future<List<Tour>> getAllForEnterprise(String enterpriseId) async {
     final rows = await driftService.records.listForEnterprise(
       collectionName: collectionName,

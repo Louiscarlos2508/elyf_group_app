@@ -8,6 +8,7 @@ import '../../../../core/offline/connectivity_service.dart';
 import '../../../../core/offline/drift_service.dart';
 import '../../../../core/offline/offline_repository.dart';
 import '../../../../core/offline/sync_manager.dart';
+import '../../../../core/offline/sync_status.dart';
 import '../../../../core/permissions/entities/user_role.dart';
 import '../../domain/repositories/admin_repository.dart';
 import 'optimized_queries.dart';
@@ -100,9 +101,6 @@ class AdminOfflineRepository implements AdminRepository {
       return id;
     }
     return null;
-  }
-
-    }
   }
 
   @override
@@ -340,9 +338,6 @@ class AdminOfflineRepository implements AdminRepository {
     });
   }
 
-    }
-  }
-
   @override
   Future<List<UserRole>> getAllRoles() async {
     try {
@@ -506,5 +501,10 @@ class AdminOfflineRepository implements AdminRepository {
     // For now, return all roles. In real implementation, filter by module permissions
     final allRoles = await getAllRoles();
     return allRoles;
+  }
+
+  @override
+  Stream<bool> watchSyncStatus() {
+    return syncManager.syncProgressStream.map((progress) => progress.status == SyncStatus.syncing);
   }
 }

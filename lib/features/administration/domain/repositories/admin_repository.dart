@@ -77,4 +77,7 @@ abstract class AdminRepository {
 
   /// Delete a role (if not system role)
   Future<void> deleteRole(String roleId);
+
+  /// Watch sync status (Stream)
+  Stream<bool> watchSyncStatus();
 }

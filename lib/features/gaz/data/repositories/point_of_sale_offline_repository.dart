@@ -258,6 +258,27 @@ class PointOfSaleOfflineRepository extends OfflineRepository<PointOfSale>
   // PointOfSaleRepository implementation
 
   @override
+  Future<List<PointOfSale>> getPointsOfSale({
+    required String enterpriseId,
+    required String moduleId,
+  }) async {
+    try {
+      final all = await getAllForEnterprise(enterpriseId);
+      return all.where((pos) => pos.moduleId == moduleId).toList()
+        ..sort((a, b) => a.name.compareTo(b.name));
+    } catch (error, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
+      AppLogger.error(
+        'Error getting points of sale: ${appException.message}',
+        name: 'PointOfSaleOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return [];
+    }
+  }
+
+  @override
   Stream<List<PointOfSale>> watchPointsOfSale({
     required String enterpriseId,
     required String moduleId,
