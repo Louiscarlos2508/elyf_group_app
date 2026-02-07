@@ -9,7 +9,7 @@ class Contract {
     required this.propertyId,
     required this.tenantId,
     required this.startDate,
-    required this.endDate,
+    this.endDate,
     required this.monthlyRent,
     required this.deposit,
     required this.status,
@@ -21,27 +21,34 @@ class Contract {
     this.createdAt,
     this.updatedAt,
     this.attachedFiles,
+    this.entryInventory,
+    this.exitInventory,
+    this.deletedAt,
+    this.deletedBy,
   });
 
   final String id;
   final String propertyId;
   final String tenantId;
   final DateTime startDate;
-  final DateTime endDate;
+  final DateTime? endDate;
   final int monthlyRent;
-  final int
-  deposit; // Montant de la caution (calculé si depositInMonths est défini)
+  final int deposit; // Montant de la caution (calculé si depositInMonths est défini)
   final ContractStatus status;
   final Property? property;
   final Tenant? tenant;
   final int? paymentDay; // Jour du mois pour le paiement
   final String? notes;
-  final int?
-  depositInMonths; // Nombre de mois pour la caution (si null, deposit est un montant fixe)
+  final int? depositInMonths; // Nombre de mois pour la caution (si null, deposit est un montant fixe)
   final DateTime? createdAt;
   final DateTime? updatedAt;
-  final List<AttachedFile>?
-  attachedFiles; // Fichiers joints (contrat signé, photos, etc.)
+  final List<AttachedFile>? attachedFiles; // Fichiers joints (contrat signé, photos, etc.)
+  final String? entryInventory; // État des lieux d'entrée (texte ou JSON)
+  final String? exitInventory; // État des lieux de sortie (texte ou JSON)
+  final DateTime? deletedAt;
+  final String? deletedBy;
+
+  bool get isDeleted => deletedAt != null;
 
   /// Calcule le montant de la caution en fonction du nombre de mois ou retourne le montant fixe.
   int get calculatedDeposit {
@@ -54,15 +61,27 @@ class Contract {
   /// Vérifie si le contrat est actif.
   bool get isActive {
     final now = DateTime.now();
-    return status == ContractStatus.active &&
-        now.isAfter(startDate) &&
-        now.isBefore(endDate);
+    final isStarted = now.isAfter(startDate) || now.isAtSameMomentAs(startDate);
+    final isNotEnded = endDate == null || now.isBefore(endDate!);
+    return status == ContractStatus.active && isStarted && isNotEnded;
+  }
+
+  /// Identifiant lisible pour l'UI (Locataire ou Propriété).
+  String get displayName {
+    if (tenant != null) {
+      return 'Contrat - ${tenant!.fullName}';
+    } else if (property != null) {
+      return 'Contrat - ${property!.address}';
+    }
+    return 'Contrat ${id.substring(0, 8)}';
   }
 
   /// Vérifie si le contrat est expiré.
   bool get isExpired {
-    return DateTime.now().isAfter(endDate);
+    if (endDate == null) return false;
+    return DateTime.now().isAfter(endDate!);
   }
+
   Contract copyWith({
     String? id,
     String? propertyId,
@@ -80,7 +99,17 @@ class Contract {
     DateTime? createdAt,
     DateTime? updatedAt,
     List<AttachedFile>? attachedFiles,
+    String? entryInventory,
+    String? exitInventory,
+    DateTime? deletedAt,
+    String? deletedBy,
   }) {
+    // Note: Pour endDate, comment distinguer 'null' (pas de changement) de 'null' (suppression) ?
+    // Dans ce cas simple, on suppose que si endDate est passé, on l'utilise tel quel (même si null).
+    // Mais Dart copyWith standard ignore null.
+    // Pour permettre de "mettre à null", on pourrait utiliser un sentinel, mais ici on va simplifier :
+    // Si on veut mettre fin indéterminée, on passera probablement un nouvel objet Contract ou on gère ça au niveau contrôleur.
+    // Pour l'instant, copyWith standard :
     return Contract(
       id: id ?? this.id,
       propertyId: propertyId ?? this.propertyId,
@@ -98,8 +127,20 @@ class Contract {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       attachedFiles: attachedFiles ?? this.attachedFiles,
+      entryInventory: entryInventory ?? this.entryInventory,
+      exitInventory: exitInventory ?? this.exitInventory,
+      deletedAt: deletedAt ?? this.deletedAt,
+      deletedBy: deletedBy ?? this.deletedBy,
     );
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is Contract && runtimeType == other.runtimeType && id == other.id;
+
+  @override
+  int get hashCode => id.hashCode;
 }
 
 enum ContractStatus { active, expired, terminated, pending }

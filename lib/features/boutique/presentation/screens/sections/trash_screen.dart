@@ -7,6 +7,7 @@ import 'package:elyf_groupe_app/features/boutique/application/providers.dart';
 import '../../../domain/entities/expense.dart';
 import '../../../domain/entities/product.dart';
 import '../../widgets/permission_guard.dart';
+import '../../widgets/boutique_header.dart';
 
 /// Écran de la corbeille pour voir et restaurer les éléments supprimés.
 class TrashScreen extends ConsumerStatefulWidget {
@@ -47,35 +48,23 @@ class _TrashScreenState extends ConsumerState<TrashScreen>
         ),
       ),
       child: Scaffold(
-        body: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(24),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.delete_outline,
-                    size: 32,
-                    color: theme.colorScheme.primary,
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Corbeille',
-                    style: theme.textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+        body: CustomScrollView(
+          slivers: [
+            const BoutiqueHeader(
+              title: 'CORBEILLE',
+              subtitle: 'Éléments supprimés',
+              gradientColors: [Color(0xFF607D8B), Color(0xFF455A64)], // Slate/Grey for trash
+            ),
+            SliverToBoxAdapter(
+              child: TabBar(
+                controller: _tabController,
+                tabs: const [
+                  Tab(icon: Icon(Icons.inventory_2), text: 'Produits'),
+                  Tab(icon: Icon(Icons.receipt_long), text: 'Dépenses'),
                 ],
               ),
             ),
-            TabBar(
-              controller: _tabController,
-              tabs: const [
-                Tab(icon: Icon(Icons.inventory_2), text: 'Produits'),
-                Tab(icon: Icon(Icons.receipt_long), text: 'Dépenses'),
-              ],
-            ),
-            Expanded(
+            SliverFillRemaining(
               child: TabBarView(
                 controller: _tabController,
                 children: const [_DeletedProductsTab(), _DeletedExpensesTab()],
@@ -201,7 +190,7 @@ class _DeletedExpensesTab extends ConsumerWidget {
           },
         );
       },
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => AppShimmers.list(context, itemCount: 5),
       error: (error, stack) => Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -238,45 +227,92 @@ class _DeletedProductCard extends ConsumerWidget {
     final deletedDate = product.deletedAt;
     final deletedBy = product.deletedBy ?? 'Inconnu';
 
-    return Card(
+    return ElyfCard(
       margin: const EdgeInsets.only(bottom: 12),
-      child: ListTile(
-        leading: Icon(
-          Icons.inventory_2_outlined,
-          color: theme.colorScheme.error,
-        ),
-        title: Text(
-          product.name,
-          style: theme.textTheme.titleMedium?.copyWith(
-            decoration: TextDecoration.lineThrough,
-          ),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              CurrencyFormatter.formatFCFA(product.price),
-              style: theme.textTheme.bodySmall,
+      padding: const EdgeInsets.all(16),
+      elevation: 1,
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.error.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
             ),
-            if (deletedDate != null) ...[
-              const SizedBox(height: 4),
-              Text(
-                'Supprimé le ${_formatDate(deletedDate)} par $deletedBy',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ],
-        ),
-        trailing: BoutiquePermissionGuard(
-          permission: BoutiquePermissions.restoreProduct,
-          child: IconButton(
-            icon: const Icon(Icons.restore),
-            tooltip: 'Restaurer',
-            onPressed: () => _restoreProduct(context, ref),
+            child: Icon(
+              Icons.inventory_2_rounded,
+              color: theme.colorScheme.error,
+              size: 24,
+            ),
           ),
-        ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  product.name,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    decoration: TextDecoration.lineThrough,
+                    decorationColor: theme.colorScheme.error.withValues(alpha: 0.5),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Text(
+                      CurrencyFormatter.formatFCFA(product.price),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.error.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        'SUPPRIMÉ',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.error,
+                          fontSize: 8,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                if (deletedDate != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    'Par $deletedBy • ${_formatDate(deletedDate)}',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                      fontSize: 10,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          BoutiquePermissionGuard(
+            permission: BoutiquePermissions.restoreProduct,
+            child: Material(
+              color: theme.colorScheme.primaryContainer.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(12),
+              child: IconButton(
+                icon: const Icon(Icons.restore_rounded, size: 22),
+                color: theme.colorScheme.primary,
+                tooltip: 'Restaurer',
+                onPressed: () => _restoreProduct(context, ref),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -339,45 +375,92 @@ class _DeletedExpenseCard extends ConsumerWidget {
     final deletedDate = expense.deletedAt;
     final deletedBy = expense.deletedBy ?? 'Inconnu';
 
-    return Card(
+    return ElyfCard(
       margin: const EdgeInsets.only(bottom: 12),
-      child: ListTile(
-        leading: Icon(
-          Icons.receipt_long_outlined,
-          color: theme.colorScheme.error,
-        ),
-        title: Text(
-          expense.label,
-          style: theme.textTheme.titleMedium?.copyWith(
-            decoration: TextDecoration.lineThrough,
-          ),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              CurrencyFormatter.formatFCFA(expense.amountCfa),
-              style: theme.textTheme.bodySmall,
+      padding: const EdgeInsets.all(16),
+      elevation: 1,
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.error.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
             ),
-            if (deletedDate != null) ...[
-              const SizedBox(height: 4),
-              Text(
-                'Supprimé le ${_formatDate(deletedDate)} par $deletedBy',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ],
-        ),
-        trailing: BoutiquePermissionGuard(
-          permission: BoutiquePermissions.restoreExpense,
-          child: IconButton(
-            icon: const Icon(Icons.restore),
-            tooltip: 'Restaurer',
-            onPressed: () => _restoreExpense(context, ref),
+            child: Icon(
+              Icons.receipt_long_rounded,
+              color: theme.colorScheme.error,
+              size: 24,
+            ),
           ),
-        ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  expense.label,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    decoration: TextDecoration.lineThrough,
+                    decorationColor: theme.colorScheme.error.withValues(alpha: 0.5),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Text(
+                      CurrencyFormatter.formatFCFA(expense.amountCfa),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.error.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        'SUPPRIMÉ',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.error,
+                          fontSize: 8,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                if (deletedDate != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    'Par $deletedBy • ${_formatDate(deletedDate)}',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                      fontSize: 10,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          BoutiquePermissionGuard(
+            permission: BoutiquePermissions.restoreExpense,
+            child: Material(
+              color: theme.colorScheme.primaryContainer.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(12),
+              child: IconButton(
+                icon: const Icon(Icons.restore_rounded, size: 22),
+                color: theme.colorScheme.primary,
+                tooltip: 'Restaurer',
+                onPressed: () => _restoreExpense(context, ref),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -427,13 +510,3 @@ class _DeletedExpenseCard extends ConsumerWidget {
     return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
   }
 }
-
-/// Provider pour les produits supprimés.
-final deletedProductsProvider = FutureProvider.autoDispose<List<Product>>(
-  (ref) => ref.watch(storeControllerProvider).getDeletedProducts(),
-);
-
-/// Provider pour les dépenses supprimées.
-final deletedExpensesProvider = FutureProvider.autoDispose<List<Expense>>(
-  (ref) => ref.watch(storeControllerProvider).getDeletedExpenses(),
-);

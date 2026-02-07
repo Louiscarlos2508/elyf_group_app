@@ -67,11 +67,13 @@ class PackagingStockCard extends StatelessWidget {
                 child: _buildPackagingItem(
                   context,
                   stock.type,
-                  'Géré automatiquement • Déduit lors des productions',
-                  stock.quantity,
-                  stock.unit,
+                  stock.unitsPerLot > 1 
+                      ? 'Format: ${stock.unitsPerLot} unités/lot'
+                      : 'Géré à l\'unité',
+                  stock.quantityLabel,
                   stock.estStockFaible,
                   stock.seuilAlerte,
+                  stock.unit,
                 ),
               );
             }),
@@ -84,10 +86,10 @@ class PackagingStockCard extends StatelessWidget {
     BuildContext context,
     String name,
     String description,
-    int quantity,
-    String unit,
+    String quantityLabel,
     bool isLowStock,
     int? seuilAlerte,
+    String unit,
   ) {
     final theme = Theme.of(context);
     final color = isLowStock ? Colors.red : Colors.purple.shade800;
@@ -152,7 +154,7 @@ class PackagingStockCard extends StatelessWidget {
               ),
             ),
             Text(
-              '$quantity $unit',
+              quantityLabel,
               style: theme.textTheme.titleMedium?.copyWith(
                 color: color,
                 fontWeight: FontWeight.bold,

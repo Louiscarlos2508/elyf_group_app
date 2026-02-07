@@ -122,7 +122,9 @@ class UserAssignmentController {
     await _repository.assignUserToEnterprise(enterpriseModuleUser);
 
     // Sync to Firestore
-    firestoreSync?.syncEnterpriseModuleUserToFirestore(enterpriseModuleUser);
+    if (firestoreSync != null) {
+      await firestoreSync!.syncEnterpriseModuleUserToFirestore(enterpriseModuleUser);
+    }
 
     // Récupérer le nom de l'utilisateur pour l'audit trail
     final userDisplayName = await _getUserDisplayName(currentUserId);
@@ -150,7 +152,7 @@ class UserAssignmentController {
     required String userId,
     required List<String> enterpriseIds,
     required String moduleId,
-    required String roleId,
+    required List<String> roleIds,
     required bool isActive,
     String? currentUserId,
   }) async {
@@ -184,7 +186,7 @@ class UserAssignmentController {
         userId: userId,
         enterpriseId: enterpriseId,
         moduleId: moduleId,
-        roleId: roleId,
+        roleIds: roleIds,
         isActive: isActive,
         createdAt: now,
         updatedAt: now,
@@ -196,7 +198,9 @@ class UserAssignmentController {
       await _repository.assignUserToEnterprise(assignment);
 
       // Sync to Firestore
-      firestoreSync?.syncEnterpriseModuleUserToFirestore(assignment);
+      if (firestoreSync != null) {
+        await firestoreSync!.syncEnterpriseModuleUserToFirestore(assignment);
+      }
 
       // Log audit trail pour chaque assignation
       auditService?.logAction(
@@ -223,7 +227,7 @@ class UserAssignmentController {
     required String userId,
     required List<String> moduleIds,
     required List<String> enterpriseIds,
-    required String roleId,
+    required List<String> roleIds,
     required bool isActive,
     String? currentUserId,
   }) async {
@@ -260,14 +264,40 @@ class UserAssignmentController {
 
     // Mapper module ID vers types d'entreprise compatibles
     List<String> getEnterpriseTypesForModule(String moduleId) {
-      final moduleToTypesMap = {
-        'eau_minerale': ['eau_minerale', 'boutique'],
-        'gaz': ['gaz', 'boutique'],
-        'orange_money': ['orange_money', 'boutique'],
-        'immobilier': ['immobilier'],
-        'boutique': ['boutique', 'gaz', 'eau_minerale', 'orange_money'],
-      };
-      return moduleToTypesMap[moduleId] ?? [];
+      final compatibleTypes = <String>{};
+
+      switch (moduleId) {
+        case 'gaz':
+          compatibleTypes.addAll(EnterpriseType.values
+              .where((t) => t.isGas)
+              .map((t) => t.id));
+          break;
+        case 'eau_minerale':
+          compatibleTypes.addAll(EnterpriseType.values
+              .where((t) => t.isWater)
+              .map((t) => t.id));
+          break;
+        case 'orange_money':
+          compatibleTypes.addAll(EnterpriseType.values
+              .where((t) => t.isMobileMoney)
+              .map((t) => t.id));
+          break;
+        case 'immobilier':
+          compatibleTypes.addAll(EnterpriseType.values
+              .where((t) => t.isRealEstate)
+              .map((t) => t.id));
+          break;
+        case 'boutique':
+          compatibleTypes.addAll(EnterpriseType.values
+              .where((t) => t.isShop)
+              .map((t) => t.id));
+          break;
+        default:
+          compatibleTypes.addAll(EnterpriseType.values
+              .where((t) => t.module.id == moduleId)
+              .map((t) => t.id));
+      }
+      return compatibleTypes.toList();
     }
 
     // Récupérer les entreprises pour valider les types
@@ -294,13 +324,13 @@ class UserAssignmentController {
             .firstOrNull;
 
         if (enterprise != null &&
-            expectedEnterpriseTypes.contains(enterprise.type)) {
+            expectedEnterpriseTypes.contains(enterprise.type.id)) {
           assignments.add(
             EnterpriseModuleUser(
               userId: userId,
               enterpriseId: enterpriseId,
               moduleId: moduleId,
-              roleId: roleId,
+              roleIds: roleIds,
               isActive: isActive,
               createdAt: now,
               updatedAt: now,
@@ -327,7 +357,9 @@ class UserAssignmentController {
       await _repository.assignUserToEnterprise(assignment);
 
       // Sync to Firestore
-      firestoreSync?.syncEnterpriseModuleUserToFirestore(assignment);
+      if (firestoreSync != null) {
+        await firestoreSync!.syncEnterpriseModuleUserToFirestore(assignment);
+      }
 
       // Log audit trail pour chaque assignation
       auditService?.logAction(
@@ -353,9 +385,9 @@ class UserAssignmentController {
     String userId,
     String enterpriseId,
     String moduleId,
-    String roleId, {
+    List<String> roleIds, {
     String? currentUserId,
-    String? oldRoleId,
+    List<String>? oldRoleIds,
   }) async {
     // Validate permissions
     if (currentUserId != null && permissionValidator != null) {
@@ -369,7 +401,7 @@ class UserAssignmentController {
         );
       }
     }
-    await _repository.updateUserRole(userId, enterpriseId, moduleId, roleId);
+    await _repository.updateUserRole(userId, enterpriseId, moduleId, roleIds);
 
     // Get updated assignment for sync
     final assignments = await _repository
@@ -383,10 +415,12 @@ class UserAssignmentController {
     );
 
     // Sync to Firestore
-    firestoreSync?.syncEnterpriseModuleUserToFirestore(
-      assignment,
-      isUpdate: true,
-    );
+    if (firestoreSync != null) {
+      await firestoreSync!.syncEnterpriseModuleUserToFirestore(
+        assignment,
+        isUpdate: true,
+      );
+    }
 
     // Récupérer le nom de l'utilisateur pour l'audit trail
     final userDisplayName = await _getUserDisplayName(currentUserId);
@@ -397,9 +431,9 @@ class UserAssignmentController {
       entityType: 'enterprise_module_user',
       entityId: assignment.documentId,
       userId: currentUserId ?? 'system',
-      description: 'User role updated',
-      oldValue: oldRoleId != null ? {'roleId': oldRoleId} : null,
-      newValue: {'roleId': roleId},
+      description: 'User roles updated',
+      oldValue: oldRoleIds != null ? {'roleIds': oldRoleIds} : null,
+      newValue: {'roleIds': roleIds},
       moduleId: moduleId,
       enterpriseId: enterpriseId,
       userDisplayName: userDisplayName,
@@ -449,10 +483,12 @@ class UserAssignmentController {
     );
 
     // Sync to Firestore
-    firestoreSync?.syncEnterpriseModuleUserToFirestore(
-      assignment,
-      isUpdate: true,
-    );
+    if (firestoreSync != null) {
+      await firestoreSync!.syncEnterpriseModuleUserToFirestore(
+        assignment,
+        isUpdate: true,
+      );
+    }
 
     // Récupérer le nom de l'utilisateur pour l'audit trail
     final userDisplayName = await _getUserDisplayName(currentUserId);

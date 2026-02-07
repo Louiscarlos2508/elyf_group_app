@@ -132,6 +132,7 @@ class RoleController {
           'name': role.name,
           'description': role.description,
           'permissions': role.permissions.toList(),
+          'moduleId': role.moduleId,
           'isSystemRole': role.isSystemRole,
         },
         userDisplayName: userDisplayName,
@@ -218,6 +219,7 @@ class RoleController {
           'name': oldRoleData.name,
           'description': oldRoleData.description,
           'permissions': oldRoleData.permissions.toList(),
+          'moduleId': oldRoleData.moduleId,
           'isSystemRole': oldRoleData.isSystemRole,
         },
         newValue: {

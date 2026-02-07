@@ -271,6 +271,61 @@ class DashboardCalculationService {
           .length,
     );
   }
+  /// Calculates daily dashboard metrics.
+  DailyDashboardMetrics calculateDailyMetrics({
+    required List<Sale> sales,
+    required List<CreditPayment> creditPayments,
+    DateTime? referenceDate,
+  }) {
+    final now = referenceDate ?? DateTime.now();
+    final startOfDay = DateTime(now.year, now.month, now.day);
+    
+    // Filter for today
+    final todaySales = sales.where((s) {
+      final sDate = s.date;
+      return sDate.isAfter(startOfDay.subtract(const Duration(milliseconds: 1))) && 
+             sDate.isBefore(startOfDay.add(const Duration(days: 1)));
+    }).toList();
+
+    final todayPayments = creditPayments.where((p) {
+        final pDate = p.date;
+        return pDate.isAfter(startOfDay.subtract(const Duration(milliseconds: 1))) && 
+               pDate.isBefore(startOfDay.add(const Duration(days: 1)));
+    }).toList();
+
+    // 1. Revenue (Total Price of Today's Sales)
+    final revenue = todaySales.fold<int>(0, (sum, s) => sum + s.totalPrice);
+
+    // 2. Collections from Today's Sales (Initial Payments)
+    final collectionsFromSales = todaySales.fold<int>(0, (sum, s) => sum + s.amountPaid);
+
+    // 3. Collections from Credit Payments (Recoveries made today)
+    final collectionsFromCredit = todayPayments.fold<int>(0, (sum, p) => sum + p.amount);
+
+    final totalCollections = collectionsFromSales + collectionsFromCredit;
+
+    return DailyDashboardMetrics(
+      revenue: revenue,
+      collections: totalCollections,
+      salesCount: todaySales.length,
+      sales: todaySales,
+    );
+  }
+}
+
+/// Daily dashboard metrics.
+class DailyDashboardMetrics {
+  const DailyDashboardMetrics({
+    required this.revenue,
+    required this.collections,
+    required this.salesCount,
+    required this.sales,
+  });
+
+  final int revenue;
+  final int collections;
+  final int salesCount;
+  final List<Sale> sales;
 }
 
 /// Monthly dashboard metrics.

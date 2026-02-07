@@ -11,4 +11,5 @@ abstract class ProductRepository {
   Future<void> restoreProduct(String id);
   Future<List<Product>> getDeletedProducts();
   Stream<List<Product>> watchProducts();
+  Stream<List<Product>> watchDeletedProducts();
 }

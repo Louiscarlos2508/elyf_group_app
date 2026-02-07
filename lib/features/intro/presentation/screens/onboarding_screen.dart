@@ -1,9 +1,11 @@
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../application/onboarding_service.dart';
+import '../../../../shared/presentation/widgets/elyf_ui/atoms/elyf_background.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -49,76 +51,98 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> with Single
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: PageView.builder(
-                controller: _controller,
-                onPageChanged: (index) => setState(() => _page = index),
-                itemCount: _slides.length,
-                itemBuilder: (context, index) {
-                  final slide = _slides[index];
-                  return OnboardingSlide(
-                    slide: slide,
-                    isActive: index == _page,
-                  );
-                },
+      body: ElyfBackground(
+        child: SafeArea(
+          child: Column(
+            children: [
+              Expanded(
+                child: PageView.builder(
+                  controller: _controller,
+                  onPageChanged: (index) => setState(() => _page = index),
+                  itemCount: _slides.length,
+                  itemBuilder: (context, index) {
+                    final slide = _slides[index];
+                    return OnboardingSlide(
+                      slide: slide,
+                      isActive: index == _page,
+                    );
+                  },
+                ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              child: Column(
-                children: [
-                  _DotsIndicator(total: _slides.length, index: _page),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: FilledButton(
-                      onPressed: () {
-                        if (_page < _slides.length - 1) {
-                          _controller.nextPage(
-                            duration: const Duration(milliseconds: 600),
-                            curve: Curves.easeInOutCubic,
-                          );
-                        } else {
-                          ref.read(onboardingServiceProvider).markCompleted();
-                          if (mounted) context.go('/login');
-                        }
-                      },
-                      style: FilledButton.styleFrom(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                // Glassmorphic Control Bar
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: BackdropFilter(
+                    filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                    child: Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.2),
                         ),
-                        elevation: 0,
                       ),
-                      child: Text(
-                        _page < _slides.length - 1 ? 'Continuer' : 'Démarrer l\'Expérience',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
+                      child: Column(
+                        children: [
+                          _DotsIndicator(total: _slides.length, index: _page),
+                          const SizedBox(height: 24),
+                          SizedBox(
+                            width: double.infinity,
+                            height: 56,
+                            child: FilledButton(
+                              onPressed: () {
+                                if (_page < _slides.length - 1) {
+                                  _controller.nextPage(
+                                    duration: const Duration(milliseconds: 600),
+                                    curve: Curves.easeInOutCubic,
+                                  );
+                                } else {
+                                  ref.read(onboardingServiceProvider).markCompleted();
+                                  if (mounted) context.go('/login');
+                                }
+                              },
+                              style: FilledButton.styleFrom(
+                                backgroundColor: Colors.white,
+                                foregroundColor: Theme.of(context).colorScheme.primary,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                elevation: 0,
+                              ),
+                              child: Text(
+                                _page < _slides.length - 1 ? 'Continuer' : 'Démarrer l\'Expérience',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          TextButton(
+                            onPressed: () {
+                              ref.read(onboardingServiceProvider).markCompleted();
+                              if (mounted) context.go('/login');
+                            },
+                            child: Text(
+                              'Passer l\'introduction',
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.7),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  TextButton(
-                    onPressed: () {
-                      ref.read(onboardingServiceProvider).markCompleted();
-                      if (mounted) context.go('/login');
-                    },
-                    child: Text(
-                      'Passer l\'introduction',
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -182,21 +206,30 @@ class _OnboardingSlideState extends State<OnboardingSlide>
         children: [
           Expanded(child: Center(child: _buildAnimation(colors))),
           const SizedBox(height: 32),
+          // Title
           Text(
             widget.slide.title,
             textAlign: TextAlign.center,
-            style: textTheme.headlineSmall?.copyWith(
+            style: textTheme.headlineMedium?.copyWith(
               fontWeight: FontWeight.w800,
-              color: colors.primary,
+              color: Colors.white, // White text on colored BG
               letterSpacing: -0.5,
+              shadows: [
+                 Shadow(
+                  color: Colors.black.withValues(alpha: 0.2),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 16),
+          // Description
           Text(
             widget.slide.description,
             textAlign: TextAlign.center,
             style: textTheme.bodyLarge?.copyWith(
-              color: colors.onSurfaceVariant,
+              color: Colors.white.withValues(alpha: 0.9), // White text on colored BG
               height: 1.6,
               letterSpacing: 0.2,
             ),
@@ -505,7 +538,6 @@ class _DotsIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(total, (dotIndex) {
@@ -517,8 +549,8 @@ class _DotsIndicator extends StatelessWidget {
           width: selected ? 32 : 8,
           decoration: BoxDecoration(
             color: selected
-                ? colors.primary
-                : colors.primary.withValues(alpha: 0.3),
+                ? Colors.white
+                : Colors.white.withValues(alpha: 0.3),
             borderRadius: BorderRadius.circular(12),
           ),
         );

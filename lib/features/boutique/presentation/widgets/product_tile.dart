@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 
 import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
+import 'package:elyf_groupe_app/shared/presentation/widgets/elyf_ui/organisms/elyf_card.dart';
+import '../../../../app/theme/app_colors.dart';
 
 import '../../domain/entities/product.dart';
 
@@ -23,94 +25,122 @@ class ProductTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isLowStock = product.stock <= 10;
+    final isLowStock = product.stock <= 10 && product.stock > 0;
+    final isOutOfStock = product.stock == 0;
 
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: theme.colorScheme.outline.withValues(alpha: 0.1),
-        ),
-      ),
-      child: InkWell(
-        onTap: product.stock > 0 ? onTap : null,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              child: Stack(
-                children: [
+    return ElyfCard(
+      padding: EdgeInsets.zero,
+      onTap: !isOutOfStock ? onTap : null,
+      elevation: 2,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Image Section
+          Expanded(
+            flex: 5,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Container(
+                  color: theme.colorScheme.surfaceContainerHighest,
+                  child: product.imageUrl != null
+                      ? _buildProductImage(product.imageUrl!, theme)
+                      : _buildPlaceholder(theme),
+                ),
+                // Out of stock overlay
+                if (isOutOfStock)
                   Container(
-                    width: double.infinity,
-                    color: theme.colorScheme.surfaceContainerHighest,
-                    child: product.imageUrl != null
-                        ? _buildProductImage(product.imageUrl!, theme)
-                        : _buildPlaceholder(theme),
-                  ),
-                  if (product.stock == 0)
-                    Container(
-                      color: Colors.black.withValues(alpha: 0.5),
-                      child: Center(
+                    color: Colors.black.withValues(alpha: 0.6),
+                    child: Center(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.white, width: 2),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
                         child: Text(
                           'RUPTURE',
-                          style: theme.textTheme.labelMedium?.copyWith(
+                          style: theme.textTheme.labelLarge?.copyWith(
                             color: Colors.white,
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 2,
                           ),
                         ),
                       ),
                     ),
-                ],
-              ),
+                  ),
+                // Category badge if any
+                if (product.category != null && !isOutOfStock)
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        product.category!.toUpperCase(),
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             ),
-            Padding(
-              padding: const EdgeInsets.all(12),
+          ),
+          // Info Section
+          Expanded(
+            flex: 4,
+            child: Padding(
+              padding: const EdgeInsets.all(8),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
-                    product.name,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    CurrencyFormatter.formatFCFA(product.price),
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      color: theme.colorScheme.primary,
-                      fontSize: 16,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(
-                        Icons.inventory_2_outlined,
-                        size: 14,
-                        color: isLowStock
-                            ? const Color(0xFFF59E0B)
-                            : theme.colorScheme.onSurfaceVariant,
+                      Text(
+                        product.name,
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          height: 1.0,
+                          fontSize: 11,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(width: 4),
-                      Expanded(
+                      const SizedBox(height: 1),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
                         child: Text(
-                          'Stock: ${product.stock}',
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: isLowStock
-                                ? const Color(0xFFF59E0B)
-                                : theme.colorScheme.onSurfaceVariant,
-                            fontWeight: isLowStock
-                                ? FontWeight.w700
-                                : FontWeight.normal,
+                          CurrencyFormatter.formatFCFA(product.price),
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w900,
+                            color: theme.colorScheme.primary,
+                            fontSize: 12,
                           ),
                         ),
                       ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Stock Chip
+                      _buildStockChip(theme, isOutOfStock, isLowStock),
                       if (showRestockButton && onRestock != null)
                         Material(
                           color: theme.colorScheme.primaryContainer,
@@ -119,9 +149,9 @@ class ProductTile extends StatelessWidget {
                             onTap: onRestock,
                             borderRadius: BorderRadius.circular(8),
                             child: Padding(
-                              padding: const EdgeInsets.all(6),
+                              padding: const EdgeInsets.all(4),
                               child: Icon(
-                                Icons.add_shopping_cart_rounded,
+                                Icons.add_rounded,
                                 size: 16,
                                 color: theme.colorScheme.onPrimaryContainer,
                               ),
@@ -133,8 +163,50 @@ class ProductTile extends StatelessWidget {
                 ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStockChip(ThemeData theme, bool isOutOfStock, bool isLowStock) {
+    Color color;
+    String label;
+    IconData icon;
+
+    if (isOutOfStock) {
+      color = theme.colorScheme.error;
+      label = '0';
+      icon = Icons.do_not_disturb_on_rounded;
+    } else if (isLowStock) {
+      color = const Color(0xFFF59E0B); // Amber 500
+      label = '${product.stock}';
+      icon = Icons.warning_amber_rounded;
+    } else {
+      color = AppColors.success;
+      label = '${product.stock}';
+      icon = Icons.inventory_2_rounded;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: color),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: color,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
       ),
     );
   }

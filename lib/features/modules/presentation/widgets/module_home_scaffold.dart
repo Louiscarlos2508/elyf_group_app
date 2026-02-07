@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
 
+
 class ModuleHomeScaffold extends StatefulWidget {
   const ModuleHomeScaffold({
     super.key,
@@ -60,7 +61,9 @@ class _ModuleHomeScaffoldState extends State<ModuleHomeScaffold> {
     final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
-      appBar: AppBar(title: Text(widget.title), centerTitle: true),
+      appBar: _selectedIndex == 1
+          ? null
+          : AppBar(title: Text(widget.title), centerTitle: true),
       body: IndexedStack(
         index: _selectedIndex,
         children: [
@@ -91,18 +94,18 @@ class _ModuleHomeScaffoldState extends State<ModuleHomeScaffold> {
           const ProfileScreen(),
         ],
       ),
-      bottomNavigationBar: NavigationBar(
+      bottomNavigationBar: ElyfBottomNavigationBar(
         selectedIndex: _selectedIndex,
         onDestinationSelected: (index) {
           setState(() => _selectedIndex = index);
         },
         destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.dashboard_outlined),
+          ElyfNavigationDestination(
+            icon: Icons.dashboard_outlined,
             label: 'Accueil',
           ),
-          NavigationDestination(
-            icon: Icon(Icons.person_outline),
+          ElyfNavigationDestination(
+            icon: Icons.person_outline,
             label: 'Profil',
           ),
         ],

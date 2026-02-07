@@ -14,6 +14,10 @@ class PropertyExpenseController {
     return _expenseRepository.watchExpenses();
   }
 
+  Stream<List<PropertyExpense>> watchDeletedExpenses() {
+    return _expenseRepository.watchDeletedExpenses();
+  }
+
   Future<PropertyExpense?> getExpense(String id) async {
     return await _expenseRepository.getExpenseById(id);
   }
@@ -45,5 +49,9 @@ class PropertyExpenseController {
 
   Future<void> deleteExpense(String id) async {
     await _expenseRepository.deleteExpense(id);
+  }
+
+  Future<void> restoreExpense(String id) async {
+    await _expenseRepository.restoreExpense(id);
   }
 }

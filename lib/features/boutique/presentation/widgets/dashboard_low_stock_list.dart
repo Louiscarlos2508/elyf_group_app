@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:elyf_groupe_app/app/theme/app_colors.dart';
+import 'package:elyf_groupe_app/shared/presentation/widgets/elyf_ui/organisms/elyf_card.dart';
 import '../../domain/entities/product.dart';
 
 /// Section displaying low stock products.
@@ -18,13 +19,10 @@ class DashboardLowStockList extends StatelessWidget {
     final theme = Theme.of(context);
 
     if (products.isEmpty) {
-      return Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: AppColors.success.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.success.withValues(alpha: 0.1)),
-        ),
+      return ElyfCard(
+        isGlass: true,
+        backgroundColor: AppColors.success.withValues(alpha: 0.08),
+        borderColor: AppColors.success.withValues(alpha: 0.1),
         child: Row(
           children: [
             Icon(Icons.check_circle_rounded, color: AppColors.success),
@@ -43,19 +41,9 @@ class DashboardLowStockList extends StatelessWidget {
       );
     }
 
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.1)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+    return ElyfCard(
+      isGlass: true,
+      padding: EdgeInsets.zero,
       child: Column(
         children: [
           Container(

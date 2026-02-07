@@ -69,6 +69,7 @@ class ProductionSessionOfflineRepository
       quantiteProduiteUnite: map['quantiteProduiteUnite'] as String,
       emballagesUtilises: map['emballagesUtilises'] as int?,
       coutBobines: map['coutBobines'] as int?,
+      coutEmballages: map['coutEmballages'] as int?,
       coutElectricite: map['coutElectricite'] as int?,
       notes: map['notes'] as String?,
       createdAt: map['createdAt'] != null
@@ -103,6 +104,7 @@ class ProductionSessionOfflineRepository
       'quantiteProduiteUnite': entity.quantiteProduiteUnite,
       'emballagesUtilises': entity.emballagesUtilises,
       'coutBobines': entity.coutBobines,
+      'coutEmballages': entity.coutEmballages,
       'coutElectricite': entity.coutElectricite,
       'notes': entity.notes,
       'status': entity.status.name,
@@ -139,13 +141,37 @@ class ProductionSessionOfflineRepository
 
   @override
   Future<void> saveToLocal(ProductionSession entity) async {
+    String localId;
+    final remoteId = getRemoteId(entity);
+
+    if (remoteId != null) {
+      // Si c'est une session synchronisée (ID distant), on cherche son ID local existant
+      // pour éviter de créer un doublon avec un nouveau ID local aléatoire.
+      final existingRecord = await driftService.records.findByRemoteId(
+        collectionName: collectionName,
+        remoteId: remoteId,
+        enterpriseId: enterpriseId,
+        moduleType: 'eau_minerale',
+      );
+      
+      if (existingRecord != null) {
+        localId = existingRecord.localId;
+      } else {
+        // Pas encore de record local pour ce remoteId, on génère un nouvel ID
+        localId = LocalIdGenerator.generate();
+      }
+    } else {
+      // Si l'ID est déjà local (commence par local_), ou si pas de remoteId
+      localId = getLocalId(entity);
+    }
+
     final map = toMap(entity);
-    final localId = getLocalId(entity);
-    map['localId'] = localId;
+    map['localId'] = localId; // Assurer la cohérence dans le JSON stocké
+    
     await driftService.records.upsert(
       collectionName: collectionName,
       localId: localId,
-      remoteId: getRemoteId(entity),
+      remoteId: remoteId,
       enterpriseId: enterpriseId,
       moduleType: 'eau_minerale',
       dataJson: jsonEncode(map),

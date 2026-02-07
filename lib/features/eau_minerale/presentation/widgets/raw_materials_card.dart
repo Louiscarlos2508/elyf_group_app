@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:elyf_groupe_app/shared/presentation/widgets/elyf_ui/organisms/elyf_card.dart';
 
 import '../../domain/entities/bobine_stock.dart';
 import '../../domain/entities/packaging_stock.dart';
@@ -46,16 +47,10 @@ class RawMaterialsCard extends StatelessWidget {
         )
         .toList();
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.orange.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Colors.orange.withValues(alpha: 0.3),
-          width: 1,
-        ),
-      ),
-      padding: const EdgeInsets.all(20),
+    return ElyfCard(
+      isGlass: true,
+      borderColor: Colors.orange.withValues(alpha: 0.2),
+      padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -64,11 +59,11 @@ class RawMaterialsCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Colors.orange.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(10),
+                  color: Colors.orange.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(
-                  Icons.inventory_2,
+                  Icons.inventory_2_outlined,
                   color: Colors.orange,
                   size: 24,
                 ),
@@ -82,11 +77,10 @@ class RawMaterialsCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 20),
-          // Afficher les bobines par type (regrouper les stocks de même type)
+          const SizedBox(height: 24),
+          // Afficher les bobines par type
           if (bobineStocks.isNotEmpty) ...[
             ...() {
-              // Regrouper les stocks par type et additionner les quantités
               final Map<String, _GroupedStock> groupedStocks = {};
               for (final stock in bobineStocks) {
                 final existing = groupedStocks[stock.type];
@@ -107,11 +101,11 @@ class RawMaterialsCard extends StatelessWidget {
               
               return groupedStocks.entries.map((entry) {
                 return Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.only(bottom: 20),
                   child: _buildPackagingItem(
                     context,
                     entry.key,
-                    'Géré automatiquement • Déduit lors des installations en production',
+                    'Bobines pour production • Déduction automatique',
                     entry.value.quantity.toDouble(),
                     'unité',
                     entry.value.isLowStock,
@@ -120,45 +114,38 @@ class RawMaterialsCard extends StatelessWidget {
                 );
               });
             }(),
-          ] else if (availableBobines > 0) ...[
-            // Fallback si bobineStocks est vide mais availableBobines > 0
-            _buildMaterialItem(
-              context,
-              'Bobines',
-              'Gérées depuis le stock • Sorties lors des installations en production',
-              availableBobines.toDouble(),
-              'unité',
-            ),
           ],
-          // Afficher les emballages (un seul type: "Emballage")
+          
+          // Afficher les emballages individuellement
           if (packagingStocks.isNotEmpty) ...[
-            const SizedBox(height: 16),
-            // Calculer la quantité totale de tous les emballages
-            _buildPackagingItem(
-              context,
-              'Emballage',
-              'Géré automatiquement • Déduit lors des productions',
-              packagingStocks.fold<double>(
-                0.0,
-                (sum, stock) => sum + stock.quantity.toDouble(),
-              ),
-              'unité',
-              packagingStocks.any((stock) => stock.estStockFaible),
-              packagingStocks.isNotEmpty
-                  ? packagingStocks.first.seuilAlerte
-                  : null,
-            ),
+            ...packagingStocks.map((stock) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 20),
+                child: _buildPackagingItem(
+                  context,
+                  stock.type, // Nom de l'emballage (ex: Préforme, Bouchon)
+                  stock.unitsPerLot > 1
+                      ? 'Format: ${stock.unitsPerLot} unités/lot'
+                      : 'Géré à l\'unité',
+                  stock.quantity.toDouble(),
+                  stock.unit,
+                  stock.estStockFaible,
+                  stock.seuilAlerte,
+                  customQuantityLabel: stock.quantityLabel,
+                ),
+              );
+            }),
           ],
+
           // Afficher les autres matières premières
           if (rawMaterials.isNotEmpty) ...[
-            const SizedBox(height: 16),
             ...rawMaterials.map((item) {
               return Padding(
-                padding: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.only(bottom: 20),
                 child: _buildMaterialItem(
                   context,
                   item.name,
-                  'Géré manuellement • Utilisé en production',
+                  'Matière gérée manuellement',
                   item.quantity,
                   item.unit,
                 ),
@@ -218,8 +205,9 @@ class RawMaterialsCard extends StatelessWidget {
     double quantity,
     String unit,
     bool isLowStock,
-    int? seuilAlerte,
-  ) {
+    int? seuilAlerte, {
+    String? customQuantityLabel,
+  }) {
     final theme = Theme.of(context);
     final color = isLowStock ? Colors.red : Colors.orange.shade800;
 
@@ -283,7 +271,7 @@ class RawMaterialsCard extends StatelessWidget {
               ),
             ),
             Text(
-              '${quantity.toStringAsFixed(0)} $unit',
+              customQuantityLabel ?? '${quantity.toStringAsFixed(0)} $unit',
               style: theme.textTheme.titleMedium?.copyWith(
                 color: color,
                 fontWeight: FontWeight.bold,

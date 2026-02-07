@@ -11,6 +11,7 @@ class SalaryPayment {
     required this.period,
     this.notes,
     this.signature, // Signature numérique du bénéficiaire
+    this.signerName, // Nom du signataire
   });
 
   final String id;
@@ -21,6 +22,7 @@ class SalaryPayment {
   final String period;
   final String? notes;
   final Uint8List? signature; // Signature numérique en format PNG
+  final String? signerName; // Nom de la personne qui a signé
 
   /// Vérifie si le paiement a une signature
   bool get aSignature => signature != null && signature!.isNotEmpty;

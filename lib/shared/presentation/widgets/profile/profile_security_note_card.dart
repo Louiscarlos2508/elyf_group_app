@@ -10,19 +10,36 @@ class ProfileSecurityNoteCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.blue.shade50,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.blue.shade200),
+        gradient: LinearGradient(
+          colors: [
+            Colors.blue.shade50.withValues(alpha: 0.5),
+            Colors.blue.shade100.withValues(alpha: 0.2),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.blue.withValues(alpha: 0.2),
+        ),
       ),
       child: Row(
         children: [
-          Icon(Icons.info_outline, color: Colors.blue.shade700, size: 20),
-          const SizedBox(width: 12),
+          Container(
+            padding: const EdgeInsets.all(8),
+             decoration: BoxDecoration(
+              color: Colors.blue.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.info_rounded, color: Colors.blue.shade700, size: 20),
+          ),
+          const SizedBox(width: 16),
           Expanded(
             child: Text(
               'Pour votre sécurité, changez régulièrement votre mot de passe et ne le partagez jamais.',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: Colors.blue.shade900,
+                height: 1.4,
               ),
             ),
           ),

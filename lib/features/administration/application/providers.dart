@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rxdart/rxdart.dart';
 
@@ -11,9 +12,8 @@ import '../../../core/permissions/services/permission_service.dart'
 import '../../../core/permissions/services/permission_registry.dart';
 import '../../../core/tenant/tenant_provider.dart'
     show activeEnterpriseIdProvider;
-import '../data/repositories/admin_offline_repository.dart';
 import '../data/repositories/enterprise_offline_repository.dart';
-import '../data/repositories/user_offline_repository.dart';
+import '../data/repositories/enterprise_firestore_repository.dart';
 import '../domain/repositories/admin_repository.dart';
 import '../domain/repositories/enterprise_repository.dart';
 import '../domain/repositories/user_repository.dart';
@@ -37,22 +37,22 @@ import 'controllers/enterprise_controller.dart';
 import 'controllers/audit_controller.dart';
 import '../../../core/auth/services/auth_service.dart';
 import '../../../core/auth/providers.dart' show authServiceProvider;
+import '../../../core/firebase/providers.dart' show firestoreProvider;
+import '../data/repositories/admin_firestore_repository.dart';
+import '../data/repositories/user_firestore_repository.dart';
 
-/// Provider for admin repository (offline-first)
+/// Provider for admin repository (Firestore online-only)
 final adminRepositoryProvider = Provider<AdminRepository>(
-  (ref) => AdminOfflineRepository(
-    driftService: ref.watch(driftServiceProvider),
-    syncManager: ref.watch(syncManagerProvider),
-    connectivityService: ref.watch(connectivityServiceProvider),
+  (ref) => AdminFirestoreRepository(
+    firestore: ref.watch(firestoreProvider),
+    ref: ref,
   ),
 );
 
-/// Provider for user repository (offline-first)
+/// Provider for user repository (Firestore online-only)
 final userRepositoryProvider = Provider<UserRepository>(
-  (ref) => UserOfflineRepository(
-    driftService: ref.watch(driftServiceProvider),
-    syncManager: ref.watch(syncManagerProvider),
-    connectivityService: ref.watch(connectivityServiceProvider),
+  (ref) => UserFirestoreRepository(
+    firestore: ref.watch(firestoreProvider),
   ),
 );
 
@@ -102,13 +102,25 @@ final permissionRegistryProvider = Provider<PermissionRegistry>(
   (ref) => PermissionRegistry.instance,
 );
 
-/// Provider for enterprise repository (offline-first)
+/// Provider for enterprise repository (platform-aware)
+/// - Web: Utilise Firestore directement (online-only)
+/// - Mobile/Desktop: Utilise Drift (offline-first)
 final enterpriseRepositoryProvider = Provider<EnterpriseRepository>(
-  (ref) => EnterpriseOfflineRepository(
-    driftService: ref.watch(driftServiceProvider),
-    syncManager: ref.watch(syncManagerProvider),
-    connectivityService: ref.watch(connectivityServiceProvider),
-  ),
+  (ref) {
+    if (kIsWeb) {
+      // Sur web: utiliser Firestore directement
+      return EnterpriseFirestoreRepository(
+        firestore: FirebaseFirestore.instance,
+      );
+    } else {
+      // Sur mobile/desktop: utiliser Drift offline-first
+      return EnterpriseOfflineRepository(
+        driftService: ref.watch(driftServiceProvider),
+        syncManager: ref.watch(syncManagerProvider),
+        connectivityService: ref.watch(connectivityServiceProvider),
+      );
+    }
+  },
 );
 
 /// Provider for enterprise type service
@@ -600,7 +612,7 @@ final adminStatsProvider = StreamProvider.autoDispose<AdminStats>((ref) {
         'boutique',
       ]) {
         enterprisesByType[type] =
-            enterprises.where((e) => e.type == type).length;
+            enterprises.where((e) => e.type.id == type).length;
       }
 
       return AdminStats(

@@ -4,13 +4,27 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:elyf_groupe_app/features/administration/application/providers.dart';
+import '../../../application/providers.dart';
 import '../../../../../shared/utils/responsive_helper.dart';
+import '../../../../../shared/widgets/actionable_empty_state.dart';
 import '../../../domain/entities/enterprise.dart';
 import '../../widgets/enterprises/enterprise_actions.dart';
 import '../../widgets/enterprises/enterprise_list_item.dart';
-import '../../widgets/enterprises/enterprise_empty_state.dart';
+import '../../widgets/enterprises/enterprise_tree_view.dart';
 import '../../widgets/admin_shimmers.dart';
+
+enum _ViewMode { list, tree }
+
+/// Notifier for view mode
+class _ViewModeNotifier extends Notifier<_ViewMode> {
+  @override
+  _ViewMode build() => _ViewMode.list;
+
+  void setMode(_ViewMode mode) => state = mode;
+}
+
+/// View mode provider for enterprises section
+final _enterprisesViewModeProvider = NotifierProvider<_ViewModeNotifier, _ViewMode>(_ViewModeNotifier.new);
 
 /// Section pour gérer les entreprises
 class AdminEnterprisesSection extends ConsumerWidget {
@@ -33,6 +47,7 @@ class AdminEnterprisesSection extends ConsumerWidget {
     return CustomScrollView(
       slivers: [
         _buildHeader(context, theme),
+        _buildViewToggle(context, ref),
         _buildCreateButton(context, ref),
         SliverToBoxAdapter(
           child: SizedBox(height: ResponsiveHelper.isMobile(context) ? 16 : 24),
@@ -44,11 +59,19 @@ class AdminEnterprisesSection extends ConsumerWidget {
               '🔵 AdminEnterprisesSection: Affichage de ${combined.length} éléments ($posCount points de vente)',
               name: 'AdminEnterprisesSection',
             );
-            return _buildEnterprisesList(context, ref, combined);
+            final viewMode = ref.watch(_enterprisesViewModeProvider);
+            return viewMode == _ViewMode.tree
+                ? _buildEnterprisesTree(context, ref, combined)
+                : _buildEnterprisesList(context, ref, combined);
           },
-          loading: () => SliverToBoxAdapter(
-            child: AdminShimmers.enterpriseListShimmer(context),
-          ),
+          loading: () {
+            final viewMode = ref.watch(_enterprisesViewModeProvider);
+            return SliverToBoxAdapter(
+              child: viewMode == _ViewMode.tree
+                  ? AdminShimmers.enterpriseTreeShimmer(context, itemCount: 8)
+                  : AdminShimmers.enterpriseListShimmer(context, itemCount: 5),
+            );
+          },
           error: (error, stack) {
             developer.log(
               '❌ AdminEnterprisesSection: Erreur: $error',
@@ -127,7 +150,15 @@ class AdminEnterprisesSection extends ConsumerWidget {
     List<({Enterprise enterprise, bool isPointOfSale})> combined,
   ) {
     if (combined.isEmpty) {
-      return const SliverToBoxAdapter(child: EnterpriseEmptyState());
+      return SliverToBoxAdapter(
+        child: ActionableEmptyState(
+          icon: Icons.business,
+          title: 'Aucune entreprise',
+          subtitle: 'Commencez par créer votre première entreprise',
+          actionLabel: 'Créer une entreprise',
+          onAction: () => EnterpriseActions.create(context, ref),
+        ),
+      );
     }
 
     return SliverList(
@@ -140,26 +171,13 @@ class AdminEnterprisesSection extends ConsumerWidget {
           onToggleStatus: () =>
               EnterpriseActions.toggleStatus(context, ref, item.enterprise),
           onDelete: () => EnterpriseActions.delete(context, ref, item.enterprise),
-          onNavigate: () {
-            if (item.isPointOfSale) {
-              // Pour les points de vente, naviguer vers l'entreprise mère
-              // On doit extraire le parentEnterpriseId depuis l'ID du point de vente
-              // Format: pos_{parentEnterpriseId}_{timestamp}
-              final posId = item.enterprise.id;
-              if (posId.startsWith('pos_')) {
-                final parts = posId.split('_');
-                if (parts.length >= 2) {
-                  final parentEnterpriseId = parts[1];
-                  context.go('/modules/${item.enterprise.type}/$parentEnterpriseId');
-                } else {
-                  context.go('/modules/${item.enterprise.type}');
-                }
-              } else {
-                context.go('/modules/${item.enterprise.type}');
-              }
-            } else {
-              context.go('/modules/${item.enterprise.type}/${item.enterprise.id}');
-            }
+          onViewDetails: () {
+            // Afficher les détails de l'entreprise dans un dialog
+            EnterpriseActions.viewDetails(context, ref, item.enterprise);
+          },
+          onManageAccess: () {
+            // Naviguer vers la gestion des accès utilisateurs pour cette entreprise
+            context.go('/admin/enterprises/${item.enterprise.id}/access');
           },
         );
       }, childCount: combined.length),
@@ -195,4 +213,75 @@ class AdminEnterprisesSection extends ConsumerWidget {
       ),
     );
   }
+
+  Widget _buildViewToggle(BuildContext context, WidgetRef ref) {
+    final viewMode = ref.watch(_enterprisesViewModeProvider);
+
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: ResponsiveHelper.adaptiveHorizontalPadding(context),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            SegmentedButton<_ViewMode>(
+              segments: const [
+                ButtonSegment(
+                  value: _ViewMode.list,
+                  icon: Icon(Icons.list, size: 18),
+                  label: Text('Liste'),
+                ),
+                ButtonSegment(
+                  value: _ViewMode.tree,
+                  icon: Icon(Icons.account_tree, size: 18),
+                  label: Text('Arbre'),
+                ),
+              ],
+              selected: {viewMode},
+              onSelectionChanged: (Set<_ViewMode> newSelection) {
+                ref.read(_enterprisesViewModeProvider.notifier).setMode(newSelection.first);
+              },
+              style: ButtonStyle(
+                visualDensity: VisualDensity.compact,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEnterprisesTree(
+    BuildContext context,
+    WidgetRef ref,
+    List<({Enterprise enterprise, bool isPointOfSale})> combined,
+  ) {
+    if (combined.isEmpty) {
+      return SliverToBoxAdapter(
+        child: ActionableEmptyState(
+          icon: Icons.business,
+          title: 'Aucune entreprise',
+          subtitle: 'Commencez par créer votre première entreprise',
+          actionLabel: 'Créer une entreprise',
+          onAction: () => EnterpriseActions.create(context, ref),
+        ),
+      );
+    }
+
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: ResponsiveHelper.adaptiveHorizontalPadding(context),
+        child: Card(
+          child: SizedBox(
+            height: 600,
+            child: EnterpriseTreeView(
+              onEnterpriseSelected: (enterprise) {
+                context.go('/modules/${enterprise.type.id}/${enterprise.id}');
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
 }

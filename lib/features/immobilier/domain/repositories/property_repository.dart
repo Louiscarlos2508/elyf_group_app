@@ -23,6 +23,12 @@ abstract class PropertyRepository {
   /// Observe les propriétés.
   Stream<List<Property>> watchProperties();
 
+  /// Observe les propriétés supprimées.
+  Stream<List<Property>> watchDeletedProperties();
+
   /// Supprime une propriété.
   Future<void> deleteProperty(String id);
+
+  /// Restaure une propriété supprimée.
+  Future<void> restoreProperty(String id);
 }

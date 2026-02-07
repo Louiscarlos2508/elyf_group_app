@@ -2,6 +2,16 @@
 // This file exports commonly used shared widgets to reduce import depth
 
 // Core widgets
+export 'elyf_ui/atoms/elyf_background.dart';
+export 'elyf_ui/atoms/elyf_shimmer.dart';
+export 'elyf_ui/atoms/elyf_badge.dart';
+export 'elyf_ui/atoms/elyf_button.dart';
+export 'elyf_ui/organisms/elyf_card.dart';
+export 'elyf_ui/organisms/elyf_app_bar.dart';
+export 'elyf_ui/organisms/elyf_drawer.dart';
+export 'elyf_ui/organisms/elyf_navigation.dart';
+
+// Core layout widgets
 export 'adaptive_navigation_scaffold.dart'
     show NavigationSection, AdaptiveNavigationScaffold;
 export 'auth_guard.dart';
@@ -26,6 +36,7 @@ export 'payment_splitter.dart';
 
 // Expense widgets
 export 'expense_form_dialog.dart';
+export 'form_image_picker.dart';
 export 'expense_balance_chart.dart';
 export 'expense_balance_filters.dart';
 export 'expense_balance_summary.dart';

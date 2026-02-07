@@ -20,14 +20,50 @@ class SettingsScreen extends ConsumerWidget {
       physics: const BouncingScrollPhysics(),
       slivers: [
         // Titre de la page
+        // Premium Header
         SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
-            child: Text(
-              'Paramètres',
-              style: theme.textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
+          child: Container(
+            margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  theme.colorScheme.primary,
+                  const Color(0xFF00C2FF), // Cyan for Water Module
+                  const Color(0xFF0369A1), // Deep Blue
+                ],
               ),
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                  blurRadius: 12,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "PARAMÈTRES",
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: Colors.white.withValues(alpha: 0.9),
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  "Configuration Générale",
+                  style: theme.textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -47,7 +83,7 @@ class SettingsScreen extends ConsumerWidget {
                   crossAxisCount: 2,
                   mainAxisSpacing: 16,
                   crossAxisSpacing: 16,
-                  childAspectRatio: 1.5,
+                  childAspectRatio: 1.1, // Increased height to prevent overflow
                   children: const [
                     EauMineralePermissionGuard(
                       permission: EauMineralePermissions.manageProducts,

@@ -17,6 +17,10 @@ class PropertyController {
     return _propertyRepository.watchProperties();
   }
 
+  Stream<List<Property>> watchDeletedProperties() {
+    return _propertyRepository.watchDeletedProperties();
+  }
+
   Future<Property?> getProperty(String id) async {
     return await _propertyRepository.getPropertyById(id);
   }
@@ -73,5 +77,9 @@ class PropertyController {
     }
 
     await _propertyRepository.deleteProperty(id);
+  }
+
+  Future<void> restoreProperty(String id) async {
+    await _propertyRepository.restoreProperty(id);
   }
 }

@@ -11,11 +11,11 @@ class ProfitReportContent extends ConsumerWidget {
   const ProfitReportContent({
     super.key,
     required this.startDate,
-    required this.endDate,
+    this.endDate,
   });
 
   final DateTime startDate;
-  final DateTime endDate;
+  final DateTime? endDate;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -29,7 +29,9 @@ class ProfitReportContent extends ConsumerWidget {
           return p.paymentDate.isAfter(
                 startDate.subtract(const Duration(days: 1)),
               ) &&
-              p.paymentDate.isBefore(endDate.add(const Duration(days: 1))) &&
+              (endDate == null ||
+                  p.paymentDate
+                      .isBefore(endDate!.add(const Duration(days: 1)))) &&
               p.status == PaymentStatus.paid;
         }).toList();
 
@@ -41,7 +43,9 @@ class ProfitReportContent extends ConsumerWidget {
               return e.expenseDate.isAfter(
                     startDate.subtract(const Duration(days: 1)),
                   ) &&
-                  e.expenseDate.isBefore(endDate.add(const Duration(days: 1)));
+                  (endDate == null ||
+                      e.expenseDate
+                          .isBefore(endDate!.add(const Duration(days: 1))));
             }).toList();
 
             final totalExpenses = periodExpenses.fold(

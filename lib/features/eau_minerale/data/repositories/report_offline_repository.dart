@@ -112,7 +112,7 @@ class ReportOfflineRepository implements ReportRepository {
           .where((s) => _isInPeriod(s.date, start, end) && s.status != ProductionSessionStatus.cancelled)
           .toList();
       final totalSessionCosts = periodSessions.fold<int>(0, (sum, s) {
-        return sum + (s.coutBobines ?? 0) + (s.coutElectricite ?? 0);
+        return sum + (s.coutBobines ?? 0) + (s.coutEmballages ?? 0) + (s.coutElectricite ?? 0);
       });
 
       final totalOutflows = totalGeneralExpenses + totalSalaries + totalSessionCosts;
@@ -236,6 +236,10 @@ class ReportOfflineRepository implements ReportRepository {
         0,
         (sum, s) => sum + (s.coutBobines ?? 0),
       );
+      final totalPackagingCost = periodSessions.fold<int>(
+        0,
+        (sum, s) => sum + (s.coutEmballages ?? 0),
+      );
       final totalElectricityCost = periodSessions.fold<int>(
         0,
         (sum, s) => sum + (s.coutElectricite ?? 0),
@@ -245,7 +249,7 @@ class ReportOfflineRepository implements ReportRepository {
         (sum, s) => sum + s.coutTotalPersonnel,
       );
       final totalCost =
-          totalBobinesCost + totalElectricityCost + totalPersonnelCost;
+          totalBobinesCost + totalPackagingCost + totalElectricityCost + totalPersonnelCost;
 
       return ProductionReportData(
         totalQuantity: totalQuantity,
@@ -254,6 +258,7 @@ class ReportOfflineRepository implements ReportRepository {
         productions: periodSessions,
         totalCost: totalCost,
         totalBobinesCost: totalBobinesCost,
+        totalPackagingCost: totalPackagingCost,
         totalElectricityCost: totalElectricityCost,
         totalPersonnelCost: totalPersonnelCost,
       );

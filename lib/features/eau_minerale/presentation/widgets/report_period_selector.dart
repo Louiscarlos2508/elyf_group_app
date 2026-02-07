@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:elyf_groupe_app/shared.dart';
 
 /// Widget for selecting report period.
 class ReportPeriodSelector extends StatelessWidget {
@@ -25,34 +26,40 @@ class ReportPeriodSelector extends StatelessWidget {
       builder: (context, constraints) {
         final isWide = constraints.maxWidth > 600;
 
-        return Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: theme.colorScheme.outline.withValues(alpha: 0.2),
-            ),
-          ),
+        return ElyfCard(
+          isGlass: true,
+          borderColor: Colors.indigo.withValues(alpha: 0.1),
+          padding: const EdgeInsets.all(24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Période du Rapport',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Sélectionnez la période pour générer le rapport',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.indigo.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.date_range_rounded,
+                      size: 20,
+                      color: Colors.indigo,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Période du Rapport',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 16),
               isWide
                   ? Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Expanded(
                           child: _ReportDateField(
@@ -70,12 +77,17 @@ class ReportPeriodSelector extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 16),
-                        IntrinsicWidth(
-                          child: FilledButton.icon(
-                            onPressed: onDownload,
-                            icon: const Icon(Icons.download),
-                            label: const Text('Télécharger'),
+                        FilledButton.icon(
+                          onPressed: onDownload,
+                          style: FilledButton.styleFrom(
+                            backgroundColor: Colors.indigo.shade700,
+                            minimumSize: const Size(0, 56),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                           ),
+                          icon: const Icon(Icons.download_rounded),
+                          label: const Text('Générer PDF'),
                         ),
                       ],
                     )
@@ -86,19 +98,26 @@ class ReportPeriodSelector extends StatelessWidget {
                           date: startDate,
                           onTap: onStartDateSelected,
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 12),
                         _ReportDateField(
                           label: 'Date de Fin',
                           date: endDate,
                           onTap: onEndDateSelected,
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 20),
                         SizedBox(
                           width: double.infinity,
                           child: FilledButton.icon(
                             onPressed: onDownload,
-                            icon: const Icon(Icons.download),
-                            label: const Text('Télécharger'),
+                            style: FilledButton.styleFrom(
+                              backgroundColor: Colors.indigo.shade700,
+                              minimumSize: const Size(0, 56),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            icon: const Icon(Icons.download_rounded),
+                            label: const Text('Générer le Rapport PDF'),
                           ),
                         ),
                       ],

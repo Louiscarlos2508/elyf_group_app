@@ -132,6 +132,12 @@ class ProductionReportContent extends ConsumerWidget {
                     ),
                     const SizedBox(height: 8),
                     _CostDetailRow(
+                      label: 'Emballages',
+                      value:
+                          '${CurrencyFormatter.formatFCFA(data.totalPackagingCost)} FCFA',
+                    ),
+                    const SizedBox(height: 8),
+                    _CostDetailRow(
                       label: 'Personnel',
                       value:
                           '${CurrencyFormatter.formatFCFA(data.totalPersonnelCost)} FCFA',
@@ -310,6 +316,16 @@ class _ProductionCard extends StatelessWidget {
                             label: '  • Électricité',
                             value: CurrencyFormatter.formatFCFA(
                               production.coutElectricite!,
+                            ),
+                          ),
+                        ],
+                        if (production.coutEmballages != null &&
+                            production.coutEmballages! > 0) ...[
+                          const SizedBox(height: 4),
+                          _DetailItem(
+                            label: '  • Emballages',
+                            value: CurrencyFormatter.formatFCFA(
+                              production.coutEmballages!,
                             ),
                           ),
                         ],

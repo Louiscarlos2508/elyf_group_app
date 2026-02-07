@@ -20,6 +20,8 @@ class Payment {
     this.mobileMoneyAmount,
     this.createdAt,
     this.updatedAt,
+    this.deletedAt,
+    this.deletedBy,
   });
 
   final String id;
@@ -39,6 +41,10 @@ class Payment {
   mobileMoneyAmount; // Montant payé en mobile money (si paymentMethod == both)
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final DateTime? deletedAt;
+  final String? deletedBy;
+
+  bool get isDeleted => deletedAt != null;
 
   Payment copyWith({
     String? id,
@@ -57,6 +63,8 @@ class Payment {
     int? mobileMoneyAmount,
     DateTime? createdAt,
     DateTime? updatedAt,
+    DateTime? deletedAt,
+    String? deletedBy,
   }) {
     return Payment(
       id: id ?? this.id,
@@ -75,8 +83,18 @@ class Payment {
       mobileMoneyAmount: mobileMoneyAmount ?? this.mobileMoneyAmount,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      deletedBy: deletedBy ?? this.deletedBy,
     );
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is Payment && runtimeType == other.runtimeType && id == other.id;
+
+  @override
+  int get hashCode => id.hashCode;
 }
 
 enum PaymentType {

@@ -8,6 +8,8 @@ class PackagingStockMovement {
     required this.date,
     required this.quantite,
     required this.raison,
+    this.isInLots = false, // Vrai si la quantité saisie était en lots
+    this.quantiteSaisie, // La quantité telle que saisie par l'utilisateur (lots ou unités)
     this.productionId,
     this.fournisseur,
     this.notes,
@@ -20,7 +22,9 @@ class PackagingStockMovement {
   final String packagingType;
   final PackagingMovementType type;
   final DateTime date;
-  final int quantite; // Quantité en unités
+  final int quantite; // Quantité en UNITÉS (toujours)
+  final bool isInLots; // Vrai si saisi en lots
+  final int? quantiteSaisie; // Quantité telle que saisie
   final String
   raison; // Ex: "Livraison", "Utilisation en production", "Ajustement"
   final String? productionId; // ID de la production si lié à une production
@@ -36,6 +40,8 @@ class PackagingStockMovement {
     PackagingMovementType? type,
     DateTime? date,
     int? quantite,
+    bool? isInLots,
+    int? quantiteSaisie,
     String? raison,
     String? productionId,
     String? fournisseur,
@@ -50,6 +56,8 @@ class PackagingStockMovement {
       type: type ?? this.type,
       date: date ?? this.date,
       quantite: quantite ?? this.quantite,
+      isInLots: isInLots ?? this.isInLots,
+      quantiteSaisie: quantiteSaisie ?? this.quantiteSaisie,
       raison: raison ?? this.raison,
       productionId: productionId ?? this.productionId,
       fournisseur: fournisseur ?? this.fournisseur,

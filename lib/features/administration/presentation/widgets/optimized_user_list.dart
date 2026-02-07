@@ -6,6 +6,9 @@ import 'package:elyf_groupe_app/core/auth/entities/enterprise_module_user.dart';
 import '../../application/providers.dart' show userFilterServiceProvider;
 import 'package:elyf_groupe_app/core/auth/providers.dart'
     show currentUserIdProvider;
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
+import 'package:elyf_groupe_app/features/administration/application/providers.dart'
+    show enterprisesProvider;
 
 /// Optimized user list widget with pagination and filtering.
 ///
@@ -140,7 +143,7 @@ class _OptimizedUserListState extends ConsumerState<OptimizedUserList> {
 }
 
 /// Optimized user list item with const constructor where possible.
-class _UserListItem extends StatelessWidget {
+class _UserListItem extends ConsumerWidget {
   const _UserListItem({
     super.key,
     required this.user,
@@ -153,7 +156,7 @@ class _UserListItem extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
 
     return Padding(
@@ -171,11 +174,66 @@ class _UserListItem extends StatelessWidget {
           subtitle: _UserListItemSubtitle(user: user, assignments: assignments),
           trailing: _UserListItemTrailing(user: user, onTap: onTap),
           children: assignments.map((assignment) {
+            final enterprisesAsync = ref.watch(enterprisesProvider);
+            final enterpriseName = enterprisesAsync.maybeWhen(
+              data: (enterprises) {
+                final ent = enterprises.firstWhere(
+                  (e) => e.id == assignment.enterpriseId,
+                  orElse: () => Enterprise(
+                    id: assignment.enterpriseId,
+                    name: assignment.enterpriseId,
+                    type: EnterpriseType.gasCompany,
+                    createdAt: DateTime.now(),
+                    updatedAt: DateTime.now(),
+                  ),
+                );
+                return ent.name;
+              },
+              orElse: () => assignment.enterpriseId,
+            );
+
             return ListTile(
-              title: Text(
-                '${assignment.enterpriseId} - ${assignment.moduleId}',
+              dense: true,
+              title: Row(
+                children: [
+                  Icon(
+                    assignment.includesChildren
+                        ? Icons.account_tree_outlined
+                        : Icons.business_outlined,
+                    size: 16,
+                    color: theme.colorScheme.primary,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '$enterpriseName - ${assignment.moduleId.toUpperCase()}',
+                      style: theme.textTheme.titleSmall,
+                    ),
+                  ),
+                  if (assignment.includesChildren)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primaryContainer,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        'Héritage actif',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.onPrimaryContainer,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ),
+                ],
               ),
-              subtitle: Text('Rôle: ${assignment.roleId}'),
+              subtitle: Text(
+                'Rôle: ${assignment.roleId}',
+                style: theme.textTheme.bodySmall,
+              ),
             );
           }).toList(),
         ),
@@ -185,14 +243,14 @@ class _UserListItem extends StatelessWidget {
 }
 
 /// Separate widget for subtitle to enable const optimization.
-class _UserListItemSubtitle extends StatelessWidget {
+class _UserListItemSubtitle extends ConsumerWidget {
   const _UserListItemSubtitle({required this.user, required this.assignments});
 
   final User user;
   final List<EnterpriseModuleUser> assignments;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
 
     return Column(
@@ -205,18 +263,31 @@ class _UserListItemSubtitle extends StatelessWidget {
           Wrap(
             spacing: 4,
             runSpacing: 4,
-            children: assignments
-                .take(3)
-                .map(
-                  (a) => Chip(
-                    label: Text(
-                      '${a.enterpriseId} - ${a.moduleId}',
-                      style: theme.textTheme.labelSmall,
-                    ),
-                    visualDensity: VisualDensity.compact,
-                  ),
-                )
-                .toList(),
+            children: assignments.take(3).map((a) {
+              final enterprisesAsync = ref.watch(enterprisesProvider);
+              final entName = enterprisesAsync.maybeWhen(
+                data: (enterprises) => enterprises
+                    .firstWhere(
+                      (e) => e.id == a.enterpriseId,
+                      orElse: () => Enterprise(
+                        id: a.enterpriseId,
+                        name: a.enterpriseId,
+                        type: EnterpriseType.gasCompany,
+                        createdAt: DateTime.now(),
+                        updatedAt: DateTime.now(),
+                      ),
+                    )
+                    .name,
+                orElse: () => a.enterpriseId,
+              );
+              return Chip(
+                label: Text(
+                  '$entName ${a.includesChildren ? "🔗" : ""}',
+                  style: theme.textTheme.labelSmall,
+                ),
+                visualDensity: VisualDensity.compact,
+              );
+            }).toList(),
           ),
           if (assignments.length > 3)
             Text(

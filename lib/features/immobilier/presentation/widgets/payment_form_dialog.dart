@@ -30,8 +30,10 @@ class _PaymentFormDialogState extends ConsumerState<PaymentFormDialog>
   PaymentType _paymentType = PaymentType.rent;
   int? _month;
   int? _year;
-  final _receiptNumberController = TextEditingController();
   final _notesController = TextEditingController();
+  final _transactionIdController = TextEditingController(); 
+  final _cashAmountController = TextEditingController(); 
+  final _mobileMoneyAmountController = TextEditingController(); 
   bool _isSaving = false;
 
   @override
@@ -47,8 +49,19 @@ class _PaymentFormDialogState extends ConsumerState<PaymentFormDialog>
       _paymentType = p.paymentType ?? PaymentType.rent;
       _month = p.month;
       _year = p.year;
-      _receiptNumberController.text = p.receiptNumber ?? '';
+      _year = p.year;
+      _year = p.year;
       _notesController.text = p.notes ?? '';
+      // Initialiser les champs split si nécessaire
+      if (p.paymentMethod == PaymentMethod.both) {
+        _cashAmountController.text = p.cashAmount?.toString() ?? '';
+        _mobileMoneyAmountController.text = p.mobileMoneyAmount?.toString() ?? '';
+      }
+      // Note: Transaction ID n'est pas encore dans l'entité Payment, on l'ajoute dans les notes pour l'instant ou on l'ignore si non supporté par l'entité
+      // Si l'utilisateur veut vraiment le stocker proprement, il faudrait l'ajouter à l'entité. 
+      // Pour l'instant on va supposer qu'il est concaténé dans les notes ou on l'ajoute.
+      // Le prompt user ne demandait pas explicitement de le stocker dans un nouveau champ, mais le plan disait "Add _transactionIdController".
+      // L'entité Payment n'a PAS de champ transactionId. Je vais l'ajouter aux notes lors de la sauvegarde.
     } else {
       _month = DateTime.now().month;
       _year = DateTime.now().year;
@@ -58,8 +71,10 @@ class _PaymentFormDialogState extends ConsumerState<PaymentFormDialog>
   @override
   void dispose() {
     _amountController.dispose();
-    _receiptNumberController.dispose();
     _notesController.dispose();
+    _transactionIdController.dispose();
+    _cashAmountController.dispose();
+    _mobileMoneyAmountController.dispose();
     super.dispose();
   }
 
@@ -90,6 +105,20 @@ class _PaymentFormDialogState extends ConsumerState<PaymentFormDialog>
       return;
     }
 
+    if (_paymentMethod == PaymentMethod.both) {
+      final total = int.tryParse(_amountController.text) ?? 0;
+      final cash = int.tryParse(_cashAmountController.text) ?? 0;
+      final mobile = int.tryParse(_mobileMoneyAmountController.text) ?? 0;
+
+      if (cash + mobile != total) {
+        NotificationService.showError(
+          context,
+          'La somme (Espèces + Mobile) doit être égale au montant total ($total)',
+        );
+        return;
+      }
+    }
+
     await handleFormSubmit(
       context: context,
       formKey: _formKey,
@@ -102,15 +131,17 @@ class _PaymentFormDialogState extends ConsumerState<PaymentFormDialog>
           paymentDate: _paymentDate,
           paymentMethod: _paymentMethod,
           status: _status,
+          cashAmount: _paymentMethod == PaymentMethod.both ? int.tryParse(_cashAmountController.text) : null,
+          mobileMoneyAmount: _paymentMethod == PaymentMethod.both ? int.tryParse(_mobileMoneyAmountController.text) : null,
           contract: _selectedContract,
           month: _month,
           year: _year,
-          receiptNumber: _receiptNumberController.text.trim().isEmpty
-              ? null
-              : _receiptNumberController.text.trim(),
+          receiptNumber: null, // Champ supprimé du formulaire, laissé à null ou géré par le backend/PDF
           notes: _notesController.text.trim().isEmpty
               ? null
-              : _notesController.text.trim(),
+              : (_transactionIdController.text.isNotEmpty 
+                  ? 'ID Trans: ${_transactionIdController.text.trim()}\n${_notesController.text.trim()}'
+                  : _notesController.text.trim()),
           paymentType: _paymentType,
           createdAt: widget.payment?.createdAt ?? DateTime.now(),
           updatedAt: DateTime.now(),
@@ -219,7 +250,7 @@ class _PaymentFormDialogState extends ConsumerState<PaymentFormDialog>
 
   @override
   Widget build(BuildContext context) {
-    final contractsAsync = ref.watch(contractsProvider);
+    final contractsAsync = ref.watch(contractsWithRelationsProvider);
 
     return FormDialog(
       title: widget.payment == null
@@ -306,6 +337,21 @@ class _PaymentFormDialogState extends ConsumerState<PaymentFormDialog>
                 if (value != null) setState(() => _paymentMethod = value);
               },
             ),
+            if (_paymentMethod == PaymentMethod.mobileMoney) ...[
+              const SizedBox(height: 16),
+              PaymentFormFields.transactionIdField(
+                controller: _transactionIdController,
+              ),
+            ],
+            if (_paymentMethod == PaymentMethod.both) ...[
+              const SizedBox(height: 16),
+              PaymentFormFields.splitAmountFields(
+                cashController: _cashAmountController,
+                mobileMoneyController: _mobileMoneyAmountController,
+                cashValidator: (v) => Validators.required(v),
+                mobileMoneyValidator: (v) => Validators.required(v),
+              ),
+            ],
             const SizedBox(height: 16),
             PaymentFormFields.statusField(
               value: _status,
@@ -314,9 +360,7 @@ class _PaymentFormDialogState extends ConsumerState<PaymentFormDialog>
               },
             ),
             const SizedBox(height: 16),
-            PaymentFormFields.receiptNumberField(
-              controller: _receiptNumberController,
-            ),
+            const SizedBox(height: 16),
             const SizedBox(height: 16),
             PaymentFormFields.notesField(controller: _notesController),
             const SizedBox(height: 24),

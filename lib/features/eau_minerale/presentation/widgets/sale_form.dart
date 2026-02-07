@@ -125,30 +125,40 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
     Widget? suffixIcon,
   }) {
     final theme = Theme.of(context);
+    final colors = theme.colorScheme;
     return InputDecoration(
       labelText: label,
       hintText: hintText,
       helperText: helperText,
       errorText: errorText,
       helperMaxLines: 2,
-      prefixIcon: Icon(icon, size: 20),
+      prefixIcon: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        child: Icon(icon, size: 20, color: colors.primary),
+      ),
+      prefixIconConstraints: const BoxConstraints(minWidth: 40),
       suffixIcon: suffixIcon,
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: theme.colorScheme.outline),
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: colors.outline.withValues(alpha: 0.1)),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: theme.colorScheme.outline.withValues(alpha: 0.5)),
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: colors.outline.withValues(alpha: 0.1)),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: theme.colorScheme.primary, width: 2),
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: colors.primary, width: 2),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: colors.error),
       ),
       filled: true,
-      fillColor: theme.colorScheme.surface,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      isDense: true,
+      fillColor: colors.surfaceContainerLow.withValues(alpha: 0.5),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      labelStyle: theme.textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
+      floatingLabelStyle: theme.textTheme.bodyMedium?.copyWith(color: colors.primary, fontWeight: FontWeight.bold),
     );
   }
 
@@ -319,12 +329,11 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
 
   @override
   Widget build(BuildContext context) {
-    final isWide = MediaQuery.of(context).size.width >= 700;
-
     return Form(
       key: _formKey,
       child: LayoutBuilder(
         builder: (context, constraints) {
+          final isWide = constraints.maxWidth >= 700;
           if (isWide) {
             return Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -362,59 +371,76 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
 
   List<Widget> _buildLeftColumn(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = theme.colorScheme;
     return [
-      Text(
-        'Informations Client',
-        style: theme.textTheme.titleMedium?.copyWith(
-          fontWeight: FontWeight.bold,
-          color: theme.colorScheme.primary,
+      ElyfCard(
+        padding: const EdgeInsets.all(20),
+        borderRadius: 24,
+        backgroundColor: colors.surfaceContainerLow.withValues(alpha: 0.5),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.person_outline_rounded, size: 18, color: colors.primary),
+                const SizedBox(width: 8),
+                Text(
+                  'Informations Client',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: colors.primary,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            SaleProductSelector(
+              selectedProduct: _selectedProduct,
+              onProductSelected: _handleProductSelected,
+            ),
+            const SizedBox(height: 16),
+            SaleCustomerSelector(
+              selectedCustomer: _selectedCustomer,
+              onCustomerSelected: _handleCustomerSelected,
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _customerNameController,
+              decoration: _buildInputDecoration(
+                context,
+                label: 'Nom du client${_isCredit ? ' (Requis)' : ''}',
+                icon: Icons.person_outline_rounded,
+                helperText: _isCredit ? 'Obligatoire pour le crédit' : 'Laisser vide pour client anonyme',
+              ),
+              validator: (v) {
+                if (_isCredit && (v == null || v.trim().isEmpty)) {
+                  return 'Nom obligatoire pour le crédit';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _customerPhoneController,
+              decoration: _buildInputDecoration(
+                context,
+                label: 'Téléphone${_isCredit ? ' (Requis)' : ''}',
+                icon: Icons.phone_android_rounded,
+                hintText: '70 00 00 00',
+              ),
+              keyboardType: TextInputType.phone,
+              validator: (v) {
+                if (_isCredit && (v == null || v.trim().isEmpty)) {
+                  return 'Téléphone obligatoire pour le crédit';
+                }
+                if (v != null && v.trim().isNotEmpty) {
+                  return Validators.phoneBurkina(v);
+                }
+                return null;
+              },
+            ),
+          ],
         ),
-      ),
-      const SizedBox(height: 16),
-      SaleProductSelector(
-        selectedProduct: _selectedProduct,
-        onProductSelected: _handleProductSelected,
-      ),
-      const SizedBox(height: 16),
-      SaleCustomerSelector(
-        selectedCustomer: _selectedCustomer,
-        onCustomerSelected: _handleCustomerSelected,
-      ),
-      const SizedBox(height: 16),
-      TextFormField(
-        controller: _customerNameController,
-        decoration: _buildInputDecoration(
-          context,
-          label: 'Nom du client${_isCredit ? ' (Requis)' : ''}',
-          icon: Icons.person_outline,
-          helperText: _isCredit ? 'Obligatoire pour le crédit' : null,
-        ),
-        validator: (v) {
-          if (_isCredit && (v == null || v.trim().isEmpty)) {
-            return 'Nom obligatoire pour le crédit';
-          }
-          return null;
-        },
-      ),
-      const SizedBox(height: 16),
-      TextFormField(
-        controller: _customerPhoneController,
-        decoration: _buildInputDecoration(
-          context,
-          label: 'Téléphone${_isCredit ? ' (Requis)' : ''}',
-          icon: Icons.phone_outlined,
-          hintText: '+226 70 00 00 00',
-        ),
-        keyboardType: TextInputType.phone,
-        validator: (v) {
-          if (_isCredit && (v == null || v.trim().isEmpty)) {
-            return 'Téléphone obligatoire pour le crédit';
-          }
-          if (v != null && v.trim().isNotEmpty) {
-            return Validators.phoneBurkina(v);
-          }
-          return null;
-        },
       ),
     ];
   }
@@ -424,138 +450,193 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
     final colors = theme.colorScheme;
 
     return [
-      Text(
-        'Détails de la Vente',
-        style: theme.textTheme.titleMedium?.copyWith(
-          fontWeight: FontWeight.bold,
-          color: theme.colorScheme.primary,
-        ),
-      ),
-      const SizedBox(height: 16),
-      if (_selectedProduct != null)
-        _buildQuantityField(context, ref)
-      else
-        TextFormField(
-          controller: _quantityController,
-          decoration: _buildInputDecoration(
-            context,
-            label: 'Quantité',
-            icon: Icons.inventory_2_outlined,
-            helperText: 'Sélectionnez d\'abord un produit',
-          ),
-          readOnly: true,
-        ),
-      const SizedBox(height: 16),
-      if (_totalPrice != null) ...[
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: colors.primaryContainer.withValues(alpha: 0.3),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: colors.primaryContainer),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Total à payer',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
+      ElyfCard(
+        padding: const EdgeInsets.all(20),
+        borderRadius: 24,
+        backgroundColor: colors.surfaceContainerLow.withValues(alpha: 0.5),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.shopping_cart_outlined, size: 18, color: colors.primary),
+                const SizedBox(width: 8),
+                Text(
+                  'Détails de la Vente',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: colors.primary,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            if (_selectedProduct != null)
+              _buildQuantityField(context, ref)
+            else
+              TextFormField(
+                controller: _quantityController,
+                decoration: _buildInputDecoration(
+                  context,
+                  label: 'Quantité',
+                  icon: Icons.inventory_2_rounded,
+                  helperText: 'Sélectionnez d\'abord un produit',
+                ),
+                readOnly: true,
+              ),
+            const SizedBox(height: 24),
+            if (_totalPrice != null) ...[
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                   gradient: LinearGradient(
+                    colors: [
+                      colors.primary.withValues(alpha: 0.8),
+                      colors.primary,
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: colors.primary.withValues(alpha: 0.2),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'TOTAL À PAYER',
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            color: colors.onPrimary.withValues(alpha: 0.8),
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          CurrencyFormatter.formatFCFA(_totalPrice!),
+                          style: theme.textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.w900,
+                            color: colors.onPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (_totalPrice! - (_amountPaid ?? 0) > 0) ...[
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                        child: Divider(color: Colors.white24, height: 1),
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'RESTE (CRÉDIT)',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: colors.onPrimary.withValues(alpha: 0.7),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            CurrencyFormatter.formatFCFA(_totalPrice! - (_amountPaid ?? 0)),
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.orangeAccent,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
                 ),
               ),
-              Text(
-                CurrencyFormatter.formatFCFA(_totalPrice!),
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: colors.primary,
+              const SizedBox(height: 28),
+            ],
+            Text(
+              'Mode de paiement',
+              style: theme.textTheme.labelLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: colors.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 12),
+            SegmentedButton<PaymentMethod>(
+              segments: const [
+                ButtonSegment<PaymentMethod>(
+                  value: PaymentMethod.cash,
+                  label: Text('Cash'),
+                  icon: Icon(Icons.money_rounded, size: 18),
                 ),
+                ButtonSegment<PaymentMethod>(
+                  value: PaymentMethod.orangeMoney,
+                  label: Text('Om'),
+                  icon: Icon(Icons.wallet_rounded, size: 18),
+                ),
+                ButtonSegment<PaymentMethod>(
+                  value: PaymentMethod.both,
+                  label: Text('Mixte'),
+                  icon: Icon(Icons.compare_arrows_rounded, size: 18),
+                ),
+              ],
+              selected: {_paymentMethod},
+              onSelectionChanged: (Set<PaymentMethod> selection) {
+                _onPaymentMethodChanged(selection.first);
+              },
+              showSelectedIcon: false,
+              style: SegmentedButton.styleFrom(
+                selectedBackgroundColor: colors.primary,
+                selectedForegroundColor: colors.onPrimary,
+                visualDensity: VisualDensity.standard,
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _amountPaidController,
+              decoration: _buildInputDecoration(
+                context,
+                label: 'Montant versé (CFA)',
+                icon: Icons.account_balance_wallet_rounded,
+                helperText: 'Saisir le montant réellement reçu',
+              ),
+              keyboardType: TextInputType.number,
+              onChanged: _onAmountPaidChanged,
+              validator: (v) {
+                if (v == null || v.isEmpty) return 'Requis';
+                final amount = int.tryParse(v);
+                if (amount == null || amount < 0) return 'Montant invalide';
+                return null;
+              },
+            ),
+            if (_paymentMethod == PaymentMethod.both &&
+                    _amountPaid != null &&
+                    _amountPaid! > 0) ...[
+              const SizedBox(height: 16),
+              PaymentSplitter(
+                totalAmount: _amountPaid!,
+                onSplitChanged: _onSplitChanged,
+                initialCashAmount: _cashAmount,
+                initialMobileMoneyAmount: _orangeMoneyAmount,
+                mobileMoneyLabel: 'Orange Money',
               ),
             ],
-          ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _notesController,
+              decoration: _buildInputDecoration(
+                context,
+                label: 'Notes (Optionnel)',
+                icon: Icons.note_alt_rounded,
+                hintText: 'Observations...',
+              ),
+              maxLines: 2,
+            ),
+          ],
         ),
-        const SizedBox(height: 24),
-      ],
-      Text(
-        'Paiement',
-        style: theme.textTheme.labelLarge?.copyWith(
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-      const SizedBox(height: 8),
-      SegmentedButton<PaymentMethod>(
-        segments: const [
-          ButtonSegment<PaymentMethod>(
-            value: PaymentMethod.cash,
-            label: Text('Cash'),
-            icon: Icon(Icons.money, size: 18),
-          ),
-          ButtonSegment<PaymentMethod>(
-            value: PaymentMethod.orangeMoney,
-            label: Text('Om'),
-            icon: Icon(Icons.wallet, size: 18),
-          ),
-          ButtonSegment<PaymentMethod>(
-            value: PaymentMethod.both,
-            label: Text('Mixte'),
-            icon: Icon(Icons.compare_arrows, size: 18),
-          ),
-        ],
-        selected: {_paymentMethod},
-        onSelectionChanged: (Set<PaymentMethod> selection) {
-          _onPaymentMethodChanged(selection.first);
-        },
-        style: ButtonStyle(
-          visualDensity: VisualDensity.compact,
-          padding: WidgetStateProperty.all(EdgeInsets.zero),
-        ),
-      ),
-      const SizedBox(height: 16),
-      TextFormField(
-        controller: _amountPaidController,
-        decoration: _buildInputDecoration(
-          context,
-          label: 'Montant versé (CFA)',
-          icon: Icons.attach_money,
-          helperText: _totalPrice != null && _amountPaid != null
-              ? (_totalPrice! - _amountPaid! > 0
-                  ? 'Reste à payer (Dette): ${CurrencyFormatter.formatFCFA(_totalPrice! - _amountPaid!)}'
-                  : 'Paiement complet')
-              : null,
-        ),
-        keyboardType: TextInputType.number,
-        onChanged: _onAmountPaidChanged,
-        validator: (v) {
-          if (v == null || v.isEmpty) return 'Requis';
-          final amount = int.tryParse(v);
-          if (amount == null || amount < 0) return 'Montant invalide';
-          if (_totalPrice != null && amount > _totalPrice!) {
-            // return 'Ne peut pas dépasser le total'; // Allow overpayment -> change? No, usually exact or debt.
-          }
-          return null;
-        },
-      ),
-      if (_paymentMethod == PaymentMethod.both &&
-              _amountPaid != null &&
-              _amountPaid! > 0) ...[
-        const SizedBox(height: 16),
-        PaymentSplitter(
-          totalAmount: _amountPaid!,
-          onSplitChanged: _onSplitChanged,
-          initialCashAmount: _cashAmount,
-          initialMobileMoneyAmount: _orangeMoneyAmount,
-          mobileMoneyLabel: 'Orange Money',
-        ),
-      ],
-      const SizedBox(height: 16),
-      TextFormField(
-        controller: _notesController,
-        decoration: _buildInputDecoration(
-          context,
-          label: 'Notes (Optionnel)',
-          icon: Icons.note_alt_outlined,
-          hintText: 'Observations...',
-        ),
-        maxLines: 2,
       ),
     ];
   }

@@ -65,12 +65,23 @@ class UserFilterService {
     String? enterpriseId,
     String? moduleId,
     String? excludeUserId,
+    List<String>? excludedUsernames,
   }) {
     var filtered = users;
 
     // Exclude current user
     if (excludeUserId != null && excludeUserId.isNotEmpty) {
       filtered = filtered.where((user) => user.id != excludeUserId).toList();
+    }
+
+    // Exclude by username (e.g., 'admin') - Case insensitive
+    if (excludedUsernames != null && excludedUsernames.isNotEmpty) {
+      final lowercaseExcluded =
+          excludedUsernames.map((u) => u.toLowerCase()).toSet();
+      filtered = filtered
+          .where((user) =>
+              !lowercaseExcluded.contains(user.username.toLowerCase()))
+          .toList();
     }
 
     // Apply search filter

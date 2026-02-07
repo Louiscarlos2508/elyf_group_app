@@ -26,6 +26,12 @@ abstract class ContractRepository {
   /// Observe les contrats.
   Stream<List<Contract>> watchContracts();
 
+  /// Observe les contrats supprimés.
+  Stream<List<Contract>> watchDeletedContracts();
+
   /// Supprime un contrat.
   Future<void> deleteContract(String id);
+
+  /// Restaure un contrat supprimé.
+  Future<void> restoreContract(String id);
 }

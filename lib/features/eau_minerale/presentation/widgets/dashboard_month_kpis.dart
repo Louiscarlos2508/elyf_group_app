@@ -4,7 +4,8 @@ import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
-import 'dashboard_kpi_card.dart';
+import 'package:elyf_groupe_app/shared/presentation/widgets/elyf_ui/organisms/elyf_card.dart';
+import 'package:elyf_groupe_app/shared/presentation/widgets/elyf_ui/atoms/elyf_shimmer.dart';
 
 /// Section displaying monthly KPIs with production sessions data.
 class DashboardMonthKpis extends ConsumerWidget {
@@ -22,9 +23,12 @@ class DashboardMonthKpis extends ConsumerWidget {
   }
 
   Widget _buildLoadingState() {
-    return const SizedBox(
-      height: 200,
-      child: Center(child: CircularProgressIndicator()),
+    return Column(
+      children: [
+        ElyfShimmer(child: ElyfShimmer.listTile()),
+        const SizedBox(height: 16),
+        ElyfShimmer(child: ElyfShimmer.listTile()),
+      ],
     );
   }
 
@@ -36,41 +40,35 @@ class DashboardMonthKpis extends ConsumerWidget {
       builder: (context, constraints) {
         final isWide = constraints.maxWidth > 900;
 
+        final theme = Theme.of(context);
         final cards = [
-          DashboardKpiCard(
+          ElyfStatsCard(
             label: 'Chiffre d\'Affaires',
             value: CurrencyFormatter.formatFCFA(summary.revenue),
             subtitle: '${summary.salesCount} ventes',
             icon: Icons.trending_up,
-            iconColor: Colors.blue,
-            backgroundColor: Colors.blue,
+            color: Colors.blue,
           ),
-          DashboardKpiCard(
+          ElyfStatsCard(
             label: 'Production',
             value: '${summary.production} packs',
             subtitle: '${summary.sessionsCount} sessions',
             icon: Icons.factory,
-            iconColor: Colors.purple,
-            backgroundColor: Colors.purple,
+            color: Colors.purple,
           ),
-          DashboardKpiCard(
+          ElyfStatsCard(
             label: 'Dépenses',
             value: CurrencyFormatter.formatFCFA(summary.expenses),
             subtitle: '${summary.transactionsCount} transactions',
             icon: Icons.receipt_long,
-            iconColor: Colors.red,
-            backgroundColor: Colors.red,
+            color: theme.colorScheme.error,
           ),
-          DashboardKpiCard(
+          ElyfStatsCard(
             label: 'Résultat Net',
             value: CurrencyFormatter.formatFCFA(summary.result),
             subtitle: summary.result >= 0 ? 'Bénéfice' : 'Déficit',
             icon: Icons.account_balance_wallet,
-            iconColor: summary.result >= 0 ? Colors.green : Colors.red,
-            valueColor: summary.result >= 0
-                ? Colors.green.shade700
-                : Colors.red.shade700,
-            backgroundColor: summary.result >= 0 ? Colors.green : Colors.red,
+            color: summary.result >= 0 ? Colors.green : Colors.red,
           ),
         ];
 

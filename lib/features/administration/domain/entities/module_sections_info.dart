@@ -282,6 +282,44 @@ class ModuleSectionsRegistry {
         description: 'Profil utilisateur',
       ),
     ],
+    'administration': [
+      ModuleSection(
+        id: 'enterprises',
+        name: 'Entreprises',
+        icon: Icons.business,
+        description: 'Gestion des entreprises et de la hiérarchie',
+      ),
+      ModuleSection(
+        id: 'users',
+        name: 'Utilisateurs',
+        icon: Icons.people_alt_outlined,
+        description: 'Gestion des utilisateurs et de leurs comptes',
+      ),
+      ModuleSection(
+        id: 'roles',
+        name: 'Rôles & Permissions',
+        icon: Icons.shield_outlined,
+        description: 'Définition des rôles et des droits d\'accès',
+      ),
+      ModuleSection(
+        id: 'modules',
+        name: 'Modules',
+        icon: Icons.view_module_outlined,
+        description: 'Activation et configuration des modules métiers',
+      ),
+      ModuleSection(
+        id: 'audit',
+        name: 'Journal d\'Audit',
+        icon: Icons.history_edu_outlined,
+        description: 'Historique des actions effectuées sur le système',
+      ),
+      ModuleSection(
+        id: 'profile',
+        name: 'Profil & Sécurité',
+        icon: Icons.manage_accounts_outlined,
+        description: 'Gestion du profil administrateur et mot de passe',
+      ),
+    ],
   };
 
   /// Récupère les sections développées pour un module

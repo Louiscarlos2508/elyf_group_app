@@ -132,122 +132,209 @@ class _MachineBreakdownDialogState
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = theme.colorScheme;
 
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      child: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                children: [
-                  Icon(Icons.build, color: theme.colorScheme.error, size: 32),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'Signaler panne - ${widget.machine.nom}',
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                      overflow: TextOverflow.ellipsis,
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 500),
+        child: ElyfCard(
+          isGlass: true,
+          padding: EdgeInsets.zero,
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Header with subtle gradient
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [colors.error.withValues(alpha: 0.1), colors.surface],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Enregistrez la panne de la machine et retirez la bobine si nécessaire.',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(height: 24),
-              TextFormField(
-                controller: _motifController,
-                decoration: const InputDecoration(
-                  labelText: 'Motif de la panne *',
-                  prefixIcon: Icon(Icons.description),
-                  helperText: 'Description de la panne',
-                ),
-                maxLines: 3,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Requis';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              InkWell(
-                onTap: () => _selectDate(context),
-                child: InputDecorator(
-                  decoration: const InputDecoration(
-                    labelText: 'Date *',
-                    prefixIcon: Icon(Icons.calendar_today),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: colors.error.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(Icons.build_circle_rounded, color: colors.error, size: 28),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Signaler Panne',
+                              style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                            ),
+                            Text(
+                              widget.machine.nom,
+                              style: theme.textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton.filledTonal(
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: const Icon(Icons.close, size: 20),
+                      ),
+                    ],
                   ),
-                  child: Text(DateFormatter.formatDate(_selectedDate)),
                 ),
-              ),
-              const SizedBox(height: 16),
-              InkWell(
-                onTap: () => _selectTime(context),
-                child: InputDecorator(
-                  decoration: const InputDecoration(
-                    labelText: 'Heure *',
-                    prefixIcon: Icon(Icons.access_time),
+                const Divider(height: 1),
+
+                // Form Content
+                Flexible(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        TextFormField(
+                          controller: _motifController,
+                          decoration: _buildInputDecoration(
+                            label: 'Motif de la panne *',
+                            hintText: 'Décrivez le problème rencontré...',
+                            icon: Icons.error_outline_rounded,
+                          ),
+                          maxLines: 3,
+                          validator: (v) => v?.trim().isEmpty ?? true ? 'Le motif est requis' : null,
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Date & Time
+                        Row(
+                          children: [
+                            Expanded(child: _buildDateTimePicker(theme, colors, isDate: true)),
+                            const SizedBox(width: 12),
+                            Expanded(child: _buildDateTimePicker(theme, colors, isDate: false)),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+
+                        if (_hasBobine) ...[
+                          ElyfCard(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            borderRadius: 16,
+                            backgroundColor: colors.primary.withValues(alpha: 0.05),
+                            borderColor: colors.primary.withValues(alpha: 0.1),
+                            child: CheckboxListTile(
+                              contentPadding: EdgeInsets.zero,
+                              title: const Text('Retirer bobine', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                              subtitle: Text(
+                                'Retour au stock (${widget.bobine!.bobineType})',
+                                style: const TextStyle(fontSize: 11),
+                              ),
+                              value: _retirerBobine,
+                              onChanged: (value) => setState(() => _retirerBobine = value ?? true),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+
+                        TextFormField(
+                          controller: _notesController,
+                          decoration: _buildInputDecoration(
+                            label: 'Notes / Actions effectuées',
+                            hintText: 'Ex: Appel technicien, pièce à changer...',
+                            icon: Icons.note_alt_rounded,
+                          ),
+                          maxLines: 2,
+                        ),
+                      ],
+                    ),
                   ),
-                  child: Text(_formatTime(_selectedTime)),
                 ),
-              ),
-              if (_hasBobine) ...[
-                const SizedBox(height: 16),
-                CheckboxListTile(
-                  title: const Text('Retirer la bobine de la machine'),
-                  subtitle: Text(
-                    'La bobine ${widget.bobine!.bobineType} sera marquée comme finie et retournée au stock',
-                  ),
-                  value: _retirerBobine,
-                  onChanged: (value) {
-                    setState(() => _retirerBobine = value ?? true);
-                  },
+
+                // Footer
+                const Divider(height: 1),
+                Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: _buildSubmitButton(),
                 ),
               ],
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _notesController,
-                decoration: const InputDecoration(
-                  labelText: 'Notes',
-                  prefixIcon: Icon(Icons.note),
-                  helperText: 'Optionnel',
-                ),
-                maxLines: 2,
-              ),
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: const Text('Annuler'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: FilledButton.icon(
-                      onPressed: _submit,
-                      icon: const Icon(Icons.check),
-                      label: const Text('Enregistrer'),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+            ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildDateTimePicker(ThemeData theme, ColorScheme colors, {required bool isDate}) {
+    return InkWell(
+      onTap: () => isDate ? _selectDate(context) : _selectTime(context),
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          color: colors.surfaceContainerLow.withValues(alpha: 0.3),
+          border: Border.all(color: colors.outline.withValues(alpha: 0.1)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(isDate ? Icons.calendar_today_rounded : Icons.access_time_rounded, size: 14, color: colors.primary),
+                const SizedBox(width: 6),
+                Text(isDate ? 'Date' : 'Heure', style: TextStyle(fontSize: 11, color: colors.onSurfaceVariant)),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              isDate ? DateFormatter.formatNumericDate(_selectedDate) : _formatTime(_selectedTime),
+              style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  InputDecoration _buildInputDecoration({required String label, required IconData icon, String? hintText}) {
+    final colors = Theme.of(context).colorScheme;
+    return InputDecoration(
+      labelText: label,
+      hintText: hintText,
+      prefixIcon: Icon(icon, size: 20, color: colors.primary),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: colors.outline.withValues(alpha: 0.1))),
+      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: colors.outline.withValues(alpha: 0.1))),
+      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: colors.primary, width: 2)),
+      filled: true,
+      fillColor: colors.surfaceContainerLow.withValues(alpha: 0.3),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+    );
+  }
+
+  Widget _buildSubmitButton() {
+    final colors = Theme.of(context).colorScheme;
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(colors: [colors.error, colors.error.withValues(alpha: 0.7)]),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [BoxShadow(color: colors.error.withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 4))],
+      ),
+      child: ElevatedButton(
+        onPressed: _submit,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          foregroundColor: Colors.white,
+          shadowColor: Colors.transparent,
+          padding: const EdgeInsets.symmetric(vertical: 18),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
+        child: const Text('ENREGISTRER LA PANNE', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1)),
       ),
     );
   }

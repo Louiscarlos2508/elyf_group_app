@@ -222,7 +222,7 @@ class _WeeklySalaryCalculatorState
         amount: info.totalSalary,
         daysWorked: info.daysWorked,
         week: _selectedWeek,
-        onPaid: (signature) async {
+        onPaid: (signature, signerName) async {
           // Utilisation d'un ID temporaire, le repository en générera un réel si besoin
           final paymentId = 'local_${DateTime.now().millisecondsSinceEpoch}';
           
@@ -240,6 +240,7 @@ class _WeeklySalaryCalculatorState
               )
             ],
             signature: signature,
+            signerName: signerName, // Ajout du nom du signataire
             isVerified: true, // Auto-verified by signature
             verifiedAt: DateTime.now(),
             sourceProductionDayIds: info.productionDayIds,
@@ -289,7 +290,7 @@ class _WeeklySalaryCalculatorState
         amount: total,
         daysWorked: salaries.fold<int>(0, (sum, info) => sum + info.daysWorked),
         week: _selectedWeek,
-        onPaid: (signature) async {
+        onPaid: (signature, signerName) async {
           final paymentId = 'local_${DateTime.now().millisecondsSinceEpoch}';
           
           final allProductionDayIds = salaries
@@ -310,6 +311,7 @@ class _WeeklySalaryCalculatorState
             paymentDate: DateTime.now(),
             persons: persons,
             signature: signature,
+            signerName: signerName, // Ajout du nom du signataire
             isVerified: true,
             verifiedAt: DateTime.now(),
             sourceProductionDayIds: allProductionDayIds,

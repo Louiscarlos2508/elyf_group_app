@@ -17,6 +17,10 @@ class TenantController {
     return _tenantRepository.watchTenants();
   }
 
+  Stream<List<Tenant>> watchDeletedTenants() {
+    return _tenantRepository.watchDeletedTenants();
+  }
+
   Future<Tenant?> getTenant(String id) async {
     return await _tenantRepository.getTenantById(id);
   }
@@ -48,5 +52,9 @@ class TenantController {
     }
 
     await _tenantRepository.deleteTenant(id);
+  }
+
+  Future<void> restoreTenant(String id) async {
+    await _tenantRepository.restoreTenant(id);
   }
 }

@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:cloud_firestore/cloud_firestore.dart'
-    show FirebaseFirestore, QuerySnapshot, DocumentChangeType, Timestamp;
+    show FirebaseFirestore, QuerySnapshot, DocumentChangeType, Timestamp, FirebaseException;
 
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/logging/app_logger.dart';
@@ -44,8 +44,22 @@ class RealtimeSyncService {
   final Map<String, StreamSubscription<QuerySnapshot>> _pointOfSaleSubscriptions = {};
 
   bool _isListening = false;
+
+  /// Indique si le service écoute actuellement les changements.
+  bool get isListening => _isListening;
   bool _initialPullCompleted = false;
-  final Completer<void> _initialPullCompleter = Completer<void>();
+  void dispose() {
+    _usersSubscription?.cancel();
+    _enterprisesSubscription?.cancel();
+    _rolesSubscription?.cancel();
+    _enterpriseModuleUsersSubscription?.cancel();
+    for (final sub in _pointOfSaleSubscriptions.values) {
+      sub.cancel();
+    }
+    _pointOfSaleSubscriptions.clear();
+    _syncStatusController.close();
+  }
+
   final _syncStatusController = StreamController<bool>.broadcast();
   bool _isSyncing = false;
 
@@ -66,11 +80,15 @@ class RealtimeSyncService {
     _syncStatusController.add(value);
   }
 
+  String? _currentUserId;
+
   /// Démarre l'écoute en temps réel de toutes les collections.
   ///
   /// Fait d'abord un pull initial depuis Firestore vers Drift (offline-first),
   /// puis démarre l'écoute en temps réel pour les changements futurs.
-  Future<void> startRealtimeSync() async {
+  Future<void> startRealtimeSync({String? userId}) async {
+    _currentUserId = userId;
+    
     if (_isListening) {
       developer.log(
         'RealtimeSyncService already listening',
@@ -115,153 +133,15 @@ class RealtimeSyncService {
     }
   }
 
-  /// Fait un pull initial de toutes les données depuis Firestore vers Drift.
-  ///
-  /// Cette méthode garantit que Drift contient toutes les données avant
-  /// de démarrer l'écoute en temps réel (offline-first).
+  /// Pull initial depuis Firestore (One-time fetch).
   Future<void> _pullInitialDataFromFirestore() async {
     try {
-      // Pull des rôles
-      final rolesSnapshot = await firestore.collection(_rolesCollection).get();
-      for (final doc in rolesSnapshot.docs) {
-        final data = doc.data();
-        final roleData = Map<String, dynamic>.from(data);
-        final role = UserRole(
-          id: roleData['id'] as String,
-          name: roleData['name'] as String,
-          description: roleData['description'] as String,
-          permissions:
-              (roleData['permissions'] as List<dynamic>?)
-                  ?.map((e) => e as String)
-                  .toSet() ??
-              {},
-          isSystemRole: roleData['isSystemRole'] as bool? ?? false,
-        );
-        final firestoreUpdatedAt = _getTimestampFromData(roleData);
-        await _saveRoleToLocal(role, firestoreUpdatedAt: firestoreUpdatedAt);
-      }
-      developer.log(
-        'Pulled ${rolesSnapshot.docs.length} roles from Firestore',
-        name: 'admin.realtime.sync',
-      );
+      if (_initialPullCompleted) return;
 
-      // Pull des EnterpriseModuleUsers
-      final assignmentsSnapshot = await firestore
-          .collection(_enterpriseModuleUsersCollection)
-          .get();
-      for (final doc in assignmentsSnapshot.docs) {
-        final data = doc.data();
-        final assignment = EnterpriseModuleUser.fromMap(
-          Map<String, dynamic>.from(data),
-        );
-        await _saveEnterpriseModuleUserToLocal(assignment);
-      }
-      developer.log(
-        'Pulled ${assignmentsSnapshot.docs.length} EnterpriseModuleUsers from Firestore',
-        name: 'admin.realtime.sync',
-      );
-
-      // Pull des utilisateurs
-      final usersSnapshot = await firestore.collection(_usersCollection).get();
-      for (final doc in usersSnapshot.docs) {
-        final data = doc.data();
-        final user = User.fromMap(Map<String, dynamic>.from(data));
-        await _saveUserToLocal(user);
-      }
-      developer.log(
-        'Pulled ${usersSnapshot.docs.length} users from Firestore',
-        name: 'admin.realtime.sync',
-      );
-
-      // Pull des entreprises
-      final enterprisesSnapshot = await firestore
-          .collection(_enterprisesCollection)
-          .get();
-      for (final doc in enterprisesSnapshot.docs) {
-        final data = doc.data();
-        final enterprise = Enterprise.fromMap(Map<String, dynamic>.from(data));
-        await _saveEnterpriseToLocal(enterprise);
-      }
-      developer.log(
-        'Pulled ${enterprisesSnapshot.docs.length} enterprises from Firestore',
-        name: 'admin.realtime.sync',
-      );
-
-      // Pull des points de vente pour toutes les entreprises
-      // Les points de vente sont dans enterprises/{enterpriseId}/pointsOfSale/
-      int totalPosCount = 0;
+      // Utiliser le service de synchro existant qui gère déjà bien le pull initial
+      await firestoreSync.pullInitialData();
       
-      // Helper to encode objects with Timestamps
-      Object? toEncodable(Object? nonEncodable) {
-        if (nonEncodable is Timestamp) {
-          return nonEncodable.toDate().toIso8601String();
-        }
-        return nonEncodable;
-      }
-
-      for (final enterpriseDoc in enterprisesSnapshot.docs) {
-        final enterpriseId = enterpriseDoc.id;
-        try {
-          final posCollection = firestore
-              .collection(_enterprisesCollection)
-              .doc(enterpriseId)
-              .collection('pointsOfSale');
-          
-          final posSnapshot = await posCollection.get();
-          
-          for (final posDoc in posSnapshot.docs) {
-            try {
-              final posData = posDoc.data();
-              final posDataWithId = Map<String, dynamic>.from(posData)
-                ..['id'] = posDoc.id
-                ..['parentEnterpriseId'] = enterpriseId;
-              
-              // Sauvegarder dans Drift avec moduleType='gaz' et enterpriseId=parentEnterpriseId
-              await driftService.records.upsert(
-                collectionName: 'pointOfSale',
-                localId: posDoc.id,
-                remoteId: posDoc.id,
-                enterpriseId: enterpriseId, // parentEnterpriseId
-                moduleType: 'gaz',
-                dataJson: jsonEncode(posDataWithId, toEncodable: toEncodable),
-                localUpdatedAt: DateTime.now(),
-              );
-              
-              totalPosCount++;
-            } catch (e, stackTrace) {
-              final appException = ErrorHandler.instance.handleError(e, stackTrace);
-              AppLogger.warning(
-                'Error saving point of sale ${posDoc.id} for enterprise $enterpriseId: ${appException.message}',
-                name: 'admin.realtime.sync',
-                error: e,
-                stackTrace: stackTrace,
-              );
-            }
-          }
-        } catch (e, stackTrace) {
-          final appException = ErrorHandler.instance.handleError(e, stackTrace);
-          AppLogger.warning(
-            'Error pulling points of sale for enterprise $enterpriseId: ${appException.message}',
-            name: 'admin.realtime.sync',
-            error: e,
-            stackTrace: stackTrace,
-          );
-        }
-      }
-      developer.log(
-        'Pulled $totalPosCount points of sale from Firestore',
-        name: 'admin.realtime.sync',
-      );
-
-      developer.log(
-        'Initial pull from Firestore to Drift completed successfully',
-        name: 'admin.realtime.sync',
-      );
-
       _initialPullCompleted = true;
-      if (!_initialPullCompleter.isCompleted) {
-        _initialPullCompleter.complete();
-      }
     } catch (e, stackTrace) {
       final appException = ErrorHandler.instance.handleError(e, stackTrace);
       AppLogger.error(
@@ -270,67 +150,10 @@ class RealtimeSyncService {
         error: e,
         stackTrace: stackTrace,
       );
-      // Ne pas rethrow - on continue même si le pull initial échoue
-      // L'écoute en temps réel chargera les données progressivement
-
-      // Marquer quand même comme complété pour ne pas bloquer indéfiniment
-      _initialPullCompleted = true;
-      if (!_initialPullCompleter.isCompleted) {
-        _initialPullCompleter.completeError(e);
-      }
+      // Ne pas rethrow ici pour permettre le démarrage de l'écoute temps réel
+      // même si le pull initial échoue partiellement
     }
   }
-
-  /// Vérifie si le pull initial est terminé.
-  bool get isInitialPullCompleted => _initialPullCompleted;
-
-  /// Attend que le pull initial soit terminé.
-  ///
-  /// Retourne un Future qui se complète quand le pull initial est terminé
-  /// ou après un timeout de 10 secondes maximum.
-  Future<void> waitForInitialPull({
-    Duration timeout = const Duration(seconds: 10),
-  }) async {
-    if (_initialPullCompleted) {
-      return;
-    }
-
-    try {
-      await _initialPullCompleter.future.timeout(timeout);
-    } catch (e, stackTrace) {
-      final appException = ErrorHandler.instance.handleError(e, stackTrace);
-      AppLogger.warning(
-        'Timeout or error waiting for initial pull: ${appException.message}',
-        name: 'admin.realtime.sync',
-        error: e,
-        stackTrace: stackTrace,
-      );
-      // Ne pas rethrow - permettre à l'app de continuer même si le pull prend trop de temps
-    }
-  }
-
-  /// Arrête l'écoute en temps réel.
-  ///
-  /// Note: Ne réinitialise PAS le flag _initialPullCompleted car les données
-  /// (roles, entreprises, enterprise_module_users) sont partagées entre tous
-  /// les utilisateurs et restent valides même après déconnexion.
-  Future<void> stopRealtimeSync() async {
-    await _usersSubscription?.cancel();
-    await _enterprisesSubscription?.cancel();
-    await _rolesSubscription?.cancel();
-    await _enterpriseModuleUsersSubscription?.cancel();
-
-    _usersSubscription = null;
-    _enterprisesSubscription = null;
-    _rolesSubscription = null;
-    _enterpriseModuleUsersSubscription = null;
-
-    _isListening = false;
-    developer.log('RealtimeSyncService stopped', name: 'admin.realtime.sync');
-  }
-
-  /// Vérifie si la synchronisation est en cours d'écoute.
-  bool get isListening => _isListening;
 
   /// Écoute les changements dans la collection users.
   Future<void> _listenToUsers() async {
@@ -345,13 +168,17 @@ class RealtimeSyncService {
                   final data = docChange.doc.data();
                   if (data == null) continue;
 
-                  final user = User.fromMap(Map<String, dynamic>.from(data));
+                  // Ajouter l'ID au map si absent
+                  final userData = Map<String, dynamic>.from(data);
+                  if (!userData.containsKey('id')) {
+                    userData['id'] = docChange.doc.id;
+                  }
+
+                  final user = User.fromMap(userData);
 
                   switch (docChange.type) {
                     case DocumentChangeType.added:
                     case DocumentChangeType.modified:
-                      // Sauvegarder localement sans déclencher de sync
-                      // (les données viennent de Firestore, pas besoin de les re-sync)
                       await _saveUserToLocal(user);
                       developer.log(
                         'User ${docChange.type.name} in realtime: ${user.id}',
@@ -368,9 +195,9 @@ class RealtimeSyncService {
                   }
                   _pulseSync();
                 } catch (e, stackTrace) {
-                  final appException = ErrorHandler.instance.handleError(e, stackTrace);
+                  // Loguer l'erreur mais continuer pour les autres changements
                   AppLogger.warning(
-                    'Error processing user change in realtime sync: ${appException.message}',
+                    'Error processing user change in realtime sync: $e',
                     name: 'admin.realtime.sync',
                     error: e,
                     stackTrace: stackTrace,
@@ -412,34 +239,33 @@ class RealtimeSyncService {
                   final data = docChange.doc.data();
                   if (data == null) continue;
 
-                  final enterprise = Enterprise.fromMap(
-                    Map<String, dynamic>.from(data),
-                  );
+                  // Ajouter l'ID au map si absent
+                  final enterpriseData = Map<String, dynamic>.from(data);
+                  if (!enterpriseData.containsKey('id')) {
+                    enterpriseData['id'] = docChange.doc.id;
+                  }
+
+                  final enterprise = Enterprise.fromMap(enterpriseData);
 
                   switch (docChange.type) {
                     case DocumentChangeType.added:
-                    case DocumentChangeType.modified:
-                      final isPointOfSale = enterprise.id.startsWith('pos_');
+                      // Pour une nouvelle entreprise, on doit aussi commencer à écouter ses points de vente
+                      await _saveEnterpriseToLocal(enterprise);
+                      await _listenToPointsOfSaleForEnterprise(enterprise.id);
                       developer.log(
-                        'Enterprise ${docChange.type.name} in realtime: id=${enterprise.id}, name=${enterprise.name}, type=${enterprise.type}, isPointOfSale=$isPointOfSale',
+                        'Enterprise added in realtime: ${enterprise.id}',
                         name: 'admin.realtime.sync',
                       );
+                      break;
+                    case DocumentChangeType.modified:
                       await _saveEnterpriseToLocal(enterprise);
                       developer.log(
-                        '✅ Enterprise sauvegardée localement: id=${enterprise.id}',
+                        'Enterprise modified in realtime: ${enterprise.id}',
                         name: 'admin.realtime.sync',
                       );
-                      
-                      // Si c'est une nouvelle entreprise, démarrer l'écoute de ses points de vente
-                      if (docChange.type == DocumentChangeType.added) {
-                        await _listenToPointsOfSaleForEnterprise(enterprise.id);
-                      }
                       break;
                     case DocumentChangeType.removed:
                       await _deleteEnterpriseFromLocal(enterprise.id);
-                      // Arrêter l'écoute des points de vente de cette entreprise
-                      await _pointOfSaleSubscriptions[enterprise.id]?.cancel();
-                      _pointOfSaleSubscriptions.remove(enterprise.id);
                       developer.log(
                         'Enterprise removed in realtime: ${enterprise.id}',
                         name: 'admin.realtime.sync',
@@ -448,9 +274,8 @@ class RealtimeSyncService {
                   }
                   _pulseSync();
                 } catch (e, stackTrace) {
-                  final appException = ErrorHandler.instance.handleError(e, stackTrace);
                   AppLogger.warning(
-                    'Error processing enterprise change in realtime sync: ${appException.message}',
+                    'Error processing enterprise change in realtime sync: $e',
                     name: 'admin.realtime.sync',
                     error: e,
                     stackTrace: stackTrace,
@@ -493,43 +318,30 @@ class RealtimeSyncService {
                   if (data == null) continue;
 
                   final roleData = Map<String, dynamic>.from(data);
-                  final role = UserRole(
-                    id: roleData['id'] as String,
-                    name: roleData['name'] as String,
-                    description: roleData['description'] as String,
-                    permissions:
-                        (roleData['permissions'] as List<dynamic>?)
-                            ?.map((e) => e as String)
-                            .toSet() ??
-                        {},
-                    isSystemRole: roleData['isSystemRole'] as bool? ?? false,
-                  );
+                  // Assurer que l'ID est présent
+                  if (!roleData.containsKey('id')) {
+                    roleData['id'] = docChange.doc.id;
+                  }
+                  
+                  // Récupérer le timestamp de modification pour la gestion des conflits
+                  final firestoreUpdatedAt = _getTimestampFromData(roleData);
+
+                  final role = UserRole.fromMap(roleData);
 
                   switch (docChange.type) {
                     case DocumentChangeType.added:
-                      final firestoreUpdatedAt = _getTimestampFromData(roleData);
-                      await _saveRoleToLocal(role, firestoreUpdatedAt: firestoreUpdatedAt);
-                      developer.log(
-                        'Role added in realtime: ${role.id}',
-                        name: 'admin.realtime.sync',
-                      );
-                      break;
                     case DocumentChangeType.modified:
-                      // Vérifier si la version locale est plus récente avant d'écraser
-                      final firestoreUpdatedAt = _getTimestampFromData(roleData);
-                      final shouldUpdate = await _shouldUpdateRoleFromFirestore(
+                      // Vérifier si la mise à jour est nécessaire (conflit)
+                      if (await _shouldUpdateRoleFromFirestore(
                         roleId: role.id,
                         firestoreUpdatedAt: firestoreUpdatedAt,
-                      );
-                      if (shouldUpdate) {
-                        await _saveRoleToLocal(role, firestoreUpdatedAt: firestoreUpdatedAt);
-                        developer.log(
-                          'Role modified in realtime: ${role.id}',
-                          name: 'admin.realtime.sync',
+                      )) {
+                        await _saveRoleToLocal(
+                          role, 
+                          firestoreUpdatedAt: firestoreUpdatedAt,
                         );
-                      } else {
                         developer.log(
-                          'Skipping role update from Firestore: local version is newer for ${role.id}',
+                          'Role ${docChange.type.name} in realtime: ${role.id}',
                           name: 'admin.realtime.sync',
                         );
                       }
@@ -544,9 +356,8 @@ class RealtimeSyncService {
                   }
                   _pulseSync();
                 } catch (e, stackTrace) {
-                  final appException = ErrorHandler.instance.handleError(e, stackTrace);
                   AppLogger.warning(
-                    'Error processing role change in realtime sync: ${appException.message}',
+                    'Error processing role change in realtime sync: $e',
                     name: 'admin.realtime.sync',
                     error: e,
                     stackTrace: stackTrace,
@@ -576,57 +387,129 @@ class RealtimeSyncService {
   }
 
   /// Écoute les changements dans la collection enterprise_module_users.
+  /// Implemente une stratégie de repli (fallback) :
+  /// 1. Tente d'écouter TOUS les documents (nécessite droits Admin)
+  /// 2. En cas d'erreur de permission, tente d'écouter SEULEMENT les documents de l'utilisateur
   Future<void> _listenToEnterpriseModuleUsers() async {
     try {
+      // Fonction helper pour traiter les snapshots
+      Future<void> handleSnapshot(QuerySnapshot snapshot) async {
+        for (final docChange in snapshot.docChanges) {
+          try {
+            final data = docChange.doc.data();
+            if (data == null) continue;
+
+            final assignment = EnterpriseModuleUser.fromMap(
+              Map<String, dynamic>.from(data as Map),
+            );
+
+            switch (docChange.type) {
+              case DocumentChangeType.added:
+              case DocumentChangeType.modified:
+                await _saveEnterpriseModuleUserToLocal(assignment);
+                developer.log(
+                  'EnterpriseModuleUser ${docChange.type.name} in realtime: ${assignment.documentId}',
+                  name: 'admin.realtime.sync',
+                );
+                break;
+              case DocumentChangeType.removed:
+                await _deleteEnterpriseModuleUserFromLocal(
+                  assignment.documentId,
+                );
+                developer.log(
+                  'EnterpriseModuleUser removed in realtime: ${assignment.documentId}',
+                  name: 'admin.realtime.sync',
+                );
+                break;
+            }
+            _pulseSync();
+          } catch (e, stackTrace) {
+            final appException = ErrorHandler.instance.handleError(e, stackTrace);
+            AppLogger.warning(
+              'Error processing EnterpriseModuleUser change in realtime sync: ${appException.message}',
+              name: 'admin.realtime.sync',
+              error: e,
+              stackTrace: stackTrace,
+            );
+          }
+        }
+      }
+
+      // Tentative 1: Écouter TOUS les documents (Admin)
       _enterpriseModuleUsersSubscription = firestore
           .collection(_enterpriseModuleUsersCollection)
           .snapshots()
           .listen(
-            (snapshot) async {
-              for (final docChange in snapshot.docChanges) {
-                try {
-                  final data = docChange.doc.data();
-                  if (data == null) continue;
+            handleSnapshot,
+            onError: (error, stackTrace) {
+              // Vérifier si c'est une erreur de permission
+              if (error is FirebaseException &&
+                  error.code == 'permission-denied') {
+                
+                developer.log(
+                  'Permission denied for reading ALL enterprise_module_users. Falling back to user-specific query.',
+                  name: 'admin.realtime.sync',
+                  error: error,
+                );
 
-                  final assignment = EnterpriseModuleUser.fromMap(
-                    Map<String, dynamic>.from(data),
-                  );
-
-                  switch (docChange.type) {
-                    case DocumentChangeType.added:
-                    case DocumentChangeType.modified:
-                      await _saveEnterpriseModuleUserToLocal(assignment);
-                      developer.log(
-                        'EnterpriseModuleUser ${docChange.type.name} in realtime: ${assignment.documentId}',
-                        name: 'admin.realtime.sync',
-                      );
-                      break;
-                    case DocumentChangeType.removed:
-                      await _deleteEnterpriseModuleUserFromLocal(
-                        assignment.documentId,
-                      );
-                      developer.log(
-                        'EnterpriseModuleUser removed in realtime: ${assignment.documentId}',
-                        name: 'admin.realtime.sync',
-                      );
-                      break;
-                  }
-                  _pulseSync();
-                } catch (e, stackTrace) {
-                  final appException = ErrorHandler.instance.handleError(e, stackTrace);
-                  AppLogger.warning(
-                    'Error processing EnterpriseModuleUser change in realtime sync: ${appException.message}',
+                // Tentative 2: Fallback sur l'utilisateur courant si disponible
+                if (_currentUserId != null) {
+                  _retryListenToUserEnterpriseModuleUsers(handleSnapshot);
+                } else {
+                   AppLogger.warning(
+                    'Permission denied and no currentUserId available for fallback query.',
                     name: 'admin.realtime.sync',
-                    error: e,
-                    stackTrace: stackTrace,
                   );
                 }
+              } else {
+                final appException =
+                    ErrorHandler.instance.handleError(error, stackTrace);
+                AppLogger.error(
+                  'Error in enterprise_module_users realtime stream: ${appException.message}',
+                  name: 'admin.realtime.sync',
+                  error: error,
+                  stackTrace: stackTrace,
+                );
               }
             },
+          );
+    } catch (e, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error setting up enterprise_module_users realtime listener: ${appException.message}',
+        name: 'admin.realtime.sync',
+        error: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  /// Helper pour écouter seulement les assignations de l'utilisateur courant
+  void _retryListenToUserEnterpriseModuleUsers(
+    Function(QuerySnapshot) onSnapshot,
+  ) {
+    if (_currentUserId == null) return;
+
+    // Annuler la souscription précédente qui a échoué
+    _enterpriseModuleUsersSubscription?.cancel();
+
+    developer.log(
+      'Starting filtered sync for user: $_currentUserId',
+      name: 'admin.realtime.sync',
+    );
+
+    try {
+      _enterpriseModuleUsersSubscription = firestore
+          .collection(_enterpriseModuleUsersCollection)
+          .where('userId', isEqualTo: _currentUserId)
+          .snapshots()
+          .listen(
+            (snapshot) => onSnapshot(snapshot),
             onError: (error, stackTrace) {
-              final appException = ErrorHandler.instance.handleError(error, stackTrace);
+              final appException =
+                  ErrorHandler.instance.handleError(error, stackTrace);
               AppLogger.error(
-                'Error in enterprise_module_users realtime stream: ${appException.message}',
+                'Error in user-specific enterprise_module_users realtime stream: ${appException.message}',
                 name: 'admin.realtime.sync',
                 error: error,
                 stackTrace: stackTrace,
@@ -634,9 +517,8 @@ class RealtimeSyncService {
             },
           );
     } catch (e, stackTrace) {
-      final appException = ErrorHandler.instance.handleError(e, stackTrace);
       AppLogger.error(
-        'Error setting up enterprise_module_users realtime listener: ${appException.message}',
+        'Error setting up user-specific listener fallback',
         name: 'admin.realtime.sync',
         error: e,
         stackTrace: stackTrace,

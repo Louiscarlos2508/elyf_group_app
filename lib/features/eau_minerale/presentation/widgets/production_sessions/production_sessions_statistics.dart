@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:elyf_groupe_app/shared.dart';
 
 /// Cartes de statistiques des sessions de production.
 class ProductionSessionsStatistics extends StatelessWidget {
@@ -17,127 +18,85 @@ class ProductionSessionsStatistics extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // Mobile layout: Single row scrollable or Grid
-        // Here we keep the 2x2 grid for standard mobile width as it offers good density
-        return Column(
+    return Column(
+      children: [
+        Row(
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: _StatCard(
-                    label: 'En Cours',
-                    value: sessionsEnCours.toString(),
-                    icon: Icons.timelapse,
-                    color: Colors.blue,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _StatCard(
-                    label: 'Produits',
-                    value: totalProduit.toInt().toString(),
-                    icon: Icons.water_drop,
-                    color: Colors.cyan,
-                  ),
-                ),
-              ],
+            Expanded(
+              child: _buildStatCard(
+                context,
+                label: 'En Cours',
+                value: sessionsEnCours.toString(),
+                icon: Icons.timelapse,
+                color: Colors.blue,
+              ),
             ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _StatCard(
-                    label: 'Terminées',
-                    value: sessionsTerminees.toString(),
-                    icon: Icons.check_circle_outline,
-                    color: Colors.green,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _StatCard(
-                    label: 'Total Sessions',
-                    value: totalSessions.toString(),
-                    icon: Icons.history,
-                    color: Colors.grey,
-                  ),
-                ),
-              ],
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildStatCard(
+                context,
+                label: 'Produits',
+                value: totalProduit.toInt().toString(),
+                icon: Icons.water_drop,
+                color: Colors.cyan,
+              ),
             ),
           ],
-        );
-      },
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _buildStatCard(
+                context,
+                label: 'Terminées',
+                value: sessionsTerminees.toString(),
+                icon: Icons.check_circle_outline,
+                color: Colors.green,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildStatCard(
+                context,
+                label: 'Total Sessions',
+                value: totalSessions.toString(),
+                icon: Icons.history,
+                color: Colors.grey,
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
-}
 
-class _StatCard extends StatelessWidget {
-  const _StatCard({
-    required this.label,
-    required this.value,
-    required this.icon,
-    required this.color,
-  });
-
-  final String label;
-  final String value;
-  final IconData icon;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildStatCard(
+    BuildContext context, {
+    required String label,
+    required String value,
+    required IconData icon,
+    required Color color,
+  }) {
     final theme = Theme.of(context);
-
-    // Modern Flat Design - Refined
-    return Container(
+    return ElyfCard(
+      isGlass: true,
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: theme.colorScheme.shadow.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-        border: Border.all(
-          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
-        ),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(icon, size: 22, color: color),
-              ),
-              const Spacer(),
-              Text(
-                value,
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: theme.colorScheme.onSurface,
-                  letterSpacing: -0.5,
-                ),
-              ),
-            ],
-          ),
+          Icon(icon, color: color, size: 24),
           const SizedBox(height: 12),
           Text(
-            label.toUpperCase(),
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+            value,
+            style: theme.textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.bold,
-              letterSpacing: 1.1,
+            ),
+          ),
+          Text(
+            label,
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
         ],

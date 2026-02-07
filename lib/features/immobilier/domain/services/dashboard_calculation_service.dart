@@ -21,7 +21,6 @@ class ImmobilierDashboardCalculationService {
     DateTime? referenceDate,
   }) {
     final now = referenceDate ?? DateTime.now();
-    final monthStart = DateTime(now.year, now.month, 1);
 
     // Statistiques des propriétés
     final totalProperties = properties.length;
@@ -49,18 +48,17 @@ class ImmobilierDashboardCalculationService {
 
     // Paiements du mois
     final monthPayments = payments.where((p) {
-      return p.paymentDate.isAfter(
-            monthStart.subtract(const Duration(days: 1)),
-          ) &&
+      return p.paymentDate.year == now.year &&
+          p.paymentDate.month == now.month &&
           p.status == PaymentStatus.paid;
     }).toList();
     final monthRevenue = monthPayments.fold<int>(0, (sum, p) => sum + p.amount);
+    final monthPaymentsCount = monthPayments.length; // Calculate count
 
     // Dépenses du mois
     final monthExpenses = expenses.where((e) {
-      return e.expenseDate.isAfter(
-        monthStart.subtract(const Duration(days: 1)),
-      );
+      return e.expenseDate.year == now.year &&
+          e.expenseDate.month == now.month;
     }).toList();
     final monthExpensesTotal = monthExpenses.fold<int>(
       0,
@@ -75,6 +73,11 @@ class ImmobilierDashboardCalculationService {
         ? (rentedProperties / totalProperties) * 100
         : 0.0;
 
+    // Taux de recouvrement
+    final collectionRate = totalMonthlyRent > 0
+        ? (monthRevenue / totalMonthlyRent) * 100
+        : 0.0;
+
     return ImmobilierDashboardMetrics(
       totalProperties: totalProperties,
       availableProperties: availableProperties,
@@ -83,9 +86,11 @@ class ImmobilierDashboardCalculationService {
       activeContractsCount: activeContractsCount,
       totalMonthlyRent: totalMonthlyRent,
       monthRevenue: monthRevenue,
+      monthPaymentsCount: monthPaymentsCount,
       monthExpensesTotal: monthExpensesTotal,
       netRevenue: netRevenue,
       occupancyRate: occupancyRate,
+      collectionRate: collectionRate, // Pass collectionRate
     );
   }
 
@@ -203,9 +208,11 @@ class ImmobilierDashboardMetrics {
     required this.activeContractsCount,
     required this.totalMonthlyRent,
     required this.monthRevenue,
+    required this.monthPaymentsCount, // Added parameter
     required this.monthExpensesTotal,
     required this.netRevenue,
     required this.occupancyRate,
+    required this.collectionRate, // Added parameter
   });
 
   final int totalProperties;
@@ -215,9 +222,11 @@ class ImmobilierDashboardMetrics {
   final int activeContractsCount;
   final int totalMonthlyRent;
   final int monthRevenue;
+  final int monthPaymentsCount; // Added field
   final int monthExpensesTotal;
   final int netRevenue;
   final double occupancyRate;
+  final double collectionRate; // Added field
 }
 
 /// Métriques calculées pour une période donnée (utilisé pour les rapports PDF).

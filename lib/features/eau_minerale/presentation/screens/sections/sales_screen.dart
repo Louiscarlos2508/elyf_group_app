@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
-import '../../../../../../core/permissions/modules/eau_minerale_permissions.dart';
+import '../../../../../core/permissions/modules/eau_minerale_permissions.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../../domain/entities/sale.dart';
 import '../../widgets/centralized_permission_guard.dart';
@@ -58,11 +58,9 @@ class SalesScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Scaffold(
-      body: _SalesContent(
-        onNewSale: () => _showForm(context),
-        onActionTap: (sale, action) => _handleAction(context, sale, action),
-      ),
+    return _SalesContent(
+      onNewSale: () => _showForm(context),
+      onActionTap: (sale, action) => _handleAction(context, sale, action),
     );
   }
 }
@@ -83,125 +81,145 @@ class _SalesContent extends ConsumerWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isWide = constraints.maxWidth > 600;
-
         return CustomScrollView(
           slivers: [
+            // Premium Header for Sales
             SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(24, 24, 24, isWide ? 24 : 16),
-                child: isWide
-                    ? Row(
-                        children: [
-                          Text(
-                            'Ventes',
-                            style: theme.textTheme.headlineMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const Spacer(),
-                          RefreshButton(
-                            onRefresh: () => ref.invalidate(salesStateProvider),
-                            tooltip: 'Actualiser les ventes',
-                          ),
-                          const SizedBox(width: 8),
-                          EauMineralePermissionGuard(
-                            permission: EauMineralePermissions.createSale,
-                            child: IntrinsicWidth(
-                              child: FilledButton.icon(
-                                onPressed: onNewSale,
-                                icon: const Icon(Icons.add),
-                                label: const Text('Nouvelle Vente'),
-                              ),
-                            ),
-                          ),
-                        ],
-                      )
-                    : Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
+              child: Container(
+                margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      theme.colorScheme.primary,
+                      const Color(0xFF2563EB), // Premium Blue
+                      const Color(0xFF1E40AF),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: theme.colorScheme.primary.withValues(alpha: 0.2),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Expanded(
-                                child: Text(
-                                  'Ventes',
-                                  style: theme.textTheme.headlineMedium
-                                      ?.copyWith(fontWeight: FontWeight.bold),
+                              Text(
+                                "GESTION DES VENTES",
+                                style: theme.textTheme.labelLarge?.copyWith(
+                                  color: Colors.white.withValues(alpha: 0.9),
+                                  fontWeight: FontWeight.w500,
+                                  letterSpacing: 1.2,
                                 ),
                               ),
-                              RefreshButton(
-                                onRefresh: () =>
-                                    ref.invalidate(salesStateProvider),
-                                tooltip: 'Actualiser les ventes',
+                              const SizedBox(height: 4),
+                              Text(
+                                "Commandes & Revenus",
+                                style: theme.textTheme.headlineMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 12),
-                          EauMineralePermissionGuard(
-                            permission: EauMineralePermissions.createSale,
-                            child: SizedBox(
-                              width: double.infinity,
-                              child: FilledButton.icon(
-                                onPressed: onNewSale,
-                                icon: const Icon(Icons.add),
-                                label: const Text('Nouvelle Vente'),
-                              ),
-                            ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.refresh, color: Colors.white),
+                          onPressed: () => ref.invalidate(salesStateProvider),
+                          tooltip: 'Actualiser',
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    EauMineralePermissionGuard(
+                      permission: EauMineralePermissions.createSale,
+                      child: FilledButton.icon(
+                        onPressed: onNewSale,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: Colors.white.withValues(alpha: 0.2),
+                          foregroundColor: Colors.white,
+                          minimumSize: const Size(double.infinity, 54),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
                           ),
-                        ],
+                        ),
+                        icon: const Icon(Icons.add_shopping_cart, size: 22),
+                        label: const Text(
+                          'Nouvelle Vente',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
+                    ),
+                  ],
+                ),
               ),
             ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+
+            // Content Section
+            SliverPadding(
+              padding: const EdgeInsets.all(16),
+              sliver: SliverToBoxAdapter(
                 child: salesStateAsync.when(
                   data: (state) => Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       if (state.sales.isNotEmpty) ...[
                         Padding(
-                          padding: const EdgeInsets.only(bottom: 16),
+                          padding: const EdgeInsets.only(left: 8, bottom: 16),
                           child: Row(
                             children: [
-                              Icon(
-                                Icons.receipt_long_outlined,
-                                color: theme.colorScheme.primary,
-                                size: 20,
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Icon(
+                                  Icons.receipt_long,
+                                  color: theme.colorScheme.primary,
+                                  size: 20,
+                                ),
                               ),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: 12),
                               Text(
                                 'Ventes récentes',
                                 style: theme.textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: theme.colorScheme.onSurfaceVariant,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                               const Spacer(),
                               Container(
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
+                                  horizontal: 14,
                                   vertical: 6,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: theme.colorScheme.primaryContainer,
+                                  color: theme.colorScheme.primary.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color: theme.colorScheme.primary.withValues(alpha: 0.2),
+                                  ),
                                 ),
-                                child: Consumer(
-                                  builder: (context, ref, child) {
-                                    final count = ref.watch(
-                                      salesStateProvider.select(
-                                        (s) => s.value?.sales.length ?? 0,
-                                      ),
-                                    );
-                                    return Text(
-                                      '$count',
-                                      style: theme.textTheme.labelMedium?.copyWith(
-                                        color: theme.colorScheme.onPrimaryContainer,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    );
-                                  },
+                                child: Text(
+                                  '${state.sales.length} ventes',
+                                  style: theme.textTheme.labelMedium?.copyWith(
+                                    color: theme.colorScheme.primary,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
                             ],
@@ -209,37 +227,29 @@ class _SalesContent extends ConsumerWidget {
                         ),
                         SalesTable(sales: state.sales, onActionTap: onActionTap),
                       ] else
-                        Container(
+                        ElyfCard(
+                          isGlass: true,
                           padding: const EdgeInsets.all(48),
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.surfaceContainerHighest,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: theme.colorScheme.outline.withValues(
-                                alpha: 0.2,
-                              ),
-                            ),
-                          ),
                           child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Icon(
-                                Icons.point_of_sale_outlined,
+                                Icons.point_of_sale_rounded,
                                 size: 64,
-                                color: theme.colorScheme.onSurfaceVariant
-                                    .withValues(alpha: 0.5),
+                                color: theme.colorScheme.primary.withValues(alpha: 0.3),
                               ),
-                              const SizedBox(height: 16),
+                              const SizedBox(height: 24),
                               Text(
                                 'Aucune vente enregistrée',
                                 style: theme.textTheme.titleMedium?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                'Créez votre première vente en cliquant sur le bouton ci-dessus',
+                                'Enregistrez votre première vente pour voir l\'activité ici',
                                 textAlign: TextAlign.center,
-                                style: theme.textTheme.bodySmall?.copyWith(
+                                style: theme.textTheme.bodyMedium?.copyWith(
                                   color: theme.colorScheme.onSurfaceVariant,
                                 ),
                               ),
@@ -248,7 +258,12 @@ class _SalesContent extends ConsumerWidget {
                         ),
                     ],
                   ),
-                  loading: () => const LoadingIndicator(),
+                  loading: () => const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(32.0),
+                      child: CircularProgressIndicator(),
+                    ),
+                  ),
                   error: (error, stackTrace) => ErrorDisplayWidget(
                     error: error,
                     onRetry: () => ref.refresh(salesStateProvider),
@@ -256,7 +271,7 @@ class _SalesContent extends ConsumerWidget {
                 ),
               ),
             ),
-            const SliverToBoxAdapter(child: SizedBox(height: 24)),
+            const SliverToBoxAdapter(child: SizedBox(height: 32)),
           ],
         );
       },

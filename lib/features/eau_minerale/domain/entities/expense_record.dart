@@ -10,6 +10,7 @@ class ExpenseRecord {
     this.notes,
     this.createdAt,
     this.updatedAt,
+    this.receiptPath,
   });
 
   final String id;
@@ -21,6 +22,7 @@ class ExpenseRecord {
   final String? notes; // Notes supplémentaires
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final String? receiptPath;
 
   /// Vérifie si la dépense est liée à une production
   bool get estLieeAProduction =>
@@ -36,6 +38,7 @@ class ExpenseRecord {
     String? notes,
     DateTime? createdAt,
     DateTime? updatedAt,
+    String? receiptPath,
   }) {
     return ExpenseRecord(
       id: id ?? this.id,
@@ -47,6 +50,7 @@ class ExpenseRecord {
       notes: notes ?? this.notes,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      receiptPath: receiptPath ?? this.receiptPath,
     );
   }
 

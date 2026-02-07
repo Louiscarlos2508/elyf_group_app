@@ -43,6 +43,7 @@ class FinanceOfflineRepository extends OfflineRepository<ExpenseRecord>
       updatedAt: map['updatedAt'] != null
           ? DateTime.parse(map['updatedAt'] as String)
           : null,
+      receiptPath: map['receiptPath'] as String?,
     );
   }
 
@@ -58,6 +59,7 @@ class FinanceOfflineRepository extends OfflineRepository<ExpenseRecord>
       'notes': entity.notes,
       'createdAt': entity.createdAt?.toIso8601String(),
       'updatedAt': entity.updatedAt?.toIso8601String(),
+      'receiptPath': entity.receiptPath,
     };
   }
 

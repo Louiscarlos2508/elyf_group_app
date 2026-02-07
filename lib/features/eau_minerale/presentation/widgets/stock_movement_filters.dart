@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
+import 'package:elyf_groupe_app/shared.dart';
 import '../../domain/entities/stock_movement.dart';
 
 /// Widget pour filtrer les mouvements de stock par période et type
@@ -32,8 +32,6 @@ class _StockMovementFiltersState extends ConsumerState<StockMovementFilters> {
     // Par défaut, afficher les 30 derniers jours
     _endDate = DateTime.now();
     _startDate = DateTime.now().subtract(const Duration(days: 30));
-    // Ne pas appeler _applyFilters() ici car le parent initialise déjà les valeurs
-    // et le provider sera appelé avec ces valeurs dès le premier build
   }
 
   void _applyFilters() {
@@ -124,125 +122,141 @@ class _StockMovementFiltersState extends ConsumerState<StockMovementFilters> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.filter_list,
+    return ElyfCard(
+      isGlass: true,
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  Icons.tune_outlined,
                   size: 20,
                   color: theme.colorScheme.primary,
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  'Filtres',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Filtres de l\'historique',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
                 ),
-                const Spacer(),
-                TextButton.icon(
-                  onPressed: _clearFilters,
-                  icon: const Icon(Icons.clear, size: 16),
-                  label: const Text('Réinitialiser'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
+              ),
+              const Spacer(),
+              TextButton(
+                onPressed: _clearFilters,
+                child: const Text('Réinitialiser'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
               children: [
-                _buildPeriodButton(context, 'Aujourd\'hui', 'today'),
-                _buildPeriodButton(context, '7 jours', 'week'),
-                _buildPeriodButton(context, 'Mois', 'month'),
-                _buildPeriodButton(context, 'Trimestre', 'quarter'),
-                _buildPeriodButton(context, 'Année', 'year'),
-                _buildPeriodButton(context, 'Tout', 'all'),
+                _buildPeriodChip(context, 'Aujourd\'hui', 'today'),
+                const SizedBox(width: 8),
+                _buildPeriodChip(context, '7 jours', 'week'),
+                const SizedBox(width: 8),
+                _buildPeriodChip(context, 'Mois', 'month'),
+                const SizedBox(width: 8),
+                _buildPeriodChip(context, 'Année', 'year'),
+                const SizedBox(width: 8),
+                _buildPeriodChip(context, 'All', 'all'),
               ],
             ),
-            const SizedBox(height: 16),
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final isWide = constraints.maxWidth > 600;
+          ),
+          const SizedBox(height: 20),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isWide = constraints.maxWidth > 600;
 
-                if (isWide) {
-                  return Row(
-                    children: [
-                      Expanded(
-                        child: _buildDateField(
-                          context,
-                          'Du',
-                          _startDate,
-                          _selectStartDate,
-                        ),
+              if (isWide) {
+                return Row(
+                  children: [
+                    Expanded(
+                      child: _buildDateField(
+                        context,
+                        'Date début',
+                        _startDate,
+                        _selectStartDate,
                       ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: _buildDateField(
-                          context,
-                          'Au',
-                          _endDate,
-                          _selectEndDate,
-                        ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: _buildDateField(
+                        context,
+                        'Date fin',
+                        _endDate,
+                        _selectEndDate,
                       ),
-                      const SizedBox(width: 16),
-                      Expanded(child: _buildTypeFilter(context)),
-                    ],
-                  );
-                } else {
-                  return Column(
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildDateField(
-                              context,
-                              'Du',
-                              _startDate,
-                              _selectStartDate,
-                            ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(child: _buildTypeFilter(context)),
+                  ],
+                );
+              } else {
+                return Column(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildDateField(
+                            context,
+                            'Début',
+                            _startDate,
+                            _selectStartDate,
                           ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: _buildDateField(
-                              context,
-                              'Au',
-                              _endDate,
-                              _selectEndDate,
-                            ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildDateField(
+                            context,
+                            'Fin',
+                            _endDate,
+                            _selectEndDate,
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      _buildTypeFilter(context),
-                    ],
-                  );
-                }
-              },
-            ),
-          ],
-        ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    _buildTypeFilter(context),
+                  ],
+                );
+              }
+            },
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildPeriodButton(BuildContext context, String label, String period) {
+  Widget _buildPeriodChip(BuildContext context, String label, String period) {
     final theme = Theme.of(context);
     final isSelected = _isPeriodSelected(period);
 
-    return FilterChip(
+    return ChoiceChip(
       label: Text(label),
       selected: isSelected,
       onSelected: (_) => _selectPeriod(period),
-      selectedColor: theme.colorScheme.primaryContainer,
-      checkmarkColor: theme.colorScheme.onPrimaryContainer,
+      selectedColor: theme.colorScheme.primary.withValues(alpha: 0.1),
+      labelStyle: TextStyle(
+        color: isSelected ? theme.colorScheme.primary : theme.colorScheme.onSurface,
+        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+      ),
+      side: BorderSide.none,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
     );
   }
+
+
 
   bool _isPeriodSelected(String period) {
     final now = DateTime.now();

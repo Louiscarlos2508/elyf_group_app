@@ -35,6 +35,8 @@ import '../domain/services/product_calculation_service.dart';
 import '../domain/services/product_filter_service.dart';
 import '../domain/services/report_calculation_service.dart';
 import '../domain/services/validation/product_validation_service.dart';
+import '../domain/entities/cart_item.dart';
+import 'controllers/cart_controller.dart';
 import 'controllers/store_controller.dart';
 
 /// Provider for BoutiqueDashboardCalculationService.
@@ -66,6 +68,12 @@ final productValidationServiceProvider = Provider<ProductValidationService>(
 
 /// Provider for CartService.
 final cartServiceProvider = Provider<CartService>((ref) => CartService());
+
+/// Provider for CartController (StateNotifier).
+/// Keeps track of the cart items across the module.
+final cartProvider = NotifierProvider<CartController, List<CartItem>>(() {
+  return CartController();
+});
 
 /// Provider for ProductFilterService.
 final productFilterServiceProvider = Provider<ProductFilterService>(
@@ -189,6 +197,14 @@ final purchasesProvider = StreamProvider.autoDispose(
 
 final expensesProvider = StreamProvider.autoDispose(
   (ref) => ref.watch(storeControllerProvider).watchExpenses(),
+);
+
+final deletedProductsProvider = StreamProvider.autoDispose(
+  (ref) => ref.watch(storeControllerProvider).watchDeletedProducts(),
+);
+
+final deletedExpensesProvider = StreamProvider.autoDispose(
+  (ref) => ref.watch(storeControllerProvider).watchDeletedExpenses(),
 );
 
 /// Provider combiné pour les métriques mensuelles du dashboard boutique.

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
+import 'package:elyf_groupe_app/shared/presentation/widgets/elyf_ui/organisms/elyf_card.dart';
+import '../../application/providers.dart';
 
 /// Widget pour afficher les alertes de stock faible.
 class StockAlertsWidget extends ConsumerWidget {
@@ -24,84 +24,76 @@ class StockAlertsWidget extends ConsumerWidget {
           return const SizedBox.shrink();
         }
 
-        return Container(
-          margin: const EdgeInsets.only(bottom: 16),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.orange.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: Colors.orange.withValues(alpha: 0.3),
-              width: 1.5,
-            ),
-          ),
+        return ElyfCard(
+          isGlass: true,
+          margin: const EdgeInsets.only(bottom: 24),
+          padding: const EdgeInsets.all(20),
+          borderColor: Colors.orange.withValues(alpha: 0.3),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  Icon(
-                    Icons.warning_amber_rounded,
-                    color: Colors.orange.shade700,
-                    size: 24,
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      Icons.warning_amber_rounded,
+                      color: Colors.orange.shade700,
+                      size: 20,
+                    ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 12),
                   Text(
                     'Alertes de Stock Faible',
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: Colors.orange.shade700,
+                      color: Colors.orange.shade800,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               ...lowStockPackaging.map((stock) {
                 final percentage = stock.pourcentageRestant;
                 return Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Column(
                     children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              stock.type,
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            stock.type,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
                             ),
-                            if (percentage != null) ...[
-                              const SizedBox(height: 4),
-                              LinearProgressIndicator(
-                                value: percentage / 100,
-                                backgroundColor: Colors.orange.withValues(
-                                  alpha: 0.2,
-                                ),
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  Colors.orange.shade700,
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
+                          ),
+                          Text(
+                            _formatQuantity(stock.quantity, stock.unit),
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.orange.shade700,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 16),
-                      Text(
-                        _formatQuantity(stock.quantity, stock.unit),
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.orange.shade700,
-                        ),
-                      ),
-                      if (stock.seuilAlerte != null) ...[
-                        const SizedBox(width: 8),
-                        Text(
-                          '/ ${stock.seuilAlerte}',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
+                      if (percentage != null) ...[
+                        const SizedBox(height: 8),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: LinearProgressIndicator(
+                            value: percentage / 100,
+                            minHeight: 6,
+                            backgroundColor: Colors.orange.withValues(
+                              alpha: 0.1,
+                            ),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.orange.shade600,
+                            ),
                           ),
                         ),
                       ],

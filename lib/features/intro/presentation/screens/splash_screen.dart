@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/auth/providers.dart';
 import '../../application/onboarding_service.dart';
+import '../../../../shared/presentation/widgets/elyf_ui/atoms/elyf_background.dart';
 
 /// Animated splash screen with ELYF branding.
 class SplashScreen extends ConsumerStatefulWidget {
@@ -98,33 +99,33 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   }
 
   /// Navigate to the appropriate screen based on authentication status
-  void _navigateToNextScreen() {
-    ref.read(currentUserProvider).when(
-      data: (user) async {
-        if (user != null) {
-          if (mounted) context.go('/modules');
+  Future<void> _navigateToNextScreen() async {
+    try {
+      // Wait for the authentication state to be ready
+      final user = await ref.read(currentUserProvider.future);
+      
+      if (!mounted) return;
+      
+      if (user != null) {
+        // User is authenticated, go to modules
+        context.go('/modules');
+      } else {
+        // User is not authenticated, check onboarding status
+        final isOnboardingCompleted = 
+            await ref.read(onboardingServiceProvider).isCompleted();
+        
+        if (!mounted) return;
+        
+        if (isOnboardingCompleted) {
+          context.go('/login');
         } else {
-          // Check if onboarding is completed
-          final isOnboardingCompleted = 
-              await ref.read(onboardingServiceProvider).isCompleted();
-          
-          if (mounted) {
-            if (isOnboardingCompleted) {
-              context.go('/login');
-            } else {
-              context.go('/onboarding');
-            }
-          }
+          context.go('/onboarding');
         }
-      },
-      loading: () async {
-        // Fallback to onboarding if auth is taking too long
-        if (mounted) context.go('/onboarding');
-      },
-      error: (error, stack) {
-        if (mounted) context.go('/login');
-      },
-    );
+      }
+    } catch (error) {
+      // On error, go to login
+      if (mounted) context.go('/login');
+    }
   }
 
   @override
@@ -143,171 +144,76 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
-      backgroundColor: colors.primary,
-      body: Stack(
-        children: [
-          // Animated background blobs (White blobs on Primary for high contrast)
-          _AnimatedSplashBackground(
-            animation: _waveAnimation,
-            colors: colors,
-            useContrast: true,
-          ),
-          // Main content
-          Center(
-            child: AnimatedBuilder(
-              animation: Listenable.merge([
-                _logoController,
-                _textController,
-                _glowController,
-              ]),
-              builder: (context, child) {
-                return Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Animated logo container (White background for logo on Primary background)
-                    Opacity(
-                      opacity: _logoOpacity.value,
-                      child: Transform.scale(
-                        scale: _logoScale.value,
-                        child: Container(
-                          padding: const EdgeInsets.all(32),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.white.withValues(
-                                  alpha: _glowAnimation.value * 0.4,
-                                ),
-                                blurRadius: 40 * _glowAnimation.value,
-                                spreadRadius: 10 * _glowAnimation.value,
+      body: ElyfBackground(
+        child: Center(
+          child: AnimatedBuilder(
+            animation: Listenable.merge([
+              _logoController,
+              _textController,
+              _glowController,
+            ]),
+            builder: (context, child) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                   // Animated logo container
+                  Opacity(
+                    opacity: _logoOpacity.value,
+                    child: Transform.scale(
+                      scale: _logoScale.value,
+                      child: Container(
+                        padding: const EdgeInsets.all(32),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: colors.primary.withValues(
+                                alpha: _glowAnimation.value * 0.4,
                               ),
-                            ],
-                          ),
-                          child: Icon(
-                            Icons.business_rounded,
-                            size: 80,
-                            color: colors.primary,
-                          ),
+                              blurRadius: 40 * _glowAnimation.value,
+                              spreadRadius: 10 * _glowAnimation.value,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          Icons.business_rounded,
+                          size: 80,
+                          color: colors.primary,
                         ),
                       ),
                     ),
-                    const SizedBox(height: 60),
-                    // Animated ELYF text (White on Primary)
-                    _AnimatedElyfText(
-                      fadeAnimation: _textFade,
-                      glowAnimation: _glowAnimation,
-                      colors: colors,
-                      textTheme: textTheme,
-                      useContrast: true,
-                    ),
-                    const SizedBox(height: 16),
-                    // Subtitle with fade
-                    Opacity(
-                      opacity: _textFade.value * 0.7,
-                      child: Text(
-                        'GROUPE ELYF',
-                        style: textTheme.titleSmall?.copyWith(
-                          color: Colors.white.withValues(alpha: 0.6),
-                          letterSpacing: 4.0,
-                          fontWeight: FontWeight.bold,
-                        ),
+                  ),
+                  const SizedBox(height: 60),
+                  // Animated ELYF text (Premium Typography)
+                  _AnimatedElyfText(
+                    fadeAnimation: _textFade,
+                    glowAnimation: _glowAnimation,
+                    colors: colors,
+                    textTheme: textTheme,
+                  ),
+                  const SizedBox(height: 16),
+                  // Subtitle (Premium Tracking)
+                  Opacity(
+                    opacity: _textFade.value * 0.8,
+                    child: Text(
+                      'GROUPE ELYF',
+                      style: textTheme.titleMedium?.copyWith(
+                        color: colors.onSurface.withValues(alpha: 0.7),
+                        letterSpacing: 8.0,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ],
-                );
-              },
-            ),
+                  ),
+                ],
+              );
+            },
           ),
-        ],
+        ),
       ),
     );
   }
-}
-
-class _AnimatedSplashBackground extends StatelessWidget {
-  const _AnimatedSplashBackground({
-    required this.animation,
-    required this.colors,
-    this.useContrast = false,
-  });
-
-  final Animation<double> animation;
-  final ColorScheme colors;
-  final bool useContrast;
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: animation,
-      builder: (context, child) {
-        return CustomPaint(
-          size: Size.infinite,
-          painter: _SplashBackgroundPainter(
-            progress: animation.value,
-            colors: colors,
-            useContrast: useContrast,
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _SplashBackgroundPainter extends CustomPainter {
-  _SplashBackgroundPainter({
-    required this.progress,
-    required this.colors,
-    this.useContrast = false,
-  });
-
-  final double progress;
-  final ColorScheme colors;
-  final bool useContrast;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final bgColor = useContrast ? colors.primary : colors.surface;
-    final blobColor = useContrast ? Colors.white : colors.primary;
-
-    // Deep background
-    canvas.drawRect(
-      Rect.fromLTWH(0, 0, size.width, size.height),
-      Paint()..color = bgColor,
-    );
-
-    // Soft animated blobs
-    final blob1Center = Offset(
-      size.width * 0.3 + math.sin(progress * 2 * math.pi) * 80,
-      size.height * 0.3 + math.cos(progress * 2 * math.pi) * 80,
-    );
-    _drawBlob(canvas, blob1Center, size.width * 0.7, blobColor.withValues(alpha: 0.08));
-
-    final blob2Center = Offset(
-      size.width * 0.7 + math.cos(progress * 2 * math.pi) * 90,
-      size.height * 0.7 + math.sin(progress * 2 * math.pi) * 90,
-    );
-    _drawBlob(canvas, blob2Center, size.width * 0.6, blobColor.withValues(alpha: 0.1));
-
-    final blob3Center = Offset(
-      size.width * 0.5 + math.sin(progress * 2 * math.pi * 0.5) * 120,
-      size.height * 0.5 + math.cos(progress * 2 * math.pi * 0.5) * 120,
-    );
-    _drawBlob(canvas, blob3Center, size.width * 0.8, blobColor.withValues(alpha: 0.05));
-  }
-
-  void _drawBlob(Canvas canvas, Offset center, double radius, Color color) {
-    final paint = Paint()
-      ..color = color
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 100);
-    canvas.drawCircle(center, radius, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _SplashBackgroundPainter oldDelegate) =>
-      oldDelegate.progress != progress ||
-      oldDelegate.colors != colors ||
-      oldDelegate.useContrast != useContrast;
 }
 
 class _AnimatedElyfText extends StatelessWidget {
@@ -316,14 +222,12 @@ class _AnimatedElyfText extends StatelessWidget {
     required this.glowAnimation,
     required this.colors,
     required this.textTheme,
-    this.useContrast = false,
   });
 
   final Animation<double> fadeAnimation;
   final Animation<double> glowAnimation;
   final ColorScheme colors;
   final TextTheme textTheme;
-  final bool useContrast;
 
   @override
   Widget build(BuildContext context) {
@@ -332,14 +236,15 @@ class _AnimatedElyfText extends StatelessWidget {
       child: Text(
         'ELYF',
         style: textTheme.displayLarge?.copyWith(
-          color: useContrast ? Colors.white : colors.primary,
+          color: colors.primary,
           fontWeight: FontWeight.w900,
           fontSize: 84,
-          letterSpacing: 8,
+          letterSpacing: 4,
+          height: 1.0,
           shadows: [
             Shadow(
-              color: (useContrast ? Colors.white : colors.primary).withValues(alpha: 0.1),
-              blurRadius: 20,
+              color: colors.primary.withValues(alpha: 0.2),
+              blurRadius: 30,
               offset: const Offset(0, 10),
             ),
           ],

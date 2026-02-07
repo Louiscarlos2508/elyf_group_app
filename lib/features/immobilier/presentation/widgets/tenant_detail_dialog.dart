@@ -143,7 +143,7 @@ class _InfoTab extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _InfoTile(icon: Icons.phone, label: 'Téléphone', value: tenant.phone),
-          _InfoTile(icon: Icons.email, label: 'Email', value: tenant.email),
+
           if (tenant.address != null)
             _InfoTile(
               icon: Icons.location_on,
@@ -314,7 +314,7 @@ class _ContractMiniCard extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
         ),
         subtitle: Text(
-          '${ContractCardHelpers.formatDate(contract.startDate)} - ${ContractCardHelpers.formatDate(contract.endDate)}',
+          '${ContractCardHelpers.formatDate(contract.startDate)} - ${contract.endDate != null ? ContractCardHelpers.formatDate(contract.endDate!) : "Indéterminée"}',
         ),
         trailing: Column(
           mainAxisAlignment: MainAxisAlignment.center,

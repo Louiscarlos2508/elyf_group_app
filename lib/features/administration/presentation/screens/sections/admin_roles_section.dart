@@ -126,28 +126,38 @@ class AdminRolesSection extends ConsumerWidget {
               slivers: [
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.all(24),
+                    padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Gestion des Rôles',
-                          style: theme.textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                'Gestion des Rôles',
+                                style: theme.textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            FilledButton.icon(
+                              onPressed: () => _handleCreateRole(context, ref),
+                              icon: const Icon(Icons.add_rounded),
+                              style: FilledButton.styleFrom(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              label: const Text('Nouveau Rôle'),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 4),
                         Text(
-                          'Créez et gérez les rôles avec leurs permissions',
+                          'Configurez les accès par défaut ou créez vos propres modèles',
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
-                        ),
-                        const SizedBox(height: 16),
-                        FilledButton.icon(
-                          onPressed: () => _handleCreateRole(context, ref),
-                          icon: const Icon(Icons.add),
-                          label: const Text('Nouveau Rôle'),
                         ),
                       ],
                     ),
@@ -184,90 +194,66 @@ class AdminRolesSection extends ConsumerWidget {
                     ),
                   )
                 else
+                // Rôles Système (Prédéfinis)
+                SliverToBoxAdapter(
+                  child: _buildSectionHeader(
+                    context,
+                    'Rôles Système',
+                    'Modèles officiels intégrés par défaut',
+                    Icons.verified_user_outlined,
+                  ),
+                ),
+                SliverList(
+                  delegate: SliverChildBuilderDelegate((context, index) {
+                    final systemRoles = roles.where((r) => r.isSystemRole).toList();
+                    if (index >= systemRoles.length) return null;
+                    final role = systemRoles[index];
+                    return _buildRoleCard(context, ref, role, usersByRole[role.id] ?? 0);
+                  }, childCount: roles.where((r) => r.isSystemRole).length),
+                ),
+
+                // Rôles Personnalisés
+                SliverToBoxAdapter(
+                  child: _buildSectionHeader(
+                    context,
+                    'Rôles Personnalisés',
+                    'Modèles créés pour vos besoins spécifiques',
+                    Icons.dashboard_customize_outlined,
+                  ),
+                ),
+                if (roles.every((r) => r.isSystemRole))
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surfaceContainerLow,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: theme.colorScheme.outlineVariant,
+                            style: BorderStyle.solid,
+                          ),
+                        ),
+                        child: Text(
+                          'Aucun rôle personnalisé défini. Utilisez le bouton "Nouveau Rôle" pour en créer un.',
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ),
+                    ),
+                  )
+                else
                   SliverList(
                     delegate: SliverChildBuilderDelegate((context, index) {
-                      final role = roles[index];
-                      final userCount = usersByRole[role.id] ?? 0;
-
-                      return Card(
-                        margin: const EdgeInsets.fromLTRB(24, 0, 24, 12),
-                        child: ListTile(
-                          title: Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  role.name,
-                                  style: theme.textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                              if (role.isSystemRole)
-                                Chip(
-                                  label: const Text('Système'),
-                                  visualDensity: VisualDensity.compact,
-                                  backgroundColor:
-                                      theme.colorScheme.primaryContainer,
-                                ),
-                            ],
-                          ),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const SizedBox(height: 4),
-                              Text(role.description),
-                              const SizedBox(height: 8),
-                              Wrap(
-                                spacing: 8,
-                                runSpacing: 4,
-                                children: [
-                                  Chip(
-                                    label: Text(
-                                      '${role.permissions.length} permission${role.permissions.length > 1 ? 's' : ''}',
-                                      style: theme.textTheme.labelSmall,
-                                    ),
-                                    visualDensity: VisualDensity.compact,
-                                  ),
-                                  if (userCount > 0)
-                                    Chip(
-                                      label: Text(
-                                        '$userCount utilisateur${userCount > 1 ? 's' : ''}',
-                                        style: theme.textTheme.labelSmall,
-                                      ),
-                                      visualDensity: VisualDensity.compact,
-                                      backgroundColor:
-                                          theme.colorScheme.secondaryContainer,
-                                    ),
-                                ],
-                              ),
-                            ],
-                          ),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.edit),
-                                onPressed: () =>
-                                    _handleEditRole(context, ref, role),
-                                tooltip: 'Modifier',
-                              ),
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.delete,
-                                  color: Colors.red,
-                                ),
-                                onPressed: role.isSystemRole
-                                    ? null
-                                    : () =>
-                                          _handleDeleteRole(context, ref, role),
-                                tooltip: 'Supprimer',
-                              ),
-                            ],
-                          ),
-                          isThreeLine: true,
-                        ),
-                      );
-                    }, childCount: roles.length),
+                      final customRoles = roles.where((r) => !r.isSystemRole).toList();
+                      if (index >= customRoles.length) return null;
+                      final role = customRoles[index];
+                      return _buildRoleCard(context, ref, role, usersByRole[role.id] ?? 0);
+                    }, childCount: roles.where((r) => !r.isSystemRole).length),
                   ),
                 const SliverToBoxAdapter(child: SizedBox(height: 24)),
               ],
@@ -301,6 +287,159 @@ class AdminRolesSection extends ConsumerWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(
+      BuildContext context, String title, String subtitle, IconData icon) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: theme.colorScheme.primary),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRoleCard(
+      BuildContext context, WidgetRef ref, UserRole role, int userCount) {
+    final theme = Theme.of(context);
+    return Card(
+      margin: const EdgeInsets.fromLTRB(24, 0, 24, 12),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(color: theme.colorScheme.outlineVariant, width: 1),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Theme(
+        data: theme.copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          leading: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: role.isSystemRole
+                  ? theme.colorScheme.primary.withValues(alpha: 0.1)
+                  : theme.colorScheme.secondary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              role.isSystemRole ? Icons.verified_user : Icons.person_outline,
+              color: role.isSystemRole
+                  ? theme.colorScheme.primary
+                  : theme.colorScheme.secondary,
+            ),
+          ),
+          title: Text(
+            role.name,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          subtitle: Text(
+            '${role.permissions.length} permissions • $userCount utilisateur${userCount > 1 ? 's' : ''}',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.edit_outlined),
+                onPressed: () => _handleEditRole(context, ref, role),
+                tooltip: 'Modifier',
+              ),
+              if (!role.isSystemRole)
+                IconButton(
+                  icon: const Icon(Icons.delete_outline, color: Colors.red),
+                  onPressed: () => _handleDeleteRole(context, ref, role),
+                  tooltip: 'Supprimer',
+                ),
+            ],
+          ),
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Divider(),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Description',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    role.description,
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Types d\'entreprise autorisés',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: role.allowedEnterpriseTypes.isEmpty
+                        ? [
+                            Chip(
+                              label: const Text('Tous les types'),
+                              backgroundColor: theme.colorScheme.surface,
+                              side: BorderSide(
+                                  color: theme.colorScheme.outlineVariant),
+                              visualDensity: VisualDensity.compact,
+                            )
+                          ]
+                        : role.allowedEnterpriseTypes.map((type) {
+                            return Chip(
+                              label: Text(type.name),
+                              backgroundColor: theme.colorScheme.surface,
+                              side: BorderSide(
+                                  color: theme.colorScheme.outlineVariant),
+                              visualDensity: VisualDensity.compact,
+                            );
+                          }).toList(),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

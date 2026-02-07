@@ -185,6 +185,63 @@ class ImmobilierPermissions {
     description: 'Permet de changer son mot de passe',
   );
 
+  // Trash & Restore
+  static const viewTrash = ActionPermission(
+    id: 'view_trash',
+    name: 'Voir la corbeille',
+    module: 'immobilier',
+    description: 'Permet de voir les éléments supprimés',
+  );
+
+  static const restoreProperty = ActionPermission(
+    id: 'restore_property',
+    name: 'Restaurer une propriété',
+    module: 'immobilier',
+    description: 'Permet de restaurer une propriété supprimée',
+  );
+
+  static const restoreTenant = ActionPermission(
+    id: 'restore_tenant',
+    name: 'Restaurer un locataire',
+    module: 'immobilier',
+    description: 'Permet de restaurer un locataire supprimé',
+  );
+
+  static const deleteContract = ActionPermission(
+    id: 'delete_contract',
+    name: 'Supprimer un contrat',
+    module: 'immobilier',
+    description: 'Permet de supprimer un contrat',
+  );
+
+  static const restoreContract = ActionPermission(
+    id: 'restore_contract',
+    name: 'Restaurer un contrat',
+    module: 'immobilier',
+    description: 'Permet de restaurer un contrat supprimé',
+  );
+
+  static const deletePayment = ActionPermission(
+    id: 'delete_payment',
+    name: 'Supprimer un paiement',
+    module: 'immobilier',
+    description: 'Permet de supprimer un paiement',
+  );
+
+  static const restorePayment = ActionPermission(
+    id: 'restore_payment',
+    name: 'Restaurer un paiement',
+    module: 'immobilier',
+    description: 'Permet de restaurer un paiement supprimé',
+  );
+
+  static const restoreExpense = ActionPermission(
+    id: 'restore_expense',
+    name: 'Restaurer une dépense',
+    module: 'immobilier',
+    description: 'Permet de restaurer une dépense supprimée',
+  );
+
   /// All permissions for the module
   static const all = [
     viewDashboard,
@@ -212,5 +269,13 @@ class ImmobilierPermissions {
     viewProfile,
     editProfile,
     changePassword,
+    viewTrash,
+    restoreProperty,
+    restoreTenant,
+    deleteContract,
+    restoreContract,
+    deletePayment,
+    restorePayment,
+    restoreExpense,
   ];
 }

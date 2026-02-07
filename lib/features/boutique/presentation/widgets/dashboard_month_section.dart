@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import 'package:elyf_groupe_app/app/theme/app_colors.dart';
-
-import 'dashboard_kpi_card.dart';
+import '../../../../../shared/presentation/widgets/elyf_ui/organisms/elyf_card.dart';
 
 /// Section displaying monthly KPIs for boutique.
 class DashboardMonthSection extends StatelessWidget {
@@ -30,40 +29,33 @@ class DashboardMonthSection extends StatelessWidget {
         final isWide = constraints.maxWidth > 900;
 
         final cards = [
-          DashboardKpiCard(
+          ElyfStatsCard(
             label: "Chiffre d'Affaires",
             value: CurrencyFormatter.formatFCFA(monthRevenue),
             subtitle: '$monthSalesCount ventes',
             icon: Icons.trending_up,
-            iconColor: const Color(0xFF3B82F6),
-            backgroundColor: const Color(0xFF3B82F6),
+            color: const Color(0xFF3B82F6),
           ),
-          DashboardKpiCard(
+          ElyfStatsCard(
             label: 'Achats',
             value: CurrencyFormatter.formatFCFA(monthPurchasesAmount),
             subtitle: 'Approvisionnements',
             icon: Icons.shopping_bag,
-            iconColor: const Color(0xFFF59E0B),
-            backgroundColor: const Color(0xFFF59E0B),
+            color: const Color(0xFFF59E0B),
           ),
-          DashboardKpiCard(
+          ElyfStatsCard(
             label: 'Dépenses',
             value: CurrencyFormatter.formatFCFA(monthExpensesAmount),
             subtitle: 'Charges',
             icon: Icons.receipt_long,
-            iconColor: theme.colorScheme.error,
-            backgroundColor: theme.colorScheme.error,
+            color: theme.colorScheme.error,
           ),
-          DashboardKpiCard(
+          ElyfStatsCard(
             label: 'Bénéfice Net',
             value: CurrencyFormatter.formatFCFA(monthProfit),
             subtitle: monthProfit >= 0 ? 'Profit' : 'Déficit',
             icon: Icons.account_balance_wallet,
-            iconColor: monthProfit >= 0 ? AppColors.success : theme.colorScheme.error,
-            valueColor: monthProfit >= 0
-                ? AppColors.success
-                : theme.colorScheme.error,
-            backgroundColor: monthProfit >= 0 ? AppColors.success : theme.colorScheme.error,
+            color: monthProfit >= 0 ? AppColors.success : theme.colorScheme.error,
           ),
         ];
 

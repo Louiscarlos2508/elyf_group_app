@@ -140,20 +140,20 @@ class TenantCard extends StatelessWidget {
                         ),
                       ],
                     ),
-                    if (tenant.email.isNotEmpty) ...[
+                    if (tenant.idNumber != null) ...[
                       const SizedBox(height: 4),
                       Row(
                         children: [
                           Icon(
-                            Icons.email,
+                            Icons.badge,
                             size: 16,
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
                           const SizedBox(width: 6),
                           Expanded(
                             child: Text(
-                              tenant.email,
-                              style: theme.textTheme.bodySmall?.copyWith(
+                              tenant.idNumber!,
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                 color: theme.colorScheme.onSurfaceVariant,
                               ),
                               maxLines: 1,

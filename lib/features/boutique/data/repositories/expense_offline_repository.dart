@@ -1,5 +1,8 @@
-import 'dart:developer' as developer;
 import 'dart:convert';
+import 'dart:developer' as developer;
+
+import '../../../../core/errors/error_handler.dart';
+import '../../../../core/logging/app_logger.dart';
 
 import '../../../../core/offline/offline_repository.dart';
 import '../../domain/entities/expense.dart';
@@ -40,6 +43,7 @@ class ExpenseOfflineRepository extends OfflineRepository<Expense>
       updatedAt: map['updatedAt'] != null
           ? DateTime.parse(map['updatedAt'] as String)
           : null,
+      receiptPath: map['receiptPath'] as String? ?? map['receipt'] as String?,
     );
   }
 
@@ -56,6 +60,7 @@ class ExpenseOfflineRepository extends OfflineRepository<Expense>
       'expenseDate': entity.date.toIso8601String(),
       'deletedAt': entity.deletedAt?.toIso8601String(),
       'updatedAt': entity.updatedAt?.toIso8601String(),
+      'receiptPath': entity.receiptPath,
     };
   }
 
@@ -203,15 +208,19 @@ class ExpenseOfflineRepository extends OfflineRepository<Expense>
   Future<String> createExpense(Expense expense) async {
     final localId = getLocalId(expense);
     // Create new expense with local ID
-    final expenseWithLocalId = Expense(
+    final newExpense = Expense(
       id: localId,
       label: expense.label,
       amountCfa: expense.amountCfa,
       category: expense.category,
       date: expense.date,
+      notes: expense.notes,
+      receiptPath: expense.receiptPath,
+      deletedAt: expense.deletedAt,
+      deletedBy: expense.deletedBy,
       updatedAt: DateTime.now(),
     );
-    await save(expenseWithLocalId);
+    await save(newExpense);
     return localId;
   }
 
@@ -276,6 +285,38 @@ class ExpenseOfflineRepository extends OfflineRepository<Expense>
   }
 
   @override
+  Future<List<Expense>> getExpensesInPeriod(DateTime start, DateTime end) async {
+    try {
+      final rows = await driftService.records.listForEnterprise(
+        collectionName: collectionName,
+        enterpriseId: enterpriseId,
+        moduleType: moduleType,
+      );
+      final expenses = rows
+          .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+          .toList();
+
+      final deduplicatedExpenses = deduplicateByRemoteId(expenses);
+
+      // Filtrer par date et statut (non supprimé)
+      return deduplicatedExpenses.where((expense) {
+        if (expense.isDeleted) return false;
+        return expense.date.isAfter(start.subtract(const Duration(seconds: 1))) &&
+            expense.date.isBefore(end.add(const Duration(seconds: 1)));
+      }).toList();
+    } catch (error, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
+      AppLogger.error(
+        'Error fetching expenses in period: ${appException.message}',
+        name: 'ExpenseOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      throw appException;
+    }
+  }
+
+  @override
   Stream<List<Expense>> watchExpenses({int limit = 50}) {
     return driftService.records
         .watchForEnterprise(
@@ -292,7 +333,31 @@ class ExpenseOfflineRepository extends OfflineRepository<Expense>
           .where((expense) => !expense.isDeleted)
           .toList();
       filteredExpenses.sort((a, b) => b.date.compareTo(a.date));
-      return filteredExpenses.take(limit).toList();
+      // On ne prend plus le limit ici pour s'assurer que les calculs de totaux quotidiens soient corrects
+      // même si on a plus de 50 dépenses.
+      return filteredExpenses;
+    });
+  }
+
+  @override
+  Stream<List<Expense>> watchDeletedExpenses() {
+    return driftService.records
+        .watchForEnterprise(
+          collectionName: collectionName,
+          enterpriseId: enterpriseId,
+          moduleType: moduleType,
+        )
+        .map((rows) {
+      final expenses = rows
+          .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+          .where((expense) => expense.isDeleted)
+          .toList();
+      expenses.sort(
+        (a, b) => (b.deletedAt ?? DateTime(1970)).compareTo(
+          a.deletedAt ?? DateTime(1970),
+        ),
+      );
+      return expenses;
     });
   }
 }

@@ -12,6 +12,10 @@ abstract class CreditRepository {
     DateTime? startDate,
     DateTime? endDate,
   });
+  Stream<List<CreditPayment>> watchPayments({
+    DateTime? startDate,
+    DateTime? endDate,
+  });
   Future<String> recordPayment(CreditPayment payment);
   Future<int> getTotalCredits();
   Future<int> getCreditCustomersCount();

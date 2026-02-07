@@ -69,9 +69,9 @@ class AuthController {
             name: 'auth.controller',
           );
           // Démarrer la sync en arrière-plan sans attendre
-          globalRealtimeSyncService!.startRealtimeSync().catchError((error) {
+          globalRealtimeSyncService!.startRealtimeSync(userId: user.id).catchError((error) {
             developer.log(
-              'Warning: Failed to start realtime sync after login (will continue anyway): $error',
+              'Error starting realtime sync in background',
               name: 'auth.controller',
               error: error,
             );

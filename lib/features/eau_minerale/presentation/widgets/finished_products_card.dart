@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:elyf_groupe_app/shared/presentation/widgets/elyf_ui/organisms/elyf_card.dart';
 
 import '../../domain/entities/stock_item.dart';
 import '../../domain/pack_constants.dart';
@@ -49,16 +50,10 @@ class FinishedProductsCard extends StatelessWidget {
       }
     }
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.green.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Colors.green.withValues(alpha: 0.3),
-          width: 1,
-        ),
-      ),
-      padding: const EdgeInsets.all(20),
+    return ElyfCard(
+      isGlass: true,
+      borderColor: Colors.green.withValues(alpha: 0.2),
+      padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -67,11 +62,11 @@ class FinishedProductsCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Colors.green.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(10),
+                  color: Colors.green.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(
-                  Icons.inventory,
+                  Icons.inventory_2_outlined,
                   color: Colors.green,
                   size: 24,
                 ),
@@ -85,11 +80,11 @@ class FinishedProductsCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
           _buildProductItem(
             context,
             packName,
-            'Ajouté par production • Déduit par ventes',
+            'Production terminée • Prêt pour la vente',
             pack.quantity,
             pack.unit,
           ),

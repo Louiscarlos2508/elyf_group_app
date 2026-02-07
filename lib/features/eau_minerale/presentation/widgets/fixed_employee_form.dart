@@ -86,6 +86,9 @@ class FixedEmployeeFormState extends ConsumerState<FixedEmployeeForm> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+
     return Form(
       key: _formKey,
       child: SingleChildScrollView(
@@ -93,44 +96,70 @@ class FixedEmployeeFormState extends ConsumerState<FixedEmployeeForm> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            TextFormField(
-              controller: _firstNameController,
-              decoration: const InputDecoration(
-                labelText: 'Prénom *',
-                prefixIcon: Icon(Icons.person_outline),
-                hintText: 'Ex: Jean',
+            Text(
+              'Informations Personnelles',
+              style: theme.textTheme.labelMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: colors.primary,
+                letterSpacing: 0.5,
               ),
-              textCapitalization: TextCapitalization.words,
-              validator: (v) => v?.isEmpty ?? true ? 'Requis' : null,
             ),
             const SizedBox(height: 16),
-            TextFormField(
-              controller: _lastNameController,
-              decoration: const InputDecoration(
-                labelText: 'Nom *',
-                prefixIcon: Icon(Icons.person),
-                hintText: 'Ex: Dupont',
+            Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _firstNameController,
+                    decoration: _buildInputDecoration(
+                      label: 'Prénom *',
+                      icon: Icons.person_outline_rounded,
+                      hintText: 'Ex: Jean',
+                    ),
+                    textCapitalization: TextCapitalization.words,
+                    validator: (v) => v?.isEmpty ?? true ? 'Requis' : null,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextFormField(
+                    controller: _lastNameController,
+                    decoration: _buildInputDecoration(
+                      label: 'Nom *',
+                      icon: Icons.person_rounded,
+                      hintText: 'Ex: Dupont',
+                    ),
+                    textCapitalization: TextCapitalization.words,
+                    validator: (v) => v?.isEmpty ?? true ? 'Requis' : null,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Informations Professionnelles',
+              style: theme.textTheme.labelMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: colors.primary,
+                letterSpacing: 0.5,
               ),
-              textCapitalization: TextCapitalization.words,
-              validator: (v) => v?.isEmpty ?? true ? 'Requis' : null,
             ),
             const SizedBox(height: 16),
             TextFormField(
               controller: _positionController,
-              decoration: const InputDecoration(
-                labelText: 'Poste',
-                prefixIcon: Icon(Icons.work_outline),
-                hintText: 'Ex: Vendeur, Gérant...',
+              decoration: _buildInputDecoration(
+                label: 'Poste / Titre',
+                icon: Icons.work_outline_rounded,
+                hintText: 'Ex: Vendeur, Gérant, Technicien...',
               ),
               textCapitalization: TextCapitalization.words,
             ),
             const SizedBox(height: 16),
             TextFormField(
               controller: _monthlySalaryController,
-              decoration: const InputDecoration(
-                labelText: 'Salaire Mensuel (FCFA) *',
-                prefixIcon: Icon(Icons.attach_money),
-                hintText: 'Ex: 150000',
+              decoration: _buildInputDecoration(
+                label: 'Salaire Mensuel (FCFA) *',
+                icon: Icons.payments_outlined,
+                hintText: 'Ex: 150 000',
               ),
               keyboardType: TextInputType.number,
               validator: (v) {
@@ -143,6 +172,30 @@ class FixedEmployeeFormState extends ConsumerState<FixedEmployeeForm> {
           ],
         ),
       ),
+    );
+  }
+
+  InputDecoration _buildInputDecoration({required String label, required IconData icon, String? hintText}) {
+    final colors = Theme.of(context).colorScheme;
+    return InputDecoration(
+      labelText: label,
+      hintText: hintText,
+      prefixIcon: Icon(icon, size: 20, color: colors.primary),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: colors.outline.withValues(alpha: 0.1)),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: colors.outline.withValues(alpha: 0.1)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: colors.primary, width: 2),
+      ),
+      filled: true,
+      fillColor: colors.surfaceContainerLow.withValues(alpha: 0.3),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
     );
   }
 }

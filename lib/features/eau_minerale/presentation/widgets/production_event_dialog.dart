@@ -69,126 +69,218 @@ class _ProductionEventDialogState extends State<ProductionEventDialog> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = theme.colorScheme;
 
-    return Form(
-      key: _formKey,
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'Enregistrer un événement',
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Enregistrez une panne, coupure ou arrêt forcé. La production sera suspendue.',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                'Type d\'événement *',
-                style: theme.textTheme.labelLarge?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 8),
-              RadioGroup<ProductionEventType>(
-                groupValue: _selectedType,
-                onChanged: (value) {
-                  setState(() => _selectedType = value);
-                },
-                child: Column(
-                  children: ProductionEventType.values.map((type) {
-                    return RadioListTile<ProductionEventType>(
-                      title: Row(
-                        children: [
-                          Text(type.icon),
-                          const SizedBox(width: 8),
-                          Text(type.label),
-                        ],
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 500),
+        child: ElyfCard(
+          isGlass: true,
+          padding: EdgeInsets.zero,
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Header with subtle gradient
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [colors.primary.withValues(alpha: 0.1), colors.surface],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: colors.primary.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(Icons.event_note_rounded, color: colors.primary, size: 24),
                       ),
-                      value: type,
-                    );
-                  }).toList(),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _motifController,
-                decoration: const InputDecoration(
-                  labelText: 'Motif *',
-                  prefixIcon: Icon(Icons.description),
-                  helperText: 'Description de l\'événement',
-                ),
-                maxLines: 3,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Requis';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              InkWell(
-                onTap: () => _selectDate(context),
-                child: InputDecorator(
-                  decoration: const InputDecoration(
-                    labelText: 'Date *',
-                    prefixIcon: Icon(Icons.calendar_today),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Enregistrer Événement',
+                              style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                            ),
+                            Text(
+                              'Signalement d\'un incident de production',
+                              style: theme.textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton.filledTonal(
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: const Icon(Icons.close, size: 20),
+                      ),
+                    ],
                   ),
-                  child: Text(DateFormatter.formatDate(_selectedDate)),
                 ),
-              ),
-              const SizedBox(height: 16),
-              InkWell(
-                onTap: () => _selectTime(context),
-                child: InputDecorator(
-                  decoration: const InputDecoration(
-                    labelText: 'Heure *',
-                    prefixIcon: Icon(Icons.access_time),
-                  ),
-                  child: Text(_formatTime(_selectedTime)),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _notesController,
-                decoration: const InputDecoration(
-                  labelText: 'Notes',
-                  prefixIcon: Icon(Icons.note),
-                  helperText: 'Optionnel',
-                ),
-                maxLines: 2,
-              ),
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: const Text('Annuler'),
+                const Divider(height: 1),
+
+                // Form Content
+                Flexible(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          'Type d\'événement *',
+                          style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: colors.primary),
+                        ),
+                        const SizedBox(height: 12),
+                        ElyfCard(
+                          padding: EdgeInsets.zero,
+                          borderRadius: 20,
+                          backgroundColor: colors.surfaceContainerLow.withValues(alpha: 0.3),
+                          child: Column(
+                            children: ProductionEventType.values.map((type) {
+                              return RadioListTile<ProductionEventType>(
+                                title: Row(
+                                  children: [
+                                    Text(type.icon, style: const TextStyle(fontSize: 18)),
+                                    const SizedBox(width: 12),
+                                    Text(type.label, style: theme.textTheme.bodyMedium),
+                                  ],
+                                ),
+                                value: type,
+                                groupValue: _selectedType,
+                                onChanged: (v) => setState(() => _selectedType = v),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+
+                        TextFormField(
+                          controller: _motifController,
+                          decoration: _buildInputDecoration(
+                            label: 'Motif *',
+                            hintText: 'Décrivez brièvement l\'incident...',
+                            icon: Icons.info_outline_rounded,
+                          ),
+                          maxLines: 2,
+                          validator: (v) => v?.trim().isEmpty ?? true ? 'Le motif est requis' : null,
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Date & Time
+                        Row(
+                          children: [
+                            Expanded(child: _buildDateTimePicker(theme, colors, isDate: true)),
+                            const SizedBox(width: 12),
+                            Expanded(child: _buildDateTimePicker(theme, colors, isDate: false)),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+
+                        TextFormField(
+                          controller: _notesController,
+                          decoration: _buildInputDecoration(
+                            label: 'Notes (Optionnel)',
+                            hintText: 'Détails supplémentaires...',
+                            icon: Icons.note_alt_rounded,
+                          ),
+                          maxLines: 2,
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: FilledButton(
-                      onPressed: _submit,
-                      child: const Text('Enregistrer'),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+                ),
+
+                // Footer
+                const Divider(height: 1),
+                Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: _buildSubmitButton(),
+                ),
+              ],
+            ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildDateTimePicker(ThemeData theme, ColorScheme colors, {required bool isDate}) {
+    return InkWell(
+      onTap: () => isDate ? _selectDate(context) : _selectTime(context),
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          color: colors.surfaceContainerLow.withValues(alpha: 0.3),
+          border: Border.all(color: colors.outline.withValues(alpha: 0.1)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(isDate ? Icons.calendar_today_rounded : Icons.access_time_rounded, size: 14, color: colors.primary),
+                const SizedBox(width: 6),
+                Text(isDate ? 'Date' : 'Heure', style: TextStyle(fontSize: 11, color: colors.onSurfaceVariant)),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              isDate ? DateFormatter.formatNumericDate(_selectedDate) : _formatTime(_selectedTime),
+              style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  InputDecoration _buildInputDecoration({required String label, required IconData icon, String? hintText}) {
+    final colors = Theme.of(context).colorScheme;
+    return InputDecoration(
+      labelText: label,
+      hintText: hintText,
+      prefixIcon: Icon(icon, size: 20, color: colors.primary),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: colors.outline.withValues(alpha: 0.1))),
+      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: colors.outline.withValues(alpha: 0.1))),
+      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: colors.primary, width: 2)),
+      filled: true,
+      fillColor: colors.surfaceContainerLow.withValues(alpha: 0.3),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+    );
+  }
+
+  Widget _buildSubmitButton() {
+    final colors = Theme.of(context).colorScheme;
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(colors: [colors.primary, colors.secondary]),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [BoxShadow(color: colors.primary.withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 4))],
+      ),
+      child: ElevatedButton(
+        onPressed: _submit,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          foregroundColor: Colors.white,
+          shadowColor: Colors.transparent,
+          padding: const EdgeInsets.symmetric(vertical: 18),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
+        child: const Text('ENREGISTRER L\'ÉVÉNEMENT', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1)),
       ),
     );
   }

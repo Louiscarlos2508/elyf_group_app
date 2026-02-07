@@ -18,15 +18,13 @@ class SingleEnterpriseSelection extends StatelessWidget {
   final String moduleId;
 
   /// Obtient le type d'entreprise correspondant au module.
-  String? _getEnterpriseTypeForModule(String moduleId) {
-    final moduleToTypeMap = {
-      'eau_minerale': 'eau_minerale',
-      'gaz': 'gaz',
-      'orange_money': 'orange_money',
-      'immobilier': 'immobilier',
-      'boutique': 'boutique',
-    };
-    return moduleToTypeMap[moduleId];
+  EnterpriseType? _getEnterpriseTypeForModule(String moduleId) {
+    if (moduleId == 'eau_minerale') return EnterpriseType.waterEntity;
+    if (moduleId == 'gaz') return EnterpriseType.gasCompany;
+    if (moduleId == 'orange_money') return EnterpriseType.mobileMoneyAgent;
+    if (moduleId == 'immobilier') return EnterpriseType.realEstateAgency;
+    if (moduleId == 'boutique') return EnterpriseType.shop;
+    return null;
   }
 
   @override
@@ -77,16 +75,13 @@ class MultipleEnterpriseSelection extends StatelessWidget {
   final ValueChanged<Set<String>> onChanged;
   final String moduleId;
 
-  /// Obtient le type d'entreprise correspondant au module.
-  String? _getEnterpriseTypeForModule(String moduleId) {
-    final moduleToTypeMap = {
-      'eau_minerale': 'eau_minerale',
-      'gaz': 'gaz',
-      'orange_money': 'orange_money',
-      'immobilier': 'immobilier',
-      'boutique': 'boutique',
-    };
-    return moduleToTypeMap[moduleId];
+  EnterpriseType? _getEnterpriseTypeForModule(String moduleId) {
+    if (moduleId == 'eau_minerale') return EnterpriseType.waterEntity;
+    if (moduleId == 'gaz') return EnterpriseType.gasCompany;
+    if (moduleId == 'orange_money') return EnterpriseType.mobileMoneyAgent;
+    if (moduleId == 'immobilier') return EnterpriseType.realEstateAgency;
+    if (moduleId == 'boutique') return EnterpriseType.shop;
+    return null;
   }
 
   @override

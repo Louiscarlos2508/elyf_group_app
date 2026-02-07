@@ -13,6 +13,7 @@ import '../../widgets/property_search_bar.dart';
 import '../../widgets/tenant_card.dart';
 import '../../widgets/tenant_detail_dialog.dart';
 import '../../widgets/tenant_form_dialog.dart';
+import '../../widgets/immobilier_header.dart';
 
 class TenantsScreen extends ConsumerStatefulWidget {
   const TenantsScreen({super.key});
@@ -38,7 +39,6 @@ class _TenantsScreenState extends ConsumerState<TenantsScreen> {
     return tenants.where((tenant) {
       return tenant.fullName.toLowerCase().contains(query) ||
           tenant.phone.contains(query) ||
-          tenant.email.toLowerCase().contains(query) ||
           (tenant.address?.toLowerCase().contains(query) ?? false);
     }).toList();
   }
@@ -98,6 +98,11 @@ class _TenantsScreenState extends ConsumerState<TenantsScreen> {
     final contractsAsync = ref.watch(contractsProvider);
 
     return Scaffold(
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _showTenantForm(),
+        icon: const Icon(Icons.add),
+        label: const Text('Nouveau'),
+      ),
       body: tenantsAsync.when(
         data: (tenants) {
           final filtered = _filterTenants(tenants);
@@ -113,80 +118,26 @@ class _TenantsScreenState extends ConsumerState<TenantsScreen> {
 
           return LayoutBuilder(
             builder: (context, constraints) {
-              final isWide = constraints.maxWidth > 600;
-
               return CustomScrollView(
                 slivers: [
                   // Header
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: EdgeInsets.fromLTRB(
-                        AppSpacing.lg,
-                        AppSpacing.lg,
-                        AppSpacing.lg,
-                        isWide ? AppSpacing.lg : AppSpacing.md,
+                  ImmobilierHeader(
+                    title: 'LOCATAIRES',
+                    subtitle: 'Gestion des locataires',
+                    additionalActions: [
+                      Semantics(
+                        label: 'Actualiser',
+                        button: true,
+                        child: IconButton(
+                          icon: const Icon(Icons.refresh, color: Colors.white),
+                          onPressed: () {
+                            ref.invalidate(tenantsProvider);
+                            ref.invalidate(contractsProvider);
+                          },
+                          tooltip: 'Actualiser',
+                        ),
                       ),
-                      child: isWide
-                          ? Row(
-                              children: [
-                                Text(
-                                  'Locataires',
-                                  style: theme.textTheme.headlineMedium
-                                      ?.copyWith(fontWeight: FontWeight.bold),
-                                ),
-                                const Spacer(),
-                                RefreshButton(
-                                  onRefresh: () {
-                                    ref.invalidate(tenantsProvider);
-                                    ref.invalidate(contractsProvider);
-                                  },
-                                  tooltip: 'Actualiser',
-                                ),
-                                const SizedBox(width: 8),
-                                Flexible(
-                                  child: FilledButton.icon(
-                                    onPressed: () => _showTenantForm(),
-                                    icon: const Icon(Icons.add),
-                                    label: const Text('Nouveau Locataire'),
-                                  ),
-                                ),
-                              ],
-                            )
-                          : Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        'Locataires',
-                                        style: theme.textTheme.titleLarge
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                      ),
-                                    ),
-                                    RefreshButton(
-                                      onRefresh: () {
-                                        ref.invalidate(tenantsProvider);
-                                        ref.invalidate(contractsProvider);
-                                      },
-                                      tooltip: 'Actualiser',
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 12),
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: FilledButton.icon(
-                                    onPressed: () => _showTenantForm(),
-                                    icon: const Icon(Icons.add),
-                                    label: const Text('Nouveau Locataire'),
-                                  ),
-                                ),
-                              ],
-                            ),
-                    ),
+                    ],
                   ),
 
                   // KPI Summary Cards

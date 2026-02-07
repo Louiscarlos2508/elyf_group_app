@@ -23,6 +23,12 @@ abstract class PaymentRepository {
   /// Observe les paiements.
   Stream<List<Payment>> watchPayments();
 
+  /// Observe les paiements supprimés.
+  Stream<List<Payment>> watchDeletedPayments();
+
   /// Supprime un paiement.
   Future<void> deletePayment(String id);
+
+  /// Restaure un paiement supprimé.
+  Future<void> restorePayment(String id);
 }

@@ -350,3 +350,75 @@ final autoSelectEnterpriseProvider = FutureProvider<void>((ref) async {
     error: (_, __) async {},
   );
 });
+
+/// Modèle pour représenter une hiérarchie d'entreprises
+class EnterpriseHierarchyNode {
+  final Enterprise enterprise;
+  final List<EnterpriseHierarchyNode> children;
+
+  EnterpriseHierarchyNode({
+    required this.enterprise,
+    this.children = const [],
+  });
+}
+
+/// Provider pour récupérer les entreprises organisées par module et par hiérarchie
+final hierarchicalEnterprisesProvider =
+    FutureProvider<Map<EnterpriseModule, List<EnterpriseHierarchyNode>>>((
+      ref,
+    ) async {
+      final accessibleEnterprisesAsync = ref.watch(
+        userAccessibleEnterprisesProvider,
+      );
+
+      return accessibleEnterprisesAsync.when(
+        data: (enterprises) {
+          if (enterprises.isEmpty) return {};
+
+          // 1. Groupement par module
+          final modulesMap = <EnterpriseModule, List<Enterprise>>{};
+          for (final enterprise in enterprises) {
+            final module = enterprise.type.module;
+            modulesMap.putIfAbsent(module, () => []).add(enterprise);
+          }
+
+          final result = <EnterpriseModule, List<EnterpriseHierarchyNode>>{};
+
+          // 2. Pour chaque module, construire la hiérarchie
+          for (final module in modulesMap.keys) {
+            final moduleEnterprises = modulesMap[module]!;
+            final enterpriseIds =
+                moduleEnterprises.map((e) => e.id).toSet();
+            
+            // Identifier les racines de ce module (ceux dont le parent n'est pas accessible ou inexistant)
+            final roots = moduleEnterprises.where((e) {
+              return e.parentEnterpriseId == null ||
+                  !enterpriseIds.contains(e.parentEnterpriseId);
+            }).toList();
+
+            final nodes = roots.map((root) {
+              return _buildHierarchy(root, moduleEnterprises);
+            }).toList();
+
+            result[module] = nodes;
+          }
+
+          return result;
+        },
+        loading: () => {},
+        error: (_, __) => {},
+      );
+    });
+
+/// Fonction récursive pour construire la hiérarchie
+EnterpriseHierarchyNode _buildHierarchy(
+  Enterprise parent,
+  List<Enterprise> allAvailable,
+) {
+  final children = allAvailable
+      .where((e) => e.parentEnterpriseId == parent.id)
+      .map((child) => _buildHierarchy(child, allAvailable))
+      .toList();
+
+  return EnterpriseHierarchyNode(enterprise: parent, children: children);
+}

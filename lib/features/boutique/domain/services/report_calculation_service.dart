@@ -17,25 +17,28 @@ class BoutiqueReportCalculationService {
     required List<Purchase> filteredPurchases,
     required List<Expense> filteredExpenses,
   }) {
-    // Calculate revenue from sales
+    // Calculate total revenue
     final totalRevenue = filteredSales.fold<int>(
       0,
       (sum, s) => sum + s.totalAmount,
     );
 
-    // Calculate COGS (Cost of Goods Sold) from purchases
-    // For simplicity, we'll use total purchases as COGS
-    // In a real system, you'd track which products were sold and their purchase prices
-    final totalCostOfGoodsSold = filteredPurchases.fold<int>(
+    // Calculate COGS (Cost of Goods Sold) from purchases and stock-related expenses
+    final purchasesAmount = filteredPurchases.fold<int>(
       0,
       (sum, p) => sum + p.totalAmount,
     );
+    
+    final stockExpenses = filteredExpenses
+        .where((e) => e.category == ExpenseCategory.stock)
+        .fold<int>(0, (sum, e) => sum + e.amountCfa);
 
-    // Calculate total expenses
-    final totalExpenses = filteredExpenses.fold<int>(
-      0,
-      (sum, e) => sum + e.amountCfa,
-    );
+    final totalCostOfGoodsSold = purchasesAmount + stockExpenses;
+
+    // Calculate total operational expenses (excluding stock)
+    final totalExpenses = filteredExpenses
+        .where((e) => e.category != ExpenseCategory.stock)
+        .fold<int>(0, (sum, e) => sum + e.amountCfa);
 
     // Calculate profits
     final grossProfit = totalRevenue - totalCostOfGoodsSold;

@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -305,12 +306,14 @@ class EnterpriseSelectorWidget extends ConsumerWidget {
   }
 }
 
-/// Dialogue de sélection d'entreprise
+/// Dialogue de sélection d'entreprise premium
 class _EnterpriseSelectorDialog extends StatelessWidget {
   const _EnterpriseSelectorDialog({
     required this.enterprises,
     this.selectedEnterpriseId,
   });
+
+
 
   final List<Enterprise> enterprises;
   final String? selectedEnterpriseId;
@@ -318,42 +321,59 @@ class _EnterpriseSelectorDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
-      child: Container(
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
-        child: ConstrainedBox(
+    return BackdropFilter(
+      filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+      child: Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(24),
+        child: Container(
           constraints: const BoxConstraints(maxWidth: 400, maxHeight: 600),
+          decoration: BoxDecoration(
+            color: (isDark ? Colors.grey[900] : Colors.white)!.withValues(alpha: 0.9),
+            borderRadius: BorderRadius.circular(28),
+            border: Border.all(
+              color: theme.colorScheme.outline.withValues(alpha: 0.1),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.2),
+                blurRadius: 40,
+                offset: const Offset(0, 20),
+              ),
+            ],
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Use standardized header pattern
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
+              // Header
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+                ),
                 child: Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(10),
+                      padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
-                        borderRadius: BorderRadius.circular(12),
+                        color: theme.colorScheme.primary,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
                       child: Icon(
-                        Icons.business_outlined,
-                        color: theme.colorScheme.primary,
-                        size: 20,
+                        Icons.business_rounded,
+                        color: theme.colorScheme.onPrimary,
+                        size: 24,
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -362,15 +382,16 @@ class _EnterpriseSelectorDialog extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Entreprise',
-                            style: theme.textTheme.titleMedium?.copyWith(
+                            'Changer d\'espace',
+                            style: theme.textTheme.titleLarge?.copyWith(
                               fontWeight: FontWeight.bold,
-                              color: theme.colorScheme.onSurface,
+                              fontSize: 18,
                             ),
                           ),
+                          const SizedBox(height: 4),
                           Text(
-                            'Sélectionner l\'entreprise active',
-                            style: theme.textTheme.bodySmall?.copyWith(
+                            'Sélectionnez une organisation',
+                            style: theme.textTheme.bodyMedium?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant,
                             ),
                           ),
@@ -378,19 +399,17 @@ class _EnterpriseSelectorDialog extends StatelessWidget {
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close, size: 20),
-                      onPressed: () => Navigator.of(context).pop(),
-                      style: IconButton.styleFrom(
-                        backgroundColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                      ),
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: const Icon(Icons.close_rounded),
+                        style: IconButton.styleFrom(
+                          backgroundColor: theme.colorScheme.surface.withValues(alpha: 0.5),
+                        ),
                     ),
                   ],
                 ),
               ),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 24),
-                child: Divider(),
-              ),
+              
+              // List
               Flexible(
                 child: ListView.separated(
                   padding: const EdgeInsets.all(24),
@@ -401,83 +420,91 @@ class _EnterpriseSelectorDialog extends StatelessWidget {
                     final enterprise = enterprises[index];
                     final isSelected = enterprise.id == selectedEnterpriseId;
                     
-                    return InkWell(
-                      onTap: () => Navigator.of(context).pop(enterprise),
-                      borderRadius: BorderRadius.circular(16),
-                      child: Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: isSelected 
-                              ? theme.colorScheme.primaryContainer.withValues(alpha: 0.2)
-                              : theme.colorScheme.surface,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: isSelected
-                                ? theme.colorScheme.primary.withValues(alpha: 0.5)
-                                : theme.colorScheme.outline.withValues(alpha: 0.1),
-                            width: isSelected ? 1.5 : 1,
+                    return Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () => Navigator.of(context).pop(enterprise),
+                        borderRadius: BorderRadius.circular(16),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: isSelected 
+                                ? theme.colorScheme.primary.withValues(alpha: 0.05)
+                                : theme.colorScheme.surfaceContainerLow.withValues(alpha: 0.5),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: isSelected
+                                  ? theme.colorScheme.primary
+                                  : theme.colorScheme.outline.withValues(alpha: 0.1),
+                              width: isSelected ? 2 : 1,
+                            ),
                           ),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? theme.colorScheme.primary
-                                    : theme.colorScheme.surfaceContainerHighest,
-                                borderRadius: BorderRadius.circular(10),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? theme.colorScheme.primary.withValues(alpha: 0.1)
+                                      : theme.colorScheme.surface,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Icon(
+                                  enterprise.type.icon,
+                                  size: 24,
+                                  color: isSelected
+                                      ? theme.colorScheme.primary
+                                      : theme.colorScheme.onSurfaceVariant,
+                                ),
                               ),
-                              child: Icon(
-                                Icons.business,
-                                size: 20,
-                                color: isSelected
-                                    ? theme.colorScheme.onPrimary
-                                    : theme.colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    enterprise.name,
-                                    style: theme.textTheme.titleSmall?.copyWith(
-                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                                      color: isSelected 
-                                          ? theme.colorScheme.primary
-                                          : theme.colorScheme.onSurface,
-                                    ),
-                                  ),
-                                  if (enterprise.description != null) ...[
-                                    const SizedBox(height: 2),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
                                     Text(
-                                      enterprise.description!,
-                                      style: theme.textTheme.bodySmall?.copyWith(
-                                        color: theme.colorScheme.onSurfaceVariant,
+                                      enterprise.name,
+                                      style: theme.textTheme.titleMedium?.copyWith(
+                                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                                        fontSize: 16,
                                       ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
                                     ),
+                                    if (enterprise.description != null) ...[
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        enterprise.description!,
+                                        style: theme.textTheme.bodySmall?.copyWith(
+                                          color: theme.colorScheme.onSurfaceVariant,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
                                   ],
-                                ],
+                                ),
                               ),
-                            ),
-                            if (isSelected)
-                              Icon(
-                                Icons.check_circle,
-                                color: theme.colorScheme.primary,
-                                size: 20,
-                              ),
-                          ],
+                              if (isSelected)
+                                Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color: theme.colorScheme.primary,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    Icons.check,
+                                    color: theme.colorScheme.onPrimary,
+                                    size: 16,
+                                  ),
+                                ),
+                            ],
+                          ),
                         ),
                       ),
                     );
                   },
                 ),
               ),
-              const SizedBox(height: 8),
             ],
           ),
         ),
@@ -485,3 +512,4 @@ class _EnterpriseSelectorDialog extends StatelessWidget {
     );
   }
 }
+

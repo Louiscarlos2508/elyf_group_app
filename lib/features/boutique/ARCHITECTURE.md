@@ -45,9 +45,7 @@ Le module Boutique suit une **architecture Clean Architecture** avec séparation
 - `ExpenseOfflineRepository` ✅
 - `StockOfflineRepository` ✅ (délègue à ProductRepository)
 - `PurchaseOfflineRepository` ✅
-
-**Repositories encore Mock** ⚠️ :
-- `ReportRepository` → MockReportRepository (repository de calcul, pas de stockage direct)
+- `ReportOfflineRepository` ✅ (Calculs basés sur les données locales)
 
 **Caractéristiques** :
 - Stockage local dans Drift/SQLite

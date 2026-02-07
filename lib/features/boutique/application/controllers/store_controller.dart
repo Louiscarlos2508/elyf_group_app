@@ -280,4 +280,12 @@ class StoreController {
   Stream<List<Product>> watchLowStockProducts({int threshold = 10}) {
     return _stockRepository.watchLowStockProducts(threshold: threshold);
   }
+
+  Stream<List<Product>> watchDeletedProducts() {
+    return _productRepository.watchDeletedProducts();
+  }
+
+  Stream<List<Expense>> watchDeletedExpenses() {
+    return _expenseRepository.watchDeletedExpenses();
+  }
 }

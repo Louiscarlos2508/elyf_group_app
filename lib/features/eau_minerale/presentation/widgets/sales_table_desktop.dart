@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:elyf_groupe_app/shared/presentation/widgets/elyf_ui/organisms/elyf_card.dart';
 
 import '../../domain/entities/sale.dart';
 import 'sales_table_helpers.dart';
@@ -20,14 +21,9 @@ class SalesTableDesktop extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: theme.colorScheme.outline.withValues(alpha: 0.2),
-        ),
-      ),
+    return ElyfCard(
+      isGlass: true,
+      padding: EdgeInsets.zero,
       child: Table(
         columnWidths: const {
           0: FlexColumnWidth(2),
@@ -42,10 +38,10 @@ class SalesTableDesktop extends StatelessWidget {
         children: [
           TableRow(
             decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest,
+              color: theme.colorScheme.primary.withValues(alpha: 0.1),
               borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(12),
-                topRight: Radius.circular(12),
+                topLeft: Radius.circular(24),
+                topRight: Radius.circular(24),
               ),
             ),
             children: [
@@ -59,8 +55,19 @@ class SalesTableDesktop extends StatelessWidget {
               _buildHeaderCell(context, 'Actions'),
             ],
           ),
-          ...sales.map((sale) {
+          ...sales.asMap().entries.map((entry) {
+            final sale = entry.value;
+            final isLast = entry.key == sales.length - 1;
             return TableRow(
+              decoration: BoxDecoration(
+                border: isLast
+                    ? null
+                    : Border(
+                        bottom: BorderSide(
+                          color: theme.colorScheme.outline.withValues(alpha: 0.1),
+                        ),
+                      ),
+              ),
               children: [
                 _buildDataCellText(context, sale.productName),
                 _buildDataCellText(context, sale.quantity.toString()),

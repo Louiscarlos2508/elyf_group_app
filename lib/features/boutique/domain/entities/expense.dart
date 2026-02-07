@@ -10,6 +10,7 @@ class Expense {
     this.deletedAt, // Date de suppression (soft delete)
     this.deletedBy, // ID de l'utilisateur qui a supprimé
     this.updatedAt,
+    this.receiptPath,
   });
 
   final String id;
@@ -21,6 +22,7 @@ class Expense {
   final DateTime? deletedAt; // Date de suppression (soft delete)
   final String? deletedBy; // ID de l'utilisateur qui a supprimé
   final DateTime? updatedAt;
+  final String? receiptPath;
 
   /// Indique si la dépense est supprimée (soft delete)
   bool get isDeleted => deletedAt != null;

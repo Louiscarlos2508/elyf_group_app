@@ -8,9 +8,14 @@ import '../../domain/entities/property.dart';
 import 'expense_form_fields.dart';
 
 class ExpenseFormDialog extends ConsumerStatefulWidget {
-  const ExpenseFormDialog({super.key, this.expense});
+  const ExpenseFormDialog({
+    super.key,
+    this.expense,
+    this.initialProperty,
+  });
 
   final PropertyExpense? expense;
+  final Property? initialProperty;
 
   @override
   ConsumerState<ExpenseFormDialog> createState() => _ExpenseFormDialogState();
@@ -24,7 +29,7 @@ class _ExpenseFormDialogState extends ConsumerState<ExpenseFormDialog>
   final _amountController = TextEditingController();
   final _descriptionController = TextEditingController();
   ExpenseCategory _category = ExpenseCategory.other;
-  final _receiptController = TextEditingController();
+  String? _receiptPath;
 
   @override
   void initState() {
@@ -35,7 +40,9 @@ class _ExpenseFormDialogState extends ConsumerState<ExpenseFormDialog>
       _amountController.text = e.amount.toString();
       _descriptionController.text = e.description;
       _category = e.category;
-      _receiptController.text = e.receipt ?? '';
+      _receiptPath = e.receipt;
+    } else if (widget.initialProperty != null) {
+      _selectedProperty = widget.initialProperty;
     }
   }
 
@@ -43,7 +50,6 @@ class _ExpenseFormDialogState extends ConsumerState<ExpenseFormDialog>
   void dispose() {
     _amountController.dispose();
     _descriptionController.dispose();
-    _receiptController.dispose();
     super.dispose();
   }
 
@@ -82,9 +88,7 @@ class _ExpenseFormDialogState extends ConsumerState<ExpenseFormDialog>
           category: _category,
           description: _descriptionController.text.trim(),
           property: _selectedProperty!.address,
-          receipt: _receiptController.text.trim().isEmpty
-              ? null
-              : _receiptController.text.trim(),
+          receipt: _receiptPath,
           createdAt: widget.expense?.createdAt ?? DateTime.now(),
           updatedAt: DateTime.now(),
         );
@@ -159,7 +163,14 @@ class _ExpenseFormDialogState extends ConsumerState<ExpenseFormDialog>
               },
             ),
             const SizedBox(height: 16),
-            ExpenseFormFields.receiptField(controller: _receiptController),
+            const SizedBox(height: 16),
+            FormImagePicker(
+              initialImagePath: _receiptPath,
+              label: 'Photo du reçu',
+              onImageSelected: (file) {
+                setState(() => _receiptPath = file?.path);
+              },
+            ),
             const SizedBox(height: 24),
           ],
         ),

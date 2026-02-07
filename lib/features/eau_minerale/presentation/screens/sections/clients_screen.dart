@@ -142,22 +142,22 @@ class ClientsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(clientsStateProvider);
     return state.when(
-      data: (data) => _CreditsContent(
-        state: data,
-        onPaymentTap: (customerId) async {
-          await _showPaymentDialog(context, ref, customerId);
-        },
-        onHistoryTap: (customerId) async {
-          await _showHistoryDialog(context, ref, customerId);
-        },
-      ),
-      loading: () => const LoadingIndicator(),
-      error: (error, stackTrace) => ErrorDisplayWidget(
-        error: error,
-        title: 'Clients indisponibles',
-        message: 'Impossible de charger les comptes clients.',
-        onRetry: () => ref.refresh(clientsStateProvider),
-      ),
+        data: (data) => _CreditsContent(
+          state: data,
+          onPaymentTap: (customerId) async {
+            await _showPaymentDialog(context, ref, customerId);
+          },
+          onHistoryTap: (customerId) async {
+            await _showHistoryDialog(context, ref, customerId);
+          },
+        ),
+        loading: () => const LoadingIndicator(),
+        error: (error, stackTrace) => ErrorDisplayWidget(
+          error: error,
+          title: 'Clients indisponibles',
+          message: 'Impossible de charger les comptes clients.',
+          onRetry: () => ref.refresh(clientsStateProvider),
+        ),
     );
   }
 }
@@ -185,28 +185,67 @@ class _CreditsContent extends ConsumerWidget {
         return CustomScrollView(
           slivers: [
             // Header
+            // Premium Header
             SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(24, 24, 24, isWide ? 24 : 16),
+              child: Container(
+                margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      theme.colorScheme.primary,
+                      const Color(0xFF00C2FF), // Cyan for Water Module
+                      const Color(0xFF0369A1), // Deep Blue
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                      blurRadius: 12,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
                 child: Row(
                   children: [
                     Expanded(
-                      child: Text(
-                        'Gestion des Crédits Clients',
-                        style: theme.textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                        overflow: TextOverflow.ellipsis,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "GESTION DES CRÉDITS",
+                            style: theme.textTheme.labelLarge?.copyWith(
+                              color: Colors.white.withValues(alpha: 0.9),
+                              fontWeight: FontWeight.w500,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            "Suivi & Paiements",
+                            style: theme.textTheme.headlineMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.refresh),
+                      icon: const Icon(Icons.refresh, color: Colors.white),
                       onPressed: () {
                         // Invalidate both to be sure we get fresh data
                         ref.invalidate(creditsDashboardProvider);
                         ref.invalidate(clientsStateProvider);
                       },
                       tooltip: 'Actualiser les crédits',
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.white.withValues(alpha: 0.2),
+                        foregroundColor: Colors.white,
+                      ),
                     ),
                   ],
                 ),

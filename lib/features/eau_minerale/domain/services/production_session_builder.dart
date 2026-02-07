@@ -27,6 +27,7 @@ class ProductionSessionBuilder {
     ProductionSessionStatus? status,
     List<ProductionDay>? productionDays,
     int? coutBobines,
+    int? coutEmballages,
     int? coutElectricite,
     required int period,
   }) {
@@ -56,6 +57,7 @@ class ProductionSessionBuilder {
       quantiteProduiteUnite: 'pack',
       emballagesUtilises: emballagesUtilises,
       coutBobines: coutBobines,
+      coutEmballages: coutEmballages,
       coutElectricite: coutElectricite,
       notes: notes,
       status: calculatedStatus,
@@ -74,6 +76,7 @@ class ProductionSessionBuilder {
     double consommationCourant = 0.0,
     int quantiteProduite = 0,
     int? coutBobines,
+    int? coutEmballages,
     int? coutElectricite,
   }) {
     return buildFromForm(
@@ -89,6 +92,7 @@ class ProductionSessionBuilder {
       quantiteProduite: quantiteProduite,
       emballagesUtilises: null,
       coutBobines: coutBobines,
+      coutEmballages: coutEmballages,
       coutElectricite: coutElectricite,
       notes: null,
       status: null, // Will be calculated

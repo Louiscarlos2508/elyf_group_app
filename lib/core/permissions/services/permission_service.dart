@@ -56,6 +56,7 @@ class MockPermissionService implements PermissionService {
       name: 'Administrateur',
       description: 'Accès complet à tous les modules',
       permissions: {'*'}, // Wildcard for all permissions
+      moduleId: 'administration',
       isSystemRole: true,
     );
   }
@@ -78,6 +79,7 @@ class MockPermissionService implements PermissionService {
           name: 'Administrateur',
           description: 'Accès complet au module $moduleId',
           permissions: {'*'}, // Wildcard for all permissions
+          moduleId: moduleId,
           isSystemRole: true,
         );
       }

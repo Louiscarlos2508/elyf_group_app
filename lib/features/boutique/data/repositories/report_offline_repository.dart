@@ -3,6 +3,7 @@ import 'dart:developer' as developer;
 import 'package:rxdart/rxdart.dart';
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/logging/app_logger.dart';
+import '../../domain/entities/expense.dart';
 import '../../domain/entities/report_data.dart';
 import '../../domain/repositories/expense_repository.dart';
 import '../../domain/repositories/purchase_repository.dart';
@@ -62,39 +63,38 @@ class ReportOfflineRepository implements ReportRepository {
       final start = _getStartDate(period, startDate: startDate);
       final end = _getEndDate(period, endDate: endDate);
 
-      final sales = await saleRepository.fetchRecentSales(limit: 1000);
-      final purchases = await purchaseRepository.fetchPurchases(limit: 1000);
-      final expenses = await expenseRepository.fetchExpenses(limit: 1000);
-
-      final periodSales = sales
-          .where((s) => _isInPeriod(s.date, start, end))
-          .toList();
-      final periodPurchases = purchases
-          .where((p) => _isInPeriod(p.date, start, end))
-          .toList();
-      final periodExpenses = expenses
-          .where((e) => _isInPeriod(e.date, start, end))
-          .toList();
+      final periodSales = await saleRepository.getSalesInPeriod(start, end);
+      final periodPurchases = await purchaseRepository.getPurchasesInPeriod(start, end);
+      final periodExpenses = await expenseRepository.getExpensesInPeriod(start, end);
 
       final salesRevenue = periodSales.fold<int>(
         0,
         (sum, s) => sum + s.totalAmount,
       );
+
+      // Consolidate purchases and stock-related expenses
       final purchasesAmount = periodPurchases.fold<int>(
         0,
         (sum, p) => sum + p.totalAmount,
       );
-      final expensesAmount = periodExpenses.fold<int>(
-        0,
-        (sum, e) => sum + e.amountCfa,
-      );
+
+      final stockExpenses = periodExpenses
+          .where((e) => e.category == ExpenseCategory.stock)
+          .fold<int>(0, (sum, e) => sum + e.amountCfa);
+
+      final operationalExpenses = periodExpenses
+          .where((e) => e.category != ExpenseCategory.stock)
+          .fold<int>(0, (sum, e) => sum + e.amountCfa);
+
+      // Total purchases = Itemized purchases + Stock category expenses
+      final totalPurchases = purchasesAmount + stockExpenses;
 
       return ReportData(
         period: period,
         salesRevenue: salesRevenue,
-        purchasesAmount: purchasesAmount,
-        expensesAmount: expensesAmount,
-        profit: salesRevenue - purchasesAmount - expensesAmount,
+        purchasesAmount: totalPurchases,
+        expensesAmount: operationalExpenses,
+        profit: salesRevenue - totalPurchases - operationalExpenses,
         salesCount: periodSales.length,
         purchasesCount: periodPurchases.length,
         expensesCount: periodExpenses.length,
@@ -121,10 +121,7 @@ class ReportOfflineRepository implements ReportRepository {
       final start = _getStartDate(period, startDate: startDate);
       final end = _getEndDate(period, endDate: endDate);
 
-      final sales = await saleRepository.fetchRecentSales(limit: 1000);
-      final periodSales = sales
-          .where((s) => _isInPeriod(s.date, start, end))
-          .toList();
+      final periodSales = await saleRepository.getSalesInPeriod(start, end);
 
       final totalRevenue = periodSales.fold<int>(
         0,
@@ -191,15 +188,20 @@ class ReportOfflineRepository implements ReportRepository {
       final start = _getStartDate(period, startDate: startDate);
       final end = _getEndDate(period, endDate: endDate);
 
-      final purchases = await purchaseRepository.fetchPurchases(limit: 1000);
-      final periodPurchases = purchases
-          .where((p) => _isInPeriod(p.date, start, end))
-          .toList();
+      final periodPurchases = await purchaseRepository.getPurchasesInPeriod(start, end);
+      final periodExpenses = await expenseRepository.getExpensesInPeriod(start, end);
 
-      final totalAmount = periodPurchases.fold<int>(
+      final purchasesAmount = periodPurchases.fold<int>(
         0,
         (sum, p) => sum + p.totalAmount,
       );
+
+      final stockExpensesAmount = periodExpenses
+          .where((e) => e.category == ExpenseCategory.stock)
+          .fold<int>(0, (sum, e) => sum + e.amountCfa);
+
+      final totalAmount = purchasesAmount + stockExpensesAmount;
+
       final totalItemsPurchased = periodPurchases.fold<int>(
         0,
         (sum, p) => sum + p.items.fold<int>(0, (is_, i) => is_ + i.quantity),
@@ -224,16 +226,42 @@ class ReportOfflineRepository implements ReportRepository {
         }
       }
 
+      // Add stock expenses as a generic supplier if there's any
+      if (stockExpensesAmount > 0) {
+        const stockLabel = 'Dépenses Stock Directes';
+        final existing = supplierTotals[stockLabel];
+        final stockExpensesCount = periodExpenses
+            .where((e) => e.category == ExpenseCategory.stock)
+            .length;
+            
+        if (existing != null) {
+          supplierTotals[stockLabel] = SupplierSummary(
+            supplierName: stockLabel,
+            totalAmount: existing.totalAmount + stockExpensesAmount,
+            purchasesCount: existing.purchasesCount + stockExpensesCount,
+          );
+        } else {
+          supplierTotals[stockLabel] = SupplierSummary(
+            supplierName: stockLabel,
+            totalAmount: stockExpensesAmount,
+            purchasesCount: stockExpensesCount,
+          );
+        }
+      }
+
       final topSuppliers = supplierTotals.values.toList()
         ..sort((a, b) => b.totalAmount.compareTo(a.totalAmount));
 
       return PurchasesReportData(
         totalAmount: totalAmount,
         totalItemsPurchased: totalItemsPurchased,
-        averagePurchaseAmount: periodPurchases.isEmpty
+        averagePurchaseAmount: (periodPurchases.length + 
+            periodExpenses.where((e) => e.category == ExpenseCategory.stock).length) == 0
             ? 0
-            : totalAmount ~/ periodPurchases.length,
-        purchasesCount: periodPurchases.length,
+            : totalAmount ~/ (periodPurchases.length + 
+                periodExpenses.where((e) => e.category == ExpenseCategory.stock).length),
+        purchasesCount: periodPurchases.length + 
+            periodExpenses.where((e) => e.category == ExpenseCategory.stock).length,
         topSuppliers: topSuppliers.take(10).toList(),
       );
     } catch (error, stackTrace) {
@@ -258,29 +286,31 @@ class ReportOfflineRepository implements ReportRepository {
       final start = _getStartDate(period, startDate: startDate);
       final end = _getEndDate(period, endDate: endDate);
 
-      final expenses = await expenseRepository.fetchExpenses(limit: 1000);
-      final periodExpenses = expenses
-          .where((e) => _isInPeriod(e.date, start, end))
+      final allExpenses = await expenseRepository.getExpensesInPeriod(start, end);
+      
+      // Exclude stock expenses from the operational expenses report
+      final operationalExpenses = allExpenses
+          .where((e) => e.category != ExpenseCategory.stock)
           .toList();
 
-      final totalAmount = periodExpenses.fold<int>(
+      final totalAmount = operationalExpenses.fold<int>(
         0,
         (sum, e) => sum + e.amountCfa,
       );
 
       final byCategory = <String, int>{};
-      for (final expense in periodExpenses) {
-        final categoryLabel = expense.category.name; // Convert enum to string
+      for (final expense in operationalExpenses) {
+        final categoryLabel = expense.category.name; 
         byCategory[categoryLabel] =
             (byCategory[categoryLabel] ?? 0) + expense.amountCfa;
       }
 
       return ExpensesReportData(
         totalAmount: totalAmount,
-        expensesCount: periodExpenses.length,
-        averageExpenseAmount: periodExpenses.isEmpty
+        expensesCount: operationalExpenses.length,
+        averageExpenseAmount: operationalExpenses.isEmpty
             ? 0
-            : totalAmount ~/ periodExpenses.length,
+            : totalAmount ~/ operationalExpenses.length,
         byCategory: byCategory,
       );
     } catch (error, stackTrace) {
@@ -305,32 +335,29 @@ class ReportOfflineRepository implements ReportRepository {
       final start = _getStartDate(period, startDate: startDate);
       final end = _getEndDate(period, endDate: endDate);
 
-      final sales = await saleRepository.fetchRecentSales(limit: 1000);
-      final purchases = await purchaseRepository.fetchPurchases(limit: 1000);
-      final expenses = await expenseRepository.fetchExpenses(limit: 1000);
-
-      final periodSales = sales
-          .where((s) => _isInPeriod(s.date, start, end))
-          .toList();
-      final periodPurchases = purchases
-          .where((p) => _isInPeriod(p.date, start, end))
-          .toList();
-      final periodExpenses = expenses
-          .where((e) => _isInPeriod(e.date, start, end))
-          .toList();
+      final periodSales = await saleRepository.getSalesInPeriod(start, end);
+      final periodPurchases = await purchaseRepository.getPurchasesInPeriod(start, end);
+      final periodExpenses = await expenseRepository.getExpensesInPeriod(start, end);
 
       final totalRevenue = periodSales.fold<int>(
         0,
         (sum, s) => sum + s.totalAmount,
       );
-      final totalCostOfGoodsSold = periodPurchases.fold<int>(
+      
+      final purchasesAmount = periodPurchases.fold<int>(
         0,
         (sum, p) => sum + p.totalAmount,
       );
-      final totalExpenses = periodExpenses.fold<int>(
-        0,
-        (sum, e) => sum + e.amountCfa,
-      );
+
+      final stockExpenses = periodExpenses
+          .where((e) => e.category == ExpenseCategory.stock)
+          .fold<int>(0, (sum, e) => sum + e.amountCfa);
+
+      final totalCostOfGoodsSold = purchasesAmount + stockExpenses;
+
+      final totalExpenses = periodExpenses
+          .where((e) => e.category != ExpenseCategory.stock)
+          .fold<int>(0, (sum, e) => sum + e.amountCfa);
 
       final grossProfit = totalRevenue - totalCostOfGoodsSold;
       final netProfit = grossProfit - totalExpenses;
@@ -382,15 +409,23 @@ class ReportOfflineRepository implements ReportRepository {
         final periodExpenses = expenses.where((e) => _isInPeriod(e.date, start, end)).toList();
 
         final salesRevenue = periodSales.fold<int>(0, (sum, s) => sum + s.totalAmount);
+        
         final purchasesAmount = periodPurchases.fold<int>(0, (sum, p) => sum + p.totalAmount);
-        final expensesAmount = periodExpenses.fold<int>(0, (sum, e) => sum + e.amountCfa);
+        final stockExpenses = periodExpenses
+            .where((e) => e.category == ExpenseCategory.stock)
+            .fold<int>(0, (sum, e) => sum + e.amountCfa);
+        final totalPurchases = purchasesAmount + stockExpenses;
+
+        final operationalExpenses = periodExpenses
+            .where((e) => e.category != ExpenseCategory.stock)
+            .fold<int>(0, (sum, e) => sum + e.amountCfa);
 
         return ReportData(
           period: period,
           salesRevenue: salesRevenue,
-          purchasesAmount: purchasesAmount,
-          expensesAmount: expensesAmount,
-          profit: salesRevenue - purchasesAmount - expensesAmount,
+          purchasesAmount: totalPurchases,
+          expensesAmount: operationalExpenses,
+          profit: salesRevenue - totalPurchases - operationalExpenses,
           salesCount: periodSales.length,
           purchasesCount: periodPurchases.length,
           expensesCount: periodExpenses.length,
@@ -454,44 +489,79 @@ class ReportOfflineRepository implements ReportRepository {
     DateTime? startDate,
     DateTime? endDate,
   }) {
-    return purchaseRepository.watchPurchases(limit: 1000).map((purchases) {
-      final start = _getStartDate(period, startDate: startDate);
-      final end = _getEndDate(period, endDate: endDate);
+    return CombineLatestStream.combine2(
+      purchaseRepository.watchPurchases(limit: 1000),
+      expenseRepository.watchExpenses(limit: 1000),
+      (purchases, expenses) {
+        final start = _getStartDate(period, startDate: startDate);
+        final end = _getEndDate(period, endDate: endDate);
 
-      final periodPurchases = purchases.where((p) => _isInPeriod(p.date, start, end)).toList();
+        final periodPurchases = purchases.where((p) => _isInPeriod(p.date, start, end)).toList();
+        final periodExpenses = expenses.where((e) => _isInPeriod(e.date, start, end)).toList();
 
-      final totalAmount = periodPurchases.fold<int>(0, (sum, p) => sum + p.totalAmount);
-      final totalItemsPurchased = periodPurchases.fold<int>(0, (sum, p) => sum + p.items.fold<int>(0, (is_, i) => is_ + i.quantity));
+        final purchasesAmount = periodPurchases.fold<int>(0, (sum, p) => sum + p.totalAmount);
+        final stockExpensesAmount = periodExpenses
+            .where((e) => e.category == ExpenseCategory.stock)
+            .fold<int>(0, (sum, e) => sum + e.amountCfa);
+        
+        final totalAmount = purchasesAmount + stockExpensesAmount;
+        
+        final totalItemsPurchased = periodPurchases.fold<int>(0, (sum, p) => sum + p.items.fold<int>(0, (is_, i) => is_ + i.quantity));
 
-      final supplierTotals = <String, SupplierSummary>{};
-      for (final purchase in periodPurchases) {
-        final supplier = purchase.supplier ?? 'Non spécifié';
-        final existing = supplierTotals[supplier];
-        if (existing != null) {
-          supplierTotals[supplier] = SupplierSummary(
-            supplierName: supplier,
-            totalAmount: existing.totalAmount + purchase.totalAmount,
-            purchasesCount: existing.purchasesCount + 1,
-          );
-        } else {
-          supplierTotals[supplier] = SupplierSummary(
-            supplierName: supplier,
-            totalAmount: purchase.totalAmount,
-            purchasesCount: 1,
-          );
+        final supplierTotals = <String, SupplierSummary>{};
+        for (final purchase in periodPurchases) {
+          final supplier = purchase.supplier ?? 'Non spécifié';
+          final existing = supplierTotals[supplier];
+          if (existing != null) {
+            supplierTotals[supplier] = SupplierSummary(
+              supplierName: supplier,
+              totalAmount: existing.totalAmount + purchase.totalAmount,
+              purchasesCount: existing.purchasesCount + 1,
+            );
+          } else {
+            supplierTotals[supplier] = SupplierSummary(
+              supplierName: supplier,
+              totalAmount: purchase.totalAmount,
+              purchasesCount: 1,
+            );
+          }
         }
-      }
+        
+        if (stockExpensesAmount > 0) {
+          const stockLabel = 'Dépenses Stock Directes';
+          final existing = supplierTotals[stockLabel];
+          final stockExpensesCount = periodExpenses
+              .where((e) => e.category == ExpenseCategory.stock)
+              .length;
+              
+          if (existing != null) {
+            supplierTotals[stockLabel] = SupplierSummary(
+              supplierName: stockLabel,
+              totalAmount: existing.totalAmount + stockExpensesAmount,
+              purchasesCount: existing.purchasesCount + stockExpensesCount,
+            );
+          } else {
+            supplierTotals[stockLabel] = SupplierSummary(
+              supplierName: stockLabel,
+              totalAmount: stockExpensesAmount,
+              purchasesCount: stockExpensesCount,
+            );
+          }
+        }
 
-      final topSuppliers = supplierTotals.values.toList()..sort((a, b) => b.totalAmount.compareTo(a.totalAmount));
+        final topSuppliers = supplierTotals.values.toList()..sort((a, b) => b.totalAmount.compareTo(a.totalAmount));
 
-      return PurchasesReportData(
-        totalAmount: totalAmount,
-        totalItemsPurchased: totalItemsPurchased,
-        averagePurchaseAmount: periodPurchases.isEmpty ? 0 : totalAmount ~/ periodPurchases.length,
-        purchasesCount: periodPurchases.length,
-        topSuppliers: topSuppliers.take(10).toList(),
-      );
-    });
+        final stockCount = periodExpenses.where((e) => e.category == ExpenseCategory.stock).length;
+
+        return PurchasesReportData(
+          totalAmount: totalAmount,
+          totalItemsPurchased: totalItemsPurchased,
+          averagePurchaseAmount: (periodPurchases.length + stockCount) == 0 ? 0 : totalAmount ~/ (periodPurchases.length + stockCount),
+          purchasesCount: periodPurchases.length + stockCount,
+          topSuppliers: topSuppliers.take(10).toList(),
+        );
+      },
+    );
   }
 
   @override
@@ -504,20 +574,22 @@ class ReportOfflineRepository implements ReportRepository {
       final start = _getStartDate(period, startDate: startDate);
       final end = _getEndDate(period, endDate: endDate);
 
-      final periodExpenses = expenses.where((e) => _isInPeriod(e.date, start, end)).toList();
+      final operationalExpenses = expenses
+          .where((e) => _isInPeriod(e.date, start, end) && e.category != ExpenseCategory.stock)
+          .toList();
 
-      final totalAmount = periodExpenses.fold<int>(0, (sum, e) => sum + e.amountCfa);
+      final totalAmount = operationalExpenses.fold<int>(0, (sum, e) => sum + e.amountCfa);
 
       final byCategory = <String, int>{};
-      for (final expense in periodExpenses) {
+      for (final expense in operationalExpenses) {
         final categoryLabel = expense.category.name;
         byCategory[categoryLabel] = (byCategory[categoryLabel] ?? 0) + expense.amountCfa;
       }
 
       return ExpensesReportData(
         totalAmount: totalAmount,
-        expensesCount: periodExpenses.length,
-        averageExpenseAmount: periodExpenses.isEmpty ? 0 : totalAmount ~/ periodExpenses.length,
+        expensesCount: operationalExpenses.length,
+        averageExpenseAmount: operationalExpenses.isEmpty ? 0 : totalAmount ~/ operationalExpenses.length,
         byCategory: byCategory,
       );
     });
@@ -542,8 +614,16 @@ class ReportOfflineRepository implements ReportRepository {
         final periodExpenses = expenses.where((e) => _isInPeriod(e.date, start, end)).toList();
 
         final totalRevenue = periodSales.fold<int>(0, (sum, s) => sum + s.totalAmount);
-        final totalCostOfGoodsSold = periodPurchases.fold<int>(0, (sum, p) => sum + p.totalAmount);
-        final totalExpenses = periodExpenses.fold<int>(0, (sum, e) => sum + e.amountCfa);
+        
+        final purchasesAmount = periodPurchases.fold<int>(0, (sum, p) => sum + p.totalAmount);
+        final stockExpenses = periodExpenses
+            .where((e) => e.category == ExpenseCategory.stock)
+            .fold<int>(0, (sum, e) => sum + e.amountCfa);
+        final totalCostOfGoodsSold = purchasesAmount + stockExpenses;
+
+        final totalExpenses = periodExpenses
+            .where((e) => e.category != ExpenseCategory.stock)
+            .fold<int>(0, (sum, e) => sum + e.amountCfa);
 
         final grossProfit = totalRevenue - totalCostOfGoodsSold;
         final netProfit = grossProfit - totalExpenses;

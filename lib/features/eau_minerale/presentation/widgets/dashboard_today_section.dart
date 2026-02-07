@@ -3,8 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import 'package:elyf_groupe_app/shared.dart';
 
-import 'dashboard_kpi_card.dart';
-
 /// Section displaying today's KPIs.
 class DashboardTodaySection extends ConsumerWidget {
   const DashboardTodaySection({super.key});
@@ -26,22 +24,19 @@ class DashboardTodaySection extends ConsumerWidget {
           builder: (context, constraints) {
             final isWide = constraints.maxWidth > 600;
             final cards = [
-              DashboardKpiCard(
+              ElyfStatsCard(
                 label: 'Chiffre d\'Affaires',
                 value: CurrencyFormatter.formatCFA(todayRevenue),
                 subtitle: '$todaySalesCount vente(s)',
                 icon: Icons.trending_up,
-                iconColor: Colors.blue,
-                backgroundColor: Colors.blue,
+                color: Colors.blue,
               ),
-              DashboardKpiCard(
+              ElyfStatsCard(
                 label: 'Encaissements',
                 value: CurrencyFormatter.formatCFA(todayCollections),
                 subtitle: '$collectionRate% collecté',
                 icon: Icons.attach_money,
-                iconColor: Colors.green,
-                valueColor: Colors.green.shade700,
-                backgroundColor: Colors.green,
+                color: Colors.green,
               ),
             ];
 
@@ -61,7 +56,11 @@ class DashboardTodaySection extends ConsumerWidget {
           },
         );
       },
-      loading: () => const LoadingIndicator(),
+      loading: () => Column(
+        children: [
+          ElyfShimmer(child: ElyfShimmer.listTile()),
+        ],
+      ),
       error: (error, stackTrace) => ErrorDisplayWidget(
         error: error,
         onRetry: () => ref.refresh(dailyDashboardSummaryProvider),

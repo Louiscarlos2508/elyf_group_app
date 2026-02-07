@@ -27,7 +27,7 @@ class SalaryTabs extends StatelessWidget {
           ),
           ButtonSegment<int>(
             value: 1,
-            label: Text('Produit'),
+            label: Text('Production'),
             icon: Icon(Icons.factory_outlined, size: 18),
           ),
           ButtonSegment<int>(

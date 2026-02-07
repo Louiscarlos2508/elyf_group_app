@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/shared/presentation/widgets/elyf_ui/organisms/elyf_card.dart';
+import 'package:elyf_groupe_app/shared/presentation/widgets/elyf_ui/atoms/elyf_shimmer.dart';
 
 import '../../domain/entities/stock_item.dart';
 
@@ -21,14 +23,9 @@ class DashboardStockList extends ConsumerWidget {
             .toList();
 
         if (finishedGoods.isEmpty) {
-          return Card(
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-              side: BorderSide(
-                color: theme.colorScheme.outline.withValues(alpha: 0.2),
-              ),
-            ),
+          return ElyfCard(
+            isGlass: true,
+            padding: const EdgeInsets.all(32),
             child: Padding(
               padding: const EdgeInsets.all(32),
               child: Center(
@@ -56,14 +53,9 @@ class DashboardStockList extends ConsumerWidget {
           );
         }
 
-        return Card(
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: BorderSide(
-              color: theme.colorScheme.outline.withValues(alpha: 0.1),
-            ),
-          ),
+        return ElyfCard(
+          isGlass: true,
+          padding: EdgeInsets.zero,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -145,7 +137,13 @@ class DashboardStockList extends ConsumerWidget {
           ),
         );
       },
-      loading: () => const LoadingIndicator(height: 100),
+      loading: () => Column(
+        children: [
+          ElyfShimmer(child: ElyfShimmer.listTile()),
+          const SizedBox(height: 8),
+          ElyfShimmer(child: ElyfShimmer.listTile()),
+        ],
+      ),
       error: (error, stackTrace) => ErrorDisplayWidget(
         error: error,
         title: 'Stock indisponible',

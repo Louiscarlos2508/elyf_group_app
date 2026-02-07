@@ -79,8 +79,11 @@ class DashboardAlertsSection extends StatelessWidget {
             count: expiringContracts.length,
             icon: Icons.event_busy,
             color: Colors.red,
-            items: expiringContracts.take(3).map((c) {
-              final daysLeft = c.endDate.difference(DateTime.now()).inDays;
+            items: expiringContracts
+                .where((c) => c.endDate != null)
+                .take(3)
+                .map((c) {
+              final daysLeft = c.endDate!.difference(DateTime.now()).inDays;
               return _AlertItem(
                 title: c.property?.address ?? 'Contrat',
                 subtitle: '$daysLeft jours restants',

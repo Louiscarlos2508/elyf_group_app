@@ -52,8 +52,20 @@ class ExpensesHistoryTab extends StatelessWidget {
                       final expense = expenses[index];
                       return ListTile(
                         title: Text(expense.description),
-                        subtitle: Text(
-                          '${expense.category.label} • ${expense.date.day}/${expense.date.month}/${expense.date.year}',
+                        subtitle: Row(
+                          children: [
+                            Text(
+                              '${expense.category.label} • ${expense.date.day}/${expense.date.month}/${expense.date.year}',
+                            ),
+                            if (expense.receiptPath != null) ...[
+                              const SizedBox(width: 8),
+                              Icon(
+                                Icons.receipt_long_rounded,
+                                size: 12,
+                                color: theme.colorScheme.primary,
+                              ),
+                            ],
+                          ],
                         ),
                         trailing: Text(
                           CurrencyFormatter.formatDouble(expense.amount),

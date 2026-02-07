@@ -52,6 +52,7 @@ class StockController {
   Future<void> recordBobineEntry({
     required String bobineType, // Type de bobine (ex: "Bobine standard")
     required int quantite, // Quantité en unités
+    int? prixUnitaire, // Optionnel
     String? fournisseur,
     String? notes,
   }) async {
@@ -81,7 +82,14 @@ class StockController {
         quantity: 0, // Sera mis à jour par recordMovement
         unit: 'unité',
         fournisseur: fournisseur,
+        prixUnitaire: prixUnitaire,
         createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+    } else if (prixUnitaire != null) {
+      // Mettre à jour le prix unitaire si fourni
+      stock = stock.copyWith(
+        prixUnitaire: prixUnitaire,
         updatedAt: DateTime.now(),
       );
     }
@@ -234,6 +242,9 @@ class StockController {
     required String packagingId,
     required String packagingType,
     required int quantite,
+    int? prixUnitaire, // Optionnel
+    bool isInLots = false, // Vrai si la quantité fournie est en lots
+    int? unitsPerLot, // Facteur de conversion explicite
     String? fournisseur,
     String? notes,
   }) async {
@@ -251,42 +262,75 @@ class StockController {
     }
 
     // Utiliser un ID fixe basé sur le type pour garantir la cohérence
-    // (comme pour les bobines avec 'bobine-${bobineType}')
     final fixedPackagingId = packagingId.isEmpty 
         ? 'packaging-${packagingType.toLowerCase().replaceAll(' ', '-')}'
         : packagingId;
     
-    // Récupérer ou créer le stock (sans le sauvegarder encore)
+    // Récupérer le stock existant
     var stock = await _packagingStockRepository.fetchById(fixedPackagingId);
     final isNewStock = stock == null;
+    
+    // Déterminer le facteur de conversion
+    // Priorité : Argument explicite > Stock existant > Défaut (1)
+    final conversionFactor = unitsPerLot ?? (stock?.unitsPerLot ?? 1);
+    
+    // Calculer la quantité finale en unités
+    int finalQuantityUnits = quantite;
+    if (isInLots) {
+      finalQuantityUnits = quantite * conversionFactor;
+    }
+
     if (isNewStock) {
-      // Créer le stock en mémoire seulement (ne pas sauvegarder avec quantity: 0)
+      // Créer le stock en mémoire seulement
       stock = PackagingStock(
         id: fixedPackagingId,
         type: packagingType,
-        quantity: 0, // Sera mis à jour après le mouvement
+        quantity: 0,
         unit: 'unité',
+        unitsPerLot: conversionFactor, 
         fournisseur: fournisseur,
+        prixUnitaire: prixUnitaire,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
+    } else {
+      // Préparer la mise à jour
+      var updated = false;
+      var newStock = stock!;
+      
+      if (prixUnitaire != null) {
+        newStock = newStock.copyWith(prixUnitaire: prixUnitaire);
+        updated = true;
+      }
+      
+      // Mettre à jour le facteur de lot si fourni change
+      if (unitsPerLot != null && unitsPerLot != newStock.unitsPerLot) {
+        newStock = newStock.copyWith(unitsPerLot: unitsPerLot);
+        updated = true;
+      }
+      
+      if (updated) {
+        stock = newStock;
+        newStock = newStock.copyWith(updatedAt: DateTime.now());
+        await _packagingStockRepository.save(newStock);
+      }
     }
 
     // Enregistrer le mouvement
-    // recordMovement met automatiquement à jour le stock (comme pour les bobines)
     final movement = PackagingStockMovement(
       id: 'movement-${DateTime.now().millisecondsSinceEpoch}',
       packagingId: fixedPackagingId,
       packagingType: packagingType,
       type: PackagingMovementType.entree,
       date: DateTime.now(),
-      quantite: quantite,
+      quantite: finalQuantityUnits, // Toujours stocker en UNITÉS
+      isInLots: isInLots,
+      quantiteSaisie: quantite,
       raison: 'Livraison',
       fournisseur: fournisseur,
       notes: notes,
       createdAt: DateTime.now(),
     );
-    // recordMovement met automatiquement à jour le stock, donc pas besoin de save après
     await _packagingStockRepository.recordMovement(movement);
   }
 

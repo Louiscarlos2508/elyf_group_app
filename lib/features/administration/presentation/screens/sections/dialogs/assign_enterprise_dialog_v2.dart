@@ -8,6 +8,7 @@ import 'package:elyf_groupe_app/core.dart';
 import '../../../../application/providers.dart';
 import '../../../../domain/entities/admin_module.dart';
 import 'package:elyf_groupe_app/core/permissions/services/permission_registry.dart';
+import '../../../../domain/entities/enterprise.dart';
 import 'widgets/enterprise_selection_widget.dart';
 
 /// Dialogue pour attribuer un utilisateur à une ou plusieurs entreprises avec un module et un rôle.
@@ -33,6 +34,7 @@ class _AssignEnterpriseDialogState
   bool _isActive = true;
   bool _isLoading = false;
   bool _multipleEnterprisesMode = false;
+  bool _includesChildren = false;
 
   @override
   Widget build(BuildContext context) {
@@ -196,20 +198,65 @@ class _AssignEnterpriseDialogState
                                 items: filteredRoles.map((role) {
                                   return DropdownMenuItem(
                                     value: role.id,
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      mainAxisSize: MainAxisSize.min,
+                                    child: Row(
                                       children: [
-                                        Text(role.name),
-                                        Text(
-                                          '${role.permissions.length} permission${role.permissions.length > 1 ? 's' : ''}',
-                                          style: theme.textTheme.bodySmall
-                                              ?.copyWith(
-                                                color: theme
-                                                    .colorScheme
-                                                    .onSurfaceVariant,
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Text(role.name),
+                                              Row(
+                                                children: [
+                                                  Text(
+                                                    '${role.permissions.length} permission${role.permissions.length > 1 ? 's' : ''}',
+                                                    style: theme
+                                                        .textTheme
+                                                        .bodySmall
+                                                        ?.copyWith(
+                                                          color: theme
+                                                              .colorScheme
+                                                              .onSurfaceVariant,
+                                                        ),
+                                                  ),
+                                                  if (role
+                                                      .allowedEnterpriseTypes
+                                                      .isNotEmpty) ...[
+                                                    const SizedBox(width: 8),
+                                                    Container(
+                                                      padding:
+                                                          const EdgeInsets.symmetric(
+                                                            horizontal: 6,
+                                                            vertical: 2,
+                                                          ),
+                                                      decoration: BoxDecoration(
+                                                        color: theme
+                                                            .colorScheme
+                                                            .primaryContainer,
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              4,
+                                                            ),
+                                                      ),
+                                                      child: Text(
+                                                        role.getAllowedTypesLabel(),
+                                                        style: theme
+                                                            .textTheme
+                                                            .labelSmall
+                                                            ?.copyWith(
+                                                              color: theme
+                                                                  .colorScheme
+                                                                  .onPrimaryContainer,
+                                                              fontSize: 10,
+                                                            ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ],
                                               ),
+                                            ],
+                                          ),
                                         ),
                                       ],
                                     ),
@@ -290,6 +337,60 @@ class _AssignEnterpriseDialogState
                         },
                         loading: () => const LinearProgressIndicator(),
                         error: (error, stack) => Text('Erreur: $error'),
+                      ),
+
+                    // Checkbox pour inclure les enfants (si entreprise sélectionnée en mode simple)
+                    if (!_multipleEnterprisesMode &&
+                        _selectedEnterpriseId != null)
+                      enterprisesAsync.when(
+                        data: (enterprises) {
+                          final selectedEnterprise = enterprises.firstWhere(
+                            (e) => e.id == _selectedEnterpriseId,
+                            orElse: () => enterprises.first,
+                          );
+
+                          // Compter les enfants
+                          final childCount = enterprises
+                              .where(
+                                (e) =>
+                                    e.parentEnterpriseId ==
+                                    selectedEnterprise.id,
+                              )
+                              .length;
+
+                          if (childCount == 0) {
+                            return const SizedBox.shrink();
+                          }
+
+                          return Column(
+                            children: [
+                              const SizedBox(height: 16),
+                              CheckboxListTile(
+                                title: const Text(
+                                  'Inclure les sites rattachés',
+                                ),
+                                subtitle: Text(
+                                  '$childCount site${childCount > 1 ? 's' : ''} rattaché${childCount > 1 ? 's' : ''} à cette entreprise',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                                value: _includesChildren,
+                                onChanged: (value) {
+                                  setState(
+                                    () => _includesChildren = value ?? false,
+                                  );
+                                },
+                                secondary: Icon(
+                                  Icons.account_tree,
+                                  color: theme.colorScheme.primary,
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                        loading: () => const SizedBox.shrink(),
+                        error: (_, __) => const SizedBox.shrink(),
                       ),
 
                     const SizedBox(height: 16),
@@ -373,7 +474,7 @@ class _AssignEnterpriseDialogState
               userId: widget.user.id,
               enterpriseIds: _selectedEnterpriseIds.toList(),
               moduleId: _selectedModuleId!,
-              roleId: _selectedRoleId!,
+              roleIds: [_selectedRoleId!],
               isActive: _isActive,
             );
 
@@ -390,8 +491,9 @@ class _AssignEnterpriseDialogState
           userId: widget.user.id,
           enterpriseId: _selectedEnterpriseId!,
           moduleId: _selectedModuleId!,
-          roleId: _selectedRoleId!,
+          roleIds: [_selectedRoleId!],
           isActive: _isActive,
+          includesChildren: _includesChildren,
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
         );
@@ -420,25 +522,54 @@ class _AssignEnterpriseDialogState
   }
 
   /// Filtre les rôles pour ne garder que ceux qui ont des permissions
-  /// pour le module spécifié.
+  /// pour le module spécifié ET qui sont compatibles avec le type d'entreprise.
   List<UserRole> _filterRolesForModule(
     List<UserRole> allRoles,
     String moduleId,
   ) {
     final registry = PermissionRegistry.instance;
     final modulePermissions = registry.getModulePermissions(moduleId);
+
+    // Récupérer l'entreprise sélectionnée pour filtrer par type
+    final enterprisesAsync = ref.read(enterprisesProvider);
+    Enterprise? selectedEnterprise;
+
+    if (_selectedEnterpriseId != null) {
+      selectedEnterprise = enterprisesAsync.maybeWhen(
+        data: (enterprises) => enterprises.firstWhere(
+          (e) => e.id == _selectedEnterpriseId,
+          orElse: () => enterprises.first,
+        ),
+        orElse: () => null,
+      );
+    }
+
     if (modulePermissions == null || modulePermissions.isEmpty) {
-      // Si aucune permission enregistrée pour ce module, retourner tous les rôles
+      // Si aucune permission enregistrée pour ce module, filtrer uniquement par type d'entreprise
+      if (selectedEnterprise != null) {
+        return allRoles
+            .where((role) => role.canBeAssignedTo(selectedEnterprise!.type))
+            .toList();
+      }
       return allRoles;
     }
 
     final modulePermissionIds = modulePermissions.keys.toSet();
 
     return allRoles.where((role) {
-      // Un rôle est valide pour ce module s'il a au moins une permission du module
-      return role.permissions.any(
+      // Vérifier que le rôle a au moins une permission du module
+      final hasModulePermission = role.permissions.any(
         (permissionId) => modulePermissionIds.contains(permissionId),
       );
+
+      if (!hasModulePermission) return false;
+
+      // Si une entreprise est sélectionnée, vérifier la compatibilité du type
+      if (selectedEnterprise != null) {
+        return role.canBeAssignedTo(selectedEnterprise.type);
+      }
+
+      return true;
     }).toList();
   }
 }

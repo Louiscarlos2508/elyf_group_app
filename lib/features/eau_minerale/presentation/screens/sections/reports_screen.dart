@@ -118,94 +118,115 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     final theme = Theme.of(context);
 
     return LayoutBuilder(
-      builder: (context, constraints) {
-        final isWide = constraints.maxWidth > 600;
-
-        return CustomScrollView(
-          slivers: [
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(24, 24, 24, isWide ? 24 : 16),
-                child: isWide
-                    ? Row(
+        builder: (context, constraints) {
+          return CustomScrollView(
+            slivers: [
+              // Premium Header for Reports
+              SliverToBoxAdapter(
+                child: Container(
+                  margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        const Color(0xFF312E81), // Dark Indigo
+                        const Color(0xFF4338CA), // Premium Indigo
+                        const Color(0xFF6366F1), // Violet
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.indigo.withValues(alpha: 0.2),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
                         children: [
-                          Text(
-                            'Rapports',
-                            style: theme.textTheme.headlineMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "ANALYTIQUES & RAPPORTS",
+                                  style: theme.textTheme.labelLarge?.copyWith(
+                                    color: Colors.white.withValues(alpha: 0.9),
+                                    fontWeight: FontWeight.w500,
+                                    letterSpacing: 1.2,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  "Performance Eau",
+                                  style: theme.textTheme.headlineMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          const Spacer(),
-                          RefreshButton(
-                            onRefresh: _invalidateProviders,
-                            tooltip: 'Actualiser les rapports',
-                          ),
-                        ],
-                      )
-                    : Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  'Rapports',
-                                  style: theme.textTheme.headlineMedium
-                                      ?.copyWith(fontWeight: FontWeight.bold),
-                                ),
-                              ),
-                              RefreshButton(
-                                onRefresh: _invalidateProviders,
-                                tooltip: 'Actualiser les rapports',
-                              ),
-                            ],
+                          IconButton(
+                            icon: const Icon(Icons.refresh, color: Colors.white),
+                            onPressed: _invalidateProviders,
+                            tooltip: 'Actualiser',
                           ),
                         ],
                       ),
-              ),
-            ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: ReportPeriodSelector(
-                  startDate: _startDate,
-                  endDate: _endDate,
-                  onStartDateSelected: () => _selectDate(context, true),
-                  onEndDateSelected: () => _selectDate(context, false),
-                  onDownload: _downloadReport,
-                ),
-              ),
-            ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-                child: ReportKpiCards(
-                  period: ReportPeriod(
-                    startDate: _startDate,
-                    endDate: _endDate,
+                      const SizedBox(height: 24),
+                      ReportPeriodSelector(
+                        startDate: _startDate,
+                        endDate: _endDate,
+                        onStartDateSelected: () => _selectDate(context, true),
+                        onEndDateSelected: () => _selectDate(context, false),
+                        onDownload: _downloadReport,
+                      ),
+                    ],
                   ),
                 ),
               ),
-            ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-                child: ReportTabs(
-                  selectedTab: _selectedTab,
-                  onTabChanged: (index) => setState(() => _selectedTab = index),
+
+              // KPI Section
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                sliver: SliverToBoxAdapter(
+                  child: ReportKpiCards(
+                    period: ReportPeriod(
+                      startDate: _startDate,
+                      endDate: _endDate,
+                    ),
+                  ),
                 ),
               ),
-            ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: _buildTabContent(context),
+
+              // Tabs Section
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                  child: ReportTabs(
+                    selectedTab: _selectedTab,
+                    onTabChanged: (index) => setState(() => _selectedTab = index),
+                  ),
+                ),
               ),
-            ),
-            const SliverToBoxAdapter(child: SizedBox(height: 24)),
-          ],
-        );
-      },
+
+              // Tab Content
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: _buildTabContent(context),
+                ),
+              ),
+              const SliverToBoxAdapter(child: SizedBox(height: 32)),
+            ],
+          );
+        },
     );
   }
 

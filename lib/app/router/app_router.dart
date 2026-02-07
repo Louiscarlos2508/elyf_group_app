@@ -2,14 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../shared/presentation/widgets/auth_guard.dart';
 import '../../features/administration/presentation/screens/admin_home_screen.dart';
+import '../../features/administration/presentation/screens/sections/admin_enterprise_management_section.dart';
 import '../../features/intro/presentation/screens/login_screen.dart';
 import '../../features/intro/presentation/screens/onboarding_screen.dart';
 import '../../features/intro/presentation/screens/splash_screen.dart';
 import '../../features/modules/presentation/screens/module_menu_screen.dart';
-import '../../shared/presentation/screens/placeholder_screen.dart';
 import 'module_route_wrappers.dart';
+
+import '../../core/auth/providers.dart';
+import '../../core/tenant/tenant_provider.dart';
 
 enum AppRoute {
   splash,
@@ -18,6 +20,7 @@ enum AppRoute {
   moduleMenu,
   dashboard,
   admin,
+  adminEnterpriseManagement,
   homeEauSachet,
   homeGaz,
   homeOrangeMoney,
@@ -25,9 +28,101 @@ enum AppRoute {
   homeBoutique,
 }
 
+/// Notifier qui écoute les changements d'état pour déclencher les redirections GoRouter
+class RouterNotifier extends ChangeNotifier {
+  RouterNotifier(Ref ref) {
+    // Écouter les changements d'auth
+    ref.listen(isAuthenticatedProvider, (_, __) => notifyListeners());
+    // Écouter les changements de l'utilisateur actuel (pour isAdmin)
+    ref.listen(currentUserProvider, (_, __) => notifyListeners());
+    // Écouter les changements d'entreprise active
+    ref.listen(activeEnterpriseIdProvider, (_, __) => notifyListeners());
+  }
+}
+
 final appRouterProvider = Provider<GoRouter>((ref) {
+  final notifier = RouterNotifier(ref);
+
   return GoRouter(
     initialLocation: '/splash',
+    refreshListenable: notifier,
+    redirect: (context, state) async {
+      final authState = ref.read(isAuthenticatedProvider);
+      final activeEnterpriseIdSync = ref.read(activeEnterpriseIdProvider);
+      final currentUserSync = ref.read(currentUserProvider);
+
+      // Récupérer l'état de l'auth de manière synchrone
+      final bool isAuthenticated = authState.when(
+        data: (authenticated) => authenticated,
+        loading: () => false,
+        error: (_, __) => false,
+      );
+
+      // Récupérer l'utilisateur pour le statut admin
+      final bool isAdmin = currentUserSync.maybeWhen(
+        data: (user) => user?.isAdmin ?? false,
+        orElse: () => false,
+      );
+
+      // Récupérer l'ID de l'entreprise active
+      final String? activeEnterpriseId = activeEnterpriseIdSync.when(
+        data: (id) => id,
+        loading: () => null,
+        error: (_, __) => null,
+      );
+
+      final String location = state.uri.path;
+
+      // Routes publiques
+      final bool isSplash = location == '/splash';
+      final bool isLogin = location == '/login';
+      final bool isOnboarding = location == '/onboarding';
+
+      // 1. Splash screen : laisser passer
+      if (isSplash) return null;
+
+      // 2. Utilisateur non authentifié
+      if (!isAuthenticated) {
+        // Rediriger vers login si on essaie d'accéder à une route protégée
+        if (!isLogin && !isOnboarding) return '/login';
+        return null;
+      }
+
+      // 3. Utilisateur authentifié sur la page de login ou onboarding
+      if (isLogin || isOnboarding) {
+        // Attendre que l'utilisateur soit chargé pour décider de la redirection
+        if (currentUserSync.isLoading) return null;
+        return isAdmin ? '/admin' : '/modules';
+      }
+
+
+      // 4. Rediriger les admins qui essaient d'accéder à /modules vers /admin
+      if (location == '/modules' && isAdmin) {
+        return '/admin';
+      }
+
+      // 5. Protection des routes de modules
+      final bool isModuleRoute = location.startsWith('/modules/');
+      final bool isModuleMenu = location == '/modules';
+
+      if (isModuleRoute && !isModuleMenu) {
+        // Vérifier si une entreprise est sélectionnée
+        if (activeEnterpriseId == null) {
+          // Rediriger vers la sélection d'entreprise si on essaie d'entrer dans un module
+          return '/modules';
+        }
+      }
+
+
+      // 6. Redirection de la racine / vers /modules ou /admin
+      if (location == '/') {
+        // Attendre que l'utilisateur soit chargé
+        if (currentUserSync.isLoading) return null;
+        return isAdmin ? '/admin' : '/modules';
+      }
+
+      return null;
+    },
     routes: [
       GoRoute(
         path: '/splash',
@@ -47,72 +142,54 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/modules',
         name: AppRoute.moduleMenu.name,
-        builder: (context, state) => const AuthGuard(child: ModuleMenuScreen()),
+        builder: (context, state) => const ModuleMenuScreen(),
       ),
       GoRoute(
         path: '/admin',
         name: AppRoute.admin.name,
-        builder: (context, state) => const AuthGuard(child: AdminHomeScreen()),
+        builder: (context, state) => const AdminHomeScreen(),
+        routes: [
+          GoRoute(
+            path: 'enterprise/:id',
+            name: AppRoute.adminEnterpriseManagement.name,
+            builder: (context, state) {
+              final enterpriseId = state.pathParameters['id']!;
+              return AdminEnterpriseManagementSection(enterpriseId: enterpriseId);
+            },
+          ),
+        ],
       ),
       GoRoute(
         path: '/',
         name: AppRoute.dashboard.name,
-        pageBuilder: (context, state) => _buildTransitionPage(
-          const PlaceholderScreen(
-            title: 'Elyf Dashboard',
-            message:
-                'Point d’entrée pour gérer toutes les entreprises et modules.',
-          ),
-        ),
+        builder: (context, state) => const SizedBox.shrink(), // Redirigé par le logic ci-dessus
       ),
-      // Routes pour les modules utilisant l'entreprise active (protégées)
+      // Routes pour les modules utilisant l'entreprise active
       GoRoute(
         path: '/modules/eau_sachet',
         name: AppRoute.homeEauSachet.name,
-        builder: (context, state) =>
-            const AuthGuard(child: EauMineraleRouteWrapper()),
+        builder: (context, state) => const EauMineraleRouteWrapper(),
       ),
       GoRoute(
         path: '/modules/gaz',
         name: AppRoute.homeGaz.name,
-        builder: (context, state) => const AuthGuard(child: GazRouteWrapper()),
+        builder: (context, state) => const GazRouteWrapper(),
       ),
       GoRoute(
         path: '/modules/orange_money',
         name: AppRoute.homeOrangeMoney.name,
-        builder: (context, state) =>
-            const AuthGuard(child: OrangeMoneyRouteWrapper()),
+        builder: (context, state) => const OrangeMoneyRouteWrapper(),
       ),
       GoRoute(
         path: '/modules/immobilier',
         name: AppRoute.homeImmobilier.name,
-        builder: (context, state) =>
-            const AuthGuard(child: ImmobilierRouteWrapper()),
+        builder: (context, state) => const ImmobilierRouteWrapper(),
       ),
       GoRoute(
         path: '/modules/boutique',
         name: AppRoute.homeBoutique.name,
-        builder: (context, state) =>
-            const AuthGuard(child: BoutiqueRouteWrapper()),
+        builder: (context, state) => const BoutiqueRouteWrapper(),
       ),
     ],
   );
 });
-
-CustomTransitionPage<void> _buildTransitionPage(Widget child) {
-  return CustomTransitionPage<void>(
-    child: child,
-    transitionsBuilder: (context, animation, secondaryAnimation, view) {
-      final tween = Tween<double>(begin: 0.9, end: 1);
-      return FadeTransition(
-        opacity: animation,
-        child: ScaleTransition(
-          scale: animation.drive(
-            tween.chain(CurveTween(curve: Curves.easeOut)),
-          ),
-          child: view,
-        ),
-      );
-    },
-  );
-}

@@ -66,14 +66,14 @@ class ContractCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Contrat ${contract.id.substring(0, 8)}',
+                          contract.displayName,
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Du ${ContractCardHelpers.formatDate(contract.startDate)} au ${ContractCardHelpers.formatDate(contract.endDate)}',
+                          'Du ${ContractCardHelpers.formatDate(contract.startDate)} au ${contract.endDate != null ? ContractCardHelpers.formatDate(contract.endDate!) : 'Indéterminée'}',
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
                           ),

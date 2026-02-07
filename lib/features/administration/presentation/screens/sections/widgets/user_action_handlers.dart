@@ -7,7 +7,7 @@ import '../dialogs/create_user_dialog.dart';
 import '../dialogs/edit_user_dialog.dart';
 import '../dialogs/assign_enterprise_dialog.dart';
 import '../../../../application/providers.dart';
-import '../../../../../../shared/utils/notification_service.dart';
+import '../../../../../../shared/services/feedback_service.dart';
 
 /// Action handlers for user section.
 ///
@@ -31,9 +31,10 @@ class UserActionHandlers {
         // Même si la sauvegarde locale a échoué, l'utilisateur existe dans Firestore
         ref.invalidate(usersProvider);
         if (context.mounted) {
-          NotificationService.showSuccess(
+          FeedbackService.showSuccess(
             context,
-            'Utilisateur créé avec succès. Si l\'utilisateur n\'apparaît pas immédiatement, rechargez la liste.',
+            message: 'Utilisateur créé avec succès',
+            actionLabel: 'Voir',
           );
         }
       } catch (e) {
@@ -47,15 +48,14 @@ class UserActionHandlers {
           if (errorMessage.toLowerCase().contains('sqlite') ||
               errorMessage.toLowerCase().contains('drift') ||
               errorMessage.toLowerCase().contains('database')) {
-            NotificationService.showInfo(
+            FeedbackService.showInfo(
               context,
-              'Utilisateur créé dans Firebase. Une erreur est survenue lors de la sauvegarde locale. '
-              'L\'utilisateur sera disponible après rechargement de la liste.',
+              message: 'Utilisateur créé dans Firebase. Erreur de sauvegarde locale.',
             );
           } else {
-            NotificationService.showError(
+            FeedbackService.showError(
               context,
-              'Erreur lors de la création: $errorMessage',
+              message: 'Erreur: $errorMessage',
             );
           }
         }
@@ -74,14 +74,14 @@ class UserActionHandlers {
         await ref.read(userControllerProvider).updateUser(result);
         ref.invalidate(usersProvider);
         if (context.mounted) {
-          NotificationService.showSuccess(
+          FeedbackService.showSuccess(
             context,
-            'Utilisateur modifié avec succès',
+            message: 'Utilisateur modifié avec succès',
           );
         }
       } catch (e) {
         if (context.mounted) {
-          NotificationService.showError(context, e.toString());
+          FeedbackService.showError(context, message: e.toString());
         }
       }
     }
@@ -136,11 +136,11 @@ class UserActionHandlers {
         ref.invalidate(enterpriseModuleUsersProvider);
         ref.invalidate(userEnterpriseModuleUsersProvider(user.id));
         if (context.mounted) {
-          NotificationService.showSuccess(context, 'Utilisateur supprimé');
+          FeedbackService.showSuccess(context, message: 'Utilisateur supprimé');
         }
       } catch (e) {
         if (context.mounted) {
-          NotificationService.showError(context, e.toString());
+          FeedbackService.showError(context, message: e.toString());
         }
       }
     }
@@ -153,14 +153,14 @@ class UserActionHandlers {
           .toggleUserStatus(user.id, !user.isActive);
       ref.invalidate(usersProvider);
       if (context.mounted) {
-        NotificationService.showInfo(
+        FeedbackService.showInfo(
           context,
-          user.isActive ? 'Utilisateur désactivé' : 'Utilisateur activé',
+          message: user.isActive ? 'Utilisateur désactivé' : 'Utilisateur activé',
         );
       }
     } catch (e) {
       if (context.mounted) {
-        NotificationService.showError(context, e.toString());
+        FeedbackService.showError(context, message: e.toString());
       }
     }
   }
@@ -203,14 +203,14 @@ class UserActionHandlers {
         ref.invalidate(enterpriseModuleUsersProvider);
         ref.invalidate(userEnterpriseModuleUsersProvider(assignment.userId));
         if (context.mounted) {
-          NotificationService.showSuccess(
+          FeedbackService.showSuccess(
             context,
-            'Assignation retirée avec succès',
+            message: 'Assignation retirée avec succès',
           );
         }
       } catch (e) {
         if (context.mounted) {
-          NotificationService.showError(context, e.toString());
+          FeedbackService.showError(context, message: e.toString());
         }
       }
     }

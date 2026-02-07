@@ -29,6 +29,12 @@ abstract class PropertyExpenseRepository {
   /// Observe les dépenses.
   Stream<List<PropertyExpense>> watchExpenses();
 
+  /// Observe les dépenses supprimées.
+  Stream<List<PropertyExpense>> watchDeletedExpenses();
+
   /// Supprime une dépense.
   Future<void> deleteExpense(String id);
+
+  /// Restaure une dépense supprimée.
+  Future<void> restoreExpense(String id);
 }

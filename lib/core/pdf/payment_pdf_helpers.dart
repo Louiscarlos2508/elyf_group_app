@@ -103,7 +103,9 @@ class PaymentPdfHelpers {
           ),
           service.buildInfoRow(
             'Date de fin:',
-            dateFormat.format(contract.endDate),
+            contract.endDate != null
+                ? dateFormat.format(contract.endDate!)
+                : 'Indéterminée',
           ),
           if (contract.paymentDay != null)
             service.buildInfoRow(

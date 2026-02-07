@@ -19,6 +19,8 @@ import '../../widgets/property_detail_dialog.dart';
 import '../../widgets/property_search_bar.dart';
 import '../../widgets/tenant_detail_dialog.dart';
 import '../../widgets/payments/payments_kpi_cards.dart';
+import '../../widgets/payments/rent_matrix_view.dart';
+import '../../widgets/immobilier_header.dart';
 
 /// Screen for managing payments.
 class PaymentsScreen extends ConsumerStatefulWidget {
@@ -30,7 +32,6 @@ class PaymentsScreen extends ConsumerStatefulWidget {
 
 class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
   final _searchController = TextEditingController();
-  PaymentStatus? _selectedStatus;
   PaymentMethod? _selectedMethod;
 
   @override
@@ -42,12 +43,13 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
   List<Payment> _filterAndSort(List<Payment> payments, WidgetRef ref) {
     // Utiliser le service de filtrage pour extraire la logique métier
     final filterService = ref.read(paymentFilterServiceProvider);
+    final selectedStatus = ref.watch(paymentListFilterProvider);
     return filterService.filterAndSort(
       payments: payments,
       searchQuery: _searchController.text.isEmpty
           ? null
           : _searchController.text,
-      status: _selectedStatus,
+      status: selectedStatus,
       method: _selectedMethod,
     );
   }
@@ -57,39 +59,91 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
     final theme = Theme.of(context);
     final paymentsAsync = ref.watch(paymentsProvider);
 
-    return Scaffold(
-      body: paymentsAsync.when(
-        data: (payments) {
-          final filtered = _filterAndSort(payments, ref);
-          final metrics = _calculateMetrics(payments);
-
-          return LayoutBuilder(
-            builder: (context, constraints) {
-              final isWide = constraints.maxWidth > 600;
-
-              return CustomScrollView(
-                slivers: [
-                  _buildHeader(theme, isWide),
-                  _buildKpiSection(theme, payments.length, metrics),
-                  _buildSectionHeader(theme),
-                  _buildSearchBar(),
-                  _buildFilters(),
-                  _buildPaymentsList(theme, filtered, payments.isEmpty),
-                  SliverToBoxAdapter(
-                    child: SizedBox(height: AppSpacing.lg),
-                  ),
-                ],
-              );
-            },
-          );
-        },
-        loading: () => const LoadingIndicator(),
-        error: (error, stackTrace) => ErrorDisplayWidget(
-          error: error,
-          title: 'Erreur de chargement',
-          message: 'Impossible de charger les paiements.',
-          onRetry: () => ref.refresh(paymentsProvider),
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: () => _showPaymentForm(),
+          icon: const Icon(Icons.add),
+          label: const Text('Nouveau'),
         ),
+        body: Column(
+          children: [
+            // Standard Immobilier Header
+            ImmobilierHeader(
+              title: 'PAIEMENTS',
+              subtitle: 'Gestion & Suivi',
+              asSliver: false,
+              additionalActions: [
+                Semantics(
+                  label: 'Actualiser',
+                  button: true,
+                  child: IconButton(
+                    icon: const Icon(Icons.refresh, color: Colors.white),
+                    onPressed: () {
+                      ref.invalidate(paymentsProvider);
+                      ref.invalidate(rentMatrixProvider);
+                    },
+                    tooltip: 'Actualiser',
+                  ),
+                ),
+              ],
+              bottom: TabBar(
+                tabs: const [
+                  Tab(text: 'HISTORIQUE'),
+                  Tab(text: 'SUIVI MENSUEL'),
+                ],
+                labelStyle: theme.textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.1,
+                ),
+                indicatorColor: Colors.white,
+                labelColor: Colors.white,
+                unselectedLabelColor: Colors.white.withValues(alpha: 0.7),
+                indicatorWeight: 3,
+              ),
+            ),
+            Expanded(
+              child: TabBarView(
+                children: [
+                  // Tab 1: Historique (Current view)
+                  _buildHistoryTab(paymentsAsync, theme),
+                  // Tab 2: Suivi Mensuel (New Matrix view)
+                  const RentMatrixView(),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHistoryTab(AsyncValue<List<Payment>> paymentsAsync, ThemeData theme) {
+    return paymentsAsync.when(
+      data: (payments) {
+        final filtered = _filterAndSort(payments, ref);
+        final metrics = _calculateMetrics(payments);
+
+        return CustomScrollView(
+          slivers: [
+            _buildKpiSection(theme, payments.length, metrics),
+            _buildSectionHeader(theme),
+            _buildSearchBar(),
+            _buildFilters(),
+            _buildPaymentsList(theme, filtered, payments.isEmpty),
+            SliverToBoxAdapter(
+              child: SizedBox(height: AppSpacing.lg),
+            ),
+          ],
+        );
+      },
+      loading: () => const LoadingIndicator(),
+      error: (error, stackTrace) => ErrorDisplayWidget(
+        error: error,
+        title: 'Erreur de chargement',
+        message: 'Impossible de charger les paiements.',
+        onRetry: () => ref.refresh(paymentsProvider),
       ),
     );
   }
@@ -122,79 +176,6 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
       overdueCount: overdueCount,
       monthTotal: monthTotal,
       overdueTotal: overdueTotal,
-    );
-  }
-
-  Widget _buildHeader(ThemeData theme, bool isWide) {
-    return SliverToBoxAdapter(
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(
-          AppSpacing.lg,
-          AppSpacing.lg,
-          AppSpacing.lg,
-          isWide ? AppSpacing.lg : AppSpacing.md,
-        ),
-        child: isWide ? _buildWideHeader(theme) : _buildNarrowHeader(theme),
-      ),
-    );
-  }
-
-  Widget _buildWideHeader(ThemeData theme) {
-    return Row(
-      children: [
-        Text(
-          'Paiements',
-          style: theme.textTheme.headlineMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const Spacer(),
-        RefreshButton(
-          onRefresh: () => ref.invalidate(paymentsProvider),
-          tooltip: 'Actualiser',
-        ),
-        const SizedBox(width: 8),
-        Flexible(
-          child: FilledButton.icon(
-            onPressed: () => _showPaymentForm(),
-            icon: const Icon(Icons.add),
-            label: const Text('Nouveau Paiement'),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildNarrowHeader(ThemeData theme) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                'Paiements',
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            RefreshButton(
-              onRefresh: () => ref.invalidate(paymentsProvider),
-              tooltip: 'Actualiser',
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        SizedBox(
-          width: double.infinity,
-          child: FilledButton.icon(
-            onPressed: () => _showPaymentForm(),
-            icon: const Icon(Icons.add),
-            label: const Text('Nouveau Paiement'),
-          ),
-        ),
-      ],
     );
   }
 
@@ -287,15 +268,17 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
   }
 
   Widget _buildFilters() {
+    final selectedStatus = ref.watch(paymentListFilterProvider);
     return SliverToBoxAdapter(
       child: PaymentFilters(
-        selectedStatus: _selectedStatus,
+        selectedStatus: selectedStatus,
         selectedMethod: _selectedMethod,
-        onStatusChanged: (status) => setState(() => _selectedStatus = status),
+        onStatusChanged: (status) =>
+            ref.read(paymentListFilterProvider.notifier).set(status),
         onMethodChanged: (method) => setState(() => _selectedMethod = method),
         onClear: () {
+          ref.read(paymentListFilterProvider.notifier).set(null);
           setState(() {
-            _selectedStatus = null;
             _selectedMethod = null;
           });
         },
@@ -344,7 +327,7 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
           : TextButton(
               onPressed: () {
                 _searchController.clear();
-                _selectedStatus = null;
+                ref.read(paymentListFilterProvider.notifier).set(null);
                 _selectedMethod = null;
                 setState(() {});
               },

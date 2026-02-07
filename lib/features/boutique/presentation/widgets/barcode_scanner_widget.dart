@@ -85,7 +85,9 @@ class _BarcodeScannerWidgetState extends State<BarcodeScannerWidget> {
             controller: _controller,
             onDetect: _handleBarcode,
             errorBuilder: (context, error, child) {
-              widget.onError?.call(error.errorDetails?.message ?? 'Erreur de scan');
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                widget.onError?.call(error.errorDetails?.message ?? 'Erreur de scan');
+              });
               return Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,

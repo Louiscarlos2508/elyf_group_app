@@ -112,16 +112,7 @@ class ExpenseFormFields {
     );
   }
 
-  static Widget receiptField({required TextEditingController controller}) {
-    return TextFormField(
-      controller: controller,
-      decoration: const InputDecoration(
-        labelText: 'Numéro de reçu',
-        hintText: 'REC-2024-001',
-        prefixIcon: Icon(Icons.receipt),
-      ),
-    );
-  }
+
 
   static IconData getCategoryIcon(ExpenseCategory category) {
     switch (category) {

@@ -67,6 +67,7 @@ class SalaryOfflineRepository extends OfflineRepository<Employee>
       signature: map['signature'] != null
           ? Uint8List.fromList((map['signature'] as List<dynamic>).cast<int>())
           : null,
+      signerName: map['signerName'] as String?,
     );
   }
 
@@ -96,6 +97,7 @@ class SalaryOfflineRepository extends OfflineRepository<Employee>
       'period': payment.period,
       'notes': payment.notes,
       'signature': payment.signature?.toList(),
+      'signerName': payment.signerName,
     };
   }
 
@@ -331,6 +333,7 @@ class SalaryOfflineRepository extends OfflineRepository<Employee>
       signature: map['signature'] != null
           ? Uint8List.fromList((map['signature'] as List<dynamic>).cast<int>())
           : null,
+      signerName: map['signerName'] as String?,
     );
   }
 
@@ -384,7 +387,9 @@ class SalaryOfflineRepository extends OfflineRepository<Employee>
         'isVerified': payment.isVerified,
         'verifiedBy': payment.verifiedBy,
         'verifiedAt': payment.verifiedAt?.toIso8601String(),
+        'verifiedAt': payment.verifiedAt?.toIso8601String(),
         'signature': payment.signature?.toList(),
+        'signerName': payment.signerName, // Ajout du nom du signataire
       };
 
       await driftService.db.transaction(() async {

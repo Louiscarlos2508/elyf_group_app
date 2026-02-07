@@ -3,4 +3,5 @@
 
 export 'core/permissions/entities/user_role.dart';
 export 'core/permissions/entities/module_permission.dart';
+export 'core/permissions/data/predefined_roles.dart';
 export 'core/auth/entities/enterprise_module_user.dart';

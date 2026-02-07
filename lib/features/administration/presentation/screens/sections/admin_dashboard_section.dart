@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/administration/application/providers.dart';
-import '../../../domain/entities/enterprise.dart';
+import 'package:elyf_groupe_app/shared/presentation/widgets/elyf_ui/organisms/elyf_card.dart';
+import 'package:elyf_groupe_app/shared/presentation/widgets/elyf_ui/atoms/elyf_shimmer.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import '../../widgets/admin_shimmers.dart';
 
 /// Dashboard avec statistiques et vue d'ensemble
@@ -19,51 +21,97 @@ class AdminDashboardSection extends ConsumerWidget {
     return CustomScrollView(
       slivers: [
         SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
+          child: Container(
+            margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  theme.colorScheme.primary,
+                  theme.colorScheme.primary.withValues(alpha: 0.8),
+                  const Color(0xFF4F46E5), // Indigo
+                ],
+              ),
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                  blurRadius: 12,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Tableau de bord',
-                  style: theme.textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Administration',
+                          style: theme.textTheme.labelLarge?.copyWith(
+                            color: Colors.white.withValues(alpha: 0.9),
+                            fontWeight: FontWeight.w500,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Tableau de bord',
+                          style: theme.textTheme.headlineMedium?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (isSyncing)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          children: [
+                            const SizedBox(
+                              width: 10,
+                              height: 10,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'LIVE',
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
                 ),
-                if (isSyncing) ...[
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      SizedBox(
-                        width: 12,
-                        height: 12,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: theme.colorScheme.primary,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Synchronisation en direct...',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.primary,
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-                const SizedBox(height: 8),
+                const SizedBox(height: 24),
                 Text(
-                  'Vue d\'ensemble du système d\'administration',
+                  'Vue d\'ensemble du système et gestion des entreprises.',
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+                    color: Colors.white.withValues(alpha: 0.8),
                   ),
                 ),
               ],
             ),
           ),
         ),
+        const SliverToBoxAdapter(child: SizedBox(height: 24)),
         statsAsync.when(
           data: (stats) => SliverToBoxAdapter(
             child: Padding(
@@ -73,22 +121,24 @@ class AdminDashboardSection extends ConsumerWidget {
                   Row(
                     children: [
                       Expanded(
-                        child: _StatCard(
-                          title: 'Entreprises',
+                        child: ElyfStatsCard(
+                          label: 'Entreprises',
                           value: stats.totalEnterprises.toString(),
                           subtitle: '${stats.activeEnterprises} actives',
-                          icon: Icons.business,
+                          icon: Icons.business_rounded,
                           color: theme.colorScheme.primary,
+                          isGlass: true,
                         ),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
-                        child: _StatCard(
-                          title: 'Rôles',
+                        child: ElyfStatsCard(
+                          label: 'Rôles',
                           value: stats.totalRoles.toString(),
                           subtitle: 'Rôles définis',
-                          icon: Icons.shield,
-                          color: theme.colorScheme.secondary,
+                          icon: Icons.shield_rounded,
+                          color: const Color(0xFF6366F1), // Indigo
+                          isGlass: true,
                         ),
                       ),
                     ],
@@ -97,22 +147,24 @@ class AdminDashboardSection extends ConsumerWidget {
                   Row(
                     children: [
                       Expanded(
-                        child: _StatCard(
-                          title: 'Utilisateurs',
+                        child: ElyfStatsCard(
+                          label: 'Utilisateurs',
                           value: stats.totalUsers.toString(),
                           subtitle: '${stats.activeUsers} actifs',
-                          icon: Icons.people,
-                          color: theme.colorScheme.tertiary,
+                          icon: Icons.people_alt_rounded,
+                          color: const Color(0xFF10B981), // Success Emerald
+                          isGlass: true,
                         ),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
-                        child: _StatCard(
-                          title: 'Attributions',
+                        child: ElyfStatsCard(
+                          label: 'Attributions',
                           value: stats.totalAssignments.toString(),
-                          subtitle: 'Accès entreprises/modules',
-                          icon: Icons.link,
-                          color: theme.colorScheme.primaryContainer,
+                          subtitle: 'Accès / Modules',
+                          icon: Icons.link_rounded,
+                          color: theme.colorScheme.secondary,
+                          isGlass: true,
                         ),
                       ),
                     ],
@@ -122,7 +174,22 @@ class AdminDashboardSection extends ConsumerWidget {
             ),
           ),
           loading: () => SliverToBoxAdapter(
-            child: AdminShimmers.statsShimmer(context),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                children: [
+                  ElyfShimmer(child: ElyfShimmer.card(height: 200, borderRadius: 40)),
+                  const SizedBox(height: 24),
+                  Row(
+                    children: [
+                      Expanded(child: ElyfShimmer(child: ElyfShimmer.card(height: 120, borderRadius: 24))),
+                      const SizedBox(width: 16),
+                      Expanded(child: ElyfShimmer(child: ElyfShimmer.card(height: 120, borderRadius: 24))),
+                    ],
+                  ),
+                ],
+              ),
+            ),
           ),
           error: (error, stack) =>
               SliverToBoxAdapter(child: Center(child: Text('Erreur: $error'))),
@@ -144,8 +211,9 @@ class AdminDashboardSection extends ConsumerWidget {
           data: (enterprises) {
             final byType = <String, List<Enterprise>>{};
             for (final enterprise in enterprises) {
-              byType.putIfAbsent(enterprise.type, () => []).add(enterprise);
+              byType.putIfAbsent(enterprise.type.id, () => []).add(enterprise);
             }
+
 
             return SliverList(
               delegate: SliverChildBuilderDelegate((context, index) {
@@ -153,8 +221,12 @@ class AdminDashboardSection extends ConsumerWidget {
                 final typeEnterprises = byType[type]!;
                 return Padding(
                   padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
-                  child: Card(
+                  child: ElyfCard(
+                    isGlass: true,
+                    padding: EdgeInsets.zero,
                     child: ExpansionTile(
+                      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                      expandedCrossAxisAlignment: CrossAxisAlignment.start,
                       leading: Icon(
                         ref
                             .read(enterpriseTypeServiceProvider)
@@ -171,22 +243,36 @@ class AdminDashboardSection extends ConsumerWidget {
                       ),
                       subtitle: Text(
                         '${typeEnterprises.length} entreprise${typeEnterprises.length > 1 ? 's' : ''}',
+                        style: theme.textTheme.bodySmall,
                       ),
-                      children: typeEnterprises.map((enterprise) {
+                      children: typeEnterprises.map<Widget>((enterprise) {
                         return ListTile(
-                          title: Text(enterprise.name),
-                          subtitle: Text(enterprise.description ?? ''),
-                          trailing: enterprise.isActive
-                              ? Chip(
-                                  label: const Text('Active'),
-                                  visualDensity: VisualDensity.compact,
-                                  backgroundColor:
-                                      theme.colorScheme.primaryContainer,
-                                )
-                              : Chip(
-                                  label: const Text('Inactive'),
-                                  visualDensity: VisualDensity.compact,
-                                ),
+                          title: Text(
+                            enterprise.name,
+                            style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                          ),
+                          subtitle: Text(
+                            enterprise.description ?? '',
+                            style: theme.textTheme.bodySmall,
+                          ),
+                          trailing: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: enterprise.isActive
+                                  ? theme.colorScheme.primaryContainer.withValues(alpha: 0.5)
+                                  : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              enterprise.isActive ? 'Active' : 'Inactive',
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: enterprise.isActive
+                                    ? theme.colorScheme.onPrimaryContainer
+                                    : theme.colorScheme.onSurfaceVariant,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
                         );
                       }).toList(),
                     ),
@@ -207,60 +293,4 @@ class AdminDashboardSection extends ConsumerWidget {
   }
 }
 
-class _StatCard extends StatelessWidget {
-  const _StatCard({
-    required this.title,
-    required this.value,
-    required this.subtitle,
-    required this.icon,
-    required this.color,
-  });
 
-  final String title;
-  final String value;
-  final String subtitle;
-  final IconData icon;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  title,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                Icon(icon, color: color),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              style: theme.textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              subtitle,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}

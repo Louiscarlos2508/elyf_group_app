@@ -10,6 +10,7 @@ import '../../widgets/daily_expense_summary_card_v2.dart';
 import '../../widgets/expense_form_dialog.dart' as immobilier_widgets;
 import '../../widgets/expenses_table_v2.dart';
 import '../../widgets/monthly_expense_summary_v2.dart';
+import '../../widgets/immobilier_header.dart';
 
 /// Expenses screen with professional UI - style Boutique/Eau Minérale.
 class ExpensesScreen extends ConsumerWidget {
@@ -36,6 +37,16 @@ class ExpensesScreen extends ConsumerWidget {
     final expensesAsync = ref.watch(expensesProvider);
 
     return Scaffold(
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          showDialog(
+            context: context,
+            builder: (_) => const immobilier_widgets.ExpenseFormDialog(),
+          );
+        },
+        icon: const Icon(Icons.add),
+        label: const Text('Nouvelle'),
+      ),
       body: expensesAsync.when(
         data: (expenses) {
           final todayExpenses = _getTodayExpenses(expenses, ref);
@@ -43,122 +54,43 @@ class ExpensesScreen extends ConsumerWidget {
 
           return LayoutBuilder(
             builder: (context, constraints) {
-              final isWide = constraints.maxWidth > 600;
-
               return CustomScrollView(
                 slivers: [
                   // Header
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: EdgeInsets.fromLTRB(
-                        AppSpacing.lg,
-                        AppSpacing.lg,
-                        AppSpacing.lg,
-                        isWide ? AppSpacing.lg : AppSpacing.md,
+                  ImmobilierHeader(
+                    title: 'DÉPENSES',
+                    subtitle: 'Gestion des charges',
+                    additionalActions: [
+                      Semantics(
+                        label: 'Actualiser',
+                        button: true,
+                        child: IconButton(
+                          icon: const Icon(Icons.refresh, color: Colors.white),
+                          onPressed: () => ref.invalidate(expensesProvider),
+                          tooltip: 'Actualiser',
+                        ),
                       ),
-                      child: isWide
-                          ? Row(
-                              children: [
-                                Text(
-                                  'Dépenses',
-                                  style: theme.textTheme.headlineMedium
-                                      ?.copyWith(fontWeight: FontWeight.bold),
+                      Semantics(
+                        label: 'Bilan des dépenses',
+                        button: true,
+                        child: IconButton(
+                          icon: const Icon(Icons.analytics, color: Colors.white),
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => ExpenseBalanceScreen(
+                                  moduleName: 'Immobilier',
+                                  expensesProvider:
+                                      immobilierExpenseBalanceProvider,
+                                  adapter: ImmobilierExpenseBalanceAdapter(),
                                 ),
-                                const Spacer(),
-                                RefreshButton(
-                                  onRefresh: () =>
-                                      ref.invalidate(expensesProvider),
-                                  tooltip: 'Actualiser les dépenses',
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.analytics),
-                                  onPressed: () {
-                                    Navigator.of(context).push(
-                                      MaterialPageRoute(
-                                        builder: (context) => ExpenseBalanceScreen(
-                                          moduleName: 'Immobilier',
-                                          expensesProvider:
-                                              immobilierExpenseBalanceProvider,
-                                          adapter:
-                                              ImmobilierExpenseBalanceAdapter(),
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                  tooltip: 'Bilan des dépenses',
-                                ),
-                                const SizedBox(width: 8),
-                                Flexible(
-                                  child: FilledButton.icon(
-                                    onPressed: () {
-                                      showDialog(
-                                        context: context,
-                                        builder: (_) =>
-                                            const immobilier_widgets.ExpenseFormDialog(),
-                                      );
-                                    },
-                                    icon: const Icon(Icons.add),
-                                    label: const Text('Nouvelle Dépense'),
-                                  ),
-                                ),
-                              ],
-                            )
-                          : Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        'Dépenses',
-                                        style: theme.textTheme.titleLarge
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                      ),
-                                    ),
-                                    RefreshButton(
-                                      onRefresh: () =>
-                                          ref.invalidate(expensesProvider),
-                                      tooltip: 'Actualiser les dépenses',
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(Icons.analytics),
-                                      onPressed: () {
-                                        Navigator.of(context).push(
-                                          MaterialPageRoute(
-                                            builder: (context) => ExpenseBalanceScreen(
-                                              moduleName: 'Immobilier',
-                                              expensesProvider:
-                                                  immobilierExpenseBalanceProvider,
-                                              adapter:
-                                                  ImmobilierExpenseBalanceAdapter(),
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                      tooltip: 'Bilan des dépenses',
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 12),
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: FilledButton.icon(
-                                    onPressed: () {
-                                      showDialog(
-                                        context: context,
-                                        builder: (_) =>
-                                            const immobilier_widgets.ExpenseFormDialog(),
-                                      );
-                                    },
-                                    icon: const Icon(Icons.add),
-                                    label: const Text('Nouvelle Dépense'),
-                                  ),
-                                ),
-                              ],
-                            ),
-                    ),
+                              ),
+                            );
+                          },
+                          tooltip: 'Bilan des dépenses',
+                        ),
+                      ),
+                    ],
                   ),
 
                   // Daily summary card

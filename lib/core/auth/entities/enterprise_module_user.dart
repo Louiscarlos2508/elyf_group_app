@@ -14,9 +14,10 @@ class EnterpriseModuleUser {
     required this.userId,
     required this.enterpriseId,
     required this.moduleId,
-    required this.roleId,
+    required this.roleIds,
     this.customPermissions = const {},
     this.isActive = true,
+    this.includesChildren = false,
     this.createdAt,
     this.updatedAt,
   });
@@ -30,14 +31,21 @@ class EnterpriseModuleUser {
   /// ID du module (ex: "eau_minerale", "gaz", "orange_money")
   final String moduleId;
 
-  /// ID du rôle assigné (ex: "gestionnaire_eau_minerale", "vendeur")
-  final String roleId;
+  /// IDs des rôles assignés (ex: ["vendeur", "gestionnaire_stock"])
+  final List<String> roleIds;
+
+  /// Rôle principal (pour compatibilité)
+  String get roleId => roleIds.isNotEmpty ? roleIds.first : '';
 
   /// Permissions personnalisées supplémentaires (au-delà du rôle)
   final Set<String> customPermissions;
 
   /// Indique si l'utilisateur est actif dans cette entreprise/module
   final bool isActive;
+
+  /// Indique si l'accès inclut automatiquement les sous-entreprises
+  /// Si true, l'utilisateur a accès à cette entreprise ET à tous ses enfants
+  final bool includesChildren;
 
   /// Date de création de l'accès
   final DateTime? createdAt;
@@ -50,9 +58,10 @@ class EnterpriseModuleUser {
     String? userId,
     String? enterpriseId,
     String? moduleId,
-    String? roleId,
+    List<String>? roleIds,
     Set<String>? customPermissions,
     bool? isActive,
+    bool? includesChildren,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -60,9 +69,10 @@ class EnterpriseModuleUser {
       userId: userId ?? this.userId,
       enterpriseId: enterpriseId ?? this.enterpriseId,
       moduleId: moduleId ?? this.moduleId,
-      roleId: roleId ?? this.roleId,
+      roleIds: roleIds ?? this.roleIds,
       customPermissions: customPermissions ?? this.customPermissions,
       isActive: isActive ?? this.isActive,
+      includesChildren: includesChildren ?? this.includesChildren,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -74,9 +84,10 @@ class EnterpriseModuleUser {
       'userId': userId,
       'enterpriseId': enterpriseId,
       'moduleId': moduleId,
-      'roleId': roleId,
+      'roleIds': roleIds,
       'customPermissions': customPermissions.toList(),
       'isActive': isActive,
+      'includesChildren': includesChildren,
       'createdAt': createdAt?.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
     };
@@ -84,17 +95,28 @@ class EnterpriseModuleUser {
 
   /// Crée depuis un Map Firestore
   factory EnterpriseModuleUser.fromMap(Map<String, dynamic> map) {
+    // Robust parsing of roleIds with fallback to roleId
+    final dynamic roleIdsData = map['roleIds'];
+    final List<String> roleIds = [];
+    
+    if (roleIdsData is List) {
+      roleIds.addAll(roleIdsData.map((e) => e.toString()));
+    } else if (map['roleId'] != null) {
+      roleIds.add(map['roleId'].toString());
+    }
+
     return EnterpriseModuleUser(
-      userId: map['userId'] as String,
-      enterpriseId: map['enterpriseId'] as String,
-      moduleId: map['moduleId'] as String,
-      roleId: map['roleId'] as String,
+      userId: map['userId'] as String? ?? '',
+      enterpriseId: map['enterpriseId'] as String? ?? '',
+      moduleId: map['moduleId'] as String? ?? '',
+      roleIds: roleIds,
       customPermissions:
           (map['customPermissions'] as List<dynamic>?)
-              ?.map((e) => e as String)
+              ?.map((e) => e.toString())
               .toSet() ??
           {},
       isActive: map['isActive'] as bool? ?? true,
+      includesChildren: map['includesChildren'] as bool? ?? false,
       createdAt: _parseTimestamp(map['createdAt']),
       updatedAt: _parseTimestamp(map['updatedAt']),
     );
@@ -119,7 +141,7 @@ class EnterpriseModuleUser {
   @override
   String toString() {
     return 'EnterpriseModuleUser(userId: $userId, enterpriseId: $enterpriseId, '
-        'moduleId: $moduleId, roleId: $roleId, isActive: $isActive)';
+        'moduleId: $moduleId, roleIds: $roleIds, isActive: $isActive)';
   }
 
   @override

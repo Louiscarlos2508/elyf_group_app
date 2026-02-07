@@ -28,10 +28,10 @@ class TenantOfflineRepository extends OfflineRepository<Tenant>
       id: map['id'] as String? ?? map['localId'] as String,
       fullName: map['fullName'] as String,
       phone: map['phone'] as String,
-      email: map['email'] as String,
       address: map['address'] as String?,
       idNumber: map['idNumber'] as String?,
       emergencyContact: map['emergencyContact'] as String?,
+      idCardPath: map['idCardPath'] as String?,
       notes: map['notes'] as String?,
       createdAt: map['createdAt'] != null
           ? DateTime.parse(map['createdAt'] as String)
@@ -39,6 +39,10 @@ class TenantOfflineRepository extends OfflineRepository<Tenant>
       updatedAt: map['updatedAt'] != null
           ? DateTime.parse(map['updatedAt'] as String)
           : null,
+      deletedAt: map['deletedAt'] != null
+          ? DateTime.parse(map['deletedAt'] as String)
+          : null,
+      deletedBy: map['deletedBy'] as String?,
     );
   }
 
@@ -48,13 +52,15 @@ class TenantOfflineRepository extends OfflineRepository<Tenant>
       'id': entity.id,
       'fullName': entity.fullName,
       'phone': entity.phone,
-      'email': entity.email,
       'address': entity.address,
       'idNumber': entity.idNumber,
       'emergencyContact': entity.emergencyContact,
+      'idCardPath': entity.idCardPath,
       'notes': entity.notes,
       'createdAt': entity.createdAt?.toIso8601String(),
       'updatedAt': entity.updatedAt?.toIso8601String(),
+      'deletedAt': entity.deletedAt?.toIso8601String(),
+      'deletedBy': entity.deletedBy,
     };
   }
 
@@ -170,6 +176,26 @@ class TenantOfflineRepository extends OfflineRepository<Tenant>
               .map(
                 (r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>),
               )
+              .where((e) => e.deletedAt == null)
+              .toList();
+          return deduplicateByRemoteId(entities);
+        });
+  }
+
+  @override
+  Stream<List<Tenant>> watchDeletedTenants() {
+    return driftService.records
+        .watchForEnterprise(
+          collectionName: collectionName,
+          enterpriseId: enterpriseId,
+          moduleType: 'immobilier',
+        )
+        .map((rows) {
+          final entities = rows
+              .map(
+                (r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>),
+              )
+              .where((e) => e.deletedAt != null)
               .toList();
           return deduplicateByRemoteId(entities);
         });
@@ -198,8 +224,7 @@ class TenantOfflineRepository extends OfflineRepository<Tenant>
       final lowerQuery = query.toLowerCase();
       return allTenants.where((tenant) {
         return tenant.fullName.toLowerCase().contains(lowerQuery) ||
-            tenant.phone.contains(query) ||
-            (tenant.email.toLowerCase().contains(lowerQuery));
+            tenant.phone.contains(query);
       }).toList();
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
@@ -221,10 +246,10 @@ class TenantOfflineRepository extends OfflineRepository<Tenant>
         id: localId,
         fullName: tenant.fullName,
         phone: tenant.phone,
-        email: tenant.email,
         address: tenant.address,
         idNumber: tenant.idNumber,
         emergencyContact: tenant.emergencyContact,
+        idCardPath: tenant.idCardPath,
         notes: tenant.notes,
         createdAt: tenant.createdAt,
         updatedAt: DateTime.now(),
@@ -266,12 +291,39 @@ class TenantOfflineRepository extends OfflineRepository<Tenant>
     try {
       final tenant = await getTenantById(id);
       if (tenant != null) {
-        await delete(tenant);
+        final updatedTenant = tenant.copyWith(
+          deletedAt: DateTime.now(),
+          deletedBy: 'system',
+        );
+        await save(updatedTenant);
       }
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       AppLogger.error(
         'Error deleting tenant: $id - ${appException.message}',
+        name: 'TenantOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      throw appException;
+    }
+  }
+
+  @override
+  Future<void> restoreTenant(String id) async {
+    try {
+      final tenant = await getTenantById(id);
+      if (tenant != null) {
+        final updatedTenant = tenant.copyWith(
+          deletedAt: null,
+          deletedBy: null,
+        );
+        await save(updatedTenant);
+      }
+    } catch (error, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
+      AppLogger.error(
+        'Error restoring tenant: $id - ${appException.message}',
         name: 'TenantOfflineRepository',
         error: error,
         stackTrace: stackTrace,

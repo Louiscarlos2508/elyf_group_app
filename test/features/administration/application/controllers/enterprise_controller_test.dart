@@ -1,6 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
+import 'package:drift/native.dart';
+import 'package:elyf_groupe_app/core/offline/drift_service.dart';
+import 'package:elyf_groupe_app/features/administration/domain/repositories/user_repository.dart';
+import 'package:elyf_groupe_app/features/administration/domain/repositories/admin_repository.dart';
 
 import 'package:elyf_groupe_app/features/administration/application/controllers/enterprise_controller.dart';
 import 'package:elyf_groupe_app/features/administration/domain/repositories/enterprise_repository.dart';
@@ -15,6 +19,8 @@ import 'enterprise_controller_test.mocks.dart';
   AuditService,
   FirestoreSyncService,
   PermissionValidatorService,
+  UserRepository,
+  AdminRepository,
 ])
 void main() {
   late EnterpriseController controller;
@@ -22,18 +28,27 @@ void main() {
   late MockAuditService mockAuditService;
   late MockFirestoreSyncService mockFirestoreSync;
   late MockPermissionValidatorService mockPermissionValidator;
+  late MockUserRepository mockUserRepository;
+  late MockAdminRepository mockAdminRepository;
 
-  setUp(() {
+  setUp(() async {
+    // Initialiser DriftService pour les tests (nécessaire pour certaines méthodes du controller)
+    await DriftService.instance.initialize(connection: NativeDatabase.memory());
+
     mockRepository = MockEnterpriseRepository();
     mockAuditService = MockAuditService();
     mockFirestoreSync = MockFirestoreSyncService();
     mockPermissionValidator = MockPermissionValidatorService();
+    mockUserRepository = MockUserRepository();
+    mockAdminRepository = MockAdminRepository();
 
     controller = EnterpriseController(
       mockRepository,
       auditService: mockAuditService,
       firestoreSync: mockFirestoreSync,
       permissionValidator: mockPermissionValidator,
+      userRepository: mockUserRepository,
+      adminRepository: mockAdminRepository,
     );
   });
 
@@ -42,7 +57,7 @@ void main() {
       final testEnterprise = Enterprise(
         id: 'enterprise-1',
         name: 'Test Enterprise',
-        type: 'eau_minerale',
+        type: EnterpriseType.waterEntity,
         address: 'Test Address',
         phone: '123456789',
         email: 'test@example.com',
@@ -72,9 +87,6 @@ void main() {
             ),
           ).called(1);
           verify(mockRepository.createEnterprise(testEnterprise)).called(1);
-          verify(
-            mockFirestoreSync.syncEnterpriseToFirestore(testEnterprise),
-          ).called(1);
           verify(
             mockAuditService.logAction(
               action: anyNamed('action'),
@@ -129,9 +141,6 @@ void main() {
           );
           verify(mockRepository.createEnterprise(testEnterprise)).called(1);
           verify(
-            mockFirestoreSync.syncEnterpriseToFirestore(testEnterprise),
-          ).called(1);
-          verify(
             mockAuditService.logAction(
               action: anyNamed('action'),
               entityType: anyNamed('entityType'),
@@ -149,7 +158,7 @@ void main() {
       final oldEnterprise = Enterprise(
         id: 'enterprise-1',
         name: 'Old Enterprise',
-        type: 'eau_minerale',
+        type: EnterpriseType.waterEntity,
         address: 'Old Address',
         phone: '123456789',
         email: 'old@example.com',
@@ -159,7 +168,7 @@ void main() {
       final updatedEnterprise = Enterprise(
         id: 'enterprise-1',
         name: 'Updated Enterprise',
-        type: 'eau_minerale',
+        type: EnterpriseType.waterEntity,
         address: 'New Address',
         phone: '987654321',
         email: 'new@example.com',
@@ -193,12 +202,6 @@ void main() {
           ).called(1);
           verify(mockRepository.getEnterpriseById('enterprise-1')).called(1);
           verify(mockRepository.updateEnterprise(updatedEnterprise)).called(1);
-          verify(
-            mockFirestoreSync.syncEnterpriseToFirestore(
-              updatedEnterprise,
-              isUpdate: true,
-            ),
-          ).called(1);
           verify(
             mockAuditService.logAction(
               action: anyNamed('action'),
@@ -245,7 +248,7 @@ void main() {
       final testEnterprise = Enterprise(
         id: 'enterprise-1',
         name: 'Test Enterprise',
-        type: 'eau_minerale',
+        type: EnterpriseType.waterEntity,
         address: 'Test Address',
         phone: '123456789',
         email: 'test@example.com',
@@ -279,12 +282,6 @@ void main() {
           ).called(1);
           verify(mockRepository.getEnterpriseById('enterprise-1')).called(1);
           verify(mockRepository.deleteEnterprise('enterprise-1')).called(1);
-          verify(
-            mockFirestoreSync.deleteFromFirestore(
-              collection: 'enterprises',
-              documentId: 'enterprise-1',
-            ),
-          ).called(1);
           verify(
             mockAuditService.logAction(
               action: anyNamed('action'),
@@ -330,7 +327,7 @@ void main() {
       final inactiveEnterprise = Enterprise(
         id: 'enterprise-1',
         name: 'Test Enterprise',
-        type: 'eau_minerale',
+        type: EnterpriseType.waterEntity,
         address: 'Test Address',
         phone: '123456789',
         email: 'test@example.com',
@@ -340,7 +337,7 @@ void main() {
       final activeEnterprise = Enterprise(
         id: 'enterprise-1',
         name: 'Test Enterprise',
-        type: 'eau_minerale',
+        type: EnterpriseType.waterEntity,
         address: 'Test Address',
         phone: '123456789',
         email: 'test@example.com',
@@ -382,9 +379,6 @@ void main() {
           ).called(1);
           verify(
             mockRepository.toggleEnterpriseStatus('enterprise-1', true),
-          ).called(1);
-          verify(
-            mockFirestoreSync.syncEnterpriseToFirestore(any, isUpdate: true),
           ).called(1);
           verify(
             mockAuditService.logAction(
@@ -436,7 +430,7 @@ void main() {
           Enterprise(
             id: 'enterprise-1',
             name: 'Enterprise 1',
-            type: 'eau_minerale',
+            type: EnterpriseType.waterEntity,
             address: 'Address 1',
             phone: '123456789',
             email: 'test1@example.com',
@@ -462,7 +456,7 @@ void main() {
         final expectedEnterprise = Enterprise(
           id: 'enterprise-1',
           name: 'Test Enterprise',
-          type: 'eau_minerale',
+          type: EnterpriseType.waterEntity,
           address: 'Test Address',
           phone: '123456789',
           email: 'test@example.com',

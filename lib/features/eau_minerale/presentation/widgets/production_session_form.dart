@@ -32,6 +32,7 @@ class ProductionSessionFormState extends ConsumerState<ProductionSessionForm> {
   final _coutBobinesController = TextEditingController();
   final _quantiteController = TextEditingController();
   final _emballagesController = TextEditingController();
+  final _coutEmballagesController = TextEditingController();
   final _notesController = TextEditingController();
 
   DateTime _selectedDate = DateTime.now();
@@ -46,6 +47,7 @@ class ProductionSessionFormState extends ConsumerState<ProductionSessionForm> {
   // Configuration (valeurs par défaut, à récupérer depuis les configs)
   double _electricityRate = 125.0; // CFA par kWh
   Map<String, int> _bobineUnitPrices = {}; // Prix unitaire par type de bobine
+  int _packagingUnitPrice = 0; // Prix unitaire de l'emballage (sachet)
 
   @override
   void initState() {
@@ -57,7 +59,27 @@ class ProductionSessionFormState extends ConsumerState<ProductionSessionForm> {
     
     // Auto-calcul coût électricité lors du changement de consommation
     _consommationController.addListener(_updateElectricityCost);
+    
+    // Auto-suggestion des emballages lors du changement de quantité produite
+    _quantiteController.addListener(_updatePackagingSuggestion);
+    
+    // Auto-calcul coût emballages lors du changement de quantité d'emballages
+    _emballagesController.addListener(_updatePackagingCost);
   }
+
+  void _updatePackagingSuggestion() {
+    // Si le champ emballage est vide ou contient la même valeur que la quantité (auto-sync),
+    // on met à jour la suggestion.
+    final quantiteStr = _quantiteController.text;
+    final emballagesStr = _emballagesController.text;
+    
+    if (emballagesStr.isEmpty || emballagesStr == _previousQuantiteValue) {
+       _emballagesController.text = quantiteStr;
+    }
+    _previousQuantiteValue = quantiteStr;
+  }
+
+  String _previousQuantiteValue = '';
 
   Future<void> _loadConfigurations() async {
     try {
@@ -72,10 +94,20 @@ class ProductionSessionFormState extends ConsumerState<ProductionSessionForm> {
         }
       }
       
+      int packagingPrice = 0;
+      for (final stock in stocks.packagingStocks) {
+        // Pour l'instant on suppose qu'il y a un type "Emballage" principal
+        if (stock.type == 'Emballage' && stock.prixUnitaire != null) {
+          packagingPrice = stock.prixUnitaire!;
+          break;
+        }
+      }
+      
       if (mounted) {
         setState(() {
           _electricityRate = rate;
           _bobineUnitPrices = prices;
+          _packagingUnitPrice = packagingPrice;
         });
         
         // Si c'est une nouvelle session, calculer le coût initial des bobines si déjà sélectionnées
@@ -98,6 +130,7 @@ class ProductionSessionFormState extends ConsumerState<ProductionSessionForm> {
     _coutBobinesController.text = (session.coutBobines ?? 0).toString();
     _quantiteController.text = session.quantiteProduite.toString();
     _emballagesController.text = session.emballagesUtilises?.toString() ?? '';
+    _coutEmballagesController.text = (session.coutEmballages ?? 0).toString();
     _notesController.text = session.notes ?? '';
     _machinesSelectionnees = List.from(session.machinesUtilisees);
     _bobinesUtilisees = List.from(session.bobinesUtilisees);
@@ -117,22 +150,31 @@ class ProductionSessionFormState extends ConsumerState<ProductionSessionForm> {
   void _updateBobineCost() {
     int totalCost = 0;
     for (final bobine in _bobinesUtilisees) {
-      // Chercher le prix pour ce type de bobine
-      // TODO: Gérer les types de manière plus robuste (normalisation des noms)
       final price = _bobineUnitPrices[bobine.bobineType] ?? 0;
       totalCost += price;
     }
     _coutBobinesController.text = totalCost.toString();
   }
+  
+  void _updatePackagingCost() {
+    final qty = int.tryParse(_emballagesController.text) ?? 0;
+    final cost = qty * _packagingUnitPrice;
+    if (_coutEmballagesController.text != cost.toString()) {
+      _coutEmballagesController.text = cost.toString();
+    }
+  }
 
   @override
   void dispose() {
     _consommationController.removeListener(_updateElectricityCost);
+    _quantiteController.removeListener(_updatePackagingSuggestion);
+    _emballagesController.removeListener(_updatePackagingCost);
     _consommationController.dispose();
     _coutElectriciteController.dispose();
     _coutBobinesController.dispose();
     _quantiteController.dispose();
     _emballagesController.dispose();
+    _coutEmballagesController.dispose();
     _notesController.dispose();
     super.dispose();
   }
@@ -157,6 +199,7 @@ class ProductionSessionFormState extends ConsumerState<ProductionSessionForm> {
       
       final coutElec = int.tryParse(_coutElectriciteController.text.replaceAll(RegExp(r'[^0-9]'), ''));
       final coutBob = int.tryParse(_coutBobinesController.text.replaceAll(RegExp(r'[^0-9]'), ''));
+      final coutEmb = int.tryParse(_coutEmballagesController.text.replaceAll(RegExp(r'[^0-9]'), ''));
 
       final session = ProductionSessionBuilder.buildFromForm(
         sessionId: widget.session?.id,
@@ -173,6 +216,7 @@ class ProductionSessionFormState extends ConsumerState<ProductionSessionForm> {
             ? int.tryParse(_emballagesController.text)
             : null,
         coutBobines: coutBob,
+        coutEmballages: coutEmb,
         coutElectricite: coutElec,
         notes: _notesController.text.isEmpty ? null : _notesController.text,
         status: _isTermine 
@@ -210,125 +254,197 @@ class ProductionSessionFormState extends ConsumerState<ProductionSessionForm> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+
     return Form(
       key: _formKey,
       child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(vertical: 20),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _buildDateField(),
-            const SizedBox(height: 16),
-            _buildTimeFields(),
-            const SizedBox(height: 16),
-            MachineSelectorField(
-              machinesSelectionnees: _machinesSelectionnees,
-              onMachinesChanged: (machines) {
-                setState(() => _machinesSelectionnees = machines);
-              },
-            ),
-            const SizedBox(height: 16),
-            BobineUsageFormField(
-              bobinesUtilisees: _bobinesUtilisees,
-              machinesDisponibles: _machinesSelectionnees,
-              onBobinesChanged: (bobines) {
-                setState(() {
-                  _bobinesUtilisees = bobines;
-                  _updateBobineCost(); // Mettre à jour le coût quand les bobines changent
-                });
-              },
-            ),
-            const SizedBox(height: 16),
-            
-            // Section Consommation & Coûts
-            Card(
-              margin: EdgeInsets.zero,
-              elevation: 0,
-              color: const Color(0xFFF5F5F5), // Colors.grey[100]
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-                side: const BorderSide(color: Color(0xFFE0E0E0)), // Colors.grey[300]
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Énergie & Coûts',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
+            // Section Timing & Date
+            ElyfCard(
+              padding: const EdgeInsets.all(20),
+              borderRadius: 24,
+              backgroundColor: colors.surfaceContainerLow.withValues(alpha: 0.5),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.calendar_today_rounded, size: 18, color: colors.primary),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Période & Horaire',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: colors.primary,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextFormField(
-                            controller: _consommationController,
-                            decoration: const InputDecoration(
-                              labelText: 'Conso. (kWh)',
-                              isDense: true,
-                              suffixText: 'kWh',
-                            ),
-                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                            onChanged: (_) => _updateElectricityCost(),
-                            validator: (value) {
-                                if (value == null || value.isEmpty) return 'Requis';
-                                return null;
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        const SizedBox(width: 8),
-                        Tooltip(
-                          message: 'Le taux de $_electricityRate FCFA/kWh est configuré dans les paramètres',
-                          child: const Icon(Icons.info_outline, size: 20, color: Colors.blue),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: TextFormField(
-                            controller: _coutElectriciteController,
-                            decoration: const InputDecoration(
-                              labelText: 'Coût Élec.',
-                              isDense: true,
-                              suffixText: 'FCFA',
-                            ),
-                            keyboardType: TextInputType.number,
-                            validator: (value) {
-                                if (value == null || value.isEmpty) return 'Requis';
-                                return null;
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: _coutBobinesController,
-                      decoration: const InputDecoration(
-                        labelText: 'Coût Bobines',
-                        isDense: true,
-                        suffixText: 'FCFA',
-                        helperText: 'Calculé selon les prix unitaires en stock',
-                      ),
-                      keyboardType: TextInputType.number,
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  _buildDateField(),
+                  const SizedBox(height: 16),
+                  _buildTimeFields(),
+                ],
               ),
             ),
-            
             const SizedBox(height: 16),
-            _buildQuantiteField(),
+
+            // Section Matériel & Bobines
+            ElyfCard(
+              padding: const EdgeInsets.all(20),
+              borderRadius: 24,
+              backgroundColor: colors.surfaceContainerLow.withValues(alpha: 0.5),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.precision_manufacturing_rounded, size: 18, color: colors.primary),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Matériel & Ressources',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: colors.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  MachineSelectorField(
+                    machinesSelectionnees: _machinesSelectionnees,
+                    onMachinesChanged: (machines) {
+                      setState(() => _machinesSelectionnees = machines);
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  BobineUsageFormField(
+                    bobinesUtilisees: _bobinesUtilisees,
+                    machinesDisponibles: _machinesSelectionnees,
+                    onBobinesChanged: (bobines) {
+                      setState(() {
+                        _bobinesUtilisees = bobines;
+                        _updateBobineCost();
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ),
             const SizedBox(height: 16),
-            _buildEmballagesField(),
+
+            // Section Énergie & Coûts
+            ElyfCard(
+              padding: const EdgeInsets.all(20),
+              borderRadius: 24,
+              backgroundColor: colors.primary.withValues(alpha: 0.03),
+              borderColor: colors.primary.withValues(alpha: 0.1),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.bolt_rounded, size: 20, color: colors.primary),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Énergie & Coûts',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: colors.primary,
+                        ),
+                      ),
+                      const Spacer(),
+                      Tooltip(
+                        message: 'Le taux de $_electricityRate FCFA/kWh est configuré dans les paramètres',
+                        child: Icon(Icons.info_outline_rounded, size: 18, color: colors.primary.withValues(alpha: 0.5)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _consommationController,
+                          decoration: _buildInputDecoration(
+                            label: 'Conso. (kWh)',
+                            icon: Icons.speed_rounded,
+                            suffixText: 'kWh',
+                          ),
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          onChanged: (_) => _updateElectricityCost(),
+                          validator: (value) => (value == null || value.isEmpty) ? 'Requis' : null,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: TextFormField(
+                          controller: _coutElectriciteController,
+                          decoration: _buildInputDecoration(
+                            label: 'Coût Élec.',
+                            icon: Icons.payments_rounded,
+                            suffixText: 'CFA',
+                          ),
+                          keyboardType: TextInputType.number,
+                          validator: (value) => (value == null || value.isEmpty) ? 'Requis' : null,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _coutBobinesController,
+                    decoration: _buildInputDecoration(
+                      label: 'Coût Bobines',
+                      icon: Icons.auto_graph_rounded,
+                      suffixText: 'CFA',
+                      helperText: 'Calculé selon les prix unitaires en stock',
+                    ),
+                    keyboardType: TextInputType.number,
+                  ),
+                ],
+              ),
+            ),
             const SizedBox(height: 16),
-            _buildNotesField(),
-            const SizedBox(height: 16),
+
+            // Section Production
+            ElyfCard(
+              padding: const EdgeInsets.all(20),
+              borderRadius: 24,
+              backgroundColor: colors.surfaceContainerLow.withValues(alpha: 0.5),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.inventory_rounded, size: 18, color: colors.primary),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Résultats de Production',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: colors.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  _buildQuantiteField(),
+                  const SizedBox(height: 16),
+                  _buildEmballagesRow(),
+                  const SizedBox(height: 16),
+                  _buildNotesField(),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
             _buildStatusSwitch(),
-            const SizedBox(height: 24),
+            const SizedBox(height: 12),
             _buildSubmitButton(),
           ],
         ),
@@ -336,15 +452,75 @@ class ProductionSessionFormState extends ConsumerState<ProductionSessionForm> {
     );
   }
 
+  InputDecoration _buildInputDecoration({
+    required String label,
+    required IconData icon,
+    String? helperText,
+    String? suffixText,
+  }) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    return InputDecoration(
+      labelText: label,
+      helperText: helperText,
+      suffixText: suffixText,
+      prefixIcon: Icon(icon, size: 18, color: colors.primary),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: colors.outline.withValues(alpha: 0.1)),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: colors.outline.withValues(alpha: 0.1)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: colors.primary, width: 2),
+      ),
+      filled: true,
+      fillColor: colors.surfaceContainerLow.withValues(alpha: 0.3),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    );
+  }
+
   Widget _buildDateField() {
     return InkWell(
       onTap: () => _selectDate(context),
-      child: InputDecorator(
-        decoration: const InputDecoration(
-          labelText: 'Date',
-          prefixIcon: Icon(Icons.calendar_today),
-        ),
-        child: Text(_formatDate(_selectedDate)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.event_rounded, size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
+              const SizedBox(width: 8),
+              Text(
+                'Date de session',
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainerLow.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.1)),
+            ),
+            child: Row(
+              children: [
+                Text(
+                  _formatDate(_selectedDate),
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                const Spacer(),
+                Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Theme.of(context).colorScheme.primary),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -394,9 +570,9 @@ class ProductionSessionFormState extends ConsumerState<ProductionSessionForm> {
   Widget _buildQuantiteField() {
     return TextFormField(
       controller: _quantiteController,
-      decoration: const InputDecoration(
-        labelText: 'Quantité produite (packs)',
-        prefixIcon: Icon(Icons.inventory_2),
+      decoration: _buildInputDecoration(
+        label: 'Quantité produite (packs)',
+        icon: Icons.inventory_2_rounded,
       ),
       keyboardType: TextInputType.number,
       validator: (value) {
@@ -411,27 +587,69 @@ class ProductionSessionFormState extends ConsumerState<ProductionSessionForm> {
     );
   }
 
-  Widget _buildEmballagesField() {
-    return TextFormField(
-      controller: _emballagesController,
-      decoration: const InputDecoration(
-        labelText: 'Emballages utilisés (packs)',
-        prefixIcon: Icon(Icons.inventory_2),
-        helperText: 'Optionnel',
-      ),
-      keyboardType: TextInputType.number,
+  Widget _buildEmballagesRow() {
+    // Récupérer le stock d'emballages
+    return Consumer(
+      builder: (context, ref, child) {
+        final stockState = ref.watch(stockStateProvider);
+        String? stockHint;
+        
+        stockState.whenData((data) {
+          final packaging = data.packagingStocks.firstOrNull;
+          if (packaging != null) {
+            stockHint = 'Disponible: ${packaging.quantityLabel}';
+          }
+        });
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: TextFormField(
+                    controller: _emballagesController,
+                    decoration: _buildInputDecoration(
+                      label: 'Emballages (unités)',
+                      icon: Icons.inventory_2_outlined,
+                      helperText: stockHint ?? 'Auto-suggéré: 1 par pack',
+                    ),
+                    keyboardType: TextInputType.number,
+                    onChanged: (_) => _updatePackagingCost(),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 1,
+                  child: TextFormField(
+                    controller: _coutEmballagesController,
+                    decoration: _buildInputDecoration(
+                      label: 'Coût Emb.',
+                      icon: Icons.payments_rounded,
+                      suffixText: 'CFA',
+                    ),
+                    keyboardType: TextInputType.number,
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
     );
   }
 
   Widget _buildNotesField() {
     return TextFormField(
       controller: _notesController,
-      decoration: const InputDecoration(
-        labelText: 'Notes',
-        prefixIcon: Icon(Icons.note),
-        helperText: 'Optionnel',
+      decoration: _buildInputDecoration(
+        label: 'Notes',
+        icon: Icons.note_alt_rounded,
+        helperText: 'Observations sur la session',
       ),
-      maxLines: 3,
+      maxLines: 2,
     );
   }
 
@@ -501,16 +719,36 @@ class ProductionSessionFormState extends ConsumerState<ProductionSessionForm> {
   }
   
   Widget _buildSubmitButton() {
-    return ElevatedButton(
-      onPressed: _isLoading ? null : submit,
-      style: ElevatedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(vertical: 16),
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Theme.of(context).colorScheme.primary, Theme.of(context).colorScheme.secondary],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      child: _isLoading
-          ? const CircularProgressIndicator()
-          : Text(
-              widget.session == null ? 'Créer la session' : 'Mettre à jour',
-            ),
+      child: ElevatedButton(
+        onPressed: _isLoading ? null : submit,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          foregroundColor: Colors.white,
+          shadowColor: Colors.transparent,
+          padding: const EdgeInsets.symmetric(vertical: 18),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
+        child: _isLoading
+            ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+            : Text(
+                widget.session == null ? 'CRÉER LA SESSION' : 'METTRE À JOUR',
+                style: const TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.2),
+              ),
+      ),
     );
   }
 

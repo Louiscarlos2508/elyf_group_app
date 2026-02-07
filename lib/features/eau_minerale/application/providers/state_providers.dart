@@ -28,6 +28,7 @@ import 'service_providers.dart';
 import '../../domain/entities/customer_credit.dart';
 import '../../domain/repositories/customer_repository.dart';
 import '../../domain/entities/weekly_salary_info.dart';
+import '../../domain/services/dashboard_calculation_service.dart';
 
 /// Provider pour récupérer le type de compteur configuré
 final electricityMeterTypeProvider =
@@ -254,68 +255,58 @@ final reportSalaryProvider = FutureProvider.autoDispose
           ref.watch(reportControllerProvider).fetchSalaryReport(period),
     );
 
-/// Derived state for daily dashboard KPIs.
-class DailyDashboardSummary {
-  const DailyDashboardSummary({
-    required this.revenue,
-    required this.collections,
-    required this.salesCount,
-    required this.sales,
-  });
-
-  final int revenue;
-  final int collections;
-  final int salesCount;
-  final List<Sale> sales;
-}
-
-final dailyDashboardSummaryProvider = FutureProvider.autoDispose<DailyDashboardSummary>((ref) async {
-  // 1. Fetch sales (using salesStateProvider which calls fetchRecentSales - assumes it fetches ALL or relevant sales)
-  // Actually, SalesState.sales contains sales sorted by date.
-  // We need to ensure we have ALL sales for "Today" and credit payments for "Today".
-  
-  final salesState = await ref.watch(salesStateProvider.future);
-  final creditRepo = ref.watch(creditRepositoryProvider);
-  
+/// Stream for Today's Sales (Real-time)
+final todaySalesStreamProvider = StreamProvider.autoDispose<List<Sale>>((ref) {
   final now = DateTime.now();
   final startOfDay = DateTime(now.year, now.month, now.day);
   final endOfDay = startOfDay.add(const Duration(days: 1)).subtract(const Duration(milliseconds: 1));
-
-  // 2. Filter Sales for Today
-  final todaySales = salesState.sales.where((s) {
-    return s.date.isAfter(startOfDay.subtract(const Duration(milliseconds: 1))) && 
-           s.date.isBefore(endOfDay.add(const Duration(milliseconds: 1)));
-  }).toList();
-
-  // 3. Calculate Revenue (Total Price of Today's Sales)
-  final revenue = todaySales.fold<int>(0, (sum, s) => sum + s.totalPrice);
-
-  // 4. Calculate Collections from Today's Sales (Initial Payments)
-  // We use cashAmount + orangeMoneyAmount which represent the payment made AT THE MOMENT OF SALE.
-  final collectionsFromSales = todaySales.fold<int>(0, (sum, s) => sum + s.cashAmount + s.orangeMoneyAmount);
-
-  // 5. Fetch Credit Payments for Today (Recoveries)
-  // These are payments made today, potentially for past sales OR current sales (if recorded as credit payment).
-  // Note: Standard flow for initial payment is stored in Sale.
-  // Standard flow for debt payment is CreditPayment.
-  // We must ensure we don't double count if a CreditPayment is created for the initial payment.
-  // Currently, the app seems to NOT create CreditPayment for initial payment automatically in SaleOfflineRepository.
   
-  final todayCreditPayments = await creditRepo.fetchPayments(
+  return ref.watch(saleRepositoryProvider).watchSales(
     startDate: startOfDay,
     endDate: endOfDay,
   );
+});
 
-  final collectionsFromCredit = todayCreditPayments.fold<int>(0, (sum, p) => sum + p.amount);
-
-  final totalCollections = collectionsFromSales + collectionsFromCredit;
-
-  return DailyDashboardSummary(
-    revenue: revenue,
-    collections: totalCollections,
-    salesCount: todaySales.length,
-    sales: todaySales,
+/// Stream for Today's Credit Payments (Real-time)
+final todayPaymentsStreamProvider = StreamProvider.autoDispose<List<CreditPayment>>((ref) {
+  final now = DateTime.now();
+  final startOfDay = DateTime(now.year, now.month, now.day);
+  final endOfDay = startOfDay.add(const Duration(days: 1)).subtract(const Duration(milliseconds: 1));
+  
+  return ref.watch(creditRepositoryProvider).watchPayments(
+    startDate: startOfDay,
+    endDate: endOfDay,
   );
+});
+
+/// Derived state for daily dashboard KPIs (Real-time).
+final dailyDashboardSummaryProvider = Provider.autoDispose<AsyncValue<DailyDashboardMetrics>>((ref) {
+  final salesAsync = ref.watch(todaySalesStreamProvider);
+  final paymentsAsync = ref.watch(todayPaymentsStreamProvider);
+  
+  if (salesAsync.isLoading || paymentsAsync.isLoading) {
+    return const AsyncValue.loading();
+  }
+  
+  if (salesAsync.hasError) {
+    return AsyncValue.error(salesAsync.error!, salesAsync.stackTrace!);
+  }
+  
+  if (paymentsAsync.hasError) {
+     return AsyncValue.error(paymentsAsync.error!, paymentsAsync.stackTrace!);
+  }
+  
+  final sales = salesAsync.value ?? [];
+  final payments = paymentsAsync.value ?? [];
+  
+  final calculationService = ref.watch(dashboardCalculationServiceProvider);
+  
+  final metrics = calculationService.calculateDailyMetrics(
+    sales: sales,
+    creditPayments: payments,
+  );
+  
+  return AsyncValue.data(metrics);
 });
 
 /// Derived state for the monthly dashboard KPIs.
@@ -410,6 +401,7 @@ final monthlyDashboardSummaryProvider =
 
   return summary;
 });
+
 final customerCreditsProvider = FutureProvider.autoDispose.family<List<Sale>, String>((ref, customerId) async {
   // Keep alive for 3 minutes to prevent rapid rebuilds
   final link = ref.keepAlive();

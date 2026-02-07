@@ -38,7 +38,7 @@ class ContractDetailHeader extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Contrat ${contract.id.substring(0, 8)}',
+                  contract.displayName,
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),

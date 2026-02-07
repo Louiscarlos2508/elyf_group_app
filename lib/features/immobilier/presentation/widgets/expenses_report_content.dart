@@ -11,11 +11,11 @@ class ExpensesReportContent extends ConsumerWidget {
   const ExpensesReportContent({
     super.key,
     required this.startDate,
-    required this.endDate,
+    this.endDate,
   });
 
   final DateTime startDate;
-  final DateTime endDate;
+  final DateTime? endDate;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -28,7 +28,8 @@ class ExpensesReportContent extends ConsumerWidget {
           return e.expenseDate.isAfter(
                 startDate.subtract(const Duration(days: 1)),
               ) &&
-              e.expenseDate.isBefore(endDate.add(const Duration(days: 1)));
+              (endDate == null ||
+                  e.expenseDate.isBefore(endDate!.add(const Duration(days: 1))));
         }).toList()..sort((a, b) => b.expenseDate.compareTo(a.expenseDate));
 
         if (periodExpenses.isEmpty) {

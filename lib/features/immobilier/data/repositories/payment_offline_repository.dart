@@ -51,6 +51,10 @@ class PaymentOfflineRepository extends OfflineRepository<Payment>
       updatedAt: map['updatedAt'] != null
           ? DateTime.parse(map['updatedAt'] as String)
           : null,
+      deletedAt: map['deletedAt'] != null
+          ? DateTime.parse(map['deletedAt'] as String)
+          : null,
+      deletedBy: map['deletedBy'] as String?,
     );
   }
 
@@ -72,6 +76,8 @@ class PaymentOfflineRepository extends OfflineRepository<Payment>
       'mobileMoneyAmount': entity.mobileMoneyAmount?.toDouble(),
       'createdAt': entity.createdAt?.toIso8601String(),
       'updatedAt': entity.updatedAt?.toIso8601String(),
+      'deletedAt': entity.deletedAt?.toIso8601String(),
+      'deletedBy': entity.deletedBy,
     };
   }
 
@@ -192,6 +198,26 @@ class PaymentOfflineRepository extends OfflineRepository<Payment>
               .map(
                 (r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>),
               )
+              .where((e) => e.deletedAt == null)
+              .toList();
+          return deduplicateByRemoteId(entities);
+        });
+  }
+
+  @override
+  Stream<List<Payment>> watchDeletedPayments() {
+    return driftService.records
+        .watchForEnterprise(
+          collectionName: collectionName,
+          enterpriseId: enterpriseId,
+          moduleType: 'immobilier',
+        )
+        .map((rows) {
+          final entities = rows
+              .map(
+                (r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>),
+              )
+              .where((e) => e.deletedAt != null)
               .toList();
           return deduplicateByRemoteId(entities);
         });
@@ -314,12 +340,39 @@ class PaymentOfflineRepository extends OfflineRepository<Payment>
     try {
       final payment = await getPaymentById(id);
       if (payment != null) {
-        await delete(payment);
+        final updatedPayment = payment.copyWith(
+          deletedAt: DateTime.now(),
+          deletedBy: 'system',
+        );
+        await save(updatedPayment);
       }
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       AppLogger.error(
         'Error deleting payment: $id - ${appException.message}',
+        name: 'PaymentOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      throw appException;
+    }
+  }
+
+  @override
+  Future<void> restorePayment(String id) async {
+    try {
+      final payment = await getPaymentById(id);
+      if (payment != null) {
+        final updatedPayment = payment.copyWith(
+          deletedAt: null,
+          deletedBy: null,
+        );
+        await save(updatedPayment);
+      }
+    } catch (error, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
+      AppLogger.error(
+        'Error restoring payment: $id - ${appException.message}',
         name: 'PaymentOfflineRepository',
         error: error,
         stackTrace: stackTrace,

@@ -29,50 +29,51 @@ class ProductionPaymentPeriodSelector extends ConsumerWidget {
 
         return InkWell(
           onTap: () async {
-            // For now, just use current period
-            // In future, could show a dialog to select different period
+            // Future: Show period picker dialog
             onPeriodChanged(currentPeriod);
           },
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           child: Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
-              border: Border.all(
-                color: theme.colorScheme.outline.withValues(alpha: 0.3),
-              ),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(16),
+              color: theme.colorScheme.surfaceContainerLow.withValues(alpha: 0.3),
+              border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.1)),
             ),
             child: Row(
               children: [
-                Icon(
-                  Icons.calendar_month_outlined,
-                  color: theme.colorScheme.primary,
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(Icons.date_range_rounded, color: theme.colorScheme.primary, size: 20),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         'Période / Semaine',
-                        style: theme.textTheme.labelMedium?.copyWith(
+                        style: theme.textTheme.labelSmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 2),
                       Text(
                         period.isEmpty ? currentPeriod : period,
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          fontWeight: FontWeight.w500,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w900,
+                          color: theme.colorScheme.onSurface,
                         ),
                       ),
                     ],
                   ),
                 ),
-                Icon(
-                  Icons.arrow_drop_down,
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
+                Icon(Icons.unfold_more_rounded, color: theme.colorScheme.onSurfaceVariant, size: 18),
               ],
             ),
           ),

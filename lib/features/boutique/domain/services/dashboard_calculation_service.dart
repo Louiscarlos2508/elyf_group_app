@@ -161,21 +161,31 @@ class BoutiqueDashboardCalculationService {
   }) {
     final monthSales = filterMonthSales(sales, referenceDate);
     final revenue = monthSales.fold(0, (sum, s) => sum + s.totalAmount);
-    final monthExpenses = calculateMonthlyExpensesTotal(
-      expenses,
-      referenceDate,
-    );
+    
+    final monthExpensesList = filterMonthExpenses(expenses, referenceDate);
+    
+    final stockExpenses = monthExpensesList
+        .where((e) => e.category == ExpenseCategory.stock)
+        .fold<int>(0, (sum, e) => sum + e.amountCfa);
+        
+    final operationalExpenses = monthExpensesList
+        .where((e) => e.category != ExpenseCategory.stock)
+        .fold<int>(0, (sum, e) => sum + e.amountCfa);
+
+    // Total purchases = Itemized purchases + Stock category expenses
+    final totalPurchases = purchasesAmount + stockExpenses;
+
     final profit = calculateMonthlyProfit(
       revenue: revenue,
-      expenses: monthExpenses,
-      purchases: purchasesAmount,
+      expenses: operationalExpenses,
+      purchases: totalPurchases,
     );
 
     return DashboardMonthlyMetrics(
       revenue: revenue,
       salesCount: monthSales.length,
-      purchasesAmount: purchasesAmount,
-      expensesAmount: monthExpenses,
+      purchasesAmount: totalPurchases,
+      expensesAmount: operationalExpenses,
       profit: profit,
     );
   }

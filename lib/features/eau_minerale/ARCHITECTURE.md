@@ -65,14 +65,13 @@ Implémentations concrètes des repositories et services de données.
 - `SalaryOfflineRepository` ✅ (nouveau)
 - `FinanceOfflineRepository` ✅ (nouveau)
 
-**Repositories encore Mock** ⚠️ :
-- `InventoryRepository` → MockInventoryRepository
-- `BobineStockQuantityRepository` → MockBobineStockQuantityRepository
-- `PackagingStockRepository` → MockPackagingStockRepository
-- `ActivityRepository` → MockActivityRepository
-- `CreditRepository` → MockCreditRepository
-- `DailyWorkerRepository` → MockDailyWorkerRepository
-- `ReportRepository` → MockReportRepository
+- `InventoryOfflineRepository` ✅
+- `BobineStockQuantityOfflineRepository` ✅
+- `PackagingStockOfflineRepository` ✅
+- `ActivityOfflineRepository` ✅
+- `CreditOfflineRepository` ✅
+- `DailyWorkerOfflineRepository` ✅
+- `ReportOfflineRepository` ✅
 
 **Caractéristiques** :
 - Stockage local dans Drift/SQLite
@@ -267,4 +266,3 @@ final repository = ProductOfflineRepository(
 - Pagination pour les listes longues
 - Lazy loading des données
 - Cache local avec Drift
-

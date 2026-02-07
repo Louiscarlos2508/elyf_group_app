@@ -34,7 +34,7 @@ abstract class AdminRepository {
     String userId,
     String enterpriseId,
     String moduleId,
-    String roleId,
+    List<String> roleIds,
   );
 
   /// Update user's custom permissions in an enterprise and module

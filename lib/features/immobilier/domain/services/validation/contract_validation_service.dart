@@ -20,9 +20,10 @@ class ContractValidationService {
   /// Validates contract dates.
   String? validateDates({
     required DateTime startDate,
-    required DateTime endDate,
+    DateTime? endDate,
   }) {
-    if (endDate.isBefore(startDate) || endDate.isAtSameMomentAs(startDate)) {
+    if (endDate != null &&
+        (endDate.isBefore(startDate) || endDate.isAtSameMomentAs(startDate))) {
       return 'La date de fin doit être après la date de début';
     }
     return null;

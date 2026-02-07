@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:cloud_firestore/cloud_firestore.dart'
@@ -35,6 +36,110 @@ class FirestoreSyncService {
   static const String _enterpriseModuleUsersCollection =
       'enterprise_module_users';
   static const String _auditLogsCollection = 'audit_logs';
+
+  /// Pulls all initial data from Firestore to local Drift database.
+  ///
+  /// This fetches Users, Enterprises, Roles, and EnterpriseModuleUsers.
+  Future<void> pullInitialData() async {
+    try {
+      developer.log(
+        'Starting initial pull of all collections...',
+        name: 'admin.firestore.sync',
+      );
+
+      // Parallel fetch for independent collections
+      await Future.wait([
+        _pullAndSaveUsers(),
+        _pullAndSaveEnterprises(),
+        _pullAndSaveRoles(),
+      ]);
+      
+      // EnterpriseModuleUsers might depend on others conceptually, but technically can be fetched in parallel too
+      await _pullAndSaveEnterpriseModuleUsers();
+
+      developer.log(
+        'Initial pull completed successfully',
+        name: 'admin.firestore.sync',
+      );
+    } catch (e, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error pulling initial data: ${appException.message}',
+        name: 'admin.firestore.sync',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      // Propagate error
+      rethrow;
+    }
+  }
+
+  Future<void> _pullAndSaveUsers() async {
+    final users = await pullUsersFromFirestore();
+    for (final user in users) {
+      // Use driftService directly to save without queuing sync back
+      await driftService.records.upsert(
+        collectionName: _usersCollection,
+        localId: user.id,
+        remoteId: user.id,
+        enterpriseId: 'global',
+        moduleType: 'administration',
+        dataJson: jsonEncode(user.toMap()), // Careful: user.toMap might behave differently for sync
+        localUpdatedAt: user.updatedAt ?? DateTime.now(),
+      );
+    }
+  }
+
+  Future<void> _pullAndSaveEnterprises() async {
+    final enterprises = await pullEnterprisesFromFirestore();
+    for (final enterprise in enterprises) {
+      await driftService.records.upsert(
+        collectionName: _enterprisesCollection,
+        localId: enterprise.id,
+        remoteId: enterprise.id,
+        enterpriseId: 'global',
+        moduleType: 'administration',
+        dataJson: jsonEncode(enterprise.toMap()),
+        localUpdatedAt: DateTime.now(),
+      );
+    }
+  }
+
+  Future<void> _pullAndSaveRoles() async {
+    final roles = await pullRolesFromFirestore();
+    for (final role in roles) {
+      await driftService.records.upsert(
+        collectionName: _rolesCollection,
+        localId: role.id,
+        remoteId: role.id,
+        enterpriseId: 'global',
+        moduleType: 'administration',
+        dataJson: jsonEncode({
+          'id': role.id,
+          'name': role.name,
+          'description': role.description,
+          'permissions': role.permissions.toList(),
+          'isSystemRole': role.isSystemRole,
+        }),
+        localUpdatedAt: DateTime.now(),
+      );
+    }
+  }
+  
+  Future<void> _pullAndSaveEnterpriseModuleUsers() async {
+    final emus = await pullEnterpriseModuleUsersFromFirestore();
+    for (final emu in emus) {
+      await driftService.records.upsert(
+        collectionName: _enterpriseModuleUsersCollection,
+        localId: emu.documentId,
+        remoteId: emu.documentId,
+        enterpriseId: 'global',
+        moduleType: 'administration',
+        dataJson: jsonEncode(emu.toMap()),
+        localUpdatedAt: DateTime.now(),
+      );
+    }
+  }
 
   /// Sync a user to Firestore
   Future<void> syncUserToFirestore(User user, {bool isUpdate = false}) async {
@@ -342,6 +447,7 @@ class FirestoreSyncService {
                   ?.map((e) => e as String)
                   .toSet() ??
               {},
+          moduleId: data['moduleId'] as String? ?? 'general',
           isSystemRole: data['isSystemRole'] as bool? ?? false,
         );
       }).toList();

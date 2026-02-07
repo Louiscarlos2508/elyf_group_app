@@ -65,6 +65,11 @@ class ContractDetailDialog extends ConsumerWidget {
                       contractId: contract.id,
                       onPaymentTap: onPaymentTap,
                     ),
+                    const SizedBox(height: 16),
+                    ContractInventorySection(
+                      entryInventory: contract.entryInventory,
+                      exitInventory: contract.exitInventory,
+                    ),
                     if (contract.notes != null &&
                         contract.notes!.isNotEmpty) ...[
                       const SizedBox(height: 16),

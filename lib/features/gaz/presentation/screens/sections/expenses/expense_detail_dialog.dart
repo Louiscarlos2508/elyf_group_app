@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
@@ -38,6 +40,35 @@ class ExpenseDetailDialog extends StatelessWidget {
           ),
           if (expense.notes != null)
             _DetailRow(theme: theme, label: 'Notes', value: expense.notes!),
+          if (expense.receiptPath != null) ...[
+            const SizedBox(height: 16),
+            Text(
+              'Re\u00e7u',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 8),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.file(
+                File(expense.receiptPath!),
+                height: 200,
+                width: double.infinity,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  height: 100,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Center(
+                    child: Icon(Icons.broken_image_outlined),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
       actions: [

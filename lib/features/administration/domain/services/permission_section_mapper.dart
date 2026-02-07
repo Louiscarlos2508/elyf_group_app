@@ -210,10 +210,29 @@ class PermissionSectionMapper {
           break;
 
         case 'administration':
-          // Pour l'administration, toutes les permissions vont dans une section unique
-          // car le module administration n'a pas de sections définies dans ModuleSectionsRegistry
-          // On retourne null pour que les permissions soient mises dans la première section disponible
-          return null;
+          if (suffix == 'dashboard') {
+            return 'enterprises'; // On met le dashboard admin avec les entreprises
+          } else if (suffix == 'enterprise' ||
+              suffix == 'enterprises' ||
+              suffix == 'hierarchy') {
+            return 'enterprises';
+          } else if (suffix == 'user' ||
+              suffix == 'users' ||
+              suffix == 'assign_user_to_enterprise') {
+            return 'users';
+          } else if (suffix == 'role' ||
+              suffix == 'roles' ||
+              suffix == 'permission' ||
+              suffix == 'permissions') {
+            return 'roles';
+          } else if (suffix == 'module' || suffix == 'modules') {
+            return 'modules';
+          } else if (suffix == 'audit' || suffix == 'audit_trail') {
+            return 'audit';
+          } else if (suffix == 'profile' || suffix == 'password') {
+            return 'profile';
+          }
+          break;
       }
     }
 

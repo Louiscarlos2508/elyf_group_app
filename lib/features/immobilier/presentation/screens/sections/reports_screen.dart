@@ -4,6 +4,7 @@ import 'package:open_file/open_file.dart';
 
 import 'package:elyf_groupe_app/core/pdf/immobilier_report_pdf_service.dart';
 import 'package:elyf_groupe_app/shared.dart';
+import '../../widgets/immobilier_header.dart';
 import 'package:elyf_groupe_app/features/immobilier/application/providers.dart';
 import '../../../domain/entities/report_period.dart';
 import '../../widgets/expenses_report_content.dart';
@@ -123,35 +124,26 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isWide = constraints.maxWidth > 600;
-
         return CustomScrollView(
           slivers: [
             // Header
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(24, 24, 24, isWide ? 24 : 16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'Rapports',
-                        style: theme.textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    RefreshButton(
-                      onRefresh: _invalidateProviders,
-                      tooltip: 'Actualiser les rapports',
-                    ),
-                  ],
+            // Header
+            ImmobilierHeader(
+              title: 'RAPPORTS',
+              subtitle: 'Analyses et exports',
+              additionalActions: [
+                Semantics(
+                  label: 'Actualiser les rapports',
+                  button: true,
+                  child: IconButton(
+                    icon: const Icon(Icons.refresh, color: Colors.white),
+                    onPressed: _invalidateProviders,
+                    tooltip: 'Actualiser les rapports',
+                  ),
                 ),
-              ),
+              ],
             ),
 
             // Period selector

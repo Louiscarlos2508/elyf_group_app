@@ -9,6 +9,8 @@ import '../../widgets/production_sessions/production_sessions_statistics.dart';
 import '../../widgets/section_placeholder.dart';
 import 'production_session_form_screen.dart';
 
+import 'package:elyf_groupe_app/shared/presentation/widgets/elyf_ui/atoms/elyf_background.dart';
+
 /// Écran de liste des sessions de production.
 class ProductionSessionsScreen extends ConsumerWidget {
   const ProductionSessionsScreen({super.key});
@@ -26,166 +28,189 @@ class ProductionSessionsScreen extends ConsumerWidget {
     final sessionsAsync = ref.watch(productionSessionsStateProvider);
     final theme = Theme.of(context);
 
-    return Scaffold(
-      body: sessionsAsync.when(
-        data: (sessions) {
-          if (sessions.isEmpty) {
-            return CustomScrollView(
-              slivers: [
-                const SliverAppBar.large(
-                  title: Text('Production'),
-                  centerTitle: false,
-                ),
-                SliverFillRemaining(
-                  child: SectionPlaceholder(
-                    icon: Icons.factory_outlined,
-                    title: 'Aucune session',
-                    subtitle: 'Commencez par créer une nouvelle session',
-                    primaryActionLabel: 'Nouvelle session',
-                    onPrimaryAction: () => _showCreateForm(context),
-                  ),
-                ),
-              ],
+    return sessionsAsync.when(
+          data: (sessions) {
+            if (sessions.isEmpty) {
+              return _buildEmptyState(context, theme);
+            }
+
+            // Filtrer les sessions annulées
+            final filteredSessions = sessions.where(
+              (s) => s.status != ProductionSessionStatus.cancelled,
+            ).toList();
+
+            if (filteredSessions.isEmpty) {
+              return _buildEmptyState(context, theme);
+            }
+
+            // Trier les sessions par date (plus récentes en premier)
+            final sessionsTriees = List<ProductionSession>.from(filteredSessions)
+              ..sort((a, b) => b.date.compareTo(a.date));
+
+            // Calculer les statistiques
+            final totalSessions = sessionsTriees.length;
+            final activeSessionsList = sessionsTriees
+                .where(
+                  (s) =>
+                      s.effectiveStatus == ProductionSessionStatus.started ||
+                      s.effectiveStatus == ProductionSessionStatus.inProgress ||
+                      s.effectiveStatus == ProductionSessionStatus.suspended ||
+                      s.effectiveStatus == ProductionSessionStatus.draft,
+                )
+                .toList();
+            final sessionsEnCours = activeSessionsList.length;
+            final hasActiveSession = sessionsEnCours > 0;
+
+            final sessionsTerminees = sessionsTriees
+                .where(
+                  (s) => s.effectiveStatus == ProductionSessionStatus.completed,
+                )
+                .length;
+            final totalProduit = sessionsTriees.fold<double>(
+              0,
+              (sum, s) => sum + s.quantiteProduite,
             );
-          }
 
-          // Filtrer les sessions annulées
-          final filteredSessions = sessions.where(
-            (s) => s.status != ProductionSessionStatus.cancelled,
-          ).toList();
-
-          if (filteredSessions.isEmpty) {
-            return Center(
-              child: SectionPlaceholder(
-                icon: Icons.factory_outlined,
-                title: 'Aucune session',
-                subtitle: 'Commencez par créer une nouvelle session',
-                primaryActionLabel: 'Nouvelle session',
-                onPrimaryAction: () => _showCreateForm(context),
-              ),
-            );
-          }
-
-          // Trier les sessions par date (plus récentes en premier)
-          final sessionsTriees = List<ProductionSession>.from(filteredSessions)
-            ..sort((a, b) => b.date.compareTo(a.date));
-
-          // Calculer les statistiques
-          final totalSessions = sessionsTriees.length;
-          final activeSessionsList = sessionsTriees
-              .where(
-                (s) =>
-                    s.effectiveStatus == ProductionSessionStatus.started ||
-                    s.effectiveStatus == ProductionSessionStatus.inProgress ||
-                    s.effectiveStatus == ProductionSessionStatus.suspended ||
-                    s.effectiveStatus == ProductionSessionStatus.draft,
-              )
-              .toList();
-          final sessionsEnCours = activeSessionsList.length;
-          final hasActiveSession = sessionsEnCours > 0;
-
-          final sessionsTerminees = sessionsTriees
-              .where(
-                (s) => s.effectiveStatus == ProductionSessionStatus.completed,
-              )
-              .length;
-          final totalProduit = sessionsTriees.fold<double>(
-            0,
-            (sum, s) => sum + s.quantiteProduite,
-          );
-
-          return Scaffold(
-            body: CustomScrollView(
-              physics: const BouncingScrollPhysics(),
-              slivers: [
-                SliverAppBar(
-                  title: const Text('Production'),
-                  centerTitle: false,
-                  pinned: true,
-                  floating: true,
-                  backgroundColor: theme.colorScheme.surface,
-                  surfaceTintColor: theme.colorScheme.surface,
-                  actions: [
-                    IconButton(
-                      icon: const Icon(Icons.refresh),
-                      onPressed: () => ref.invalidate(productionSessionsStateProvider),
-                      tooltip: 'Actualiser',
+            return Stack(
+              children: [
+                CustomScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  slivers: [
+                    // Premium Header
+                    SliverToBoxAdapter(
+                      child: Container(
+                        margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Color(0xFF0284C7), // Sky 600
+                              Color(0xFF00C2FF), // Custom Cyan
+                              Color(0xFF0369A1), // Sky 700
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: [
+                            BoxShadow(
+                              color: theme.colorScheme.primary.withValues(alpha: 0.2),
+                              blurRadius: 12,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    "EAU MINÉRALE",
+                                    style: theme.textTheme.labelLarge?.copyWith(
+                                      color: Colors.white.withValues(alpha: 0.9),
+                                      fontWeight: FontWeight.w500,
+                                      letterSpacing: 1.2,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    "Production",
+                                    style: theme.textTheme.headlineMedium?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.refresh, color: Colors.white),
+                              onPressed: () => ref.invalidate(productionSessionsStateProvider),
+                              tooltip: 'Actualiser',
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
+                    
+                    // Statistiques (Dashboard Styled)
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+                      sliver: SliverToBoxAdapter(
+                        child: ProductionSessionsStatistics(
+                          totalSessions: totalSessions,
+                          sessionsEnCours: sessionsEnCours,
+                          sessionsTerminees: sessionsTerminees,
+                          totalProduit: totalProduit,
+                        ),
+                      ),
+                    ),
+
+                    // Titre de section "Historique"
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        child: Row(
+                          children: [
+                            Text(
+                              'SESSIONS RÉCENTES',
+                              style: theme.textTheme.labelMedium?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                            const Spacer(),
+                            Text(
+                              '$totalSessions sessions',
+                              style: theme.textTheme.labelMedium?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    // Liste des sessions
+                    SliverPadding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      sliver: SliverList(
+                        delegate: SliverChildBuilderDelegate((context, index) {
+                          final session = sessionsTriees[index];
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 16),
+                            child: ProductionSessionsCard(session: session),
+                          );
+                        }, childCount: sessionsTriees.length),
+                      ),
+                    ),
+                    
+                    // Espace pour le FAB
+                    const SliverToBoxAdapter(child: SizedBox(height: 100)),
                   ],
                 ),
                 
-                // Statistiques (Dashboard Styled)
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-                    child: ProductionSessionsStatistics(
-                      totalSessions: totalSessions,
-                      sessionsEnCours: sessionsEnCours,
-                      sessionsTerminees: sessionsTerminees,
-                      totalProduit: totalProduit,
+                if (!hasActiveSession)
+                  Positioned(
+                    bottom: 24,
+                    right: 24,
+                    child: FloatingActionButton.extended(
+                      onPressed: () => _showCreateForm(context),
+                      icon: const Icon(Icons.add_task),
+                      label: const Text('Nouvelle Session'),
+                      elevation: 6,
+                      backgroundColor: theme.colorScheme.primary,
+                      foregroundColor: theme.colorScheme.onPrimary,
                     ),
                   ),
-                ),
-
-                // Titre de section "Historique"
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                    child: Row(
-                      children: [
-                        Text(
-                          'SESSIONS RÉCENTES',
-                          style: theme.textTheme.labelMedium?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.2,
-                          ),
-                        ),
-                        const Spacer(),
-                        Text(
-                          '$totalSessions sessions',
-                          style: theme.textTheme.labelMedium?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                // Liste des sessions
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate((context, index) {
-                      final session = sessionsTriees[index];
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: ProductionSessionsCard(session: session),
-                      );
-                    }, childCount: sessionsTriees.length),
-                  ),
-                ),
-                
-                // Espace pour le FAB
-                const SliverToBoxAdapter(child: SizedBox(height: 100)),
               ],
-            ),
-            floatingActionButton: !hasActiveSession
-                ? FloatingActionButton.extended(
-                    onPressed: () => _showCreateForm(context),
-                    icon: const Icon(Icons.add),
-                    label: const Text('Nouvelle Session'),
-                    elevation: 4,
-                  )
-                : null,
-          );
-        },
-        loading: () => Scaffold(
-          body: const Center(child: CircularProgressIndicator()),
-        ),
-        error: (error, stack) => Scaffold(
-          body: Center(
+            );
+          },
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, stack) => Center(
             child: SectionPlaceholder(
               icon: Icons.error_outline,
               title: 'Erreur',
@@ -194,8 +219,50 @@ class ProductionSessionsScreen extends ConsumerWidget {
               onPrimaryAction: () => ref.invalidate(productionSessionsStateProvider),
             ),
           ),
+    );
+  }
+
+  Widget _buildEmptyState(BuildContext context, ThemeData theme) {
+    return CustomScrollView(
+      slivers: [
+        SliverToBoxAdapter(
+          child: Container(
+            margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF0284C7), Color(0xFF0369A1)],
+              ),
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "EAU MINÉRALE",
+                  style: theme.textTheme.labelLarge?.copyWith(color: Colors.white70),
+                ),
+                Text(
+                  "Production",
+                  style: theme.textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
-      ),
+        SliverFillRemaining(
+          child: SectionPlaceholder(
+            icon: Icons.factory_outlined,
+            title: 'Aucune session',
+            subtitle: 'Commencez par créer une nouvelle session de production',
+            primaryActionLabel: 'Nouvelle session',
+            onPrimaryAction: () => _showCreateForm(context),
+          ),
+        ),
+      ],
     );
   }
 }

@@ -63,20 +63,55 @@ class _SalariesScreenState extends ConsumerState<SalariesScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Scaffold(
-      body: CustomScrollView(
+    return CustomScrollView(
         slivers: [
+          // Premium Header
           SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+            child: Container(
+              margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    theme.colorScheme.primary,
+                    const Color(0xFF00C2FF), // Cyan for Water Module
+                    const Color(0xFF0369A1), // Deep Blue
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
               child: Row(
                 children: [
                   Expanded(
-                    child: Text(
-                      'Gestion Salaires',
-                      style: theme.textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "GESTION SALAIRES",
+                          style: theme.textTheme.labelLarge?.copyWith(
+                            color: Colors.white.withValues(alpha: 0.9),
+                            fontWeight: FontWeight.w500,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          "Employés & Paiements",
+                          style: theme.textTheme.headlineMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   IconButton(
@@ -87,20 +122,21 @@ class _SalariesScreenState extends ConsumerState<SalariesScreen> {
                         ),
                       );
                     },
-                    icon: const Icon(Icons.account_balance_wallet_rounded),
+                    icon: const Icon(Icons.account_balance_wallet_rounded, color: Colors.white),
                     tooltip: 'Réconciliation',
                     style: IconButton.styleFrom(
-                      backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
-                      foregroundColor: theme.colorScheme.primary,
+                      backgroundColor: Colors.white.withValues(alpha: 0.2),
+                      foregroundColor: Colors.white,
                     ),
                   ),
                   const SizedBox(width: 8),
                   IconButton(
                     onPressed: () => ref.invalidate(salaryStateProvider),
-                    icon: const Icon(Icons.refresh_rounded),
+                    icon: const Icon(Icons.refresh_rounded, color: Colors.white),
                     tooltip: 'Actualiser',
                     style: IconButton.styleFrom(
-                      backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                      backgroundColor: Colors.white.withValues(alpha: 0.2),
+                      foregroundColor: Colors.white,
                     ),
                   ),
                 ],
@@ -136,7 +172,6 @@ class _SalariesScreenState extends ConsumerState<SalariesScreen> {
           ),
           const SliverPadding(padding: EdgeInsets.only(bottom: 80)),
         ],
-      ),
     );
   }
 }

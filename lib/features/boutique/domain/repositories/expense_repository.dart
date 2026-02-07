@@ -8,5 +8,7 @@ abstract class ExpenseRepository {
   Future<void> deleteExpense(String id, {String? deletedBy});
   Future<void> restoreExpense(String id);
   Future<List<Expense>> getDeletedExpenses();
+  Future<List<Expense>> getExpensesInPeriod(DateTime start, DateTime end);
   Stream<List<Expense>> watchExpenses({int limit = 50});
+  Stream<List<Expense>> watchDeletedExpenses();
 }

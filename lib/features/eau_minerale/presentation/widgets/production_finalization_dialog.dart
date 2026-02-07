@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/core/logging/app_logger.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../domain/entities/packaging_stock.dart';
 import '../../domain/entities/production_session.dart';
 import '../../domain/entities/production_session_status.dart';
 import 'time_picker_field.dart';
-import 'package:elyf_groupe_app/shared.dart';
-import '../../../../../shared/utils/notification_service.dart';
-import '../../../../../../core/logging/app_logger.dart';
 
 /// Dialog pour finaliser une production.
 class ProductionFinalizationDialog extends ConsumerStatefulWidget {
@@ -316,89 +315,149 @@ class _ProductionFinalizationDialogState
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = theme.colorScheme;
 
-    return AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      title: const Text('Finaliser la production'),
-      content: SingleChildScrollView(
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Date et heure de fin
-              Text(
-                'Date et heure de fin',
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+    return FormDialog(
+      title: 'Finaliser la production',
+      saveLabel: 'Finaliser',
+      isLoading: _isLoading,
+      isGlass: true,
+      onSave: _submit,
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Section Temps & Énergie
+            ElyfCard(
+              padding: const EdgeInsets.all(20),
+              borderRadius: 24,
+              backgroundColor: colors.surfaceContainerLow.withValues(alpha: 0.5),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                   Row(
+                    children: [
+                      Icon(Icons.timer_rounded, size: 18, color: colors.primary),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Informations de Fin',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: colors.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  TimePickerField(
+                    label: 'Heure de fin',
+                    initialTime: TimeOfDay.fromDateTime(_heureFin),
+                    onTimeSelected: (time) {
+                      setState(() {
+                        _heureFin = DateTime(
+                          widget.session.date.year,
+                          widget.session.date.month,
+                          widget.session.date.day,
+                          time.hour,
+                          time.minute,
+                        );
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                  _buildIndexCompteurFinalField(),
+                  _buildConsumptionPreview(),
+                ],
               ),
-              const SizedBox(height: 8),
-              TimePickerField(
-                label: 'Heure de fin',
-                initialTime: TimeOfDay.fromDateTime(_heureFin),
-                onTimeSelected: (time) {
-                  setState(() {
-                    _heureFin = DateTime(
-                      widget.session.date.year,
-                      widget.session.date.month,
-                      widget.session.date.day,
-                      time.hour,
-                      time.minute,
-                    );
-                  });
-                },
+            ),
+            const SizedBox(height: 16),
+
+            // Section Récapitulatif
+            ElyfCard(
+              padding: const EdgeInsets.all(20),
+              borderRadius: 24,
+              backgroundColor: colors.primary.withValues(alpha: 0.03),
+              borderColor: colors.primary.withValues(alpha: 0.1),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.analytics_rounded, size: 18, color: colors.primary),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Récapitulatif Global',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: colors.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Somme calculée sur tous les jours de production',
+                    style: theme.textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
+                  ),
+                  const SizedBox(height: 20),
+                  TextFormField(
+                    controller: _quantiteProduiteController,
+                    readOnly: true,
+                    decoration: _buildInputDecoration(
+                      label: 'Total des packs produits',
+                      icon: Icons.inventory_2_rounded,
+                      isReadOnly: true,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _emballagesUtilisesController,
+                    readOnly: true,
+                    decoration: _buildInputDecoration(
+                      label: 'Total des emballages utilisés',
+                      icon: Icons.shopping_bag_rounded,
+                      isReadOnly: true,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 24),
-              _buildIndexCompteurFinalField(),
-              const SizedBox(height: 24),
-              // Récapitulatif des quantités (lecture seule, issues des jours)
-              Text(
-                'Récapitulatif des quantités (somme des jours de production)',
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextFormField(
-                controller: _quantiteProduiteController,
-                readOnly: true,
-                decoration: const InputDecoration(
-                  labelText: 'Total des packs produits',
-                  prefixIcon: Icon(Icons.inventory_2),
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextFormField(
-                controller: _emballagesUtilisesController,
-                readOnly: true,
-                decoration: const InputDecoration(
-                  labelText: 'Total des emballages utilisés',
-                  prefixIcon: Icon(Icons.shopping_bag),
-                ),
-              ),
-              _buildConsumptionPreview(),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
-          child: const Text('Annuler'),
-        ),
-        FilledButton(
-          onPressed: _isLoading ? null : _submit,
-          child: _isLoading
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Text('Finaliser'),
-        ),
-      ],
+    );
+  }
+
+  InputDecoration _buildInputDecoration({
+    required String label,
+    required IconData icon,
+    String? helperText,
+    bool isReadOnly = false,
+  }) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    return InputDecoration(
+      labelText: label,
+      helperText: helperText,
+      prefixIcon: Icon(icon, size: 18, color: isReadOnly ? colors.onSurfaceVariant : colors.primary),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: colors.outline.withValues(alpha: 0.1)),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: colors.outline.withValues(alpha: 0.1)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: colors.primary, width: 2),
+      ),
+      filled: true,
+      fillColor: isReadOnly 
+          ? colors.surfaceContainerHighest.withValues(alpha: 0.2)
+          : colors.surfaceContainerLow.withValues(alpha: 0.5),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
     );
   }
 
@@ -409,14 +468,14 @@ class _ProductionFinalizationDialogState
       data: (meterType) {
         return TextFormField(
           controller: _indexCompteurFinalKwhController,
-          decoration: InputDecoration(
-            labelText: '${meterType.finalLabel} *',
-            prefixIcon: const Icon(Icons.bolt),
+          decoration: _buildInputDecoration(
+            label: '${meterType.finalLabel} *',
+            icon: Icons.bolt_rounded,
             helperText: widget.session.indexCompteurInitialKwh != null
                 ? '${meterType.initialLabel}: ${widget.session.indexCompteurInitialKwh} ${meterType.unit}'
                 : meterType.finalHelperText,
           ),
-          keyboardType: TextInputType.numberWithOptions(decimal: true),
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
           validator: (value) {
             if (value == null || value.isEmpty) {
               return 'Requis';
@@ -458,6 +517,7 @@ class _ProductionFinalizationDialogState
 
   Widget _buildConsumptionPreview() {
     final theme = Theme.of(context);
+    final colors = theme.colorScheme;
     final meterTypeAsync = ref.watch(electricityMeterTypeProvider);
 
     return meterTypeAsync.when(
@@ -486,27 +546,52 @@ class _ProductionFinalizationDialogState
           children: [
             const SizedBox(height: 16),
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: theme.colorScheme.primaryContainer.withValues(
-                  alpha: 0.3,
+                gradient: LinearGradient(
+                  colors: [
+                    colors.primary.withValues(alpha: 0.1),
+                    colors.primary.withValues(alpha: 0.05),
+                  ],
                 ),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: colors.primary.withValues(alpha: 0.2)),
               ),
               child: Row(
                 children: [
-                  Icon(
-                    Icons.info_outline,
-                    color: theme.colorScheme.onPrimaryContainer,
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: colors.primary.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.electric_bolt_rounded,
+                      size: 20,
+                      color: colors.primary,
+                    ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 12),
                   Expanded(
-                    child: Text(
-                      'Consommation électrique: ${consommation.toStringAsFixed(2)} ${meterType.unit}',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: theme.colorScheme.onPrimaryContainer,
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'CONSO. ÉLECTRIQUE',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: colors.onSurfaceVariant,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        Text(
+                          '${consommation.toStringAsFixed(2)} ${meterType.unit}',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w900,
+                            color: colors.primary,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],

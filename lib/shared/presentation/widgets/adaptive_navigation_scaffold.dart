@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../utils/responsive_helper.dart';
+import 'elyf_ui/organisms/elyf_app_bar.dart';
+import 'elyf_ui/organisms/elyf_drawer.dart';
+import 'elyf_ui/organisms/elyf_navigation.dart';
 
 /// Configuration pour une section de navigation
 class NavigationSection {
@@ -128,48 +131,32 @@ class _AdaptiveNavigationScaffoldState
   Widget _buildTabletScreen() {
     // Sur tablette, utiliser NavigationRail compact (80px) avec labels
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.appTitle),
+      appBar: ElyfAppBar(
+        title: widget.appTitle,
         centerTitle: true,
         actions: widget.appBarActions,
+        elevation: 1, // Subtle elevation for tablet
       ),
       resizeToAvoidBottomInset: false,
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final maxHeight = constraints.maxHeight.isFinite
-              ? constraints.maxHeight
-              : MediaQuery.of(context).size.height;
-
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ClipRect(
-                child: SizedBox(
-                  width: 80,
-                  height: maxHeight,
-                  child: NavigationRail(
-                    selectedIndex: _selectedIndex,
-                    onDestinationSelected: _onDestinationSelected,
-                    labelType: NavigationRailLabelType.selected,
-                    extended: false,
-                    minWidth: 80,
-                    destinations: widget.sections
-                        .map(
-                          (section) => NavigationRailDestination(
-                            icon: Icon(section.icon),
-                            selectedIcon: Icon(section.icon),
-                            label: Text(section.label),
-                          ),
-                        )
-                        .toList(),
+      body: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ElyfNavigationRail(
+            selectedIndex: _selectedIndex,
+            onDestinationSelected: _onDestinationSelected,
+            extended: false,
+            destinations: widget.sections
+                .map(
+                  (section) => ElyfNavigationDestination(
+                    icon: section.icon,
+                    label: section.label,
                   ),
-                ),
-              ),
-              const VerticalDivider(thickness: 1, width: 1),
-              Expanded(child: _getWidgetForIndex(_selectedIndex)),
-            ],
-          );
-        },
+                )
+                .toList(),
+          ),
+          const VerticalDivider(thickness: 1, width: 1),
+          Expanded(child: _getWidgetForIndex(_selectedIndex)),
+        ],
       ),
     );
   }
@@ -178,51 +165,32 @@ class _AdaptiveNavigationScaffoldState
     final isExtended = ResponsiveHelper.isExtendedScreen(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.appTitle),
+      appBar: ElyfAppBar(
+        title: widget.appTitle,
         centerTitle: true,
         actions: widget.appBarActions,
+        elevation: 1,
       ),
       resizeToAvoidBottomInset: false,
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final maxHeight = constraints.maxHeight.isFinite
-              ? constraints.maxHeight
-              : MediaQuery.of(context).size.height;
-
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ClipRect(
-                child: SizedBox(
-                  width: isExtended ? 200 : 80,
-                  height: maxHeight,
-                  child: NavigationRail(
-                    selectedIndex: _selectedIndex,
-                    onDestinationSelected: _onDestinationSelected,
-                    labelType: isExtended
-                        ? NavigationRailLabelType.none
-                        : NavigationRailLabelType.selected,
-                    extended: isExtended,
-                    minExtendedWidth: 200,
-                    minWidth: 80,
-                    destinations: widget.sections
-                        .map(
-                          (section) => NavigationRailDestination(
-                            icon: Icon(section.icon),
-                            selectedIcon: Icon(section.icon),
-                            label: Text(section.label),
-                          ),
-                        )
-                        .toList(),
+      body: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ElyfNavigationRail(
+            selectedIndex: _selectedIndex,
+            onDestinationSelected: _onDestinationSelected,
+            extended: isExtended,
+            destinations: widget.sections
+                .map(
+                  (section) => ElyfNavigationDestination(
+                    icon: section.icon,
+                    label: section.label,
                   ),
-                ),
-              ),
-              const VerticalDivider(thickness: 1, width: 1),
-              Expanded(child: _getWidgetForIndex(_selectedIndex)),
-            ],
-          );
-        },
+                )
+                .toList(),
+          ),
+          const VerticalDivider(thickness: 1, width: 1),
+          Expanded(child: _getWidgetForIndex(_selectedIndex)),
+        ],
       ),
     );
   }
@@ -231,50 +199,40 @@ class _AdaptiveNavigationScaffoldState
     final theme = Theme.of(context);
     final sectionsCount = widget.sections.length;
 
-    // Si plus de 4 sections, utiliser un drawer pour une meilleure ergonomie
-    // Le drawer offre plus d'espace et une meilleure lisibilité sur petits écrans
-    if (sectionsCount > 4) {
+    // Si plus de 5 sections, utiliser un drawer pour une meilleure ergonomie (étendu de 4 à 5)
+    if (sectionsCount > 5) {
       return _buildMobileWithDrawer(theme);
     }
 
-    // Pour 4 sections ou moins, utiliser NavigationBar en bas
+    // Pour 4 sections ou moins, utiliser la barre de navigation premium flottante
     return Scaffold(
       key: _scaffoldKey,
-      appBar: AppBar(
-        title: Text(widget.appTitle),
+      extendBody: false, // Désactivé pour une clarté maximale
+      appBar: ElyfAppBar(
+        title: widget.appTitle,
         centerTitle: true,
+        leading: Navigator.of(context).canPop() 
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () => Navigator.of(context).pop(),
+                tooltip: 'Retour',
+              )
+            : null,
         actions: widget.appBarActions,
+        useGlassmorphism: false,
+        elevation: 0,
+        backgroundColor: theme.colorScheme.surface,
       ),
       body: _getWidgetForIndex(_selectedIndex),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          boxShadow: [
-            BoxShadow(
-              color: theme.shadowColor.withValues(alpha: 0.1),
-              blurRadius: 8,
-              offset: const Offset(0, -2),
-            ),
-          ],
-        ),
-        child: NavigationBar(
-          selectedIndex: _selectedIndex,
-          onDestinationSelected: _onDestinationSelected,
-          labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-          height: 72,
-          elevation: 0,
-          backgroundColor: theme.colorScheme.surface,
-          indicatorColor: theme.colorScheme.primaryContainer,
-          destinations: widget.sections.map((section) {
-            return NavigationDestination(
-              icon: Icon(section.icon),
-              selectedIcon: Icon(
-                section.icon,
-                color: theme.colorScheme.primary,
-              ),
-              label: section.label,
-            );
-          }).toList(),
-        ),
+      bottomNavigationBar: ElyfBottomNavigationBar(
+        selectedIndex: _selectedIndex,
+        onDestinationSelected: _onDestinationSelected,
+        destinations: widget.sections.map((section) {
+          return ElyfNavigationDestination(
+            icon: section.icon,
+            label: section.label,
+          );
+        }).toList(),
       ),
     );
   }
@@ -282,149 +240,37 @@ class _AdaptiveNavigationScaffoldState
   Widget _buildMobileWithDrawer(ThemeData theme) {
     return Scaffold(
       key: _scaffoldKey,
-      appBar: AppBar(
-        title: Text(widget.appTitle),
+      extendBody: false, // Plus simple sans superposition
+      appBar: ElyfAppBar(
+        title: widget.appTitle,
         centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.menu),
-          onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-          tooltip: 'Menu',
-        ),
-        actions: widget.appBarActions,
-      ),
-      drawer: _buildDrawer(theme),
-      body: _getWidgetForIndex(_selectedIndex),
-    );
-  }
-
-  Widget _buildDrawer(ThemeData theme) {
-    return Drawer(
-      backgroundColor: theme.colorScheme.surface,
-      child: SafeArea(
-        child: Column(
+        leading: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(32),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primaryContainer.withValues(alpha: 0.2),
-                border: Border(
-                  bottom: BorderSide(
-                    color: theme.colorScheme.outline.withValues(alpha: 0.1),
-                  ),
-                ),
+            if (Navigator.of(context).canPop())
+              IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () => Navigator.of(context).pop(),
+                tooltip: 'Retour',
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primary,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: theme.colorScheme.primary.withValues(alpha: 0.3),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Icon(
-                      Icons.business,
-                      size: 28,
-                      color: theme.colorScheme.onPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    widget.appTitle,
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      color: theme.colorScheme.primary,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Système de Gestion Intégré',
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: widget.sections.length,
-                itemBuilder: (context, index) {
-                  final section = widget.sections[index];
-                  final isSelected = _selectedIndex == index;
- 
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
-                    child: Material(
-                      color: isSelected
-                          ? theme.colorScheme.primaryContainer.withValues(alpha: 0.4)
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(16),
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(16),
-                        onTap: () => _onDestinationSelected(index),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 14,
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                section.icon,
-                                color: isSelected
-                                    ? theme.colorScheme.primary
-                                    : theme.colorScheme.onSurfaceVariant,
-                                size: 24,
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Text(
-                                  section.label,
-                                  style: theme.textTheme.titleSmall?.copyWith(
-                                    color: isSelected
-                                        ? theme.colorScheme.primary
-                                        : theme.colorScheme.onSurface,
-                                    fontWeight: isSelected
-                                        ? FontWeight.bold
-                                        : FontWeight.w500,
-                                  ),
-                                ),
-                              ),
-                              if (isSelected)
-                                Container(
-                                  width: 4,
-                                  height: 4,
-                                  decoration: BoxDecoration(
-                                    color: theme.colorScheme.primary,
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
+            IconButton(
+              icon: const Icon(Icons.menu),
+              onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+              tooltip: 'Menu',
             ),
           ],
         ),
+        actions: widget.appBarActions,
+        elevation: 0,
+        backgroundColor: theme.colorScheme.surface,
       ),
+      drawer: ElyfDrawer(
+        sections: widget.sections,
+        selectedIndex: _selectedIndex,
+        onDestinationSelected: _onDestinationSelected,
+        appTitle: widget.appTitle,
+      ),
+      body: _getWidgetForIndex(_selectedIndex),
     );
   }
 }

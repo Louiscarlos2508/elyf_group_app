@@ -37,7 +37,17 @@ class EnterpriseOfflineRepository extends OfflineRepository<Enterprise>
     return Enterprise(
       id: id,
       name: map['name'] as String,
-      type: map['type'] as String,
+      type: EnterpriseType.fromId(map['type'] as String),
+      parentEnterpriseId: map['parentEnterpriseId'] as String?,
+      hierarchyLevel: map['hierarchyLevel'] as int? ?? 0,
+      hierarchyPath: map['hierarchyPath'] as String? ?? '',
+      ancestorIds: (map['ancestorIds'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList() ?? const [],
+      moduleId: map['moduleId'] as String?,
+      metadata: (map['metadata'] as Map<String, dynamic>?) ?? const {},
+      latitude: (map['latitude'] as num?)?.toDouble(),
+      longitude: (map['longitude'] as num?)?.toDouble(),
       description: map['description'] as String?,
       address: map['address'] as String?,
       phone: map['phone'] as String?,
@@ -57,7 +67,15 @@ class EnterpriseOfflineRepository extends OfflineRepository<Enterprise>
     return {
       'id': entity.id,
       'name': entity.name,
-      'type': entity.type,
+      'type': entity.type.id,
+      'parentEnterpriseId': entity.parentEnterpriseId,
+      'hierarchyLevel': entity.hierarchyLevel,
+      'hierarchyPath': entity.hierarchyPath,
+      'ancestorIds': entity.ancestorIds,
+      'moduleId': entity.moduleId,
+      'metadata': entity.metadata,
+      'latitude': entity.latitude,
+      'longitude': entity.longitude,
       'description': entity.description,
       'address': entity.address,
       'phone': entity.phone,
@@ -242,7 +260,7 @@ class EnterpriseOfflineRepository extends OfflineRepository<Enterprise>
   @override
   Future<List<Enterprise>> getEnterprisesByType(String type) async {
     final allEnterprises = await getAllEnterprises();
-    return allEnterprises.where((e) => e.type == type).toList();
+    return allEnterprises.where((e) => e.type.id == type).toList();
   }
 
   @override

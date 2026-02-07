@@ -50,6 +50,10 @@ class PropertyExpenseOfflineRepository
       updatedAt: map['updatedAt'] != null
           ? DateTime.parse(map['updatedAt'] as String)
           : null,
+      deletedAt: map['deletedAt'] != null
+          ? DateTime.parse(map['deletedAt'] as String)
+          : null,
+      deletedBy: map['deletedBy'] as String?,
     );
   }
 
@@ -71,6 +75,8 @@ class PropertyExpenseOfflineRepository
       'reference': entity.receipt,
       'createdAt': entity.createdAt?.toIso8601String(),
       'updatedAt': entity.updatedAt?.toIso8601String(),
+      'deletedAt': entity.deletedAt?.toIso8601String(),
+      'deletedBy': entity.deletedBy,
     };
   }
 
@@ -242,8 +248,35 @@ class PropertyExpenseOfflineRepository
             }
           }
           final deduplicated = deduplicateByRemoteId(expenses);
-          deduplicated.sort((a, b) => b.expenseDate.compareTo(a.expenseDate));
-          return deduplicated;
+          final active = deduplicated.where((e) => e.deletedAt == null).toList();
+          active.sort((a, b) => b.expenseDate.compareTo(a.expenseDate));
+          return active;
+        });
+  }
+
+  @override
+  Stream<List<PropertyExpense>> watchDeletedExpenses() {
+    return driftService.records
+        .watchForEnterprise(
+          collectionName: collectionName,
+          enterpriseId: enterpriseId,
+          moduleType: 'immobilier',
+        )
+        .map((rows) {
+          final expenses = <PropertyExpense>[];
+          for (final row in rows) {
+            final map = safeDecodeJson(row.dataJson, row.localId);
+            if (map == null) continue;
+            try {
+              expenses.add(fromMap(map));
+            } catch (e) {
+              // Ignore corrupt data
+            }
+          }
+          final deduplicated = deduplicateByRemoteId(expenses);
+          final deleted = deduplicated.where((e) => e.deletedAt != null).toList();
+          deleted.sort((a, b) => b.expenseDate.compareTo(a.expenseDate));
+          return deleted;
         });
   }
 
@@ -381,12 +414,39 @@ class PropertyExpenseOfflineRepository
     try {
       final expense = await getExpenseById(id);
       if (expense != null) {
-        await delete(expense);
+        final updatedExpense = expense.copyWith(
+          deletedAt: DateTime.now(),
+          deletedBy: 'system',
+        );
+        await save(updatedExpense);
       }
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       AppLogger.error(
         'Error deleting expense: $id - ${appException.message}',
+        name: 'PropertyExpenseOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      throw appException;
+    }
+  }
+
+  @override
+  Future<void> restoreExpense(String id) async {
+    try {
+      final expense = await getExpenseById(id);
+      if (expense != null) {
+        final updatedExpense = expense.copyWith(
+          deletedAt: null,
+          deletedBy: null,
+        );
+        await save(updatedExpense);
+      }
+    } catch (error, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
+      AppLogger.error(
+        'Error restoring expense: $id - ${appException.message}',
         name: 'PropertyExpenseOfflineRepository',
         error: error,
         stackTrace: stackTrace,

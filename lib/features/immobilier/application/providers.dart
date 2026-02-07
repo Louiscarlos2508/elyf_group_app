@@ -3,6 +3,7 @@ import 'package:rxdart/rxdart.dart';
 
 export 'providers/permission_providers.dart';
 export 'providers/section_providers.dart';
+export 'providers/filter_providers.dart';
 
 import '../../../../core/offline/drift_service.dart';
 import '../../../../core/offline/providers.dart';
@@ -208,6 +209,25 @@ final contractsProvider = StreamProvider.autoDispose<List<Contract>>((ref) {
   return controller.watchContracts();
 });
 
+final contractsWithRelationsProvider = StreamProvider.autoDispose<List<Contract>>((ref) {
+  final contractsStream = ref.watch(contractControllerProvider).watchContracts();
+  final tenantsStream = ref.watch(tenantControllerProvider).watchTenants();
+  final propertiesStream = ref.watch(propertyControllerProvider).watchProperties();
+
+  return CombineLatestStream.combine3(
+    contractsStream,
+    tenantsStream,
+    propertiesStream,
+    (contracts, tenants, properties) {
+      return contracts.map((c) {
+        final tenant = tenants.where((t) => t.id == c.tenantId).firstOrNull;
+        final property = properties.where((p) => p.id == c.propertyId).firstOrNull;
+        return c.copyWith(tenant: tenant, property: property);
+      }).toList();
+    },
+  );
+});
+
 final paymentsProvider = StreamProvider.autoDispose<List<Payment>>((ref) {
   final controller = ref.watch(paymentControllerProvider);
   return controller.watchPayments();
@@ -218,6 +238,39 @@ final expensesProvider = StreamProvider.autoDispose<List<PropertyExpense>>((
 ) {
   final controller = ref.watch(expenseControllerProvider);
   return controller.watchExpenses();
+});
+
+// --- Deleted Items Providers ---
+
+final deletedPropertiesProvider = StreamProvider.autoDispose<List<Property>>((
+  ref,
+) {
+  final controller = ref.watch(propertyControllerProvider);
+  return controller.watchDeletedProperties();
+});
+
+final deletedTenantsProvider = StreamProvider.autoDispose<List<Tenant>>((ref) {
+  final controller = ref.watch(tenantControllerProvider);
+  return controller.watchDeletedTenants();
+});
+
+final deletedContractsProvider = StreamProvider.autoDispose<List<Contract>>((
+  ref,
+) {
+  final controller = ref.watch(contractControllerProvider);
+  return controller.watchDeletedContracts();
+});
+
+final deletedPaymentsProvider = StreamProvider.autoDispose<List<Payment>>((ref) {
+  final controller = ref.watch(paymentControllerProvider);
+  return controller.watchDeletedPayments();
+});
+
+final deletedExpensesProvider = StreamProvider.autoDispose<List<PropertyExpense>>((
+  ref,
+) {
+  final controller = ref.watch(expenseControllerProvider);
+  return controller.watchDeletedExpenses();
 });
 
 // --- Combined & Derived Providers ---
@@ -306,6 +359,35 @@ final paymentsByTenantProvider = StreamProvider.autoDispose
                   .toList();
           filtered.sort((a, b) => b.paymentDate.compareTo(a.paymentDate));
           return filtered;
+        },
+      );
+    });
+final propertyProfitabilityProvider = StreamProvider.autoDispose
+    .family<({int revenue, int expenses, int net}), String>((ref, propertyId) {
+      return CombineLatestStream.combine3(
+        ref.watch(contractControllerProvider).watchContracts().map(
+          (contracts) => contracts.where((c) => c.propertyId == propertyId),
+        ),
+        ref.watch(paymentControllerProvider).watchPayments(),
+        ref.watch(expenseControllerProvider).watchExpenses().map(
+          (expenses) => expenses.where((e) => e.propertyId == propertyId),
+        ),
+        (contracts, payments, propertyExpenses) {
+          final contractIds = contracts.map((c) => c.id).toSet();
+          
+          final revenue = payments
+              .where((p) => contractIds.contains(p.contractId) && p.status != PaymentStatus.cancelled)
+              .fold(0, (sum, p) => sum + p.amount);
+
+          final expenses = propertyExpenses
+              .where((e) => e.deletedAt == null)
+              .fold(0, (sum, e) => sum + e.amount);
+
+          return (
+            revenue: revenue,
+            expenses: expenses,
+            net: revenue - expenses,
+          );
         },
       );
     });

@@ -218,9 +218,11 @@ class _EditRoleDialogState extends ConsumerState<EditRoleDialog>
                     children: [
                       TextFormField(
                         controller: _nameController,
-                        decoration: const InputDecoration(
-                          labelText: 'Nom du rôle *',
-                          hintText: 'Gestionnaire',
+                        decoration: _buildInputDecoration(
+                          theme, 
+                          'Nom du rôle *', 
+                          'ex: Gestionnaire', 
+                          Icons.badge_outlined
                         ),
                         enabled: !widget.role.isSystemRole,
                         validator: (value) {
@@ -233,9 +235,11 @@ class _EditRoleDialogState extends ConsumerState<EditRoleDialog>
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _descriptionController,
-                        decoration: const InputDecoration(
-                          labelText: 'Description *',
-                          hintText: 'Description du rôle',
+                        decoration: _buildInputDecoration(
+                          theme, 
+                          'Description *', 
+                          'Une brève description des responsabilités', 
+                          Icons.description_outlined
                         ),
                         maxLines: 2,
                         enabled: !widget.role.isSystemRole,
@@ -262,8 +266,8 @@ class _EditRoleDialogState extends ConsumerState<EditRoleDialog>
                           final permissionsByModuleList =
                               <String, List<ModulePermission>>{};
 
-                          // Parcourir tous les modules enregistrés
-                          for (final moduleId in registry.registeredModules) {
+                          // Parcourir uniquement le module de ce rôle
+                          for (final moduleId in [widget.role.moduleId]) {
                             final modulePermissions = registry
                                 .getModulePermissions(moduleId);
                             if (modulePermissions != null) {
@@ -559,15 +563,7 @@ class _EditRoleDialogState extends ConsumerState<EditRoleDialog>
                                         ) {
                                           return CheckboxListTile(
                                             title: Text(permission.name),
-                                            subtitle: Text(
-                                              permission.id,
-                                              style: theme.textTheme.bodySmall
-                                                  ?.copyWith(
-                                                    color: theme
-                                                        .colorScheme
-                                                        .onSurfaceVariant,
-                                                  ),
-                                            ),
+                                            // Subtitle removed to hide technical English IDs
                                             value: _selectedPermissions
                                                 .contains(permission.id),
                                             enabled: !widget.role.isSystemRole,
@@ -674,15 +670,7 @@ class _EditRoleDialogState extends ConsumerState<EditRoleDialog>
                                     ) {
                                       return CheckboxListTile(
                                         title: Text(permission.name),
-                                        subtitle: Text(
-                                          permission.id,
-                                          style: theme.textTheme.bodySmall
-                                              ?.copyWith(
-                                                color: theme
-                                                    .colorScheme
-                                                    .onSurfaceVariant,
-                                              ),
-                                        ),
+                                          // Subtitle removed to hide technical English IDs
                                         value: _selectedPermissions.contains(
                                           permission.id,
                                         ),
@@ -714,15 +702,7 @@ class _EditRoleDialogState extends ConsumerState<EditRoleDialog>
                                       permissionId;
                                   return CheckboxListTile(
                                     title: Text(permissionName),
-                                    subtitle: Text(
-                                      permissionId,
-                                      style: theme.textTheme.bodySmall
-                                          ?.copyWith(
-                                            color: theme
-                                                .colorScheme
-                                                .onSurfaceVariant,
-                                          ),
-                                    ),
+                                      // Subtitle removed to hide technical English IDs
                                     value: _selectedPermissions.contains(
                                       permissionId,
                                     ),
@@ -808,5 +788,30 @@ class _EditRoleDialogState extends ConsumerState<EditRoleDialog>
       default:
         return moduleId;
     }
+  }
+
+  InputDecoration _buildInputDecoration(
+    ThemeData theme, 
+    String label, 
+    String hint, 
+    IconData icon, {
+    String? helper,
+    Widget? suffix,
+  }) {
+    return InputDecoration(
+      labelText: label,
+      hintText: hint,
+      helperText: helper,
+      prefixIcon: Icon(icon, size: 20),
+      suffixIcon: suffix,
+      filled: true,
+      fillColor: theme.colorScheme.surfaceContainerLow,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide.none,
+      ),
+      isDense: true,
+      contentPadding: const EdgeInsets.symmetric(vertical: 16),
+    );
   }
 }

@@ -11,7 +11,9 @@ import '../../widgets/checkout_dialog.dart';
 import '../../widgets/permission_guard.dart';
 import '../../widgets/product_tile.dart';
 import '../../widgets/barcode_scanner_widget.dart';
+import '../../widgets/boutique_search_bar.dart';
 import 'package:elyf_groupe_app/shared.dart';
+import '../../widgets/boutique_header.dart';
 
 class PosScreen extends ConsumerStatefulWidget {
   const PosScreen({super.key});
@@ -179,101 +181,80 @@ class _PosScreenState extends ConsumerState<PosScreen> {
               children: [
                 Expanded(
                   flex: isWide ? 2 : 1,
-                  child: Column(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: TextField(
-                                controller: _searchController,
-                                decoration: InputDecoration(
-                                  hintText: 'Rechercher un produit...',
-                                  prefixIcon: const Icon(Icons.search),
-                                  suffixIcon: _searchQuery.isNotEmpty
-                                      ? IconButton(
-                                          icon: const Icon(Icons.clear),
-                                          onPressed: () {
-                                            _searchController.clear();
-                                            setState(() => _searchQuery = '');
-                                          },
-                                        )
-                                      : null,
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                  child: CustomScrollView(
+                    slivers: [
+                      BoutiqueHeader(
+                        title: "POINT DE VENTE",
+                        subtitle: "Caisse & Panier",
+                        gradientColors: [
+                          const Color(0xFF2563EB), // Blue 600
+                          const Color(0xFF1D4ED8), // Blue 700
+                        ],
+                        shadowColor: const Color(0xFF2563EB),
+                      ),
+                      SliverPadding(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                        sliver: SliverToBoxAdapter(
+                          child: BoutiqueSearchBar(
+                            controller: _searchController,
+                            hintText: 'Rechercher un produit...',
+                            onChanged: (value) {
+                              setState(() => _searchQuery = value);
+                            },
+                            onScanPressed: () async {
+                              final scannedBarcode = await Navigator.of(context).push<String>(
+                                MaterialPageRoute(
+                                  builder: (context) => BarcodeScannerWidget(
+                                    onBarcodeDetected: (barcode) {
+                                      Navigator.of(context).pop(barcode);
+                                    },
+                                    onError: (error) {
+                                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                                        if (context.mounted) {
+                                          NotificationService.showError(
+                                            context,
+                                            'Erreur de scan: $error',
+                                          );
+                                        }
+                                      });
+                                    },
                                   ),
-                                  filled: true,
-                                  fillColor:
-                                      theme.colorScheme.surfaceContainerHighest,
                                 ),
-                                onChanged: (value) {
-                                  setState(() => _searchQuery = value);
-                                },
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            IconButton(
-                              icon: const Icon(Icons.qr_code_scanner),
-                              onPressed: () async {
-                                // ✅ TODO résolu: Implement barcode scanning
-                                final scannedBarcode = await Navigator.of(context).push<String>(
-                                  MaterialPageRoute(
-                                    builder: (context) => BarcodeScannerWidget(
-                                      onBarcodeDetected: (barcode) {
-                                        Navigator.of(context).pop(barcode);
-                                      },
-                                      onError: (error) {
-                                        NotificationService.showError(
-                                          context,
-                                          'Erreur de scan: $error',
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                );
+                              );
 
-                                if (scannedBarcode != null && mounted) {
-                                  // Rechercher le produit par code-barres
-                                  final productsAsync = ref.read(productsProvider);
-                                  productsAsync.whenData((products) {
-                                    try {
-                                      final product = products.firstWhere(
-                                        (p) => p.barcode == scannedBarcode,
-                                      );
-                                      
-                                      _addToCart(product);
-                                      NotificationService.showSuccess(
-                                        context,
-                                        '${product.name} ajouté au panier',
-                                      );
-                                    } catch (e) {
-                                      NotificationService.showWarning(
-                                        context,
-                                        'Produit avec code-barres $scannedBarcode non trouvé',
-                                      );
-                                    }
-                                  });
-                                }
-                              },
-                              tooltip: 'Scanner un code-barres',
-                              style: IconButton.styleFrom(
-                                backgroundColor:
-                                    theme.colorScheme.primaryContainer,
-                              ),
-                            ),
-                          ],
+                              if (scannedBarcode != null && mounted) {
+                                final productsAsync = ref.read(productsProvider);
+                                productsAsync.whenData((products) {
+                                  try {
+                                    final product = products.firstWhere(
+                                      (p) => p.barcode == scannedBarcode,
+                                    );
+                                    _addToCart(product);
+                                    NotificationService.showSuccess(
+                                      context,
+                                      '${product.name} ajouté au panier',
+                                    );
+                                  } catch (e) {
+                                    NotificationService.showWarning(
+                                      context,
+                                      'Produit avec code-barres $scannedBarcode non trouvé',
+                                    );
+                                  }
+                                });
+                              }
+                            },
+                          ),
                         ),
                       ),
-                      Expanded(
-                        child: productsAsync.when(
-                          data: (products) {
-                            final filteredProducts = _filterProducts(
-                              products,
-                              _searchQuery,
-                            );
-                            if (filteredProducts.isEmpty) {
-                              return Center(
+                      productsAsync.when(
+                        data: (products) {
+                          final filteredProducts = _filterProducts(
+                            products,
+                            _searchQuery,
+                          );
+                          if (filteredProducts.isEmpty) {
+                            return SliverFillRemaining(
+                              child: Center(
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
@@ -299,29 +280,39 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                                     ),
                                   ],
                                 ),
-                              );
-                            }
-                            return GridView.builder(
-                              padding: const EdgeInsets.all(16),
-                              gridDelegate:
-                                  SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: isWide ? 4 : 2,
-                                    childAspectRatio: 0.75,
-                                    crossAxisSpacing: 12,
-                                    mainAxisSpacing: 12,
-                                  ),
-                              itemCount: filteredProducts.length,
-                              itemBuilder: (context, index) {
-                                final product = filteredProducts[index];
-                                return ProductTile(
-                                  product: product,
-                                  onTap: () => _addToCart(product),
-                                );
-                              },
+                              ),
                             );
-                          },
-                          loading: () => AppShimmers.grid(context, count: 8),
-                          error: (_, __) => Center(
+                          }
+                          return SliverPadding(
+                            padding: const EdgeInsets.all(16),
+                            sliver: SliverGrid(
+                              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: isWide ? 4 : 2,
+                                childAspectRatio: 0.75,
+                                crossAxisSpacing: 12,
+                                mainAxisSpacing: 12,
+                              ),
+                              delegate: SliverChildBuilderDelegate(
+                                (context, index) {
+                                  final product = filteredProducts[index];
+                                  return ProductTile(
+                                    product: product,
+                                    onTap: () => _addToCart(product),
+                                  );
+                                },
+                                childCount: filteredProducts.length,
+                              ),
+                            ),
+                          );
+                        },
+                        loading: () => SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: AppShimmers.grid(context, count: 8),
+                          ),
+                        ),
+                        error: (_, __) => SliverFillRemaining(
+                          child: Center(
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [

@@ -38,6 +38,7 @@ class PaymentReceiptGenerator {
                 ),
             ],
             signature: payment.signature,
+            signerName: payment.signerName,
             font: font,
             fontBold: fontBold,
           );
@@ -74,6 +75,7 @@ class PaymentReceiptGenerator {
                // Add bonuses/deductions if available in model later
             ],
             signature: payment.signature,
+            signerName: payment.signerName,
             font: font,
             fontBold: fontBold,
           );
@@ -97,6 +99,7 @@ class PaymentReceiptGenerator {
     required String beneficiary,
     required List<_PaymentDetailRow> details,
     required Uint8List? signature,
+    String? signerName, // Added parameter
     required pw.Font font,
     required pw.Font fontBold,
   }) {
@@ -206,13 +209,17 @@ class PaymentReceiptGenerator {
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
                 pw.Text('Signature du Bénéficiaire', style: pw.TextStyle(font: fontBold, fontSize: 10)),
+                if (signerName != null && signerName.isNotEmpty) ...[
+                  pw.SizedBox(height: 4),
+                  pw.Text('Signé par : $signerName', style: pw.TextStyle(font: font, fontSize: 9, color: PdfColors.grey700)),
+                ],
                 pw.SizedBox(height: 10),
                 if (signature != null)
-                  pw.Container(
+                   pw.Container(
                      height: 60,
                      width: 120,
                      child: pw.Image(pw.MemoryImage(signature)),
-                  )
+                   )
                 else
                   pw.SizedBox(height: 50),
                   

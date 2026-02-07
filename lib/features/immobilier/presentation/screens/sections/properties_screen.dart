@@ -3,18 +3,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:open_file/open_file.dart';
 
 import 'package:elyf_groupe_app/core/pdf/immobilier_stock_report_pdf_service.dart';
-import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/shared.dart' hide ExpenseFormDialog;
 import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
 import 'package:elyf_groupe_app/features/immobilier/application/providers.dart';
 import '../../../domain/entities/property.dart';
 import '../../widgets/property_detail_dialog.dart';
 import '../../widgets/property_filters.dart';
 import '../../widgets/property_form_dialog.dart';
+import '../../widgets/contract_form_dialog.dart';
+import '../../widgets/expense_form_dialog.dart';
 import '../../widgets/property_list_empty_state.dart';
 import '../../widgets/property_list_helpers.dart';
 import '../../widgets/property_list_sliver.dart';
 import '../../widgets/property_search_bar.dart';
 import '../../widgets/property_sort_menu.dart';
+import '../../widgets/immobilier_header.dart';
 
 class PropertiesScreen extends ConsumerStatefulWidget {
   const PropertiesScreen({super.key});
@@ -25,7 +28,6 @@ class PropertiesScreen extends ConsumerStatefulWidget {
 
 class _PropertiesScreenState extends ConsumerState<PropertiesScreen> {
   final _searchController = TextEditingController();
-  PropertyStatus? _selectedStatus;
   PropertyType? _selectedType;
   PropertySortOption _sortOption = PropertySortOption.dateNewest;
 
@@ -36,10 +38,11 @@ class _PropertiesScreenState extends ConsumerState<PropertiesScreen> {
   }
 
   List<Property> _filterAndSort(List<Property> properties) {
+    final selectedStatus = ref.watch(propertyListFilterProvider);
     return PropertyListHelpers.filterAndSort(
       properties: properties,
       searchQuery: _searchController.text,
-      selectedStatus: _selectedStatus,
+      selectedStatus: selectedStatus,
       selectedType: _selectedType,
       sortOption: _sortOption,
     );
@@ -76,7 +79,23 @@ class _PropertiesScreenState extends ConsumerState<PropertiesScreen> {
           Navigator.of(context).pop();
           _deleteProperty(property);
         },
+        onAddContract: () => _showContractForm(property: property),
+        onAddExpense: () => _showExpenseForm(property: property),
       ),
+    );
+  }
+
+  void _showContractForm({Property? property}) {
+    showDialog(
+      context: context,
+      builder: (context) => ContractFormDialog(initialProperty: property),
+    );
+  }
+
+  void _showExpenseForm({Property? property}) {
+    showDialog(
+      context: context,
+      builder: (context) => ExpenseFormDialog(initialProperty: property),
     );
   }
 
@@ -125,6 +144,11 @@ class _PropertiesScreenState extends ConsumerState<PropertiesScreen> {
     final propertiesAsync = ref.watch(propertiesProvider);
 
     return Scaffold(
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _showPropertyForm(),
+        icon: const Icon(Icons.add),
+        label: const Text('Nouvelle'),
+      ),
       body: propertiesAsync.when(
         data: (properties) {
           final filtered = _filterAndSort(properties);
@@ -137,116 +161,42 @@ class _PropertiesScreenState extends ConsumerState<PropertiesScreen> {
 
           return LayoutBuilder(
             builder: (context, constraints) {
-              final isWide = constraints.maxWidth > 600;
-
               return CustomScrollView(
                 slivers: [
                   // Header
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: EdgeInsets.fromLTRB(
-                        AppSpacing.lg,
-                        AppSpacing.lg,
-                        AppSpacing.lg,
-                        isWide ? AppSpacing.lg : AppSpacing.md,
+                  ImmobilierHeader(
+                    title: 'PROPRIÉTÉS',
+                    subtitle: 'Gestion du parc',
+                    additionalActions: [
+                      Semantics(
+                        label: 'Actualiser',
+                        button: true,
+                        child: IconButton(
+                          icon: const Icon(Icons.refresh, color: Colors.white),
+                          onPressed: () => ref.invalidate(propertiesProvider),
+                          tooltip: 'Actualiser',
+                        ),
                       ),
-                      child: isWide
-                          ? Row(
-                              children: [
-                                Text(
-                                  'Propriétés',
-                                  style: theme.textTheme.headlineMedium
-                                      ?.copyWith(fontWeight: FontWeight.bold),
-                                ),
-                                const Spacer(),
-                                Semantics(
-                                  label: 'Actualiser les propriétés',
-                                  hint: 'Recharge la liste des propriétés',
-                                  button: true,
-                                  child: RefreshButton(
-                                    onRefresh: () =>
-                                        ref.invalidate(propertiesProvider),
-                                    tooltip: 'Actualiser',
-                                  ),
-                                ),
-                                Semantics(
-                                  label: 'Télécharger rapport PDF',
-                                  hint: 'Génère et télécharge un rapport PDF des propriétés',
-                                  button: true,
-                                  child: IconButton(
-                                    icon: const Icon(Icons.download),
-                                    onPressed: () =>
-                                        _downloadStockReport(context),
-                                    tooltip: 'Télécharger rapport PDF',
-                                  ),
-                                ),
-                                PropertySortMenu(
-                                  selectedSort: _sortOption,
-                                  onSortChanged: (sort) =>
-                                      setState(() => _sortOption = sort),
-                                ),
-                                const SizedBox(width: 8),
-                                Flexible(
-                                  child: FilledButton.icon(
-                                    onPressed: () => _showPropertyForm(),
-                                    icon: const Icon(Icons.add),
-                                    label: const Text('Nouvelle Propriété'),
-                                  ),
-                                ),
-                              ],
-                            )
-                          : Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        'Propriétés',
-                                        style: theme.textTheme.titleLarge
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                      ),
-                                    ),
-                                    Semantics(
-                                      label: 'Actualiser les propriétés',
-                                      button: true,
-                                      child: RefreshButton(
-                                        onRefresh: () =>
-                                            ref.invalidate(propertiesProvider),
-                                        tooltip: 'Actualiser',
-                                      ),
-                                    ),
-                                    Semantics(
-                                      label: 'Télécharger rapport PDF',
-                                      button: true,
-                                      child: IconButton(
-                                        icon: const Icon(Icons.download),
-                                        onPressed: () =>
-                                            _downloadStockReport(context),
-                                        tooltip: 'Télécharger rapport PDF',
-                                      ),
-                                    ),
-                                    PropertySortMenu(
-                                      selectedSort: _sortOption,
-                                      onSortChanged: (sort) =>
-                                          setState(() => _sortOption = sort),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 12),
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: FilledButton.icon(
-                                    onPressed: () => _showPropertyForm(),
-                                    icon: const Icon(Icons.add),
-                                    label: const Text('Nouvelle Propriété'),
-                                  ),
-                                ),
-                              ],
-                            ),
-                    ),
+                      Semantics(
+                        label: 'Rapport PDF',
+                        button: true,
+                        child: IconButton(
+                          icon: const Icon(Icons.download, color: Colors.white),
+                          onPressed: () => _downloadStockReport(context),
+                          tooltip: 'Télécharger PDF',
+                        ),
+                      ),
+                      Theme(
+                        data: theme.copyWith(
+                          iconTheme: const IconThemeData(color: Colors.white),
+                        ),
+                        child: PropertySortMenu(
+                          selectedSort: _sortOption,
+                          onSortChanged: (sort) =>
+                              setState(() => _sortOption = sort),
+                        ),
+                      ),
+                    ],
                   ),
 
                   // KPI Summary Cards
@@ -281,14 +231,16 @@ class _PropertiesScreenState extends ConsumerState<PropertiesScreen> {
                   // Filters
                   SliverToBoxAdapter(
                     child: PropertyFilters(
-                      selectedStatus: _selectedStatus,
+                      selectedStatus: ref.watch(propertyListFilterProvider),
                       selectedType: _selectedType,
                       onStatusChanged: (status) =>
-                          setState(() => _selectedStatus = status),
+                          ref.read(propertyListFilterProvider.notifier).set(
+                              status),
                       onTypeChanged: (type) =>
                           setState(() => _selectedType = type),
                       onClear: () => setState(() {
-                        _selectedStatus = null;
+                        ref.read(propertyListFilterProvider.notifier).set(
+                            null);
                         _selectedType = null;
                       }),
                     ),
@@ -303,7 +255,8 @@ class _PropertiesScreenState extends ConsumerState<PropertiesScreen> {
                         onResetFilters: () {
                           setState(() {
                             _searchController.clear();
-                            _selectedStatus = null;
+                            ref.read(propertyListFilterProvider.notifier).set(
+                                null);
                             _selectedType = null;
                           });
                         },

@@ -23,12 +23,10 @@ class PaymentFormFields {
         prefixIcon: Icon(Icons.description),
       ),
       items: contracts.map((contract) {
-        final property = contract.property;
-        final tenant = contract.tenant;
-        final label = property != null && tenant != null
-            ? '${property.address} - ${tenant.fullName}'
-            : contract.id;
-        return DropdownMenuItem(value: contract, child: Text(label));
+        return DropdownMenuItem(
+          value: contract,
+          child: Text(contract.displayName),
+        );
       }).toList(),
       onChanged: onChanged,
       validator: validator,
@@ -196,16 +194,54 @@ class PaymentFormFields {
     }
   }
 
-  static Widget receiptNumberField({
-    required TextEditingController controller,
-  }) {
+
+
+  static Widget transactionIdField({required TextEditingController controller}) {
     return TextFormField(
       controller: controller,
       decoration: const InputDecoration(
-        labelText: 'Numéro de reçu',
-        hintText: 'REC-2024-001',
-        prefixIcon: Icon(Icons.receipt),
+        labelText: 'ID Transaction',
+        hintText: 'Ex: PP2304...',
+        prefixIcon: Icon(Icons.receipt_long),
       ),
+      textCapitalization: TextCapitalization.characters,
+    );
+  }
+
+  static Widget splitAmountFields({
+    required TextEditingController cashController,
+    required TextEditingController mobileMoneyController,
+    required String? Function(String?) cashValidator,
+    required String? Function(String?) mobileMoneyValidator,
+  }) {
+    return Row(
+      children: [
+        Expanded(
+          child: TextFormField(
+            controller: cashController,
+            decoration: const InputDecoration(
+              labelText: 'Espèces (FCFA)',
+              prefixIcon: Icon(Icons.money),
+            ),
+            keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            validator: cashValidator,
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: TextFormField(
+            controller: mobileMoneyController,
+            decoration: const InputDecoration(
+              labelText: 'Mobile Money (FCFA)',
+              prefixIcon: Icon(Icons.smartphone),
+            ),
+            keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            validator: mobileMoneyValidator,
+          ),
+        ),
+      ],
     );
   }
 

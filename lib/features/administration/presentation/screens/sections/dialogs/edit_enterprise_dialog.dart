@@ -23,7 +23,7 @@ class _EditEnterpriseDialogState extends State<EditEnterpriseDialog>
   late final TextEditingController _phoneController;
   late final TextEditingController _emailController;
 
-  late String _selectedType;
+  late EnterpriseType _selectedType;
   late bool _isActive;
   bool _isLoading = false;
 
@@ -183,12 +183,12 @@ class _EditEnterpriseDialogState extends State<EditEnterpriseDialog>
                         },
                       ),
                       const SizedBox(height: 16),
-                      DropdownButtonFormField<String>(
+                      DropdownButtonFormField<EnterpriseType>(
                         initialValue: _selectedType,
                         decoration: const InputDecoration(labelText: 'Type *'),
                         items: EnterpriseType.values.map((type) {
                           return DropdownMenuItem(
-                            value: type.id,
+                            value: type,
                             child: Text(type.label),
                           );
                         }).toList(),

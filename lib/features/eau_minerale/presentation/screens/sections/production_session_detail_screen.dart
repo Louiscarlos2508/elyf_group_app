@@ -231,7 +231,7 @@ class _ProductionSessionDetailContent extends ConsumerWidget {
             _buildInfoRow(
               context,
               'Quantité produite',
-              '${session.quantiteProduite} ${session.quantiteProduiteUnite}',
+              '${session.quantiteProduite} packs',
             ),
             if (session.emballagesUtilises != null) ...[
               const SizedBox(height: 12),
@@ -578,6 +578,12 @@ class _ProductionSessionDetailContent extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
             _buildInfoRow(context, 'Coût bobines', '${marge.coutBobines} CFA'),
+            const SizedBox(height: 8),
+            _buildInfoRow(
+              context,
+              'Coût emballages',
+              '${marge.coutEmballages} CFA',
+            ),
             const SizedBox(height: 8),
             _buildInfoRow(
               context,

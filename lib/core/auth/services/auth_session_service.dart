@@ -351,27 +351,9 @@ class AuthSessionService {
       // Vérifier si c'est le premier admin et créer le profil dans Firestore
       // Note: Ces opérations peuvent échouer si Firestore n'est pas encore configuré ou accessible,
       // mais cela n'empêchera pas l'authentification de fonctionner
-      bool isFirstAdmin = false;
-      try {
-        isFirstAdmin = await _firestoreUserService.adminExists().timeout(
-          const Duration(seconds: 5),
-        );
-      } catch (e, stackTrace) {
-        final appException = ErrorHandler.instance.handleError(e, stackTrace);
-        AppLogger.warning(
-          'Error checking if admin exists (Firestore may not be accessible - network issue). Assuming no admin exists for first-time setup: ${appException.message}',
-          name: 'auth.session',
-          error: e,
-          stackTrace: stackTrace,
-        );
-        // Si la vérification échoue (réseau, permissions, etc.), on assume qu'il n'y a pas d'admin (première connexion)
-        // Cela permettra de créer le premier admin même si Firestore n'est pas accessible
-        isFirstAdmin = false;
-      }
-
-      // Only set shouldBeAdmin for NEW users (first admin or admin email)
-      // For existing users, we'll use their Firestore isAdmin value
-      final shouldBeAdmin = !isFirstAdmin || email == _adminEmail;
+      // Seul l'email configuré comme admin peut être admin automatiquement à la création du profil.
+      // Tous les autres utilisateurs doivent être promus manuellement dans la console ou par un autre admin.
+      final shouldBeAdmin = email.toLowerCase() == _adminEmail.toLowerCase();
 
       // Créer ou mettre à jour le profil utilisateur dans Firestore
       // Cette opération peut échouer silencieusement si Firestore n'est pas accessible (réseau, permissions)

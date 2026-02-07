@@ -4,9 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../application/providers.dart';
 import '../../../domain/entities/enterprise.dart';
 import '../../../../../shared/utils/notification_service.dart';
-import '../../screens/sections/dialogs/create_enterprise_dialog.dart';
+import '../../screens/sections/dialogs/create_enterprise_wizard.dart';
 import '../../screens/sections/dialogs/edit_enterprise_dialog.dart';
 import '../../../../../../core/auth/providers.dart' show currentUserIdProvider;
+import 'package:go_router/go_router.dart';
+import 'package:elyf_groupe_app/app/router/app_router.dart';
 import '../../screens/sections/admin_audit_trail_section.dart'
     show recentAuditLogsProvider;
 
@@ -18,7 +20,7 @@ class EnterpriseActions {
   static Future<void> create(BuildContext context, WidgetRef ref) async {
     final result = await showDialog<Enterprise>(
       context: context,
-      builder: (context) => const CreateEnterpriseDialog(),
+      builder: (context) => const CreateEnterpriseWizard(),
     );
 
     if (result != null) {
@@ -186,4 +188,17 @@ class EnterpriseActions {
       }
     }
   }
+
+  /// Navigates to the enterprise management dashboard.
+  static void viewDetails(
+    BuildContext context,
+    WidgetRef ref,
+    Enterprise enterprise,
+  ) {
+    context.goNamed(
+      AppRoute.adminEnterpriseManagement.name,
+      pathParameters: {'id': enterprise.id},
+    );
+  }
+
 }

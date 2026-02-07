@@ -43,7 +43,7 @@ class ModuleEnterprisesTab extends StatelessWidget {
               child: Text(enterprise.name[0].toUpperCase()),
             ),
             title: Text(enterprise.name),
-            subtitle: Text(enterprise.type ?? ''),
+            subtitle: Text(enterprise.type.label),
             trailing: enterprise.isActive
                 ? Icon(
                     Icons.check_circle,

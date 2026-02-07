@@ -13,6 +13,7 @@ import '../../presentation/screens/sections/payments_screen.dart';
 import '../../presentation/screens/sections/properties_screen.dart';
 import '../../presentation/screens/sections/reports_screen.dart';
 import '../../presentation/screens/sections/tenants_screen.dart';
+import '../../presentation/screens/sections/trash_screen.dart';
 import 'permission_providers.dart';
 
 /// Provider pour récupérer les sections accessibles selon les permissions.
@@ -112,6 +113,16 @@ final accessibleImmobilierSectionsProvider =
                 moduleId: moduleId,
               ),
               requiredPermissions: {ImmobilierPermissions.viewProfile.id},
+            ),
+            (
+              section: NavigationSection(
+                label: 'Corbeille',
+                icon: Icons.delete_outline,
+                builder: () => const TrashScreen(),
+                enterpriseId: enterpriseId,
+                moduleId: moduleId,
+              ),
+              requiredPermissions: {ImmobilierPermissions.viewTrash.id},
             ),
           ];
 

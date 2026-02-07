@@ -1,3 +1,4 @@
+import 'package:elyf_groupe_app/shared/presentation/widgets/elyf_ui/organisms/elyf_card.dart';
 import 'package:flutter/material.dart';
 
 import '../../domain/entities/expense_record.dart';
@@ -16,32 +17,30 @@ class ExpensesTableDesktop extends StatelessWidget {
   final String Function(int) formatCurrency;
   final void Function(ExpenseRecord expense, String action)? onActionTap;
 
+
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: theme.colorScheme.outline.withValues(alpha: 0.2),
-        ),
-      ),
+    return ElyfCard(
+      isGlass: true,
+      borderColor: Colors.red.withValues(alpha: 0.1),
+      padding: EdgeInsets.zero,
       child: Table(
         columnWidths: const {
           0: FlexColumnWidth(1.5),
           1: FlexColumnWidth(3),
-          2: FlexColumnWidth(1.5),
-          3: FlexColumnWidth(1.5),
+          2: FlexColumnWidth(1),
+          3: FlexColumnWidth(1.2),
         },
         children: [
           TableRow(
             decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest,
+              color: Colors.red.withValues(alpha: 0.05),
               borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(12),
-                topRight: Radius.circular(12),
+                topLeft: Radius.circular(24),
+                topRight: Radius.circular(24),
               ),
             ),
             children: [
@@ -51,8 +50,19 @@ class ExpensesTableDesktop extends StatelessWidget {
               _buildHeaderCell(context, 'Actions'),
             ],
           ),
-          ...expenses.map((expense) {
+          ...expenses.asMap().entries.map((entry) {
+            final expense = entry.value;
+            final isLast = entry.key == expenses.length - 1;
             return TableRow(
+              decoration: BoxDecoration(
+                border: isLast
+                    ? null
+                    : Border(
+                        bottom: BorderSide(
+                          color: theme.colorScheme.outline.withValues(alpha: 0.1),
+                        ),
+                      ),
+              ),
               children: [
                 _buildDataCellWidget(
                   context,
@@ -68,15 +78,32 @@ class ExpensesTableDesktop extends StatelessWidget {
                       Expanded(
                         child: Text(
                           expense.label,
-                          style: theme.textTheme.bodyMedium,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ),
+                      if (expense.estLieeAProduction)
+                        Padding(
+                          padding: const EdgeInsets.only(left: 8.0),
+                          child: Icon(
+                            Icons.factory,
+                            size: 16,
+                            color: theme.colorScheme.primary.withValues(alpha: 0.6),
+                          ),
+                        ),
                     ],
                   ),
                 ),
-                _buildDataCellText(
+                _buildDataCellWidget(
                   context,
-                  '${formatCurrency(expense.amountCfa)} FCFA',
+                  Text(
+                    '${formatCurrency(expense.amountCfa)} CFA',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.red.shade700,
+                    ),
+                  ),
                 ),
                 _buildDataCellWidget(
                   context,
@@ -108,13 +135,7 @@ class ExpensesTableDesktop extends StatelessWidget {
     );
   }
 
-  Widget _buildDataCellText(BuildContext context, String text) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Text(text, style: theme.textTheme.bodyMedium),
-    );
-  }
+
 
   Widget _buildDataCellWidget(BuildContext context, Widget content) {
     return Padding(

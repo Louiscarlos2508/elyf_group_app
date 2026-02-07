@@ -5,13 +5,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/errors/error_handler.dart';
+import '../../../../core/errors/app_exceptions.dart';
+import '../../../../core/offline/providers.dart' as offline_providers;
 import '../../../../core/logging/app_logger.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
-import '../../../../../shared/utils/notification_service.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
-import '../../../../core/offline/providers.dart' as offline_providers;
-import '../../../../core/errors/app_exceptions.dart';
 import '../../domain/entities/packaging_stock.dart';
 
 /// Formulaire pour ajouter des matières premières en stock (bobines, emballages, autres).
@@ -41,9 +40,11 @@ class StockEntryFormState extends ConsumerState<StockEntryForm> {
   final _supplierController = TextEditingController();
   final _priceController = TextEditingController();
   final _notesController = TextEditingController();
+  final _unitsPerLotController = TextEditingController(text: '1000'); // Valeur par défaut indicative
 
   _StockEntryType _selectedType = _StockEntryType.bobine;
   DateTime _selectedDate = DateTime.now();
+  bool _useLots = false; // Toggle pour saisir en lots au lieu d'unités
   
   // Type fixe pour toutes les bobines
   static const String _bobineType = 'Bobine';
@@ -56,6 +57,7 @@ class StockEntryFormState extends ConsumerState<StockEntryForm> {
     _supplierController.dispose();
     _priceController.dispose();
     _notesController.dispose();
+    _unitsPerLotController.dispose();
     super.dispose();
   }
 
@@ -84,13 +86,13 @@ class StockEntryFormState extends ConsumerState<StockEntryForm> {
       // Valider et parser la quantité
       if (quantiteStr.isEmpty) {
         developer.log('Quantité vide - validation failed', name: 'StockEntryForm');
-        throw ValidationException('La quantité est requise');
+        throw const ValidationException('La quantité est requise', 'MISSING_QUANTITY');
       }
       
       final quantite = int.tryParse(quantiteStr);
       if (quantite == null || quantite <= 0) {
         developer.log('Quantité invalide: $quantite', name: 'StockEntryForm');
-        throw ValidationException('La quantité doit être un nombre entier positif');
+        throw const ValidationException('La quantité doit être un nombre entier positif', 'INVALID_QUANTITY');
       }
       
       developer.log('Quantité validée: $quantite, Type: $_selectedType', name: 'StockEntryForm');
@@ -98,11 +100,12 @@ class StockEntryFormState extends ConsumerState<StockEntryForm> {
       switch (_selectedType) {
         case _StockEntryType.bobine:
           developer.log('Recording bobine entry - calling recordBobineEntry', name: 'StockEntryForm');
-          // Utiliser un type fixe pour toutes les bobines
-          // Enregistrer l'entrée de bobines (ajoute à la quantité du stock)
           await stockController.recordBobineEntry(
             bobineType: _bobineType,
             quantite: quantite,
+            prixUnitaire: _priceController.text.isEmpty
+                ? null
+                : int.tryParse(_priceController.text),
             fournisseur: _supplierController.text.isEmpty
                 ? null
                 : _supplierController.text,
@@ -112,11 +115,7 @@ class StockEntryFormState extends ConsumerState<StockEntryForm> {
 
         case _StockEntryType.emballage:
           developer.log('Recording packaging entry - starting', name: 'StockEntryForm');
-          final prixUnitaire = _priceController.text.isEmpty
-              ? null
-              : int.tryParse(_priceController.text);
-          developer.log('Prix unitaire: $prixUnitaire', name: 'StockEntryForm');
-
+          
           // Récupérer ou créer le stock d'emballages
           final packagingController = ref.read(
             packagingStockControllerProvider,
@@ -126,30 +125,60 @@ class StockEntryFormState extends ConsumerState<StockEntryForm> {
           );
 
           if (stockEmballage == null) {
-            // Créer un nouveau stock d'emballages en mémoire seulement
-            // Utiliser un ID fixe basé sur le type pour garantir la cohérence
-            // (comme pour les bobines avec 'bobine-${type}')
+            // Créer un nouveau stock d'emballages avec le facteur de conversion renseigné
+            final unitsPerLot = int.tryParse(_unitsPerLotController.text) ?? 1;
             final packagingId = 'packaging-emballage';
             stockEmballage = PackagingStock(
               id: packagingId,
               type: 'Emballage',
-              quantity: 0, // Sera mis à jour par recordPackagingEntry
+              quantity: 0, 
               unit: 'unité',
+              unitsPerLot: unitsPerLot,
               fournisseur: _supplierController.text.isEmpty
                   ? null
                   : _supplierController.text,
-              prixUnitaire: prixUnitaire,
+              prixUnitaire: _priceController.text.isEmpty
+                  ? null
+                  : int.tryParse(_priceController.text),
               createdAt: _selectedDate,
               updatedAt: _selectedDate,
             );
-            // Ne pas sauvegarder ici - recordPackagingEntry le fera avec la bonne quantité
+            
+            // On sauvegarde le stock avec sa configuration d'unité d'abord
+            await packagingController.save(stockEmballage);
+          } else if (_useLots) {
+             // Si on utilise des lots, on met à jour la configuration si elle a changé
+             // Cela permet de gérer les changements de conditionnement (ex: passage de 1000 à 500)
+             final newUnitsPerLot = int.tryParse(_unitsPerLotController.text) ?? 1;
+             if (newUnitsPerLot > 0 && stockEmballage.unitsPerLot != newUnitsPerLot) {
+               developer.log('Updating unitsPerLot from ${stockEmballage.unitsPerLot} to $newUnitsPerLot', name: 'StockEntryForm');
+               await packagingController.save(stockEmballage.copyWith(unitsPerLot: newUnitsPerLot));
+             }
+          }
+
+          // Calculer le prix à l'unité si on saisit par lots
+          int? prixFinalUnitaire;
+          final prixSaisiStr = _priceController.text.trim();
+          if (prixSaisiStr.isNotEmpty) {
+            final prixSaisi = int.tryParse(prixSaisiStr) ?? 0;
+            if (_useLots) {
+              final unitsPerLot = int.tryParse(_unitsPerLotController.text) ?? 1;
+              prixFinalUnitaire = (prixSaisi / unitsPerLot).round();
+            } else {
+              prixFinalUnitaire = prixSaisi;
+            }
           }
 
           // Enregistrer l'entrée
+          final unitsPerLot = _useLots ? (int.tryParse(_unitsPerLotController.text) ?? 1) : null;
+          
           await stockController.recordPackagingEntry(
             packagingId: stockEmballage.id,
             packagingType: 'Emballage',
             quantite: quantite,
+            prixUnitaire: prixFinalUnitaire,
+            isInLots: _useLots,
+            unitsPerLot: unitsPerLot,
             fournisseur: _supplierController.text.isEmpty
                 ? null
                 : _supplierController.text,
@@ -265,142 +294,409 @@ class StockEntryFormState extends ConsumerState<StockEntryForm> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
     final quantite = int.tryParse(_quantityController.text) ?? 0;
 
     return Form(
       key: _formKey,
       child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(vertical: 20),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Type de matière première
-            SegmentedButton<_StockEntryType>(
-              segments: const [
-                ButtonSegment(
-                  value: _StockEntryType.bobine,
-                  label: Text('Bobine'),
-                  icon: Icon(Icons.repeat, size: 18),
-                ),
-                ButtonSegment(
-                  value: _StockEntryType.emballage,
-                  label: Text('Emballage'),
-                  icon: Icon(Icons.inventory_2, size: 18),
-                ),
-              ],
-              selected: {_selectedType},
-              onSelectionChanged: (Set<_StockEntryType> newSelection) {
-                setState(() {
-                  _selectedType = newSelection.first;
-                });
-              },
-            ),
-            const SizedBox(height: 24),
-
-            // Date de réception
-            InkWell(
-              onTap: () async {
-                final picked = await showDatePicker(
-                  context: context,
-                  initialDate: _selectedDate,
-                  firstDate: DateTime(2020),
-                  lastDate: DateTime.now(),
-                );
-                if (picked != null) {
-                  setState(() => _selectedDate = picked);
-                }
-              },
-              child: InputDecorator(
-                decoration: const InputDecoration(
-                  labelText: 'Date de réception',
-                  prefixIcon: Icon(Icons.calendar_today),
-                ),
-                child: Text(
-                  '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
-                ),
+            // Section Type d'Entrée
+            ElyfCard(
+              padding: const EdgeInsets.all(20),
+              borderRadius: 24,
+              backgroundColor: colors.surfaceContainerLow.withValues(alpha: 0.5),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.inventory_2_rounded, size: 18, color: colors.primary),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Type d\'Entrée Stock',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: colors.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: colors.surfaceContainerLow,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: colors.outline.withValues(alpha: 0.1)),
+                    ),
+                    child: Row(
+                      children: [
+                        _buildTypeSegment(
+                          type: _StockEntryType.bobine,
+                          label: 'Bobine',
+                          icon: Icons.album_rounded,
+                          isSelected: _selectedType == _StockEntryType.bobine,
+                        ),
+                        const SizedBox(width: 4),
+                        _buildTypeSegment(
+                          type: _StockEntryType.emballage,
+                          label: 'Emballage',
+                          icon: Icons.layers_rounded,
+                          isSelected: _selectedType == _StockEntryType.emballage,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 16),
 
-            // Quantité
-            TextFormField(
-              controller: _quantityController,
-              decoration: InputDecoration(
-                labelText: 'Quantité',
-                prefixIcon: const Icon(Icons.numbers),
-                suffixText: 'unité${quantite > 1 ? 's' : ''}',
-                helperText: _selectedType == _StockEntryType.bobine
-                    ? 'Nombre de bobines à ajouter'
-                    : 'Nombre d\'emballages à ajouter',
+            // Section Date & Quantité
+            ElyfCard(
+              padding: const EdgeInsets.all(20),
+              borderRadius: 24,
+              backgroundColor: colors.surfaceContainerLow.withValues(alpha: 0.5),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                   Row(
+                    children: [
+                      Icon(Icons.edit_calendar_rounded, size: 18, color: colors.primary),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Informations de Réception',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: colors.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  // Date Picker Premium
+                  InkWell(
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: _selectedDate,
+                        firstDate: DateTime(2020),
+                        lastDate: DateTime.now(),
+                        builder: (context, child) => Theme(
+                          data: theme.copyWith(
+                            colorScheme: colors.copyWith(primary: colors.primary),
+                          ),
+                          child: child!,
+                        ),
+                      );
+                      if (picked != null) setState(() => _selectedDate = picked);
+                    },
+                    borderRadius: BorderRadius.circular(16),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: colors.surfaceContainerLow.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: colors.outline.withValues(alpha: 0.1)),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.calendar_today_rounded, size: 18, color: colors.primary),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Date de réception',
+                                  style: theme.textTheme.labelSmall?.copyWith(color: colors.onSurfaceVariant),
+                                ),
+                                Text(
+                                  DateFormatter.formatLongDate(_selectedDate),
+                                  style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Icon(Icons.expand_more_rounded, color: colors.onSurfaceVariant),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  if (_selectedType == _StockEntryType.emballage) ...[
+                    // Toggle Lot vs Unité
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: colors.surfaceContainerLow.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: colors.outline.withValues(alpha: 0.1)),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: _buildUnitToggleSegment(
+                              isSelected: !_useLots,
+                              label: 'Unités',
+                              onTap: () => setState(() => _useLots = false),
+                            ),
+                          ),
+                          Expanded(
+                            child: _buildUnitToggleSegment(
+                              isSelected: _useLots,
+                              label: 'Lots',
+                              onTap: () => setState(() => _useLots = true),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    if (_useLots) ...[
+                      TextFormField(
+                        controller: _unitsPerLotController,
+                        decoration: _buildInputDecoration(
+                          label: 'Unités par Lot',
+                          icon: Icons.scale_rounded,
+                          hintText: 'Ex: 1000',
+                          suffixText: 'unités/lot',
+                        ),
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                        validator: (v) => _useLots && (v?.isEmpty ?? true) ? 'Requis' : null,
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                  ],
+                  TextFormField(
+                    controller: _quantityController,
+                    decoration: _buildInputDecoration(
+                      label: 'Quantité',
+                      icon: Icons.numbers_rounded,
+                      hintText: _useLots ? 'Nombre de lots' : 'Nombre d\'unités',
+                      suffixText: _useLots 
+                          ? 'lot${quantite > 1 ? 's' : ''}'
+                          : 'unité${quantite > 1 ? 's' : ''}',
+                    ),
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                    validator: (v) => v?.isEmpty ?? true ? 'Requis' : null,
+                  ),
+                ],
               ),
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
-              ],
-              validator: (v) {
-                if (v == null || v.isEmpty) return 'Requis';
-                final qty = int.tryParse(v);
-                if (qty == null || qty <= 0) return 'Quantité invalide';
-                return null;
-              },
             ),
             const SizedBox(height: 16),
 
-            // Fournisseur
-            TextFormField(
-              controller: _supplierController,
-              decoration: const InputDecoration(
-                labelText: 'Fournisseur (optionnel)',
-                prefixIcon: Icon(Icons.local_shipping),
+            // Section Détails Supplémentaires
+            ElyfCard(
+              padding: const EdgeInsets.all(20),
+              borderRadius: 24,
+              backgroundColor: colors.primary.withValues(alpha: 0.03),
+              borderColor: colors.primary.withValues(alpha: 0.1),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                   Row(
+                    children: [
+                      Icon(Icons.add_business_rounded, size: 18, color: colors.primary),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Détails Supplémentaires',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: colors.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  TextFormField(
+                    controller: _supplierController,
+                    decoration: _buildInputDecoration(
+                      label: 'Fournisseur (Optionnel)',
+                      icon: Icons.local_shipping_rounded,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _priceController,
+                    decoration: _buildInputDecoration(
+                      label: (_selectedType == _StockEntryType.emballage && _useLots)
+                          ? 'Prix du lot total (FCFA, Optionnel)'
+                          : 'Prix unitaire (FCFA, Optionnel)',
+                      icon: Icons.payments_rounded,
+                      helperText: (_selectedType == _StockEntryType.emballage && _useLots)
+                          ? 'Le système calculera automatiquement le prix à l\'unité'
+                          : null,
+                    ),
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _notesController,
+                    decoration: _buildInputDecoration(
+                      label: 'Notes (Optionnel)',
+                      icon: Icons.note_alt_rounded,
+                    ),
+                    maxLines: 2,
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 16),
-
-            // Prix unitaire
-            TextFormField(
-              controller: _priceController,
-              decoration: const InputDecoration(
-                labelText: 'Prix unitaire (FCFA, optionnel)',
-                prefixIcon: Icon(Icons.attach_money),
-              ),
-              keyboardType: TextInputType.number,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              validator: (v) {
-                if (v != null && v.isNotEmpty) {
-                  final price = int.tryParse(v);
-                  if (price == null || price < 0) return 'Prix invalide';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-
-            // Notes
-            TextFormField(
-              controller: _notesController,
-              decoration: const InputDecoration(
-                labelText: 'Notes (optionnel)',
-                prefixIcon: Icon(Icons.note),
-              ),
-              maxLines: 2,
-            ),
-            // Bouton de soumission (seulement si showSubmitButton est true)
             if (widget.showSubmitButton) ...[
               const SizedBox(height: 24),
-              FilledButton(
-                onPressed: _isLoading ? null : _submit,
-                child: _isLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Ajouter au stock'),
-              ),
+              _buildSubmitButton(),
             ],
           ],
+        ),
+      ),
+    );
+  }
+
+  InputDecoration _buildInputDecoration({
+    required String label,
+    required IconData icon,
+    String? hintText,
+    String? suffixText,
+    String? helperText,
+  }) {
+    final colors = Theme.of(context).colorScheme;
+    return InputDecoration(
+      labelText: label,
+      hintText: hintText,
+      suffixText: suffixText,
+      helperText: helperText,
+      prefixIcon: Icon(icon, size: 20, color: colors.primary),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: colors.outline.withValues(alpha: 0.1)),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: colors.outline.withValues(alpha: 0.1)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: colors.primary, width: 2),
+      ),
+      filled: true,
+      fillColor: colors.surfaceContainerLow.withValues(alpha: 0.3),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+    );
+  }
+
+  Widget _buildSubmitButton() {
+    final colors = Theme.of(context).colorScheme;
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(colors: [colors.primary, colors.secondary]),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: colors.primary.withValues(alpha: 0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ElevatedButton(
+        onPressed: _isLoading ? null : _submit,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          foregroundColor: Colors.white,
+          shadowColor: Colors.transparent,
+          padding: const EdgeInsets.symmetric(vertical: 18),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
+        child: _isLoading 
+          ? const CircularProgressIndicator(color: Colors.white)
+          : const Text(
+            'AJOUTER AU STOCK',
+            style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1),
+          ),
+      ),
+    );
+  }
+
+  Widget _buildTypeSegment({
+    required _StockEntryType type,
+    required String label,
+    required IconData icon,
+    required bool isSelected,
+  }) {
+    final theme = Theme.of(context);
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _selectedType = type),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: isSelected ? Colors.indigo.shade600 : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: Colors.indigo.withValues(alpha: 0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    )
+                  ]
+                : [],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 18,
+                color: isSelected ? Colors.white : theme.colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: isSelected ? Colors.white : theme.colorScheme.onSurfaceVariant,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+  Widget _buildUnitToggleSegment({
+    required bool isSelected,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? colors.primary : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text(
+          label,
+          textAlign: TextAlign.center,
+          style: theme.textTheme.labelLarge?.copyWith(
+            color: isSelected ? colors.onPrimary : colors.onSurfaceVariant,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          ),
         ),
       ),
     );

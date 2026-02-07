@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../domain/entities/expense_record.dart';
 
@@ -28,46 +29,68 @@ class MonthlyExpenseSummary extends ConsumerWidget {
       monthStart: monthStart,
     );
 
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: theme.colorScheme.outline.withValues(alpha: 0.2),
-        ),
-      ),
-      padding: const EdgeInsets.all(20),
+    return ElyfCard(
+      isGlass: true,
+      borderColor: Colors.red.withValues(alpha: 0.1),
+      padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Résumé Mensuel',
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.red.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.calendar_month_rounded,
+                  size: 20,
+                  color: Colors.red,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Résumé Mensuel',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
           ),
+          const SizedBox(height: 20),
           if (monthlyTotal == 0)
-            Padding(
-              padding: const EdgeInsets.all(48),
-              child: Center(
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 24),
                 child: Text(
                   'Aucune dépense ce mois-ci',
-                  style: theme.textTheme.bodyLarge?.copyWith(
+                  style: theme.textTheme.bodyMedium?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
               ),
             )
           else
-            Padding(
-              padding: const EdgeInsets.only(top: 16),
-              child: Text(
-                '${monthlyTotal.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]} ')} FCFA',
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.red,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${monthlyTotal.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]} ')} CFA',
+                  style: theme.textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.red.shade800,
+                  ),
                 ),
-              ),
+                const SizedBox(height: 4),
+                Text(
+                  'Total cumulé pour le mois en cours',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                  ),
+                ),
+              ],
             ),
         ],
       ),

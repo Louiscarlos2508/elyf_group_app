@@ -321,6 +321,26 @@ class PurchaseOfflineRepository extends OfflineRepository<Purchase>
   }
 
   @override
+  Future<List<Purchase>> getPurchasesInPeriod(DateTime start, DateTime end) async {
+    try {
+      final allPurchases = await getAllForEnterprise(enterpriseId);
+      return allPurchases.where((purchase) {
+        return purchase.date.isAfter(start.subtract(const Duration(seconds: 1))) &&
+            purchase.date.isBefore(end.add(const Duration(seconds: 1)));
+      }).toList();
+    } catch (error, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
+      AppLogger.error(
+        'Error fetching purchases in period: ${appException.message}',
+        name: 'PurchaseOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      throw appException;
+    }
+  }
+
+  @override
   Stream<List<Purchase>> watchPurchases({int limit = 50}) {
     return driftService.records
         .watchForEnterprise(
@@ -339,7 +359,8 @@ class PurchaseOfflineRepository extends OfflineRepository<Purchase>
       }
       final deduplicatedPurchases = deduplicateByRemoteId(purchases);
       deduplicatedPurchases.sort((a, b) => b.date.compareTo(a.date));
-      return deduplicatedPurchases.take(limit).toList();
+      // On ne prend plus le limit ici pour s'assurer que les calculs de totaux soient corrects
+      return deduplicatedPurchases;
     });
   }
 }

@@ -24,62 +24,71 @@ class UserFiltersBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
     final enterprisesAsync = ref.watch(enterprisesProvider);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
+      padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
       child: Row(
         children: [
           Expanded(
+            flex: 3,
             child: TextField(
               controller: searchController,
-              decoration: const InputDecoration(
-                labelText: 'Rechercher',
-                hintText: 'Nom, prénom, username...',
-                prefixIcon: Icon(Icons.search),
+              decoration: InputDecoration(
+                isDense: true,
+                hintText: 'Rechercher un utilisateur...',
+                prefixIcon: const Icon(Icons.search_rounded),
+                filled: true,
+                fillColor: theme.colorScheme.surfaceContainerLow,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: const EdgeInsets.symmetric(vertical: 12),
               ),
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 12),
           enterprisesAsync.when(
             data: (enterprises) {
-              if (enterprises.isEmpty) {
-                return const SizedBox.shrink();
-              }
-              return Flexible(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    minWidth: 180,
-                    maxWidth: 250,
+              if (enterprises.isEmpty) return const SizedBox.shrink();
+              return Expanded(
+                flex: 2,
+                child: DropdownButtonFormField<String?>(
+                  initialValue: selectedEnterpriseId,
+                  decoration: InputDecoration(
+                    isDense: true,
+                    labelText: 'Entreprise',
+                    filled: true,
+                    fillColor: theme.colorScheme.surfaceContainerLow,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                   ),
-                  child: DropdownButtonFormField<String?>(
-                    initialValue: selectedEnterpriseId,
-                    decoration: const InputDecoration(
-                      labelText: 'Entreprise',
-                      isDense: true,
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
+                  items: [
+                    const DropdownMenuItem<String?>(
+                      value: null,
+                      child: Text('Toutes'),
+                    ),
+                    ...enterprises.map(
+                      (e) => DropdownMenuItem<String?>(
+                        value: e.id,
+                        child: Text(e.name, overflow: TextOverflow.ellipsis),
                       ),
                     ),
-                    items: [
-                      const DropdownMenuItem<String?>(
-                        value: null,
-                        child: Text('Toutes'),
-                      ),
-                      ...enterprises.map(
-                        (e) => DropdownMenuItem<String?>(
-                          value: e.id,
-                          child: Text(e.name, overflow: TextOverflow.ellipsis),
-                        ),
-                      ),
-                    ],
-                    onChanged: (value) {
-                      onEnterpriseChanged?.call(value);
-                      onModuleChanged?.call(null);
-                    },
-                    isExpanded: true,
-                  ),
+                  ],
+                  onChanged: (value) {
+                    onEnterpriseChanged?.call(value);
+                    onModuleChanged?.call(null);
+                  },
+                  isExpanded: true,
+                  icon: const Icon(Icons.keyboard_arrow_down_rounded),
                 ),
               );
             },

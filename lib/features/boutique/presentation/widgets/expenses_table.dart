@@ -130,6 +130,17 @@ class ExpensesTable extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     Text(expense.label),
+                    if (expense.receiptPath != null) ...[
+                      const SizedBox(width: 8),
+                      Tooltip(
+                        message: 'Reçu attaché',
+                        child: Icon(
+                          Icons.receipt_long_rounded,
+                          size: 14,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -216,9 +227,21 @@ class ExpensesTable extends StatelessWidget {
               fontWeight: FontWeight.w600,
             ),
           ),
-          subtitle: Text(
-            _getCategoryLabel(expense.category),
-            style: theme.textTheme.bodySmall?.copyWith(color: color),
+          subtitle: Row(
+            children: [
+              Text(
+                _getCategoryLabel(expense.category),
+                style: theme.textTheme.bodySmall?.copyWith(color: color),
+              ),
+              if (expense.receiptPath != null) ...[
+                const SizedBox(width: 8),
+                Icon(
+                  Icons.receipt_long_rounded,
+                  size: 12,
+                  color: theme.colorScheme.primary,
+                ),
+              ],
+            ],
           ),
           trailing: Text(
             formatCurrency(expense.amountCfa),

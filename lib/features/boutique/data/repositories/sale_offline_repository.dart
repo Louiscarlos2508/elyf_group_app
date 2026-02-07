@@ -226,6 +226,26 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
   }
 
   @override
+  Future<List<Sale>> getSalesInPeriod(DateTime start, DateTime end) async {
+    try {
+      final allSales = await getAllForEnterprise(enterpriseId);
+      return allSales.where((sale) {
+        return sale.date.isAfter(start.subtract(const Duration(seconds: 1))) &&
+            sale.date.isBefore(end.add(const Duration(seconds: 1)));
+      }).toList();
+    } catch (error, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
+      AppLogger.error(
+        'Error fetching sales in period: ${appException.message}',
+        name: 'SaleOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      throw appException;
+    }
+  }
+
+  @override
   Future<String> createSale(Sale sale) async {
     try {
       final localId = getLocalId(sale);
@@ -286,7 +306,8 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
           .toList();
       final deduplicatedSales = deduplicateByRemoteId(sales);
       deduplicatedSales.sort((a, b) => b.date.compareTo(a.date));
-      return deduplicatedSales.take(limit).toList();
+      // On ne prend plus le limit ici pour s'assurer que les calculs de totaux soient corrects
+      return deduplicatedSales;
     });
   }
 }

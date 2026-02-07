@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../domain/entities/daily_worker.dart';
 import '../../domain/entities/production_day.dart';
 import '../../domain/entities/production_session.dart';
 import 'daily_worker_form_dialog.dart';
-import 'package:elyf_groupe_app/shared.dart';
-import '../../../../../shared/utils/notification_service.dart';
 
 /// Formulaire pour enregistrer le personnel journalier pour un jour de production.
 class DailyPersonnelForm extends ConsumerStatefulWidget {
@@ -39,7 +38,7 @@ class _DailyPersonnelFormState extends ConsumerState<DailyPersonnelForm> {
   int _packsProduits = 0;
   int _emballagesUtilises = 0;
   List<DailyWorker> _workers = [];
-  String _workersKey = '';
+
 
   @override
   void initState() {
@@ -58,10 +57,26 @@ class _DailyPersonnelFormState extends ConsumerState<DailyPersonnelForm> {
       }
     }
     _updateNombrePersonnes();
+    
+    // Auto-suggestion des emballages
+    _packsController.addListener(_updatePackagingSuggestion);
   }
+
+  void _updatePackagingSuggestion() {
+    final packsStr = _packsController.text;
+    final emballagesStr = _emballagesController.text;
+    
+    if (emballagesStr.isEmpty || emballagesStr == _previousPacksValue) {
+       _emballagesController.text = packsStr;
+    }
+    _previousPacksValue = packsStr;
+  }
+
+  String _previousPacksValue = '';
 
   @override
   void dispose() {
+    _packsController.removeListener(_updatePackagingSuggestion);
     _notesController.dispose();
     _packsController.dispose();
     _emballagesController.dispose();
@@ -159,407 +174,343 @@ class _DailyPersonnelFormState extends ConsumerState<DailyPersonnelForm> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = theme.colorScheme;
 
     return Form(
       key: _formKey,
       child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(vertical: 20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              'Personnel journalier - ${_formatDate(widget.date)}',
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Sélectionnez les personnes présentes pour ce jour de production.',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Sélection des ouvriers
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    'Ouvriers disponibles',
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                IntrinsicWidth(
-                  child: OutlinedButton.icon(
-                    onPressed: () async {
-                      final result = await showDialog<DailyWorker>(
-                        context: context,
-                        builder: (context) => const DailyWorkerFormDialog(),
-                      );
-                      if (result != null && mounted) {
-                        // Rafraîchir la liste des ouvriers
-                        ref.invalidate(allDailyWorkersProvider);
-                      }
-                    },
-                    icon: const Icon(Icons.add, size: 18),
-                    label: const Text('Ajouter'),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-
-            // Récupération des ouvriers depuis le provider
-            ref
-                .watch(allDailyWorkersProvider)
-                .when(
-                  data: (workers) {
-                    if (workers.isEmpty) {
-                      return Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.surfaceContainerHighest,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Column(
-                          children: [
-                            Icon(
-                              Icons.person_add,
-                              size: 48,
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Aucun ouvrier disponible',
-                              style: theme.textTheme.bodyMedium,
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Cliquez sur "Ajouter" ci-dessus pour créer un nouvel ouvrier',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        ),
-                      );
-                    }
-                    final idsKey = workers.map((w) => w.id).join(',');
-                    if (idsKey != _workersKey) {
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        if (mounted) {
-                          setState(() {
-                            _workers = workers;
-                            _workersKey = idsKey;
-                          });
-                        }
-                      });
-                    }
-                    return Column(
-                      children: workers.map((worker) {
-                        final isSelected = _selectedWorkerIds.contains(
-                          worker.id,
-                        );
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 8),
-                          color: isSelected
-                              ? theme.colorScheme.primaryContainer
-                              : theme.colorScheme.surface,
-                          child: CheckboxListTile(
-                            title: Text(worker.name),
-                            subtitle: Text(
-                              '${worker.phone} • ${worker.salaireJournalier} CFA/jour',
-                            ),
-                            value: isSelected,
-                            onChanged: (_) => _toggleWorker(worker.id),
-                            secondary: CircleAvatar(
-                              child: Text(worker.name[0].toUpperCase()),
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    );
-                  },
-                  loading: () => const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(24.0),
-                      child: CircularProgressIndicator(),
-                    ),
-                  ),
-                  error: (error, stack) => Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.errorContainer.withValues(
-                        alpha: 0.3,
-                      ),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Column(
-                      children: [
-                        Icon(
-                          Icons.error_outline,
-                          color: theme.colorScheme.error,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Erreur lors du chargement des ouvriers',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.error,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-            const SizedBox(height: 24),
-
-            // Production journalière
-            Text(
-              'Production de la journée',
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _packsController,
-                    decoration: const InputDecoration(
-                      labelText: 'Packs produits (jour)',
-                      prefixIcon: Icon(Icons.inventory_2),
-                      helperText:
-                          'Nombre de packs produits ce jour (obligatoire)',
-                    ),
-                    keyboardType: TextInputType.number,
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Obligatoire';
-                      }
-                      final n = int.tryParse(value.trim());
-                      if (n == null || n < 0) {
-                        return 'Entier positif requis';
-                      }
-                      return null;
-                    },
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: FutureBuilder<int>(
-                    future: ref
-                        .read(packagingStockControllerProvider)
-                        .fetchByType('Emballage')
-                        .then((stock) => stock?.quantity ?? 0),
-                    builder: (context, snapshot) {
-                      final stockDisponible = snapshot.data ?? 0;
-                      return TextFormField(
-                        controller: _emballagesController,
-                        decoration: InputDecoration(
-                          labelText: 'Emballages utilisés (jour)',
-                          prefixIcon: const Icon(Icons.shopping_bag),
-                          helperText:
-                              snapshot.connectionState ==
-                                  ConnectionState.waiting
-                              ? 'Chargement du stock...'
-                              : 'Stock disponible: $stockDisponible unité${stockDisponible > 1 ? 's' : ''}',
-                          helperMaxLines: 2,
-                        ),
-                        keyboardType: TextInputType.number,
-                        enabled:
-                            snapshot.connectionState != ConnectionState.waiting,
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return null; // Optionnel
-                          }
-                          final emballages = int.tryParse(value.trim());
-                          if (emballages == null || emballages < 0) {
-                            return 'Nombre invalide';
-                          }
-                          if (emballages > stockDisponible) {
-                            return 'Stock insuffisant ($stockDisponible disponible${stockDisponible > 1 ? 's' : ''})';
-                          }
-                          return null;
-                        },
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-
-            // Nombre de personnes et coût (salaire issu des ouvriers)
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primaryContainer.withValues(
-                  alpha: 0.3,
-                ),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: theme.colorScheme.primary.withValues(alpha: 0.2),
-                ),
-              ),
+            // Header Section
+            ElyfCard(
+              padding: const EdgeInsets.all(20),
+              borderRadius: 24,
+              backgroundColor: colors.primary.withValues(alpha: 0.03),
+              borderColor: colors.primary.withValues(alpha: 0.1),
               child: Row(
                 children: [
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                      shape: BoxShape.circle,
+                      color: colors.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Icon(
-                      Icons.people_outline,
-                      color: theme.colorScheme.primary,
-                      size: 20,
-                    ),
+                    child: Icon(Icons.badge_rounded, color: colors.primary, size: 24),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 16),
                   Expanded(
-                    child: Text(
-                      'Personnel sélectionné',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  Text(
-                    '$_nombrePersonnes',
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.primary,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Personnel Journalier',
+                          style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900, color: colors.onSurface),
+                        ),
+                        Text(
+                          DateFormatter.formatLongDate(widget.date),
+                          style: theme.textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
-
             const SizedBox(height: 16),
 
-            // Notes
-            TextFormField(
-              controller: _notesController,
-              decoration: const InputDecoration(
-                labelText: 'Notes',
-                prefixIcon: Icon(Icons.note),
-                helperText: 'Optionnel',
-              ),
-              maxLines: 3,
-            ),
-
-            const SizedBox(height: 24),
-
-            // Coût total (somme des salaires des ouvriers sélectionnés)
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.secondaryContainer.withValues(
-                  alpha: 0.3,
-                ),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: theme.colorScheme.secondary.withValues(alpha: 0.2),
-                ),
-              ),
+            // Workers Management
+            ElyfCard(
+              padding: const EdgeInsets.all(20),
+              borderRadius: 24,
+              backgroundColor: colors.surfaceContainerLow.withValues(alpha: 0.5),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Row(
                     children: [
-                      Container(
+                      Icon(Icons.groups_rounded, size: 18, color: colors.primary),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Ouvriers Disponibles',
+                        style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: colors.primary),
+                      ),
+                      const Spacer(),
+                      IconButton.filledTonal(
+                        onPressed: () async {
+                          final result = await showDialog<DailyWorker>(
+                            context: context,
+                            builder: (context) => const DailyWorkerFormDialog(),
+                          );
+                          if (result != null && mounted) ref.invalidate(allDailyWorkersProvider);
+                        },
+                        icon: const Icon(Icons.add_rounded, size: 18),
+                        constraints: const BoxConstraints(),
                         padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.secondary.withValues(
-                            alpha: 0.1,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  ref.watch(allDailyWorkersProvider).when(
+                    data: (workers) {
+                      if (workers.isEmpty) return _buildEmptyWorkersView(theme, colors);
+                      _workers = workers;
+                      return Column(
+                        children: workers.map((worker) => _buildWorkerItem(theme, colors, worker)).toList(),
+                      );
+                    },
+                    loading: () => const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator())),
+                    error: (error, stack) => _buildErrorView(theme, colors),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Production Details
+            ElyfCard(
+              padding: const EdgeInsets.all(20),
+              borderRadius: 24,
+              backgroundColor: colors.surfaceContainerLow.withValues(alpha: 0.5),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.analytics_rounded, size: 18, color: colors.primary),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Production du Jour',
+                        style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: colors.primary),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _packsController,
+                          decoration: _buildInputDecoration(
+                            label: 'Packs produits',
+                            icon: Icons.inventory_2_rounded,
                           ),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.payments_outlined,
-                          color: theme.colorScheme.secondary,
-                          size: 20,
+                          keyboardType: TextInputType.number,
+                          validator: (v) => v?.trim().isEmpty ?? true ? 'Requis' : null,
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: Text(
-                          'Coût total du personnel',
-                          style: theme.textTheme.bodyLarge?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                      Text(
-                        '${_coutTotalFromWorkers()} CFA',
-                        style: theme.textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.secondary,
-                        ),
+                        child: _buildPackagingStockField(theme, colors),
                       ),
                     ],
-                  ),
-                  const SizedBox(height: 8),
-                  Padding(
-                    padding: const EdgeInsets.only(left: 40),
-                    child: Text(
-                      'Calculé automatiquement selon le salaire de chaque ouvrier.',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
                   ),
                 ],
               ),
             ),
+            const SizedBox(height: 16),
 
-            const SizedBox(height: 24),
-
-            // Boutons
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close),
-                    label: const Text('Annuler'),
+            // Summary Section
+            ElyfCard(
+              padding: const EdgeInsets.all(20),
+              borderRadius: 24,
+              backgroundColor: colors.secondary.withValues(alpha: 0.05),
+              borderColor: colors.secondary.withValues(alpha: 0.1),
+              child: Column(
+                children: [
+                  _buildSummaryRow(
+                    theme, 
+                    colors, 
+                    icon: Icons.people_alt_rounded, 
+                    label: 'Personnel Présent', 
+                    value: '$_nombrePersonnes',
+                    badgeColor: colors.primary,
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: FilledButton.icon(
-                    onPressed: _submit,
-                    icon: const Icon(Icons.check),
-                    label: const Text('Enregistrer'),
+                  const SizedBox(height: 12),
+                  _buildSummaryRow(
+                    theme, 
+                    colors, 
+                    icon: Icons.payments_rounded, 
+                    label: 'Coût Main d\'œuvre', 
+                    value: '${_coutTotalFromWorkers()} CFA',
+                    badgeColor: colors.secondary,
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
+            const SizedBox(height: 16),
+
+            // Notes
+            ElyfCard(
+              padding: const EdgeInsets.all(20),
+              borderRadius: 24,
+              backgroundColor: colors.surfaceContainerLow.withValues(alpha: 0.3),
+              child: TextFormField(
+                controller: _notesController,
+                decoration: _buildInputDecoration(
+                  label: 'Notes / Observations (Optionnel)',
+                  icon: Icons.note_alt_rounded,
+                ),
+                maxLines: 2,
+              ),
+            ),
+            const SizedBox(height: 32),
+            _buildSubmitButton(),
           ],
         ),
       ),
     );
   }
 
-  String _formatDate(DateTime date) {
-    return '${date.day.toString().padLeft(2, '0')}/'
-        '${date.month.toString().padLeft(2, '0')}/'
-        '${date.year}';
+  Widget _buildWorkerItem(ThemeData theme, ColorScheme colors, DailyWorker worker) {
+     final isSelected = _selectedWorkerIds.contains(worker.id);
+     return Padding(
+       padding: const EdgeInsets.only(bottom: 8),
+       child: InkWell(
+         onTap: () => _toggleWorker(worker.id),
+         borderRadius: BorderRadius.circular(16),
+         child: AnimatedContainer(
+           duration: const Duration(milliseconds: 200),
+           padding: const EdgeInsets.all(12),
+           decoration: BoxDecoration(
+             color: isSelected ? colors.primary.withValues(alpha: 0.1) : colors.surface,
+             borderRadius: BorderRadius.circular(16),
+             border: Border.all(
+               color: isSelected ? colors.primary : colors.outline.withValues(alpha: 0.1),
+               width: isSelected ? 2 : 1,
+             ),
+           ),
+           child: Row(
+             children: [
+               CircleAvatar(
+                 backgroundColor: isSelected ? colors.primary : colors.primaryContainer.withValues(alpha: 0.5),
+                 foregroundColor: isSelected ? colors.onPrimary : colors.primary,
+                 child: Text(worker.name[0].toUpperCase(), style: const TextStyle(fontWeight: FontWeight.bold)),
+               ),
+               const SizedBox(width: 16),
+               Expanded(
+                 child: Column(
+                   crossAxisAlignment: CrossAxisAlignment.start,
+                   children: [
+                     Text(worker.name, style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold)),
+                     Text('${worker.salaireJournalier} CFA/jour', style: theme.textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant)),
+                   ],
+                 ),
+               ),
+               Checkbox(
+                 value: isSelected,
+                 onChanged: (_) => _toggleWorker(worker.id),
+                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+               ),
+             ],
+           ),
+         ),
+       ),
+     );
   }
+
+  Widget _buildEmptyWorkersView(ThemeData theme, ColorScheme colors) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(color: colors.surfaceContainerLow, borderRadius: BorderRadius.circular(16)),
+      child: Column(
+        children: [
+           Icon(Icons.person_off_rounded, size: 48, color: colors.onSurfaceVariant.withValues(alpha: 0.5)),
+           const SizedBox(height: 16),
+           Text('Aucun ouvrier enregistré', style: theme.textTheme.titleSmall),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorView(ThemeData theme, ColorScheme colors) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(color: colors.errorContainer.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(16)),
+      child: Row(children: [Icon(Icons.error_outline, color: colors.error), const SizedBox(width: 12), Text('Erreur de chargement', style: TextStyle(color: colors.error))]),
+    );
+  }
+
+  Widget _buildPackagingStockField(ThemeData theme, ColorScheme colors) {
+    return FutureBuilder<int>(
+      future: ref.read(packagingStockControllerProvider).fetchByType('Emballage').then((s) => s?.quantity ?? 0),
+      builder: (context, snapshot) {
+        final stock = snapshot.data ?? 0;
+        return TextFormField(
+          controller: _emballagesController,
+          decoration: _buildInputDecoration(
+            label: 'Emballages (unités/sachets)',
+            icon: Icons.layers_rounded,
+            hintText: 'Stock: $stock',
+          ),
+          keyboardType: TextInputType.number,
+          validator: (v) {
+            if (v == null || v.isEmpty) return null;
+            final val = int.tryParse(v);
+            if (val != null && val > stock) return 'Stock insuffisant';
+            return null;
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildSummaryRow(ThemeData theme, ColorScheme colors, {required IconData icon, required String label, required String value, required Color badgeColor}) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(color: badgeColor.withValues(alpha: 0.1), shape: BoxShape.circle),
+          child: Icon(icon, color: badgeColor, size: 18),
+        ),
+        const SizedBox(width: 12),
+        Expanded(child: Text(label, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold))),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(color: badgeColor, borderRadius: BorderRadius.circular(12)),
+          child: Text(value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        ),
+      ],
+    );
+  }
+
+  InputDecoration _buildInputDecoration({required String label, required IconData icon, String? hintText}) {
+    final colors = Theme.of(context).colorScheme;
+    return InputDecoration(
+      labelText: label,
+      hintText: hintText,
+      prefixIcon: Icon(icon, size: 20, color: colors.primary),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: colors.outline.withValues(alpha: 0.1))),
+      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: colors.outline.withValues(alpha: 0.1))),
+      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: colors.primary, width: 2)),
+      filled: true,
+      fillColor: colors.surfaceContainerLow.withValues(alpha: 0.3),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+    );
+  }
+
+  Widget _buildSubmitButton() {
+    final colors = Theme.of(context).colorScheme;
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(colors: [colors.primary, colors.secondary]),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [BoxShadow(color: colors.primary.withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 4))],
+      ),
+      child: ElevatedButton(
+        onPressed: _submit,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          foregroundColor: Colors.white,
+          shadowColor: Colors.transparent,
+          padding: const EdgeInsets.symmetric(vertical: 18),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
+        child: const Text('ENREGISTRER LE PERSONNEL', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1)),
+      ),
+    );
+  }
+
+
 }

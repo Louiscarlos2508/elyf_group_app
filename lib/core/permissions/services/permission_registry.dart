@@ -55,4 +55,25 @@ class PermissionRegistry {
     }
     return count;
   }
+
+  /// Get the module ID for a specific permission ID
+  String? getModuleForPermission(String permissionId) {
+    for (final entry in _permissions.entries) {
+      if (entry.value.containsKey(permissionId)) {
+        return entry.key;
+      }
+    }
+    return null;
+  }
+
+  /// Get the human-readable name for a specific permission ID
+  String? getPermissionName(String permissionId) {
+    for (final modulePerms in _permissions.values) {
+      final perm = modulePerms[permissionId];
+      if (perm != null) {
+        return perm.name;
+      }
+    }
+    return null;
+  }
 }

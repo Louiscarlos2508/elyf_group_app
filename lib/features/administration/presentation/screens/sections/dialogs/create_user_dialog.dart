@@ -175,7 +175,7 @@ class _CreateUserDialogState extends ConsumerState<CreateUserDialog>
             mainAxisSize: MainAxisSize.min,
             children: [
               Padding(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.fromLTRB(28, 28, 28, 12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -183,13 +183,14 @@ class _CreateUserDialogState extends ConsumerState<CreateUserDialog>
                       'Nouvel Utilisateur',
                       style: theme.textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.bold,
+                        letterSpacing: -0.5,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
                     Text(
                       'Créez un nouvel utilisateur du système',
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+                        color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
                       ),
                     ),
                   ],
@@ -202,10 +203,7 @@ class _CreateUserDialogState extends ConsumerState<CreateUserDialog>
                     children: [
                       TextFormField(
                         controller: _firstNameController,
-                        decoration: const InputDecoration(
-                          labelText: 'Prénom *',
-                          hintText: 'Jean',
-                        ),
+                        decoration: _buildInputDecoration(theme, 'Prénom *', 'Jean', Icons.person_outline),
                         textCapitalization: TextCapitalization.words,
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
@@ -217,10 +215,7 @@ class _CreateUserDialogState extends ConsumerState<CreateUserDialog>
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _lastNameController,
-                        decoration: const InputDecoration(
-                          labelText: 'Nom *',
-                          hintText: 'Dupont',
-                        ),
+                        decoration: _buildInputDecoration(theme, 'Nom *', 'Dupont', Icons.people_outline),
                         textCapitalization: TextCapitalization.words,
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
@@ -232,10 +227,12 @@ class _CreateUserDialogState extends ConsumerState<CreateUserDialog>
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _usernameController,
-                        decoration: const InputDecoration(
-                          labelText: 'Nom d\'utilisateur *',
-                          hintText: 'jdupont',
-                          helperText: 'Lettres, chiffres et _ uniquement',
+                        decoration: _buildInputDecoration(
+                          theme, 
+                          'Nom d\'utilisateur *', 
+                          'jdupont', 
+                          Icons.alternate_email,
+                          helper: 'Lettres, chiffres et _ uniquement',
                         ),
                         textCapitalization: TextCapitalization.none,
                         validator: _validateUsername,
@@ -243,10 +240,7 @@ class _CreateUserDialogState extends ConsumerState<CreateUserDialog>
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _emailController,
-                        decoration: const InputDecoration(
-                          labelText: 'Email',
-                          hintText: 'jean.dupont@elyf.com',
-                        ),
+                        decoration: _buildInputDecoration(theme, 'Email', 'jean.dupont@elyf.com', Icons.email_outlined),
                         keyboardType: TextInputType.emailAddress,
                         validator: _createFirebaseAccount
                             ? (value) {
@@ -278,10 +272,12 @@ class _CreateUserDialogState extends ConsumerState<CreateUserDialog>
                         const SizedBox(height: 16),
                         TextFormField(
                           controller: _passwordController,
-                          decoration: InputDecoration(
-                            labelText: 'Mot de passe *',
-                            hintText: 'Minimum 6 caractères',
-                            suffixIcon: IconButton(
+                          decoration: _buildInputDecoration(
+                            theme, 
+                            'Mot de passe *', 
+                            'Minimum 6 caractères', 
+                            Icons.lock_outline,
+                            suffix: IconButton(
                               icon: Icon(
                                 _obscurePassword
                                     ? Icons.visibility_outlined
@@ -308,10 +304,12 @@ class _CreateUserDialogState extends ConsumerState<CreateUserDialog>
                         const SizedBox(height: 16),
                         TextFormField(
                           controller: _confirmPasswordController,
-                          decoration: InputDecoration(
-                            labelText: 'Confirmer le mot de passe *',
-                            hintText: 'Répétez le mot de passe',
-                            suffixIcon: IconButton(
+                          decoration: _buildInputDecoration(
+                            theme, 
+                            'Confirmer le mot de passe *', 
+                            'Répétez le mot de passe', 
+                            Icons.lock_reset_outlined,
+                            suffix: IconButton(
                               icon: Icon(
                                 _obscureConfirmPassword
                                     ? Icons.visibility_outlined
@@ -340,10 +338,7 @@ class _CreateUserDialogState extends ConsumerState<CreateUserDialog>
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _phoneController,
-                        decoration: const InputDecoration(
-                          labelText: 'Téléphone',
-                          hintText: '+226 70 00 00 00',
-                        ),
+                        decoration: _buildInputDecoration(theme, 'Téléphone', '+226 70 00 00 00', Icons.phone_android_outlined),
                         keyboardType: TextInputType.phone,
                         inputFormatters: [
                           FilteringTextInputFormatter.allow(
@@ -401,6 +396,31 @@ class _CreateUserDialogState extends ConsumerState<CreateUserDialog>
           ),
         ),
       ),
+    );
+  }
+
+  InputDecoration _buildInputDecoration(
+    ThemeData theme, 
+    String label, 
+    String hint, 
+    IconData icon, {
+    String? helper,
+    Widget? suffix,
+  }) {
+    return InputDecoration(
+      labelText: label,
+      hintText: hint,
+      helperText: helper,
+      prefixIcon: Icon(icon, size: 20),
+      suffixIcon: suffix,
+      filled: true,
+      fillColor: theme.colorScheme.surfaceContainerLow,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide.none,
+      ),
+      isDense: true,
+      contentPadding: const EdgeInsets.symmetric(vertical: 16),
     );
   }
 }

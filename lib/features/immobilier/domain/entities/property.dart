@@ -14,6 +14,8 @@ class Property {
     this.amenities,
     this.createdAt,
     this.updatedAt,
+    this.deletedAt,
+    this.deletedBy,
   });
 
   final String id;
@@ -29,6 +31,10 @@ class Property {
   final List<String>? amenities;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final DateTime? deletedAt;
+  final String? deletedBy;
+
+  bool get isDeleted => deletedAt != null;
   Property copyWith({
     String? id,
     String? address,
@@ -43,6 +49,8 @@ class Property {
     List<String>? amenities,
     DateTime? createdAt,
     DateTime? updatedAt,
+    DateTime? deletedAt,
+    String? deletedBy,
   }) {
     return Property(
       id: id ?? this.id,
@@ -58,8 +66,18 @@ class Property {
       amenities: amenities ?? this.amenities,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      deletedBy: deletedBy ?? this.deletedBy,
     );
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is Property && runtimeType == other.runtimeType && id == other.id;
+
+  @override
+  int get hashCode => id.hashCode;
 }
 
 enum PropertyType { house, apartment, studio, villa, commercial }

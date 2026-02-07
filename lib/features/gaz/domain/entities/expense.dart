@@ -9,6 +9,7 @@ class GazExpense {
     required this.enterpriseId,
     required this.isFixed,
     this.notes,
+    this.receiptPath,
   });
 
   final String id;
@@ -19,6 +20,7 @@ class GazExpense {
   final String enterpriseId;
   final bool isFixed; // Charge fixe vs variable
   final String? notes;
+  final String? receiptPath;
 
   GazExpense copyWith({
     String? id,
@@ -29,6 +31,7 @@ class GazExpense {
     String? enterpriseId,
     bool? isFixed,
     String? notes,
+    String? receiptPath,
   }) {
     return GazExpense(
       id: id ?? this.id,
@@ -39,6 +42,7 @@ class GazExpense {
       enterpriseId: enterpriseId ?? this.enterpriseId,
       isFixed: isFixed ?? this.isFixed,
       notes: notes ?? this.notes,
+      receiptPath: receiptPath ?? this.receiptPath,
     );
   }
 }

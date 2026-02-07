@@ -9,10 +9,9 @@ import '../../application/providers.dart'
     show userControllerProvider, usersProvider, isAdminSyncingProvider;
 import '../../domain/entities/user.dart' show User;
 import 'sections/admin_dashboard_section.dart';
-import 'sections/admin_enterprises_section.dart';
+import 'sections/admin_organizational_section.dart';
+import 'sections/admin_access_section.dart';
 import 'sections/admin_modules_section.dart';
-import 'sections/admin_users_section.dart';
-import 'sections/admin_roles_section.dart';
 import 'sections/admin_audit_trail_section.dart';
 
 /// Écran principal d'administration avec navigation adaptative
@@ -29,58 +28,55 @@ class _AdminHomeScreenState extends ConsumerState<AdminHomeScreen> {
   void _navigateToProfile(BuildContext context) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => Scaffold(
-          appBar: AppBar(title: const Text('Mon Profil')),
-          body: ProfileScreen(
-            // Utiliser le callback du module administration pour la mise à jour
-            // Cela permet d'utiliser UserController et d'avoir l'audit trail
-            onProfileUpdate:
-                ({
-                  required userId,
-                  required firstName,
-                  required lastName,
-                  required username,
-                  email,
-                  phone,
-                }) async {
-                  final currentUserId = ref.read(currentUserIdProvider);
-                  if (currentUserId == null || currentUserId != userId) {
-                    throw AuthenticationException(
-                      'Utilisateur non connecté ou ID invalide',
-                      'USER_NOT_AUTHENTICATED',
+        builder: (context) => ProfileScreen(
+          // Utiliser le callback du module administration pour la mise à jour
+          // Cela permet d'utiliser UserController et d'avoir l'audit trail
+          onProfileUpdate:
+              ({
+                required userId,
+                required firstName,
+                required lastName,
+                required username,
+                email,
+                phone,
+              }) async {
+                final currentUserId = ref.read(currentUserIdProvider);
+                if (currentUserId == null || currentUserId != userId) {
+                  throw AuthenticationException(
+                    'Utilisateur non connecté ou ID invalide',
+                    'USER_NOT_AUTHENTICATED',
+                  );
+                }
+
+                // Récupérer l'utilisateur actuel
+                final List<User> users = await ref.read(usersProvider.future);
+                final currentUser = users.firstWhere(
+                  (u) => u.id == currentUserId,
+                  orElse: () => throw NotFoundException(
+                    'Utilisateur non trouvé',
+                    'USER_NOT_FOUND',
+                  ),
+                );
+
+                // Créer l'utilisateur mis à jour
+                final updatedUser = currentUser.copyWith(
+                  firstName: firstName,
+                  lastName: lastName,
+                  username: username,
+                  email: email,
+                  phone: phone,
+                  updatedAt: DateTime.now(),
+                );
+
+                // Utiliser UserController pour la mise à jour (inclut audit trail)
+                await ref
+                    .read(userControllerProvider)
+                    .updateUser(
+                      updatedUser,
+                      currentUserId: currentUserId,
+                      oldUser: currentUser,
                     );
-                  }
-
-                  // Récupérer l'utilisateur actuel
-                  final List<User> users = await ref.read(usersProvider.future);
-                  final currentUser = users.firstWhere(
-                    (u) => u.id == currentUserId,
-                    orElse: () => throw NotFoundException(
-                      'Utilisateur non trouvé',
-                      'USER_NOT_FOUND',
-                    ),
-                  );
-
-                  // Créer l'utilisateur mis à jour
-                  final updatedUser = currentUser.copyWith(
-                    firstName: firstName,
-                    lastName: lastName,
-                    username: username,
-                    email: email,
-                    phone: phone,
-                    updatedAt: DateTime.now(),
-                  );
-
-                  // Utiliser UserController pour la mise à jour (inclut audit trail)
-                  await ref
-                      .read(userControllerProvider)
-                      .updateUser(
-                        updatedUser,
-                        currentUserId: currentUserId,
-                        oldUser: currentUser,
-                      );
-                },
-          ),
+              },
         ),
       ),
     );
@@ -95,9 +91,15 @@ class _AdminHomeScreenState extends ConsumerState<AdminHomeScreen> {
         isPrimary: true,
       ),
       NavigationSection(
-        label: 'Entreprises',
-        icon: Icons.business_outlined,
-        builder: () => const AdminEnterprisesSection(),
+        label: 'Organisation',
+        icon: Icons.account_tree_outlined,
+        builder: () => const AdminOrganizationalSection(),
+        isPrimary: true,
+      ),
+      NavigationSection(
+        label: 'Accès',
+        icon: Icons.people_outlined,
+        builder: () => const AdminAccessSection(),
         isPrimary: true,
       ),
       NavigationSection(
@@ -107,19 +109,7 @@ class _AdminHomeScreenState extends ConsumerState<AdminHomeScreen> {
         isPrimary: true,
       ),
       NavigationSection(
-        label: 'Utilisateurs',
-        icon: Icons.people_outlined,
-        builder: () => const AdminUsersSection(),
-        isPrimary: true,
-      ),
-      NavigationSection(
-        label: 'Rôles',
-        icon: Icons.shield_outlined,
-        builder: () => const AdminRolesSection(),
-        isPrimary: true,
-      ),
-      NavigationSection(
-        label: 'Audit Trail',
+        label: 'Audit',
         icon: Icons.history_outlined,
         builder: () => const AdminAuditTrailSection(),
         isPrimary: true,

@@ -2,13 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
+
 import 'package:elyf_groupe_app/features/boutique/application/providers.dart';
 import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
-import '../../widgets/dashboard_header.dart';
 import '../../widgets/dashboard_low_stock_list.dart';
-import '../../widgets/dashboard_month_section.dart';
 import '../../widgets/dashboard_today_section.dart';
+import '../../widgets/dashboard_month_section.dart';
+
 import '../../widgets/restock_dialog.dart';
+import '../../widgets/boutique_header.dart';
 
 /// Professional dashboard screen for boutique module.
 class DashboardScreen extends ConsumerWidget {
@@ -22,42 +24,35 @@ class DashboardScreen extends ConsumerWidget {
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          // Header
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(
-                AppSpacing.lg,
-                AppSpacing.lg,
-                AppSpacing.lg,
-                AppSpacing.md,
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: DashboardHeader(
-                      date: DateTime.now(),
-                      role: 'Gérant',
-                    ),
-                  ),
-                  Semantics(
-                    label: 'Actualiser le tableau de bord',
-                    hint: 'Recharge toutes les données affichées',
-                    button: true,
-                    child: RefreshButton(
-                      onRefresh: () {
+          // Header with Gradient
+          BoutiqueHeader(
+            title: "BOUTIQUE",
+            subtitle: "Tableau de Bord",
+            gradientColors: [
+              const Color(0xFF08BDBA), // Primary Teal/Cyan
+              const Color(0xFF0F766E), // Darker Teal
+            ],
+            shadowColor: const Color(0xFF08BDBA),
+            additionalActions: [
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: IconButton(
+                  icon: const Icon(Icons.refresh, color: Colors.white),
+                  onPressed: () {
                     ref.invalidate(recentSalesProvider);
                     ref.invalidate(productsProvider);
                     ref.invalidate(lowStockProductsProvider);
                     ref.invalidate(purchasesProvider);
                     ref.invalidate(expensesProvider);
                     ref.invalidate(boutiqueMonthlyMetricsProvider);
-                      },
-                      tooltip: 'Actualiser le tableau de bord',
-                    ),
-                  ),
-                ],
+                  },
+                  tooltip: 'Actualiser',
+                ),
               ),
-            ),
+            ],
           ),
 
           // Today section header
@@ -81,7 +76,11 @@ class DashboardScreen extends ConsumerWidget {
                   );
                   return DashboardTodaySection(metrics: metrics);
                 },
-                loading: () => AppShimmers.statsGrid(context),
+                loading: () => Column(
+                  children: [
+                    ElyfShimmer(child: ElyfShimmer.listTile()),
+                  ],
+                ),
                 error: (error, stackTrace) => ErrorDisplayWidget(
                   error: error,
                   onRetry: () => ref.refresh(recentSalesProvider),
@@ -138,7 +137,13 @@ class DashboardScreen extends ConsumerWidget {
                     },
                   );
                 },
-                loading: () => AppShimmers.list(context, itemCount: 3),
+                loading: () => Column(
+                  children: [
+                    ElyfShimmer(child: ElyfShimmer.listTile()),
+                    const SizedBox(height: 8),
+                    ElyfShimmer(child: ElyfShimmer.listTile()),
+                  ],
+                ),
                 error: (error, stackTrace) => ErrorDisplayWidget(
                   error: error,
                   title: 'Erreur de chargement',
@@ -177,7 +182,13 @@ class DashboardScreen extends ConsumerWidget {
           monthProfit: metrics.profit,
         );
       },
-      loading: () => AppShimmers.statsGrid(context),
+      loading: () => Column(
+        children: [
+          ElyfShimmer(child: ElyfShimmer.listTile()),
+          const SizedBox(height: 16),
+          ElyfShimmer(child: ElyfShimmer.listTile()),
+        ],
+      ),
       error: (error, stackTrace) => ErrorDisplayWidget(
         error: error,
         title: 'Erreur de chargement des métriques mensuelles',

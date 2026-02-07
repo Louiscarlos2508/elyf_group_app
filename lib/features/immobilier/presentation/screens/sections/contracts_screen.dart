@@ -17,6 +17,7 @@ import '../../widgets/payment_detail_dialog.dart';
 import '../../widgets/property_detail_dialog.dart';
 import '../../widgets/property_search_bar.dart';
 import '../../widgets/tenant_detail_dialog.dart';
+import '../../widgets/immobilier_header.dart';
 
 class ContractsScreen extends ConsumerStatefulWidget {
   const ContractsScreen({super.key});
@@ -152,9 +153,14 @@ class _ContractsScreenState extends ConsumerState<ContractsScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final contractsAsync = ref.watch(contractsProvider);
+    final contractsAsync = ref.watch(contractsWithRelationsProvider);
 
     return Scaffold(
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _showContractForm(),
+        icon: const Icon(Icons.add),
+        label: const Text('Nouveau'),
+      ),
       body: contractsAsync.when(
         data: (contracts) {
           final filtered = _filterAndSort(contracts);
@@ -170,76 +176,23 @@ class _ContractsScreenState extends ConsumerState<ContractsScreen> {
 
           return LayoutBuilder(
             builder: (context, constraints) {
-              final isWide = constraints.maxWidth > 600;
-
               return CustomScrollView(
                 slivers: [
                   // Header
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: EdgeInsets.fromLTRB(
-                        AppSpacing.lg,
-                        AppSpacing.lg,
-                        AppSpacing.lg,
-                        isWide ? AppSpacing.lg : AppSpacing.md,
+                  ImmobilierHeader(
+                    title: 'CONTRATS',
+                    subtitle: 'Baux & Locations',
+                    additionalActions: [
+                      Semantics(
+                        label: 'Actualiser',
+                        button: true,
+                        child: IconButton(
+                          icon: const Icon(Icons.refresh, color: Colors.white),
+                          onPressed: () => ref.invalidate(contractsProvider),
+                          tooltip: 'Actualiser',
+                        ),
                       ),
-                      child: isWide
-                          ? Row(
-                              children: [
-                                Text(
-                                  'Contrats',
-                                  style: theme.textTheme.headlineMedium
-                                      ?.copyWith(fontWeight: FontWeight.bold),
-                                ),
-                                const Spacer(),
-                                RefreshButton(
-                                  onRefresh: () =>
-                                      ref.invalidate(contractsProvider),
-                                  tooltip: 'Actualiser',
-                                ),
-                                const SizedBox(width: 8),
-                                Flexible(
-                                  child: FilledButton.icon(
-                                    onPressed: () => _showContractForm(),
-                                    icon: const Icon(Icons.add),
-                                    label: const Text('Nouveau Contrat'),
-                                  ),
-                                ),
-                              ],
-                            )
-                          : Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        'Contrats',
-                                        style: theme.textTheme.titleLarge
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                      ),
-                                    ),
-                                    RefreshButton(
-                                      onRefresh: () =>
-                                          ref.invalidate(contractsProvider),
-                                      tooltip: 'Actualiser',
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 12),
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: FilledButton.icon(
-                                    onPressed: () => _showContractForm(),
-                                    icon: const Icon(Icons.add),
-                                    label: const Text('Nouveau Contrat'),
-                                  ),
-                                ),
-                              ],
-                            ),
-                    ),
+                    ],
                   ),
 
                   // KPI Summary Cards

@@ -108,7 +108,7 @@ class ProductionTrackingSessionInfo extends StatelessWidget {
                 context,
                 Icons.water_drop,
                 'Quantité produite',
-                '${session.quantiteProduite} L',
+                '${session.quantiteProduite} packs',
               ),
             if (session.emballagesUtilises != null &&
                 session.emballagesUtilises! > 0)

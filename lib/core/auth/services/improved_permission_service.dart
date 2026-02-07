@@ -78,6 +78,7 @@ class MockImprovedPermissionService implements ImprovedPermissionService {
       name: 'Administrateur',
       description: 'Accès complet',
       permissions: {'*'},
+      moduleId: 'administration',
       isSystemRole: true,
     );
 
@@ -100,6 +101,7 @@ class MockImprovedPermissionService implements ImprovedPermissionService {
         'create_expense',
         'view_reports',
       },
+      moduleId: 'eau_minerale',
       isSystemRole: false,
     );
   }
@@ -121,7 +123,7 @@ class MockImprovedPermissionService implements ImprovedPermissionService {
         userId: defaultUserId,
         enterpriseId: enterpriseId,
         moduleId: moduleId == 'eau' ? 'eau_minerale' : moduleId,
-        roleId: 'admin',
+        roleIds: ['admin'],
         isActive: true,
         createdAt: DateTime.now(),
       );
@@ -145,23 +147,28 @@ class MockImprovedPermissionService implements ImprovedPermissionService {
       return false;
     }
 
-    final role = _roles[access.roleId];
-    if (role == null) {
-      return false;
-    }
-
-    // Wildcard permission
-    if (role.hasPermission('*')) {
+    // Check custom permissions first
+    if (access.customPermissions.contains(permissionId)) {
       return true;
     }
 
-    // Permission du rôle
-    if (role.hasPermission(permissionId)) {
-      return true;
+    // Check each assigned role
+    for (final roleId in access.roleIds) {
+      final role = _roles[roleId];
+      if (role == null) continue;
+
+      // Wildcard permission
+      if (role.hasPermission('*')) {
+        return true;
+      }
+
+      // Role permission
+      if (role.hasPermission(permissionId)) {
+        return true;
+      }
     }
 
-    // Permissions personnalisées
-    return access.customPermissions.contains(permissionId);
+    return false;
   }
 
   @override

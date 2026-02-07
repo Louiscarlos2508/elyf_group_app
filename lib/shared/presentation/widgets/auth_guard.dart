@@ -19,12 +19,8 @@ class AuthGuard extends ConsumerWidget {
     return isAuthenticatedAsync.when(
       data: (isAuthenticated) {
         if (!isAuthenticated) {
-          // Rediriger vers le login si non connecté
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (context.mounted) {
-              context.go('/login');
-            }
-          });
+          // Le routeur gérera la redirection vers /login.
+          // On affiche un loader en attendant.
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );

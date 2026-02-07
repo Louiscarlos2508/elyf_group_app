@@ -172,6 +172,7 @@ class ProductionPaymentPersonsSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final colors = theme.colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -185,27 +186,33 @@ class ProductionPaymentPersonsSection extends ConsumerWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      'Personnes à Payer *',
+                      'Personnes à Payer',
                       style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w900,
+                        color: colors.onSurface,
                       ),
                     ),
                   ),
                   const SizedBox(width: 8),
-                  OutlinedButton.icon(
+                  TextButton.icon(
                     onPressed: () => _loadFromProduction(context, ref),
-                    icon: const Icon(Icons.download, size: 18),
-                    label: const Text('Charger depuis production'),
-                    style: OutlinedButton.styleFrom(
-                      backgroundColor: theme.colorScheme.primaryContainer
-                          .withValues(alpha: 0.3),
+                    icon: const Icon(Icons.sync_rounded, size: 18),
+                    label: const Text('Importer'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: colors.primary,
+                      backgroundColor: colors.primary.withValues(alpha: 0.1),
                     ),
                   ),
                   const SizedBox(width: 8),
-                  OutlinedButton.icon(
+                  ElevatedButton.icon(
                     onPressed: onAddPerson,
-                    icon: const Icon(Icons.add, size: 18),
-                    label: const Text('Nouvelle personne'),
+                    icon: const Icon(Icons.add_rounded, size: 18),
+                    label: const Text('Ajouter'),
+                    style: ElevatedButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      backgroundColor: colors.primary,
+                      elevation: 0,
+                    ),
                   ),
                 ],
               );
@@ -215,26 +222,40 @@ class ProductionPaymentPersonsSection extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    'Personnes à Payer *',
+                    'Personnes à Payer',
                     style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w900,
+                      color: colors.onSurface,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  OutlinedButton.icon(
-                    onPressed: () => _loadFromProduction(context, ref),
-                    icon: const Icon(Icons.download, size: 18),
-                    label: const Text('Charger depuis production'),
-                    style: OutlinedButton.styleFrom(
-                      backgroundColor: theme.colorScheme.primaryContainer
-                          .withValues(alpha: 0.3),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  OutlinedButton.icon(
-                    onPressed: onAddPerson,
-                    icon: const Icon(Icons.add, size: 18),
-                    label: const Text('Nouvelle personne'),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextButton.icon(
+                          onPressed: () => _loadFromProduction(context, ref),
+                          icon: const Icon(Icons.sync_rounded, size: 18),
+                          label: const Text('Importer'),
+                          style: TextButton.styleFrom(
+                            foregroundColor: colors.primary,
+                            backgroundColor: colors.primary.withValues(alpha: 0.1),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: onAddPerson,
+                          icon: const Icon(Icons.add_rounded, size: 18),
+                          label: const Text('Ajouter'),
+                          style: ElevatedButton.styleFrom(
+                            foregroundColor: Colors.white,
+                            backgroundColor: colors.primary,
+                            elevation: 0,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               );
@@ -243,20 +264,36 @@ class ProductionPaymentPersonsSection extends ConsumerWidget {
         ),
         const SizedBox(height: 16),
         if (persons.isEmpty)
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: theme.colorScheme.outline.withValues(alpha: 0.2),
-              ),
-              borderRadius: BorderRadius.circular(12),
-            ),
+          ElyfCard(
+            padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
+            borderRadius: 20,
+            backgroundColor: colors.surfaceContainerLow.withValues(alpha: 0.3),
+            borderColor: colors.outline.withValues(alpha: 0.1),
             child: Center(
-              child: Text(
-                'Ajoutez des personnes à payer',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.people_outline_rounded,
+                    size: 48,
+                    color: colors.onSurfaceVariant.withValues(alpha: 0.2),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Aucun personnel ajouté',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      color: colors.onSurfaceVariant,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Importez depuis la production ou ajoutez manuellement',
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colors.onSurfaceVariant.withValues(alpha: 0.7),
+                    ),
+                  ),
+                ],
               ),
             ),
           )

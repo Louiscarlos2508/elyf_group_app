@@ -11,7 +11,7 @@ import '../../../domain/entities/property.dart';
 import '../../../domain/entities/tenant.dart';
 import '../../../domain/services/dashboard_calculation_service.dart';
 import '../../widgets/dashboard_alerts_section.dart';
-import '../../widgets/dashboard_header_v2.dart';
+import '../../widgets/immobilier_header.dart';
 import '../../widgets/dashboard_month_section_v2.dart';
 import '../../widgets/dashboard_today_section_v2.dart';
 
@@ -34,42 +34,30 @@ class DashboardScreen extends ConsumerWidget {
       body: CustomScrollView(
         slivers: [
           // Header
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(
-                AppSpacing.lg,
-                AppSpacing.lg,
-                AppSpacing.lg,
-                AppSpacing.md,
+          // Header
+          ImmobilierHeader(
+            title: 'TABLEAU DE BORD',
+            subtitle: "Vue d'ensemble",
+            additionalActions: [
+              Semantics(
+                label: 'Actualiser le tableau de bord',
+                hint: 'Recharge toutes les données affichées',
+                button: true,
+                child: IconButton(
+                  icon: const Icon(Icons.refresh, color: Colors.white),
+                  onPressed: () {
+                    ref.invalidate(propertiesProvider);
+                    ref.invalidate(contractsProvider);
+                    ref.invalidate(paymentsProvider);
+                    ref.invalidate(expensesProvider);
+                    ref.invalidate(tenantsProvider);
+                    ref.invalidate(immobilierMonthlyMetricsProvider);
+                    ref.invalidate(immobilierAlertsProvider);
+                  },
+                  tooltip: 'Actualiser le tableau de bord',
+                ),
               ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: DashboardHeaderV2(
-                      date: DateTime.now(),
-                      role: 'Gestionnaire',
-                    ),
-                  ),
-                  Semantics(
-                    label: 'Actualiser le tableau de bord',
-                    hint: 'Recharge toutes les données affichées',
-                    button: true,
-                    child: RefreshButton(
-                      onRefresh: () {
-                        ref.invalidate(propertiesProvider);
-                        ref.invalidate(contractsProvider);
-                        ref.invalidate(paymentsProvider);
-                        ref.invalidate(expensesProvider);
-                        ref.invalidate(tenantsProvider);
-                        ref.invalidate(immobilierMonthlyMetricsProvider);
-                        ref.invalidate(immobilierAlertsProvider);
-                      },
-                      tooltip: 'Actualiser le tableau de bord',
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            ],
           ),
 
           // Today section header
@@ -107,6 +95,18 @@ class DashboardScreen extends ConsumerWidget {
                 paymentsAsync: paymentsAsync,
                 expensesAsync: expensesAsync,
                 calculationService: calculationService,
+                onRevenueTap: () => _navigateToSection(context, ref, 'Paiements',
+                    onNavigation: () {
+                  ref.read(paymentListFilterProvider.notifier).set(null);
+                }),
+                onExpensesTap: () => _navigateToSection(context, ref, 'Dépenses'),
+                onProfitTap: () => _navigateToSection(context, ref, 'Rapports'),
+                onOccupancyTap: () =>
+                    _navigateToSection(context, ref, 'Propriétés',
+                        onNavigation: () {
+                  ref.read(propertyListFilterProvider.notifier).set(
+                      PropertyStatus.rented);
+                }),
               ),
             ),
           ),
@@ -134,6 +134,22 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
+  void _navigateToSection(
+    BuildContext context,
+    WidgetRef ref,
+    String label, {
+    VoidCallback? onNavigation,
+  }) {
+    final sections =
+        ref.read(accessibleImmobilierSectionsProvider).asData?.value ?? [];
+    final index = sections.indexWhere((s) => s.label == label);
+    if (index != -1) {
+      onNavigation?.call();
+      context
+          .findAncestorStateOfType<BaseModuleShellScreenState>()
+          ?.navigateToIndex(index);
+    }
+  }
 }
 
 /// Widget privé pour les KPIs d'aujourd'hui.
@@ -179,6 +195,10 @@ class _DashboardMonthKpis extends StatelessWidget {
     required this.paymentsAsync,
     required this.expensesAsync,
     required this.calculationService,
+    this.onRevenueTap,
+    this.onExpensesTap,
+    this.onProfitTap,
+    this.onOccupancyTap,
   });
 
   final AsyncValue<List<Property>> propertiesAsync;
@@ -187,6 +207,10 @@ class _DashboardMonthKpis extends StatelessWidget {
   final AsyncValue<List<Payment>> paymentsAsync;
   final AsyncValue expensesAsync;
   final ImmobilierDashboardCalculationService calculationService;
+  final VoidCallback? onRevenueTap;
+  final VoidCallback? onExpensesTap;
+  final VoidCallback? onProfitTap;
+  final VoidCallback? onOccupancyTap;
 
   @override
   Widget build(BuildContext context) {
@@ -213,10 +237,15 @@ class _DashboardMonthKpis extends StatelessWidget {
 
                         return DashboardMonthSectionV2(
                           monthRevenue: metrics.monthRevenue,
-                          monthPaymentsCount: 0,
+                          monthPaymentsCount: metrics.monthPaymentsCount, // Used calculated count
                           monthExpensesAmount: metrics.monthExpensesTotal,
                           monthProfit: metrics.netRevenue,
                           occupancyRate: metrics.occupancyRate,
+                          collectionRate: metrics.collectionRate, // Pass rate
+                          onRevenueTap: onRevenueTap,
+                          onExpensesTap: onExpensesTap,
+                          onProfitTap: onProfitTap,
+                          onOccupancyTap: onOccupancyTap,
                         );
                       },
                       loading: () => AppShimmers.statsGrid(context),
@@ -266,8 +295,9 @@ class _DashboardAlerts extends StatelessWidget {
             .where(
               (c) =>
                   c.status == ContractStatus.active &&
-                  c.endDate.difference(now).inDays <= 30 &&
-                  c.endDate.isAfter(now),
+                  c.endDate != null &&
+                  c.endDate!.difference(now).inDays <= 30 &&
+                  c.endDate!.isAfter(now),
             )
             .toList();
 

@@ -42,7 +42,7 @@ class CompletedStep extends StatelessWidget {
               icon: Icons.inventory_2,
               label: 'Quantité produite',
               value:
-                  '${session.quantiteProduite} ${session.quantiteProduiteUnite}',
+                  '${session.quantiteProduite} packs',
             ),
             InfoRow(
               icon: Icons.access_time,

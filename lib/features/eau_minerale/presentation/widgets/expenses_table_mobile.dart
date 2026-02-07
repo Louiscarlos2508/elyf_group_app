@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:elyf_groupe_app/shared.dart';
 
 import '../../domain/entities/expense_record.dart';
 import 'expenses_table_helpers.dart';
@@ -24,17 +25,13 @@ class ExpensesTableMobile extends StatelessWidget {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: expenses.length,
-      separatorBuilder: (context, index) => const Divider(height: 1),
+      separatorBuilder: (context, index) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final expense = expenses[index];
-        return Container(
+        return ElyfCard(
+          isGlass: true,
+          borderColor: Colors.red.withValues(alpha: 0.1),
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
-            border: Border.all(
-              color: theme.colorScheme.outline.withValues(alpha: 0.2),
-            ),
-          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

@@ -24,6 +24,10 @@ class ContractController {
     return _contractRepository.watchContracts();
   }
 
+  Stream<List<Contract>> watchDeletedContracts() {
+    return _contractRepository.watchDeletedContracts();
+  }
+
   Future<Contract?> getContract(String id) async {
     return await _contractRepository.getContractById(id);
   }
@@ -209,5 +213,9 @@ class ContractController {
         }
       }
     }
+  }
+
+  Future<void> restoreContract(String id) async {
+    await _contractRepository.restoreContract(id);
   }
 }

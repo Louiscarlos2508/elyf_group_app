@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -12,6 +14,7 @@ import '../../widgets/expense_form_dialog.dart' as boutique;
 import '../../widgets/expenses_table.dart';
 import '../../widgets/monthly_expense_summary.dart';
 import '../../widgets/permission_guard.dart';
+import '../../widgets/boutique_header.dart';
 
 /// Expenses screen with professional UI - style eau_minerale.
 class ExpensesScreen extends ConsumerWidget {
@@ -48,125 +51,96 @@ class ExpensesScreen extends ConsumerWidget {
               return CustomScrollView(
                 slivers: [
                   // Header
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: EdgeInsets.fromLTRB(
-                        AppSpacing.lg,
-                        AppSpacing.lg,
-                        AppSpacing.lg,
-                        isWide ? AppSpacing.lg : AppSpacing.md,
+                  BoutiqueHeader(
+                    title: "GESTION FINANCIÈRE",
+                    subtitle: "Dépenses & Charges",
+                    gradientColors: [
+                      const Color(0xFFDC2626), // Red 600
+                      const Color(0xFFB91C1C), // Red 700
+                    ],
+                    shadowColor: const Color(0xFFDC2626),
+                    additionalActions: [
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: IconButton(
+                          icon: const Icon(Icons.refresh, color: Colors.white),
+                          onPressed: () => ref.invalidate(expensesProvider),
+                          tooltip: 'Actualiser les dépenses',
+                        ),
                       ),
-                      child: isWide
-                          ? Row(
-                              children: [
-                                Text(
-                                  'Dépenses',
-                                  style: theme.textTheme.headlineMedium
-                                      ?.copyWith(fontWeight: FontWeight.bold),
+                      const SizedBox(width: 8),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: IconButton(
+                          icon: const Icon(Icons.analytics, color: Colors.white),
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => ExpenseBalanceScreen(
+                                  moduleName: 'Boutique',
+                                  expensesProvider:
+                                      boutiqueExpenseBalanceProvider,
+                                  adapter: BoutiqueExpenseBalanceAdapter(),
                                 ),
-                                const Spacer(),
-                                RefreshButton(
-                                  onRefresh: () =>
-                                      ref.invalidate(expensesProvider),
-                                  tooltip: 'Actualiser les dépenses',
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.analytics),
-                                  onPressed: () {
-                                    Navigator.of(context).push(
-                                      MaterialPageRoute(
-                                        builder: (context) => ExpenseBalanceScreen(
-                                          moduleName: 'Boutique',
-                                          expensesProvider:
-                                              boutiqueExpenseBalanceProvider,
-                                          adapter:
-                                              BoutiqueExpenseBalanceAdapter(),
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                  tooltip: 'Bilan des dépenses',
-                                ),
-                                const SizedBox(width: 8),
-                                Flexible(
-                                  child: BoutiquePermissionGuard(
-                                    permission:
-                                        BoutiquePermissions.createExpense,
-                                    child: FilledButton.icon(
-                                      onPressed: () {
-                                        showDialog(
-                                          context: context,
-                                          builder: (_) =>
-                                              const boutique.ExpenseFormDialog(),
-                                        );
-                                      },
-                                      icon: const Icon(Icons.add),
-                                      label: const Text('Nouvelle Dépense'),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            )
-                          : Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        'Dépenses',
-                                        style: theme.textTheme.titleLarge
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                      ),
-                                    ),
-                                    RefreshButton(
-                                      onRefresh: () =>
-                                          ref.invalidate(expensesProvider),
-                                      tooltip: 'Actualiser les dépenses',
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(Icons.analytics),
-                                      onPressed: () {
-                                        Navigator.of(context).push(
-                                          MaterialPageRoute(
-                                            builder: (context) => ExpenseBalanceScreen(
-                                              moduleName: 'Boutique',
-                                              expensesProvider:
-                                                  boutiqueExpenseBalanceProvider,
-                                              adapter:
-                                                  BoutiqueExpenseBalanceAdapter(),
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                      tooltip: 'Bilan des dépenses',
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 12),
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: BoutiquePermissionGuard(
-                                    permission:
-                                        BoutiquePermissions.createExpense,
-                                    child: FilledButton.icon(
-                                      onPressed: () {
-                                        showDialog(
-                                          context: context,
-                                          builder: (_) =>
-                                              const boutique.ExpenseFormDialog(),
-                                        );
-                                      },
-                                      icon: const Icon(Icons.add),
-                                      label: const Text('Nouvelle Dépense'),
-                                    ),
-                                  ),
-                                ),
-                              ],
+                              ),
+                            );
+                          },
+                          tooltip: 'Bilan des dépenses',
+                        ),
+                      ),
+                      if (isWide) ...[
+                        const SizedBox(width: 8),
+                        BoutiquePermissionGuard(
+                          permission: BoutiquePermissions.createExpense,
+                          child: FilledButton.icon(
+                            onPressed: () {
+                              showDialog(
+                                context: context,
+                                builder: (_) =>
+                                    const boutique.ExpenseFormDialog(),
+                              );
+                            },
+                            style: FilledButton.styleFrom(
+                              backgroundColor:
+                                  Colors.white.withValues(alpha: 0.2),
+                              foregroundColor: Colors.white,
                             ),
-                    ),
+                            icon: const Icon(Icons.add),
+                            label: const Text('Nouvelle Dépense'),
+                          ),
+                        ),
+                      ],
+                    ],
+                    bottom: isWide
+                        ? null
+                        : BoutiquePermissionGuard(
+                            permission: BoutiquePermissions.createExpense,
+                            child: SizedBox(
+                              width: double.infinity,
+                              child: FilledButton.icon(
+                                onPressed: () {
+                                  showDialog(
+                                    context: context,
+                                    builder: (_) =>
+                                        const boutique.ExpenseFormDialog(),
+                                  );
+                                },
+                                style: FilledButton.styleFrom(
+                                  backgroundColor:
+                                      Colors.white.withValues(alpha: 0.2),
+                                  foregroundColor: Colors.white,
+                                ),
+                                icon: const Icon(Icons.add),
+                                label: const Text('Nouvelle Dépense'),
+                              ),
+                            ),
+                          ),
                   ),
 
                   // Daily summary card
@@ -294,6 +268,35 @@ class ExpensesScreen extends ConsumerWidget {
               ),
               if (expense.notes != null)
                 _buildDetailRow(theme, 'Notes', expense.notes!),
+              if (expense.receiptPath != null) ...[
+                const SizedBox(height: 16),
+                Text(
+                  'Re\u00e7u',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.file(
+                    File(expense.receiptPath!),
+                    height: 200,
+                    width: double.infinity,
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      height: 100,
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Center(
+                        child: Icon(Icons.broken_image_outlined),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
           actions: [
@@ -364,10 +367,12 @@ class ExpensesScreen extends ConsumerWidget {
     );
 
     if (!hasPermission) {
-      NotificationService.showError(
-        context,
-        'Vous n\'avez pas la permission de supprimer des dépenses.',
-      );
+      if (context.mounted) {
+        NotificationService.showError(
+          context,
+          'Vous n\'avez pas la permission de supprimer des dépenses.',
+        );
+      }
       return;
     }
 

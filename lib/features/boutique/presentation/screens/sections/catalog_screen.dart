@@ -11,6 +11,8 @@ import '../../widgets/permission_guard.dart';
 import '../../widgets/product_form_dialog.dart';
 import '../../widgets/product_tile.dart';
 import '../../widgets/restock_dialog.dart';
+import '../../widgets/boutique_header.dart';
+import '../../widgets/boutique_search_bar.dart';
 
 class CatalogScreen extends ConsumerStatefulWidget {
   const CatalogScreen({super.key});
@@ -38,71 +40,51 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final productsAsync = ref.watch(productsProvider);
 
     return CustomScrollView(
       slivers: [
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: EdgeInsets.all(AppSpacing.lg),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    'Produits',
-                    style: theme.textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
+        BoutiqueHeader(
+          title: "CATALOGUE",
+          subtitle: "Produits & Stocks",
+          gradientColors: [
+            const Color(0xFF059669), // Emerald 600
+            const Color(0xFF047857), // Emerald 700
+          ],
+          shadowColor: const Color(0xFF059669),
+          additionalActions: [
+            BoutiquePermissionGuard(
+              permission: BoutiquePermissions.createProduct,
+              child: IntrinsicWidth(
+                child: Semantics(
+                  label: 'Nouveau produit',
+                  hint: 'Créer un nouveau produit dans le catalogue',
+                  button: true,
+                  child: FilledButton.icon(
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) => const ProductFormDialog(),
+                      );
+                    },
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Colors.white.withValues(alpha: 0.2),
+                      foregroundColor: Colors.white,
                     ),
+                    icon: const Icon(Icons.add),
+                    label: const Text('Nouveau Produit'),
                   ),
-                ),
-                const SizedBox(width: AppSpacing.md),
-                BoutiquePermissionGuard(
-                  permission: BoutiquePermissions.createProduct,
-                  child: IntrinsicWidth(
-                    child: Semantics(
-                      label: 'Nouveau produit',
-                      hint: 'Créer un nouveau produit dans le catalogue',
-                      button: true,
-                      child: FilledButton.icon(
-                        onPressed: () {
-                          showDialog(
-                            context: context,
-                            builder: (context) => const ProductFormDialog(),
-                          );
-                        },
-                        icon: const Icon(Icons.add),
-                        label: const Text('Nouveau Produit'),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: AppSpacing.horizontalPadding,
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Rechercher un produit...',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _searchQuery.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          _searchController.clear();
-                          setState(() => _searchQuery = '');
-                        },
-                      )
-                    : null,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
+            ),
+          ],
+        ),
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+          sliver: SliverToBoxAdapter(
+            child: BoutiqueSearchBar(
+              controller: _searchController,
+              hintText: 'Rechercher un produit...',
               onChanged: (value) {
                 setState(() => _searchQuery = value);
               },

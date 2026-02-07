@@ -134,9 +134,9 @@ class ProductionPaymentFormState extends ConsumerState<ProductionPaymentForm> {
             const SizedBox(height: 16),
             TextFormField(
               controller: _notesController,
-              decoration: const InputDecoration(
-                labelText: 'Note / Description (optionnel)',
-                prefixIcon: Icon(Icons.note),
+              decoration: _buildInputDecoration(
+                label: 'Note / Description (optionnel)',
+                icon: Icons.note_rounded,
                 hintText: 'Ex: Production de 500 packs, 3 jours de travail...',
               ),
               maxLines: 3,
@@ -167,6 +167,30 @@ class ProductionPaymentFormState extends ConsumerState<ProductionPaymentForm> {
           ],
         ),
       ),
+    );
+  }
+
+  InputDecoration _buildInputDecoration({required String label, required IconData icon, String? hintText}) {
+    final colors = Theme.of(context).colorScheme;
+    return InputDecoration(
+      labelText: label,
+      hintText: hintText,
+      prefixIcon: Icon(icon, size: 20, color: colors.primary),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: colors.outline.withValues(alpha: 0.1)),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: colors.outline.withValues(alpha: 0.1)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: colors.primary, width: 2),
+      ),
+      filled: true,
+      fillColor: colors.surfaceContainerLow.withValues(alpha: 0.3),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
     );
   }
 }

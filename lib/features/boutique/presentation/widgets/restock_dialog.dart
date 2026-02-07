@@ -58,8 +58,10 @@ class _RestockDialogState extends ConsumerState<RestockDialog> {
       final totalPrice = int.parse(_priceController.text);
       final unitPrice = (totalPrice / qty).round();
 
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final randomPart = (DateTime.now().microsecond % 1000).toString().padLeft(3, '0');
       final purchase = Purchase(
-        id: 'purchase-${DateTime.now().millisecondsSinceEpoch}',
+        id: 'local_purchase_${timestamp}_$randomPart',
         date: DateTime.now(),
         items: [
           PurchaseItem(
@@ -83,7 +85,7 @@ class _RestockDialogState extends ConsumerState<RestockDialog> {
 
       // Créer la dépense associée
       final expense = Expense(
-        id: 'expense-${purchase.id}',
+        id: 'local_expense_${purchase.id.replaceFirst('local_purchase_', '')}',
         label: 'Achat: ${widget.product.name} (x$qty)',
         amountCfa: totalPrice,
         category: ExpenseCategory.stock,

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'dart:ui' as ui;
 import 'package:elyf_groupe_app/shared.dart';
-import '../../../../../shared/utils/notification_service.dart';
+
 
 /// Dialog pour enregistrer une signature numérique après paiement.
 class PaymentSignatureDialog extends StatefulWidget {
@@ -22,7 +22,7 @@ class PaymentSignatureDialog extends StatefulWidget {
   final int? daysWorked; // Optionnel (pour salaire mensuel)
   final DateTime? week; // Optionnel (pour salaire mensuel)
   final String? period; // Optionnel (pour salaire mensuel, ex: "janvier 2024")
-  final ValueChanged<Uint8List> onPaid;
+  final void Function(Uint8List signature, String? signerName) onPaid; // Updated callback
 
   @override
   State<PaymentSignatureDialog> createState() => _PaymentSignatureDialogState();
@@ -30,20 +30,25 @@ class PaymentSignatureDialog extends StatefulWidget {
 
 class _PaymentSignatureDialogState extends State<PaymentSignatureDialog> {
   final GlobalKey _signatureKey = GlobalKey();
-  final List<Offset> _points = [];
-  bool _hasSignature = false;
+  // Use nullable Offset to represent breaks in strokes
+  final List<Offset?> _points = [];
+  final TextEditingController _signerNameController = TextEditingController();
+  
+  @override
+  void dispose() {
+    _signerNameController.dispose();
+    super.dispose();
+  }
 
-  void _addPoint(Offset point) {
+  void _addPoint(Offset? point) {
     setState(() {
       _points.add(point);
-      _hasSignature = true;
     });
   }
 
   void _clearSignature() {
     setState(() {
       _points.clear();
-      _hasSignature = false;
     });
   }
 
@@ -52,6 +57,7 @@ class _PaymentSignatureDialogState extends State<PaymentSignatureDialog> {
       final RenderRepaintBoundary boundary =
           _signatureKey.currentContext!.findRenderObject()
               as RenderRepaintBoundary;
+      // Increase pixelRatio for better quality
       final ui.Image image = await boundary.toImage(pixelRatio: 3.0);
       final ByteData? byteData = await image.toByteData(
         format: ui.ImageByteFormat.png,
@@ -63,7 +69,8 @@ class _PaymentSignatureDialogState extends State<PaymentSignatureDialog> {
   }
 
   Future<void> _submit() async {
-    if (!_hasSignature) {
+    // Check if there is at least one valid point
+    if (_points.where((p) => p != null).isEmpty) {
       NotificationService.showError(
         context,
         'Veuillez signer avant de valider',
@@ -74,7 +81,7 @@ class _PaymentSignatureDialogState extends State<PaymentSignatureDialog> {
     final signature = await _captureSignature();
     if (!mounted) return;
     if (signature != null) {
-      widget.onPaid(signature);
+      widget.onPaid(signature, _signerNameController.text.trim().isEmpty ? null : _signerNameController.text.trim());
     } else {
       NotificationService.showError(
         context,
@@ -94,7 +101,6 @@ class _PaymentSignatureDialogState extends State<PaymentSignatureDialog> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Informations du paiement (Scrollable if needed)
           Flexible(
             child: SingleChildScrollView(
               child: Container(
@@ -148,7 +154,7 @@ class _PaymentSignatureDialogState extends State<PaymentSignatureDialog> {
                       children: [
                         Text('Montant:', style: theme.textTheme.bodyMedium),
                         Text(
-                          '${widget.amount} CFA',
+                          CurrencyFormatter.formatFCFA(widget.amount),
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: theme.colorScheme.primary,
@@ -161,7 +167,18 @@ class _PaymentSignatureDialogState extends State<PaymentSignatureDialog> {
               ),
             ),
           ),
-          const SizedBox(height: 12), // Reduced spacing
+          const SizedBox(height: 16),
+          TextField(
+            controller: _signerNameController,
+            decoration: const InputDecoration(
+              labelText: 'Nom du signataire (Optionnel)',
+              border: OutlineInputBorder(),
+              prefixIcon: Icon(Icons.person),
+              hintText: 'Qui signe ?',
+            ),
+            textCapitalization: TextCapitalization.words,
+          ),
+          const SizedBox(height: 16),
           Text(
             'Signature du bénéficiaire',
             style: theme.textTheme.titleSmall?.copyWith(
@@ -178,23 +195,27 @@ class _PaymentSignatureDialogState extends State<PaymentSignatureDialog> {
               borderRadius: BorderRadius.circular(8),
               color: Colors.white,
             ),
+            clipBehavior: Clip.hardEdge,
             child: RepaintBoundary(
               key: _signatureKey,
               child: Builder(
                 builder: (context) {
-                  return GestureDetector(
-                    onPanStart: (details) {
+                  return Listener(
+                    onPointerDown: (event) {
                       final renderBox = context.findRenderObject() as RenderBox;
-                      final localPosition = renderBox.globalToLocal(details.globalPosition);
+                      final localPosition = renderBox.globalToLocal(event.position);
                       _addPoint(localPosition);
                     },
-                    onPanUpdate: (details) {
+                    onPointerMove: (event) {
                       final renderBox = context.findRenderObject() as RenderBox;
-                      final localPosition = renderBox.globalToLocal(details.globalPosition);
+                      final localPosition = renderBox.globalToLocal(event.position);
                       _addPoint(localPosition);
                     },
-                    onPanEnd: (details) {
-                      _addPoint(const Offset(-1, -1)); 
+                    onPointerUp: (event) {
+                      _addPoint(null);
+                    },
+                    onPointerCancel: (event) {
+                      _addPoint(null);
                     },
                     child: CustomPaint(
                       painter: _SignaturePainter(_points),
@@ -215,30 +236,6 @@ class _PaymentSignatureDialogState extends State<PaymentSignatureDialog> {
               ),
             ],
           ),
-          // Shortened info text to save space
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.orange.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.info_outline,
-                  size: 16,
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Signez pour valider.',
-                    style: theme.textTheme.bodySmall,
-                  ),
-                ),
-              ],
-            ),
-          ),
         ],
       ),
       actions: [
@@ -258,21 +255,27 @@ class _PaymentSignatureDialogState extends State<PaymentSignatureDialog> {
 class _SignaturePainter extends CustomPainter {
   _SignaturePainter(this.points);
 
-  final List<Offset> points;
+  final List<Offset?> points;
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
       ..color = Colors.black
-      ..strokeWidth = 2.0
+      ..strokeWidth = 2.5
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
 
     for (int i = 0; i < points.length - 1; i++) {
-      if (points[i].dx < 0 || points[i + 1].dx < 0) {
-        continue; // Ignorer les marqueurs de fin de trait
+      if (points[i] != null && points[i + 1] != null) {
+        canvas.drawLine(points[i]!, points[i + 1]!, paint);
+      } else if (points[i] != null && points[i + 1] == null) {
+        // Draw a dot for single points
+        canvas.drawPoints(ui.PointMode.points, [points[i]!], paint);
       }
-      canvas.drawLine(points[i], points[i + 1], paint);
+    }
+    // Handle last point if it's a dot
+    if (points.isNotEmpty && points.last != null) {
+       canvas.drawPoints(ui.PointMode.points, [points.last!], paint);
     }
   }
 

@@ -137,8 +137,10 @@ class _CheckoutDialogState extends ConsumerState<CheckoutDialog>
           }
         }
 
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        final randomPart = (DateTime.now().microsecond % 1000).toString().padLeft(3, '0');
         final sale = Sale(
-          id: 'sale-${DateTime.now().millisecondsSinceEpoch}',
+          id: 'local_sale_${timestamp}_$randomPart',
           date: DateTime.now(),
           items: widget.cartItems.map((item) {
             return SaleItem(

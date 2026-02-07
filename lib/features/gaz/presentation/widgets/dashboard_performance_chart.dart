@@ -1,5 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:elyf_groupe_app/shared/presentation/widgets/elyf_ui/organisms/elyf_card.dart';
 
 /// Chart displaying performance over the last 7 days (Bénéfice, Dépenses, Ventes).
 class DashboardPerformanceChart extends StatelessWidget {
@@ -54,16 +55,8 @@ class DashboardPerformanceChart extends StatelessWidget {
       return '$dayName $dayNumber';
     });
 
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: Colors.black.withValues(alpha: 0.1),
-          width: 1.3,
-        ),
-      ),
+    return ElyfCard(
+      isGlass: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -71,12 +64,10 @@ class DashboardPerformanceChart extends StatelessWidget {
           Text(
             'Performance des 7 derniers jours',
             style: theme.textTheme.titleMedium?.copyWith(
-              fontSize: 16,
-              fontWeight: FontWeight.normal,
-              color: const Color(0xFF0A0A0A),
+              fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 46),
+          const SizedBox(height: 32),
           // Chart
           SizedBox(
             height: 300,
@@ -88,7 +79,7 @@ class DashboardPerformanceChart extends StatelessWidget {
                   horizontalInterval: yMax / 4,
                   getDrawingHorizontalLine: (value) {
                     return FlLine(
-                      color: const Color(0xFFE5E7EB),
+                      color: theme.colorScheme.outline.withValues(alpha: 0.1),
                       strokeWidth: 1,
                     );
                   },
@@ -97,7 +88,7 @@ class DashboardPerformanceChart extends StatelessWidget {
                   leftTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
-                      reservedSize: 40,
+                      reservedSize: 44,
                       interval: yMax / 4,
                       getTitlesWidget: (value, meta) {
                         return Padding(
@@ -105,8 +96,8 @@ class DashboardPerformanceChart extends StatelessWidget {
                           child: Text(
                             value.toInt().toString(),
                             style: theme.textTheme.bodySmall?.copyWith(
-                              fontSize: 12,
-                              color: const Color(0xFF666666),
+                              fontSize: 10,
+                              color: theme.colorScheme.onSurfaceVariant,
                             ),
                             textAlign: TextAlign.right,
                           ),
@@ -135,8 +126,8 @@ class DashboardPerformanceChart extends StatelessWidget {
                           child: Text(
                             dayLabels[index],
                             style: theme.textTheme.bodySmall?.copyWith(
-                              fontSize: 12,
-                              color: const Color(0xFF666666),
+                              fontSize: 10,
+                              color: theme.colorScheme.onSurfaceVariant,
                             ),
                             textAlign: TextAlign.center,
                           ),
@@ -155,34 +146,37 @@ class DashboardPerformanceChart extends StatelessWidget {
                   LineChartBarData(
                     spots: profitSpots,
                     isCurved: true,
-                    color: const Color(0xFF3B82F6),
+                    color: theme.colorScheme.primary,
                     barWidth: 3,
                     dotData: FlDotData(
                       show: true,
                       getDotPainter: (spot, percent, barData, index) {
                         return FlDotCirclePainter(
                           radius: 4,
-                          color: const Color(0xFF3B82F6),
+                          color: theme.colorScheme.primary,
                           strokeWidth: 2,
                           strokeColor: Colors.white,
                         );
                       },
                     ),
-                    belowBarData: BarAreaData(show: false),
+                    belowBarData: BarAreaData(
+                      show: true,
+                      color: theme.colorScheme.primary.withValues(alpha: 0.05),
+                    ),
                   ),
                   // Dépenses (red)
                   LineChartBarData(
                     spots: expensesSpots,
                     isCurved: true,
-                    color: const Color(0xFFEF4444),
+                    color: theme.colorScheme.error,
                     barWidth: 3,
                     dotData: FlDotData(
                       show: true,
                       getDotPainter: (spot, percent, barData, index) {
                         return FlDotSquarePainter(
-                          size: 8,
-                          color: const Color(0xFFEF4444),
-                          strokeWidth: 2,
+                          size: 6,
+                          color: theme.colorScheme.error,
+                          strokeWidth: 1.5,
                           strokeColor: Colors.white,
                         );
                       },
@@ -199,7 +193,7 @@ class DashboardPerformanceChart extends StatelessWidget {
                       show: true,
                       getDotPainter: (spot, percent, barData, index) {
                         return FlDotCrossPainter(
-                          size: 8,
+                          size: 6,
                           color: const Color(0xFF10B981),
                         );
                       },
@@ -217,8 +211,8 @@ class DashboardPerformanceChart extends StatelessWidget {
             spacing: 16,
             runSpacing: 8,
             children: [
-              _LegendItem(color: const Color(0xFF3B82F6), label: 'Bénéfice'),
-              _LegendItem(color: const Color(0xFFEF4444), label: 'Dépenses'),
+              _LegendItem(color: theme.colorScheme.primary, label: 'Bénéfice'),
+              _LegendItem(color: theme.colorScheme.error, label: 'Dépenses'),
               _LegendItem(color: const Color(0xFF10B981), label: 'Ventes'),
             ],
           ),

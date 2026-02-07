@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
 /// Professional KPI card for dashboard with icon and subtitle.
+import 'package:elyf_groupe_app/shared/presentation/widgets/elyf_ui/organisms/elyf_card.dart';
+
+/// Professional KPI card for dashboard with icon and subtitle.
 class DashboardKpiCard extends StatelessWidget {
   const DashboardKpiCard({
     super.key,
@@ -11,6 +14,7 @@ class DashboardKpiCard extends StatelessWidget {
     this.iconColor,
     this.valueColor,
     this.backgroundColor,
+    this.isGlass = false,
   });
 
   final String label;
@@ -20,87 +24,106 @@ class DashboardKpiCard extends StatelessWidget {
   final Color? iconColor;
   final Color? valueColor;
   final Color? backgroundColor;
+  final bool isGlass;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
 
+    if (isGlass) {
+      return ElyfCard(
+        isGlass: true,
+        borderColor: (iconColor ?? colors.primary).withValues(alpha: 0.1),
+        padding: const EdgeInsets.all(20),
+        child: _buildContent(context),
+      );
+    }
+
     return Container(
       decoration: BoxDecoration(
         color: backgroundColor != null
             ? backgroundColor!.withValues(alpha: 0.15)
             : colors.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
+        padding: const EdgeInsets.all(20),
+        child: _buildContent(context),
+      ),
+    );
+  }
+
+  Widget _buildContent(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    label,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: colors.onSurfaceVariant,
-                      fontSize: 12,
-                    ),
-                  ),
+            if (icon != null)
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: (iconColor ?? colors.primary).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                if (icon != null)
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: (iconColor ?? colors.primary).withValues(
-                        alpha: backgroundColor != null ? 0.2 : 0.1,
-                      ),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(
-                      icon,
-                      size: 18,
-                      color: iconColor ?? colors.primary,
-                    ),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Text(
-              value,
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color:
-                    valueColor ??
-                    (backgroundColor != null
-                        ? iconColor ?? colors.onSurface
-                        : colors.onSurface),
-                fontSize: 22,
-              ),
-            ),
-            if (subtitle != null) ...[
-              const SizedBox(height: 2),
-              Text(
-                subtitle!,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: colors.onSurfaceVariant,
-                  fontSize: 11,
+                child: Icon(
+                  icon,
+                  size: 20,
+                  color: iconColor ?? colors.primary,
                 ),
               ),
-            ],
+            if (subtitle != null)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: (valueColor ?? colors.onSurfaceVariant)
+                      .withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  subtitle!,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: valueColor ?? colors.onSurfaceVariant,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
           ],
         ),
-      ),
+        const SizedBox(height: 16),
+        Text(
+          label,
+          style: theme.textTheme.labelLarge?.copyWith(
+            color: colors.onSurfaceVariant.withValues(alpha: 0.7),
+            letterSpacing: 0.5,
+          ),
+        ),
+        const SizedBox(height: 4),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            value,
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: valueColor ?? colors.onSurface,
+              letterSpacing: -0.5,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

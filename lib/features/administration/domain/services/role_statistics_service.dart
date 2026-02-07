@@ -18,9 +18,9 @@ class RoleStatisticsService {
   }) {
     final counts = <String, Set<String>>{};
     for (final assignment in assignments) {
-      counts
-          .putIfAbsent(assignment.roleId, () => <String>{})
-          .add(assignment.userId);
+      for (final roleId in assignment.roleIds) {
+        counts.putIfAbsent(roleId, () => <String>{}).add(assignment.userId);
+      }
     }
     return counts.map((key, value) => MapEntry(key, value.length));
   }
@@ -34,7 +34,7 @@ class RoleStatisticsService {
     required List<EnterpriseModuleUser> assignments,
   }) {
     final uniqueUsers = assignments
-        .where((a) => a.roleId == roleId)
+        .where((a) => a.roleIds.contains(roleId))
         .map((a) => a.userId)
         .toSet();
     return uniqueUsers.length;

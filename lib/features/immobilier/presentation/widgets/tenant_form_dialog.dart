@@ -19,11 +19,11 @@ class _TenantFormDialogState extends ConsumerState<TenantFormDialog>
   final _formKey = GlobalKey<FormState>();
   final _fullNameController = TextEditingController();
   final _phoneController = TextEditingController();
-  final _emailController = TextEditingController();
   final _addressController = TextEditingController();
   final _idNumberController = TextEditingController();
   final _emergencyContactController = TextEditingController();
   final _notesController = TextEditingController();
+  String? _idCardPath;
 
   @override
   void initState() {
@@ -32,10 +32,10 @@ class _TenantFormDialogState extends ConsumerState<TenantFormDialog>
       final t = widget.tenant!;
       _fullNameController.text = t.fullName;
       _phoneController.text = t.phone;
-      _emailController.text = t.email;
       _addressController.text = t.address ?? '';
       _idNumberController.text = t.idNumber ?? '';
       _emergencyContactController.text = t.emergencyContact ?? '';
+      _idCardPath = t.idCardPath;
       _notesController.text = t.notes ?? '';
     }
   }
@@ -44,7 +44,6 @@ class _TenantFormDialogState extends ConsumerState<TenantFormDialog>
   void dispose() {
     _fullNameController.dispose();
     _phoneController.dispose();
-    _emailController.dispose();
     _addressController.dispose();
     _idNumberController.dispose();
     _emergencyContactController.dispose();
@@ -70,7 +69,6 @@ class _TenantFormDialogState extends ConsumerState<TenantFormDialog>
           id: widget.tenant?.id ?? IdGenerator.generate(),
           fullName: _fullNameController.text.trim(),
           phone: phone,
-          email: _emailController.text.trim(),
           address: _addressController.text.trim().isEmpty
               ? null
               : _addressController.text.trim(),
@@ -78,6 +76,7 @@ class _TenantFormDialogState extends ConsumerState<TenantFormDialog>
               ? null
               : _idNumberController.text.trim(),
           emergencyContact: emergencyContact,
+          idCardPath: _idCardPath,
           notes: _notesController.text.trim().isEmpty
               ? null
               : _notesController.text.trim(),
@@ -106,9 +105,7 @@ class _TenantFormDialogState extends ConsumerState<TenantFormDialog>
   @override
   Widget build(BuildContext context) {
     return FormDialog(
-      title: widget.tenant == null
-          ? 'Nouveau locataire'
-          : 'Modifier le locataire',
+      title: widget.tenant == null ? 'Nouveau locataire' : 'Modifier le locataire',
       saveLabel: widget.tenant == null ? 'Créer' : 'Enregistrer',
       onSave: _save,
       child: Form(
@@ -145,25 +142,6 @@ class _TenantFormDialogState extends ConsumerState<TenantFormDialog>
             ),
             const SizedBox(height: 16),
             TextFormField(
-              controller: _emailController,
-              decoration: const InputDecoration(
-                labelText: 'Email *',
-                hintText: 'jean.kabore@example.com',
-                prefixIcon: Icon(Icons.email),
-              ),
-              keyboardType: TextInputType.emailAddress,
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'L\'email est requis';
-                }
-                if (!value.contains('@')) {
-                  return 'Email invalide';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
               controller: _addressController,
               decoration: const InputDecoration(
                 labelText: 'Adresse',
@@ -180,6 +158,14 @@ class _TenantFormDialogState extends ConsumerState<TenantFormDialog>
                 hintText: 'CI-123456',
                 prefixIcon: Icon(Icons.badge),
               ),
+            ),
+            const SizedBox(height: 16),
+            FormImagePicker(
+              initialImagePath: _idCardPath,
+              label: 'Photo de la pièce d\'identité',
+              onImageSelected: (file) {
+                setState(() => _idCardPath = file?.path);
+              },
             ),
             const SizedBox(height: 16),
             TextFormField(

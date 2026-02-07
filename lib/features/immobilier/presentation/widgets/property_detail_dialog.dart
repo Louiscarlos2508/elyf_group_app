@@ -1,21 +1,27 @@
 import 'package:flutter/material.dart';
-
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../application/providers.dart';
 import '../../domain/entities/property.dart';
 import 'property_detail_helpers.dart';
 import 'property_detail_widgets.dart';
+import '../../../../shared/utils/currency_formatter.dart';
 
 /// Dialog pour afficher les détails d'une propriété.
-class PropertyDetailDialog extends StatelessWidget {
+class PropertyDetailDialog extends ConsumerWidget {
   const PropertyDetailDialog({
     super.key,
     required this.property,
     this.onEdit,
     this.onDelete,
+    this.onAddContract,
+    this.onAddExpense,
   });
 
   final Property property;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
+  final VoidCallback? onAddContract;
+  final VoidCallback? onAddExpense;
 
   Color _getStatusColor(PropertyStatus status) {
     switch (status) {
@@ -38,12 +44,13 @@ class PropertyDetailDialog extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final profitabilityAsync = ref.watch(propertyProfitabilityProvider(property.id));
 
     return Dialog(
       child: Container(
-        constraints: const BoxConstraints(maxWidth: 600, maxHeight: 700),
+        constraints: const BoxConstraints(maxWidth: 600, maxHeight: 800),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -132,6 +139,50 @@ class PropertyDetailDialog extends StatelessWidget {
                         ),
                       ],
                     ),
+                    const SizedBox(height: 16),
+                    // Profitability KPI Card
+                    profitabilityAsync.when(
+                      data: (data) => _buildProfitabilityCard(theme, data),
+                      loading: () => const LinearProgressIndicator(),
+                      error: (e, st) => Text('Erreur rentabilité: $e'),
+                    ),
+                    const SizedBox(height: 16),
+                    // Quick Actions
+                    Row(
+                      children: [
+                        if (onAddContract != null &&
+                            property.status == PropertyStatus.available) ...[
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                                onAddContract?.call();
+                              },
+                              icon: const Icon(Icons.add_circle_outline),
+                              label: const Text('Nouveau Contrat'),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: theme.colorScheme.primary,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                        ],
+                        if (onAddExpense != null)
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                                onAddExpense?.call();
+                              },
+                              icon: const Icon(Icons.receipt_long),
+                              label: const Text('Ajouter Dépense'),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: theme.colorScheme.error,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
                     const SizedBox(height: 24),
                     PropertyDetailSection(
                       title: 'Caractéristiques',
@@ -184,6 +235,7 @@ class PropertyDetailDialog extends StatelessWidget {
                                 avatar: const Icon(
                                   Icons.check_circle,
                                   size: 18,
+                                  color: Colors.green,
                                 ),
                               );
                             }).toList(),
@@ -215,6 +267,55 @@ class PropertyDetailDialog extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildProfitabilityCard(ThemeData theme, ({int revenue, int expenses, int net}) data) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'PERFORMANCE FINANCIÈRE',
+            style: theme.textTheme.labelSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.2,
+              color: theme.colorScheme.primary,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildMetricItem(theme, 'Recettes', data.revenue, Colors.green),
+              _buildMetricItem(theme, 'Dépenses', data.expenses, Colors.red),
+              _buildMetricItem(theme, 'Rendement Net', data.net, Colors.blue, isBold: true),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMetricItem(ThemeData theme, String label, int amount, Color color, {bool isBold = false}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+        Text(
+          CurrencyFormatter.formatFCFA(amount),
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
+            color: color,
+          ),
+        ),
+      ],
     );
   }
 }

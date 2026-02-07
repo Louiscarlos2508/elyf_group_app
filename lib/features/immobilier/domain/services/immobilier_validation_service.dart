@@ -59,8 +59,9 @@ class ImmobilierValidationService {
     }
 
     // Vérifier que la date de fin est après la date de début
-    if (contract.endDate.isBefore(contract.startDate) ||
-        contract.endDate.isAtSameMomentAs(contract.startDate)) {
+    if (contract.endDate != null &&
+        (contract.endDate!.isBefore(contract.startDate) ||
+            contract.endDate!.isAtSameMomentAs(contract.startDate))) {
       return 'La date de fin doit être après la date de début';
     }
 
@@ -105,25 +106,54 @@ class ImmobilierValidationService {
 
     // Valider le cas du paiement mixte (both)
     if (payment.paymentMethod.name == 'both') {
-      // Vérifier que les montants cashAmount et mobileMoneyAmount sont présents
       if (payment.cashAmount == null || payment.mobileMoneyAmount == null) {
         return 'Les montants en espèces et en mobile money sont requis pour un paiement mixte';
       }
-
-      // Vérifier que les montants sont positifs
       if (payment.cashAmount! <= 0 || payment.mobileMoneyAmount! <= 0) {
         return 'Les montants en espèces et en mobile money doivent être supérieurs à 0';
       }
-
-      // Vérifier que la somme correspond au montant total
       final totalSplit = payment.cashAmount! + payment.mobileMoneyAmount!;
       if (totalSplit != payment.amount) {
         return 'La somme des montants en espèces (${payment.cashAmount}) et en mobile money (${payment.mobileMoneyAmount}) doit être égale au montant total (${payment.amount})';
       }
     } else {
-      // Si ce n'est pas "both", s'assurer que cashAmount et mobileMoneyAmount sont null
       if (payment.cashAmount != null || payment.mobileMoneyAmount != null) {
         return 'Les montants séparés ne doivent être renseignés que pour un paiement mixte';
+      }
+    }
+
+    // Vérifier les doublons
+    final existingPayments = await _paymentRepository.getPaymentsByContract(
+      payment.contractId,
+    );
+
+    if (payment.paymentType == PaymentType.rent) {
+      if (payment.month == null || payment.year == null) {
+        return 'Le mois et l\'année sont requis pour un paiement de loyer';
+      }
+
+      final duplicateRent = existingPayments.any(
+        (p) =>
+            p.id != payment.id &&
+            p.paymentType == PaymentType.rent &&
+            p.month == payment.month &&
+            p.year == payment.year &&
+            p.status != PaymentStatus.cancelled,
+      );
+
+      if (duplicateRent) {
+        return 'Un paiement de loyer existe déjà pour ${payment.month}/${payment.year}';
+      }
+    } else if (payment.paymentType == PaymentType.deposit) {
+      final duplicateDeposit = existingPayments.any(
+        (p) =>
+            p.id != payment.id &&
+            p.paymentType == PaymentType.deposit &&
+            p.status != PaymentStatus.cancelled,
+      );
+
+      if (duplicateDeposit) {
+        return 'Une caution a déjà été enregistrée pour ce contrat';
       }
     }
 
@@ -188,7 +218,8 @@ class ImmobilierValidationService {
     final contracts = await _contractRepository.getAllContracts();
     for (final contract in contracts) {
       if (contract.status == ContractStatus.active &&
-          contract.endDate.isBefore(now)) {
+          contract.endDate != null &&
+          contract.endDate!.isBefore(now)) {
         final updated = Contract(
           id: contract.id,
           propertyId: contract.propertyId,
@@ -245,7 +276,7 @@ class ImmobilierValidationService {
     if (contract.status == ContractStatus.terminated) {
       return ContractStatus.terminated;
     }
-    if (contract.endDate.isBefore(now)) {
+    if (contract.endDate != null && contract.endDate!.isBefore(now)) {
       return ContractStatus.expired;
     }
     if (contract.startDate.isAfter(now)) {

@@ -4,10 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/features/administration/application/providers.dart';
 import 'package:elyf_groupe_app/core/auth/providers.dart'
     show currentUserIdProvider;
+import '../../../../../shared/widgets/actionable_empty_state.dart';
 import 'widgets/user_section_header.dart';
 import 'widgets/user_filters_bar.dart';
 import 'widgets/user_list_item.dart';
-import 'widgets/user_empty_state.dart';
 import 'widgets/user_action_handlers.dart';
 import '../../widgets/admin_shimmers.dart';
 
@@ -77,11 +77,23 @@ class _AdminUsersSectionState extends ConsumerState<AdminUsersSection> {
                   enterpriseId: _selectedEnterpriseFilter,
                   moduleId: _selectedModuleFilter,
                   excludeUserId: currentUserId,
+                  excludedUsernames: ['admin'], // Exclure le super admin 'admin'
                 );
 
                 if (filteredUsers.isEmpty) {
+                  final hasSearchQuery = _searchController.text.isNotEmpty;
                   return SliverToBoxAdapter(
-                    child: UserEmptyState(searchQuery: _searchController.text),
+                    child: ActionableEmptyState(
+                      icon: hasSearchQuery ? Icons.search_off : Icons.people,
+                      title: hasSearchQuery
+                          ? 'Aucun utilisateur trouvé'
+                          : 'Aucun utilisateur',
+                      subtitle: hasSearchQuery
+                          ? 'Essayez de modifier vos critères de recherche'
+                          : 'Commencez par créer votre premier utilisateur',
+                      actionLabel: hasSearchQuery ? null : 'Créer un utilisateur',
+                      onAction: hasSearchQuery ? null : _handlers.handleCreateUser,
+                    ),
                   );
                 }
 
@@ -104,7 +116,7 @@ class _AdminUsersSectionState extends ConsumerState<AdminUsersSection> {
                 );
               },
               loading: () => SliverToBoxAdapter(
-                child: AdminShimmers.enterpriseListShimmer(context),
+                child: AdminShimmers.userListShimmer(context, itemCount: 5),
               ),
               error: (error, stack) => SliverToBoxAdapter(
                 child: Center(child: Text('Erreur: $error')),
@@ -112,7 +124,7 @@ class _AdminUsersSectionState extends ConsumerState<AdminUsersSection> {
             );
           },
           loading: () => SliverToBoxAdapter(
-            child: AdminShimmers.enterpriseListShimmer(context),
+            child: AdminShimmers.userListShimmer(context, itemCount: 5),
           ),
           error: (error, stack) => SliverToBoxAdapter(
             child: Center(

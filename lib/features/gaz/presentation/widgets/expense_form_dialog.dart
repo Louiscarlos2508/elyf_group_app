@@ -36,6 +36,7 @@ class _GazExpenseFormDialogState extends ConsumerState<GazExpenseFormDialog>
   DateTime _selectedDate = DateTime.now();
   bool _isFixed = false;
   String? _enterpriseId;
+  String? _receiptPath;
 
   bool get isEditing => widget.expense != null;
 
@@ -54,6 +55,7 @@ class _GazExpenseFormDialogState extends ConsumerState<GazExpenseFormDialog>
       _selectedDate = widget.expense!.date;
       _isFixed = widget.expense!.isFixed;
       _enterpriseId = widget.expense!.enterpriseId;
+      _receiptPath = widget.expense!.receiptPath;
     }
   }
 
@@ -97,6 +99,7 @@ class _GazExpenseFormDialogState extends ConsumerState<GazExpenseFormDialog>
           notes: _notesController.text.trim().isEmpty
               ? null
               : _notesController.text.trim(),
+          receiptPath: _receiptPath,
         );
 
         final controller = ref.read(expenseControllerProvider);
@@ -143,6 +146,14 @@ class _GazExpenseFormDialogState extends ConsumerState<GazExpenseFormDialog>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   ExpenseFormHeader(isEditing: isEditing),
+                  const SizedBox(height: 24),
+                  FormImagePicker(
+                    initialImagePath: _receiptPath,
+                    label: 'Photo du reçu',
+                    onImageSelected: (file) {
+                      setState(() => _receiptPath = file?.path);
+                    },
+                  ),
                   const SizedBox(height: 24),
                   ExpenseAmountInput(controller: _amountController),
                   const SizedBox(height: 16),

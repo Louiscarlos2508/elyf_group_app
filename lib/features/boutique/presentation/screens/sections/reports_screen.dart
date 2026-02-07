@@ -13,6 +13,7 @@ import '../../widgets/report_kpi_cards_v2.dart';
 import '../../widgets/report_period_selector_v2.dart';
 import '../../widgets/report_tabs_v2.dart';
 import '../../widgets/sales_report_content_v2.dart';
+import '../../widgets/boutique_header.dart';
 
 /// Reports screen with professional UI - style eau_minerale.
 class ReportsScreen extends ConsumerStatefulWidget {
@@ -111,35 +112,31 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isWide = constraints.maxWidth > 600;
-
         return CustomScrollView(
           slivers: [
-            // Header
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(24, 24, 24, isWide ? 24 : 16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'Rapports',
-                        style: theme.textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    RefreshButton(
-                      onRefresh: _invalidateProviders,
-                      tooltip: 'Actualiser les rapports',
-                    ),
-                  ],
+            BoutiqueHeader(
+              title: "RAPPORTS",
+              subtitle: "Statistiques & Analyses",
+              gradientColors: [
+                const Color(0xFF7C3AED), // Violet 600
+                const Color(0xFF6D28D9), // Violet 700
+              ],
+              shadowColor: const Color(0xFF7C3AED),
+              additionalActions: [
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: IconButton(
+                    icon: const Icon(Icons.refresh, color: Colors.white),
+                    onPressed: _invalidateProviders,
+                    tooltip: 'Actualiser les rapports',
+                  ),
                 ),
-              ),
+              ],
             ),
 
             // Period selector

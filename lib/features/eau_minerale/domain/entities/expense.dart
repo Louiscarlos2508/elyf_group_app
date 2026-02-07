@@ -6,6 +6,7 @@ class Expense {
     required this.amount,
     required this.description,
     required this.date,
+    this.receiptPath,
   });
 
   final String id;
@@ -13,4 +14,5 @@ class Expense {
   final int amount;
   final String description;
   final DateTime date;
+  final String? receiptPath;
 }

@@ -25,6 +25,12 @@ class ProductionPaymentsContent extends ConsumerWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // 1. Calculateur Intelligent (Priorité Absolue)
+            const WeeklySalaryCalculator(),
+            
+            const SizedBox(height: 32),
+            
+            // 2. Actions Manuelles & Historique
             LayoutBuilder(
               builder: (context, constraints) {
                 final isWide = constraints.maxWidth > 600;
@@ -38,14 +44,14 @@ class ProductionPaymentsContent extends ConsumerWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Paiements Production / Hebdomadaires',
-                              style: theme.textTheme.titleLarge?.copyWith(
+                              'Historique & Saisie Manuelle',
+                              style: theme.textTheme.titleMedium?.copyWith(
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'Enregistrez les paiements pour les productions de la semaine (prestataires, ouvriers occasionnels)',
+                              'Consultez l\'historique ou ajoutez un paiement hors-production',
                               style: theme.textTheme.bodyMedium?.copyWith(
                                 color: theme.colorScheme.onSurfaceVariant,
                               ),
@@ -53,12 +59,10 @@ class ProductionPaymentsContent extends ConsumerWidget {
                           ],
                         ),
                       ),
-                      IntrinsicWidth(
-                        child: FilledButton.icon(
-                          onPressed: onNewPayment,
-                          icon: const Icon(Icons.add),
-                          label: const Text('Nouveau Paiement'),
-                        ),
+                      OutlinedButton.icon(
+                        onPressed: onNewPayment,
+                        icon: const Icon(Icons.edit_note_rounded),
+                        label: const Text('Saisie Manuelle / Avancée'),
                       ),
                     ],
                   );
@@ -67,25 +71,18 @@ class ProductionPaymentsContent extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Paiements Production / Hebdomadaires',
-                        style: theme.textTheme.titleLarge?.copyWith(
+                        'Historique & Saisie Manuelle',
+                        style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Enregistrez les paiements pour les productions de la semaine (prestataires, ouvriers occasionnels)',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
                       const SizedBox(height: 16),
                       SizedBox(
                         width: double.infinity,
-                        child: FilledButton.icon(
+                        child: OutlinedButton.icon(
                           onPressed: onNewPayment,
-                          icon: const Icon(Icons.add),
-                          label: const Text('Nouveau Paiement'),
+                          icon: const Icon(Icons.edit_note_rounded),
+                          label: const Text('Saisie Manuelle / Avancée'),
                         ),
                       ),
                     ],
@@ -93,19 +90,10 @@ class ProductionPaymentsContent extends ConsumerWidget {
                 }
               },
             ),
-            const SizedBox(height: 24),
-            // Calculateur de salaires hebdomadaires (toujours visible)
-            const WeeklySalaryCalculator(),
+            
             if (payments.isNotEmpty) ...[
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
               const Divider(),
-              const SizedBox(height: 24),
-              Text(
-                'Historique des paiements',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
               const SizedBox(height: 16),
               ...payments.map((payment) => _PaymentCard(payment: payment)),
             ] else ...[
@@ -114,15 +102,15 @@ class ProductionPaymentsContent extends ConsumerWidget {
                 child: Column(
                   children: [
                     Icon(
-                      Icons.history,
+                      Icons.history_toggle_off_rounded,
                       size: 48,
                       color: theme.colorScheme.onSurfaceVariant.withValues(
-                        alpha: 0.5,
+                        alpha: 0.3,
                       ),
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'Aucun paiement enregistré',
+                      'Aucun historique de paiement',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),

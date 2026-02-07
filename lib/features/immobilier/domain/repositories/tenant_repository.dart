@@ -20,6 +20,12 @@ abstract class TenantRepository {
   /// Observe les locataires.
   Stream<List<Tenant>> watchTenants();
 
+  /// Observe les locataires supprimés.
+  Stream<List<Tenant>> watchDeletedTenants();
+
   /// Supprime un locataire.
   Future<void> deleteTenant(String id);
+
+  /// Restaure un locataire supprimé.
+  Future<void> restoreTenant(String id);
 }

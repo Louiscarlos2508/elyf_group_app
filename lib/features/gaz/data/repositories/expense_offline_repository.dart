@@ -37,6 +37,7 @@ class GazExpenseOfflineRepository extends OfflineRepository<GazExpense>
       enterpriseId: map['enterpriseId'] as String,
       isFixed: map['isFixed'] as bool? ?? false,
       notes: map['notes'] as String?,
+      receiptPath: map['receiptPath'] as String?,
     );
   }
 
@@ -51,6 +52,7 @@ class GazExpenseOfflineRepository extends OfflineRepository<GazExpense>
       'enterpriseId': entity.enterpriseId,
       'isFixed': entity.isFixed,
       'notes': entity.notes,
+      'receiptPath': entity.receiptPath,
     };
   }
 

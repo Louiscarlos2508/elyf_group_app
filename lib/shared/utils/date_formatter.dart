@@ -55,6 +55,30 @@ class DateFormatter {
     return '$dayName ${date.day} ${months[date.month - 1]} ${date.year}';
   }
 
+  /// Formats a long date (e.g., "Mardi 15 Janvier 2024").
+  static String formatLongDate(DateTime date) {
+    const months = [
+      'Janvier',
+      'Février',
+      'Mars',
+      'Avril',
+      'Mai',
+      'Juin',
+      'Juillet',
+      'Août',
+      'Septembre',
+      'Octobre',
+      'Novembre',
+      'Décembre',
+    ];
+    return '${date.day} ${months[date.month - 1]} ${date.year}';
+  }
+
+  /// Formats a numeric date (e.g., "15/01/2024"). Same as formatDate.
+  static String formatNumericDate(DateTime date) {
+    return formatDate(date);
+  }
+
   /// Formats a date as "DD/MM/YYYY", returns empty string if null.
   static String formatDateOrEmpty(DateTime? date) {
     if (date == null) return '';

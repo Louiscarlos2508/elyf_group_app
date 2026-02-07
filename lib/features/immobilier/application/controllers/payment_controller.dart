@@ -17,6 +17,10 @@ class PaymentController {
     return _paymentRepository.watchPayments();
   }
 
+  Stream<List<Payment>> watchDeletedPayments() {
+    return _paymentRepository.watchDeletedPayments();
+  }
+
   Future<Payment?> getPayment(String id) async {
     return await _paymentRepository.getPaymentById(id);
   }
@@ -66,5 +70,9 @@ class PaymentController {
 
   Future<void> deletePayment(String id) async {
     await _paymentRepository.deletePayment(id);
+  }
+
+  Future<void> restorePayment(String id) async {
+    await _paymentRepository.restorePayment(id);
   }
 }

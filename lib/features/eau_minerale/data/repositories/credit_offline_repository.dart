@@ -250,6 +250,55 @@ class CreditOfflineRepository extends OfflineRepository<CreditPayment>
   }
 
   @override
+  Stream<List<CreditPayment>> watchPayments({
+    DateTime? startDate,
+    DateTime? endDate,
+  }) {
+    developer.log(
+      'Watching credit payments for enterprise: $enterpriseId',
+      name: 'CreditOfflineRepository',
+    );
+
+    return driftService.records
+        .watchForEnterprise(
+          collectionName: collectionName,
+          enterpriseId: enterpriseId,
+          moduleType: moduleType,
+        )
+        .map((rows) {
+          var payments = rows
+              .map((row) => safeDecodeJson(row.dataJson, row.localId))
+              .where((map) => map != null)
+              .map((map) => fromMap(map!))
+              .toList();
+
+          if (startDate != null) {
+            payments = payments
+                .where(
+                  (p) =>
+                      p.date.isAfter(startDate) ||
+                      p.date.isAtSameMomentAs(startDate),
+                )
+                .toList();
+          }
+
+          if (endDate != null) {
+            payments = payments
+                .where(
+                  (p) =>
+                      p.date.isBefore(endDate) ||
+                      p.date.isAtSameMomentAs(endDate),
+                )
+                .toList();
+          }
+          
+          payments.sort((a, b) => b.date.compareTo(a.date));
+
+          return payments;
+        });
+  }
+
+  @override
   Future<List<CreditPayment>> fetchSalePayments(String saleId) async {
     try {
       final allPayments = await getAllForEnterprise(enterpriseId);

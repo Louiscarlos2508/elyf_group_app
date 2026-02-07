@@ -88,9 +88,25 @@ class _DashboardContent extends ConsumerWidget {
     return CustomScrollView(
       slivers: [
         // Header section
+        // Header section with Gradient
         SliverToBoxAdapter(
-          child: Padding(
-            padding: EdgeInsets.all(AppSpacing.lg),
+          child: Container(
+            padding: EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.xl,
+              AppSpacing.lg,
+              AppSpacing.lg,
+            ),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Theme.of(context).colorScheme.primary,
+                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.8),
+                ],
+              ),
+            ),
             child: Row(
               children: [
                 Expanded(
@@ -99,32 +115,28 @@ class _DashboardContent extends ConsumerWidget {
                     children: [
                       Text(
                         "Vue d'ensemble",
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.normal,
+                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
                         ),
                       ),
-                      const SizedBox(height: AppSpacing.sm),
+                      const SizedBox(height: AppSpacing.xs),
                       Text(
-                        'Tableau de bord de gestion du gaz',
+                        'Gestion logistique & points de vente',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          color: Colors.white.withValues(alpha: 0.8),
                         ),
                       ),
                     ],
                   ),
                 ),
-                Semantics(
-                  label: 'Actualiser le tableau de bord',
-                  hint: 'Recharge toutes les données affichées',
-                  button: true,
-                  child: RefreshButton(
-                    onRefresh: () {
-                      ref.invalidate(gasSalesProvider);
-                      ref.invalidate(cylindersProvider);
-                      ref.invalidate(gazExpensesProvider);
-                    },
-                    tooltip: 'Actualiser le tableau de bord',
-                  ),
+                RefreshButton(
+                  onRefresh: () {
+                    ref.invalidate(gasSalesProvider);
+                    ref.invalidate(cylindersProvider);
+                    ref.invalidate(gazExpensesProvider);
+                  },
+                  tooltip: 'Actualiser',
                 ),
               ],
             ),

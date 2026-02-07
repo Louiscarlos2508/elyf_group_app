@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:elyf_groupe_app/shared.dart';
 
 import '../../domain/entities/stock_movement.dart';
 
@@ -99,69 +100,64 @@ class StockMovementTable extends StatelessWidget {
   ) {
     final theme = Theme.of(context);
 
-    return Card(
-      color: theme.colorScheme.surfaceContainerHighest,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Expanded(
-              child: _buildSummaryItem(
-                context,
-                'Total Entrées',
-                totalEntries,
-                Colors.green,
-                Icons.arrow_downward,
-              ),
+    return ElyfCard(
+      isGlass: true,
+      borderColor: theme.colorScheme.primary.withValues(alpha: 0.1),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildSummaryItem(
+              context,
+              'Entrées',
+              totalEntries,
+              Colors.green,
+              Icons.arrow_downward,
             ),
-            Container(
-              width: 1,
-              height: 40,
-              color: theme.colorScheme.outline.withValues(alpha: 0.2),
+          ),
+          _buildDivider(theme),
+          Expanded(
+            child: _buildSummaryItem(
+              context,
+              'Sorties',
+              totalExits,
+              Colors.red,
+              Icons.arrow_upward,
             ),
-            Expanded(
-              child: _buildSummaryItem(
-                context,
-                'Total Sorties',
-                totalExits,
-                Colors.red,
-                Icons.arrow_upward,
-              ),
+          ),
+          _buildDivider(theme),
+          Expanded(
+            child: _buildSummaryItem(
+              context,
+              'Net',
+              netMovement,
+              netMovement >= 0 ? Colors.green : Colors.red,
+              Icons.balance,
             ),
-            Container(
-              width: 1,
-              height: 40,
-              color: theme.colorScheme.outline.withValues(alpha: 0.2),
+          ),
+          _buildDivider(theme),
+          Expanded(
+            child: _buildSummaryItem(
+              context,
+              'Total',
+              totalMovements.toDouble(),
+              theme.colorScheme.primary,
+              Icons.history,
             ),
-            Expanded(
-              child: _buildSummaryItem(
-                context,
-                'Mouvement Net',
-                netMovement,
-                netMovement >= 0 ? Colors.green : Colors.red,
-                Icons.swap_horiz,
-              ),
-            ),
-            Container(
-              width: 1,
-              height: 40,
-              color: theme.colorScheme.outline.withValues(alpha: 0.2),
-            ),
-            Expanded(
-              child: _buildSummaryItem(
-                context,
-                'Total Mouvements',
-                totalMovements.toDouble(),
-                theme.colorScheme.primary,
-                Icons.list,
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
+  Widget _buildDivider(ThemeData theme) {
+    return Container(
+      width: 1,
+      height: 32,
+      margin: const EdgeInsets.symmetric(horizontal: 4),
+      color: theme.colorScheme.outline.withValues(alpha: 0.1),
+    );
+  }
   Widget _buildSummaryItem(
     BuildContext context,
     String label,
@@ -170,259 +166,108 @@ class StockMovementTable extends StatelessWidget {
     IconData icon,
   ) {
     final theme = Theme.of(context);
-
     return Column(
-      mainAxisSize: MainAxisSize.min,
       children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 14, color: color),
-            const SizedBox(width: 2),
-            Flexible(
-              child: Text(
-                label,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                  fontSize: 11,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
+        Icon(icon, size: 16, color: color),
         const SizedBox(height: 4),
         Text(
           value.toStringAsFixed(0),
           style: theme.textTheme.titleMedium?.copyWith(
-            color: color,
             fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+        Text(
+          label,
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildDesktopTable(
-    BuildContext context,
-    List<StockMovement> movements,
-  ) {
+  Widget _buildDesktopTable(BuildContext context, List<StockMovement> movements) {
     final theme = Theme.of(context);
-
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: theme.colorScheme.outline.withValues(alpha: 0.2),
-        ),
-      ),
+    return ElyfCard(
       child: Table(
         columnWidths: const {
-          0: FlexColumnWidth(1.8),
-          1: FlexColumnWidth(2.2),
-          2: FlexColumnWidth(1.2),
+          0: FlexColumnWidth(2),
+          1: FlexColumnWidth(2),
+          2: FlexColumnWidth(3),
           3: FlexColumnWidth(2),
-          4: FlexColumnWidth(1.5),
-          5: FlexColumnWidth(1.3),
         },
         children: [
           TableRow(
             decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(12),
-                topRight: Radius.circular(12),
-              ),
+              color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
             ),
             children: [
-              _buildHeaderCell(context, 'Date/Heure'),
-              _buildHeaderCell(context, 'Produit'),
+              _buildHeaderCell(context, 'Date'),
               _buildHeaderCell(context, 'Type'),
-              _buildHeaderCell(context, 'Motif'),
+              _buildHeaderCell(context, 'Produit'),
               _buildHeaderCell(context, 'Quantité'),
-              _buildHeaderCell(context, 'Machine'),
             ],
           ),
-          ...movements.map((movement) {
-            final reasonText = movement.productionId != null
-                ? '${movement.reason} (Production)'
-                : movement.reason;
-            // Extraire le nom de la machine depuis les notes si disponible
-            String? machineName;
-            if (movement.notes != null) {
-              // Les notes peuvent contenir "Installation en production - {machineName}"
-              final match = RegExp(
-                r'Installation.*- (.+)|machine[:\s]+(.+)',
-                caseSensitive: false,
-              ).firstMatch(movement.notes!);
-              if (match != null) {
-                machineName = match.group(1) ?? match.group(2);
-              }
-            }
-            return TableRow(
-              children: [
-                _buildDataCellText(context, _formatDateTime(movement.date)),
-                _buildDataCellText(context, movement.productName),
-                _buildDataCellWidget(
-                  context,
-                  _buildTypeChip(context, movement.type),
-                ),
-                _buildDataCellText(context, reasonText),
-                _buildDataCellText(
-                  context,
-                  '${movement.quantity.toStringAsFixed(0)} ${movement.unit}',
-                ),
-                _buildDataCellText(context, machineName ?? '-'),
-              ],
-            );
-          }),
+          ...movements.map((m) => TableRow(
+                children: [
+                  _buildDataCell(context, _formatDateTime(m.date)),
+                  _buildDataCell(
+                    context,
+                    m.type == StockMovementType.entry ? 'ENTRÉE' : 'SORTIE',
+                    color: m.type == StockMovementType.entry ? Colors.green : Colors.red,
+                  ),
+                  _buildDataCell(context, m.productName),
+                  _buildDataCell(context, '${m.quantity} ${m.unit}'),
+                ],
+              )),
         ],
       ),
     );
   }
 
   Widget _buildMobileList(BuildContext context, List<StockMovement> movements) {
-    final theme = Theme.of(context);
-
-    return ListView.separated(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: movements.length,
-      separatorBuilder: (context, index) => const Divider(height: 1),
-      itemBuilder: (context, index) {
-        final movement = movements[index];
-        return Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
-            border: Border.all(
-              color: theme.colorScheme.outline.withValues(alpha: 0.2),
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    movement.productName,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+    return Column(
+      children: movements
+          .map((m) => ElyfCard(
+                margin: const EdgeInsets.only(bottom: 8),
+                child: ListTile(
+                  leading: Icon(
+                    m.type == StockMovementType.entry ? Icons.arrow_downward : Icons.arrow_upward,
+                    color: m.type == StockMovementType.entry ? Colors.green : Colors.red,
                   ),
-                  _buildTypeChip(context, movement.type),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Date: ${_formatDateTime(movement.date)}',
-                style: theme.textTheme.bodySmall,
-              ),
-              if (movement.productionId != null) ...[
-                Builder(
-                  builder: (context) {
-                    final prodId = movement.productionId!;
-                    final shortId = prodId.length > 8
-                        ? '${prodId.substring(0, 8)}...'
-                        : prodId;
-                    return Text(
-                      'Production: $shortId',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.primary,
-                        fontStyle: FontStyle.italic,
-                      ),
-                    );
-                  },
+                  title: Text(m.productName),
+                  subtitle: Text(_formatDateTime(m.date)),
+                  trailing: Text(
+                    '${m.quantity} ${m.unit}',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
                 ),
-              ],
-              Text(
-                'Motif: ${movement.reason}',
-                style: theme.textTheme.bodySmall,
-              ),
-              Text(
-                'Quantité: ${movement.quantity.toStringAsFixed(0)} ${movement.unit}',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              if (movement.notes != null) ...[
-                const SizedBox(height: 4),
-                Builder(
-                  builder: (context) {
-                    // Extraire le nom de la machine depuis les notes
-                    final match = RegExp(
-                      r'Installation.*- (.+)|machine[:\s]+(.+)',
-                      caseSensitive: false,
-                    ).firstMatch(movement.notes!);
-                    if (match != null) {
-                      final machineName = match.group(1) ?? match.group(2);
-                      return Text(
-                        'Machine: $machineName',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.primary,
-                          fontStyle: FontStyle.italic,
-                        ),
-                      );
-                    }
-                    return const SizedBox.shrink();
-                  },
-                ),
-              ],
-            ],
-          ),
-        );
-      },
+              ))
+          .toList(),
     );
   }
 
   Widget _buildHeaderCell(BuildContext context, String text) {
-    final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.all(12),
       child: Text(
         text,
-        style: theme.textTheme.labelMedium?.copyWith(
-          fontWeight: FontWeight.bold,
-          color: theme.colorScheme.onSurfaceVariant,
-        ),
+        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
       ),
     );
   }
 
-  Widget _buildDataCellText(BuildContext context, String text) {
-    final theme = Theme.of(context);
+  Widget _buildDataCell(BuildContext context, String text, {Color? color}) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Text(text, style: theme.textTheme.bodyMedium),
-    );
-  }
-
-  Widget _buildDataCellWidget(BuildContext context, Widget content) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: content,
-    );
-  }
-
-  Widget _buildTypeChip(BuildContext context, StockMovementType type) {
-    final theme = Theme.of(context);
-    final isEntry = type == StockMovementType.entry;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: (isEntry ? Colors.green : Colors.red).withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(8),
-      ),
+      padding: const EdgeInsets.all(12),
       child: Text(
-        isEntry ? 'Entrée' : 'Sortie',
-        style: theme.textTheme.labelSmall?.copyWith(
-          color: isEntry ? Colors.green.shade700 : Colors.red.shade700,
-          fontWeight: FontWeight.w600,
-        ),
+        text,
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: color,
+            ),
       ),
     );
   }

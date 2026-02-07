@@ -20,6 +20,7 @@ class ProductionSession {
     required this.quantiteProduiteUnite,
     this.emballagesUtilises,
     this.coutBobines,
+    this.coutEmballages,
     this.coutElectricite,
     this.notes,
     this.createdAt,
@@ -47,6 +48,7 @@ class ProductionSession {
   final String quantiteProduiteUnite; // Unité (ex: "pack", "sachet")
   final int? emballagesUtilises; // Nombre d'emballages utilisés (packs)
   final int? coutBobines; // Coût total des bobines utilisées (CFA)
+  final int? coutEmballages; // Coût total des emballages utilisés (CFA)
   final int? coutElectricite; // Coût de l'électricité (CFA)
   final String? notes;
   final DateTime? createdAt;
@@ -68,12 +70,13 @@ class ProductionSession {
     return difference.inMinutes / 60.0;
   }
 
-  /// Calcule le coût total de la session (bobines + électricité + personnel)
+  /// Calcule le coût total de la session (bobines + emballages + électricité + personnel)
   int get coutTotal {
     final coutBob = coutBobines ?? 0;
+    final coutEmb = coutEmballages ?? 0;
     final coutElec = coutElectricite ?? 0;
     final coutPers = coutTotalPersonnel;
-    return coutBob + coutElec + coutPers;
+    return coutBob + coutEmb + coutElec + coutPers;
   }
 
   /// Vérifie si la session est complète (toutes les données nécessaires)
@@ -178,6 +181,7 @@ class ProductionSession {
     String? quantiteProduiteUnite,
     int? emballagesUtilises,
     int? coutBobines,
+    int? coutEmballages,
     int? coutElectricite,
     String? notes,
     DateTime? createdAt,
@@ -205,6 +209,7 @@ class ProductionSession {
           quantiteProduiteUnite ?? this.quantiteProduiteUnite,
       emballagesUtilises: emballagesUtilises ?? this.emballagesUtilises,
       coutBobines: coutBobines ?? this.coutBobines,
+      coutEmballages: coutEmballages ?? this.coutEmballages,
       coutElectricite: coutElectricite ?? this.coutElectricite,
       notes: notes ?? this.notes,
       createdAt: createdAt ?? this.createdAt,

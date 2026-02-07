@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/cart_item.dart';
 
+import 'package:elyf_groupe_app/shared/presentation/widgets/elyf_ui/organisms/elyf_card.dart';
+
 class CartSummary extends ConsumerWidget {
   const CartSummary({
     super.key,
@@ -34,21 +36,27 @@ class CartSummary extends ConsumerWidget {
       child: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(24, 24, 16, 16),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Panier',
-                  style: theme.textTheme.titleLarge?.copyWith(
+                  'PANIER',
+                  style: theme.textTheme.labelLarge?.copyWith(
                     fontWeight: FontWeight.bold,
+                    letterSpacing: 1.1,
+                    color: theme.colorScheme.primary,
                   ),
                 ),
                 if (cartItems.isNotEmpty)
                   TextButton.icon(
                     onPressed: onClear,
-                    icon: const Icon(Icons.clear_all, size: 18),
+                    icon: const Icon(Icons.delete_sweep_rounded, size: 18),
                     label: const Text('Vider'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: theme.colorScheme.error,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                    ),
                   ),
               ],
             ),
@@ -59,18 +67,26 @@ class CartSummary extends ConsumerWidget {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
-                          Icons.shopping_cart_outlined,
-                          size: 64,
-                          color: theme.colorScheme.onSurfaceVariant.withValues(
-                            alpha: 0.5,
+                        Container(
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.shopping_cart_outlined,
+                            size: 48,
+                            color: theme.colorScheme.onSurfaceVariant.withValues(
+                              alpha: 0.3,
+                            ),
                           ),
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 20),
                         Text(
-                          'Panier vide',
+                          'Votre panier est vide',
                           style: theme.textTheme.bodyLarge?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
+                            color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ],
@@ -81,57 +97,64 @@ class CartSummary extends ConsumerWidget {
                     itemCount: cartItems.length,
                     itemBuilder: (context, index) {
                       final item = cartItems[index];
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          side: BorderSide(
-                            color: theme.colorScheme.outline.withValues(alpha: 0.1),
-                          ),
-                        ),
-                        child: ListTile(
-                          title: Text(
-                            item.product.name,
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          subtitle: Text(
-                            CurrencyFormatter.formatFCFA(item.product.price),
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.remove_circle_outline, size: 20),
-                                onPressed: () =>
-                                    onUpdateQuantity(index, item.quantity - 1),
-                                color: theme.colorScheme.primary,
+                      return ElyfCard(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.all(12),
+                        elevation: 1,
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    item.product.name,
+                                    style: theme.textTheme.titleSmall?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    CurrencyFormatter.formatFCFA(item.product.price),
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      color: theme.colorScheme.primary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              Text(
-                                '${item.quantity}',
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
+                            ),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                _QtyButton(
+                                  icon: Icons.remove_rounded,
+                                  onPressed: () => onUpdateQuantity(index, item.quantity - 1),
                                 ),
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.add_circle_outline, size: 20),
-                                onPressed: () =>
-                                    onUpdateQuantity(index, item.quantity + 1),
-                                color: theme.colorScheme.primary,
-                              ),
-                              const SizedBox(width: 4),
-                              IconButton(
-                                icon: const Icon(Icons.delete_outline, size: 20),
-                                onPressed: () => onRemove(index),
-                                color: theme.colorScheme.error,
-                              ),
-                            ],
-                          ),
+                                Container(
+                                  constraints: const BoxConstraints(minWidth: 32),
+                                  alignment: Alignment.center,
+                                  child: Text(
+                                    '${item.quantity}',
+                                    style: theme.textTheme.bodyLarge?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                                _QtyButton(
+                                  icon: Icons.add_rounded,
+                                  onPressed: () => onUpdateQuantity(index, item.quantity + 1),
+                                ),
+                                const SizedBox(width: 8),
+                                IconButton(
+                                  icon: const Icon(Icons.delete_outline_rounded, size: 20),
+                                  onPressed: () => onRemove(index),
+                                  color: theme.colorScheme.error.withValues(alpha: 0.7),
+                                  visualDensity: VisualDensity.compact,
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       );
                     },
@@ -140,7 +163,7 @@ class CartSummary extends ConsumerWidget {
           if (cartItems.isNotEmpty) ...[
             const Divider(height: 1),
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(24),
               child: Column(
                 children: [
                   Row(
@@ -148,28 +171,40 @@ class CartSummary extends ConsumerWidget {
                     children: [
                       Text(
                         'Total',
-                        style: theme.textTheme.titleLarge?.copyWith(
+                        style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
                       Text(
                         CurrencyFormatter.formatFCFA(total),
                         style: theme.textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w900,
                           color: theme.colorScheme.primary,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 24),
                   SizedBox(
                     width: double.infinity,
+                    height: 56,
                     child: FilledButton.icon(
                       onPressed: onCheckout,
-                      icon: const Icon(Icons.payment),
-                      label: const Text('Payer'),
+                      icon: const Icon(Icons.check_circle_rounded),
+                      label: const Text(
+                        'VALIDER LA VENTE',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
                       style: FilledButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        elevation: 4,
+                        shadowColor: theme.colorScheme.primary.withValues(alpha: 0.4),
                       ),
                     ),
                   ),
@@ -178,6 +213,34 @@ class CartSummary extends ConsumerWidget {
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+class _QtyButton extends StatelessWidget {
+  const _QtyButton({required this.icon, required this.onPressed});
+
+  final IconData icon;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Material(
+      color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.all(4),
+          child: Icon(
+            icon,
+            size: 18,
+            color: theme.colorScheme.primary,
+          ),
+        ),
       ),
     );
   }

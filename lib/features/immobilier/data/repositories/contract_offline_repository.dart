@@ -29,7 +29,9 @@ class ContractOfflineRepository extends OfflineRepository<Contract>
       propertyId: map['propertyId'] as String,
       tenantId: map['tenantId'] as String,
       startDate: DateTime.parse(map['startDate'] as String),
-      endDate: DateTime.parse(map['endDate'] as String),
+      endDate: map['endDate'] != null
+          ? DateTime.parse(map['endDate'] as String)
+          : null,
       monthlyRent: (map['monthlyRent'] as num?)?.toInt() ?? 0,
       deposit: (map['deposit'] as num?)?.toInt() ?? 0,
       status: _parseContractStatus(map['status'] as String),
@@ -44,7 +46,13 @@ class ContractOfflineRepository extends OfflineRepository<Contract>
       updatedAt: map['updatedAt'] != null
           ? DateTime.parse(map['updatedAt'] as String)
           : null,
+      deletedAt: map['deletedAt'] != null
+          ? DateTime.parse(map['deletedAt'] as String)
+          : null,
+      deletedBy: map['deletedBy'] as String?,
       attachedFiles: null, // Will be loaded separately if needed
+      entryInventory: map['entryInventory'] as String?,
+      exitInventory: map['exitInventory'] as String?,
     );
   }
 
@@ -55,7 +63,7 @@ class ContractOfflineRepository extends OfflineRepository<Contract>
       'propertyId': entity.propertyId,
       'tenantId': entity.tenantId,
       'startDate': entity.startDate.toIso8601String(),
-      'endDate': entity.endDate.toIso8601String(),
+      'endDate': entity.endDate?.toIso8601String(),
       'monthlyRent': entity.monthlyRent.toDouble(),
       'deposit': entity.deposit.toDouble(),
       'status': entity.status.name,
@@ -64,6 +72,10 @@ class ContractOfflineRepository extends OfflineRepository<Contract>
       'depositInMonths': entity.depositInMonths,
       'createdAt': entity.createdAt?.toIso8601String(),
       'updatedAt': entity.updatedAt?.toIso8601String(),
+      'deletedAt': entity.deletedAt?.toIso8601String(),
+      'deletedBy': entity.deletedBy,
+      'entryInventory': entity.entryInventory,
+      'exitInventory': entity.exitInventory,
     };
   }
 
@@ -184,6 +196,26 @@ class ContractOfflineRepository extends OfflineRepository<Contract>
               .map(
                 (r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>),
               )
+              .where((e) => e.deletedAt == null)
+              .toList();
+          return deduplicateByRemoteId(entities);
+        });
+  }
+
+  @override
+  Stream<List<Contract>> watchDeletedContracts() {
+    return driftService.records
+        .watchForEnterprise(
+          collectionName: collectionName,
+          enterpriseId: enterpriseId,
+          moduleType: 'immobilier',
+        )
+        .map((rows) {
+          final entities = rows
+              .map(
+                (r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>),
+              )
+              .where((e) => e.deletedAt != null)
               .toList();
           return deduplicateByRemoteId(entities);
         });
@@ -277,6 +309,8 @@ class ContractOfflineRepository extends OfflineRepository<Contract>
         createdAt: contract.createdAt,
         updatedAt: DateTime.now(),
         attachedFiles: contract.attachedFiles,
+        entryInventory: contract.entryInventory,
+        exitInventory: contract.exitInventory,
       );
       await save(contractWithLocalId);
       return contractWithLocalId;
@@ -315,12 +349,39 @@ class ContractOfflineRepository extends OfflineRepository<Contract>
     try {
       final contract = await getContractById(id);
       if (contract != null) {
-        await delete(contract);
+        final updatedContract = contract.copyWith(
+          deletedAt: DateTime.now(),
+          deletedBy: 'system',
+        );
+        await save(updatedContract);
       }
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       AppLogger.error(
         'Error deleting contract: $id - ${appException.message}',
+        name: 'ContractOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      throw appException;
+    }
+  }
+
+  @override
+  Future<void> restoreContract(String id) async {
+    try {
+      final contract = await getContractById(id);
+      if (contract != null) {
+        final updatedContract = contract.copyWith(
+          deletedAt: null,
+          deletedBy: null,
+        );
+        await save(updatedContract);
+      }
+    } catch (error, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
+      AppLogger.error(
+        'Error restoring contract: $id - ${appException.message}',
         name: 'ContractOfflineRepository',
         error: error,
         stackTrace: stackTrace,

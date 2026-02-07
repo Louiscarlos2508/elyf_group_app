@@ -5,14 +5,14 @@ class ReportPeriodSelectorV2 extends StatelessWidget {
   const ReportPeriodSelectorV2({
     super.key,
     required this.startDate,
-    required this.endDate,
+    this.endDate,
     required this.onStartDateSelected,
     required this.onEndDateSelected,
     required this.onDownload,
   });
 
   final DateTime startDate;
-  final DateTime endDate;
+  final DateTime? endDate;
   final VoidCallback onStartDateSelected;
   final VoidCallback onEndDateSelected;
   final VoidCallback onDownload;
@@ -114,12 +114,12 @@ class ReportPeriodSelectorV2 extends StatelessWidget {
 class _ReportDateField extends StatelessWidget {
   const _ReportDateField({
     required this.label,
-    required this.date,
+    this.date,
     required this.onTap,
   });
 
   final String label;
-  final DateTime date;
+  final DateTime? date;
   final VoidCallback onTap;
 
   @override
@@ -134,7 +134,9 @@ class _ReportDateField extends StatelessWidget {
           suffixIcon: const Icon(Icons.calendar_today),
         ),
         child: Text(
-          '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}',
+          date != null
+              ? '${date!.day.toString().padLeft(2, '0')}/${date!.month.toString().padLeft(2, '0')}/${date!.year}'
+              : 'Choisir',
           style: theme.textTheme.bodyMedium,
         ),
       ),

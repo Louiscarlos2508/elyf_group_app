@@ -46,6 +46,10 @@ class PropertyOfflineRepository extends OfflineRepository<Property>
       updatedAt: map['updatedAt'] != null
           ? DateTime.parse(map['updatedAt'] as String)
           : null,
+      deletedAt: map['deletedAt'] != null
+          ? DateTime.parse(map['deletedAt'] as String)
+          : null,
+      deletedBy: map['deletedBy'] as String?,
     );
   }
 
@@ -65,6 +69,8 @@ class PropertyOfflineRepository extends OfflineRepository<Property>
       'amenities': entity.amenities,
       'createdAt': entity.createdAt?.toIso8601String(),
       'updatedAt': entity.updatedAt?.toIso8601String(),
+      'deletedAt': entity.deletedAt?.toIso8601String(),
+      'deletedBy': entity.deletedBy,
     };
   }
 
@@ -180,6 +186,26 @@ class PropertyOfflineRepository extends OfflineRepository<Property>
               .map(
                 (r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>),
               )
+              .where((e) => e.deletedAt == null)
+              .toList();
+          return deduplicateByRemoteId(entities);
+        });
+  }
+
+  @override
+  Stream<List<Property>> watchDeletedProperties() {
+    return driftService.records
+        .watchForEnterprise(
+          collectionName: collectionName,
+          enterpriseId: enterpriseId,
+          moduleType: 'immobilier',
+        )
+        .map((rows) {
+          final entities = rows
+              .map(
+                (r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>),
+              )
+              .where((e) => e.deletedAt != null)
               .toList();
           return deduplicateByRemoteId(entities);
         });
@@ -291,12 +317,40 @@ class PropertyOfflineRepository extends OfflineRepository<Property>
     try {
       final property = await getPropertyById(id);
       if (property != null) {
-        await delete(property);
+        final updatedProperty = property.copyWith(
+          deletedAt: DateTime.now(),
+          // TODO: Get active user from a provider/service once available
+          deletedBy: 'system',
+        );
+        await save(updatedProperty);
       }
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       AppLogger.error(
         'Error deleting property: $id - ${appException.message}',
+        name: 'PropertyOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      throw appException;
+    }
+  }
+
+  @override
+  Future<void> restoreProperty(String id) async {
+    try {
+      final property = await getPropertyById(id);
+      if (property != null) {
+        final updatedProperty = property.copyWith(
+          deletedAt: null,
+          deletedBy: null,
+        );
+        await save(updatedProperty);
+      }
+    } catch (error, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
+      AppLogger.error(
+        'Error restoring property: $id - ${appException.message}',
         name: 'PropertyOfflineRepository',
         error: error,
         stackTrace: stackTrace,

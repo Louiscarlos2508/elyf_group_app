@@ -7,7 +7,6 @@ import '../../domain/entities/bobine_usage.dart';
 import '../../domain/entities/machine.dart';
 import 'bobine_usage_form_field.dart' show bobineStocksDisponiblesProvider;
 import 'package:elyf_groupe_app/shared.dart';
-import '../../../../../shared/utils/notification_service.dart';
 
 /// Formulaire pour installer une bobine.
 /// Crée automatiquement une nouvelle bobine et l'installe sur la machine.
@@ -155,7 +154,7 @@ class _BobineInstallationFormState
         NotificationService.showSuccess(
           context,
           _bobineNonFinieExistante != null
-              ? 'Bobine non finie réutilisée: ${_bobineNonFinieExistante!.bobineType}'
+              ? 'Bobine réutilisée: ${_bobineNonFinieExistante!.bobineType}'
               : 'Bobine installée: ${usage.bobineType}',
         );
       }
@@ -163,7 +162,7 @@ class _BobineInstallationFormState
       if (mounted) {
         NotificationService.showError(
           context,
-          'Erreur lors de l\'installation de la bobine: $e',
+          'Erreur lors de l\'installation: $e',
         );
       }
     } finally {
@@ -176,254 +175,313 @@ class _BobineInstallationFormState
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = theme.colorScheme;
 
     return Form(
       key: _formKey,
       child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 8),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              'Installation bobine - ${widget.machine.nom}',
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Si cette machine a une bobine non finie d\'une production précédente, elle sera réutilisée. Sinon, une bobine disponible sera automatiquement assignée.',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 24),
-            // Afficher l'info si une bobine non finie existe
-            if (_bobineNonFinieExistante != null)
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.orange.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: Colors.orange.withValues(alpha: 0.3),
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.history, color: Colors.orange.shade800),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Rejoindre la bobine précédente ?',
-                                style: theme.textTheme.titleSmall?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.orange.shade900,
-                                ),
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                'Une bobine de type "${_bobineNonFinieExistante!.bobineType}" installée le ${_formatDate(_bobineNonFinieExistante!.dateInstallation)} est toujours active sur cette machine.',
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: Colors.orange.shade800,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () {
-                              // Ignorer la bobine existante et en créer une nouvelle
-                              setState(() {
-                                _bobineNonFinieExistante = null;
-                                // Reset dates to now (default)
-                                _dateInstallation = DateTime.now();
-                                _heureInstallation = TimeOfDay.now();
-                              });
-                            },
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: theme.colorScheme.primary,
-                              padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 8), // Compact
-                            ),
-                            child: const Text('Installer une NOUVELLE', textAlign: TextAlign.center, style: TextStyle(fontSize: 12)),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: FilledButton.icon(
-                            onPressed: null, // Déjà sélectionné par défaut
-                            icon: const Icon(Icons.check, size: 16),
-                            label: const Text('Réutiliser', style: TextStyle(fontSize: 12)),
-                            style: FilledButton.styleFrom(
-                                backgroundColor: Colors.orange.shade800,
-                                padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 8),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              )
-            else
-              // Affichage informatif : une bobine sera automatiquement assignée
-              ref
-                  .watch(bobineStocksDisponiblesProvider)
-                  .when(
-                    data: (bobineStocks) {
-                      if (bobineStocks.isEmpty) {
-                        return Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.errorContainer.withValues(
-                              alpha: 0.2,
-                            ),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Column(
-                            children: [
-                              Icon(
-                                Icons.error_outline,
-                                color: theme.colorScheme.error,
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Aucune bobine disponible en stock',
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: theme.colorScheme.error,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Veuillez réapprovisionner le stock avant de continuer.',
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: theme.colorScheme.onErrorContainer,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
-                          ),
-                        );
-                      }
-
-                      return Container(
-                        padding: const EdgeInsets.all(16),
+            // Header Section info
+            ElyfCard(
+              padding: const EdgeInsets.all(20),
+              borderRadius: 24,
+              backgroundColor: colors.primary.withValues(alpha: 0.03),
+              borderColor: colors.primary.withValues(alpha: 0.1),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: theme.colorScheme.primaryContainer.withValues(
-                            alpha: 0.3,
-                          ),
-                          borderRadius: BorderRadius.circular(8),
+                          color: colors.primary.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        child: Row(
+                        child: Icon(Icons.settings_input_component_rounded, color: colors.primary, size: 24),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(
-                              Icons.info_outline,
-                              color: theme.colorScheme.primary,
+                            Text(
+                              'Machine: ${widget.machine.nom}',
+                              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900, color: colors.onSurface),
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Une bobine sera automatiquement assignée',
-                                    style: theme.textTheme.bodyMedium,
-                                  ),
-                                  Text(
-                                    '${bobineStocks.fold<int>(0, (sum, stock) => sum + stock.quantity)} bobine${bobineStocks.fold<int>(0, (sum, stock) => sum + stock.quantity) > 1 ? 's' : ''} disponible${bobineStocks.fold<int>(0, (sum, stock) => sum + stock.quantity) > 1 ? 's' : ''}',
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      color: theme.colorScheme.onSurfaceVariant,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                            Text(
+                              'Installation de bobine',
+                              style: theme.textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
                             ),
                           ],
                         ),
-                      );
-                    },
-                    loading: () => const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(16.0),
-                        child: CircularProgressIndicator(),
                       ),
-                    ),
-                    error: (error, stack) => Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.errorContainer.withValues(
-                          alpha: 0.2,
-                        ),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Column(
-                        children: [
-                          Icon(
-                            Icons.error_outline,
-                            color: theme.colorScheme.error,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Erreur lors du chargement des bobines',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.error,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    ],
                   ),
-            const SizedBox(height: 24),
-            InkWell(
-              onTap: () => _selectDate(context),
-              child: InputDecorator(
-                decoration: const InputDecoration(
-                  labelText: 'Date d\'installation *',
-                  prefixIcon: Icon(Icons.calendar_today),
-                ),
-                child: Text(_formatDate(_dateInstallation)),
+                ],
               ),
             ),
             const SizedBox(height: 16),
-            InkWell(
-              onTap: () => _selectTime(context),
-              child: InputDecorator(
-                decoration: const InputDecoration(
-                  labelText: 'Heure d\'installation *',
-                  prefixIcon: Icon(Icons.access_time),
-                ),
-                child: Text(_formatTime(_heureInstallation)),
+
+            // Bobine Existante Alert
+            if (_bobineNonFinieExistante != null)
+              _buildExistingBobineAlert(theme, colors),
+
+            const SizedBox(height: 16),
+
+            // Configuration Section
+            ElyfCard(
+              padding: const EdgeInsets.all(20),
+              borderRadius: 24,
+              backgroundColor: colors.surfaceContainerLow.withValues(alpha: 0.5),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.access_time_filled_rounded, size: 18, color: colors.primary),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Configuration Temps',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: colors.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  
+                  // Date Picker
+                  _buildDateTimePicker(
+                    theme,
+                    colors,
+                    label: 'Date d\'installation',
+                    value: _formatDate(_dateInstallation),
+                    icon: Icons.calendar_today_rounded,
+                    onTap: () => _selectDate(context),
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Time Picker
+                  _buildDateTimePicker(
+                    theme,
+                    colors,
+                    label: 'Heure d\'installation',
+                    value: _formatTime(_heureInstallation),
+                    icon: Icons.schedule_rounded,
+                    onTap: () => _selectTime(context),
+                  ),
+                ],
               ),
             ),
+
+            const SizedBox(height: 16),
+
+            // Stocks Disponibles Section (if not reusing)
+            if (_bobineNonFinieExistante == null)
+              ref.watch(bobineStocksDisponiblesProvider).maybeWhen(
+                data: (bobineStocks) => _buildStockInfo(theme, colors, bobineStocks),
+                loading: () => const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator())),
+                orElse: () => const SizedBox.shrink(),
+              ),
+
             const SizedBox(height: 24),
-            FilledButton.icon(
-              onPressed: _isLoading ? null : _submit,
-              icon: _isLoading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.add),
-              label: Text(
-                _isLoading ? 'Création...' : 'Ajouter et installer la bobine',
-              ),
-            ),
+            _buildSubmitButton(),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildExistingBobineAlert(ThemeData theme, ColorScheme colors) {
+    return ElyfCard(
+      padding: const EdgeInsets.all(20),
+      borderRadius: 24,
+      backgroundColor: Colors.orange.withValues(alpha: 0.05),
+      borderColor: Colors.orange.withValues(alpha: 0.2),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(Icons.history_rounded, color: Colors.orange.shade800),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Bobine précédente détectée',
+                      style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: Colors.orange.shade900),
+                    ),
+                    Text(
+                      'Type: ${_bobineNonFinieExistante!.bobineType}',
+                      style: theme.textTheme.bodySmall?.copyWith(color: Colors.orange.shade800),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () {
+                    setState(() {
+                      _bobineNonFinieExistante = null;
+                      _dateInstallation = DateTime.now();
+                      _heureInstallation = TimeOfDay.now();
+                    });
+                  },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: colors.error,
+                    side: BorderSide(color: colors.error.withValues(alpha: 0.5)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('IGNORER', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: FilledButton(
+                   onPressed: null, // Déjà sélectionné
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.orange.shade800,
+                    disabledBackgroundColor: Colors.orange.shade800,
+                    disabledForegroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('RÉUTILISER', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStockInfo(ThemeData theme, ColorScheme colors, List<dynamic> bobineStocks) {
+    if (bobineStocks.isEmpty) return _buildEmptyStockWarning(theme, colors);
+    
+    final total = bobineStocks.fold<int>(0, (sum, stock) => sum + (stock.quantity as num).toInt());
+    return ElyfCard(
+      padding: const EdgeInsets.all(16),
+      borderRadius: 16,
+      backgroundColor: colors.primary.withValues(alpha: 0.05),
+      child: Row(
+        children: [
+          Icon(Icons.inventory_2_rounded, size: 18, color: colors.primary),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              '$total bobine${total > 1 ? 's' : ''} disponible${total > 1 ? 's' : ''} en stock.',
+              style: theme.textTheme.bodySmall?.copyWith(color: colors.primary, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyStockWarning(ThemeData theme, ColorScheme colors) {
+    return ElyfCard(
+      padding: const EdgeInsets.all(20),
+      borderRadius: 24,
+      backgroundColor: colors.errorContainer.withValues(alpha: 0.2),
+      borderColor: colors.error.withValues(alpha: 0.3),
+      child: Column(
+        children: [
+          Icon(Icons.report_problem_rounded, color: colors.error, size: 32),
+          const SizedBox(height: 12),
+          Text(
+            'Stock Épuisé',
+            style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: colors.error),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Aucune bobine disponible. Veuillez réapprovisionner.',
+            style: theme.textTheme.bodySmall?.copyWith(color: colors.error),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDateTimePicker(ThemeData theme, ColorScheme colors, {required String label, required String value, required IconData icon, required VoidCallback onTap}) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: colors.surfaceContainerLow.withValues(alpha: 0.3),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: colors.outline.withValues(alpha: 0.1)),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 18, color: colors.primary),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label, style: theme.textTheme.labelSmall?.copyWith(color: colors.onSurfaceVariant)),
+                  Text(value, style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ),
+            Icon(Icons.expand_more_rounded, color: colors.onSurfaceVariant),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSubmitButton() {
+    final colors = Theme.of(context).colorScheme;
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(colors: [colors.primary, colors.secondary]),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: colors.primary.withValues(alpha: 0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ElevatedButton(
+        onPressed: _isLoading ? null : _submit,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          foregroundColor: Colors.white,
+          shadowColor: Colors.transparent,
+          padding: const EdgeInsets.symmetric(vertical: 18),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
+        child: _isLoading 
+          ? const CircularProgressIndicator(color: Colors.white)
+          : const Text(
+            'INSTALLER LA BOBINE',
+            style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1),
+          ),
       ),
     );
   }

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:developer' as developer;
+import 'dart:math';
 
 import 'package:meta/meta.dart';
 
@@ -405,14 +406,17 @@ abstract class OfflineRepository<T> with OptimisticUIRepositoryMixin<T> {
   }
 }
 
+
 /// Utility for generating local IDs.
 class LocalIdGenerator {
   LocalIdGenerator._();
 
+  static final _random = Random();
+
   static String generate() {
     final timestamp = DateTime.now().millisecondsSinceEpoch;
-    final random = timestamp.hashCode.toRadixString(36);
-    return 'local_${timestamp}_$random';
+    final randomPart = _random.nextInt(1000000).toRadixString(36);
+    return 'local_${timestamp}_$randomPart';
   }
 
   static bool isLocalId(String id) {

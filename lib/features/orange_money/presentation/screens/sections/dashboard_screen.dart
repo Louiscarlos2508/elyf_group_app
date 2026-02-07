@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
+import 'package:elyf_groupe_app/shared/presentation/widgets/elyf_ui/organisms/elyf_card.dart';
+import 'package:elyf_groupe_app/shared/presentation/widgets/elyf_ui/atoms/elyf_shimmer.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/orange_money/application/providers.dart';
@@ -26,38 +28,76 @@ class DashboardScreen extends ConsumerWidget {
         return CustomScrollView(
           slivers: [
             SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.all(AppSpacing.lg),
-                child: Text(
-                  'Tableau de Bord',
-                  style: theme.textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(24, 64, 24, 32),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      const Color(0xFFF97316), // Orange
+                      const Color(0xFFFB923C),
+                      const Color(0xFFF59E0B), // Amber
+                    ],
                   ),
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(40),
+                    bottomRight: Radius.circular(40),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Orange Money',
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color: Colors.white.withValues(alpha: 0.9),
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Tableau de Bord',
+                      style: theme.textTheme.headlineMedium?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      'Suivi des flux, commissions et transactions en temps réel.',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: Colors.white.withValues(alpha: 0.8),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
+            const SliverToBoxAdapter(child: SizedBox(height: 24)),
             SliverToBoxAdapter(
               child: Padding(
                 padding: AppSpacing.horizontalPadding,
                 child: Row(
                   children: [
                     Expanded(
-                      child: _buildStatCard(
-                        context,
-                        'Cash-In Total',
-                        CurrencyFormatter.formatFCFA(cashInTotal),
-                        Icons.arrow_downward,
-                        theme.colorScheme.primary,
+                      child: ElyfStatsCard(
+                        label: 'Cash-In Total',
+                        value: CurrencyFormatter.formatFCFA(cashInTotal),
+                        icon: Icons.arrow_downward_rounded,
+                        color: const Color(0xFFF97316),
+                        isGlass: true,
                       ),
                     ),
                     const SizedBox(width: AppSpacing.md),
                     Expanded(
-                      child: _buildStatCard(
-                        context,
-                        'Cash-Out Total',
-                        CurrencyFormatter.formatFCFA(cashOutTotal),
-                        Icons.arrow_upward,
-                        Colors.orange,
+                      child: ElyfStatsCard(
+                        label: 'Cash-Out Total',
+                        value: CurrencyFormatter.formatFCFA(cashOutTotal),
+                        icon: Icons.arrow_upward_rounded,
+                        color: Colors.orange,
+                        isGlass: true,
                       ),
                     ),
                   ],
@@ -71,22 +111,22 @@ class DashboardScreen extends ConsumerWidget {
                 child: Row(
                   children: [
                     Expanded(
-                      child: _buildStatCard(
-                        context,
-                        'Commission',
-                        CurrencyFormatter.formatFCFA(totalCommission),
-                        Icons.account_balance_wallet,
-                        Colors.blue,
+                      child: ElyfStatsCard(
+                        label: 'Commission',
+                        value: CurrencyFormatter.formatFCFA(totalCommission),
+                        icon: Icons.account_balance_wallet_rounded,
+                        color: Colors.blue,
+                        isGlass: true,
                       ),
                     ),
                     const SizedBox(width: AppSpacing.md),
                     Expanded(
-                      child: _buildStatCard(
-                        context,
-                        'Transactions',
-                        totalTransactions.toString(),
-                        Icons.history,
-                        Colors.purple,
+                      child: ElyfStatsCard(
+                        label: 'Transactions',
+                        value: totalTransactions.toString(),
+                        icon: Icons.history_rounded,
+                        color: Colors.purple,
+                        isGlass: true,
                       ),
                     ),
                   ],
@@ -97,22 +137,24 @@ class DashboardScreen extends ConsumerWidget {
               SliverToBoxAdapter(
                 child: Padding(
                   padding: EdgeInsets.all(AppSpacing.lg),
-                  child: Card(
-                    color: Colors.orange.withValues(alpha: 0.1),
-                    child: Padding(
-                      padding: EdgeInsets.all(AppSpacing.md),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.warning, color: Colors.orange),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              '$pendingTransactions transaction(s) en attente',
-                              style: theme.textTheme.bodyLarge,
+                  child: ElyfCard(
+                    isGlass: true,
+                    backgroundColor: Colors.orange.withValues(alpha: 0.1),
+                    borderColor: Colors.orange.withValues(alpha: 0.2),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.warning_amber_rounded, color: Colors.orange),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            '$pendingTransactions transaction(s) en attente',
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                              color: Colors.orange.shade800,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -120,7 +162,22 @@ class DashboardScreen extends ConsumerWidget {
           ],
         );
       },
-      loading: () => const LoadingIndicator(),
+      loading: () => Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          children: [
+            ElyfShimmer(child: ElyfShimmer.card(height: 200, borderRadius: 40)),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(child: ElyfShimmer(child: ElyfShimmer.card(height: 120, borderRadius: 24))),
+                const SizedBox(width: 16),
+                Expanded(child: ElyfShimmer(child: ElyfShimmer.card(height: 120, borderRadius: 24))),
+              ],
+            ),
+          ],
+        ),
+      ),
       error: (error, stackTrace) => ErrorDisplayWidget(
         error: error,
         onRetry: () => ref.refresh(orangeMoneyStateProvider),
@@ -128,45 +185,5 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildStatCard(
-    BuildContext context,
-    String label,
-    String value,
-    IconData icon,
-    Color color,
-  ) {
-    final theme = Theme.of(context);
-    return Card(
-      child: Padding(
-        padding: EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(icon, color: color, size: 28),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    label,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              value,
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+
 }

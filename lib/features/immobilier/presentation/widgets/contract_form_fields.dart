@@ -148,13 +148,24 @@ class ContractFormFields {
 
   static Widget notesField({required TextEditingController controller}) {
     return TextFormField(
+      textCapitalization: TextCapitalization.sentences,
+    );
+  }
+
+  static Widget inventoryField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    String? hint,
+  }) {
+    return TextFormField(
       controller: controller,
-      decoration: const InputDecoration(
-        labelText: 'Notes',
-        hintText: 'Notes supplémentaires...',
-        prefixIcon: Icon(Icons.note),
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hint ?? 'Description de l\'état des lieux...',
+        prefixIcon: Icon(icon),
       ),
-      maxLines: 3,
+      maxLines: 4,
       textCapitalization: TextCapitalization.sentences,
     );
   }

@@ -31,24 +31,7 @@ class AdminOfflineRepository implements AdminRepository {
 
   // EnterpriseModuleUser methods
   EnterpriseModuleUser _enterpriseModuleUserFromMap(Map<String, dynamic> map) {
-    return EnterpriseModuleUser(
-      userId: map['userId'] as String,
-      enterpriseId: map['enterpriseId'] as String,
-      moduleId: map['moduleId'] as String,
-      roleId: map['roleId'] as String,
-      customPermissions:
-          (map['customPermissions'] as List<dynamic>?)
-              ?.map((e) => e as String)
-              .toSet() ??
-          {},
-      isActive: map['isActive'] as bool? ?? true,
-      createdAt: map['createdAt'] != null
-          ? DateTime.parse(map['createdAt'] as String)
-          : null,
-      updatedAt: map['updatedAt'] != null
-          ? DateTime.parse(map['updatedAt'] as String)
-          : null,
-    );
+    return EnterpriseModuleUser.fromMap(map);
   }
 
   Map<String, dynamic> _enterpriseModuleUserToMap(EnterpriseModuleUser entity) {
@@ -56,7 +39,7 @@ class AdminOfflineRepository implements AdminRepository {
       'userId': entity.userId,
       'enterpriseId': entity.enterpriseId,
       'moduleId': entity.moduleId,
-      'roleId': entity.roleId,
+      'roleIds': entity.roleIds,
       'customPermissions': entity.customPermissions.toList(),
       'isActive': entity.isActive,
       'createdAt': entity.createdAt?.toIso8601String(),
@@ -75,6 +58,7 @@ class AdminOfflineRepository implements AdminRepository {
               ?.map((e) => e as String)
               .toSet() ??
           {},
+      moduleId: map['moduleId'] as String? ?? 'general',
       isSystemRole: map['isSystemRole'] as bool? ?? false,
     );
   }
@@ -85,6 +69,7 @@ class AdminOfflineRepository implements AdminRepository {
       'name': entity.name,
       'description': entity.description,
       'permissions': entity.permissions.toList(),
+      'moduleId': entity.moduleId,
       'isSystemRole': entity.isSystemRole,
     };
   }
@@ -251,7 +236,7 @@ class AdminOfflineRepository implements AdminRepository {
     String userId,
     String enterpriseId,
     String moduleId,
-    String roleId,
+    List<String> roleIds,
   ) async {
     final all = await getEnterpriseModuleUsers();
     final emu = all.firstWhere(
@@ -263,10 +248,10 @@ class AdminOfflineRepository implements AdminRepository {
         userId: userId,
         enterpriseId: enterpriseId,
         moduleId: moduleId,
-        roleId: roleId,
+        roleIds: roleIds,
       ),
     );
-    await assignUserToEnterprise(emu.copyWith(roleId: roleId));
+    await assignUserToEnterprise(emu.copyWith(roleIds: roleIds));
   }
 
   @override
@@ -286,7 +271,7 @@ class AdminOfflineRepository implements AdminRepository {
         userId: userId,
         enterpriseId: enterpriseId,
         moduleId: moduleId,
-        roleId: 'vendeur', // Default role
+        roleIds: const [], // Default roles
       ),
     );
     await assignUserToEnterprise(emu.copyWith(customPermissions: permissions));
@@ -498,9 +483,8 @@ class AdminOfflineRepository implements AdminRepository {
 
   @override
   Future<List<UserRole>> getModuleRoles(String moduleId) async {
-    // For now, return all roles. In real implementation, filter by module permissions
     final allRoles = await getAllRoles();
-    return allRoles;
+    return allRoles.where((role) => role.moduleId == moduleId).toList();
   }
 
   @override

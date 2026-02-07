@@ -214,4 +214,11 @@ abstract class BaseModuleShellScreenState<T extends BaseModuleShellScreen>
       appBarActions: _buildAppBarActions(),
     );
   }
+
+  /// Change l'index de navigation programmatiquement.
+  void navigateToIndex(int index) {
+    if (mounted) {
+      setState(() => _selectedIndex = index);
+    }
+  }
 }

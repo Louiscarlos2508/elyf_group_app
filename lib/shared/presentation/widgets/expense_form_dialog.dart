@@ -5,6 +5,8 @@ import '../../utils/validators.dart';
 import 'form_fields/amount_input_field.dart';
 import 'form_fields/date_picker_field.dart';
 import 'form_fields/category_selector_field.dart';
+import 'form_image_picker.dart';
+
 
 /// Dialog générique pour créer/modifier une dépense.
 ///
@@ -29,6 +31,7 @@ class ExpenseFormDialog<T extends Enum> extends StatefulWidget {
     this.initialCategory,
     this.initialDescription,
     this.initialNotes,
+    this.initialReceiptPath,
     this.isLoading = false,
   });
 
@@ -49,6 +52,7 @@ class ExpenseFormDialog<T extends Enum> extends StatefulWidget {
     required T category,
     required String description,
     String? notes,
+    String? receiptPath,
   })
   onSave;
 
@@ -88,6 +92,9 @@ class ExpenseFormDialog<T extends Enum> extends StatefulWidget {
   /// Valeur initiale des notes.
   final String? initialNotes;
 
+  /// Valeur initiale du reçu.
+  final String? initialReceiptPath;
+
   /// Indique si le formulaire est en cours de sauvegarde.
   final bool isLoading;
 
@@ -103,6 +110,7 @@ class _ExpenseFormDialogState<T extends Enum>
   late final TextEditingController _notesController;
   late T _selectedCategory;
   late DateTime _selectedDate;
+  String? _receiptPath;
 
   @override
   void initState() {
@@ -116,6 +124,7 @@ class _ExpenseFormDialogState<T extends Enum>
     _notesController = TextEditingController(text: widget.initialNotes ?? '');
     _selectedCategory = widget.initialCategory ?? widget.categories.first;
     _selectedDate = widget.initialDate ?? DateTime.now();
+    _receiptPath = widget.initialReceiptPath;
   }
 
   @override
@@ -148,6 +157,7 @@ class _ExpenseFormDialogState<T extends Enum>
       notes: _notesController.text.trim().isEmpty
           ? null
           : _notesController.text.trim(),
+      receiptPath: _receiptPath,
     );
 
     if (!mounted) return;
@@ -180,6 +190,14 @@ class _ExpenseFormDialogState<T extends Enum>
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,
           children: [
+            FormImagePicker(
+              initialImagePath: _receiptPath,
+              label: 'Photo du reçu',
+              onImageSelected: (file) {
+                setState(() => _receiptPath = file?.path);
+              },
+            ),
+            const SizedBox(height: 24),
             AmountInputField(
               controller: _amountController,
               label: widget.amountLabel,

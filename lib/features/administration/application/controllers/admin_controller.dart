@@ -39,10 +39,12 @@ class AdminController {
          permissionValidator: permissionValidator,
          userRepository: userRepository,
          enterpriseRepository: enterpriseRepository,
-       );
+       ),
+       _enterpriseRepository = enterpriseRepository;
 
   final RoleController _roleController;
   final UserAssignmentController _userAssignmentController;
+  final EnterpriseRepository? _enterpriseRepository;
 
   // ============================================================================
   // Délégation aux méthodes de RoleController
@@ -122,14 +124,14 @@ class AdminController {
     required String userId,
     required List<String> enterpriseIds,
     required String moduleId,
-    required String roleId,
+    required List<String> roleIds,
     required bool isActive,
     String? currentUserId,
   }) => _userAssignmentController.batchAssignUserToEnterprises(
     userId: userId,
     enterpriseIds: enterpriseIds,
     moduleId: moduleId,
-    roleId: roleId,
+    roleIds: roleIds,
     isActive: isActive,
     currentUserId: currentUserId,
   );
@@ -139,14 +141,14 @@ class AdminController {
     required String userId,
     required List<String> moduleIds,
     required List<String> enterpriseIds,
-    required String roleId,
+    required List<String> roleIds,
     required bool isActive,
     String? currentUserId,
   }) => _userAssignmentController.batchAssignUserToModulesAndEnterprises(
     userId: userId,
     moduleIds: moduleIds,
     enterpriseIds: enterpriseIds,
-    roleId: roleId,
+    roleIds: roleIds,
     isActive: isActive,
     currentUserId: currentUserId,
   );
@@ -156,16 +158,16 @@ class AdminController {
     String userId,
     String enterpriseId,
     String moduleId,
-    String roleId, {
+    List<String> roleIds, {
     String? currentUserId,
-    String? oldRoleId,
+    List<String>? oldRoleIds,
   }) => _userAssignmentController.updateUserRole(
     userId,
     enterpriseId,
     moduleId,
-    roleId,
+    roleIds,
     currentUserId: currentUserId,
-    oldRoleId: oldRoleId,
+    oldRoleIds: oldRoleIds,
   );
 
   /// Met à jour les permissions personnalisées d'un utilisateur.
@@ -209,4 +211,63 @@ class AdminController {
 
   /// Surveille le statut de synchronisation (Stream).
   Stream<bool> watchSyncStatus() => _roleController.watchSyncStatus();
+
+  // ============================================================================
+  // Méthodes de vérification d'accès avec héritage hiérarchique
+  // ============================================================================
+
+  /// Vérifie si un utilisateur a accès à une entreprise (directement ou via héritage).
+  ///
+  /// Retourne `true` si :
+  /// - L'utilisateur a un accès direct à cette entreprise dans le module spécifié
+  /// - L'utilisateur a un accès à une entreprise parente avec `includesChildren = true`
+  ///
+  /// [userId] : ID de l'utilisateur
+  /// [enterpriseId] : ID de l'entreprise à vérifier
+  /// [moduleId] : ID du module
+  Future<bool> hasAccessToEnterprise({
+    required String userId,
+    required String enterpriseId,
+    required String moduleId,
+  }) async {
+    // Récupérer tous les accès de l'utilisateur
+    final userAccesses = await getUserEnterpriseModuleUsers(userId);
+
+    // Vérifier accès direct
+    final directAccess = userAccesses.any((access) =>
+        access.enterpriseId == enterpriseId &&
+        access.moduleId == moduleId &&
+        access.isActive);
+
+    if (directAccess) return true;
+
+    // Vérifier accès via parent avec héritage
+    if (_enterpriseRepository != null) {
+      final enterprises = await _enterpriseRepository.getAllEnterprises();
+      final targetEnterprise = enterprises.firstWhere(
+        (e) => e.id == enterpriseId,
+        orElse: () => throw Exception('Enterprise not found: $enterpriseId'),
+      );
+
+      // Si l'entreprise a un parent, vérifier si l'utilisateur a accès au parent avec includesChildren
+      if (targetEnterprise.parentEnterpriseId != null) {
+        final parentAccess = userAccesses.any((access) =>
+            access.enterpriseId == targetEnterprise.parentEnterpriseId &&
+            access.moduleId == moduleId &&
+            access.isActive &&
+            access.includesChildren);
+
+        if (parentAccess) return true;
+
+        // Récursion : vérifier les parents des parents
+        return hasAccessToEnterprise(
+          userId: userId,
+          enterpriseId: targetEnterprise.parentEnterpriseId!,
+          moduleId: moduleId,
+        );
+      }
+    }
+
+    return false;
+  }
 }

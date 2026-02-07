@@ -8,7 +8,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../core/errors/app_exceptions.dart';
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/offline/drift_service.dart';
-import '../../../../core/offline/offline_repository.dart';
 import '../../domain/entities/enterprise.dart';
 import '../../domain/repositories/enterprise_repository.dart';
 import '../../domain/repositories/user_repository.dart';
@@ -62,7 +61,7 @@ class EnterpriseController {
 
       // Récupérer aussi les points de vente
       // Essayer d'abord depuis Drift, puis depuis Firestore si nécessaire
-      final driftService = (_repository as OfflineRepository<Enterprise>).driftService;
+      final driftService = DriftService.instance;
       
       developer.log(
         'EnterpriseController.getAllEnterprises: Recherche des points de vente',

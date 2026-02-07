@@ -74,6 +74,12 @@ class ProductionReportFinancialSummary extends ConsumerWidget {
                 theme: theme,
               ),
               ProductionReportComponents.buildCostRow(
+                label: 'Emballages',
+                amount: session.coutEmballages ?? 0,
+                formatCurrency: ProductionReportHelpers.formatCurrency,
+                theme: theme,
+              ),
+              ProductionReportComponents.buildCostRow(
                 label: 'Électricité',
                 amount: coutElectricite,
                 formatCurrency: ProductionReportHelpers.formatCurrency,

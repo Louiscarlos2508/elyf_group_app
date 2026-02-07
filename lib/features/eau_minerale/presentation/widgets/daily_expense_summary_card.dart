@@ -1,3 +1,4 @@
+import 'package:elyf_groupe_app/shared/presentation/widgets/elyf_ui/organisms/elyf_card.dart';
 import 'package:flutter/material.dart';
 
 /// Daily expense summary card.
@@ -11,39 +12,44 @@ class DailyExpenseSummaryCard extends StatelessWidget {
   final int total;
   final String Function(int) formatCurrency;
 
+
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFF0F0),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.red.withValues(alpha: 0.2)),
-      ),
-      padding: const EdgeInsets.all(20),
+    return ElyfCard(
+      isGlass: true,
+      borderColor: Colors.red.withValues(alpha: 0.1),
+      padding: const EdgeInsets.all(24),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.red.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(10),
+              color: Colors.red.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(16),
             ),
-            child: const Icon(Icons.trending_down, size: 24, color: Colors.red),
+            child: const Icon(
+              Icons.trending_down_rounded,
+              size: 28,
+              color: Colors.red,
+            ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 20),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Total Dépenses du Jour',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+                  'Dépenses du Jour',
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                    letterSpacing: 0.5,
                   ),
                 ),
+                const SizedBox(height: 4),
                 Text(
-                  formatCurrency(total),
+                  '${formatCurrency(total)} CFA',
                   style: theme.textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: Colors.red.shade700,

@@ -12,9 +12,9 @@ class UserEmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Center(
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -24,7 +24,11 @@ class UserEmptyState extends StatelessWidget {
               color: theme.colorScheme.onSurfaceVariant,
             ),
             const SizedBox(height: 16),
-            Text('Aucun utilisateur', style: theme.textTheme.titleLarge),
+            Text(
+              'Aucun utilisateur',
+              style: theme.textTheme.titleLarge,
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: 8),
             Text(
               searchQuery != null && searchQuery!.isNotEmpty
@@ -33,6 +37,7 @@ class UserEmptyState extends StatelessWidget {
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
+              textAlign: TextAlign.center,
             ),
           ],
         ),

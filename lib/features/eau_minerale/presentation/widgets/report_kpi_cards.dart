@@ -32,8 +32,9 @@ class ReportKpiCards extends ConsumerWidget {
                           value: CurrencyFormatter.formatFCFA(data.revenue),
                           subtitle: '${data.salesCount} ventes',
                           icon: Icons.trending_up,
-                          iconColor: Colors.blue,
-                          backgroundColor: Colors.blue,
+                          iconColor: Colors.blue.shade700,
+                          valueColor: Colors.blue.shade800,
+                          isGlass: true,
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -43,10 +44,10 @@ class ReportKpiCards extends ConsumerWidget {
                           value: CurrencyFormatter.formatFCFA(data.collections),
                           subtitle:
                               '${data.collectionRate.toStringAsFixed(0)}% du CA',
-                          icon: Icons.attach_money,
-                          iconColor: Colors.green,
-                          valueColor: Colors.green.shade700,
-                          backgroundColor: Colors.green,
+                          icon: Icons.account_balance_wallet_rounded,
+                          iconColor: Colors.green.shade700,
+                          valueColor: Colors.green.shade800,
+                          isGlass: true,
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -57,10 +58,10 @@ class ReportKpiCards extends ConsumerWidget {
                             data.totalExpenses,
                           ),
                           subtitle: 'Dépenses + Salaires',
-                          icon: Icons.receipt_long,
-                          iconColor: Colors.red,
-                          valueColor: Colors.red.shade700,
-                          backgroundColor: Colors.red,
+                          icon: Icons.receipt_long_rounded,
+                          iconColor: Colors.red.shade700,
+                          valueColor: Colors.red.shade800,
+                          isGlass: true,
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -68,17 +69,15 @@ class ReportKpiCards extends ConsumerWidget {
                         child: DashboardKpiCard(
                           label: 'Trésorerie',
                           value: CurrencyFormatter.formatFCFA(data.treasury),
-                          subtitle: 'Entrées - Sorties',
-                          icon: Icons.trending_up,
+                          subtitle: 'Solde Net',
+                          icon: Icons.analytics_rounded,
                           iconColor: data.treasury >= 0
-                              ? Colors.green
-                              : Colors.red,
-                          valueColor: data.treasury >= 0
                               ? Colors.green.shade700
                               : Colors.red.shade700,
-                          backgroundColor: data.treasury >= 0
-                              ? Colors.green
-                              : Colors.red,
+                          valueColor: data.treasury >= 0
+                              ? Colors.green.shade800
+                              : Colors.red.shade800,
+                          isGlass: true,
                         ),
                       ),
                     ],
@@ -90,8 +89,9 @@ class ReportKpiCards extends ConsumerWidget {
                         value: CurrencyFormatter.formatFCFA(data.revenue),
                         subtitle: '${data.salesCount} ventes',
                         icon: Icons.trending_up,
-                        iconColor: Colors.blue,
-                        backgroundColor: Colors.blue,
+                        iconColor: Colors.blue.shade700,
+                        valueColor: Colors.blue.shade800,
+                        isGlass: true,
                       ),
                       const SizedBox(height: 16),
                       DashboardKpiCard(
@@ -99,36 +99,34 @@ class ReportKpiCards extends ConsumerWidget {
                         value: CurrencyFormatter.formatFCFA(data.collections),
                         subtitle:
                             '${data.collectionRate.toStringAsFixed(0)}% du CA',
-                        icon: Icons.attach_money,
-                        iconColor: Colors.green,
-                        valueColor: Colors.green.shade700,
-                        backgroundColor: Colors.green,
+                        icon: Icons.account_balance_wallet_rounded,
+                        iconColor: Colors.green.shade700,
+                        valueColor: Colors.green.shade800,
+                        isGlass: true,
                       ),
                       const SizedBox(height: 16),
                       DashboardKpiCard(
                         label: 'Charges Totales',
                         value: CurrencyFormatter.formatFCFA(data.totalExpenses),
                         subtitle: 'Dépenses + Salaires',
-                        icon: Icons.receipt_long,
-                        iconColor: Colors.red,
-                        valueColor: Colors.red.shade700,
-                        backgroundColor: Colors.red,
+                        icon: Icons.receipt_long_rounded,
+                        iconColor: Colors.red.shade700,
+                        valueColor: Colors.red.shade800,
+                        isGlass: true,
                       ),
                       const SizedBox(height: 16),
                       DashboardKpiCard(
                         label: 'Trésorerie',
                         value: CurrencyFormatter.formatFCFA(data.treasury),
-                        subtitle: 'Entrées - Sorties',
-                        icon: Icons.trending_up,
+                        subtitle: 'Solde Net',
+                        icon: Icons.analytics_rounded,
                         iconColor: data.treasury >= 0
-                            ? Colors.green
-                            : Colors.red,
-                        valueColor: data.treasury >= 0
                             ? Colors.green.shade700
                             : Colors.red.shade700,
-                        backgroundColor: data.treasury >= 0
-                            ? Colors.green
-                            : Colors.red,
+                        valueColor: data.treasury >= 0
+                            ? Colors.green.shade800
+                            : Colors.red.shade800,
+                        isGlass: true,
                       ),
                     ],
                   );

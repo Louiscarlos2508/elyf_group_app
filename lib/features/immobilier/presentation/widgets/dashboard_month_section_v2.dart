@@ -13,6 +13,11 @@ class DashboardMonthSectionV2 extends StatelessWidget {
     required this.monthExpensesAmount,
     required this.monthProfit,
     required this.occupancyRate,
+    required this.collectionRate, // Added parameter
+    this.onRevenueTap,
+    this.onExpensesTap,
+    this.onProfitTap,
+    this.onOccupancyTap,
   });
 
   final int monthRevenue;
@@ -20,6 +25,11 @@ class DashboardMonthSectionV2 extends StatelessWidget {
   final int monthExpensesAmount;
   final int monthProfit;
   final double occupancyRate;
+  final double collectionRate; // Added field
+  final VoidCallback? onRevenueTap;
+  final VoidCallback? onExpensesTap;
+  final VoidCallback? onProfitTap;
+  final VoidCallback? onOccupancyTap;
 
   @override
   Widget build(BuildContext context) {
@@ -32,10 +42,11 @@ class DashboardMonthSectionV2 extends StatelessWidget {
           DashboardKpiCardV2(
             label: 'Revenus Locatifs',
             value: CurrencyFormatter.formatFCFA(monthRevenue),
-            subtitle: '$monthPaymentsCount paiements',
+            subtitle: '$monthPaymentsCount paiements (${collectionRate.toStringAsFixed(0)}%)', // Display rate
             icon: Icons.trending_up,
             iconColor: const Color(0xFF3B82F6), // Blue
             backgroundColor: const Color(0xFF3B82F6),
+            onTap: onRevenueTap,
           ),
           DashboardKpiCardV2(
             label: 'Dépenses',
@@ -44,6 +55,7 @@ class DashboardMonthSectionV2 extends StatelessWidget {
             icon: Icons.receipt_long,
             iconColor: theme.colorScheme.error,
             backgroundColor: theme.colorScheme.error,
+            onTap: onExpensesTap,
           ),
           DashboardKpiCardV2(
             label: 'Bénéfice Net',
@@ -55,6 +67,7 @@ class DashboardMonthSectionV2 extends StatelessWidget {
                 ? const Color(0xFF059669)
                 : theme.colorScheme.error,
             backgroundColor: monthProfit >= 0 ? const Color(0xFF10B981) : theme.colorScheme.error,
+            onTap: onProfitTap,
           ),
           DashboardKpiCardV2(
             label: "Taux d'Occupation",
@@ -63,6 +76,7 @@ class DashboardMonthSectionV2 extends StatelessWidget {
             icon: Icons.home,
             iconColor: const Color(0xFF6366F1), // Indigo
             backgroundColor: const Color(0xFF6366F1),
+            onTap: onOccupancyTap,
           ),
         ];
 

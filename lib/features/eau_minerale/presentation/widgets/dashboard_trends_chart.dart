@@ -1,8 +1,9 @@
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:fl_chart/fl_chart.dart';
 
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
+import 'package:elyf_groupe_app/shared.dart';
 import '../../domain/entities/production_session.dart';
 import '../../domain/entities/sale.dart';
 
@@ -27,10 +28,7 @@ class DashboardTrendsChart extends ConsumerWidget {
   }
 
   Widget _buildLoadingState() {
-    return const SizedBox(
-      height: 200,
-      child: Center(child: CircularProgressIndicator()),
-    );
+    return ElyfShimmer(child: ElyfShimmer.card(height: 200));
   }
 
   Widget _buildErrorState(BuildContext context) {
@@ -105,15 +103,8 @@ class DashboardTrendsChart extends ConsumerWidget {
         .map((e) => FlSpot(e.key.toDouble(), e.value * scaleFactor))
         .toList();
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: theme.colorScheme.outline.withValues(alpha: 0.2),
-        ),
-      ),
+    return ElyfCard(
+      isGlass: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -129,7 +120,7 @@ class DashboardTrendsChart extends ConsumerWidget {
               const SizedBox(height: 8),
               Row(
                 children: [
-                  _LegendItem(color: Colors.blue, label: 'Ventes'),
+                  _LegendItem(color: theme.colorScheme.primary, label: 'Ventes'),
                   const SizedBox(width: 16),
                   _LegendItem(color: Colors.purple, label: 'Production'),
                 ],
@@ -196,12 +187,12 @@ class DashboardTrendsChart extends ConsumerWidget {
                   LineChartBarData(
                     spots: salesSpots,
                     isCurved: true,
-                    color: Colors.blue,
+                    color: theme.colorScheme.primary,
                     barWidth: 3,
                     dotData: const FlDotData(show: false),
                     belowBarData: BarAreaData(
                       show: true,
-                      color: Colors.blue.withValues(alpha: 0.1),
+                      color: theme.colorScheme.primary.withValues(alpha: 0.1),
                     ),
                   ),
                   LineChartBarData(

@@ -39,16 +39,18 @@ class _ExpenseFormDialogState extends ConsumerState<ExpenseFormDialog> {
     required ExpenseCategory category,
     required String description,
     String? notes,
+    String? receiptPath,
   }) async {
     setState(() => _isLoading = true);
     try {
       final expense = Expense(
-        id: 'expense-${DateTime.now().millisecondsSinceEpoch}',
+        id: 'local_${DateTime.now().millisecondsSinceEpoch}',
         label: description,
         amountCfa: amount.toInt(),
         category: category,
         date: date,
         notes: notes,
+        receiptPath: receiptPath,
       );
 
       await ref.read(storeControllerProvider).createExpense(expense);

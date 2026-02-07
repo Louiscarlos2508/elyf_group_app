@@ -15,6 +15,7 @@ class ProductionPayment {
     this.verifiedBy,
     this.verifiedAt,
     this.signature,
+    this.signerName, // Nom du signataire
   });
 
   final String id;
@@ -37,6 +38,9 @@ class ProductionPayment {
 
   /// Signature numérique du bénéficiaire (ou du représentant).
   final Uint8List? signature;
+
+  /// Nom du signataire (optionnel).
+  final String? signerName;
 
   int get totalAmount =>
       persons.fold(0, (sum, p) => sum + p.effectiveTotalAmount);

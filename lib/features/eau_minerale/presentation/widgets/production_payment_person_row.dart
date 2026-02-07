@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:elyf_groupe_app/shared.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
@@ -116,80 +117,159 @@ class _ProductionPaymentPersonRowState
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        border: Border.all(
-          color: theme.colorScheme.outline.withValues(alpha: 0.2),
-        ),
-        borderRadius: BorderRadius.circular(12),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Header Row: Icon + Name + Delete
           Row(
             children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: colors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(Icons.person_outline_rounded,
+                    color: colors.primary, size: 20),
+              ),
+              const SizedBox(width: 12),
               Expanded(
                 child: TextFormField(
                   controller: _nameController,
                   decoration: const InputDecoration(
-                    labelText: 'Nom *',
+                    hintText: 'Nom du bénéficiaire',
+                    border: InputBorder.none,
                     isDense: true,
-                    hintText: 'Ex: Mamadou Traoré',
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
                   ),
                   textCapitalization: TextCapitalization.words,
                 ),
               ),
-              const SizedBox(width: 8),
               IconButton(
-                icon: const Icon(Icons.delete_outline, color: Colors.red),
+                icon: Icon(Icons.close_rounded,
+                    color: theme.colorScheme.error, size: 20),
                 onPressed: widget.onRemove,
+                tooltip: 'Retirer',
+                style: IconButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          
+          const SizedBox(height: 8),
+          
+          // Data Row: Price x Days = Total
           Row(
             children: [
+              // Price
               Expanded(
+                flex: 3,
                 child: TextFormField(
                   controller: _pricePerDayController,
-                  decoration: const InputDecoration(
-                    labelText: 'Prix/jour (FCFA)',
-                    isDense: true,
-                    hintText: 'Ex: 5000',
+                  decoration: _buildInputDecoration(
+                    label: 'Prix/j',
+                    hintText: '5000',
                   ),
                   keyboardType: TextInputType.number,
+                  style: theme.textTheme.bodyMedium,
                 ),
               ),
-              const SizedBox(width: 8),
+              
+              // Multiplier Symbol
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Text(
+                  '×',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    color: colors.outline,
+                    fontWeight: FontWeight.w300,
+                  ),
+                ),
+              ),
+              
+              // Days
               Expanded(
+                flex: 2,
                 child: TextFormField(
                   controller: _daysController,
-                  decoration: const InputDecoration(
-                    labelText: 'Nb jours',
-                    isDense: true,
-                    hintText: 'Ex: 5',
+                  decoration: _buildInputDecoration(
+                    label: 'Jours',
+                    hintText: '5',
                   ),
                   keyboardType: TextInputType.number,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodyMedium,
                 ),
               ),
-              const SizedBox(width: 8),
+              
+              // Equals Symbol
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Text(
+                  '=',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    color: colors.outline,
+                    fontWeight: FontWeight.w300,
+                  ),
+                ),
+              ),
+              
+              // Total
               Expanded(
+                flex: 3,
                 child: TextFormField(
                   controller: _totalController,
-                  decoration: const InputDecoration(
-                    labelText: 'Montant Total (FCFA)*',
-                    isDense: true,
-                    helperText: 'Auto-calculé ou saisir manuellement',
+                  decoration: _buildInputDecoration(
+                    label: 'Total',
+                    hintText: '25000',
                   ),
                   keyboardType: TextInputType.number,
+                  textAlign: TextAlign.end,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: colors.primary,
+                  ),
                 ),
               ),
             ],
           ),
+          const SizedBox(height: 8),
+          Divider(height: 1, color: colors.outline.withValues(alpha: 0.1)),
         ],
       ),
+    );
+  }
+
+  InputDecoration _buildInputDecoration({required String label, String? hintText, IconData? icon}) {
+    final colors = Theme.of(context).colorScheme;
+    return InputDecoration(
+      labelText: label,
+      hintText: hintText,
+      prefixIcon: icon != null ? Icon(icon, size: 18, color: colors.primary) : null,
+      isDense: true,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: colors.outline.withValues(alpha: 0.05)),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: colors.outline.withValues(alpha: 0.05)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: colors.primary, width: 1.5),
+      ),
+      filled: true,
+      fillColor: colors.surfaceContainerLowest.withValues(alpha: 0.5),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
     );
   }
 }

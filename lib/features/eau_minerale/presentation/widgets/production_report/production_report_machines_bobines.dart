@@ -90,6 +90,12 @@ class ProductionReportMachinesBobines extends ConsumerWidget {
     ProductionSession currentSession,
     List<ProductionSession> allSessions,
   ) {
+    // Si la bobine a été installée pendant cette session (après ou à l'heure du début), 
+    // elle n'est pas réutilisée mais neuve.
+    if (!bobine.heureInstallation.isBefore(currentSession.heureDebut)) {
+      return (isReused: false, sessionOrigine: null);
+    }
+
     final sessionsPrecedentes =
         allSessions
             .where(

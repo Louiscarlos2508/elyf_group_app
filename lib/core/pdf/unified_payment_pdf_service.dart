@@ -135,12 +135,13 @@ class UnifiedPaymentPdfService extends BasePaymentPdfService {
 
   String _getPaymentItemLabel(Payment payment) {
     if (payment.paymentType == PaymentType.deposit) {
-      return 'Montant de la caution';
+      return 'PAIEMENT DE LA CAUTION (DÉPÔT DE GARANTIE)';
     }
     if (payment.month != null && payment.year != null) {
-      return 'Loyer ${getMonthName(payment.month!)} ${payment.year}';
+      final monthName = getMonthName(payment.month!).toUpperCase();
+      return 'LOYER MENSUEL - $monthName ${payment.year}';
     }
-    return 'Loyer mensuel';
+    return 'LOYER MENSUEL';
   }
 
   pw.Widget _buildPaymentTable(String label, int amount) {

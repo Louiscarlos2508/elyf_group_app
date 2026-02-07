@@ -372,4 +372,26 @@ class ProductOfflineRepository extends OfflineRepository<Product>
           .toList();
     });
   }
+
+  @override
+  Stream<List<Product>> watchDeletedProducts() {
+    return driftService.records
+        .watchForEnterprise(
+          collectionName: collectionName,
+          enterpriseId: enterpriseId,
+          moduleType: moduleType,
+        )
+        .map((rows) {
+      final products = rows
+          .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+          .where((product) => product.isDeleted)
+          .toList();
+      products.sort(
+        (a, b) => (b.deletedAt ?? DateTime(1970)).compareTo(
+          a.deletedAt ?? DateTime(1970),
+        ),
+      );
+      return products;
+    });
+  }
 }

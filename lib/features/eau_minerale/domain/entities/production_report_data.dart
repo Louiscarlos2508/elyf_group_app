@@ -9,6 +9,7 @@ class ProductionReportData {
     required this.productions,
     this.totalCost = 0,
     this.totalBobinesCost = 0,
+    this.totalPackagingCost = 0,
     this.totalElectricityCost = 0,
     this.totalPersonnelCost = 0,
   });
@@ -18,8 +19,9 @@ class ProductionReportData {
   final double averageQuantityPerBatch; // Average quantity per batch
   final List<ProductionSession>
   productions; // List of production sessions in period
-  final int totalCost; // Coût total (bobines + électricité + personnel)
+  final int totalCost; // Coût total (bobines + emballages + électricité + personnel)
   final int totalBobinesCost; // Coût total des bobines
+  final int totalPackagingCost; // Coût total des emballages
   final int totalElectricityCost; // Coût total de l'électricité
   final int totalPersonnelCost; // Coût total du personnel
 }

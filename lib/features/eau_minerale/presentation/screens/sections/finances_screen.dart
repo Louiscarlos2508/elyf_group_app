@@ -3,8 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
-import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
-import '../../../../../../core/permissions/modules/eau_minerale_permissions.dart';
+import '../../../../../core/permissions/modules/eau_minerale_permissions.dart';
 import '../../../application/controllers/finances_controller.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../../domain/adapters/expense_balance_adapter.dart';
@@ -39,9 +38,8 @@ class FinancesScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(financesStateProvider);
-    return Scaffold(
-      body: state.when(
-        data: (data) => _ExpensesContent(
+    return state.when(
+      data: (data) => _ExpensesContent(
           state: data,
           ref: ref,
           onNewExpense: () => _showForm(context),
@@ -81,13 +79,12 @@ class FinancesScreen extends ConsumerWidget {
             );
           },
         ),
-        loading: () => const LoadingIndicator(),
-        error: (error, stackTrace) => ErrorDisplayWidget(
-          error: error,
-          title: 'Charges indisponibles',
-          message: 'Impossible de charger les dernières dépenses.',
-          onRetry: () => ref.refresh(financesStateProvider),
-        ),
+      loading: () => const LoadingIndicator(),
+      error: (error, stackTrace) => ErrorDisplayWidget(
+        error: error,
+        title: 'Charges indisponibles',
+        message: 'Impossible de charger les dernières dépenses.',
+        onRetry: () => ref.refresh(financesStateProvider),
       ),
     );
   }
@@ -131,149 +128,158 @@ class _ExpensesContent extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isWide = constraints.maxWidth > 600;
-
         return CustomScrollView(
           slivers: [
+            // Premium Header for Finances
             SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(
-                  AppSpacing.lg,
-                  AppSpacing.lg,
-                  AppSpacing.lg,
-                  isWide ? AppSpacing.lg : AppSpacing.md,
+              child: Container(
+                margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      const Color(0xFF991B1B), // Dark Red
+                      const Color(0xFFDC2626), // Premium Red
+                      const Color(0xFFEF4444),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.red.withValues(alpha: 0.2),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
-                child: isWide
-                    ? Row(
-                        children: [
-                          Text(
-                            'Dépenses',
-                            style: theme.textTheme.headlineMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const Spacer(),
-                          RefreshButton(
-                            onRefresh: () =>
-                                ref.invalidate(financesStateProvider),
-                            tooltip: 'Actualiser les dépenses',
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.analytics),
-                            onPressed: onBalanceTap,
-                            tooltip: 'Bilan des dépenses',
-                          ),
-                          const SizedBox(width: 8),
-                          Flexible(
-                            child: EauMineralePermissionGuard(
-                              permission: EauMineralePermissions.createExpense,
-                              child: FilledButton.icon(
-                                onPressed: onNewExpense,
-                                icon: const Icon(Icons.add),
-                                label: const Text('Nouvelle Dépense'),
-                              ),
-                            ),
-                          ),
-                        ],
-                      )
-                    : Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Expanded(
-                                child: Text(
-                                  'Dépenses',
-                                  style: theme.textTheme.titleLarge?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                              Text(
+                                "GESTION FINANCIÈRE",
+                                style: theme.textTheme.labelLarge?.copyWith(
+                                  color: Colors.white.withValues(alpha: 0.9),
+                                  fontWeight: FontWeight.w500,
+                                  letterSpacing: 1.2,
                                 ),
                               ),
-                              RefreshButton(
-                                onRefresh: () =>
-                                    ref.invalidate(financesStateProvider),
-                                tooltip: 'Actualiser les dépenses',
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.analytics),
-                                onPressed: onBalanceTap,
-                                tooltip: 'Bilan des dépenses',
+                              const SizedBox(height: 4),
+                              Text(
+                                "Dépenses & Charges",
+                                style: theme.textTheme.headlineMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 12),
-                          EauMineralePermissionGuard(
-                            permission: EauMineralePermissions.createExpense,
-                            child: SizedBox(
-                              width: double.infinity,
-                              child: FilledButton.icon(
-                                onPressed: onNewExpense,
-                                icon: const Icon(Icons.add),
-                                label: const Text('Nouvelle Dépense'),
-                              ),
+                        ),
+                        Row(
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.analytics_outlined, color: Colors.white),
+                              onPressed: onBalanceTap,
+                              tooltip: 'Bilan',
                             ),
-                          ),
-                        ],
-                      ),
-              ),
-            ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: AppSpacing.horizontalPadding,
-                child: DailyExpenseSummaryCard(
-                  total: todayTotal,
-                  formatCurrency: formatCurrency,
-                ),
-              ),
-            ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(
-                  AppSpacing.lg,
-                  AppSpacing.lg,
-                  AppSpacing.lg,
-                  AppSpacing.md,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Dépenses du Jour',
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                            IconButton(
+                              icon: const Icon(Icons.refresh, color: Colors.white),
+                              onPressed: () => ref.invalidate(financesStateProvider),
+                              tooltip: 'Actualiser',
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 16),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.surface,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: theme.colorScheme.outline.withValues(
-                            alpha: 0.2,
+                    const SizedBox(height: 24),
+                    EauMineralePermissionGuard(
+                      permission: EauMineralePermissions.createExpense,
+                      child: FilledButton.icon(
+                        onPressed: onNewExpense,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: Colors.white.withValues(alpha: 0.2),
+                          foregroundColor: Colors.white,
+                          minimumSize: const Size(double.infinity, 54),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
                           ),
                         ),
-                      ),
-                      padding: EdgeInsets.all(AppSpacing.lg),
-                      child: ExpensesTable(
-                        expenses: todayExpenses,
-                        formatCurrency: formatCurrency,
-                        onActionTap: onActionTap,
+                        icon: const Icon(Icons.add_card_rounded, size: 22),
+                        label: const Text(
+                          'Enregistrer une Dépense',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
             ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: AppSpacing.horizontalPadding,
+
+            // Daily Summary
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              sliver: SliverToBoxAdapter(
+                child: DailyExpenseSummaryCard(
+                  total: todayTotal,
+                  formatCurrency: formatCurrency,
+                ),
+              ),
+            ),
+
+            // Today's Table
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              sliver: SliverToBoxAdapter(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(left: 8, top: 16, bottom: 12),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.today_rounded,
+                            size: 18,
+                            color: theme.colorScheme.primary.withValues(alpha: 0.6),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Dépenses du Jour',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    ExpensesTable(
+                      expenses: todayExpenses,
+                      formatCurrency: formatCurrency,
+                      onActionTap: onActionTap,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // Monthly Summary
+            SliverPadding(
+              padding: const EdgeInsets.all(16),
+              sliver: SliverToBoxAdapter(
                 child: MonthlyExpenseSummary(expenses: state.expenses),
               ),
             ),
-            SliverToBoxAdapter(
-              child: SizedBox(height: AppSpacing.lg),
-            ),
+            const SliverToBoxAdapter(child: SizedBox(height: 32)),
           ],
         );
       },

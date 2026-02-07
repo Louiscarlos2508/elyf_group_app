@@ -8,7 +8,8 @@ import '../../../../domain/entities/cylinder.dart';
 import '../../../../domain/entities/expense.dart';
 import '../../../../domain/entities/gas_sale.dart';
 import '../../../../domain/services/gaz_calculation_service.dart';
-import '../../../widgets/dashboard_overview_kpi_card.dart';
+import '../../../../../../shared/presentation/widgets/elyf_ui/organisms/elyf_card.dart';
+import '../../../../../../shared/presentation/widgets/elyf_ui/atoms/elyf_shimmer.dart';
 
 /// Section des KPI cards pour le dashboard.
 class DashboardKpiSection extends ConsumerWidget {
@@ -25,6 +26,7 @@ class DashboardKpiSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
     // Utiliser le service pour les calculs
     final todaySales = GazCalculationService.calculateTodaySales(sales);
     final todayRevenue = GazCalculationService.calculateTodayRevenue(sales);
@@ -70,41 +72,42 @@ class DashboardKpiSection extends ConsumerWidget {
               return Row(
                 children: [
                   Expanded(
-                    child: DashboardOverviewKpiCard(
-                      title: 'Ventes du jour',
+                    child: ElyfStatsCard(
+                      label: 'Ventes du jour',
                       value: CurrencyFormatter.formatDouble(todayRevenue),
                       subtitle: '${todaySales.length} vente(s)',
                       icon: Icons.trending_up,
+                      color: theme.colorScheme.primary,
                     ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
-                    child: DashboardOverviewKpiCard(
-                      title: 'Dépenses du jour',
-                      value: CurrencyFormatter.formatDouble(
-                        todayExpensesAmount,
-                      ),
+                    child: ElyfStatsCard(
+                      label: 'Dépenses du jour',
+                      value: CurrencyFormatter.formatDouble(todayExpensesAmount),
                       subtitle: '${todayExpenses.length} dépense(s)',
                       icon: Icons.trending_down,
+                      color: theme.colorScheme.error,
                     ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
-                    child: DashboardOverviewKpiCard(
-                      title: 'Bénéfice du jour',
+                    child: ElyfStatsCard(
+                      label: 'Bénéfice du jour',
                       value: CurrencyFormatter.formatDouble(todayProfit),
                       subtitle: todayProfit >= 0 ? 'Positif' : 'Négatif',
                       icon: Icons.account_balance_wallet,
-                      valueColor: const Color(0xFF00A63E),
+                      color: const Color(0xFF00A63E),
                     ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
-                    child: DashboardOverviewKpiCard(
-                      title: 'Bouteilles pleines',
+                    child: ElyfStatsCard(
+                      label: 'Bouteilles pleines',
                       value: '$fullBottles',
                       subtitle: '$emptyBottles vides',
                       icon: Icons.inventory_2,
+                      color: theme.colorScheme.secondary,
                     ),
                   ),
                 ],
@@ -117,22 +120,22 @@ class DashboardKpiSection extends ConsumerWidget {
                 Row(
                   children: [
                     Expanded(
-                      child: DashboardOverviewKpiCard(
-                        title: 'Ventes du jour',
+                      child: ElyfStatsCard(
+                        label: 'Ventes du jour',
                         value: CurrencyFormatter.formatDouble(todayRevenue),
                         subtitle: '${todaySales.length} vente(s)',
                         icon: Icons.trending_up,
+                        color: theme.colorScheme.primary,
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: DashboardOverviewKpiCard(
-                        title: 'Dépenses du jour',
-                        value: CurrencyFormatter.formatDouble(
-                          todayExpensesAmount,
-                        ),
+                      child: ElyfStatsCard(
+                        label: 'Dépenses du jour',
+                        value: CurrencyFormatter.formatDouble(todayExpensesAmount),
                         subtitle: '${todayExpenses.length} dépense(s)',
                         icon: Icons.trending_down,
+                        color: theme.colorScheme.error,
                       ),
                     ),
                   ],
@@ -141,21 +144,22 @@ class DashboardKpiSection extends ConsumerWidget {
                 Row(
                   children: [
                     Expanded(
-                      child: DashboardOverviewKpiCard(
-                        title: 'Bénéfice du jour',
+                      child: ElyfStatsCard(
+                        label: 'Bénéfice du jour',
                         value: CurrencyFormatter.formatDouble(todayProfit),
                         subtitle: todayProfit >= 0 ? 'Positif' : 'Négatif',
                         icon: Icons.account_balance_wallet,
-                        valueColor: const Color(0xFF00A63E),
+                        color: const Color(0xFF00A63E),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: DashboardOverviewKpiCard(
-                        title: 'Bouteilles pleines',
+                      child: ElyfStatsCard(
+                        label: 'Bouteilles pleines',
                         value: '$fullBottles',
                         subtitle: '$emptyBottles vides',
                         icon: Icons.inventory_2,
+                        color: theme.colorScheme.secondary,
                       ),
                     ),
                   ],
@@ -165,9 +169,12 @@ class DashboardKpiSection extends ConsumerWidget {
           },
         );
       },
-      loading: () => const SizedBox(
-        height: 155,
-        child: Center(child: CircularProgressIndicator()),
+      loading: () => Column(
+        children: [
+          ElyfShimmer(child: ElyfShimmer.listTile()),
+          const SizedBox(height: 12),
+          ElyfShimmer(child: ElyfShimmer.listTile()),
+        ],
       ),
       error: (_, __) => const SizedBox.shrink(),
     );

@@ -124,22 +124,24 @@ class MonthlySalaryPaymentFormState
     }
 
     // Demander la signature avant d'enregistrer le paiement
-    final signature = await showDialog<Uint8List>(
+    final result = await showDialog<(Uint8List, String?)>(
       context: context,
       builder: (dialogContext) => PaymentSignatureDialog(
         workerName: widget.employee.name,
         amount: widget.employee.monthlySalary,
         period: _period,
-        onPaid: (sig) {
-          Navigator.of(context).pop(sig);
+        onPaid: (sig, name) {
+          Navigator.of(context).pop((sig, name));
         },
       ),
     );
 
-    if (signature == null) {
+    if (result == null) {
       // L'utilisateur a annulé la signature
       return;
     }
+
+    final (signature, signerName) = result;
 
     setState(() => _isLoading = true);
     try {
@@ -154,6 +156,7 @@ class MonthlySalaryPaymentFormState
             ? null
             : _notesController.text.trim(),
         signature: signature,
+        signerName: signerName, // Ajout du nom du signataire
       );
 
       await ref

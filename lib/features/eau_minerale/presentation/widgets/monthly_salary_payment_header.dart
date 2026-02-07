@@ -13,65 +13,87 @@ class MonthlySalaryPaymentHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    
     return Column(
       children: [
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: theme.colorScheme.primary.withValues(alpha: 0.2),
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        ElyfCard(
+          padding: const EdgeInsets.all(20),
+          borderRadius: 20,
+          backgroundColor: colors.primary.withValues(alpha: 0.05),
+          borderColor: colors.primary.withValues(alpha: 0.1),
+          child: Row(
             children: [
-              Text(
-                'Employé',
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: colors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(Icons.person_rounded, color: colors.primary, size: 28),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      employee.name,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        color: colors.onSurface,
+                      ),
+                    ),
+                    if (employee.position != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        employee.position!,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colors.onSurfaceVariant,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
-              const SizedBox(height: 4),
-              Text(
-                employee.name,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              if (employee.position != null) ...[
-                const SizedBox(height: 4),
-                Text(
-                  employee.position!,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
             ],
           ),
         ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: theme.colorScheme.outline.withValues(alpha: 0.2),
-            ),
-          ),
+        const SizedBox(height: 12),
+        ElyfCard(
+          padding: const EdgeInsets.all(20),
+          borderRadius: 20,
+          backgroundColor: colors.surfaceContainerLow.withValues(alpha: 0.5),
+          borderColor: colors.outline.withValues(alpha: 0.1),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Salaire mensuel', style: theme.textTheme.bodyLarge),
-              Text(
-                CurrencyFormatter.format(employee.monthlySalary),
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.primary,
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Salaire Mensuel',
+                    style: theme.textTheme.labelMedium?.copyWith(color: colors.onSurfaceVariant),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    CurrencyFormatter.format(employee.monthlySalary),
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w900,
+                      color: colors.primary,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: colors.primary.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
                 ),
+                child: Icon(Icons.payments_rounded, color: colors.primary, size: 20),
               ),
             ],
           ),
