@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
-import '../../../../../../../shared/utils/currency_formatter.dart';
 import '../../../../domain/entities/expense.dart';
 
 /// Dialog pour afficher les détails d'une dépense.
@@ -72,8 +71,9 @@ class ExpenseDetailDialog extends StatelessWidget {
         ],
       ),
       actions: [
-        TextButton(
+        ElyfButton(
           onPressed: () => Navigator.of(context).pop(),
+          variant: ElyfButtonVariant.text,
           child: const Text('Fermer'),
         ),
       ],

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../../../../shared/presentation/widgets/elyf_ui/atoms/elyf_icon_button.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../../../shared/utils/currency_formatter.dart';
@@ -168,25 +169,24 @@ class GazExpenseCard extends StatelessWidget {
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      IconButton(
-                        icon: Icon(
-                          Icons.edit_outlined,
-                          color: theme.colorScheme.primary,
-                          size: 20,
-                        ),
+                      ElyfIconButton(
+                        icon: Icons.edit_outlined,
                         onPressed: onEdit,
                         tooltip: 'Modifier',
-                        visualDensity: VisualDensity.compact,
+                        iconColor: theme.colorScheme.primary,
+                        size: 32,
+                        iconSize: 20,
+                        useGlassEffect: false,
                       ),
-                      IconButton(
-                        icon: Icon(
-                          Icons.delete_outline,
-                          color: theme.colorScheme.error,
-                          size: 20,
-                        ),
+                      const SizedBox(width: 4),
+                      ElyfIconButton(
+                        icon: Icons.delete_outline,
                         onPressed: onDelete,
                         tooltip: 'Supprimer',
-                        visualDensity: VisualDensity.compact,
+                        iconColor: theme.colorScheme.error,
+                        size: 32,
+                        iconSize: 20,
+                        useGlassEffect: false,
                       ),
                     ],
                   ),

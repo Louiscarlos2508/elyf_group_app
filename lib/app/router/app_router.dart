@@ -37,6 +37,12 @@ class RouterNotifier extends ChangeNotifier {
     ref.listen(currentUserProvider, (_, __) => notifyListeners());
     // Écouter les changements d'entreprise active
     ref.listen(activeEnterpriseIdProvider, (_, __) => notifyListeners());
+
+    // Écouter la disponibilité des entreprises pour l'auto-sélection
+    ref.listen(userAccessibleEnterprisesProvider, (_, __) => notifyListeners());
+
+    // Écouter la disponibilité des modules pour l'auto-sélection
+    ref.listen(userAccessibleModulesForActiveEnterpriseProvider, (_, __) => notifyListeners());
   }
 }
 
@@ -52,11 +58,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final currentUserSync = ref.read(currentUserProvider);
 
       // Récupérer l'état de l'auth de manière synchrone
-      final bool isAuthenticated = authState.when(
-        data: (authenticated) => authenticated,
-        loading: () => false,
-        error: (_, __) => false,
-      );
+      final bool isAuthenticated = authState;
 
       // Récupérer l'utilisateur pour le statut admin
       final bool isAdmin = currentUserSync.maybeWhen(
@@ -92,16 +94,50 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       if (isLogin || isOnboarding) {
         // Attendre que l'utilisateur soit chargé pour décider de la redirection
         if (currentUserSync.isLoading) return null;
-        return isAdmin ? '/admin' : '/modules';
-      }
+        if (isAdmin) return '/admin';
 
+        // Tenter de déterminer si on peut sauter l'écran de sélection
+        final enterprisesAsync = ref.read(userAccessibleEnterprisesProvider);
+        if (enterprisesAsync.isLoading) return null;
+
+        final enterprises = enterprisesAsync.value ?? [];
+        if (enterprises.length == 1) {
+          // Une seule entreprise
+          if (activeEnterpriseId == null) {
+            // Déclencher l'auto-sélection et attendre
+            ref.read(autoSelectEnterpriseProvider);
+            return null;
+          }
+
+          // Entreprise active, vérifier les modules
+          final modulesAsync = ref.read(userAccessibleModulesForActiveEnterpriseProvider);
+          if (modulesAsync.isLoading) return null;
+
+          final modules = modulesAsync.value ?? [];
+          if (modules.length == 1) {
+            final modulePath = _getModulePathFromId(modules.first);
+            if (modulePath != null) return '/modules/$modulePath';
+          }
+        }
+
+        return '/modules';
+      }
 
       // 4. Rediriger les admins qui essaient d'accéder à /modules vers /admin
       if (location == '/modules' && isAdmin) {
         return '/admin';
       }
 
-      // 5. Protection des routes de modules
+      // 5. Auto-redirection depuis /modules si un seul choix possible
+      if (location == '/modules') {
+        final modulesAsync = ref.read(userAccessibleModulesForActiveEnterpriseProvider);
+        if (modulesAsync.hasValue && modulesAsync.value!.length == 1) {
+          final modulePath = _getModulePathFromId(modulesAsync.value!.first);
+          if (modulePath != null) return '/modules/$modulePath';
+        }
+      }
+
+      // 6. Protection des routes de modules
       final bool isModuleRoute = location.startsWith('/modules/');
       final bool isModuleMenu = location == '/modules';
 
@@ -113,8 +149,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         }
       }
 
-
-      // 6. Redirection de la racine / vers /modules ou /admin
+      // 7. Redirection de la racine / vers /modules ou /admin
       if (location == '/') {
         // Attendre que l'utilisateur soit chargé
         if (currentUserSync.isLoading) return null;
@@ -193,3 +228,21 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     ],
   );
 });
+
+/// Helper pour mapper l'ID d'un module vers son chemin de route
+String? _getModulePathFromId(String moduleId) {
+  switch (moduleId) {
+    case 'gaz':
+      return 'gaz';
+    case 'eau_minerale':
+      return 'eau_sachet';
+    case 'orange_money':
+      return 'orange_money';
+    case 'immobilier':
+      return 'immobilier';
+    case 'boutique':
+      return 'boutique';
+    default:
+      return null;
+  }
+}

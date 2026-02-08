@@ -63,6 +63,7 @@ export 'error_display_widget.dart';
 export 'loading_indicator.dart';
 export 'empty_state.dart';
 export 'section_header.dart';
+export 'double_tap_to_exit.dart';
 
 // Profile widgets
 export 'profile/profile_logout_card.dart';

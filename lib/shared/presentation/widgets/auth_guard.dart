@@ -14,18 +14,19 @@ class AuthGuard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isAuthenticatedAsync = ref.watch(isAuthenticatedProvider);
+    final isAuthenticated = ref.watch(isAuthenticatedProvider);
+    final currentUserAsync = ref.watch(currentUserProvider);
 
-    return isAuthenticatedAsync.when(
-      data: (isAuthenticated) {
-        if (!isAuthenticated) {
-          // Le routeur gérera la redirection vers /login.
-          // On affiche un loader en attendant.
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
-        }
-        return child;
+    if (isAuthenticated) {
+      return child;
+    }
+
+    return currentUserAsync.when(
+      data: (user) {
+        // Si on est ici et isAuthenticated est false, l'utilisateur n'est pas connecté
+        return const Scaffold(
+          body: Center(child: CircularProgressIndicator()),
+        );
       },
       loading: () =>
           const Scaffold(body: Center(child: CircularProgressIndicator())),

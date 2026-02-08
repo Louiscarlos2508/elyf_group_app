@@ -168,7 +168,7 @@ class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
                                   )),
                                 );
                                 // Forcer le rechargement du tour en utilisant refresh
-                                ref.refresh(tourProvider(tour.id));
+                                final _ = ref.refresh(tourProvider(tour.id));
                               }
                             } catch (e) {
                               if (!mounted || !context.mounted) return;

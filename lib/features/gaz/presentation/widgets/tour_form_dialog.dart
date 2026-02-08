@@ -95,7 +95,7 @@ class _TourFormDialogState extends ConsumerState<TourFormDialog>
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 24),
-              FilledButton(
+              ElyfButton(
                 onPressed: () => Navigator.of(context).pop(),
                 child: const Text('Fermer'),
               ),
@@ -165,9 +165,10 @@ class _TourFormDialogState extends ConsumerState<TourFormDialog>
                 Row(
                   children: [
                     Expanded(
-                      child: OutlinedButton(
+                      child: ElyfButton(
                         onPressed: () => Navigator.of(context).pop(),
-                        style: GazButtonStyles.outlined(context),
+                        variant: ElyfButtonVariant.outlined,
+                        width: double.infinity,
                         child: const Text(
                           'Annuler',
                           style: TextStyle(fontSize: 14),
@@ -176,22 +177,14 @@ class _TourFormDialogState extends ConsumerState<TourFormDialog>
                     ),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: FilledButton(
+                      child: ElyfButton(
                         onPressed: _isLoading ? null : _submit,
-                        style: GazButtonStyles.filledPrimary(context),
-                        child: _isLoading
-                            ? const SizedBox(
-                                height: 16,
-                                width: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : const Text(
-                                'Créer',
-                                style: TextStyle(fontSize: 14),
-                              ),
+                        isLoading: _isLoading,
+                        width: double.infinity,
+                        child: const Text(
+                          'Créer',
+                          style: TextStyle(fontSize: 14),
+                        ),
                       ),
                     ),
                   ],

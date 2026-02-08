@@ -164,7 +164,7 @@ class ExpenseFormState extends ConsumerState<ExpenseForm> {
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<ExpenseCategory>(
-                    value: _category,
+                    initialValue: _category,
                     decoration: _buildInputDecoration(
                       label: 'Type de dépense',
                       icon: Icons.category_rounded,

@@ -21,7 +21,7 @@ class PropertyExpenseOfflineRepository
   final String enterpriseId;
 
   @override
-  String get collectionName => 'expenses';
+  String get collectionName => 'property_expenses';
 
   @override
   PropertyExpense fromMap(Map<String, dynamic> map) {

@@ -82,6 +82,27 @@ class RealtimeSyncService {
 
   String? _currentUserId;
 
+  /// Arrête l'écoute en temps réel et libère les ressources.
+  Future<void> stopRealtimeSync() async {
+    _usersSubscription?.cancel();
+    _enterprisesSubscription?.cancel();
+    _rolesSubscription?.cancel();
+    _enterpriseModuleUsersSubscription?.cancel();
+    for (final sub in _pointOfSaleSubscriptions.values) {
+      sub.cancel();
+    }
+    _pointOfSaleSubscriptions.clear();
+    
+    _isListening = false;
+    _initialPullCompleted = false;
+    _currentUserId = null;
+    
+    developer.log(
+      'RealtimeSyncService stopped',
+      name: 'admin.realtime.sync',
+    );
+  }
+
   /// Démarre l'écoute en temps réel de toutes les collections.
   ///
   /// Fait d'abord un pull initial depuis Firestore vers Drift (offline-first),

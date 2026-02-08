@@ -4,7 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/auth/providers.dart' show currentUserIdProvider;
 import '../../../../core/errors/app_exceptions.dart';
 import 'package:elyf_groupe_app/shared.dart'
-    show NavigationSection, ProfileScreen, AdaptiveNavigationScaffold;
+    show
+        NavigationSection,
+        ProfileScreen,
+        AdaptiveNavigationScaffold,
+        DoubleTapToExit;
 import '../../application/providers.dart'
     show userControllerProvider, usersProvider, isAdminSyncingProvider;
 import '../../domain/entities/user.dart' show User;
@@ -122,32 +126,34 @@ class _AdminHomeScreenState extends ConsumerState<AdminHomeScreen> {
     final sections = _buildSections();
     final isSyncing = ref.watch(isAdminSyncingProvider).asData?.value ?? false;
 
-    return AdaptiveNavigationScaffold(
-      sections: sections,
-      appTitle: 'Administration • ELYF Groupe',
-      selectedIndex: _selectedIndex,
-      onIndexChanged: (index) {
-        setState(() => _selectedIndex = index);
-      },
-      appBarActions: [
-        if (isSyncing)
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: Tooltip(
-              message: 'Synchronisation en cours...',
-              child: Icon(
-                Icons.sync,
-                size: 18,
-                color: Theme.of(context).colorScheme.primary,
+    return DoubleTapToExit(
+      child: AdaptiveNavigationScaffold(
+        sections: sections,
+        appTitle: 'Administration • ELYF Groupe',
+        selectedIndex: _selectedIndex,
+        onIndexChanged: (index) {
+          setState(() => _selectedIndex = index);
+        },
+        appBarActions: [
+          if (isSyncing)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: Tooltip(
+                message: 'Synchronisation en cours...',
+                child: Icon(
+                  Icons.sync,
+                  size: 18,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
               ),
             ),
+          IconButton(
+            icon: const Icon(Icons.person_outline),
+            onPressed: () => _navigateToProfile(context),
+            tooltip: 'Mon Profil',
           ),
-        IconButton(
-          icon: const Icon(Icons.person_outline),
-          onPressed: () => _navigateToProfile(context),
-          tooltip: 'Mon Profil',
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

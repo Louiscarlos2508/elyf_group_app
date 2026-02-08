@@ -1,5 +1,4 @@
 import 'dart:math' as math;
-import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 
 /// A premium animated mesh gradient background.
@@ -73,43 +72,48 @@ class _ElyfBackgroundState extends State<ElyfBackground>
     final tertiary = colors.tertiaryContainer.withValues(alpha: isDark ? 0.3 : 0.6);
     final background = colors.surface;
 
-    return Stack(
-      children: [
-        // Solid background base
-        Container(color: background),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // If we are in an unbounded vertical space (like a Sliver), 
+        // we need to ensure we don't try to occupy infinite space.
+        // If there's no child, we use a fallback height.
+        // If there is a child, the Stack Fit will handle it, but 
+        // we should still be careful with the painters.
+        
+        final Widget content = Stack(
+          clipBehavior: Clip.antiAlias,
+          children: [
+            // Solid background base
+            Positioned.fill(child: Container(color: background)),
 
-        // Animated Mesh Gradient Painter
-        AnimatedBuilder(
-          animation: _controller,
-          builder: (context, child) {
-            return CustomPaint(
-              size: Size.infinite,
-              painter: _MeshGradientPainter(
-                progress: _controller.value,
-                primary: primary,
-                secondary: secondary,
-                tertiary: tertiary,
+            // Animated Mesh Gradient Painter
+            Positioned.fill(
+              child: AnimatedBuilder(
+                animation: _controller,
+                builder: (context, child) {
+                  return CustomPaint(
+                    painter: _MeshGradientPainter(
+                      progress: _controller.value,
+                      primary: primary,
+                      secondary: secondary,
+                      tertiary: tertiary,
+                    ),
+                  );
+                },
               ),
-            );
-          },
-        ),
+            ),
 
-        // Noise overlay for texture (optional, adds "premium paper" feel)
-        // Opacity(
-        //   opacity: 0.02,
-        //   child: Container(
-        //     decoration: const BoxDecoration(
-        //       image: DecorationImage(
-        //         image: AssetImage('assets/images/noise.png'),
-        //         repeat: ImageRepeat.repeat,
-        //       ),
-        //     ),
-        //   ),
-        // ),
+            // Content
+            if (widget.child != null) widget.child!,
+          ],
+        );
 
-        // Content
-        if (widget.child != null) widget.child!,
-      ],
+        if (!constraints.hasBoundedHeight && widget.child == null) {
+          return SizedBox(height: 400, child: content);
+        }
+
+        return content;
+      },
     );
   }
 }
@@ -129,8 +133,11 @@ class _MeshGradientPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    if (size.width == 0 || size.height == 0) return;
+    
     final w = size.width;
-    final h = size.height;
+    // Check for infinite height and use a fallback (e.g. 500 or screen width)
+    final h = size.height.isInfinite ? (w > 0 ? w : 500.0) : size.height;
 
     // Blob 1: Primary - Floating Top Left
     final blob1Pos = Offset(

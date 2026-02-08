@@ -223,26 +223,25 @@ class _CylinderLeakFormDialogState
                 ),
               ),
               const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Flexible(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      style: GazButtonStyles.outlined(context),
-                      child: const Text('Annuler'),
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Flexible(
+                        child: ElyfButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          variant: ElyfButtonVariant.outlined,
+                          child: const Text('Annuler'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Flexible(
+                        child: ElyfButton(
+                          onPressed: _submit,
+                          child: const Text('Signaler'),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 12),
-                  Flexible(
-                    child: FilledButton(
-                      onPressed: _submit,
-                      style: GazButtonStyles.filledPrimary(context),
-                      child: const Text('Signaler'),
-                    ),
-                  ),
-                ],
-              ),
             ],
           ),
         ),

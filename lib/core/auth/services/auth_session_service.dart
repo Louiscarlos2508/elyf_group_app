@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:developer' as developer;
 
 import 'package:firebase_auth/firebase_auth.dart'
@@ -38,6 +39,12 @@ class AuthSessionService {
   AppUser? _currentUser;
   bool _isInitialized = false;
 
+  /// Stream Controller pour notifier des changements de l'utilisateur.
+  final _userStreamController = StreamController<AppUser?>.broadcast();
+
+  /// Stream de l'utilisateur actuel.
+  Stream<AppUser?> get userStream => _userStreamController.stream;
+
   /// Récupère l'email admin depuis les variables d'environnement.
   String get _adminEmail {
     return dotenv.env['ADMIN_EMAIL'] ?? 'admin@elyf.com';
@@ -74,21 +81,19 @@ class AuthSessionService {
       final isLoggedInLocal = await _authStorageService.isLoggedIn();
 
       // Attendre activement que Firebase Auth restaure l'état
+      // Passer de 2s à 5s pour être plus robuste lors des Hot Reloads/Restarts
       User? firebaseUser = _firebaseAuth.currentUser;
       
-      // Si l'utilisateur est null, attendre via authStateChanges().first avec timeout
       if (firebaseUser == null) {
         try {
+          developer.log(
+            'Waiting for Firebase Auth to restore session...',
+            name: 'auth.session',
+          );
           firebaseUser = await _firebaseAuth.authStateChanges().first.timeout(
-            const Duration(seconds: 2),
+            const Duration(seconds: 5),
             onTimeout: () => null,
           );
-          if (firebaseUser != null) {
-            developer.log(
-              'User restored from authStateChanges()',
-              name: 'auth.session',
-            );
-          }
         } catch (e) {
           developer.log(
             'Timeout waiting for authStateChanges(): $e',
@@ -97,85 +102,41 @@ class AuthSessionService {
         }
       }
 
-      // Détecter les incohérences : SecureStorage dit "logged in" mais Firebase Auth n'a pas d'utilisateur
-      // ET nous avons attendu suffisamment.
-      if (isLoggedInLocal && firebaseUser == null) {
-        // En mode offline, on ne nettoie PAS les données locales si l'utilisateur y est.
-        // On permet à l'app de fonctionner avec les données de SecureStorage.
+      // Charger l'utilisateur depuis le cache local pour la persistence offline
+      final localUser = await _authStorageService.loadUser();
+
+      // LOGIQUE DE SÉCURITÉ CRITIQUE : Vérification de cohérence
+      if (firebaseUser != null) {
         developer.log(
-          'Firebase Auth has no user, but SecureStorage has data. Using SecureStorage as fallback.',
+          'Firebase Auth confirmed user: ${firebaseUser.email} (${firebaseUser.uid})',
           name: 'auth.session',
         );
-        await _loadUserFromStorage();
-      }
 
-      if (firebaseUser != null) {
-        // Récupérer les données depuis Firestore avec gestion d'erreur améliorée
-        try {
-          // Attendre un court délai pour s'assurer que Firestore est prêt
-          // Cela peut être nécessaire après le déploiement de nouvelles règles
-          await Future<void>.delayed(const Duration(milliseconds: 500));
-
-          final userData = await _firestoreUserService
-              .getUserById(firebaseUser.uid)
-              .timeout(const Duration(seconds: 5));
-
-          if (userData != null) {
-            _currentUser = AppUser(
-              id: firebaseUser.uid,
-              email: firebaseUser.email ?? '',
-              displayName:
-                  userData['firstName'] != null && userData['lastName'] != null
-                  ? '${userData['firstName']} ${userData['lastName']}'
-                  : userData['username'] as String?,
-              isAdmin: userData['isAdmin'] as bool? ?? false,
-            );
-
-            // Sauvegarder dans le stockage sécurisé
-            await _authStorageService.saveUser(_currentUser!);
-          } else {
-            // Utilisateur Firebase existe mais pas dans Firestore, charger depuis SecureStorage
-            developer.log(
-              'User not found in Firestore, loading from SecureStorage',
-              name: 'auth.session',
-            );
-            await _loadUserFromStorage();
-          }
-        } catch (e, stackTrace) {
-          // Détecter si c'est une erreur de réseau/DNS plutôt qu'une erreur de permissions
-          final errorString = e.toString().toLowerCase();
-          final isNetworkError =
-              errorString.contains('unavailable') ||
-              errorString.contains('unable to resolve') ||
-              errorString.contains('network') ||
-              errorString.contains('timeout') ||
-              errorString.contains('connection') ||
-              errorString.contains('no address associated');
-
-          final appException = ErrorHandler.instance.handleError(e, stackTrace);
-          if (isNetworkError) {
-            AppLogger.warning(
-              'Network error loading user from Firestore (offline mode). Loading from SecureStorage. '
-              'This is normal if the device has no internet connection: ${appException.message}',
-              name: 'auth.session',
-              error: e,
-              stackTrace: stackTrace,
-            );
-          } else {
-            AppLogger.warning(
-              'Error loading user from Firestore (permissions/rules issue), trying SecureStorage: ${appException.message}',
-              name: 'auth.session',
-              error: e,
-              stackTrace: stackTrace,
-            );
-          }
-          // En cas d'erreur Firestore (réseau, règles, permissions, timeout), charger depuis SecureStorage
-          // Ne pas considérer cela comme une erreur fatale - l'utilisateur pourra se reconnecter
-          await _loadUserFromStorage();
+        if (localUser != null && localUser.id != firebaseUser.uid) {
+          // ALERTE ROUGE : L'ID local ne correspond pas à l'ID Firebase
+          // Cela peut arriver après un changement de compte rapide ou un bug de persistence
+          developer.log(
+            'SECURITY ALERT: Local ID (${localUser.id}) mismatch with Firebase ID (${firebaseUser.uid}). '
+            'Clearing stale local data...',
+            name: 'auth.session',
+          );
+          await _authStorageService.clearLocalAuthData();
         }
+        
+        // Continuer avec l'utilisateur Firebase (Source de vérité)
+        await _fetchAndSyncFirestoreUser(firebaseUser);
       } else {
-        // Pas d'utilisateur Firebase, charger depuis SecureStorage
-        await _loadUserFromStorage();
+        // Pas d'utilisateur Firebase trouvé après l'attente
+        if (localUser != null) {
+          developer.log(
+            'No Firebase user found. Falling back to secure local storage for offline access.',
+            name: 'auth.session',
+          );
+          _updateUser(localUser);
+        } else {
+          developer.log('No user session found (Firebase or Local).', name: 'auth.session');
+          _updateUser(null);
+        }
       }
     } catch (e, stackTrace) {
       final appException = ErrorHandler.instance.handleError(e, stackTrace);
@@ -237,9 +198,82 @@ class AuthSessionService {
     _isInitialized = true;
   }
 
-  /// Charge l'utilisateur depuis le stockage sécurisé
+  /// Charge l'utilisateur depuis le stockage sécurisé et met à jour l'état.
   Future<void> _loadUserFromStorage() async {
-    _currentUser = await _authStorageService.loadUser();
+    final user = await _authStorageService.loadUser();
+    _updateUser(user);
+  }
+
+  /// Récupère les données Firestore pour un utilisateur Firebase et synchronise le cache local.
+  Future<void> _fetchAndSyncFirestoreUser(User firebaseUser) async {
+    try {
+      // Un court délai pour s'assurer que Firebase est stable
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+
+      final userData = await _firestoreUserService
+          .getUserById(firebaseUser.uid)
+          .timeout(const Duration(seconds: 5));
+
+      AppUser appUser;
+      if (userData != null) {
+        appUser = AppUser(
+          id: firebaseUser.uid,
+          email: firebaseUser.email ?? '',
+          displayName:
+              userData['firstName'] != null && userData['lastName'] != null
+              ? '${userData['firstName']} ${userData['lastName']}'
+              : userData['username'] as String?,
+          isAdmin: userData['isAdmin'] as bool? ?? false,
+        );
+      } else {
+        // Utilisateur Firebase existe mais pas dans Firestore (rare), utiliser les données minimales
+        developer.log(
+          'User not found in Firestore, fallback to minimal AppUser',
+          name: 'auth.session',
+        );
+        appUser = AppUser(
+          id: firebaseUser.uid,
+          email: firebaseUser.email ?? '',
+          displayName: firebaseUser.displayName ?? 'Utilisateur',
+          isAdmin: firebaseUser.email?.toLowerCase() == _adminEmail.toLowerCase(),
+        );
+      }
+
+      // Mise à jour de l'état ET du cache local (Source de vérité synchronisée)
+      _updateUser(appUser);
+      await _authStorageService.saveUser(appUser);
+      
+    } catch (e, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.warning(
+        'Error syncing Firestore user (offline mode fallback): ${appException.message}',
+        name: 'auth.session',
+      );
+      
+      // En cas d'erreur (réseau), on essaie de charger ce qu'on a déjà en cache local
+      // SI l'ID correspond, sinon on reste avec les données minimales de Firebase
+      final localUser = await _authStorageService.loadUser();
+      if (localUser != null && localUser.id == firebaseUser.uid) {
+        _updateUser(localUser);
+      } else {
+        // Fallback minimal
+        _updateUser(AppUser(
+          id: firebaseUser.uid,
+          email: firebaseUser.email ?? '',
+          isAdmin: firebaseUser.email?.toLowerCase() == _adminEmail.toLowerCase(),
+        ));
+      }
+    }
+  }
+
+  /// Met à jour l'utilisateur actuel et notifie les écouteurs.
+  void _updateUser(AppUser? user) {
+    _currentUser = user;
+    _userStreamController.add(user);
+    developer.log(
+      'Auth user state updated: ${user?.email ?? "null"}',
+      name: 'auth.session',
+    );
   }
 
   /// Se connecter avec email et mot de passe via Firebase Auth.
@@ -348,121 +382,15 @@ class AuthSessionService {
         );
       }
 
-      // Vérifier si c'est le premier admin et créer le profil dans Firestore
-      // Note: Ces opérations peuvent échouer si Firestore n'est pas encore configuré ou accessible,
-      // mais cela n'empêchera pas l'authentification de fonctionner
-      // Seul l'email configuré comme admin peut être admin automatiquement à la création du profil.
-      // Tous les autres utilisateurs doivent être promus manuellement dans la console ou par un autre admin.
-      final shouldBeAdmin = email.toLowerCase() == _adminEmail.toLowerCase();
+      // 3. Récupérer et synchroniser les données utilisateur (Firestore -> Cache -> State)
+      await _fetchAndSyncFirestoreUser(firebaseUser);
+      
+      developer.log(
+        'User successfully logged in: ${firebaseUser.email} (${firebaseUser.uid})',
+        name: 'auth.session',
+      );
 
-      // Créer ou mettre à jour le profil utilisateur dans Firestore
-      // Cette opération peut échouer silencieusement si Firestore n'est pas accessible (réseau, permissions)
-      // L'authentification continuera quand même et le profil sera créé quand Firestore sera disponible
-      // ⚠️ IMPORTANT: Ne pas passer firstName/lastName pour éviter d'écraser les vraies valeurs existantes
-      // Si l'utilisateur existe déjà, ses firstName/lastName seront préservés
-      // Si c'est un nouvel utilisateur, ils seront vides et pourront être mis à jour via l'admin
-      // ⚠️ CRITICAL: Only pass isAdmin for NEW users, not for updates
-      try {
-        // Check if user already exists in Firestore
-        Map<String, dynamic>? existingUser;
-        try {
-          existingUser = await _firestoreUserService
-              .getUserById(firebaseUser.uid)
-              .timeout(const Duration(seconds: 2));
-        } catch (e) {
-          existingUser = null; // User doesn't exist or Firestore unavailable
-        }
-
-        await _firestoreUserService
-            .createOrUpdateUser(
-              userId: firebaseUser.uid,
-              email: firebaseUser.email ?? email,
-              // Ne pas passer firstName/lastName pour éviter d'écraser les valeurs existantes
-              username: email.split('@').first,
-              isActive: true,
-              // CRITICAL FIX: Only set isAdmin for NEW users
-              // For existing users, preserve their current isAdmin value
-              isAdmin: existingUser != null 
-                  ? (existingUser['isAdmin'] as bool? ?? false)
-                  : shouldBeAdmin,
-            )
-            .timeout(const Duration(seconds: 5));
-      } catch (e, stackTrace) {
-        final appException = ErrorHandler.instance.handleError(e, stackTrace);
-        AppLogger.warning(
-          'Error creating user profile in Firestore (network/permissions issue - app will work in offline mode): ${appException.message}',
-          name: 'auth.session',
-          error: e,
-          stackTrace: stackTrace,
-        );
-        // Continue malgré l'erreur - le profil sera créé quand Firestore sera disponible
-        // Firebase Auth a réussi, donc l'utilisateur peut se connecter
-      }
-
-      // Récupérer les données utilisateur depuis Firestore
-      // Si Firestore n'est pas disponible (réseau, permissions), on utilise les valeurs par défaut
-      // Utiliser un timeout court pour ne pas bloquer la connexion
-      Map<String, dynamic>? userData;
-      try {
-        userData = await _firestoreUserService
-            .getUserById(firebaseUser.uid)
-            .timeout(const Duration(seconds: 2)); // Réduit de 5 à 2 secondes pour accélérer
-      } catch (e, stackTrace) {
-        final appException = ErrorHandler.instance.handleError(e, stackTrace);
-        AppLogger.warning(
-          'Error getting user data from Firestore (network/permissions issue - using default values): ${appException.message}',
-          name: 'auth.session',
-          error: e,
-          stackTrace: stackTrace,
-        );
-        userData = null; // Utilisera les valeurs par défaut
-        // Ce n'est pas critique - l'utilisateur peut se connecter avec les valeurs par défaut
-        // Les données seront récupérées lors de la synchronisation en arrière-plan
-      }
-
-      // Créer l'utilisateur avec les données disponibles
-      // Envelopper dans un try-catch pour s'assurer qu'aucune erreur inattendue ne bloque la connexion
-      try {
-        final appUser = AppUser(
-          id: firebaseUser.uid,
-          email: firebaseUser.email ?? email,
-          displayName:
-              userData?['firstName'] != null && userData?['lastName'] != null
-              ? '${userData!['firstName']} ${userData['lastName']}'
-              : 'Administrateur',
-          // CRITICAL FIX: Always use Firestore data if available, only fallback to shouldBeAdmin for new users
-          isAdmin: userData?['isAdmin'] as bool? ?? false,
-        );
-
-        // Sauvegarder dans le stockage sécurisé
-        await _authStorageService.saveUser(appUser);
-        _currentUser = appUser;
-
-        developer.log(
-          'User successfully logged in: ${appUser.email} (${appUser.id})',
-          name: 'auth.session',
-        );
-
-        return appUser;
-      } catch (e, stackTrace) {
-        final appException = ErrorHandler.instance.handleError(e, stackTrace);
-        // Si la création de l'AppUser échoue, créer avec les valeurs minimales
-        AppLogger.warning(
-          'Error creating AppUser object, using minimal values: ${appException.message}',
-          name: 'auth.session',
-          error: e,
-          stackTrace: stackTrace,
-        );
-        final appUser = AppUser(
-          id: firebaseUser.uid,
-          email: firebaseUser.email ?? email,
-          displayName: 'Administrateur',
-          isAdmin: email == _adminEmail,
-        );
-        await _authStorageService.saveUser(appUser);
-        _currentUser = appUser;
-        return appUser;
-      }
+      return _currentUser!;
     } on FirebaseAuthException catch (e) {
       String errorMessage;
       switch (e.code) {
@@ -525,7 +453,7 @@ class AuthSessionService {
 
           // Sauvegarder dans le stockage sécurisé
           await _authStorageService.saveUser(appUser);
-          _currentUser = appUser;
+          _updateUser(appUser);
 
           return appUser;
         }
@@ -559,7 +487,7 @@ class AuthSessionService {
             isAdmin: email == _adminEmail,
           );
           await _authStorageService.saveUser(appUser);
-          _currentUser = appUser;
+          _updateUser(appUser);
           return appUser;
         }
       }
@@ -601,7 +529,7 @@ class AuthSessionService {
             isAdmin: email == _adminEmail,
           );
           await _authStorageService.saveUser(appUser);
-          _currentUser = appUser;
+          _updateUser(appUser);
           return appUser;
         }
       }
@@ -653,7 +581,7 @@ class AuthSessionService {
 
     // Nettoyer les données locales (toujours faire, même si Firebase signOut échoue)
     await _authStorageService.clearLocalAuthData();
-    _currentUser = null;
+    _updateUser(null);
     // Ne pas réinitialiser _isInitialized - Firebase Core reste initialisé
     // et le service doit rester prêt pour la prochaine connexion
 
@@ -683,7 +611,7 @@ class AuthSessionService {
         stackTrace: stackTrace,
       );
     }
-    _currentUser = null;
+    _updateUser(null);
     _isInitialized = false;
     developer.log('Auth session service reset complete', name: 'auth.session');
   }

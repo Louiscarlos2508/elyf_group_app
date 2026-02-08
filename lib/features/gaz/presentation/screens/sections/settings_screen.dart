@@ -11,6 +11,7 @@ import '../../widgets/bottle_price_table.dart';
 import '../../widgets/cylinder_form_dialog.dart';
 import '../../widgets/point_of_sale_form_dialog.dart';
 import '../../widgets/point_of_sale_table.dart';
+import '../../widgets/gaz_header.dart';
 import '../../../application/providers.dart' show pointsOfSaleProvider;
 
 /// Écran de paramètres pour le module Gaz selon le design Figma.
@@ -47,6 +48,10 @@ class GazSettingsScreen extends ConsumerWidget {
           color: const Color(0xFFF9FAFB),
           child: CustomScrollView(
             slivers: [
+              const GazHeader(
+                title: 'ADMINISTRATION',
+                subtitle: 'Paramètres Gaz',
+              ),
               SliverPadding(
                 padding: const EdgeInsets.all(24),
                 sliver: SliverList(
@@ -152,42 +157,26 @@ class GazSettingsScreen extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
-                isMobile
-                    ? IconButton.filled(
+                isMobile ? ElyfButton(
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => const CylinderFormDialog(),
+                    );
+                  },
+                  size: ElyfButtonSize.small,
+                  icon: Icons.add,
+                  child: const Text('Nouveau'),
+                )
+                    : ElyfButton(
                         onPressed: () {
                           showDialog(
                             context: context,
                             builder: (context) => const CylinderFormDialog(),
                           );
                         },
-                        style: IconButton.styleFrom(
-                          backgroundColor: const Color(0xFF030213),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        icon: const Icon(Icons.add, size: 20),
-                      )
-                    : FilledButton.icon(
-                        style: FilledButton.styleFrom(
-                          backgroundColor: const Color(0xFF030213),
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
-                          ),
-                        ),
-                        onPressed: () {
-                          showDialog(
-                            context: context,
-                            builder: (context) => const CylinderFormDialog(),
-                          );
-                        },
-                        icon: const Icon(Icons.add, size: 18),
-                        label: const Text('Nouveau type'),
+                        icon: Icons.add,
+                        child: const Text('Nouveau type'),
                       ),
               ],
             ),
@@ -267,48 +256,32 @@ class GazSettingsScreen extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
-                isMobile
-                    ? IconButton.filled(
-                        style: IconButton.styleFrom(
-                          backgroundColor: const Color(0xFF030213),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        onPressed: () async {
-                          final result = await showDialog<bool>(
-                            context: context,
-                            builder: (context) {
-                              return PointOfSaleFormDialog(
-                                enterpriseId: enterpriseId,
-                                moduleId: moduleId,
-                              );
-                            },
-                          );
+                isMobile ? ElyfButton(
+                  onPressed: () async {
+                    final result = await showDialog<bool>(
+                      context: context,
+                      builder: (context) {
+                        return PointOfSaleFormDialog(
+                          enterpriseId: enterpriseId,
+                          moduleId: moduleId,
+                        );
+                      },
+                    );
 
-                          if (result == true && context.mounted) {
-                            ref.invalidate(
-                              pointsOfSaleProvider((
-                                enterpriseId: enterpriseId,
-                                moduleId: moduleId,
-                              )),
-                            );
-                          }
-                        },
-                        icon: const Icon(Icons.add, size: 20),
-                      )
-                    : FilledButton.icon(
-                        style: FilledButton.styleFrom(
-                          backgroundColor: const Color(0xFF030213),
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
-                          ),
-                        ),
+                    if (result == true && context.mounted) {
+                      ref.invalidate(
+                        pointsOfSaleProvider((
+                          enterpriseId: enterpriseId,
+                          moduleId: moduleId,
+                        )),
+                      );
+                    }
+                  },
+                  size: ElyfButtonSize.small,
+                  icon: Icons.add,
+                  child: const Text('Nouveau'),
+                )
+                    : ElyfButton(
                         onPressed: () async {
                           developer.log(
                             '🔵 [SETTINGS] Bouton "Nouveau point de vente" cliqué',
@@ -334,8 +307,8 @@ class GazSettingsScreen extends ConsumerWidget {
                             );
                           }
                         },
-                        icon: const Icon(Icons.add, size: 18),
-                        label: const Text('Nouveau point de vente'),
+                        icon: Icons.add,
+                        child: const Text('Nouveau point de vente'),
                       ),
               ],
             ),

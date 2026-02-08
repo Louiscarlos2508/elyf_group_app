@@ -76,6 +76,9 @@ class AuthService {
   /// Vérifier si un utilisateur est connecté
   bool get isAuthenticated => _sessionService.isAuthenticated;
 
+  /// Stream de l'utilisateur actuel.
+  Stream<AppUser?> get userStream => _sessionService.userStream;
+
   /// Crée un compte utilisateur normal dans Firebase Auth.
   ///
   /// Cette méthode crée un utilisateur standard (NON admin).
@@ -153,44 +156,44 @@ final authServiceProvider = Provider<AuthService>((ref) {
 });
 
 /// Provider pour l'utilisateur actuel
-final currentUserProvider = FutureProvider<AppUser?>((ref) async {
+final currentUserProvider = StreamProvider<AppUser?>((ref) async* {
   final authService = ref.watch(authServiceProvider);
 
   // Initialiser si nécessaire
   await authService.initialize();
 
-  // Retourner l'utilisateur actuel
-  return authService.currentUser;
+  // Émettre l'utilisateur actuel initial
+  yield authService.currentUser;
+
+  // Émettre les changements futurs
+  yield* authService.userStream;
 });
 
 /// Provider pour l'ID de l'utilisateur actuel (compatible avec l'existant)
 ///
-/// Utilise directement AuthService pour éviter les problèmes avec currentUserProvider
-/// qui peut être en état de chargement pendant la connexion.
+/// Utilise ref.watch sur currentUserProvider pour être réactif.
 final currentUserIdProvider = Provider<String?>((ref) {
-  try {
-    final authService = ref.read(authServiceProvider);
-    if (authService.isAuthenticated && authService.currentUser != null) {
-      return authService.currentUser!.id;
-    }
-    final currentUserAsync = ref.watch(currentUserProvider);
-    return currentUserAsync.maybeWhen(
-      data: (user) => user?.id,
-      orElse: () => null,
-    );
-  } catch (e) {
-    return null;
-  }
+  final currentUserAsync = ref.watch(currentUserProvider);
+  return currentUserAsync.maybeWhen(
+    data: (user) => user?.id,
+    orElse: () => null,
+  );
 });
 
 /// Provider pour vérifier si l'utilisateur est connecté
-final isAuthenticatedProvider = FutureProvider<bool>((ref) async {
-  final currentUserAsync = await ref.watch(currentUserProvider.future);
-  return currentUserAsync != null;
+final isAuthenticatedProvider = Provider<bool>((ref) {
+  final currentUserAsync = ref.watch(currentUserProvider);
+  return currentUserAsync.maybeWhen(
+    data: (user) => user != null,
+    orElse: () => false,
+  );
 });
 
 /// Provider pour vérifier si l'utilisateur est admin
 final isAdminProvider = Provider<bool>((ref) {
   final currentUserAsync = ref.watch(currentUserProvider);
-  return currentUserAsync.value?.isAdmin ?? false;
+  return currentUserAsync.maybeWhen(
+    data: (user) => user?.isAdmin ?? false,
+    orElse: () => false,
+  );
 });

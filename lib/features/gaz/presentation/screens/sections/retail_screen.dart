@@ -9,7 +9,7 @@ import 'retail/retail_statistics_tab.dart';
 import 'retail/retail_tab_bar.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/core/logging/app_logger.dart';
-import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
+import '../../widgets/gaz_header.dart';
 
 /// Écran de vente au détail - matches Figma design.
 class GazRetailScreen extends ConsumerStatefulWidget {
@@ -70,10 +70,12 @@ class _GazRetailScreenState extends ConsumerState<GazRetailScreen>
       color: const Color(0xFFF9FAFB),
       child: Column(
         children: [
-          // Tabs
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
-            child: RetailTabBar(tabController: _tabController),
+          // Header section with Premium Background
+          GazHeader(
+            title: 'GAZ',
+            subtitle: 'Vente Détail',
+            asSliver: false,
+            bottom: RetailTabBar(tabController: _tabController),
           ),
           // Content
           Expanded(

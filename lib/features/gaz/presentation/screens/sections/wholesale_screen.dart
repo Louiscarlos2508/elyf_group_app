@@ -3,11 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
 import '../../../domain/services/gaz_calculation_service.dart';
 import '../../widgets/wholesale_date_filter_card.dart';
 import '../../widgets/wholesale_empty_state.dart';
-import '../../widgets/wholesale_kpi_card.dart';
 import '../../widgets/wholesale_sale_card.dart';
+import '../../widgets/gaz_header.dart';
+import '../../../../../shared/presentation/widgets/elyf_ui/atoms/elyf_icon_button.dart';
 
 /// Écran des ventes en gros - matches Figma design.
 class GazWholesaleScreen extends ConsumerStatefulWidget {
@@ -28,33 +30,17 @@ class _GazWholesaleScreenState extends ConsumerState<GazWholesaleScreen> {
 
     return CustomScrollView(
       slivers: [
-        // Header
-        SliverToBoxAdapter(
-          child: Container(
-            color: const Color(0xFFF9FAFB),
-            padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Suivi des ventes',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontSize: 16,
-                    fontWeight: FontWeight.normal,
-                    color: const Color(0xFF101828),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Consultez les ventes effectuées',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontSize: 14,
-                    color: const Color(0xFF4A5565),
-                  ),
-                ),
-              ],
+        // Header section with Premium Background
+        GazHeader(
+          title: 'VENTES GROS',
+          subtitle: 'Suivi des ventes',
+          additionalActions: [
+            ElyfIconButton(
+              icon: Icons.refresh,
+              onPressed: () => ref.invalidate(gasSalesProvider),
+              tooltip: 'Actualiser',
             ),
-          ),
+          ],
         ),
 
         // Filter section
@@ -142,92 +128,92 @@ class _WholesaleKpiGrid extends StatelessWidget {
           return Row(
             children: [
               Expanded(
-                child: WholesaleKpiCard(
-                  title: 'Nombre de ventes',
+                child: ElyfStatsCard(
+                  label: 'Nombre de ventes',
                   value: '${metrics.salesCount}',
                   icon: Icons.shopping_cart,
-                  iconColor: const Color(0xFF3B82F6),
+                  color: const Color(0xFF3B82F6),
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: AppSpacing.md),
               Expanded(
-                child: WholesaleKpiCard(
-                  title: 'Total vendu',
+                child: ElyfStatsCard(
+                  label: 'Total vendu',
                   value: metrics.totalSold.toStringAsFixed(0),
                   subtitle: 'FCFA',
                   icon: Icons.trending_up,
-                  iconColor: const Color(0xFF10B981),
+                  color: const Color(0xFF10B981),
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: AppSpacing.md),
               Expanded(
-                child: WholesaleKpiCard(
-                  title: 'Encaissé',
+                child: ElyfStatsCard(
+                  label: 'Encaissé',
                   value: metrics.collected.toStringAsFixed(0),
                   subtitle: 'FCFA',
-                  icon: Icons.trending_up,
-                  iconColor: const Color(0xFF3B82F6),
+                  icon: Icons.account_balance_wallet,
+                  color: const Color(0xFF3B82F6),
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: AppSpacing.md),
               Expanded(
-                child: WholesaleKpiCard(
-                  title: 'Crédit',
+                child: ElyfStatsCard(
+                  label: 'Crédit',
                   value: metrics.credit.toStringAsFixed(0),
                   subtitle: 'FCFA',
-                  icon: Icons.trending_up,
-                  iconColor: const Color(0xFFF97316),
+                  icon: Icons.error_outline,
+                  color: const Color(0xFFF97316),
                 ),
               ),
             ],
           );
         }
 
-        // Mobile: 2x2 grid
+        // Mobile: grid
         return Column(
           children: [
             Row(
               children: [
                 Expanded(
-                  child: WholesaleKpiCard(
-                    title: 'Nombre de ventes',
+                  child: ElyfStatsCard(
+                    label: 'Ventes',
                     value: '${metrics.salesCount}',
                     icon: Icons.shopping_cart,
-                    iconColor: const Color(0xFF3B82F6),
+                    color: const Color(0xFF3B82F6),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: AppSpacing.md),
                 Expanded(
-                  child: WholesaleKpiCard(
-                    title: 'Total vendu',
+                  child: ElyfStatsCard(
+                    label: 'Total',
                     value: metrics.totalSold.toStringAsFixed(0),
                     subtitle: 'FCFA',
                     icon: Icons.trending_up,
-                    iconColor: const Color(0xFF10B981),
+                    color: const Color(0xFF10B981),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
             Row(
               children: [
                 Expanded(
-                  child: WholesaleKpiCard(
-                    title: 'Encaissé',
+                  child: ElyfStatsCard(
+                    label: 'Encaissé',
                     value: metrics.collected.toStringAsFixed(0),
                     subtitle: 'FCFA',
-                    icon: Icons.trending_up,
-                    iconColor: const Color(0xFF3B82F6),
+                    icon: Icons.account_balance_wallet,
+                    color: const Color(0xFF3B82F6),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: AppSpacing.md),
                 Expanded(
-                  child: WholesaleKpiCard(
-                    title: 'Crédit',
+                  child: ElyfStatsCard(
+                    label: 'Crédit',
                     value: metrics.credit.toStringAsFixed(0),
                     subtitle: 'FCFA',
-                    icon: Icons.trending_up,
-                    iconColor: const Color(0xFFF97316),
+                    icon: Icons.error_outline,
+                    color: const Color(0xFFF97316),
                   ),
                 ),
               ],

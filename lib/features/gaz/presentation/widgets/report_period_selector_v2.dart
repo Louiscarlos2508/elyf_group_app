@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../shared/presentation/widgets/elyf_ui/atoms/elyf_button.dart';
 
 /// Widget for selecting report period - style eau_minerale.
 class GazReportPeriodSelectorV2 extends StatelessWidget {
@@ -71,10 +72,10 @@ class GazReportPeriodSelectorV2 extends StatelessWidget {
                         ),
                         const SizedBox(width: 16),
                         IntrinsicWidth(
-                          child: FilledButton.icon(
+                          child: ElyfButton(
                             onPressed: onDownload,
-                            icon: const Icon(Icons.download),
-                            label: const Text('Télécharger'),
+                            icon: Icons.download,
+                            child: const Text('Télécharger'),
                           ),
                         ),
                       ],
@@ -95,10 +96,10 @@ class GazReportPeriodSelectorV2 extends StatelessWidget {
                         const SizedBox(height: 12),
                         SizedBox(
                           width: double.infinity,
-                          child: FilledButton.icon(
+                          child: ElyfButton(
                             onPressed: onDownload,
-                            icon: const Icon(Icons.download),
-                            label: const Text('Télécharger PDF'),
+                            icon: Icons.download,
+                            child: const Text('Télécharger PDF'),
                           ),
                         ),
                       ],

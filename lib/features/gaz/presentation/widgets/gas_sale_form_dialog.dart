@@ -286,9 +286,8 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
-              FilledButton(
+              ElyfButton(
                 onPressed: () => Navigator.of(context).pop(),
-                style: GazButtonStyles.filledPrimary(context),
                 child: const Text('Fermer'),
               ),
             ],

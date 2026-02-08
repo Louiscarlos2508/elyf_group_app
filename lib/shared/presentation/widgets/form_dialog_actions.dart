@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'gaz_button_styles.dart';
+import 'elyf_ui/atoms/elyf_button.dart';
 
 /// Actions génériques pour les dialogs de formulaire.
 class FormDialogActions extends StatelessWidget {
@@ -25,9 +25,10 @@ class FormDialogActions extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: OutlinedButton(
+          child: ElyfButton(
             onPressed: isLoading ? null : onCancel,
-            style: GazButtonStyles.outlined(context),
+            variant: ElyfButtonVariant.outlined,
+            width: double.infinity,
             child: Text(
               cancelLabel,
               style: const TextStyle(fontSize: 14),
@@ -36,22 +37,14 @@ class FormDialogActions extends StatelessWidget {
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: FilledButton(
+          child: ElyfButton(
             onPressed: (isLoading || !submitEnabled) ? null : onSubmit,
-            style: GazButtonStyles.filledPrimary(context),
-            child: isLoading
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  )
-                : Text(
-                    submitLabel,
-                    style: const TextStyle(fontSize: 14),
-                  ),
+            isLoading: isLoading,
+            width: double.infinity,
+            child: Text(
+              submitLabel,
+              style: const TextStyle(fontSize: 14),
+            ),
           ),
         ),
       ],

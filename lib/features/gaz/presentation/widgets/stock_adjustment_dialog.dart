@@ -313,30 +313,21 @@ class _StockAdjustmentDialogState extends ConsumerState<StockAdjustmentDialog> {
                   Row(
                     children: [
                       Expanded(
-                        child: OutlinedButton(
+                        child: ElyfButton(
                           onPressed: () => Navigator.of(context).pop(),
-                          style: GazButtonStyles.outlined(context),
+                          variant: ElyfButtonVariant.outlined,
+                          width: double.infinity,
                           child: const Text('Annuler'),
                         ),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
-                        child: FilledButton.icon(
+                        child: ElyfButton(
                           onPressed: _isLoading ? null : _submit,
-                          style: GazButtonStyles.filledPrimary(context),
-                          icon: _isLoading
-                              ? const SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      Colors.white,
-                                    ),
-                                  ),
-                                )
-                              : const Icon(Icons.check),
-                          label: const Text('Ajuster'),
+                          isLoading: _isLoading,
+                          width: double.infinity,
+                          icon: Icons.check,
+                          child: const Text('Ajuster'),
                         ),
                       ),
                     ],

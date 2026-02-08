@@ -5,8 +5,6 @@ import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../domain/repositories/customer_repository.dart';
 
-/// Widget for selecting a customer in the sale form.
-import 'package:elyf_groupe_app/shared/presentation/widgets/elyf_ui/organisms/elyf_card.dart';
 
 class SaleCustomerSelector extends ConsumerWidget {
   const SaleCustomerSelector({

@@ -226,7 +226,7 @@ class _CreateRoleDialogState extends ConsumerState<CreateRoleDialog>
                         if (widget.moduleId == null)
                           DropdownButtonFormField<String>(
                             isExpanded: true,
-                            value: _selectedModuleId,
+                            initialValue: _selectedModuleId,
                             decoration: _buildInputDecoration(
                               theme, 
                               'Module *', 

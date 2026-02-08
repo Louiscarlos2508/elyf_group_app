@@ -8,7 +8,6 @@ import '../../../domain/entities/tour.dart';
 import '../payment_form_dialog.dart';
 import '../wholesaler_payment_card.dart';
 import 'package:elyf_groupe_app/shared.dart';
-import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
 
 /// Contenu de l'étape retour du tour.
 class ReturnStepContent extends ConsumerWidget {
@@ -34,16 +33,8 @@ class ReturnStepContent extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Carte principale
-        Container(
+        ElyfCard(
           padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border.all(
-              color: Colors.black.withValues(alpha: 0.1),
-              width: 1.305,
-            ),
-            borderRadius: BorderRadius.circular(14),
-          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -121,7 +112,7 @@ class ReturnStepContent extends ConsumerWidget {
                               )),
                             );
                             // Forcer le rechargement du tour en utilisant refresh
-                            await ref.refresh(tourProvider(tour.id).future);
+                            ref.refresh(tourProvider(tour.id).future).ignore();
                           }
                         } catch (e) {
                           AppLogger.error(

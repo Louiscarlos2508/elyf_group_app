@@ -126,22 +126,22 @@ class _PosScreenState extends ConsumerState<PosScreen> {
     }
   }
 
-  void _showCartBottomSheet(BuildContext context) {
+  void _showCartBottomSheet(BuildContext parentContext) {
     showModalBottomSheet(
-      context: context,
+      context: parentContext,
       isScrollControlled: true,
-      builder: (context) => DraggableScrollableSheet(
+      builder: (sheetContext) => DraggableScrollableSheet(
         initialChildSize: 0.7,
         minChildSize: 0.5,
         maxChildSize: 0.95,
-        builder: (context, scrollController) => CartSummary(
+        builder: (scrollContext, scrollController) => CartSummary(
           cartItems: _cartItems,
           onRemove: _removeFromCart,
           onUpdateQuantity: _updateQuantity,
           onClear: _clearCart,
           onCheckout: () {
-            Navigator.of(context).pop();
-            _showCheckout(context);
+            Navigator.of(scrollContext).pop();
+            _showCheckout(parentContext);
           },
         ),
       ),

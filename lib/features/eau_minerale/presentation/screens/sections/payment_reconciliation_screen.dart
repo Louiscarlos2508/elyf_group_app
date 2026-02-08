@@ -3,10 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../application/providers.dart';
-import '../../../domain/entities/payment_status.dart';
 import '../../../domain/entities/production_day.dart';
 import '../../../domain/services/payment_reconciliation_service.dart';
-import '../../widgets/payment_status_badge.dart';
 import 'package:intl/intl.dart';
 
 /// Écran de réconciliation des paiements.

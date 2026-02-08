@@ -26,6 +26,7 @@ import '../core/firebase/fcm_handlers.dart'
 import '../core/permissions/services/permission_initializer.dart';
 import '../core/navigation/navigation_service.dart';
 import '../shared/utils/local_notification_service.dart';
+import '../core/offline/sync_paths.dart';
 
 /// Global connectivity service instance.
 ///
@@ -58,88 +59,7 @@ MessagingService? globalMessagingService;
 ///
 /// This is where we initialize Firebase, Drift, Remote Config,
 /// crash reporting, and any other shared services.
-/// Global collection paths configuration.
-///
-/// Maps logical collection names to physical Firestore paths.
-/// Used by all sync services to ensure consistency.
-final collectionPaths = <String, String Function(String?)>{
-  // Administration module (collections globales)
-  'enterprises': (enterpriseId) => 'enterprises',
-  'users': (enterpriseId) => 'users',
-  'roles': (enterpriseId) => 'roles',
-  'enterprise_module_users': (enterpriseId) => 'enterprise_module_users',
 
-  // Boutique module
-  'sales': (enterpriseId) => 'enterprises/${enterpriseId!}/sales',
-  'products': (enterpriseId) => 'enterprises/${enterpriseId!}/products',
-  'expenses': (enterpriseId) => 'enterprises/${enterpriseId!}/expenses',
-  'purchases': (enterpriseId) => 'enterprises/${enterpriseId!}/purchases',
-
-  // Eau Minérale module
-  'customers': (enterpriseId) => 'enterprises/${enterpriseId!}/customers',
-  'machines': (enterpriseId) => 'enterprises/${enterpriseId!}/machines',
-  'bobines': (enterpriseId) => 'enterprises/${enterpriseId!}/bobines',
-  'production_sessions': (enterpriseId) =>
-      'enterprises/${enterpriseId!}/productionSessions',
-  'employees': (enterpriseId) => 'enterprises/${enterpriseId!}/employees',
-  'salary_payments': (enterpriseId) =>
-      'enterprises/${enterpriseId!}/salaryPayments',
-  'production_payments': (enterpriseId) =>
-      'enterprises/${enterpriseId!}/productionPayments',
-  'credit_payments': (enterpriseId) =>
-      'enterprises/${enterpriseId!}/creditPayments',
-  'daily_workers': (enterpriseId) =>
-      'enterprises/${enterpriseId!}/dailyWorkers',
-  'bobine_stocks': (enterpriseId) =>
-      'enterprises/${enterpriseId!}/bobineStocks',
-  'bobine_stock_movements': (enterpriseId) =>
-      'enterprises/${enterpriseId!}/bobineStockMovements',
-  'expense_records': (enterpriseId) =>
-      'enterprises/${enterpriseId!}/expenseRecords',
-  'stock_items': (enterpriseId) => 'enterprises/${enterpriseId!}/stockItems',
-  'stock_movements': (enterpriseId) =>
-      'enterprises/${enterpriseId!}/stockMovements',
-  'packaging_stocks': (enterpriseId) =>
-      'enterprises/${enterpriseId!}/packagingStocks',
-  'packaging_stock_movements': (enterpriseId) =>
-      'enterprises/${enterpriseId!}/packagingStockMovements',
-
-  // Orange Money module
-  'agents': (enterpriseId) => 'enterprises/${enterpriseId!}/agents',
-  'transactions': (enterpriseId) =>
-      'enterprises/${enterpriseId!}/transactions',
-  'commissions': (enterpriseId) =>
-      'enterprises/${enterpriseId!}/commissions',
-  'liquidity_checkpoints': (enterpriseId) =>
-      'enterprises/${enterpriseId!}/liquidityCheckpoints',
-  'orange_money_settings': (enterpriseId) =>
-      'enterprises/${enterpriseId!}/orangeMoneySettings',
-
-  // Immobilier module
-  'properties': (enterpriseId) => 'enterprises/${enterpriseId!}/properties',
-  'tenants': (enterpriseId) => 'enterprises/${enterpriseId!}/tenants',
-  'contracts': (enterpriseId) => 'enterprises/${enterpriseId!}/contracts',
-  'payments': (enterpriseId) => 'enterprises/${enterpriseId!}/payments',
-  'property_expenses': (enterpriseId) =>
-      'enterprises/${enterpriseId!}/propertyExpenses',
-
-  // Gaz module
-  'gas_sales': (enterpriseId) => 'enterprises/${enterpriseId!}/gasSales',
-  'cylinders': (enterpriseId) => 'enterprises/${enterpriseId!}/cylinders',
-  'cylinder_stocks': (enterpriseId) =>
-      'enterprises/${enterpriseId!}/cylinderStocks',
-  'pointOfSale': (enterpriseId) =>
-      'enterprises/${enterpriseId!}/pointsOfSale',
-  'tours': (enterpriseId) => 'enterprises/${enterpriseId!}/tours',
-  'gaz_expenses': (enterpriseId) =>
-      'enterprises/${enterpriseId!}/gazExpenses',
-  'cylinder_leaks': (enterpriseId) =>
-      'enterprises/${enterpriseId!}/cylinderLeaks',
-  'gaz_settings': (enterpriseId) =>
-      'enterprises/${enterpriseId!}/gazSettings',
-  'financial_reports': (enterpriseId) =>
-      'enterprises/${enterpriseId!}/financialReports',
-};
 
 Future<void> bootstrap() async {
   WidgetsFlutterBinding.ensureInitialized();

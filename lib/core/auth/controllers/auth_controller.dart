@@ -7,10 +7,12 @@ import '../../errors/app_exceptions.dart';
 import '../../errors/error_handler.dart';
 import '../../logging/app_logger.dart';
 import '../entities/entities.dart';
+import '../../tenant/tenant_provider.dart';
 import '../services/auth_service.dart';
 import '../../firebase/firestore_user_service.dart';
 import '../../../app/bootstrap.dart'
-    show globalRealtimeSyncService, globalModuleRealtimeSyncService, collectionPaths;
+    show globalRealtimeSyncService, globalModuleRealtimeSyncService;
+import '../../../core/offline/sync_paths.dart';
 import '../../../core/offline/drift_service.dart';
 import '../../../core/offline/module_data_sync_service.dart';
 import '../../../features/administration/application/controllers/admin_controller.dart';
@@ -25,13 +27,16 @@ class AuthController {
   AuthController({
     required this.authService,
     required this.firestoreUserService,
+    required Ref ref,
     AdminController? adminController,
     FirebaseFirestore? firestore,
-  })  : _adminController = adminController,
+  })  : _ref = ref,
+        _adminController = adminController,
         _firestore = firestore;
 
   final AuthService authService;
   final FirestoreUserService firestoreUserService;
+  final Ref _ref;
   final AdminController? _adminController;
   final FirebaseFirestore? _firestore;
 
@@ -170,16 +175,29 @@ class AuthController {
           'Stopped all module realtime syncs on logout',
           name: 'auth.controller',
         );
-      } catch (e, stackTrace) {
-        final appException = ErrorHandler.instance.handleError(e, stackTrace);
-        AppLogger.warning(
-          'Error stopping module realtime syncs on logout: ${appException.message}',
-          name: 'auth.controller',
-          error: e,
-          stackTrace: stackTrace,
-        );
-        // Continuer même si l'arrêt échoue
+      } catch (e) {
+        // ... (existing error handling)
       }
+    }
+
+    // Arrêter aussi la sync admin pour qu'elle puisse redémarrer pour le nouvel utilisateur
+    if (globalRealtimeSyncService != null) {
+      try {
+        await globalRealtimeSyncService!.stopRealtimeSync();
+        developer.log(
+          'Stopped admin realtime sync on logout',
+          name: 'auth.controller',
+        );
+      } catch (e) {
+        developer.log('Error stopping admin realtime sync on logout: $e');
+      }
+    }
+
+    // Nettoyer l'entreprise active
+    try {
+      await _ref.read(activeEnterpriseIdProvider.notifier).clearActiveEnterprise();
+    } catch (e) {
+      developer.log('Error clearing active enterprise on logout: $e');
     }
 
     // Déconnecter de l'auth service
@@ -396,5 +414,6 @@ final authControllerProvider = Provider<AuthController>((ref) {
     firestoreUserService: ref.watch(firestoreUserServiceProvider),
     adminController: ref.watch(adminControllerProvider),
     firestore: FirebaseFirestore.instance,
+    ref: ref,
   );
 });

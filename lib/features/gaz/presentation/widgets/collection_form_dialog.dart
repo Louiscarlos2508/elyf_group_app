@@ -314,21 +314,16 @@ class _CollectionFormDialogState extends ConsumerState<CollectionFormDialog> {
         // Bouton pour ajouter un nouveau grossiste (seulement pour les grossistes)
         if (_collectionType == CollectionType.wholesaler) ...[
           const SizedBox(height: 8),
-          OutlinedButton.icon(
+          ElyfButton(
             onPressed: () {
               setState(() {
                 _isAddingNewWholesaler = true;
                 _selectedClient = null;
               });
             },
-            icon: const Icon(Icons.add, size: 18),
-            label: const Text('Ajouter un nouveau grossiste'),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 12,
-              ),
-            ),
+            icon: Icons.add,
+            variant: ElyfButtonVariant.outlined,
+            child: const Text('Ajouter un nouveau grossiste'),
           ),
         ],
       ],
@@ -398,7 +393,7 @@ class _CollectionFormDialogState extends ConsumerState<CollectionFormDialog> {
         Row(
           children: [
             Expanded(
-              child: OutlinedButton(
+              child: ElyfButton(
                 onPressed: () {
                   setState(() {
                     _isAddingNewWholesaler = false;
@@ -408,21 +403,23 @@ class _CollectionFormDialogState extends ConsumerState<CollectionFormDialog> {
                     _selectedClient = null;
                   });
                 },
+                variant: ElyfButtonVariant.outlined,
+                width: double.infinity,
                 child: const Text('Annuler'),
               ),
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: FilledButton(
+              child: ElyfButton(
                 onPressed: () async {
                   final name = _wholesalerNameController.text.trim();
                   if (name.isEmpty) {
-                    if (context.mounted) {
-                      NotificationService.showError(
-                        context,
-                        'Le nom du grossiste est requis',
-                      );
-                    }
+                  if (mounted) {
+                    NotificationService.showError(
+                      context,
+                      'Le nom du grossiste est requis',
+                    );
+                  }
                     return;
                   }
 
@@ -457,13 +454,14 @@ class _CollectionFormDialogState extends ConsumerState<CollectionFormDialog> {
                     _wholesalerAddressController.clear();
                   });
 
-                  if (context.mounted) {
+                  if (mounted) {
                     NotificationService.showSuccess(
                       context,
                       'Grossiste "$name" ajouté avec succès',
                     );
                   }
                 },
+                width: double.infinity,
                 child: const Text('Ajouter'),
               ),
             ),

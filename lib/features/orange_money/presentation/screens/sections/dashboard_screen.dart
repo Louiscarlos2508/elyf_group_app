@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
-import 'package:elyf_groupe_app/shared/presentation/widgets/elyf_ui/organisms/elyf_card.dart';
-import 'package:elyf_groupe_app/shared/presentation/widgets/elyf_ui/atoms/elyf_shimmer.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/orange_money/application/providers.dart';

@@ -2,14 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
-import '../../../../../../../shared/utils/currency_formatter.dart';
 import '../../../../application/providers.dart';
 import '../../../../domain/entities/cylinder.dart';
 import '../../../../domain/entities/expense.dart';
 import '../../../../domain/entities/gas_sale.dart';
 import '../../../../domain/services/gaz_calculation_service.dart';
-import '../../../../../../shared/presentation/widgets/elyf_ui/organisms/elyf_card.dart';
-import '../../../../../../shared/presentation/widgets/elyf_ui/atoms/elyf_shimmer.dart';
 
 /// Section des KPI cards pour le dashboard.
 class DashboardKpiSection extends ConsumerWidget {

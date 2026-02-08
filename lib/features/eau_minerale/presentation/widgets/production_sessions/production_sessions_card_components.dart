@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:elyf_groupe_app/shared.dart';
 
 import '../../../../../app/theme/app_theme.dart';
 import '../../../domain/entities/production_session.dart';

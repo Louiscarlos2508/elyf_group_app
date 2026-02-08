@@ -3,10 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
-import 'package:elyf_groupe_app/core/logging/app_logger.dart';
 import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
 import '../../../../domain/entities/user.dart';
-import 'package:elyf_groupe_app/core.dart';
 import '../../../../application/providers.dart';
 import 'widgets/module_selection_widget.dart';
 import 'widgets/multiple_module_enterprise_selection_widget.dart';
@@ -26,7 +24,7 @@ class AssignEnterpriseDialog extends ConsumerStatefulWidget {
 
 class _AssignEnterpriseDialogState
     extends ConsumerState<AssignEnterpriseDialog> {
-  Set<String> _selectedRoleIds = {};
+  final Set<String> _selectedRoleIds = {};
   Set<String> _selectedModuleIds = {};
   Set<String> _selectedEnterpriseIds = {};
   bool _isActive = true;
@@ -322,7 +320,7 @@ class _AssignEnterpriseDialogState
                             onChanged: (value) {
                               setState(() => _isActive = value);
                             },
-                            activeColor: theme.colorScheme.primary,
+                            activeThumbColor: theme.colorScheme.primary,
                           ),
                         ),
                         const SizedBox(height: 24),

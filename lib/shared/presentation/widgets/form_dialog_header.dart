@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'elyf_ui/atoms/elyf_icon_button.dart';
 
 /// En-tête générique pour les dialogs de formulaire.
 class FormDialogHeader extends StatelessWidget {
@@ -49,10 +50,13 @@ class FormDialogHeader extends StatelessWidget {
             ],
           ),
         ),
-        IconButton(
-          icon: const Icon(Icons.close, size: 20),
+        ElyfIconButton(
+          icon: Icons.close,
           onPressed: () => Navigator.of(context).pop(),
-          color: theme.colorScheme.onSurfaceVariant,
+          iconColor: theme.colorScheme.onSurfaceVariant,
+          useGlassEffect: false,
+          iconSize: 20,
+          size: 36,
         ),
       ],
     );

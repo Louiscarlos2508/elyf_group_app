@@ -13,6 +13,8 @@ import '../../widgets/report_kpi_cards_v2.dart';
 import '../../widgets/report_period_selector_v2.dart';
 import '../../widgets/report_tabs_v2.dart';
 import '../../widgets/sales_report_content_v2.dart';
+import '../../widgets/gaz_header.dart';
+import '../../../../../shared/presentation/widgets/elyf_ui/atoms/elyf_icon_button.dart';
 
 /// Reports screen with professional UI - style boutique.
 class GazReportsScreen extends ConsumerStatefulWidget {
@@ -125,35 +127,23 @@ class _GazReportsScreenState extends ConsumerState<GazReportsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isWide = constraints.maxWidth > 600;
 
         return CustomScrollView(
           slivers: [
-            // Header
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(24, 24, 24, isWide ? 24 : 16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'Rapports',
-                        style: theme.textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    RefreshButton(
-                      onRefresh: _invalidateProviders,
-                      tooltip: 'Actualiser les rapports',
-                    ),
-                  ],
+            // Header section with Premium Background
+            GazHeader(
+              title: 'GAZ',
+              subtitle: 'Rapports',
+              additionalActions: [
+                ElyfIconButton(
+                  onPressed: _invalidateProviders,
+                  icon: Icons.refresh,
+                  tooltip: 'Actualiser les rapports',
                 ),
-              ),
+              ],
             ),
 
             // Period selector

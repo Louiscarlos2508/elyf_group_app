@@ -15,6 +15,8 @@ class ElyfButton extends StatefulWidget {
     this.icon,
     this.width,
     this.height,
+    this.backgroundColor,
+    this.textColor,
   });
 
   final VoidCallback? onPressed;
@@ -25,6 +27,8 @@ class ElyfButton extends StatefulWidget {
   final IconData? icon;
   final double? width;
   final double? height;
+  final Color? backgroundColor;
+  final Color? textColor;
 
   @override
   State<ElyfButton> createState() => _ElyfButtonState();
@@ -66,6 +70,8 @@ class _ElyfButtonState extends State<ElyfButton>
     _controller.reverse();
   }
 
+  bool _isBusy = false;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -80,7 +86,18 @@ class _ElyfButtonState extends State<ElyfButton>
       onTapCancel: _handleTapCancel,
       onTap: widget.onPressed != null && !widget.isLoading
           ? () {
+              if (_isBusy) return;
+              
+              setState(() => _isBusy = true);
               widget.onPressed!();
+              
+              if (mounted) {
+                Future.delayed(const Duration(milliseconds: 500), () {
+                  if (mounted) {
+                    setState(() => _isBusy = false);
+                  }
+                });
+              }
             }
           : null,
       child: ScaleTransition(
@@ -146,6 +163,21 @@ class _ElyfButtonState extends State<ElyfButton>
         decoration = const BoxDecoration();
         color = primaryColor;
         break;
+    }
+
+    if (widget.backgroundColor != null) {
+      if (widget.variant == ElyfButtonVariant.outlined) {
+         decoration = decoration.copyWith(
+           color: widget.backgroundColor,
+           border: Border.all(color: widget.backgroundColor!),
+         );
+      } else {
+         decoration = decoration.copyWith(color: widget.backgroundColor);
+      }
+    }
+    
+    if (widget.textColor != null) {
+      color = widget.textColor!;
     }
 
     return Container(

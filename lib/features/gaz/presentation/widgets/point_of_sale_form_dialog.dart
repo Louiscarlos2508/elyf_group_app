@@ -10,6 +10,7 @@ import '../../application/providers.dart' as gaz_providers;
 import '../../domain/entities/point_of_sale.dart';
 import '../../../../features/administration/application/providers.dart'
     show enterprisesProvider, enterprisesByTypeProvider, enterpriseByIdProvider, adminStatsProvider;
+import '../../../../shared/presentation/widgets/elyf_ui/atoms/elyf_icon_button.dart';
 
 /// Dialogue pour créer ou modifier un point de vente.
 class PointOfSaleFormDialog extends ConsumerStatefulWidget {
@@ -134,9 +135,7 @@ class _PointOfSaleFormDialogState extends ConsumerState<PointOfSaleFormDialog>
     final activeEnterpriseAsync = ref.watch(activeEnterpriseProvider);
     
     activeEnterpriseAsync.whenData((enterprise) {
-      if (_moduleId == null) {
-        _moduleId = widget.moduleId ?? 'gaz';
-      }
+      _moduleId ??= widget.moduleId ?? 'gaz';
     });
 
     return Dialog(
@@ -178,9 +177,11 @@ class _PointOfSaleFormDialogState extends ConsumerState<PointOfSaleFormDialog>
                             ),
                           ),
                         ),
-                        IconButton(
-                          icon: const Icon(Icons.close),
+                        ElyfIconButton(
+                          icon: Icons.close,
                           onPressed: () => Navigator.of(context).pop(),
+                          iconColor: theme.colorScheme.onSurface,
+                          useGlassEffect: false,
                         ),
                       ],
                     ),
@@ -243,38 +244,30 @@ class _PointOfSaleFormDialogState extends ConsumerState<PointOfSaleFormDialog>
                     ),
                     const SizedBox(height: 24),
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         Flexible(
-                          child: OutlinedButton(
+                          child: ElyfButton(
                             onPressed: _isLoading
                                 ? null
                                 : () => Navigator.of(context).pop(),
-                            style: GazButtonStyles.outlined(context),
+                            variant: ElyfButtonVariant.outlined,
                             child: const Text('Annuler'),
                           ),
                         ),
                         const SizedBox(width: 12),
                         Flexible(
-                          child: FilledButton(
+                          child: ElyfButton(
                             onPressed: _isLoading ? null : _savePointOfSale,
-                            style: GazButtonStyles.filledPrimary(context),
                             child: _isLoading
                                 ? const SizedBox(
-                                    width: 20,
                                     height: 20,
+                                    width: 20,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                        Colors.white,
-                                      ),
+                                      color: Colors.white,
                                     ),
                                   )
-                                : Text(
-                                    widget.pointOfSale == null
-                                        ? 'Créer'
-                                        : 'Enregistrer',
-                                  ),
+                                : const Text('Enregistrer'),
                           ),
                         ),
                       ],

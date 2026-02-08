@@ -299,6 +299,30 @@ class ModuleRealtimeSyncService {
 
               switch (docChange.type) {
                 case DocumentChangeType.added:
+                  // Check if there are pending deletions for this document
+                  // This prevents "zombie resurrection" where a deleted item reappears
+                  // because the server hasn't processed the delete yet but sends the item in a snapshot
+                  bool isDeletedLocally = false;
+                  final syncManager = _syncManager;
+                  if (syncManager != null) {
+                    final pendingOps = await syncManager.getPendingForCollection(
+                      collectionName,
+                    );
+                    isDeletedLocally = pendingOps.any(
+                      (op) =>
+                          op.documentId == documentId &&
+                          op.operationType == 'delete',
+                    );
+                  }
+
+                  if (isDeletedLocally) {
+                    developer.log(
+                      'Skipping added document $documentId because it is marked for deletion locally',
+                      name: 'module.realtime.sync',
+                    );
+                    break;
+                  }
+
                   // Nouveau document : sauvegarder avec vérification de doublon
                   await _upsertWithDuplicateCheck(
                     collectionName: collectionName,

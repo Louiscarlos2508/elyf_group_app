@@ -7,7 +7,7 @@ import '../providers.dart'
 /// Non autoDispose pour éviter un rechargement à chaque visite du profil.
 final currentUserProfileProvider =
     FutureProvider<Map<String, dynamic>?>((ref) async {
-      final userId = ref.read(currentUserIdProvider);
+      final userId = ref.watch(currentUserIdProvider);
       if (userId == null) return null;
 
       try {

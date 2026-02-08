@@ -296,7 +296,7 @@ class StockController {
     } else {
       // Préparer la mise à jour
       var updated = false;
-      var newStock = stock!;
+      var newStock = stock;
       
       if (prixUnitaire != null) {
         newStock = newStock.copyWith(prixUnitaire: prixUnitaire);

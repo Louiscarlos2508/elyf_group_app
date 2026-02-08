@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../../../../shared/presentation/widgets/elyf_ui/atoms/elyf_button.dart';
 
 import '../../domain/entities/collection.dart';
 
@@ -211,25 +212,14 @@ class WholesalerPaymentCard extends StatelessWidget {
           ),
           const SizedBox(height: 11.99),
           // Bouton d'enregistrement de paiement
-          SizedBox(
+          ElyfButton(
+            onPressed: collection.isPaymentComplete ? null : onPaymentPressed,
             width: double.infinity,
-            child: FilledButton(
-              style: FilledButton.styleFrom(
-                backgroundColor: theme.colorScheme.primary,
-                foregroundColor: theme.colorScheme.onPrimary,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                minimumSize: const Size(0, 32),
-              ),
-              onPressed: collection.isPaymentComplete ? null : onPaymentPressed,
-              child: Text(
-                collection.isPaymentComplete
-                    ? 'Paiement complet'
-                    : 'Enregistrer paiement',
-                style: const TextStyle(fontSize: 14),
-              ),
+            child: Text(
+              collection.isPaymentComplete
+                  ? 'Paiement complet'
+                  : 'Enregistrer paiement',
+              style: const TextStyle(fontSize: 14),
             ),
           ),
         ],

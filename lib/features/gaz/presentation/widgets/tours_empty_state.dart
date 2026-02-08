@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../shared/presentation/widgets/elyf_ui/atoms/elyf_button.dart';
 
 /// Empty state widget when no tours are in progress - matches Figma design.
 class ToursEmptyState extends StatelessWidget {
@@ -37,15 +38,10 @@ class ToursEmptyState extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 24),
-          FilledButton.icon(
+          ElyfButton(
             onPressed: onNewTourPressed,
-            icon: const Icon(Icons.add, size: 16),
-            label: const Text('Nouveau tour'),
-            style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFF030213),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            ),
+            icon: Icons.add,
+            child: const Text('Nouveau tour'),
           ),
         ],
       ),

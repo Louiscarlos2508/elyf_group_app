@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../core/tenant/tenant_provider.dart' show activeEnterpriseProvider;
+import '../../../../shared/presentation/widgets/elyf_ui/atoms/elyf_button.dart';
 import '../../domain/entities/cylinder.dart';
 import 'cylinder_form/cylinder_submit_handler.dart';
 
@@ -102,7 +103,7 @@ class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 24),
-              FilledButton(
+              ElyfButton(
                 onPressed: () => Navigator.of(context).pop(),
                 child: const Text('Fermer'),
               ),
@@ -244,33 +245,19 @@ class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
                   ),
                   const SizedBox(height: 32),
                   
-                  // Actions
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      TextButton(
+                      ElyfButton(
                         onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
+                        variant: ElyfButtonVariant.text,
                         child: const Text('Annuler'),
                       ),
                       const SizedBox(width: 8),
-                      FilledButton(
+                      ElyfButton(
                         onPressed: _isLoading ? null : _saveCylinder,
-                        style: FilledButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        child: _isLoading
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : Text(widget.cylinder == null ? 'Créer' : 'Enregistrer'),
+                        isLoading: _isLoading,
+                        child: Text(widget.cylinder == null ? 'Créer' : 'Enregistrer'),
                       ),
                     ],
                   ),

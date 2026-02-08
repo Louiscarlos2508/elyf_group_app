@@ -94,7 +94,7 @@ class _GazExpenseFormDialogState extends ConsumerState<GazExpenseFormDialog>
           amount: amount,
           category: _selectedCategory,
           date: _selectedDate,
-          enterpriseId: enterpriseId,
+          enterpriseId: _enterpriseId ?? enterpriseId,
           isFixed: _isFixed,
           notes: _notesController.text.trim().isEmpty
               ? null

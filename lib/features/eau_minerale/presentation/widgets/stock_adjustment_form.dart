@@ -8,7 +8,6 @@ import '../../../../core/errors/app_exceptions.dart';
 import '../../domain/entities/stock_item.dart';
 import '../../domain/pack_constants.dart';
 import '../../domain/entities/bobine_stock_movement.dart';
-import '../../domain/entities/stock_movement.dart';
 import '../../domain/entities/packaging_stock_movement.dart';
 
 /// Formulaire pour retirer des stocks (bobines, emballages, produits finis).

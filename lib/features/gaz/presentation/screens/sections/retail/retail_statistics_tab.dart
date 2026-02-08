@@ -3,11 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
-import '../../../../../../../shared/utils/currency_formatter.dart';
+import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
 import '../../../../application/providers.dart';
 import '../../../../domain/entities/gas_sale.dart';
 import '../../../../domain/services/gaz_calculation_service.dart';
-import '../../../widgets/retail_kpi_card.dart';
 
 /// Onglet statistiques pour la vente au détail.
 class RetailStatisticsTab extends ConsumerWidget {
@@ -75,42 +74,46 @@ class RetailStatisticsTab extends ConsumerWidget {
                     Row(
                       children: [
                         Expanded(
-                          child: RetailKpiCard(
-                            title: 'Ventes aujourd\'hui',
+                          child: ElyfStatsCard(
+                            label: 'Ventes aujourd\'hui',
                             value: '${todaySales.length}',
                             icon: Icons.shopping_cart,
+                            color: const Color(0xFF3B82F6),
                           ),
                         ),
-                        const SizedBox(width: 16),
+                        const SizedBox(width: AppSpacing.md),
                         Expanded(
-                          child: RetailKpiCard(
-                            title: 'Total du jour',
+                          child: ElyfStatsCard(
+                            label: 'Total du jour',
                             value: CurrencyFormatter.formatDouble(todayRevenue),
                             subtitle: 'FCFA',
                             icon: Icons.attach_money,
+                            color: const Color(0xFF10B981),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppSpacing.md),
                     // Ligne 2: Cette semaine et ce mois
                     Row(
                       children: [
                         Expanded(
-                          child: RetailKpiCard(
-                            title: 'Cette semaine',
+                          child: ElyfStatsCard(
+                            label: 'Cette semaine',
                             value: CurrencyFormatter.formatDouble(weekRevenue),
                             subtitle: 'FCFA',
                             icon: Icons.calendar_today,
+                            color: const Color(0xFF6366F1),
                           ),
                         ),
-                        const SizedBox(width: 16),
+                        const SizedBox(width: AppSpacing.md),
                         Expanded(
-                          child: RetailKpiCard(
-                            title: 'Ce mois',
+                          child: ElyfStatsCard(
+                            label: 'Ce mois',
                             value: CurrencyFormatter.formatDouble(monthRevenue),
                             subtitle: 'FCFA',
                             icon: Icons.calendar_month,
+                            color: const Color(0xFF8B5CF6),
                           ),
                         ),
                       ],

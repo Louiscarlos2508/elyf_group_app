@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/tenant/tenant_provider.dart';
 import '../../../administration/domain/entities/enterprise.dart';
 import '../../../../shared/presentation/widgets/elyf_ui/organisms/elyf_app_bar.dart';
+import '../../../../shared/presentation/widgets/widgets.dart';
 
 class ModuleMenuScreen extends ConsumerStatefulWidget {
   const ModuleMenuScreen({super.key});
@@ -26,216 +27,191 @@ class _ModuleMenuScreenState extends ConsumerState<ModuleMenuScreen> {
     // Activer la sélection automatique si une seule entreprise est disponible
     ref.watch(autoSelectEnterpriseProvider);
 
-    // Écouter les changements de modules pour la navigation automatique
-    ref.listen<AsyncValue<List<String>>>(
-      userAccessibleModulesForActiveEnterpriseProvider,
-      (previous, next) {
-        next.whenData((moduleIds) {
-          // Si un seul module est disponible (et que ce n'est pas le chargement initial)
-          if (moduleIds.length == 1) {
-            final moduleId = moduleIds.first;
-            // Ne pas rediriger automatiquement vers le groupe si on veut voir le menu
-            // Mais généralement 'group' est traité comme un module.
-            
-            try {
-              final module = EnterpriseModule.values.firstWhere((e) => e.id == moduleId);
-               // Utiliser un microtask pour éviter les erreurs de navigation pendant le build
-              Future.microtask(() {
-                if (context.mounted) {
-                   _navigateToModule(context, module);
-                }
-              });
-            } catch (e) {
-              // Module non trouvé dans l'enum, ignorer
-            }
-          }
-        });
-      },
-    );
-
-    return Scaffold(
-      backgroundColor: theme.colorScheme.surface,
-      appBar: ElyfAppBar(
-        title: activeEnterpriseAsync.when(
-          data: (enterprise) => enterprise == null
-              ? 'Sélection Organisation'
-              : enterprise.name,
-          loading: () => 'Chargement...',
-          error: (_, __) => 'Sélection Organisation',
+    return DoubleTapToExit(
+      child: Scaffold(
+        backgroundColor: theme.colorScheme.surface,
+        appBar: ElyfAppBar(
+          title: activeEnterpriseAsync.when(
+            data: (enterprise) => enterprise == null
+                ? 'Sélection Organisation'
+                : enterprise.name,
+            loading: () => 'Chargement...',
+            error: (_, __) => 'Sélection Organisation',
+          ),
+          centerTitle: true,
+          useGlassmorphism: true,
+          elevation: 0,
+          actions: activeEnterpriseAsync.asData?.value != null
+              ? [
+                  IconButton(
+                    icon: const Icon(Icons.swap_horiz_rounded),
+                    tooltip: 'Changer d\'organisation',
+                    onPressed: () {
+                      ref.read(activeEnterpriseIdProvider.notifier).clearActiveEnterprise();
+                    },
+                  ),
+                ]
+              : null,
         ),
-        centerTitle: true,
-        useGlassmorphism: true,
-        elevation: 0,
-        actions: activeEnterpriseAsync.asData?.value != null
-            ? [
-                IconButton(
-                  icon: const Icon(Icons.swap_horiz_rounded),
-                  tooltip: 'Changer d\'organisation',
-                  onPressed: () {
-                    ref.read(activeEnterpriseIdProvider.notifier).clearActiveEnterprise();
-                  },
-                ),
-              ]
-            : null,
-      ),
-      extendBodyBehindAppBar: true, // For glassmorphism
-      body: SafeArea(
-        child: activeEnterpriseAsync.when(
-          data: (activeEnterprise) {
-            // Case 1: No active enterprise selected -> Show Enterprise Selector
-            if (activeEnterprise == null) {
-              return hierarchicalEnterprisesAsync.when(
-                data: (modulesMap) {
-                  developer.log(
-                    '🔍 ModuleMenuScreen: modulesMap has ${modulesMap.length} modules',
-                    name: 'ModuleMenuScreen',
-                  );
-                  
-                  if (modulesMap.isEmpty) {
+        extendBodyBehindAppBar: true, // For glassmorphism
+        body: SafeArea(
+          child: activeEnterpriseAsync.when(
+            data: (activeEnterprise) {
+              // Case 1: No active enterprise selected -> Show Enterprise Selector
+              if (activeEnterprise == null) {
+                return hierarchicalEnterprisesAsync.when(
+                  data: (modulesMap) {
                     developer.log(
-                      '⚠️ ModuleMenuScreen: modulesMap is empty, trying fallback to accessible enterprises',
+                      '🔍 ModuleMenuScreen: modulesMap has ${modulesMap.length} modules',
                       name: 'ModuleMenuScreen',
                     );
                     
-                    // Fallback: afficher les entreprises accessibles sans hiérarchie
-                    final accessibleEnterprisesAsync = ref.watch(userAccessibleEnterprisesProvider);
-                    return accessibleEnterprisesAsync.when(
-                      data: (enterprises) {
-                        developer.log(
-                          '🔍 ModuleMenuScreen FALLBACK: ${enterprises.length} accessible enterprises',
-                          name: 'ModuleMenuScreen',
-                        );
-                        
-                        if (enterprises.isEmpty) {
-                          return _buildEmptyState(theme);
-                        }
-                        
-                        // Afficher une liste simple groupée par module
-                        final grouped = <EnterpriseModule, List<Enterprise>>{};
-                        for (final e in enterprises) {
-                          grouped.putIfAbsent(e.type.module, () => []).add(e);
-                        }
-                        
-                        final sortedModules = grouped.keys.toList()
-                          ..sort((a, b) {
-                            if (a == EnterpriseModule.group) return -1;
-                            if (b == EnterpriseModule.group) return 1;
-                            return a.label.compareTo(b.label);
-                          });
-                        
-                        return ListView.builder(
-                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-                          itemCount: sortedModules.length,
-                          itemBuilder: (context, index) {
-                            final module = sortedModules[index];
-                            final moduleEnterprises = grouped[module]!;
-                            return _buildSimpleModuleSection(context, module, moduleEnterprises);
-                          },
-                        );
+                    if (modulesMap.isEmpty) {
+                      developer.log(
+                        '⚠️ ModuleMenuScreen: modulesMap is empty, trying fallback to accessible enterprises',
+                        name: 'ModuleMenuScreen',
+                      );
+                      
+                      // Fallback: afficher les entreprises accessibles sans hiérarchie
+                      final accessibleEnterprisesAsync = ref.watch(userAccessibleEnterprisesProvider);
+                      return accessibleEnterprisesAsync.when(
+                        data: (enterprises) {
+                          developer.log(
+                            '🔍 ModuleMenuScreen FALLBACK: ${enterprises.length} accessible enterprises',
+                            name: 'ModuleMenuScreen',
+                          );
+                          
+                          if (enterprises.isEmpty) {
+                            return _buildEmptyState(theme);
+                          }
+                          
+                          // Afficher une liste simple groupée par module
+                          final grouped = <EnterpriseModule, List<Enterprise>>{};
+                          for (final e in enterprises) {
+                            grouped.putIfAbsent(e.type.module, () => []).add(e);
+                          }
+                          
+                          final sortedModules = grouped.keys.toList()
+                            ..sort((a, b) {
+                              if (a == EnterpriseModule.group) return -1;
+                              if (b == EnterpriseModule.group) return 1;
+                              return a.label.compareTo(b.label);
+                            });
+                          
+                          return ListView.builder(
+                            padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+                            itemCount: sortedModules.length,
+                            itemBuilder: (context, index) {
+                              final module = sortedModules[index];
+                              final moduleEnterprises = grouped[module]!;
+                              return _buildSimpleModuleSection(context, module, moduleEnterprises);
+                            },
+                          );
+                        },
+                        loading: () => const Center(child: CircularProgressIndicator()),
+                        error: (e, s) => _buildErrorView(theme, e),
+                      );
+                    }
+
+                    // Trier les modules : mettre 'group' en premier si présent
+                    final sortedModules = modulesMap.keys.toList()
+                      ..sort((a, b) {
+                        if (a == EnterpriseModule.group) return -1;
+                        if (b == EnterpriseModule.group) return 1;
+                        return a.label.compareTo(b.label);
+                      });
+
+                    return ListView.builder(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+                      itemCount: sortedModules.length,
+                      itemBuilder: (context, index) {
+                        final module = sortedModules[index];
+                        final nodes = modulesMap[module]!;
+                        return _buildModuleSection(context, module, nodes);
                       },
-                      loading: () => const Center(child: CircularProgressIndicator()),
-                      error: (e, s) => _buildErrorView(theme, e),
                     );
+                  },
+                  loading: () => const Center(child: CircularProgressIndicator()),
+                  error: (error, stack) {
+                    return _buildErrorView(theme, error);
+                  },
+                );
+              }
+
+              // Case 2: Enterprise selected -> Show Available Modules Grid
+              return accessibleModulesAsync.when(
+                data: (moduleIds) {
+                  if (moduleIds.isEmpty) {
+                    return _buildNoModulesState(theme);
                   }
 
-                  // Trier les modules : mettre 'group' en premier si présent
-                  final sortedModules = modulesMap.keys.toList()
-                    ..sort((a, b) {
-                      if (a == EnterpriseModule.group) return -1;
-                      if (b == EnterpriseModule.group) return 1;
-                      return a.label.compareTo(b.label);
-                    });
+                  // Map string IDs to EnterpriseModule enums
+                  final modules = moduleIds
+                      .map((id) {
+                        try {
+                          return EnterpriseModule.values
+                              .firstWhere((e) => e.id == id);
+                        } catch (_) {
+                          return null;
+                        }
+                      })
+                      .whereType<EnterpriseModule>()
+                      .toList();
+                  
+                   // Sort modules manually if needed
+                  modules.sort((a, b) => a.label.compareTo(b.label));
 
-                  return ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-                    itemCount: sortedModules.length,
-                    itemBuilder: (context, index) {
-                      final module = sortedModules[index];
-                      final nodes = modulesMap[module]!;
-                      return _buildModuleSection(context, module, nodes);
-                    },
+                  return Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(24.0),
+                        child: Column(
+                          children: [
+                            Text(
+                              'Modules Accessibles',
+                              style: theme.textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: theme.colorScheme.onSurface,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Sélectionnez un module pour continuer',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        child: GridView.builder(
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 16,
+                            mainAxisSpacing: 16,
+                            childAspectRatio: 0.85,
+                          ),
+                          itemCount: modules.length,
+                          itemBuilder: (context, index) {
+                            return _ModuleMenuCard(
+                              module: modules[index],
+                              onTap: () => _navigateToModule(context, modules[index]),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
                   );
                 },
                 loading: () => const Center(child: CircularProgressIndicator()),
-                error: (error, stack) {
-                  return _buildErrorView(theme, error);
-                },
+                error: (error, stack) => _buildErrorView(theme, error),
               );
-            }
-
-            // Case 2: Enterprise selected -> Show Available Modules Grid
-            return accessibleModulesAsync.when(
-              data: (moduleIds) {
-                if (moduleIds.isEmpty) {
-                  return _buildNoModulesState(theme);
-                }
-
-                // Map string IDs to EnterpriseModule enums
-                final modules = moduleIds
-                    .map((id) {
-                      try {
-                        return EnterpriseModule.values
-                            .firstWhere((e) => e.id == id);
-                      } catch (_) {
-                        return null;
-                      }
-                    })
-                    .whereType<EnterpriseModule>()
-                    .toList();
-                
-                 // Sort modules manually if needed
-                modules.sort((a, b) => a.label.compareTo(b.label));
-
-                return Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(24.0),
-                      child: Column(
-                        children: [
-                          Text(
-                            'Modules Accessibles',
-                            style: theme.textTheme.headlineSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: theme.colorScheme.onSurface,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Sélectionnez un module pour continuer',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Expanded(
-                      child: GridView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          crossAxisSpacing: 16,
-                          mainAxisSpacing: 16,
-                          childAspectRatio: 0.85,
-                        ),
-                        itemCount: modules.length,
-                        itemBuilder: (context, index) {
-                          return _ModuleMenuCard(
-                            module: modules[index],
-                            onTap: () => _navigateToModule(context, modules[index]),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                );
-              },
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, stack) => _buildErrorView(theme, error),
-            );
-          },
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, stack) => _buildErrorView(theme, error),
+            },
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (error, stack) => _buildErrorView(theme, error),
+          ),
         ),
       ),
     );

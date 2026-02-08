@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import 'package:elyf_groupe_app/shared.dart';
-import 'package:elyf_groupe_app/shared/presentation/widgets/elyf_ui/organisms/elyf_card.dart';
-import 'package:elyf_groupe_app/shared/presentation/widgets/elyf_ui/atoms/elyf_shimmer.dart';
 
 import '../../domain/entities/stock_item.dart';
 

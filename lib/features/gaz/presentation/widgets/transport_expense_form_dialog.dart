@@ -5,7 +5,7 @@ import '../../application/providers.dart';
 import '../../domain/entities/tour.dart';
 import '../../domain/entities/transport_expense.dart';
 import 'package:elyf_groupe_app/shared.dart';
-import '../../../../../shared/utils/notification_service.dart';
+import '../../../../shared/presentation/widgets/elyf_ui/atoms/elyf_icon_button.dart';
 
 /// Formulaire d'ajout d'une dépense de transport selon le design Figma.
 class TransportExpenseFormDialog extends ConsumerStatefulWidget {
@@ -62,7 +62,7 @@ class _TransportExpenseFormDialogState
 
       await controller.updateTour(updatedTour);
 
-      if (mounted && context.mounted) {
+      if (mounted) {
         // Invalider les providers pour rafraîchir l'UI
         ref.invalidate(
           toursProvider((
@@ -71,7 +71,7 @@ class _TransportExpenseFormDialogState
           )),
         );
         // Forcer le rechargement du tour
-        await ref.refresh(tourProvider(widget.tour.id).future);
+        ref.refresh(tourProvider(widget.tour.id).future).ignore();
         
         Navigator.of(context).pop(true);
       }
@@ -87,7 +87,6 @@ class _TransportExpenseFormDialogState
     final theme = Theme.of(context);
     final lightGray = const Color(0xFFF3F3F5);
     final textGray = const Color(0xFF717182);
-    final darkColor = const Color(0xFF030213);
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -126,10 +125,12 @@ class _TransportExpenseFormDialogState
                       ],
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.close, size: 16),
+                  ElyfIconButton(
+                    icon: Icons.close,
                     onPressed: () => Navigator.of(context).pop(),
-                    color: const Color(0xFF0A0A0A).withValues(alpha: 0.7),
+                    useGlassEffect: false,
+                    size: 32,
+                    iconSize: 16,
                   ),
                 ],
               ),
@@ -236,43 +237,19 @@ class _TransportExpenseFormDialogState
               Row(
                 children: [
                   Expanded(
-                    child: OutlinedButton(
+                    child: ElyfButton(
                       onPressed: () => Navigator.of(context).pop(),
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(
-                          color: const Color(0xFF000000).withValues(alpha: 0.1),
-                          width: 1.3,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 9),
-                      ),
-                      child: const Text(
-                        'Annuler',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Color(0xFF0A0A0A),
-                        ),
-                      ),
+                      variant: ElyfButtonVariant.outlined,
+                      width: double.infinity,
+                      child: const Text('Annuler'),
                     ),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: FilledButton(
+                    child: ElyfButton(
                       onPressed: _submit,
-                      style: FilledButton.styleFrom(
-                        backgroundColor: darkColor,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                      ),
-                      child: const Text(
-                        'Ajouter',
-                        style: TextStyle(fontSize: 14),
-                      ),
+                      width: double.infinity,
+                      child: const Text('Ajouter'),
                     ),
                   ),
                 ],

@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import '../../../domain/entities/point_of_sale.dart';
 import 'pos_associate_cylinders_dialog.dart';
+import '../../../../../shared/presentation/widgets/elyf_ui/atoms/elyf_button.dart';
+import '../../../../../shared/presentation/widgets/elyf_ui/atoms/elyf_icon_button.dart';
 
 /// Dialog pour afficher et gérer les types de bouteilles d'un point de vente.
 class PosTypesDialog extends ConsumerWidget {
@@ -65,14 +67,12 @@ class PosTypesDialog extends ConsumerWidget {
                         ),
                       ),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
+                    ElyfIconButton(
+                      icon: Icons.close,
                       onPressed: () => Navigator.of(context).pop(),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(
-                        minWidth: 32,
-                        minHeight: 32,
-                      ),
+                      useGlassEffect: false,
+                      size: 32,
+                      iconSize: 20,
                     ),
                   ],
                 ),
@@ -135,7 +135,7 @@ class PosTypesDialog extends ConsumerWidget {
                     ),
                   ),
                 const SizedBox(height: 16),
-                FilledButton.icon(
+                ElyfButton(
                   onPressed: () async {
                     Navigator.of(context).pop();
                     await showDialog(
@@ -148,14 +148,8 @@ class PosTypesDialog extends ConsumerWidget {
                       ),
                     );
                   },
-                  icon: const Icon(Icons.add, size: 18),
-                  label: const Text('Associer des types'),
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                  ),
+                  icon: Icons.add,
+                  child: const Text('Associer des types'),
                 ),
               ],
             ),

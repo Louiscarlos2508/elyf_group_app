@@ -9,7 +9,6 @@ import '../../widgets/production_sessions/production_sessions_statistics.dart';
 import '../../widgets/section_placeholder.dart';
 import 'production_session_form_screen.dart';
 
-import 'package:elyf_groupe_app/shared/presentation/widgets/elyf_ui/atoms/elyf_background.dart';
 
 /// Écran de liste des sessions de production.
 class ProductionSessionsScreen extends ConsumerWidget {

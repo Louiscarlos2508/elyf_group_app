@@ -3,7 +3,6 @@ import 'package:mockito/mockito.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:elyf_groupe_app/features/boutique/data/repositories/sale_offline_repository.dart';
 import 'package:elyf_groupe_app/features/boutique/domain/entities/sale.dart';
-import 'package:elyf_groupe_app/features/boutique/domain/repositories/sale_repository.dart';
 import 'package:elyf_groupe_app/core/offline/connectivity_service.dart';
 import 'package:elyf_groupe_app/core/offline/drift_service.dart';
 import 'package:elyf_groupe_app/core/offline/sync_manager.dart';

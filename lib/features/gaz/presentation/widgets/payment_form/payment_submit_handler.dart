@@ -81,7 +81,7 @@ class PaymentSubmitHandler {
           )),
         );
         // Forcer le rechargement du tour en utilisant refresh
-        await ref.refresh(tourProvider(tour.id).future);
+        ref.refresh(tourProvider(tour.id).future).ignore();
       }
 
       // Créer les enregistrements CylinderLeak pour chaque fuite signalée

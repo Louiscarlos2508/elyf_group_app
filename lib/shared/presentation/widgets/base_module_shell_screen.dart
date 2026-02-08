@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'adaptive_navigation_scaffold.dart';
 import 'module_loading_animation.dart';
 import 'enterprise_selector_widget.dart';
+import 'widgets.dart';
 import '../../../core/tenant/tenant_provider.dart';
 
 // Re-export NavigationSection so subclasses can use it
@@ -199,19 +200,21 @@ abstract class BaseModuleShellScreenState<T extends BaseModuleShellScreen>
     }
 
     // Navigation complète
-    return AdaptiveNavigationScaffold(
-      sections: sections,
-      appTitle: appTitle,
-      selectedIndex: currentIndex,
-      onIndexChanged: (index) {
-        if (index < sections.length) {
-          setState(() => _selectedIndex = index);
-        }
-      },
-      isLoading: false,
-      enterpriseId: widget.enterpriseId,
-      moduleId: widget.moduleId,
-      appBarActions: _buildAppBarActions(),
+    return DoubleTapToExit(
+      child: AdaptiveNavigationScaffold(
+        sections: sections,
+        appTitle: appTitle,
+        selectedIndex: currentIndex,
+        onIndexChanged: (index) {
+          if (index < sections.length) {
+            setState(() => _selectedIndex = index);
+          }
+        },
+        isLoading: false,
+        enterpriseId: widget.enterpriseId,
+        moduleId: widget.moduleId,
+        appBarActions: _buildAppBarActions(),
+      ),
     );
   }
 

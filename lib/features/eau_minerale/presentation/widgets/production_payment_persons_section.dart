@@ -8,7 +8,6 @@ import '../../domain/entities/production_payment_person.dart';
 import 'production_payment_person_row.dart';
 import 'production_period_formatter.dart';
 import 'package:elyf_groupe_app/shared.dart';
-import '../../../../../shared/utils/notification_service.dart';
 
 /// Section for managing persons to pay in production payment.
 class ProductionPaymentPersonsSection extends ConsumerWidget {

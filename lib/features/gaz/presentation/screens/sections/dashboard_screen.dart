@@ -5,14 +5,13 @@ import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
 import 'package:elyf_groupe_app/core/permissions/modules/gaz_permissions.dart';
-import '../../../domain/entities/gas_sale.dart';
-import '../../../domain/entities/expense.dart';
-import '../../../domain/entities/cylinder.dart';
-import '../../widgets/dashboard_stock_by_capacity.dart';
+import 'package:elyf_groupe_app/features/gaz/presentation/widgets/dashboard_stock_by_capacity.dart';
 import '../../widgets/permission_guard.dart';
 import 'dashboard/dashboard_kpi_section.dart';
 import 'dashboard/dashboard_performance_section.dart';
 import 'dashboard/dashboard_pos_performance_section.dart';
+import '../../widgets/gaz_header.dart';
+import '../../../../../shared/presentation/widgets/elyf_ui/atoms/elyf_icon_button.dart';
 
 /// Professional dashboard screen for gaz module - matches Figma design.
 class GazDashboardScreen extends ConsumerWidget {
@@ -62,10 +61,10 @@ class GazDashboardScreen extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 32),
-                FilledButton.icon(
+                ElyfButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.arrow_back),
-                  label: const Text('Retour'),
+                  icon: Icons.arrow_back,
+                  child: const Text('Retour'),
                 ),
               ],
             ),
@@ -83,68 +82,27 @@ class _DashboardContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final dashboardDataAsync = ref.watch(gazDashboardDataProvider);
-
     return CustomScrollView(
       slivers: [
-        // Header section
-        // Header section with Gradient
-        SliverToBoxAdapter(
-          child: Container(
-            padding: EdgeInsets.fromLTRB(
-              AppSpacing.lg,
-              AppSpacing.xl,
-              AppSpacing.lg,
-              AppSpacing.lg,
+        // Header section with Premium Background
+        GazHeader(
+          title: 'GAZ',
+          subtitle: "Tableau de Bord",
+          additionalActions: [
+            ElyfIconButton(
+              icon: Icons.refresh,
+              onPressed: () {
+                ref.invalidate(gasSalesProvider);
+                ref.invalidate(cylindersProvider);
+                ref.invalidate(gazExpensesProvider);
+              },
+              tooltip: 'Actualiser',
             ),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Theme.of(context).colorScheme.primary,
-                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.8),
-                ],
-              ),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "Vue d'ensemble",
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.xs),
-                      Text(
-                        'Gestion logistique & points de vente',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.white.withValues(alpha: 0.8),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                RefreshButton(
-                  onRefresh: () {
-                    ref.invalidate(gasSalesProvider);
-                    ref.invalidate(cylindersProvider);
-                    ref.invalidate(gazExpensesProvider);
-                  },
-                  tooltip: 'Actualiser',
-                ),
-              ],
-            ),
-          ),
+          ],
         ),
 
         // KPI Cards (4 cards in a row)
-        SliverPadding(
+        const SliverPadding(
           padding: EdgeInsets.fromLTRB(
             AppSpacing.lg,
             0,
@@ -152,25 +110,25 @@ class _DashboardContent extends ConsumerWidget {
             AppSpacing.lg,
           ),
           sliver: SliverToBoxAdapter(
-            child: _buildKpiSection(context, ref, dashboardDataAsync),
+            child: _DashboardKpiSliver(),
           ),
         ),
 
         // Stock par capacité section
-        SliverPadding(
+        const SliverPadding(
           padding: EdgeInsets.fromLTRB(
             AppSpacing.lg,
             0,
             AppSpacing.lg,
             AppSpacing.lg,
           ),
-          sliver: const SliverToBoxAdapter(
+          sliver: SliverToBoxAdapter(
             child: DashboardStockByCapacity(),
           ),
         ),
 
         // Performance chart (7 derniers jours)
-        SliverPadding(
+        const SliverPadding(
           padding: EdgeInsets.fromLTRB(
             AppSpacing.lg,
             0,
@@ -178,12 +136,12 @@ class _DashboardContent extends ConsumerWidget {
             AppSpacing.lg,
           ),
           sliver: SliverToBoxAdapter(
-            child: _buildPerformanceSection(context, ref, dashboardDataAsync),
+            child: _DashboardChartsSliver(),
           ),
         ),
 
         // Performance par point de vente
-        SliverPadding(
+        const SliverPadding(
           padding: EdgeInsets.fromLTRB(
             AppSpacing.lg,
             0,
@@ -191,29 +149,22 @@ class _DashboardContent extends ConsumerWidget {
             AppSpacing.xl,
           ),
           sliver: SliverToBoxAdapter(
-            child: dashboardDataAsync.when(
-              data: (data) => DashboardPosPerformanceSection(sales: data.sales),
-              loading: () => AppShimmers.table(context, rows: 4),
-              error: (error, stackTrace) => ErrorDisplayWidget(
-                error: error,
-                title: 'Erreur de chargement',
-                message: 'Impossible de charger les performances par point de vente.',
-                onRetry: () => ref.refresh(gazDashboardDataProvider),
-              ),
-            ),
+            child: _DashboardPosPerformanceSliver(),
           ),
         ),
       ],
     );
   }
+}
 
-  Widget _buildKpiSection(
-    BuildContext context,
-    WidgetRef ref,
-    AsyncValue<
-        ({List<GasSale> sales, List<GazExpense> expenses, List<Cylinder> cylinders})>
-        dashboardDataAsync,
-  ) {
+/// Specialized widget for Dashboard KPIs to enable granular rebuilds.
+class _DashboardKpiSliver extends ConsumerWidget {
+  const _DashboardKpiSliver();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final dashboardDataAsync = ref.watch(gazDashboardDataProvider);
+
     return dashboardDataAsync.when(
       data: (data) => DashboardKpiSection(
         sales: data.sales,
@@ -228,14 +179,16 @@ class _DashboardContent extends ConsumerWidget {
       ),
     );
   }
+}
 
-  Widget _buildPerformanceSection(
-    BuildContext context,
-    WidgetRef ref,
-    AsyncValue<
-        ({List<GasSale> sales, List<GazExpense> expenses, List<Cylinder> cylinders})>
-        dashboardDataAsync,
-  ) {
+/// Specialized widget for Dashboard Charts to enable granular rebuilds.
+class _DashboardChartsSliver extends ConsumerWidget {
+  const _DashboardChartsSliver();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final dashboardDataAsync = ref.watch(gazDashboardDataProvider);
+
     return dashboardDataAsync.when(
       data: (data) => DashboardPerformanceSection(
         sales: data.sales,
@@ -245,6 +198,27 @@ class _DashboardContent extends ConsumerWidget {
       error: (error, stackTrace) => ErrorDisplayWidget(
         error: error,
         title: 'Erreur de chargement des performances',
+        onRetry: () => ref.refresh(gazDashboardDataProvider),
+      ),
+    );
+  }
+}
+
+/// Specialized widget for POS performance to enable granular rebuilds.
+class _DashboardPosPerformanceSliver extends ConsumerWidget {
+  const _DashboardPosPerformanceSliver();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final dashboardDataAsync = ref.watch(gazDashboardDataProvider);
+
+    return dashboardDataAsync.when(
+      data: (data) => DashboardPosPerformanceSection(sales: data.sales),
+      loading: () => AppShimmers.table(context, rows: 4),
+      error: (error, stackTrace) => ErrorDisplayWidget(
+        error: error,
+        title: 'Erreur de chargement',
+        message: 'Impossible de charger les performances par point de vente.',
         onRetry: () => ref.refresh(gazDashboardDataProvider),
       ),
     );

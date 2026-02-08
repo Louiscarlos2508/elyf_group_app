@@ -5,6 +5,7 @@ import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import '../../../domain/entities/cylinder.dart';
 import '../../../domain/entities/point_of_sale.dart';
 import '../point_of_sale_stock_card.dart';
+import '../../../../../shared/presentation/widgets/elyf_ui/atoms/elyf_icon_button.dart';
 
 /// Dialog pour afficher le stock d'un point de vente.
 class PosStockDialog extends ConsumerWidget {
@@ -101,14 +102,12 @@ class PosStockDialog extends ConsumerWidget {
                         ),
                       ),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
+                    ElyfIconButton(
+                      icon: Icons.close,
                       onPressed: () => Navigator.of(context).pop(),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(
-                        minWidth: 32,
-                        minHeight: 32,
-                      ),
+                      useGlassEffect: false,
+                      size: 32,
+                      iconSize: 20,
                     ),
                   ],
                 ),

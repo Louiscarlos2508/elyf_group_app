@@ -1,9 +1,12 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'connectivity_service.dart';
 import 'drift_service.dart';
 import 'sync_manager.dart';
 import 'sync_status.dart';
+import 'handlers/firebase_sync_handler.dart';
+import 'sync_paths.dart';
 
 /// Provider for the Drift service singleton.
 final driftServiceProvider = Provider<DriftService>((ref) {
@@ -32,14 +35,22 @@ final isOnlineProvider = Provider<bool>((ref) {
   return status.maybeWhen(data: (s) => s.isOnline, orElse: () => false);
 });
 
-/// Provider for the sync manager (stub).
+/// Provider for the sync manager.
 final syncManagerProvider = Provider<SyncManager>((ref) {
   final driftService = ref.watch(driftServiceProvider);
   final connectivityService = ref.watch(connectivityServiceProvider);
 
+  // Initialize Firebase handler with global paths
+  final syncHandler = FirebaseSyncHandler(
+    firestore: FirebaseFirestore.instance,
+    collectionPaths: collectionPaths,
+    driftService: driftService,
+  );
+
   final manager = SyncManager(
     driftService: driftService,
     connectivityService: connectivityService,
+    syncHandler: syncHandler,
   );
 
   ref.onDispose(() => manager.dispose());

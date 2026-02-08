@@ -2,14 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
-import '../../../../../shared/utils/notification_service.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../domain/entities/product.dart';
 import '../../domain/pack_constants.dart';
 
-/// Sélecteur Pack pour les ventes. Stock = [packStockQuantityProvider],
-/// même source que Stock / Dashboard.
-import 'package:elyf_groupe_app/shared/presentation/widgets/elyf_ui/organisms/elyf_card.dart';
 
 class SaleProductSelector extends ConsumerWidget {
   const SaleProductSelector({

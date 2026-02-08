@@ -1,6 +1,7 @@
 import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../../shared/presentation/widgets/elyf_ui/atoms/elyf_button.dart';
 
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import '../../../domain/entities/point_of_sale.dart';
@@ -89,8 +90,9 @@ class _PosAssociateCylindersDialogState
             title: const Text('Erreur'),
             content: Text('Erreur lors de l\'enregistrement: ${e.toString()}'),
             actions: [
-              TextButton(
+              ElyfButton(
                 onPressed: () => Navigator.of(errorContext).pop(),
+                variant: ElyfButtonVariant.text,
                 child: const Text('Fermer'),
               ),
             ],
@@ -164,21 +166,17 @@ class _PosAssociateCylindersDialogState
           ),
         ),
         actions: [
-          TextButton(
+          ElyfButton(
             onPressed: _isLoading
                 ? null
                 : () => Navigator.of(widget.dialogContext).pop(),
+            variant: ElyfButtonVariant.text,
             child: const Text('Annuler'),
           ),
-          FilledButton(
+          ElyfButton(
             onPressed: _isLoading ? null : _save,
-            child: _isLoading
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text('Enregistrer'),
+            isLoading: _isLoading,
+            child: const Text('Enregistrer'),
           ),
         ],
       ),
@@ -189,8 +187,9 @@ class _PosAssociateCylindersDialogState
         title: const Text('Erreur'),
         content: Text('Erreur: $e'),
         actions: [
-          TextButton(
+          ElyfButton(
             onPressed: () => Navigator.of(widget.dialogContext).pop(),
+            variant: ElyfButtonVariant.text,
             child: const Text('Fermer'),
           ),
         ],

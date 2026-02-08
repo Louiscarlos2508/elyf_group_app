@@ -36,16 +36,24 @@ class CylinderSubmitHandler {
       final sellPrice = double.tryParse(sellPriceText) ?? 0.0;
       final buyPrice = double.tryParse(buyPriceText) ?? 0.0;
 
-      final cylinder = Cylinder(
-        id:
-            existingCylinder?.id ??
-            'cyl-${DateTime.now().millisecondsSinceEpoch}',
-        weight: weight,
-        buyPrice: buyPrice,
-        sellPrice: sellPrice,
-        enterpriseId: enterpriseId,
-        moduleId: moduleId,
-      );
+      Cylinder cylinder;
+      if (existingCylinder != null) {
+        cylinder = existingCylinder.copyWith(
+          weight: weight,
+          buyPrice: buyPrice,
+          sellPrice: sellPrice,
+        );
+      } else {
+        cylinder = Cylinder(
+          id: 'cyl-${DateTime.now().millisecondsSinceEpoch}',
+          weight: weight,
+          buyPrice: buyPrice,
+          sellPrice: sellPrice,
+          enterpriseId: enterpriseId,
+          moduleId: moduleId,
+          stock: 0,
+        );
+      }
 
       if (existingCylinder == null) {
         await controller.addCylinder(cylinder);

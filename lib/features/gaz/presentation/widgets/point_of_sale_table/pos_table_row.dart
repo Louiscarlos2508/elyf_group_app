@@ -65,16 +65,15 @@ class PosTableRow extends ConsumerWidget {
           'Êtes-vous sûr de vouloir supprimer "${pointOfSale.name}" ?\n\nCette action est irréversible.',
         ),
         actions: [
-          TextButton(
+          ElyfButton(
             onPressed: () => Navigator.of(context).pop(false),
+            variant: ElyfButtonVariant.text,
             child: const Text('Annuler'),
           ),
-          FilledButton(
+          ElyfButton(
             onPressed: () => Navigator.of(context).pop(true),
-            style: FilledButton.styleFrom(
-              backgroundColor: theme.colorScheme.error,
-              foregroundColor: theme.colorScheme.onError,
-            ),
+            backgroundColor: theme.colorScheme.error,
+            textColor: theme.colorScheme.onError,
             child: const Text('Supprimer'),
           ),
         ],

@@ -8,7 +8,6 @@ import 'profile_security_card.dart';
 import 'profile_security_note_card.dart';
 import 'edit_profile_dialog.dart';
 import 'change_password_dialog.dart';
-import '../../../../shared/presentation/widgets/elyf_ui/organisms/elyf_app_bar.dart';
 import '../../../../core/domain/entities/user_profile.dart';
 import '../../../../core/auth/providers.dart'
     show currentUserIdProvider, currentUserProfileProvider, currentUserProvider;
