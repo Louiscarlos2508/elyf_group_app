@@ -1,4 +1,4 @@
-import 'dart:developer' as developer;
+import '../logging/app_logger.dart';
 
 import 'package:drift/drift.dart';
 
@@ -64,7 +64,7 @@ class DriftService {
 
   Future<void> initialize({QueryExecutor? connection}) async {
     if (_initialized) {
-      developer.log('DriftService already initialized', name: 'offline.drift');
+      AppLogger.debug('DriftService already initialized', name: 'offline.drift');
       return;
     }
 
@@ -73,7 +73,7 @@ class DriftService {
     _syncOperations = SyncOperationDao(_db!);
     _initialized = true;
 
-    developer.log('DriftService initialized', name: 'offline.drift');
+    AppLogger.info('DriftService initialized', name: 'offline.drift');
   }
 
   Future<void> clearAll() async {
@@ -104,7 +104,7 @@ class DriftService {
     _db = null;
     _records = null;
     _syncOperations = null;
-    developer.log('DriftService closed', name: 'offline.drift');
+    AppLogger.info('DriftService closed', name: 'offline.drift');
   }
 
   static Future<void> dispose() async {

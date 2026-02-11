@@ -1,5 +1,3 @@
-import 'dart:developer' as developer;
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../errors/error_handler.dart';
@@ -54,7 +52,7 @@ class FirestoreUserService {
         // Créer un nouvel utilisateur
         userData['createdAt'] = FieldValue.serverTimestamp();
         await userDoc.set(userData);
-        developer.log(
+        AppLogger.info(
           'Created user in Firestore: $userId',
           name: 'firestore.user',
         );
@@ -77,7 +75,7 @@ class FirestoreUserService {
           }
         }
         await userDoc.update(userData);
-        developer.log(
+        AppLogger.info(
           'Updated user in Firestore: $userId',
           name: 'firestore.user',
         );
@@ -92,14 +90,14 @@ class FirestoreUserService {
           e.message?.toLowerCase().contains('no address') == true;
 
       if (isNetworkError) {
-        developer.log(
+        AppLogger.error(
           'Network error creating/updating user in Firestore (code: ${e.code}). User profile will be created when network is available: $userId',
           name: 'firestore.user',
           error: e,
           stackTrace: stackTrace,
         );
       } else {
-        developer.log(
+        AppLogger.error(
           'Firebase error creating/updating user in Firestore (code: ${e.code}): ${e.message}. User profile will be created when Firestore is available: $userId',
           name: 'firestore.user',
           error: e,
@@ -120,7 +118,7 @@ class FirestoreUserService {
           errorString.contains('no address associated');
 
       if (isNetworkError) {
-        developer.log(
+        AppLogger.error(
           'Network error creating/updating user in Firestore. User profile will be created when network is available: $userId',
           name: 'firestore.user',
           error: e,
@@ -129,12 +127,12 @@ class FirestoreUserService {
       } else if (errorString.contains('not_found') ||
           errorString.contains('does not exist') ||
           errorString.contains('database')) {
-        developer.log(
+        AppLogger.info(
           'Firestore database not found yet - user profile will be created when database is available: $userId',
           name: 'firestore.user',
         );
       } else {
-        developer.log(
+        AppLogger.error(
           'Error creating/updating user in Firestore. User profile will be created when Firestore is available: $userId',
           name: 'firestore.user',
           error: e,
@@ -157,7 +155,7 @@ class FirestoreUserService {
       final userSnapshot = await userDoc.get();
 
       if (!userSnapshot.exists) {
-        developer.log(
+        AppLogger.info(
           'User not found in Firestore: $userId',
           name: 'firestore.user',
         );
@@ -175,14 +173,14 @@ class FirestoreUserService {
           e.message?.toLowerCase().contains('no address') == true;
 
       if (isNetworkError) {
-        developer.log(
+        AppLogger.error(
           'Network error getting user from Firestore (code: ${e.code}). App will work in offline mode.',
           name: 'firestore.user',
           error: e,
           stackTrace: stackTrace,
         );
       } else {
-        developer.log(
+        AppLogger.error(
           'Firebase error getting user from Firestore (code: ${e.code}): ${e.message}',
           name: 'firestore.user',
           error: e,
@@ -203,14 +201,14 @@ class FirestoreUserService {
           errorString.contains('no address associated');
 
       if (isNetworkError) {
-        developer.log(
+        AppLogger.error(
           'Network error getting user from Firestore. App will work in offline mode: $e',
           name: 'firestore.user',
           error: e,
           stackTrace: stackTrace,
         );
       } else {
-        developer.log(
+        AppLogger.error(
           'Unexpected error getting user from Firestore: $e',
           name: 'firestore.user',
           error: e,
@@ -264,14 +262,14 @@ class FirestoreUserService {
           e.message?.toLowerCase().contains('no address') == true;
 
       if (isNetworkError) {
-        developer.log(
+        AppLogger.error(
           'Network error checking if admin exists (code: ${e.code}). Assuming no admin exists for first-time setup.',
           name: 'firestore.user',
           error: e,
           stackTrace: stackTrace,
         );
       } else {
-        developer.log(
+        AppLogger.error(
           'Firebase error checking if admin exists (code: ${e.code}). Assuming no admin exists: ${e.message}',
           name: 'firestore.user',
           error: e,
@@ -292,7 +290,7 @@ class FirestoreUserService {
           errorString.contains('no address associated');
 
       if (isNetworkError) {
-        developer.log(
+        AppLogger.error(
           'Network error checking if admin exists. Assuming no admin exists for first-time setup: $e',
           name: 'firestore.user',
           error: e,
@@ -301,12 +299,12 @@ class FirestoreUserService {
       } else if (errorString.contains('not_found') ||
           errorString.contains('does not exist') ||
           errorString.contains('database')) {
-        developer.log(
+        AppLogger.info(
           'Firestore database not found yet - assuming no admin exists',
           name: 'firestore.user',
         );
       } else {
-        developer.log(
+        AppLogger.error(
           'Error checking if admin exists. Assuming no admin exists: $e',
           name: 'firestore.user',
           error: e,
@@ -326,7 +324,7 @@ class FirestoreUserService {
         'isAdmin': isAdmin,
         'updatedAt': FieldValue.serverTimestamp(),
       });
-      developer.log(
+      AppLogger.info(
         'Updated admin status for user: $userId -> isAdmin: $isAdmin',
         name: 'firestore.user',
       );

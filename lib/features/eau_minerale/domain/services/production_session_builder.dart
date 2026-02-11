@@ -13,6 +13,7 @@ class ProductionSessionBuilder {
   /// All parameters are required except where noted as optional.
   static ProductionSession buildFromForm({
     required String? sessionId,
+    required String enterpriseId,
     required DateTime selectedDate,
     required DateTime heureDebut,
     DateTime? heureFin,
@@ -44,6 +45,7 @@ class ProductionSessionBuilder {
 
     return ProductionSession(
       id: sessionId ?? '',
+      enterpriseId: enterpriseId,
       date: selectedDate,
       period: period,
       heureDebut: heureDebut,
@@ -68,6 +70,7 @@ class ProductionSessionBuilder {
   /// Builds a ProductionSession with default values for optional fields.
   static ProductionSession buildWithDefaults({
     required String? sessionId,
+    required String enterpriseId,
     required DateTime selectedDate,
     required DateTime heureDebut,
     required List<String> machinesUtilisees,
@@ -81,6 +84,7 @@ class ProductionSessionBuilder {
   }) {
     return buildFromForm(
       sessionId: sessionId,
+      enterpriseId: enterpriseId,
       selectedDate: selectedDate,
       heureDebut: heureDebut,
       heureFin: null,

@@ -21,7 +21,7 @@ class ReportKpiCardsV2 extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final paymentsAsync = ref.watch(paymentsProvider);
+    final paymentsAsync = ref.watch(paymentsWithRelationsProvider);
     final expensesAsync = ref.watch(expensesProvider);
     final propertiesAsync = ref.watch(propertiesProvider);
 

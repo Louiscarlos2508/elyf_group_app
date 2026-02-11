@@ -3,6 +3,8 @@ import 'dart:convert';
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/offline_repository.dart';
+import '../../../audit_trail/domain/entities/audit_record.dart';
+import '../../../audit_trail/domain/repositories/audit_trail_repository.dart';
 import '../../domain/entities/liquidity_checkpoint.dart';
 import '../../domain/repositories/liquidity_repository.dart';
 
@@ -14,64 +16,27 @@ class LiquidityOfflineRepository extends OfflineRepository<LiquidityCheckpoint>
     required super.syncManager,
     required super.connectivityService,
     required this.enterpriseId,
-    required this.moduleType,
+    required this.auditTrailRepository,
+    required this.userId,
+    this.moduleType = 'orange_money',
   });
 
   final String enterpriseId;
   final String moduleType;
+  final AuditTrailRepository auditTrailRepository;
+  final String userId;
 
   @override
   String get collectionName => 'liquidity_checkpoints';
 
   @override
   LiquidityCheckpoint fromMap(Map<String, dynamic> map) {
-    return LiquidityCheckpoint(
-      id: map['id'] as String? ?? map['localId'] as String,
-      enterpriseId: map['enterpriseId'] as String,
-      date: DateTime.parse(map['date'] as String),
-      type: LiquidityCheckpointType.values.firstWhere(
-        (e) => e.name == map['type'],
-        orElse: () => LiquidityCheckpointType.full,
-      ),
-      amount: (map['amount'] as num).toInt(),
-      morningCheckpoint: (map['morningCheckpoint'] as num?)?.toInt(),
-      eveningCheckpoint: (map['eveningCheckpoint'] as num?)?.toInt(),
-      cashAmount: (map['cashAmount'] as num?)?.toInt(),
-      simAmount: (map['simAmount'] as num?)?.toInt(),
-      morningCashAmount: (map['morningCashAmount'] as num?)?.toInt(),
-      morningSimAmount: (map['morningSimAmount'] as num?)?.toInt(),
-      eveningCashAmount: (map['eveningCashAmount'] as num?)?.toInt(),
-      eveningSimAmount: (map['eveningSimAmount'] as num?)?.toInt(),
-      notes: map['notes'] as String?,
-      createdAt: map['createdAt'] != null
-          ? DateTime.parse(map['createdAt'] as String)
-          : null,
-      updatedAt: map['updatedAt'] != null
-          ? DateTime.parse(map['updatedAt'] as String)
-          : null,
-    );
+    return LiquidityCheckpoint.fromMap(map, enterpriseId);
   }
 
   @override
   Map<String, dynamic> toMap(LiquidityCheckpoint entity) {
-    return {
-      'id': entity.id,
-      'enterpriseId': entity.enterpriseId,
-      'date': entity.date.toIso8601String(),
-      'type': entity.type.name,
-      'amount': entity.amount,
-      'morningCheckpoint': entity.morningCheckpoint,
-      'eveningCheckpoint': entity.eveningCheckpoint,
-      'cashAmount': entity.cashAmount,
-      'simAmount': entity.simAmount,
-      'morningCashAmount': entity.morningCashAmount,
-      'morningSimAmount': entity.morningSimAmount,
-      'eveningCashAmount': entity.eveningCashAmount,
-      'eveningSimAmount': entity.eveningSimAmount,
-      'notes': entity.notes,
-      'createdAt': entity.createdAt?.toIso8601String(),
-      'updatedAt': entity.updatedAt?.toIso8601String(),
-    };
+    return entity.toMap();
   }
 
   @override
@@ -158,6 +123,7 @@ class LiquidityOfflineRepository extends OfflineRepository<LiquidityCheckpoint>
     );
     final checkpoints = rows
         .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+        .where((c) => !c.isDeleted)
         .toList();
     
     // Dédupliquer par remoteId pour éviter les doublons
@@ -166,6 +132,22 @@ class LiquidityOfflineRepository extends OfflineRepository<LiquidityCheckpoint>
     // Trier par date décroissante
     deduplicatedCheckpoints.sort((a, b) => b.date.compareTo(a.date));
     return deduplicatedCheckpoints;
+  }
+
+  Future<List<LiquidityCheckpoint>> getAllDeletedForEnterprise(
+    String enterpriseId,
+  ) async {
+    final rows = await driftService.records.listForEnterprise(
+      collectionName: collectionName,
+      enterpriseId: enterpriseId,
+      moduleType: moduleType,
+    );
+    final checkpoints = rows
+        .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+        .where((c) => c.isDeleted)
+        .toList();
+    
+    return deduplicateByRemoteId(checkpoints);
   }
 
   // LiquidityRepository implementation
@@ -241,25 +223,34 @@ class LiquidityOfflineRepository extends OfflineRepository<LiquidityCheckpoint>
   Future<String> createCheckpoint(LiquidityCheckpoint checkpoint) async {
     try {
       final localId = getLocalId(checkpoint);
-      final checkpointWithLocalId = LiquidityCheckpoint(
+      final now = DateTime.now();
+      final checkpointWithLocalId = checkpoint.copyWith(
         id: localId,
-        enterpriseId: checkpoint.enterpriseId,
-        date: checkpoint.date,
-        type: checkpoint.type,
-        amount: checkpoint.amount,
-        morningCheckpoint: checkpoint.morningCheckpoint,
-        eveningCheckpoint: checkpoint.eveningCheckpoint,
-        cashAmount: checkpoint.cashAmount,
-        simAmount: checkpoint.simAmount,
-        morningCashAmount: checkpoint.morningCashAmount,
-        morningSimAmount: checkpoint.morningSimAmount,
-        eveningCashAmount: checkpoint.eveningCashAmount,
-        eveningSimAmount: checkpoint.eveningSimAmount,
-        notes: checkpoint.notes,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        enterpriseId: enterpriseId,
+        createdAt: checkpoint.createdAt ?? now,
+        updatedAt: now,
       );
       await save(checkpointWithLocalId);
+
+      // Audit Log
+      await auditTrailRepository.log(
+        AuditRecord(
+          id: LocalIdGenerator.generate(),
+          enterpriseId: enterpriseId,
+          userId: userId,
+          module: 'orange_money',
+          action: 'create_liquidity_checkpoint',
+          entityId: localId,
+          entityType: 'liquidity_checkpoint',
+          metadata: {
+            'amount': checkpoint.amount,
+            'type': checkpoint.type.name,
+            'date': checkpoint.date.toIso8601String(),
+          },
+          timestamp: now,
+        ),
+      );
+
       return localId;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
@@ -276,25 +267,27 @@ class LiquidityOfflineRepository extends OfflineRepository<LiquidityCheckpoint>
   @override
   Future<void> updateCheckpoint(LiquidityCheckpoint checkpoint) async {
     try {
-      final updated = LiquidityCheckpoint(
-        id: checkpoint.id,
-        enterpriseId: checkpoint.enterpriseId,
-        date: checkpoint.date,
-        type: checkpoint.type,
-        amount: checkpoint.amount,
-        morningCheckpoint: checkpoint.morningCheckpoint,
-        eveningCheckpoint: checkpoint.eveningCheckpoint,
-        cashAmount: checkpoint.cashAmount,
-        simAmount: checkpoint.simAmount,
-        morningCashAmount: checkpoint.morningCashAmount,
-        morningSimAmount: checkpoint.morningSimAmount,
-        eveningCashAmount: checkpoint.eveningCashAmount,
-        eveningSimAmount: checkpoint.eveningSimAmount,
-        notes: checkpoint.notes,
-        createdAt: checkpoint.createdAt,
-        updatedAt: DateTime.now(),
-      );
+      final now = DateTime.now();
+      final updated = checkpoint.copyWith(updatedAt: now);
       await save(updated);
+
+      // Audit Log
+      await auditTrailRepository.log(
+        AuditRecord(
+          id: LocalIdGenerator.generate(),
+          enterpriseId: enterpriseId,
+          userId: userId,
+          module: 'orange_money',
+          action: 'update_liquidity_checkpoint',
+          entityId: checkpoint.id,
+          entityType: 'liquidity_checkpoint',
+          metadata: {
+            'amount': checkpoint.amount,
+            'type': checkpoint.type.name,
+          },
+          timestamp: now,
+        ),
+      );
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       AppLogger.error(
@@ -308,11 +301,32 @@ class LiquidityOfflineRepository extends OfflineRepository<LiquidityCheckpoint>
   }
 
   @override
-  Future<void> deleteCheckpoint(String checkpointId) async {
+  Future<void> deleteCheckpoint(String checkpointId, String userId) async {
     try {
       final checkpoint = await getCheckpoint(checkpointId);
       if (checkpoint != null) {
-        await delete(checkpoint);
+        final now = DateTime.now();
+        final updatedCheckpoint = checkpoint.copyWith(
+          deletedAt: now,
+          deletedBy: userId,
+          updatedAt: now,
+        );
+        await save(updatedCheckpoint);
+
+        // Audit Log
+        await auditTrailRepository.log(
+          AuditRecord(
+            id: LocalIdGenerator.generate(),
+            enterpriseId: enterpriseId,
+            userId: userId,
+            module: 'orange_money',
+            action: 'delete_liquidity_checkpoint',
+            entityId: checkpointId,
+            entityType: 'liquidity_checkpoint',
+            metadata: {'amount': checkpoint.amount, 'type': checkpoint.type.name},
+            timestamp: now,
+          ),
+        );
       }
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
@@ -324,6 +338,105 @@ class LiquidityOfflineRepository extends OfflineRepository<LiquidityCheckpoint>
       );
       throw appException;
     }
+  }
+
+  @override
+  Future<void> restoreCheckpoint(String checkpointId) async {
+    try {
+      final rows = await driftService.records.listForEnterprise(
+        collectionName: collectionName,
+        enterpriseId: enterpriseId,
+        moduleType: moduleType,
+      );
+      
+      final row = rows.firstWhere(
+        (r) {
+          final data = jsonDecode(r.dataJson) as Map<String, dynamic>;
+          return data['id'] == checkpointId || r.localId == checkpointId;
+        },
+      );
+
+      final checkpoint = fromMap(jsonDecode(row.dataJson) as Map<String, dynamic>);
+      
+      final now = DateTime.now();
+      final updatedCheckpoint = checkpoint.copyWith(
+        deletedAt: null,
+        deletedBy: null,
+        updatedAt: now,
+      );
+      await save(updatedCheckpoint);
+
+      // Audit Log
+      await auditTrailRepository.log(
+        AuditRecord(
+          id: LocalIdGenerator.generate(),
+          enterpriseId: enterpriseId,
+          userId: userId,
+          module: 'orange_money',
+          action: 'restore_liquidity_checkpoint',
+          entityId: checkpointId,
+          entityType: 'liquidity_checkpoint',
+          timestamp: now,
+        ),
+      );
+    } catch (error, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
+      AppLogger.error(
+        'Error restoring checkpoint: $checkpointId',
+        name: 'LiquidityOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      throw appException;
+    }
+  }
+
+  @override
+  Stream<List<LiquidityCheckpoint>> watchCheckpoints({
+    DateTime? startDate,
+    DateTime? endDate,
+  }) {
+    return driftService.records
+        .watchForEnterprise(
+          collectionName: collectionName,
+          enterpriseId: enterpriseId,
+          moduleType: moduleType,
+        )
+        .map((rows) {
+      var checkpoints = rows
+          .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+          .where((c) => !c.isDeleted)
+          .toList();
+
+      if (startDate != null) {
+        checkpoints = checkpoints.where((c) => !c.date.isBefore(startDate)).toList();
+      }
+      if (endDate != null) {
+        checkpoints = checkpoints.where((c) => !c.date.isAfter(endDate)).toList();
+      }
+
+      checkpoints.sort((a, b) => b.date.compareTo(a.date));
+      return deduplicateByRemoteId(checkpoints);
+    });
+  }
+
+  @override
+  Stream<List<LiquidityCheckpoint>> watchDeletedCheckpoints() {
+    return driftService.records
+        .watchForEnterprise(
+          collectionName: collectionName,
+          enterpriseId: enterpriseId,
+          moduleType: moduleType,
+        )
+        .map((rows) {
+      final checkpoints = rows
+          .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+          .where((c) => c.isDeleted)
+          .toList();
+
+      checkpoints.sort((a, b) => (b.deletedAt ?? DateTime.now()).compareTo(a.deletedAt ?? DateTime.now()));
+      return deduplicateByRemoteId(checkpoints);
+    });
   }
 
   @override

@@ -1,13 +1,23 @@
+import '../../../audit_trail/domain/services/audit_trail_service.dart';
 import '../../../../core/errors/app_exceptions.dart';
 import '../../domain/entities/tenant.dart';
 import '../../domain/repositories/tenant_repository.dart';
 import '../../domain/services/immobilier_validation_service.dart';
 
 class TenantController {
-  TenantController(this._tenantRepository, this._validationService);
+  TenantController(
+    this._tenantRepository,
+    this._validationService,
+    this._auditTrailService,
+    this._enterpriseId,
+    this._userId,
+  );
 
   final TenantRepository _tenantRepository;
   final ImmobilierValidationService _validationService;
+  final AuditTrailService _auditTrailService;
+  final String _enterpriseId;
+  final String _userId;
 
   Future<List<Tenant>> fetchTenants() async {
     return await _tenantRepository.getAllTenants();
@@ -33,11 +43,15 @@ class TenantController {
   }
 
   Future<Tenant> createTenant(Tenant tenant) async {
-    return await _tenantRepository.createTenant(tenant);
+    final created = await _tenantRepository.createTenant(tenant);
+    await _logAction('create', created.id, metadata: created.toMap());
+    return created;
   }
 
   Future<Tenant> updateTenant(Tenant tenant) async {
-    return await _tenantRepository.updateTenant(tenant);
+    final updated = await _tenantRepository.updateTenant(tenant);
+    await _logAction('update', updated.id, metadata: updated.toMap());
+    return updated;
   }
 
   /// Supprime un locataire après validation.
@@ -52,9 +66,27 @@ class TenantController {
     }
 
     await _tenantRepository.deleteTenant(id);
+    await _logAction('delete', id);
   }
 
   Future<void> restoreTenant(String id) async {
     await _tenantRepository.restoreTenant(id);
+    await _logAction('restore', id);
+  }
+
+  Future<void> _logAction(
+    String action,
+    String entityId, {
+    Map<String, dynamic>? metadata,
+  }) async {
+    await _auditTrailService.logAction(
+      enterpriseId: _enterpriseId,
+      userId: _userId,
+      module: 'immobilier',
+      action: action,
+      entityId: entityId,
+      entityType: 'tenant',
+      metadata: metadata,
+    );
   }
 }

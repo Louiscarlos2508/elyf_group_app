@@ -48,4 +48,32 @@ class BobineUsage {
       estFinie: estFinie ?? this.estFinie,
     );
   }
+
+  factory BobineUsage.fromMap(Map<String, dynamic> map) {
+    return BobineUsage(
+      bobineType: map['bobineType'] as String? ?? '',
+      machineId: map['machineId'] as String? ?? '',
+      machineName: map['machineName'] as String? ?? '',
+      dateInstallation: DateTime.parse(map['dateInstallation'] as String),
+      heureInstallation: DateTime.parse(map['heureInstallation'] as String),
+      dateUtilisation: map['dateUtilisation'] != null
+          ? DateTime.parse(map['dateUtilisation'] as String)
+          : null,
+      estInstallee: map['estInstallee'] as bool? ?? true,
+      estFinie: map['estFinie'] as bool? ?? false,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'bobineType': bobineType,
+      'machineId': machineId,
+      'machineName': machineName,
+      'dateInstallation': dateInstallation.toIso8601String(),
+      'heureInstallation': heureInstallation.toIso8601String(),
+      'dateUtilisation': dateUtilisation?.toIso8601String(),
+      'estInstallee': estInstallee,
+      'estFinie': estFinie,
+    };
+  }
 }

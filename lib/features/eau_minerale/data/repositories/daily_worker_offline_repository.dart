@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/logging/app_logger.dart';
@@ -189,7 +188,7 @@ class DailyWorkerOfflineRepository extends OfflineRepository<DailyWorker>
       return await getByLocalId(id);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
+      AppLogger.error(
         'Error fetching worker: $id',
         name: 'DailyWorkerOfflineRepository',
         error: error,
@@ -230,7 +229,7 @@ class DailyWorkerOfflineRepository extends OfflineRepository<DailyWorker>
       return updated;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
+      AppLogger.error(
         'Error updating worker: ${worker.id}',
         name: 'DailyWorkerOfflineRepository',
         error: error,

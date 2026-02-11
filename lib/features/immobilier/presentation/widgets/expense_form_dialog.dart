@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/immobilier/application/providers.dart';
+import '../../../../core/tenant/tenant_provider.dart';
 import '../../domain/entities/expense.dart';
 import '../../domain/entities/property.dart';
 import 'expense_form_fields.dart';
@@ -80,8 +81,10 @@ class _ExpenseFormDialogState extends ConsumerState<ExpenseFormDialog>
       onLoadingChanged:
           (_) {}, // Pas besoin de gestion d'état de chargement séparée
       onSubmit: () async {
+        final enterpriseId = ref.read(activeEnterpriseIdProvider).value ?? 'default';
         final expense = PropertyExpense(
           id: widget.expense?.id ?? IdGenerator.generate(),
+          enterpriseId: enterpriseId,
           propertyId: _selectedProperty!.id,
           amount: int.parse(_amountController.text),
           expenseDate: _expenseDate,

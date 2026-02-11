@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/immobilier/application/providers.dart';
+import '../../../../core/tenant/tenant_provider.dart';
 import '../../domain/entities/property.dart';
 import '../../domain/services/property_validation_service.dart';
 import 'package:elyf_groupe_app/shared.dart';
@@ -63,8 +64,10 @@ class _PropertyFormDialogState extends ConsumerState<PropertyFormDialog>
       onLoadingChanged:
           (_) {}, // Pas besoin de gestion d'état de chargement séparée
       onSubmit: () async {
+        final enterpriseId = ref.read(activeEnterpriseIdProvider).value ?? 'default';
         final property = Property(
           id: widget.property?.id ?? IdGenerator.generate(),
+          enterpriseId: enterpriseId,
           address: _addressController.text.trim(),
           city: _cityController.text.trim(),
           propertyType: _selectedType,

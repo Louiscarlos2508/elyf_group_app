@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
+import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 import '../../domain/services/electricity_meter_config_service.dart';
 import '../../domain/entities/bobine_usage.dart';
 import '../../domain/entities/production_day.dart';
@@ -201,8 +202,11 @@ class ProductionSessionFormState extends ConsumerState<ProductionSessionForm> {
       final coutBob = int.tryParse(_coutBobinesController.text.replaceAll(RegExp(r'[^0-9]'), ''));
       final coutEmb = int.tryParse(_coutEmballagesController.text.replaceAll(RegExp(r'[^0-9]'), ''));
 
+      final enterpriseId = ref.read(activeEnterpriseIdProvider).value ?? '';
+
       final session = ProductionSessionBuilder.buildFromForm(
         sessionId: widget.session?.id,
+        enterpriseId: enterpriseId,
         selectedDate: _selectedDate,
         heureDebut: _heureDebut,
         heureFin: widget.session?.heureFin, // Préserver l'heure de fin si elle existe

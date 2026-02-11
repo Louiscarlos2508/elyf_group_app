@@ -64,7 +64,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
 
       final properties = await ref.read(propertiesProvider.future);
       final contracts = await ref.read(contractsProvider.future);
-      final payments = await ref.read(paymentsProvider.future);
+      final payments = await ref.read(paymentsWithRelationsProvider.future);
       final expenses = await ref.read(expensesProvider.future);
 
       final periodPayments = payments.where((p) {
@@ -118,7 +118,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   void _invalidateProviders() {
     ref.invalidate(propertiesProvider);
     ref.invalidate(contractsProvider);
-    ref.invalidate(paymentsProvider);
+    ref.invalidate(paymentsWithRelationsProvider);
     ref.invalidate(expensesProvider);
   }
 

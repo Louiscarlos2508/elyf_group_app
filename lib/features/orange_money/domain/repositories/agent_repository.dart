@@ -14,7 +14,17 @@ abstract class AgentRepository {
 
   Future<void> updateAgent(Agent agent);
 
-  Future<void> deleteAgent(String agentId);
+  Future<void> deleteAgent(String agentId, String userId);
+
+  Future<void> restoreAgent(String agentId);
+
+  Stream<List<Agent>> watchAgents({
+    String? enterpriseId,
+    AgentStatus? status,
+    String? searchQuery,
+  });
+
+  Stream<List<Agent>> watchDeletedAgents();
 
   /// Obtenir les statistiques des agents pour une journée.
   Future<Map<String, dynamic>> getDailyStatistics({

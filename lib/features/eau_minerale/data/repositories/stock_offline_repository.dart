@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/logging/app_logger.dart';
@@ -258,7 +257,7 @@ class StockOfflineRepository extends OfflineRepository<StockMovement>
       }).toList();
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
+      AppLogger.error(
         'Error fetching stock movements',
         name: 'StockOfflineRepository',
         error: error,

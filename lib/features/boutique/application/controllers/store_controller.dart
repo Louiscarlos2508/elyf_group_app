@@ -10,6 +10,8 @@ import '../../domain/repositories/purchase_repository.dart';
 import '../../domain/repositories/report_repository.dart';
 import '../../domain/repositories/sale_repository.dart';
 import '../../domain/repositories/stock_repository.dart';
+import '../../../audit_trail/domain/services/audit_trail_service.dart';
+import '../../../../core/logging/app_logger.dart';
 
 class StoreController {
   StoreController(
@@ -19,6 +21,7 @@ class StoreController {
     this._purchaseRepository,
     this._expenseRepository,
     this._reportRepository,
+    this._auditTrailService,
     this._currentUserId,
   );
 
@@ -28,6 +31,7 @@ class StoreController {
   final PurchaseRepository _purchaseRepository;
   final ExpenseRepository _expenseRepository;
   final ReportRepository _reportRepository;
+  final AuditTrailService _auditTrailService;
   final String _currentUserId;
 
   Future<List<Product>> fetchProducts() async {
@@ -47,18 +51,32 @@ class StoreController {
   }
 
   Future<String> createProduct(Product product) async {
-    return await _productRepository.createProduct(product);
+    final productId = await _productRepository.createProduct(product);
+    _logEvent(product.enterpriseId, 'CREATE_PRODUCT', productId, 'product', {
+      'name': product.name,
+      'price': product.price,
+    });
+    return productId;
   }
 
   Future<void> updateProduct(Product product) async {
-    return await _productRepository.updateProduct(product);
+    await _productRepository.updateProduct(product);
+    _logEvent(product.enterpriseId, 'UPDATE_PRODUCT', product.id, 'product', {
+      'name': product.name,
+    });
   }
 
   Future<void> deleteProduct(String id) async {
-    return await _productRepository.deleteProduct(
-      id,
-      deletedBy: _currentUserId,
-    );
+    final product = await _productRepository.getProduct(id);
+    if (product != null) {
+      await _productRepository.deleteProduct(
+        id,
+        deletedBy: _currentUserId,
+      );
+      _logEvent(product.enterpriseId, 'DELETE_PRODUCT', id, 'product', {
+        'name': product.name,
+      });
+    }
   }
 
   Future<void> restoreProduct(String id) async {
@@ -82,7 +100,12 @@ class StoreController {
         await _stockRepository.updateStock(item.productId, newStock);
       }
     }
-    return await _saleRepository.createSale(sale);
+    final saleId = await _saleRepository.createSale(sale);
+    _logEvent(sale.enterpriseId, 'CREATE_SALE', saleId, 'sale', {
+      'totalAmount': sale.totalAmount,
+      'itemCount': sale.items.length,
+    });
+    return saleId;
   }
 
   Future<List<Product>> getLowStockProducts({int threshold = 10}) async {
@@ -113,7 +136,12 @@ class StoreController {
         // Ne pas appeler updateStock car updateProduct le fait déjà
       }
     }
-    return await _purchaseRepository.createPurchase(purchase);
+    final purchaseId = await _purchaseRepository.createPurchase(purchase);
+    _logEvent(purchase.enterpriseId, 'CREATE_PURCHASE', purchaseId, 'purchase', {
+      'totalAmount': purchase.totalAmount,
+      'itemCount': purchase.items.length,
+    });
+    return purchaseId;
   }
 
   // Expense methods
@@ -122,14 +150,25 @@ class StoreController {
   }
 
   Future<String> createExpense(Expense expense) async {
-    return await _expenseRepository.createExpense(expense);
+    final expenseId = await _expenseRepository.createExpense(expense);
+    _logEvent(expense.enterpriseId, 'CREATE_EXPENSE', expenseId, 'expense', {
+      'label': expense.label,
+      'amount': expense.amountCfa,
+    });
+    return expenseId;
   }
 
   Future<void> deleteExpense(String id) async {
-    return await _expenseRepository.deleteExpense(
-      id,
-      deletedBy: _currentUserId,
-    );
+    final expense = await _expenseRepository.getExpense(id);
+    if (expense != null) {
+      await _expenseRepository.deleteExpense(
+        id,
+        deletedBy: _currentUserId,
+      );
+      _logEvent(expense.enterpriseId, 'DELETE_EXPENSE', id, 'expense', {
+        'label': expense.label,
+      });
+    }
   }
 
   Future<void> restoreExpense(String id) async {
@@ -287,5 +326,26 @@ class StoreController {
 
   Stream<List<Expense>> watchDeletedExpenses() {
     return _expenseRepository.watchDeletedExpenses();
+  }
+  void _logEvent(
+    String enterpriseId,
+    String action,
+    String entityId,
+    String entityType,
+    Map<String, dynamic> metadata,
+  ) {
+    try {
+      _auditTrailService.logAction(
+        enterpriseId: enterpriseId,
+        userId: _currentUserId,
+        module: 'boutique',
+        action: action,
+        entityId: entityId,
+        entityType: entityType,
+        metadata: metadata,
+      );
+    } catch (e) {
+      AppLogger.error('Failed to log boutique audit event', error: e);
+    }
   }
 }

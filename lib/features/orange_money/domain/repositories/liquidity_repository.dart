@@ -22,7 +22,16 @@ abstract class LiquidityRepository {
   Future<void> updateCheckpoint(LiquidityCheckpoint checkpoint);
 
   /// Supprime un pointage.
-  Future<void> deleteCheckpoint(String checkpointId);
+  Future<void> deleteCheckpoint(String checkpointId, String userId);
+
+  Future<void> restoreCheckpoint(String checkpointId);
+
+  Stream<List<LiquidityCheckpoint>> watchCheckpoints({
+    DateTime? startDate,
+    DateTime? endDate,
+  });
+
+  Stream<List<LiquidityCheckpoint>> watchDeletedCheckpoints();
 
   /// Récupère les statistiques des pointages.
   Future<Map<String, dynamic>> getStatistics({

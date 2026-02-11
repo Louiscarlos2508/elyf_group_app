@@ -44,7 +44,7 @@ void main() {
         userId: 'user-1',
         enterpriseId: 'enterprise-1',
         moduleId: 'module-1',
-        roleId: 'role-1',
+        roleIds: ['role-1'],
         customPermissions: {},
       );
 
@@ -149,6 +149,7 @@ void main() {
         description: 'Test Description',
         permissions: {'permission-1'},
         isSystemRole: false,
+        moduleId: 'module-1',
       );
 
       test(
@@ -213,6 +214,7 @@ void main() {
         description: 'Old Description',
         permissions: {'permission-1'},
         isSystemRole: false,
+        moduleId: 'module-1',
       );
 
       final updatedRole = UserRole(
@@ -221,6 +223,7 @@ void main() {
         description: 'Updated Description',
         permissions: {'permission-1', 'permission-2'},
         isSystemRole: false,
+        moduleId: 'module-1',
       );
 
       test(
@@ -296,6 +299,7 @@ void main() {
         description: 'Test Description',
         permissions: {'permission-1'},
         isSystemRole: false,
+        moduleId: 'module-1',
       );
 
       test(
@@ -369,7 +373,7 @@ void main() {
             userId: 'user-1',
             enterpriseId: 'enterprise-1',
             moduleId: 'module-1',
-            roleId: 'role-1',
+            roleIds: ['role-1'],
             customPermissions: {},
           ),
         ];

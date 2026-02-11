@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
+import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 import '../../../../core/logging/app_logger.dart';
 import '../../domain/entities/bobine_usage.dart';
 import '../../domain/entities/production_day.dart';
@@ -173,8 +174,11 @@ class ProductionSessionFormStepsState
         }
       }
 
+      final enterpriseId = ref.read(activeEnterpriseIdProvider).value ?? '';
+
       final session = ProductionSessionBuilder.buildFromForm(
         sessionId: sessionId,
+        enterpriseId: enterpriseId,
         selectedDate: _selectedDate,
         heureDebut: _heureDebut,
         heureFin: null,
@@ -259,8 +263,11 @@ class ProductionSessionFormStepsState
         }
       }
 
+      final enterpriseId = ref.read(activeEnterpriseIdProvider).value ?? '';
+
       final session = ProductionSessionFormActions.buildSession(
         sessionId: existingSessionId,
+        enterpriseId: enterpriseId,
         selectedDate: _selectedDate,
         heureDebut: _heureDebut,
         heureFin: widget.session?.heureFin,

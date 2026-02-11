@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/logging/app_logger.dart';
@@ -103,7 +102,7 @@ class PointOfSaleOfflineRepository extends OfflineRepository<PointOfSale>
     // pour qu'il soit récupérable via getAllForEnterprise('gaz_1')
     final storageEnterpriseId = getEnterpriseId(entity) ?? enterpriseId;
     
-    developer.log(
+    AppLogger.debug(
       'Sauvegarde PointOfSale: id=${entity.id}, parentEnterpriseId=${entity.parentEnterpriseId}, storageEnterpriseId=$storageEnterpriseId',
       name: 'PointOfSaleOfflineRepository.saveToLocal',
     );
@@ -163,7 +162,7 @@ class PointOfSaleOfflineRepository extends OfflineRepository<PointOfSale>
 
   @override
   Future<List<PointOfSale>> getAllForEnterprise(String enterpriseId) async {
-    developer.log(
+    AppLogger.debug(
       'Récupération des points de vente pour enterpriseId: $enterpriseId, moduleType: $moduleType',
       name: 'PointOfSaleOfflineRepository.getAllForEnterprise',
     );
@@ -178,7 +177,7 @@ class PointOfSaleOfflineRepository extends OfflineRepository<PointOfSale>
       moduleType: moduleType,
     );
     
-    developer.log(
+    AppLogger.debug(
       'Nombre de lignes trouvées dans Drift: ${rows.length} pour enterpriseId=$enterpriseId, moduleType=$moduleType',
       name: 'PointOfSaleOfflineRepository.getAllForEnterprise',
     );
@@ -189,8 +188,8 @@ class PointOfSaleOfflineRepository extends OfflineRepository<PointOfSale>
         collectionName: collectionName,
         moduleType: moduleType,
       );
-      developer.log(
-        '🔵 DEBUG: Total de points de vente dans Drift (toutes entreprises): ${allRows.length}',
+      AppLogger.debug(
+        'Total de points de vente dans Drift (toutes entreprises): ${allRows.length}',
         name: 'PointOfSaleOfflineRepository.getAllForEnterprise',
       );
       
@@ -202,8 +201,8 @@ class PointOfSaleOfflineRepository extends OfflineRepository<PointOfSale>
                                         map['enterpriseId'] as String? ?? 
                                         'unknown';
           final posEnterpriseId = map['enterpriseId'] as String?;
-          developer.log(
-            '🔵 DEBUG: Point de vente trouvé - id: ${row.localId}, enterpriseId dans Drift: ${row.enterpriseId}, parentEnterpriseId dans data: $posParentEnterpriseId, enterpriseId dans data: $posEnterpriseId',
+          AppLogger.debug(
+            'Point de vente trouvé - id: ${row.localId}, enterpriseId dans Drift: ${row.enterpriseId}, parentEnterpriseId dans data: $posParentEnterpriseId, enterpriseId dans data: $posEnterpriseId',
             name: 'PointOfSaleOfflineRepository.getAllForEnterprise',
           );
         } catch (e) {
@@ -225,7 +224,7 @@ class PointOfSaleOfflineRepository extends OfflineRepository<PointOfSale>
           try {
             final map = jsonDecode(r.dataJson) as Map<String, dynamic>;
             final entity = fromMap(map);
-            developer.log(
+            AppLogger.debug(
               'PointOfSale trouvé: id=${entity.id}, name=${entity.name}, parentEnterpriseId=${entity.parentEnterpriseId}',
               name: 'PointOfSaleOfflineRepository.getAllForEnterprise',
             );
@@ -247,7 +246,7 @@ class PointOfSaleOfflineRepository extends OfflineRepository<PointOfSale>
     // Dédupliquer par remoteId pour éviter les doublons
     final deduplicated = deduplicateByRemoteId(entities);
     
-    developer.log(
+    AppLogger.debug(
       'Points de vente après déduplication: ${deduplicated.length}',
       name: 'PointOfSaleOfflineRepository.getAllForEnterprise',
     );

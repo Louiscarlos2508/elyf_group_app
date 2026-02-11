@@ -25,6 +25,33 @@ class AttachedFile {
   /// Vérifie si le fichier est un document
   bool get isDocument => type == AttachedFileType.document;
 
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'name': name,
+      'path': path,
+      'type': type.name,
+      'size': size,
+      'uploadedAt': uploadedAt?.toIso8601String(),
+    };
+  }
+
+  factory AttachedFile.fromMap(Map<String, dynamic> map) {
+    return AttachedFile(
+      id: map['id'] as String,
+      name: map['name'] as String,
+      path: map['path'] as String,
+      type: AttachedFileType.values.firstWhere(
+        (e) => e.name == map['type'],
+        orElse: () => AttachedFileType.document,
+      ),
+      size: map['size'] as int?,
+      uploadedAt: map['uploadedAt'] != null
+          ? DateTime.parse(map['uploadedAt'] as String)
+          : null,
+    );
+  }
+
   AttachedFile copyWith({
     String? id,
     String? name,

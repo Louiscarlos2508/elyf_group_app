@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/immobilier/application/providers.dart';
+import '../../../../core/tenant/tenant_provider.dart';
 import '../../domain/entities/tenant.dart';
 import 'package:elyf_groupe_app/shared.dart';
 
@@ -65,8 +66,10 @@ class _TenantFormDialogState extends ConsumerState<TenantFormDialog>
         final emergencyContact = rawEmergency.isEmpty
             ? null
             : (PhoneUtils.normalizeBurkina(rawEmergency) ?? rawEmergency);
+        final enterpriseId = ref.read(activeEnterpriseIdProvider).value ?? 'default';
         final tenant = Tenant(
           id: widget.tenant?.id ?? IdGenerator.generate(),
+          enterpriseId: enterpriseId,
           fullName: _fullNameController.text.trim(),
           phone: phone,
           address: _addressController.text.trim().isEmpty

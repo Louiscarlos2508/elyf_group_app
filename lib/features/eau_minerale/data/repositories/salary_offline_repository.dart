@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
 import 'dart:typed_data';
 
 import '../../../../core/errors/error_handler.dart';
@@ -231,7 +230,7 @@ class SalaryOfflineRepository extends OfflineRepository<Employee>
       return localId;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
+      AppLogger.error(
         'Error creating fixed employee',
         name: 'SalaryOfflineRepository',
         error: error,
@@ -387,7 +386,6 @@ class SalaryOfflineRepository extends OfflineRepository<Employee>
         'isVerified': payment.isVerified,
         'verifiedBy': payment.verifiedBy,
         'verifiedAt': payment.verifiedAt?.toIso8601String(),
-        'verifiedAt': payment.verifiedAt?.toIso8601String(),
         'signature': payment.signature?.toList(),
         'signerName': payment.signerName, // Ajout du nom du signataire
       };
@@ -418,7 +416,7 @@ class SalaryOfflineRepository extends OfflineRepository<Employee>
       return localId;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
+      AppLogger.error(
         'Error creating production payment',
         name: 'SalaryOfflineRepository',
         error: error,

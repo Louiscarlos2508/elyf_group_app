@@ -3,6 +3,8 @@ import 'dart:convert';
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/offline_repository.dart';
+import '../../../audit_trail/domain/entities/audit_record.dart';
+import '../../../audit_trail/domain/repositories/audit_trail_repository.dart';
 import '../../domain/entities/sale.dart';
 import '../../domain/repositories/sale_repository.dart';
 
@@ -15,94 +17,26 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
     required super.connectivityService,
     required this.enterpriseId,
     required this.moduleType,
+    required this.auditTrailRepository,
+    this.userId = 'system',
   });
 
   final String enterpriseId;
   final String moduleType;
+  final AuditTrailRepository auditTrailRepository;
+  final String userId;
 
   @override
   String get collectionName => 'sales';
 
   @override
   Sale fromMap(Map<String, dynamic> map) {
-    final items =
-        (map['items'] as List<dynamic>?)
-            ?.map(
-              (item) => SaleItem(
-                productId: item['productId'] as String,
-                productName: item['productName'] as String,
-                quantity: (item['quantity'] as num).toInt(),
-                unitPrice: (item['unitPrice'] as num).toInt(),
-                totalPrice: (item['totalPrice'] as num).toInt(),
-              ),
-            )
-            .toList() ??
-        [];
-
-    // Gérer l'enum PaymentMethod avec support pour "both"
-    PaymentMethod? paymentMethod;
-    if (map['paymentMethod'] != null) {
-      final methodStr = map['paymentMethod'] as String;
-      switch (methodStr) {
-        case 'cash':
-          paymentMethod = PaymentMethod.cash;
-          break;
-        case 'mobileMoney':
-          paymentMethod = PaymentMethod.mobileMoney;
-          break;
-        case 'both':
-          paymentMethod = PaymentMethod.both;
-          break;
-        default:
-          paymentMethod = PaymentMethod.cash;
-      }
-    }
-
-    return Sale(
-      id: map['id'] as String? ?? map['localId'] as String,
-      date: DateTime.parse(map['date'] as String? ?? map['saleDate'] as String),
-      items: items,
-      totalAmount: (map['totalAmount'] as num).toInt(),
-      amountPaid: (map['amountPaid'] as num?)?.toInt() ?? 0,
-      customerName: map['customerName'] as String?,
-      paymentMethod: paymentMethod,
-      notes: map['notes'] as String?,
-      cashAmount: (map['cashAmount'] as num?)?.toInt() ?? 0,
-      mobileMoneyAmount: (map['mobileMoneyAmount'] as num?)?.toInt() ?? 0,
-      updatedAt: map['updatedAt'] != null
-          ? DateTime.parse(map['updatedAt'] as String)
-          : null,
-    );
+    return Sale.fromMap(map, enterpriseId);
   }
 
   @override
   Map<String, dynamic> toMap(Sale entity) {
-    return {
-      'id': entity.id,
-      'date': entity.date.toIso8601String(),
-      'saleDate': entity.date.toIso8601String(),
-      'items': entity.items
-          .map(
-            (item) => {
-              'productId': item.productId,
-              'productName': item.productName,
-              'quantity': item.quantity,
-              'unitPrice': item.unitPrice,
-              'totalPrice': item.totalPrice,
-            },
-          )
-          .toList(),
-      'totalAmount': entity.totalAmount.toDouble(),
-      'paidAmount': entity.amountPaid.toDouble(),
-      'amountPaid': entity.amountPaid.toDouble(),
-      'paymentMethod': entity.paymentMethod?.name ?? 'cash',
-      'customerName': entity.customerName,
-      'notes': entity.notes,
-      'cashAmount': entity.cashAmount.toDouble(),
-      'mobileMoneyAmount': entity.mobileMoneyAmount.toDouble(),
-      'isComplete': entity.amountPaid >= entity.totalAmount,
-      'updatedAt': entity.updatedAt?.toIso8601String(),
-    };
+    return entity.toMap();
   }
 
   @override
@@ -199,7 +133,9 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
     
     // Trier par date décroissante
     deduplicatedSales.sort((a, b) => b.date.compareTo(a.date));
-    return deduplicatedSales;
+
+    // Filtrer les ventes supprimées (soft delete)
+    return deduplicatedSales.where((sale) => !sale.isDeleted).toList();
   }
 
   // SaleRepository interface implementation
@@ -249,20 +185,20 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
   Future<String> createSale(Sale sale) async {
     try {
       final localId = getLocalId(sale);
-      final saleWithLocalId = Sale(
+      final saleWithLocalId = sale.copyWith(
         id: localId,
-        date: sale.date,
-        items: sale.items,
-        totalAmount: sale.totalAmount,
-        amountPaid: sale.amountPaid,
-        customerName: sale.customerName,
-        paymentMethod: sale.paymentMethod,
-        notes: sale.notes,
-        cashAmount: sale.cashAmount,
-        mobileMoneyAmount: sale.mobileMoneyAmount,
+        enterpriseId: enterpriseId,
         updatedAt: DateTime.now(),
       );
       await save(saleWithLocalId);
+      
+      // Audit Log
+      await _logAudit(
+        action: 'create_sale',
+        entityId: localId,
+        metadata: {'totalAmount': sale.totalAmount, 'customerName': sale.customerName},
+      );
+
       return localId;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
@@ -306,8 +242,153 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
           .toList();
       final deduplicatedSales = deduplicateByRemoteId(sales);
       deduplicatedSales.sort((a, b) => b.date.compareTo(a.date));
-      // On ne prend plus le limit ici pour s'assurer que les calculs de totaux soient corrects
+      // Filtrer les ventes actives
+      return deduplicatedSales.where((s) => !s.isDeleted).toList();
+    });
+  }
+
+  @override
+  Future<void> deleteSale(String id, {String? deletedBy}) async {
+    try {
+      final sale = await getSale(id);
+      if (sale != null && !sale.isDeleted) {
+        final deletedSale = sale.copyWith(
+          deletedAt: DateTime.now(),
+          deletedBy: deletedBy,
+          updatedAt: DateTime.now(),
+        );
+        await save(deletedSale);
+
+        // Audit Log
+        await _logAudit(
+          action: 'delete_sale',
+          entityId: id,
+          metadata: {'deletedBy': deletedBy},
+        );
+      }
+    } catch (error, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
+      AppLogger.error(
+        'Error deleting sale: $id',
+        name: 'SaleOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      throw appException;
+    }
+  }
+
+  @override
+  Future<void> restoreSale(String id) async {
+    try {
+      final sale = await getSale(id);
+      if (sale != null && sale.isDeleted) {
+        final restoredSale = sale.copyWith(
+          deletedAt: null,
+          deletedBy: null,
+          updatedAt: DateTime.now(),
+        );
+        await save(restoredSale);
+
+        // Audit Log
+        await _logAudit(
+          action: 'restore_sale',
+          entityId: id,
+        );
+      }
+    } catch (error, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
+      AppLogger.error(
+        'Error restoring sale: $id',
+        name: 'SaleOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      throw appException;
+    }
+  }
+
+  @override
+  Future<List<Sale>> getDeletedSales() async {
+    try {
+      final rows = await driftService.records.listForEnterprise(
+        collectionName: collectionName,
+        enterpriseId: enterpriseId,
+        moduleType: moduleType,
+      );
+      final sales = <Sale>[];
+      for (final row in rows) {
+        final map = safeDecodeJson(row.dataJson, row.localId);
+        if (map == null) continue;
+        try {
+          final sale = fromMap(map);
+          if (sale.isDeleted) {
+            sales.add(sale);
+          }
+        } catch (_) {}
+      }
+      final deduplicatedSales = deduplicateByRemoteId(sales);
+      deduplicatedSales.sort((a, b) => b.date.compareTo(a.date));
+      return deduplicatedSales;
+    } catch (error, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
+      AppLogger.error(
+        'Error fetching deleted sales',
+        name: 'SaleOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      throw appException;
+    }
+  }
+
+  @override
+  Stream<List<Sale>> watchDeletedSales() {
+    return driftService.records
+        .watchForEnterprise(
+          collectionName: collectionName,
+          enterpriseId: enterpriseId,
+          moduleType: moduleType,
+        )
+        .map((rows) {
+      final sales = <Sale>[];
+      for (final row in rows) {
+        final map = safeDecodeJson(row.dataJson, row.localId);
+        if (map == null) continue;
+        try {
+          final sale = fromMap(map);
+          if (sale.isDeleted) {
+            sales.add(sale);
+          }
+        } catch (_) {}
+      }
+      final deduplicatedSales = deduplicateByRemoteId(sales);
+      deduplicatedSales.sort((a, b) => b.date.compareTo(a.date));
       return deduplicatedSales;
     });
+  }
+
+  Future<void> _logAudit({
+    required String action,
+    required String entityId,
+    Map<String, dynamic>? metadata,
+  }) async {
+    try {
+      await auditTrailRepository.log(
+        AuditRecord(
+          id: '', 
+          enterpriseId: enterpriseId,
+          userId: userId, 
+          module: 'boutique',
+          action: action,
+          entityId: entityId,
+          entityType: 'sale',
+          metadata: metadata,
+          timestamp: DateTime.now(),
+        ),
+      );
+    } catch (e) {
+      AppLogger.error('Failed to log sale audit: $action', error: e);
+    }
   }
 }

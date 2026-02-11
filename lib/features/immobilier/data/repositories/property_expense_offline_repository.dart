@@ -1,15 +1,12 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import '../../../../core/errors/error_handler.dart';
-import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/offline_repository.dart';
 import '../../domain/entities/expense.dart';
 import '../../domain/repositories/expense_repository.dart';
 
 /// Offline-first repository for PropertyExpense entities (immobilier module).
-class PropertyExpenseOfflineRepository
-    extends OfflineRepository<PropertyExpense>
+class PropertyExpenseOfflineRepository extends OfflineRepository<PropertyExpense>
     implements PropertyExpenseRepository {
   PropertyExpenseOfflineRepository({
     required super.driftService,
@@ -23,76 +20,23 @@ class PropertyExpenseOfflineRepository
   @override
   String get collectionName => 'property_expenses';
 
-  @override
-  PropertyExpense fromMap(Map<String, dynamic> map) {
-    return PropertyExpense(
-      id: map['id'] as String? ?? map['localId'] as String,
-      propertyId:
-          map['propertyId'] as String? ??
-          map['relatedEntityId'] as String? ??
-          '',
-      amount:
-          (map['amount'] as num?)?.toInt() ??
-          (map['amountCfa'] as num?)?.toInt() ??
-          0,
-      expenseDate: map['expenseDate'] != null
-          ? DateTime.parse(map['expenseDate'] as String)
-          : (map['date'] != null
-                ? DateTime.parse(map['date'] as String)
-                : DateTime.now()),
-      category: _parseCategory(map['category'] as String?),
-      description: map['description'] as String? ?? '',
-      property: map['property'] as String?,
-      receipt: map['receipt'] as String? ?? map['reference'] as String?,
-      createdAt: map['createdAt'] != null
-          ? DateTime.parse(map['createdAt'] as String)
-          : null,
-      updatedAt: map['updatedAt'] != null
-          ? DateTime.parse(map['updatedAt'] as String)
-          : null,
-      deletedAt: map['deletedAt'] != null
-          ? DateTime.parse(map['deletedAt'] as String)
-          : null,
-      deletedBy: map['deletedBy'] as String?,
-    );
-  }
+  String get moduleType => 'immobilier';
 
   @override
-  Map<String, dynamic> toMap(PropertyExpense entity) {
-    return {
-      'id': entity.id,
-      'propertyId': entity.propertyId,
-      'relatedEntityId': entity.propertyId,
-      'relatedEntityType': 'property',
-      'amount': entity.amount.toDouble(),
-      'amountCfa': entity.amount.toDouble(),
-      'expenseDate': entity.expenseDate.toIso8601String(),
-      'date': entity.expenseDate.toIso8601String(),
-      'category': entity.category.name,
-      'description': entity.description,
-      'property': entity.property,
-      'receipt': entity.receipt,
-      'reference': entity.receipt,
-      'createdAt': entity.createdAt?.toIso8601String(),
-      'updatedAt': entity.updatedAt?.toIso8601String(),
-      'deletedAt': entity.deletedAt?.toIso8601String(),
-      'deletedBy': entity.deletedBy,
-    };
-  }
+  PropertyExpense fromMap(Map<String, dynamic> map) => PropertyExpense.fromMap(map);
+
+  @override
+  Map<String, dynamic> toMap(PropertyExpense entity) => entity.toMap();
 
   @override
   String getLocalId(PropertyExpense entity) {
-    if (entity.id.startsWith('local_')) {
-      return entity.id;
-    }
+    if (entity.id.isNotEmpty) return entity.id;
     return LocalIdGenerator.generate();
   }
 
   @override
   String? getRemoteId(PropertyExpense entity) {
-    if (!entity.id.startsWith('local_')) {
-      return entity.id;
-    }
+    if (!LocalIdGenerator.isLocalId(entity.id)) return entity.id;
     return null;
   }
 
@@ -101,15 +45,14 @@ class PropertyExpenseOfflineRepository
 
   @override
   Future<void> saveToLocal(PropertyExpense entity) async {
-    final map = toMap(entity);
     final localId = getLocalId(entity);
-    map['localId'] = localId;
+    final map = toMap(entity)..['localId'] = localId;
     await driftService.records.upsert(
       collectionName: collectionName,
       localId: localId,
       remoteId: getRemoteId(entity),
       enterpriseId: enterpriseId,
-      moduleType: 'immobilier',
+      moduleType: moduleType,
       dataJson: jsonEncode(map),
       localUpdatedAt: DateTime.now(),
     );
@@ -118,71 +61,41 @@ class PropertyExpenseOfflineRepository
   @override
   Future<void> deleteFromLocal(PropertyExpense entity) async {
     final remoteId = getRemoteId(entity);
-    final localId = getLocalId(entity);
-
     if (remoteId != null) {
       await driftService.records.deleteByRemoteId(
         collectionName: collectionName,
         remoteId: remoteId,
         enterpriseId: enterpriseId,
-        moduleType: 'immobilier',
+        moduleType: moduleType,
       );
       return;
     }
+    final localId = getLocalId(entity);
     await driftService.records.deleteByLocalId(
       collectionName: collectionName,
       localId: localId,
       enterpriseId: enterpriseId,
-      moduleType: 'immobilier',
+      moduleType: moduleType,
     );
   }
 
   @override
   Future<PropertyExpense?> getByLocalId(String localId) async {
-    final byRemote = await driftService.records.findByRemoteId(
-      collectionName: collectionName,
-      remoteId: localId,
-      enterpriseId: enterpriseId,
-      moduleType: 'immobilier',
-    );
-    if (byRemote != null) {
-      final map = safeDecodeJson(byRemote.dataJson, localId);
-      if (map == null) return null;
-      try {
-        return fromMap(map);
-      } catch (e, stackTrace) {
-        final appException = ErrorHandler.instance.handleError(e, stackTrace);
-        AppLogger.warning(
-          'Error parsing PropertyExpense from map: ${appException.message}',
-          name: 'PropertyExpenseOfflineRepository',
-          error: e,
-          stackTrace: stackTrace,
-        );
-        return null;
-      }
-    }
-
-    final byLocal = await driftService.records.findByLocalId(
+    final record = await driftService.records.findByLocalId(
       collectionName: collectionName,
       localId: localId,
       enterpriseId: enterpriseId,
-      moduleType: 'immobilier',
+      moduleType: moduleType,
+    ) ?? await driftService.records.findByRemoteId(
+      collectionName: collectionName,
+      remoteId: localId,
+      enterpriseId: enterpriseId,
+      moduleType: moduleType,
     );
-    if (byLocal == null) return null;
-    final map = safeDecodeJson(byLocal.dataJson, localId);
-    if (map == null) return null;
-    try {
-      return fromMap(map);
-    } catch (e, stackTrace) {
-      final appException = ErrorHandler.instance.handleError(e, stackTrace);
-      AppLogger.warning(
-        'Error parsing PropertyExpense from map: ${appException.message}',
-        name: 'PropertyExpenseOfflineRepository',
-        error: e,
-        stackTrace: stackTrace,
-      );
-      return null;
-    }
+
+    if (record == null) return null;
+    final map = safeDecodeJson(record.dataJson, record.localId);
+    return map != null ? fromMap(map) : null;
   }
 
   @override
@@ -195,35 +108,15 @@ class PropertyExpenseOfflineRepository
     final rows = await driftService.records.listForEnterprise(
       collectionName: collectionName,
       enterpriseId: enterpriseId,
-      moduleType: 'immobilier',
+      moduleType: moduleType,
     );
+    final entities = rows
+        .map((r) => safeDecodeJson(r.dataJson, r.localId))
+        .where((m) => m != null)
+        .map((m) => fromMap(m!))
+        .toList();
     
-    // Décoder et parser de manière sécurisée, en ignorant les données corrompues
-    final expenses = <PropertyExpense>[];
-    for (final row in rows) {
-      final map = safeDecodeJson(row.dataJson, row.localId);
-      if (map == null) continue; // Ignorer les données corrompues
-      
-      try {
-        expenses.add(fromMap(map));
-      } catch (e, stackTrace) {
-        final appException = ErrorHandler.instance.handleError(e, stackTrace);
-        AppLogger.warning(
-          'Error parsing PropertyExpense from map (skipping): ${appException.message}',
-          name: 'PropertyExpenseOfflineRepository',
-          error: e,
-          stackTrace: stackTrace,
-        );
-        // Continuer avec les autres enregistrements
-      }
-    }
-    
-    // Dédupliquer par remoteId pour éviter les doublons
-    final deduplicatedExpenses = deduplicateByRemoteId(expenses);
-    
-    // Trier par date décroissante
-    deduplicatedExpenses.sort((a, b) => b.expenseDate.compareTo(a.expenseDate));
-    return deduplicatedExpenses;
+    return deduplicateByRemoteId(entities);
   }
 
   // PropertyExpenseRepository interface implementation
@@ -234,49 +127,16 @@ class PropertyExpenseOfflineRepository
         .watchForEnterprise(
           collectionName: collectionName,
           enterpriseId: enterpriseId,
-          moduleType: 'immobilier',
+          moduleType: moduleType,
         )
         .map((rows) {
-          final expenses = <PropertyExpense>[];
-          for (final row in rows) {
-            final map = safeDecodeJson(row.dataJson, row.localId);
-            if (map == null) continue;
-            try {
-              expenses.add(fromMap(map));
-            } catch (e) {
-              // Ignore corrupt data
-            }
-          }
-          final deduplicated = deduplicateByRemoteId(expenses);
-          final active = deduplicated.where((e) => e.deletedAt == null).toList();
-          active.sort((a, b) => b.expenseDate.compareTo(a.expenseDate));
-          return active;
-        });
-  }
-
-  @override
-  Stream<List<PropertyExpense>> watchDeletedExpenses() {
-    return driftService.records
-        .watchForEnterprise(
-          collectionName: collectionName,
-          enterpriseId: enterpriseId,
-          moduleType: 'immobilier',
-        )
-        .map((rows) {
-          final expenses = <PropertyExpense>[];
-          for (final row in rows) {
-            final map = safeDecodeJson(row.dataJson, row.localId);
-            if (map == null) continue;
-            try {
-              expenses.add(fromMap(map));
-            } catch (e) {
-              // Ignore corrupt data
-            }
-          }
-          final deduplicated = deduplicateByRemoteId(expenses);
-          final deleted = deduplicated.where((e) => e.deletedAt != null).toList();
-          deleted.sort((a, b) => b.expenseDate.compareTo(a.expenseDate));
-          return deleted;
+          final entities = rows
+              .map((r) => safeDecodeJson(r.dataJson, r.localId))
+              .where((m) => m != null)
+              .map((m) => fromMap(m!))
+              .where((e) => !e.isDeleted)
+              .toList();
+          return deduplicateByRemoteId(entities);
         });
   }
 
@@ -285,127 +145,47 @@ class PropertyExpenseOfflineRepository
     try {
       return await getByLocalId(id);
     } catch (error, stackTrace) {
-      final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      AppLogger.error(
-        'Error getting expense: $id - ${appException.message}',
-        name: 'PropertyExpenseOfflineRepository',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      throw appException;
+      throw ErrorHandler.instance.handleError(error, stackTrace);
     }
   }
 
   @override
   Future<List<PropertyExpense>> getExpensesByProperty(String propertyId) async {
-    try {
-      final all = await getAllExpenses();
-      final filtered = all.where((e) => e.propertyId == propertyId).toList()
-        ..sort((a, b) => b.expenseDate.compareTo(a.expenseDate));
-      return filtered;
-    } catch (error, stackTrace) {
-      final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      AppLogger.error(
-        'Error fetching expenses by property: $propertyId - ${appException.message}',
-        name: 'PropertyExpenseOfflineRepository',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      throw appException;
-    }
+    final all = await getAllExpenses();
+    return all.where((e) => e.propertyId == propertyId).toList();
   }
 
   @override
-  Future<List<PropertyExpense>> getExpensesByCategory(
-    ExpenseCategory category,
-  ) async {
-    try {
-      final all = await getAllExpenses();
-      final filtered = all.where((e) => e.category == category).toList()
-        ..sort((a, b) => b.expenseDate.compareTo(a.expenseDate));
-      return filtered;
-    } catch (error, stackTrace) {
-      final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      AppLogger.error(
-        'Error fetching expenses by category: ${category.name} - ${appException.message}',
-        name: 'PropertyExpenseOfflineRepository',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      throw appException;
-    }
-  }
-
-  @override
-  Future<List<PropertyExpense>> getExpensesByPeriod(
-    DateTime start,
-    DateTime end,
-  ) async {
-    try {
-      final all = await getAllExpenses();
-      final filtered = all.where((e) {
-        return (e.expenseDate.isAfter(start) ||
-                e.expenseDate.isAtSameMomentAs(start)) &&
-            (e.expenseDate.isBefore(end) ||
-                e.expenseDate.isAtSameMomentAs(end));
-      }).toList()..sort((a, b) => b.expenseDate.compareTo(a.expenseDate));
-      return filtered;
-    } catch (error, stackTrace) {
-      final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      AppLogger.error(
-        'Error fetching expenses by period: ${appException.message}',
-        name: 'PropertyExpenseOfflineRepository',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      throw appException;
-    }
+  Future<List<PropertyExpense>> getExpensesByCategory(ExpenseCategory category) async {
+    final all = await getAllExpenses();
+    return all.where((e) => e.category == category).toList();
   }
 
   @override
   Future<PropertyExpense> createExpense(PropertyExpense expense) async {
     try {
-      final localId = getLocalId(expense);
-      final expenseWithLocalId = PropertyExpense(
+      final localId = expense.id.isEmpty ? LocalIdGenerator.generate() : expense.id;
+      final newExpense = expense.copyWith(
         id: localId,
-        propertyId: expense.propertyId,
-        amount: expense.amount,
-        expenseDate: expense.expenseDate,
-        category: expense.category,
-        description: expense.description,
-        property: expense.property,
-        receipt: expense.receipt,
+        enterpriseId: enterpriseId,
         createdAt: expense.createdAt ?? DateTime.now(),
-        updatedAt: expense.updatedAt,
+        updatedAt: DateTime.now(),
       );
-      await save(expenseWithLocalId);
-      return expenseWithLocalId;
+      await save(newExpense);
+      return newExpense;
     } catch (error, stackTrace) {
-      final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      AppLogger.error(
-        'Error creating expense: ${appException.message}',
-        name: 'PropertyExpenseOfflineRepository',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      throw appException;
+      throw ErrorHandler.instance.handleError(error, stackTrace);
     }
   }
 
   @override
   Future<PropertyExpense> updateExpense(PropertyExpense expense) async {
     try {
-      await save(expense);
-      return expense;
+      final updatedExpense = expense.copyWith(updatedAt: DateTime.now());
+      await save(updatedExpense);
+      return updatedExpense;
     } catch (error, stackTrace) {
-      final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error updating expense: ${expense.id}',
-        name: 'PropertyExpenseOfflineRepository',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      throw appException;
+      throw ErrorHandler.instance.handleError(error, stackTrace);
     }
   }
 
@@ -414,22 +194,44 @@ class PropertyExpenseOfflineRepository
     try {
       final expense = await getExpenseById(id);
       if (expense != null) {
-        final updatedExpense = expense.copyWith(
+        await save(expense.copyWith(
           deletedAt: DateTime.now(),
           deletedBy: 'system',
-        );
-        await save(updatedExpense);
+        ));
       }
     } catch (error, stackTrace) {
-      final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      AppLogger.error(
-        'Error deleting expense: $id - ${appException.message}',
-        name: 'PropertyExpenseOfflineRepository',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      throw appException;
+      throw ErrorHandler.instance.handleError(error, stackTrace);
     }
+  }
+  @override
+  Future<List<PropertyExpense>> getExpensesByPeriod(
+    DateTime start,
+    DateTime end,
+  ) async {
+    final all = await getAllExpenses();
+    return all.where((e) {
+      return e.expenseDate.isAfter(start.subtract(const Duration(seconds: 1))) &&
+          e.expenseDate.isBefore(end.add(const Duration(seconds: 1)));
+    }).toList();
+  }
+
+  @override
+  Stream<List<PropertyExpense>> watchDeletedExpenses() {
+    return driftService.records
+        .watchForEnterprise(
+          collectionName: collectionName,
+          enterpriseId: enterpriseId,
+          moduleType: moduleType,
+        )
+        .map((rows) {
+          final entities = rows
+              .map((r) => safeDecodeJson(r.dataJson, r.localId))
+              .where((m) => m != null)
+              .map((m) => fromMap(m!))
+              .where((e) => e.isDeleted)
+              .toList();
+          return deduplicateByRemoteId(entities);
+        });
   }
 
   @override
@@ -437,46 +239,13 @@ class PropertyExpenseOfflineRepository
     try {
       final expense = await getExpenseById(id);
       if (expense != null) {
-        final updatedExpense = expense.copyWith(
+        await save(expense.copyWith(
           deletedAt: null,
           deletedBy: null,
-        );
-        await save(updatedExpense);
+        ));
       }
     } catch (error, stackTrace) {
-      final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      AppLogger.error(
-        'Error restoring expense: $id - ${appException.message}',
-        name: 'PropertyExpenseOfflineRepository',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      throw appException;
-    }
-  }
-
-  ExpenseCategory _parseCategory(String? categoryStr) {
-    if (categoryStr == null) return ExpenseCategory.other;
-    switch (categoryStr.toLowerCase()) {
-      case 'maintenance':
-        return ExpenseCategory.maintenance;
-      case 'repair':
-      case 'réparation':
-        return ExpenseCategory.repair;
-      case 'utilities':
-      case 'services publics':
-        return ExpenseCategory.utilities;
-      case 'insurance':
-      case 'assurance':
-        return ExpenseCategory.insurance;
-      case 'taxes':
-      case 'impôts':
-        return ExpenseCategory.taxes;
-      case 'cleaning':
-      case 'nettoyage':
-        return ExpenseCategory.cleaning;
-      default:
-        return ExpenseCategory.other;
+      throw ErrorHandler.instance.handleError(error, stackTrace);
     }
   }
 }

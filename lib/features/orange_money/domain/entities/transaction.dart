@@ -2,6 +2,7 @@
 class Transaction {
   const Transaction({
     required this.id,
+    required this.enterpriseId,
     required this.type,
     required this.amount,
     required this.phoneNumber,
@@ -13,10 +14,14 @@ class Transaction {
     this.reference,
     this.notes,
     this.createdBy,
+    this.deletedAt,
+    this.deletedBy,
+    this.createdAt,
     this.updatedAt,
   });
 
   final String id;
+  final String enterpriseId;
   final TransactionType type;
   final int amount; // Amount in FCFA
   final String phoneNumber;
@@ -28,7 +33,105 @@ class Transaction {
   final String? reference; // Transaction reference from Orange Money
   final String? notes;
   final String? createdBy;
+  final DateTime? deletedAt;
+  final String? deletedBy;
+  final DateTime? createdAt;
   final DateTime? updatedAt;
+
+  bool get isDeleted => deletedAt != null;
+
+  Transaction copyWith({
+    String? id,
+    String? enterpriseId,
+    TransactionType? type,
+    int? amount,
+    String? phoneNumber,
+    DateTime? date,
+    TransactionStatus? status,
+    String? customerName,
+    int? commission,
+    int? fees,
+    String? reference,
+    String? notes,
+    String? createdBy,
+    DateTime? deletedAt,
+    String? deletedBy,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return Transaction(
+      id: id ?? this.id,
+      enterpriseId: enterpriseId ?? this.enterpriseId,
+      type: type ?? this.type,
+      amount: amount ?? this.amount,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
+      date: date ?? this.date,
+      status: status ?? this.status,
+      customerName: customerName ?? this.customerName,
+      commission: commission ?? this.commission,
+      fees: fees ?? this.fees,
+      reference: reference ?? this.reference,
+      notes: notes ?? this.notes,
+      createdBy: createdBy ?? this.createdBy,
+      deletedAt: deletedAt ?? this.deletedAt,
+      deletedBy: deletedBy ?? this.deletedBy,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  factory Transaction.fromMap(
+    Map<String, dynamic> map,
+    String defaultEnterpriseId,
+  ) {
+    return Transaction(
+      id: map['id'] as String? ?? map['localId'] as String,
+      enterpriseId: map['enterpriseId'] as String? ?? defaultEnterpriseId,
+      type: TransactionType.values.byName(map['type'] as String),
+      amount: (map['amount'] as num).toInt(),
+      phoneNumber: map['phoneNumber'] as String,
+      date: DateTime.parse(map['date'] as String),
+      status: TransactionStatus.values.byName(map['status'] as String),
+      customerName: map['customerName'] as String?,
+      commission: (map['commission'] as num?)?.toInt(),
+      fees: (map['fees'] as num?)?.toInt(),
+      reference: map['reference'] as String?,
+      notes: map['notes'] as String?,
+      createdBy: map['createdBy'] as String?,
+      deletedAt: map['deletedAt'] != null
+          ? DateTime.parse(map['deletedAt'] as String)
+          : null,
+      deletedBy: map['deletedBy'] as String?,
+      createdAt: map['createdAt'] != null
+          ? DateTime.parse(map['createdAt'] as String)
+          : null,
+      updatedAt: map['updatedAt'] != null
+          ? DateTime.parse(map['updatedAt'] as String)
+          : null,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'enterpriseId': enterpriseId,
+      'type': type.name,
+      'amount': amount,
+      'phoneNumber': phoneNumber,
+      'date': date.toIso8601String(),
+      'status': status.name,
+      'customerName': customerName,
+      'commission': commission,
+      'fees': fees,
+      'reference': reference,
+      'notes': notes,
+      'createdBy': createdBy,
+      'deletedAt': deletedAt?.toIso8601String(),
+      'deletedBy': deletedBy,
+      'createdAt': createdAt?.toIso8601String(),
+      'updatedAt': updatedAt?.toIso8601String(),
+    };
+  }
 
   bool get isCashIn => type == TransactionType.cashIn;
   bool get isCashOut => type == TransactionType.cashOut;

@@ -275,6 +275,7 @@ class DashboardCalculationService {
   DailyDashboardMetrics calculateDailyMetrics({
     required List<Sale> sales,
     required List<CreditPayment> creditPayments,
+    required List<ProductionSession> sessions,
     DateTime? referenceDate,
   }) {
     final now = referenceDate ?? DateTime.now();
@@ -304,11 +305,24 @@ class DashboardCalculationService {
 
     final totalCollections = collectionsFromSales + collectionsFromCredit;
 
+    // 4. Production Volume Today
+    final productionVolume = sessions.where((s) {
+      final sDate = s.date;
+      return sDate.isAfter(startOfDay.subtract(const Duration(milliseconds: 1))) && 
+             sDate.isBefore(startOfDay.add(const Duration(days: 1))) &&
+             s.status != ProductionSessionStatus.cancelled;
+    }).fold<int>(0, (sum, s) {
+      final dailySum = s.totalPacksProduitsJournalier;
+      final finalQty = s.quantiteProduite;
+      return sum + (dailySum > 0 ? dailySum : finalQty);
+    });
+
     return DailyDashboardMetrics(
       revenue: revenue,
       collections: totalCollections,
       salesCount: todaySales.length,
       sales: todaySales,
+      productionVolume: productionVolume,
     );
   }
 }
@@ -320,12 +334,14 @@ class DailyDashboardMetrics {
     required this.collections,
     required this.salesCount,
     required this.sales,
+    this.productionVolume = 0,
   });
 
   final int revenue;
   final int collections;
   final int salesCount;
   final List<Sale> sales;
+  final int productionVolume;
 }
 
 /// Monthly dashboard metrics.

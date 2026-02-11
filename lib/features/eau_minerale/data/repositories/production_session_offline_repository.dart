@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/logging/app_logger.dart';
@@ -49,6 +48,7 @@ class ProductionSessionOfflineRepository
 
     return ProductionSession(
       id: map['id'] as String? ?? map['localId'] as String,
+      enterpriseId: map['enterpriseId'] as String? ?? enterpriseId,
       date: DateTime.parse(map['date'] as String),
       period: map['period'] as int? ?? 0,
       heureDebut: DateTime.parse(map['heureDebut'] as String),
@@ -78,6 +78,8 @@ class ProductionSessionOfflineRepository
       updatedAt: map['updatedAt'] != null
           ? DateTime.parse(map['updatedAt'] as String)
           : null,
+      createdBy: map['createdBy'] as String?,
+      updatedBy: map['updatedBy'] as String?,
       status: _parseStatus(map['status'] as String? ?? 'draft'),
       cancelReason: map['cancelReason'] as String?,
       events: events,
@@ -117,6 +119,9 @@ class ProductionSessionOfflineRepository
       ),
       'createdAt': entity.createdAt?.toIso8601String(),
       'updatedAt': entity.updatedAt?.toIso8601String(),
+      'enterpriseId': entity.enterpriseId,
+      'createdBy': entity.createdBy,
+      'updatedBy': entity.updatedBy,
     };
   }
 
@@ -262,7 +267,7 @@ class ProductionSessionOfflineRepository
   Future<List<ProductionSession>> getAllForEnterprise(
     String enterpriseId,
   ) async {
-    developer.log(
+    AppLogger.debug(
       'Fetching all production sessions for enterprise: $enterpriseId (module: eau_minerale)',
       name: 'ProductionSessionOfflineRepository',
     );
@@ -273,7 +278,7 @@ class ProductionSessionOfflineRepository
       moduleType: 'eau_minerale',
     );
 
-    developer.log(
+    AppLogger.debug(
       'Found ${rows.length} records for $collectionName / $enterpriseId',
       name: 'ProductionSessionOfflineRepository',
     );
@@ -284,7 +289,7 @@ class ProductionSessionOfflineRepository
         .map((map) => fromMap(map!))
         .toList();
 
-    developer.log(
+    AppLogger.debug(
       'Successfully decoded ${sessions.length} sessions',
       name: 'ProductionSessionOfflineRepository',
     );
@@ -354,7 +359,7 @@ class ProductionSessionOfflineRepository
     DateTime? endDate,
   }) async {
     try {
-      developer.log(
+      AppLogger.debug(
         'Fetching production sessions for enterprise: $enterpriseId',
         name: 'ProductionSessionOfflineRepository',
       );
@@ -385,7 +390,7 @@ class ProductionSessionOfflineRepository
       return allSessions;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
+      AppLogger.error(
         'Error fetching production sessions',
         name: 'ProductionSessionOfflineRepository',
         error: error,
@@ -464,7 +469,7 @@ class ProductionSessionOfflineRepository
       
       for (final existing in existingSessions) {
         if (_sessionKey(existing) == key) {
-          developer.log(
+          AppLogger.debug(
             'Session déjà existante pour la clé $key. Retourne la session existante.',
             name: 'ProductionSessionOfflineRepository',
           );

@@ -1,4 +1,4 @@
-import 'dart:developer' as developer;
+import '../../../../core/logging/app_logger.dart';
 import '../adapters/pack_stock_adapter.dart';
 import '../entities/sale.dart';
 import '../pack_constants.dart';
@@ -28,13 +28,13 @@ class SaleService {
     try {
       if (productId == packProductId) {
         final stock = await packStockAdapter.getPackStock(productId: productId);
-        developer.log('Fetched pack stock: $stock', name: 'elyf.saleService');
+        AppLogger.debug('Fetched pack stock: $stock', name: 'SaleService');
         return stock;
       }
       final product = await productRepository?.getProduct(productId);
       if (product != null && product.isFinishedGood) {
         final stock = await packStockAdapter.getPackStock(productId: productId);
-        developer.log('Fetched finished good stock: $stock', name: 'elyf.saleService');
+        AppLogger.debug('Fetched finished good stock: $stock', name: 'SaleService');
         return stock;
       }
       if (product != null) {
@@ -42,7 +42,7 @@ class SaleService {
       }
       return 0;
     } catch (e, st) {
-      developer.log('Error in getCurrentStock: $e', name: 'elyf.saleService', error: e, stackTrace: st);
+      AppLogger.error('Error in getCurrentStock: $e', name: 'SaleService', error: e, stackTrace: st);
       return 0;
     }
   }

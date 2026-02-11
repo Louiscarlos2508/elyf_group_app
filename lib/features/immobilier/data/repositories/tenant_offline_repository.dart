@@ -1,13 +1,11 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import '../../../../core/errors/error_handler.dart';
-import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/offline_repository.dart';
 import '../../domain/entities/tenant.dart';
 import '../../domain/repositories/tenant_repository.dart';
 
-/// Offline-first repository for Tenant entities.
+/// Offline-first repository for Tenant entities (immobilier module).
 class TenantOfflineRepository extends OfflineRepository<Tenant>
     implements TenantRepository {
   TenantOfflineRepository({
@@ -22,61 +20,23 @@ class TenantOfflineRepository extends OfflineRepository<Tenant>
   @override
   String get collectionName => 'tenants';
 
-  @override
-  Tenant fromMap(Map<String, dynamic> map) {
-    return Tenant(
-      id: map['id'] as String? ?? map['localId'] as String,
-      fullName: map['fullName'] as String,
-      phone: map['phone'] as String,
-      address: map['address'] as String?,
-      idNumber: map['idNumber'] as String?,
-      emergencyContact: map['emergencyContact'] as String?,
-      idCardPath: map['idCardPath'] as String?,
-      notes: map['notes'] as String?,
-      createdAt: map['createdAt'] != null
-          ? DateTime.parse(map['createdAt'] as String)
-          : null,
-      updatedAt: map['updatedAt'] != null
-          ? DateTime.parse(map['updatedAt'] as String)
-          : null,
-      deletedAt: map['deletedAt'] != null
-          ? DateTime.parse(map['deletedAt'] as String)
-          : null,
-      deletedBy: map['deletedBy'] as String?,
-    );
-  }
+  String get moduleType => 'immobilier';
 
   @override
-  Map<String, dynamic> toMap(Tenant entity) {
-    return {
-      'id': entity.id,
-      'fullName': entity.fullName,
-      'phone': entity.phone,
-      'address': entity.address,
-      'idNumber': entity.idNumber,
-      'emergencyContact': entity.emergencyContact,
-      'idCardPath': entity.idCardPath,
-      'notes': entity.notes,
-      'createdAt': entity.createdAt?.toIso8601String(),
-      'updatedAt': entity.updatedAt?.toIso8601String(),
-      'deletedAt': entity.deletedAt?.toIso8601String(),
-      'deletedBy': entity.deletedBy,
-    };
-  }
+  Tenant fromMap(Map<String, dynamic> map) => Tenant.fromMap(map);
+
+  @override
+  Map<String, dynamic> toMap(Tenant entity) => entity.toMap();
 
   @override
   String getLocalId(Tenant entity) {
-    if (entity.id.startsWith('local_')) {
-      return entity.id;
-    }
+    if (entity.id.isNotEmpty) return entity.id;
     return LocalIdGenerator.generate();
   }
 
   @override
   String? getRemoteId(Tenant entity) {
-    if (!entity.id.startsWith('local_')) {
-      return entity.id;
-    }
+    if (!LocalIdGenerator.isLocalId(entity.id)) return entity.id;
     return null;
   }
 
@@ -92,7 +52,7 @@ class TenantOfflineRepository extends OfflineRepository<Tenant>
       localId: localId,
       remoteId: getRemoteId(entity),
       enterpriseId: enterpriseId,
-      moduleType: 'immobilier',
+      moduleType: moduleType,
       dataJson: jsonEncode(map),
       localUpdatedAt: DateTime.now(),
     );
@@ -106,7 +66,7 @@ class TenantOfflineRepository extends OfflineRepository<Tenant>
         collectionName: collectionName,
         remoteId: remoteId,
         enterpriseId: enterpriseId,
-        moduleType: 'immobilier',
+        moduleType: moduleType,
       );
       return;
     }
@@ -115,30 +75,27 @@ class TenantOfflineRepository extends OfflineRepository<Tenant>
       collectionName: collectionName,
       localId: localId,
       enterpriseId: enterpriseId,
-      moduleType: 'immobilier',
+      moduleType: moduleType,
     );
   }
 
   @override
   Future<Tenant?> getByLocalId(String localId) async {
-    final byRemote = await driftService.records.findByRemoteId(
-      collectionName: collectionName,
-      remoteId: localId,
-      enterpriseId: enterpriseId,
-      moduleType: 'immobilier',
-    );
-    if (byRemote != null) {
-      return fromMap(jsonDecode(byRemote.dataJson) as Map<String, dynamic>);
-    }
-
-    final byLocal = await driftService.records.findByLocalId(
+    final record = await driftService.records.findByLocalId(
       collectionName: collectionName,
       localId: localId,
       enterpriseId: enterpriseId,
-      moduleType: 'immobilier',
+      moduleType: moduleType,
+    ) ?? await driftService.records.findByRemoteId(
+      collectionName: collectionName,
+      remoteId: localId,
+      enterpriseId: enterpriseId,
+      moduleType: moduleType,
     );
-    if (byLocal == null) return null;
-    return fromMap(jsonDecode(byLocal.dataJson) as Map<String, dynamic>);
+
+    if (record == null) return null;
+    final map = safeDecodeJson(record.dataJson, record.localId);
+    return map != null ? fromMap(map) : null;
   }
 
   @override
@@ -151,13 +108,14 @@ class TenantOfflineRepository extends OfflineRepository<Tenant>
     final rows = await driftService.records.listForEnterprise(
       collectionName: collectionName,
       enterpriseId: enterpriseId,
-      moduleType: 'immobilier',
+      moduleType: moduleType,
     );
     final tenants = rows
-        .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+        .map((r) => safeDecodeJson(r.dataJson, r.localId))
+        .where((m) => m != null)
+        .map((m) => fromMap(m!))
         .toList();
     
-    // Dédupliquer par remoteId pour éviter les doublons
     return deduplicateByRemoteId(tenants);
   }
 
@@ -169,14 +127,14 @@ class TenantOfflineRepository extends OfflineRepository<Tenant>
         .watchForEnterprise(
           collectionName: collectionName,
           enterpriseId: enterpriseId,
-          moduleType: 'immobilier',
+          moduleType: moduleType,
         )
         .map((rows) {
           final entities = rows
-              .map(
-                (r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>),
-              )
-              .where((e) => e.deletedAt == null)
+              .map((r) => safeDecodeJson(r.dataJson, r.localId))
+              .where((m) => m != null)
+              .map((m) => fromMap(m!))
+              .where((e) => !e.isDeleted)
               .toList();
           return deduplicateByRemoteId(entities);
         });
@@ -188,14 +146,14 @@ class TenantOfflineRepository extends OfflineRepository<Tenant>
         .watchForEnterprise(
           collectionName: collectionName,
           enterpriseId: enterpriseId,
-          moduleType: 'immobilier',
+          moduleType: moduleType,
         )
         .map((rows) {
           final entities = rows
-              .map(
-                (r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>),
-              )
-              .where((e) => e.deletedAt != null)
+              .map((r) => safeDecodeJson(r.dataJson, r.localId))
+              .where((m) => m != null)
+              .map((m) => fromMap(m!))
+              .where((e) => e.isDeleted)
               .toList();
           return deduplicateByRemoteId(entities);
         });
@@ -206,65 +164,34 @@ class TenantOfflineRepository extends OfflineRepository<Tenant>
     try {
       return await getByLocalId(id);
     } catch (error, stackTrace) {
-      final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error getting tenant: $id',
-        name: 'TenantOfflineRepository',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      throw appException;
+      throw ErrorHandler.instance.handleError(error, stackTrace);
     }
   }
 
   @override
   Future<List<Tenant>> searchTenants(String query) async {
-    try {
-      final allTenants = await getAllTenants();
-      final lowerQuery = query.toLowerCase();
-      return allTenants.where((tenant) {
-        return tenant.fullName.toLowerCase().contains(lowerQuery) ||
-            tenant.phone.contains(query);
-      }).toList();
-    } catch (error, stackTrace) {
-      final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      AppLogger.error(
-        'Error searching tenants: ${appException.message}',
-        name: 'TenantOfflineRepository',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      throw appException;
-    }
+    final all = await getAllTenants();
+    final lowerQuery = query.toLowerCase();
+    return all.where((t) => 
+      t.fullName.toLowerCase().contains(lowerQuery) || 
+      t.phone.contains(query)
+    ).toList();
   }
 
   @override
   Future<Tenant> createTenant(Tenant tenant) async {
     try {
-      final localId = getLocalId(tenant);
-      final tenantWithLocalId = Tenant(
+      final localId = tenant.id.isEmpty ? LocalIdGenerator.generate() : tenant.id;
+      final newTenant = tenant.copyWith(
         id: localId,
-        fullName: tenant.fullName,
-        phone: tenant.phone,
-        address: tenant.address,
-        idNumber: tenant.idNumber,
-        emergencyContact: tenant.emergencyContact,
-        idCardPath: tenant.idCardPath,
-        notes: tenant.notes,
-        createdAt: tenant.createdAt,
+        enterpriseId: enterpriseId,
+        createdAt: tenant.createdAt ?? DateTime.now(),
         updatedAt: DateTime.now(),
       );
-      await save(tenantWithLocalId);
-      return tenantWithLocalId;
+      await save(newTenant);
+      return newTenant;
     } catch (error, stackTrace) {
-      final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      AppLogger.error(
-        'Error creating tenant: ${appException.message}',
-        name: 'TenantOfflineRepository',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      throw appException;
+      throw ErrorHandler.instance.handleError(error, stackTrace);
     }
   }
 
@@ -275,14 +202,7 @@ class TenantOfflineRepository extends OfflineRepository<Tenant>
       await save(updatedTenant);
       return updatedTenant;
     } catch (error, stackTrace) {
-      final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error updating tenant: ${tenant.id}',
-        name: 'TenantOfflineRepository',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      throw appException;
+      throw ErrorHandler.instance.handleError(error, stackTrace);
     }
   }
 
@@ -291,21 +211,13 @@ class TenantOfflineRepository extends OfflineRepository<Tenant>
     try {
       final tenant = await getTenantById(id);
       if (tenant != null) {
-        final updatedTenant = tenant.copyWith(
+        await save(tenant.copyWith(
           deletedAt: DateTime.now(),
           deletedBy: 'system',
-        );
-        await save(updatedTenant);
+        ));
       }
     } catch (error, stackTrace) {
-      final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      AppLogger.error(
-        'Error deleting tenant: $id - ${appException.message}',
-        name: 'TenantOfflineRepository',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      throw appException;
+      throw ErrorHandler.instance.handleError(error, stackTrace);
     }
   }
 
@@ -314,21 +226,13 @@ class TenantOfflineRepository extends OfflineRepository<Tenant>
     try {
       final tenant = await getTenantById(id);
       if (tenant != null) {
-        final updatedTenant = tenant.copyWith(
+        await save(tenant.copyWith(
           deletedAt: null,
           deletedBy: null,
-        );
-        await save(updatedTenant);
+        ));
       }
     } catch (error, stackTrace) {
-      final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      AppLogger.error(
-        'Error restoring tenant: $id - ${appException.message}',
-        name: 'TenantOfflineRepository',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      throw appException;
+      throw ErrorHandler.instance.handleError(error, stackTrace);
     }
   }
 }

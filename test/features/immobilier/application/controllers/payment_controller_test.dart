@@ -7,19 +7,53 @@ import 'package:elyf_groupe_app/features/immobilier/domain/repositories/payment_
 import 'package:elyf_groupe_app/features/immobilier/domain/services/immobilier_validation_service.dart';
 import 'package:elyf_groupe_app/features/immobilier/domain/entities/payment.dart';
 import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
+import 'package:elyf_groupe_app/features/audit_trail/domain/services/audit_trail_service.dart';
 
 import 'payment_controller_test.mocks.dart';
+
+class MockAuditTrailService extends Mock implements AuditTrailService {
+  @override
+  Future<String> logAction({
+    required String? enterpriseId,
+    required String? userId,
+    required String? module,
+    required String? action,
+    required String? entityId,
+    required String? entityType,
+    Map<String, dynamic>? metadata,
+  }) =>
+      super.noSuchMethod(
+        Invocation.method(#logAction, [], {
+          #enterpriseId: enterpriseId,
+          #userId: userId,
+          #module: module,
+          #action: action,
+          #entityId: entityId,
+          #entityType: entityType,
+          #metadata: metadata,
+        }),
+        returnValue: Future.value('test-log-id'),
+      );
+}
 
 @GenerateMocks([PaymentRepository, ImmobilierValidationService])
 void main() {
   late PaymentController controller;
   late MockPaymentRepository mockRepository;
   late MockImmobilierValidationService mockValidationService;
+  late MockAuditTrailService mockAuditService;
 
   setUp(() {
     mockRepository = MockPaymentRepository();
     mockValidationService = MockImmobilierValidationService();
-    controller = PaymentController(mockRepository, mockValidationService);
+    mockAuditService = MockAuditTrailService();
+    controller = PaymentController(
+      mockRepository,
+      mockValidationService,
+      mockAuditService,
+      'test-enterprise',
+      'test-user',
+    );
   });
 
   group('PaymentController', () {
@@ -43,6 +77,7 @@ void main() {
         // Arrange
         final payment = Payment(
           id: 'payment-1',
+          enterpriseId: 'test-enterprise',
           contractId: 'contract-1',
           amount: 50000,
           paymentDate: DateTime(2026, 1, 1),
@@ -66,6 +101,7 @@ void main() {
         // Arrange
         final payment = Payment(
           id: 'payment-1',
+          enterpriseId: 'test-enterprise',
           contractId: 'contract-1',
           amount: 50000,
           paymentDate: DateTime(2026, 1, 1),

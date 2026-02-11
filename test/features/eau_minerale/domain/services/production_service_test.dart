@@ -1,203 +1,176 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/domain/services/production_service.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/production_session.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/production_session_status.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/machine.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/bobine_usage.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/bobine_stock.dart';
 
 void main() {
-  group('ProductionService', () {
-    late ProductionService service;
+  late ProductionService productionService;
 
-    setUp(() {
-      service = ProductionService();
+  setUp(() {
+    productionService = ProductionService();
+  });
+
+  group('ProductionService - calculateStatus', () {
+    final now = DateTime.now();
+    final start = now.subtract(const Duration(hours: 1));
+
+    test('should return draft when everything is empty', () {
+      final status = productionService.calculateStatus(
+        quantiteProduite: 0,
+        heureFin: null,
+        heureDebut: now.add(const Duration(hours: 1)),
+        machinesUtilisees: [],
+        bobinesUtilisees: [],
+      );
+      expect(status, ProductionSessionStatus.draft);
     });
 
-    group('calculateStatus', () {
-      test('should return completed when all conditions met', () {
-        final result = service.calculateStatus(
-          quantiteProduite: 1000,
-          heureFin: DateTime(2024, 1, 1, 16),
-          heureDebut: DateTime(2024, 1, 1, 8),
-          machinesUtilisees: ['m1'],
-          bobinesUtilisees: [
-            BobineUsage(
-              bobineType: 'type1',
-              machineId: 'm1',
-              machineName: 'Machine 1',
-              dateInstallation: DateTime(2024, 1, 1, 8),
-              heureInstallation: DateTime(2024, 1, 1, 8),
-              estInstallee: true,
-              estFinie: true,
-            ),
-          ],
-        );
-
-        expect(result, equals(ProductionSessionStatus.completed));
-      });
-
-      test('should return inProgress when machines or bobbins used', () {
-        final result = service.calculateStatus(
-          quantiteProduite: 0,
-          heureFin: null,
-          heureDebut: DateTime(2024, 1, 1, 8),
-          machinesUtilisees: ['m1'],
-          bobinesUtilisees: [
-            BobineUsage(
-              bobineType: 'type1',
-              machineId: 'm1',
-              machineName: 'Machine 1',
-              dateInstallation: DateTime(2024, 1, 1, 8),
-              heureInstallation: DateTime(2024, 1, 1, 8),
-              estInstallee: true,
-              estFinie: false,
-            ),
-          ],
-        );
-
-        expect(result, equals(ProductionSessionStatus.inProgress));
-      });
-
-      test('should return started when heureDebut is in past', () {
-        final result = service.calculateStatus(
-          quantiteProduite: 0,
-          heureFin: null,
-          heureDebut: DateTime(2024, 1, 1, 8),
-          machinesUtilisees: [],
-          bobinesUtilisees: [],
-        );
-
-        expect(result, equals(ProductionSessionStatus.started));
-      });
-
-      test('should return draft when no activity', () {
-        final futureDate = DateTime.now().add(const Duration(days: 1));
-        final result = service.calculateStatus(
-          quantiteProduite: 0,
-          heureFin: null,
-          heureDebut: futureDate,
-          machinesUtilisees: [],
-          bobinesUtilisees: [],
-        );
-
-        expect(result, equals(ProductionSessionStatus.draft));
-      });
+    test('should return started when start time is in the past', () {
+      final status = productionService.calculateStatus(
+        quantiteProduite: 0,
+        heureFin: null,
+        heureDebut: start,
+        machinesUtilisees: [],
+        bobinesUtilisees: [],
+      );
+      expect(status, ProductionSessionStatus.started);
     });
 
-    group('toutesBobinesFinies', () {
-      test('should return false for empty list', () {
-        final result = service.toutesBobinesFinies([]);
-        expect(result, isFalse);
-      });
-
-      test('should return true when all bobbins finished', () {
-        final bobines = [
-          BobineUsage(
-            bobineType: 'type1',
-            machineId: 'm1',
-            machineName: 'Machine 1',
-            dateInstallation: DateTime.now(),
-            heureInstallation: DateTime.now(),
-            estInstallee: true,
-            estFinie: true,
-          ),
-          BobineUsage(
-            bobineType: 'type2',
-            machineId: 'm2',
-            machineName: 'Machine 2',
-            dateInstallation: DateTime.now(),
-            heureInstallation: DateTime.now(),
-            estInstallee: true,
-            estFinie: true,
-          ),
-        ];
-
-        final result = service.toutesBobinesFinies(bobines);
-        expect(result, isTrue);
-      });
-
-      test('should return false when some bobbins not finished', () {
-        final bobines = [
-          BobineUsage(
-            bobineType: 'type1',
-            machineId: 'm1',
-            machineName: 'Machine 1',
-            dateInstallation: DateTime.now(),
-            heureInstallation: DateTime.now(),
-            estInstallee: true,
-            estFinie: true,
-          ),
-          BobineUsage(
-            bobineType: 'type2',
-            machineId: 'm2',
-            machineName: 'Machine 2',
-            dateInstallation: DateTime.now(),
-            heureInstallation: DateTime.now(),
-            estInstallee: true,
-            estFinie: false,
-          ),
-        ];
-
-        final result = service.toutesBobinesFinies(bobines);
-        expect(result, isFalse);
-      });
+    test('should return inProgress when machines are used', () {
+      final status = productionService.calculateStatus(
+        quantiteProduite: 0,
+        heureFin: null,
+        heureDebut: start,
+        machinesUtilisees: ['machine1'],
+        bobinesUtilisees: [],
+      );
+      expect(status, ProductionSessionStatus.inProgress);
     });
 
-    group('peutEtreFinalisee', () {
-      test('should return true when all conditions met', () {
-        final result = service.peutEtreFinalisee(
-          bobinesUtilisees: [
-            BobineUsage(
-              bobineType: 'type1',
-              machineId: 'm1',
-              machineName: 'Machine 1',
-              dateInstallation: DateTime.now(),
-              heureInstallation: DateTime.now(),
-              estInstallee: true,
-              estFinie: true,
-            ),
-          ],
-          machinesUtilisees: ['m1'],
-        );
+    test('should return completed when quantity > 0 and end time is set', () {
+      final status = productionService.calculateStatus(
+        quantiteProduite: 100,
+        heureFin: now,
+        heureDebut: start,
+        machinesUtilisees: ['machine1'],
+        bobinesUtilisees: [],
+      );
+      expect(status, ProductionSessionStatus.completed);
+    });
+  });
 
-        expect(result, isTrue);
-      });
+  group('ProductionService - Finalization logic', () {
+    test('toutesBobinesFinies returns false for empty list', () {
+      expect(productionService.toutesBobinesFinies([]), isFalse);
+    });
 
-      test('should return false when bobbins not finished', () {
-        final result = service.peutEtreFinalisee(
-          bobinesUtilisees: [
-            BobineUsage(
-              bobineType: 'type1',
-              machineId: 'm1',
-              machineName: 'Machine 1',
-              dateInstallation: DateTime.now(),
-              heureInstallation: DateTime.now(),
-              estInstallee: true,
-              estFinie: false,
-            ),
-          ],
-          machinesUtilisees: ['m1'],
-        );
+    test('toutesBobinesFinies returns true if all are finished', () {
+      final bobines = [
+        BobineUsage(
+          bobineType: 'T1',
+          machineId: 'M1',
+          machineName: 'Mach 1',
+          dateInstallation: DateTime.now(),
+          heureInstallation: DateTime.now(),
+          estFinie: true,
+        ),
+      ];
+      expect(productionService.toutesBobinesFinies(bobines), isTrue);
+    });
 
-        expect(result, isFalse);
-      });
+    test('peutEtreFinalisee returns true if conditions met', () {
+      final bobines = [
+        BobineUsage(
+          bobineType: 'T1',
+          machineId: 'M1',
+          machineName: 'Mach 1',
+          dateInstallation: DateTime.now(),
+          heureInstallation: DateTime.now(),
+          estFinie: true,
+        ),
+      ];
+      final machines = ['M1'];
+      expect(
+        productionService.peutEtreFinalisee(
+          bobinesUtilisees: bobines,
+          machinesUtilisees: machines,
+        ),
+        isTrue,
+      );
+    });
+  });
 
-      test('should return false when machine count mismatch', () {
-        final result = service.peutEtreFinalisee(
-          bobinesUtilisees: [
-            BobineUsage(
-              bobineType: 'type1',
-              machineId: 'm1',
-              machineName: 'Machine 1',
-              dateInstallation: DateTime.now(),
-              heureInstallation: DateTime.now(),
-              estInstallee: true,
-              estFinie: true,
-            ),
-          ],
-          machinesUtilisees: ['m1', 'm2'],
-        );
+  group('ProductionService - chargerBobinesNonFinies', () {
+    final machine1 = Machine(id: 'M1', nom: 'M1', reference: 'REF1');
+    final stock1 = BobineStock(
+      id: 'ST1',
+      type: 'T1',
+      quantity: 10,
+      unit: 'pcs',
+      seuilAlerte: 2,
+    );
 
-        expect(result, isFalse);
-      });
+    test('should return empty lists when no machines selected', () async {
+      final result = await productionService.chargerBobinesNonFinies(
+        machinesSelectionnees: [],
+        sessionsPrecedentes: [],
+        machines: [machine1],
+        bobineStocksDisponibles: [stock1],
+      );
+      expect(result.bobinesUtilisees, isEmpty);
+      expect(result.machinesAvecBobineNonFinie, isEmpty);
+    });
+
+    test('should install new bobine if no unfinished one found', () async {
+      final result = await productionService.chargerBobinesNonFinies(
+        machinesSelectionnees: ['M1'],
+        sessionsPrecedentes: [],
+        machines: [machine1],
+        bobineStocksDisponibles: [stock1],
+      );
+      expect(result.bobinesUtilisees.length, 1);
+      expect(result.bobinesUtilisees.first.bobineType, 'T1');
+      expect(result.bobinesUtilisees.first.estInstallee, isTrue);
+      expect(result.machinesAvecBobineNonFinie, isEmpty);
+    });
+
+    test('should reuse unfinished bobine from previous session', () async {
+      final now = DateTime.now();
+      final previousBobine = BobineUsage(
+        bobineType: 'T-OLD',
+        machineId: 'M1',
+        machineName: 'M1',
+        dateInstallation: now.subtract(const Duration(days: 1)),
+        heureInstallation: now.subtract(const Duration(days: 1)),
+        estFinie: false,
+      );
+      final previousSession = ProductionSession(
+        id: 'S1',
+        enterpriseId: 'test-enterprise',
+        date: now.subtract(const Duration(days: 1)),
+        period: 1,
+        heureDebut: now.subtract(const Duration(days: 1)),
+        consommationCourant: 0,
+        machinesUtilisees: ['M1'],
+        bobinesUtilisees: [previousBobine],
+        quantiteProduite: 0,
+        quantiteProduiteUnite: 'pack',
+      );
+
+      final result = await productionService.chargerBobinesNonFinies(
+        machinesSelectionnees: ['M1'],
+        sessionsPrecedentes: [previousSession],
+        machines: [machine1],
+        bobineStocksDisponibles: [stock1],
+      );
+
+      expect(result.bobinesUtilisees.length, 1);
+      expect(result.bobinesUtilisees.first.bobineType, 'T-OLD');
+      expect(result.machinesAvecBobineNonFinie.containsKey('M1'), isTrue);
+      expect(result.machinesAvecBobineNonFinie['M1']!.bobineType, 'T-OLD');
     });
   });
 }

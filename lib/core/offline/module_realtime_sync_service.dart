@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -12,6 +11,7 @@ import 'drift_service.dart';
 import 'module_data_sync_service.dart';
 import 'security/data_sanitizer.dart';
 import 'sync_manager.dart';
+import 'sync/sync_conflict_resolver.dart';
 
 /// Service pour la synchronisation en temps réel des données d'un module
 /// depuis Firestore vers Drift.
@@ -27,14 +27,14 @@ class ModuleRealtimeSyncService {
     required this.driftService,
     required this.collectionPaths,
     SyncManager? syncManager,
-    ConflictResolver? conflictResolver,
+    SyncConflictResolver? conflictResolver,
   })  : _syncManager = syncManager,
-        _conflictResolver = conflictResolver ?? const ConflictResolver();
+        _conflictResolver = conflictResolver ?? SyncConflictResolver();
 
   final FirebaseFirestore firestore;
   final DriftService driftService;
   final SyncManager? _syncManager;
-  final ConflictResolver _conflictResolver;
+  final SyncConflictResolver _conflictResolver;
   final Map<String, String Function(String p1)> collectionPaths;
 
   // Map pour stocker les subscriptions par module/entreprise
@@ -147,7 +147,7 @@ class ModuleRealtimeSyncService {
     if (_isListening &&
         _currentEnterpriseId == enterpriseId &&
         _currentModuleId == moduleId) {
-      developer.log(
+      AppLogger.debug(
         'ModuleRealtimeSyncService already listening for $moduleId in enterprise $enterpriseId',
         name: 'module.realtime.sync',
       );
@@ -159,7 +159,7 @@ class ModuleRealtimeSyncService {
       // Seulement si on n'est pas déjà en train d'écouter (évite double pull)
       // Note: Le pull initial peut être fait plusieurs fois sans problème car
       // les données sont upsertées (pas de duplication)
-      developer.log(
+      AppLogger.info(
         'Starting initial pull for module $moduleId in enterprise $enterpriseId...',
         name: 'module.realtime.sync',
       );
@@ -179,7 +179,7 @@ class ModuleRealtimeSyncService {
           ModuleDataSyncService.moduleCollections[moduleId] ?? [];
 
       if (collectionsToSync.isEmpty) {
-        developer.log(
+        AppLogger.info(
           'No collections configured for module $moduleId, skipping realtime sync',
           name: 'module.realtime.sync',
         );
@@ -192,7 +192,7 @@ class ModuleRealtimeSyncService {
       for (final collectionName in collectionsToSync) {
         // Vérifier si un chemin est configuré pour cette collection
         if (!collectionPaths.containsKey(collectionName)) {
-            developer.log(
+            AppLogger.info(
               'No path configured for collection $collectionName, skipping realtime listener',
               name: 'module.realtime.sync',
             );
@@ -222,7 +222,7 @@ class ModuleRealtimeSyncService {
       _currentEnterpriseId = enterpriseId;
       _currentModuleId = moduleId;
 
-      developer.log(
+      AppLogger.info(
         'ModuleRealtimeSyncService started for module $moduleId in enterprise $enterpriseId',
         name: 'module.realtime.sync',
       );
@@ -288,7 +288,7 @@ class ModuleRealtimeSyncService {
                 final parentEnterpriseId = jsonCompatibleData['parentEnterpriseId'] as String? ??
                                            jsonCompatibleData['enterpriseId'] as String? ??
                                            'unknown';
-                developer.log(
+                AppLogger.debug(
                   '🔵 SYNC (realtime): Point de vente - parentEnterpriseId=$parentEnterpriseId, stockage avec enterpriseId=$storageEnterpriseId (entreprise gaz) dans Drift',
                   name: 'module.realtime.sync',
                 );
@@ -316,7 +316,7 @@ class ModuleRealtimeSyncService {
                   }
 
                   if (isDeletedLocally) {
-                    developer.log(
+                    AppLogger.debug(
                       'Skipping added document $documentId because it is marked for deletion locally',
                       name: 'module.realtime.sync',
                     );
@@ -332,7 +332,7 @@ class ModuleRealtimeSyncService {
                     dataJson: jsonEncode(sanitizedData),
                     localUpdatedAt: DateTime.now(),
                   );
-                  developer.log(
+                  AppLogger.debug(
                     '${collectionName.capitalize()} added in realtime: $documentId',
                     name: 'module.realtime.sync',
                   );
@@ -364,7 +364,7 @@ class ModuleRealtimeSyncService {
                   // Si des modifications sont en attente, ne pas supprimer
                   // (les modifications locales seront synchronisées)
                   if (hasPendingChanges) {
-                    developer.log(
+                    AppLogger.debug(
                       '${collectionName.capitalize()} removed in Firestore but local changes pending: $documentId (skipping delete)',
                       name: 'module.realtime.sync',
                     );
@@ -387,7 +387,7 @@ class ModuleRealtimeSyncService {
                     enterpriseId: deleteEnterpriseId,
                     moduleType: moduleId,
                   );
-                  developer.log(
+                  AppLogger.debug(
                     '${collectionName.capitalize()} removed in realtime: $documentId',
                     name: 'module.realtime.sync',
                   );
@@ -439,7 +439,7 @@ class ModuleRealtimeSyncService {
     _isListening = false;
     _currentEnterpriseId = null;
     _currentModuleId = null;
-    developer.log(
+    AppLogger.info(
       'ModuleRealtimeSyncService stopped',
       name: 'module.realtime.sync',
     );
@@ -473,7 +473,7 @@ class ModuleRealtimeSyncService {
                                  firestoreData['enterpriseId'] as String? ??
                                  enterpriseId;
       storageEnterpriseId = parentEnterpriseId;
-      developer.log(
+      AppLogger.debug(
         'Point de vente (modified): utilisation de parentEnterpriseId=$parentEnterpriseId pour le stockage (au lieu de enterpriseId=$enterpriseId)',
         name: 'module.realtime.sync',
       );
@@ -546,7 +546,7 @@ class ModuleRealtimeSyncService {
           dataJson: jsonEncode(firestoreData),
           localUpdatedAt: DateTime.now(),
         );
-        developer.log(
+        AppLogger.debug(
           '${collectionName.capitalize()} modified in realtime (no local): $documentId',
           name: 'module.realtime.sync',
         );
@@ -556,7 +556,7 @@ class ModuleRealtimeSyncService {
       // 4. Si pas de version locale mais modifications en attente, ne pas écraser
       // (les modifications locales seront synchronisées et écraseront Firestore)
       if (localRecord == null && hasPendingChanges) {
-        developer.log(
+        AppLogger.debug(
           '${collectionName.capitalize()} modified in Firestore but local changes pending: $documentId (skipping)',
           name: 'module.realtime.sync',
         );
@@ -599,7 +599,7 @@ class ModuleRealtimeSyncService {
 
         // Si Firestore n'a pas de timestamp, utiliser la version locale
         if (firestoreUpdatedAt == null) {
-          developer.log(
+          AppLogger.debug(
             '${collectionName.capitalize()} modified in Firestore but no updatedAt: $documentId (keeping local)',
             name: 'module.realtime.sync',
           );
@@ -622,7 +622,7 @@ class ModuleRealtimeSyncService {
           dataJson: jsonEncode(firestoreData),
           localUpdatedAt: DateTime.now(),
         );
-        developer.log(
+        AppLogger.debug(
           '${collectionName.capitalize()} modified in realtime (local has no updatedAt): $documentId',
           name: 'module.realtime.sync',
         );
@@ -635,7 +635,7 @@ class ModuleRealtimeSyncService {
         // Si la version locale est plus récente et qu'il y a des modifications en attente,
         // ne pas écraser (les modifications locales seront synchronisées vers Firestore)
         if (localIsNewer && hasPendingChanges) {
-          developer.log(
+          AppLogger.debug(
             '${collectionName.capitalize()} conflict: local is newer with pending changes: $documentId (skipping Firestore update)',
             name: 'module.realtime.sync',
           );
@@ -663,7 +663,7 @@ class ModuleRealtimeSyncService {
           dataJson: jsonEncode(softDeletedData),
           localUpdatedAt: DateTime.now(),
         );
-          developer.log(
+          AppLogger.debug(
             '${collectionName.capitalize()} soft deleted in realtime: $documentId',
             name: 'module.realtime.sync',
           );
@@ -686,19 +686,21 @@ class ModuleRealtimeSyncService {
           dataJson: jsonEncode(restoredData),
           localUpdatedAt: DateTime.now(),
         );
-          developer.log(
+          AppLogger.debug(
             '${collectionName.capitalize()} restored in realtime: $documentId',
             name: 'module.realtime.sync',
           );
           return;
         }
 
-        // Résoudre le conflit en utilisant ConflictResolver
+        // Résoudre le conflit en utilisant SyncConflictResolver
         // (stratégie par défaut : lastWriteWins basé sur updatedAt)
-        final resolvedData = _conflictResolver.resolve(
+        final resolvedDataResult = _conflictResolver.resolve(
           localData: localData,
           serverData: firestoreData,
+          collectionName: collectionName,
         );
+        final resolvedData = resolvedDataResult.resolvedData;
 
         // Déterminer quelle version a été choisie en comparant les timestamps
         // Le ConflictResolver utilise lastWriteWins par défaut
@@ -714,7 +716,7 @@ class ModuleRealtimeSyncService {
           localUpdatedAt: choseLocal ? localUpdatedAt : DateTime.now(),
         );
 
-        developer.log(
+        AppLogger.debug(
           '${collectionName.capitalize()} modified in realtime (conflict resolved): $documentId',
           name: 'module.realtime.sync',
         );

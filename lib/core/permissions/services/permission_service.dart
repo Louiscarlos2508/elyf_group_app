@@ -1,5 +1,6 @@
 import '../entities/module_user.dart';
 import '../entities/user_role.dart';
+import '../../auth/entities/enterprise_module_user.dart';
 
 /// Service for checking user permissions across all modules.
 abstract class PermissionService {
@@ -7,30 +8,71 @@ abstract class PermissionService {
   Future<bool> hasPermission(
     String userId,
     String moduleId,
-    String permissionId,
-  );
+    String permissionId, {
+    String? enterpriseId, // Added for multi-tenancy
+  });
 
   /// Get user's role in a module
-  Future<UserRole?> getUserRole(String userId, String moduleId);
+  Future<UserRole?> getUserRole(
+    String userId,
+    String moduleId, {
+    String? enterpriseId, // Added for multi-tenancy
+  });
 
   /// Get user's module data
-  Future<ModuleUser?> getModuleUser(String userId, String moduleId);
+  Future<ModuleUser?> getModuleUser(
+    String userId,
+    String moduleId, {
+    String? enterpriseId, // Added for multi-tenancy
+  });
 
   /// Get all permissions for a user in a module
-  Future<Set<String>> getUserPermissions(String userId, String moduleId);
+  Future<Set<String>> getUserPermissions(
+    String userId,
+    String moduleId, {
+    String? enterpriseId, // Added for multi-tenancy
+  });
 
   /// Check if user has any of the specified permissions
   Future<bool> hasAnyPermission(
     String userId,
     String moduleId,
-    Set<String> permissionIds,
-  );
+    Set<String> permissionIds, {
+    String? enterpriseId, // Added for multi-tenancy
+  });
 
   /// Check if user has all specified permissions
   Future<bool> hasAllPermissions(
     String userId,
     String moduleId,
-    Set<String> permissionIds,
+    Set<String> permissionIds, {
+    String? enterpriseId, // Added for multi-tenancy
+  });
+
+  /// Get user's access data for a specific enterprise and module.
+  Future<EnterpriseModuleUser?> getEnterpriseModuleUser(
+    String userId,
+    String enterpriseId,
+    String moduleId,
+  );
+
+  /// Get all active accesses for a user across all enterprises.
+  Future<List<EnterpriseModuleUser>> getUserAccesses(String userId);
+
+  /// Get IDs of all enterprises where the user has at least one active access.
+  Future<List<String>> getUserEnterprises(String userId);
+
+  /// Get IDs of all modules accessible by the user within a specific enterprise.
+  Future<List<String>> getUserModules(String userId, String enterpriseId);
+
+  /// Check if user has active access to a specific enterprise.
+  Future<bool> hasEnterpriseAccess(String userId, String enterpriseId);
+
+  /// Check if user has active access to a module within an enterprise.
+  Future<bool> hasModuleAccess(
+    String userId,
+    String enterpriseId,
+    String moduleId,
   );
 }
 
@@ -122,14 +164,15 @@ class MockPermissionService implements PermissionService {
   Future<bool> hasPermission(
     String userId,
     String moduleId,
-    String permissionId,
-  ) async {
-    final moduleUser = await getModuleUser(userId, moduleId);
+    String permissionId, {
+    String? enterpriseId,
+  }) async {
+    final moduleUser = await getModuleUser(userId, moduleId, enterpriseId: enterpriseId);
     if (moduleUser == null || !moduleUser.isActive) {
       return false;
     }
 
-    final role = await getUserRole(userId, moduleId);
+    final role = await getUserRole(userId, moduleId, enterpriseId: enterpriseId);
     if (role == null) {
       return false;
     }
@@ -149,8 +192,12 @@ class MockPermissionService implements PermissionService {
   }
 
   @override
-  Future<UserRole?> getUserRole(String userId, String moduleId) async {
-    final moduleUser = await getModuleUser(userId, moduleId);
+  Future<UserRole?> getUserRole(
+    String userId,
+    String moduleId, {
+    String? enterpriseId,
+  }) async {
+    final moduleUser = await getModuleUser(userId, moduleId, enterpriseId: enterpriseId);
     if (moduleUser == null) {
       return null;
     }
@@ -159,20 +206,28 @@ class MockPermissionService implements PermissionService {
   }
 
   @override
-  Future<ModuleUser?> getModuleUser(String userId, String moduleId) async {
+  Future<ModuleUser?> getModuleUser(
+    String userId,
+    String moduleId, {
+    String? enterpriseId,
+  }) async {
     return _moduleUsers[moduleId]?[userId];
   }
 
   @override
-  Future<Set<String>> getUserPermissions(String userId, String moduleId) async {
-    final role = await getUserRole(userId, moduleId);
+  Future<Set<String>> getUserPermissions(
+    String userId,
+    String moduleId, {
+    String? enterpriseId,
+  }) async {
+    final role = await getUserRole(userId, moduleId, enterpriseId: enterpriseId);
     if (role == null) {
       return {};
     }
 
     final permissions = <String>{...role.permissions};
 
-    final moduleUser = await getModuleUser(userId, moduleId);
+    final moduleUser = await getModuleUser(userId, moduleId, enterpriseId: enterpriseId);
     if (moduleUser != null) {
       permissions.addAll(moduleUser.customPermissions);
     }
@@ -184,10 +239,11 @@ class MockPermissionService implements PermissionService {
   Future<bool> hasAnyPermission(
     String userId,
     String moduleId,
-    Set<String> permissionIds,
-  ) async {
+    Set<String> permissionIds, {
+    String? enterpriseId,
+  }) async {
     for (final permissionId in permissionIds) {
-      if (await hasPermission(userId, moduleId, permissionId)) {
+      if (await hasPermission(userId, moduleId, permissionId, enterpriseId: enterpriseId)) {
         return true;
       }
     }
@@ -198,13 +254,87 @@ class MockPermissionService implements PermissionService {
   Future<bool> hasAllPermissions(
     String userId,
     String moduleId,
-    Set<String> permissionIds,
-  ) async {
+    Set<String> permissionIds, {
+    String? enterpriseId,
+  }) async {
     for (final permissionId in permissionIds) {
-      if (!await hasPermission(userId, moduleId, permissionId)) {
+      if (!await hasPermission(userId, moduleId, permissionId, enterpriseId: enterpriseId)) {
         return false;
       }
     }
     return true;
+  }
+
+  @override
+  Future<EnterpriseModuleUser?> getEnterpriseModuleUser(
+    String userId,
+    String enterpriseId,
+    String moduleId,
+  ) async {
+    final moduleUser = await getModuleUser(userId, moduleId, enterpriseId: enterpriseId);
+    if (moduleUser == null) return null;
+
+    return EnterpriseModuleUser(
+      userId: moduleUser.userId,
+      enterpriseId: enterpriseId,
+      moduleId: moduleUser.moduleId,
+      roleIds: [moduleUser.roleId],
+      customPermissions: moduleUser.customPermissions,
+      isActive: moduleUser.isActive,
+      createdAt: moduleUser.createdAt,
+      updatedAt: moduleUser.updatedAt,
+    );
+  }
+
+  @override
+  Future<List<EnterpriseModuleUser>> getUserAccesses(String userId) async {
+    final accesses = <EnterpriseModuleUser>[];
+    for (final moduleId in _moduleUsers.keys) {
+      final user = _moduleUsers[moduleId]?[userId];
+      if (user != null && user.isActive) {
+        accesses.add(EnterpriseModuleUser(
+          userId: user.userId,
+          enterpriseId: 'default_enterprise', // Mock fallback
+          moduleId: user.moduleId,
+          roleIds: [user.roleId],
+          customPermissions: user.customPermissions,
+          isActive: user.isActive,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+        ));
+      }
+    }
+    return accesses;
+  }
+
+  @override
+  Future<List<String>> getUserEnterprises(String userId) async {
+    final accesses = await getUserAccesses(userId);
+    return accesses.map((a) => a.enterpriseId).toSet().toList();
+  }
+
+  @override
+  Future<List<String>> getUserModules(String userId, String enterpriseId) async {
+    final accesses = await getUserAccesses(userId);
+    return accesses
+        .where((a) => a.enterpriseId == enterpriseId)
+        .map((a) => a.moduleId)
+        .toList();
+  }
+
+  @override
+  Future<bool> hasEnterpriseAccess(String userId, String enterpriseId) async {
+    final accesses = await getUserAccesses(userId);
+    return accesses.any((a) => a.enterpriseId == enterpriseId);
+  }
+
+  @override
+  Future<bool> hasModuleAccess(
+    String userId,
+    String enterpriseId,
+    String moduleId,
+  ) async {
+    final access = await getEnterpriseModuleUser(userId, enterpriseId, moduleId);
+    return access != null && access.isActive;
   }
 }

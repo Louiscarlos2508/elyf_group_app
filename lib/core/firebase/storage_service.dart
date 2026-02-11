@@ -1,4 +1,3 @@
-import 'dart:developer' as developer;
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -97,7 +96,7 @@ class StorageService {
       uploadTask.snapshotEvents.listen((taskSnapshot) {
         final progress =
             taskSnapshot.bytesTransferred / taskSnapshot.totalBytes;
-        developer.log(
+        AppLogger.debug(
           'Upload progress: ${(progress * 100).toStringAsFixed(1)}%',
           name: 'storage.service',
         );
@@ -107,7 +106,7 @@ class StorageService {
       final snapshot = await uploadTask;
       final downloadUrl = await snapshot.ref.getDownloadURL();
 
-      developer.log(
+      AppLogger.info(
         'File uploaded successfully: $storagePath',
         name: 'storage.service',
       );
@@ -191,14 +190,14 @@ class StorageService {
       final ref = storage.ref(storagePath);
       await ref.writeToFile(localFile);
 
-      developer.log(
+      AppLogger.debug(
         'File downloaded to: ${localFile.path}',
         name: 'storage.service',
       );
 
       return localFile;
     } catch (e, stackTrace) {
-      developer.log(
+      AppLogger.error(
         'Error downloading file to local',
         name: 'storage.service',
         error: e,
@@ -255,7 +254,7 @@ class StorageService {
       final ref = storage.ref(storagePath);
       await ref.delete();
 
-      developer.log('File deleted: $storagePath', name: 'storage.service');
+      AppLogger.info('File deleted: $storagePath', name: 'storage.service');
     } catch (e, stackTrace) {
       final appException = ErrorHandler.instance.handleError(e, stackTrace);
       AppLogger.error(
@@ -365,7 +364,7 @@ class StorageService {
 
       await ref.updateMetadata(metadata);
 
-      developer.log(
+      AppLogger.debug(
         'File metadata updated: $storagePath',
         name: 'storage.service',
       );

@@ -1,15 +1,17 @@
 #!/usr/bin/env dart
+// ignore_for_file: avoid_print
 
 /// Script utilitaire pour générer le hash d'un mot de passe.
 ///
 /// Usage:
-///   dart scripts/generate_password_hash.dart <password>
+///   dart scripts/generate_password_hash.dart [password]
 ///
 /// Exemple:
 ///   dart scripts/generate_password_hash.dart admin123
 ///
 /// Le hash généré peut être utilisé dans le fichier .env comme valeur
 /// pour ADMIN_PASSWORD_HASH.
+library;
 
 import 'dart:io';
 import 'package:elyf_groupe_app/core/auth/utils/password_hasher.dart';

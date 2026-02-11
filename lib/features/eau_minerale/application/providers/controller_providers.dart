@@ -1,6 +1,5 @@
+import '../../../../core/logging/app_logger.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import 'dart:developer' as developer;
 
 import '../../domain/adapters/pack_stock_adapter.dart';
 import '../adapters/no_op_pack_stock_adapter.dart';
@@ -18,6 +17,7 @@ import '../controllers/report_controller.dart';
 import '../controllers/sales_controller.dart';
 import '../controllers/salary_controller.dart';
 import '../controllers/stock_controller.dart';
+import '../../../audit_trail/application/providers.dart';
 import 'repository_providers.dart';
 
 // Controller Providers
@@ -64,9 +64,9 @@ final packStockAdapterProvider = Provider<PackStockAdapter>((ref) {
     final controller = ref.watch(stockControllerProvider);
     return StockControllerPackAdapter(controller);
   } catch (e, st) {
-    developer.log(
+    AppLogger.warning(
       'PackStockAdapter fallback to NoOp: $e',
-      name: 'elyf.packStockAdapter',
+      name: 'packStockAdapter',
       error: e,
       stackTrace: st,
     );
@@ -80,6 +80,7 @@ final productionSessionControllerProvider =
         ref.watch(productionSessionRepositoryProvider),
         ref.watch(stockControllerProvider),
         ref.watch(bobineStockQuantityRepositoryProvider),
+        ref.watch(auditTrailServiceProvider),
       ),
     );
 
@@ -88,6 +89,7 @@ final salesControllerProvider = Provider<SalesController>(
     ref.watch(saleRepositoryProvider),
     ref.watch(packStockAdapterProvider),
     ref.watch(eauMineraleProductRepositoryProvider),
+    ref.watch(auditTrailServiceProvider),
   ),
 );
 

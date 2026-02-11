@@ -27,7 +27,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   late Animation<double> _logoOpacity;
   late Animation<double> _textFade;
   late Animation<double> _glowAnimation;
-  late Animation<double> _waveAnimation;
 
   @override
   void initState() {
@@ -75,10 +74,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       vsync: this,
       duration: const Duration(milliseconds: 3000),
     )..repeat();
-    _waveAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _waveController, curve: Curves.linear));
 
     // Start animations in sequence
     _logoController.forward().then((_) {

@@ -1,5 +1,6 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
+
+import '../logging/app_logger.dart';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 
@@ -9,15 +10,15 @@ import '../../shared/utils/local_notification_service.dart';
 ///
 /// Cette fonction est appelée quand l'app est active et reçoit une notification.
 void onForegroundMessage(RemoteMessage message) {
-  developer.log(
+  AppLogger.debug(
     'Notification reçue en foreground: ${message.messageId}',
     name: 'fcm.handlers',
   );
-  developer.log(
+  AppLogger.debug(
     'Titre: ${message.notification?.title}, Corps: ${message.notification?.body}',
     name: 'fcm.handlers',
   );
-  developer.log('Données: ${message.data}', name: 'fcm.handlers');
+  AppLogger.debug('Données: ${message.data}', name: 'fcm.handlers');
 
   // ✅ TODO résolu: Afficher une notification locale
   final title = message.notification?.title ?? 'Nouvelle notification';
@@ -42,15 +43,15 @@ void onForegroundMessage(RemoteMessage message) {
 /// Cette fonction est appelée quand l'utilisateur appuie sur une notification
 /// et que l'app est en arrière-plan ou fermée.
 void onMessageOpenedApp(RemoteMessage message) {
-  developer.log(
+  AppLogger.info(
     'Notification a ouvert l\'app: ${message.messageId}',
     name: 'fcm.handlers',
   );
-  developer.log(
+  AppLogger.info(
     'Titre: ${message.notification?.title}, Corps: ${message.notification?.body}',
     name: 'fcm.handlers',
   );
-  developer.log('Données: ${message.data}', name: 'fcm.handlers');
+  AppLogger.info('Données: ${message.data}', name: 'fcm.handlers');
 
   // ✅ TODO résolu: Naviguer vers la page appropriée
   _handleNotificationNavigation(message.data);
@@ -64,15 +65,15 @@ void onMessageOpenedApp(RemoteMessage message) {
 /// Cette fonction sera appelée automatiquement par Firebase Messaging.
 @pragma('vm:entry-point')
 Future<void> onBackgroundMessage(RemoteMessage message) async {
-  developer.log(
+  AppLogger.debug(
     'Notification reçue en background: ${message.messageId}',
     name: 'fcm.handlers.background',
   );
-  developer.log(
+  AppLogger.debug(
     'Titre: ${message.notification?.title}, Corps: ${message.notification?.body}',
     name: 'fcm.handlers.background',
   );
-  developer.log('Données: ${message.data}', name: 'fcm.handlers.background');
+  AppLogger.debug('Données: ${message.data}', name: 'fcm.handlers.background');
 
   // ✅ TODO résolu: Traiter la notification en arrière-plan
   // Pour l'instant, on log simplement. Si nécessaire, on peut :
@@ -80,7 +81,7 @@ Future<void> onBackgroundMessage(RemoteMessage message) async {
   // - Mettre à jour un compteur de badges
   // - Déclencher une synchronisation
   
-  developer.log(
+  AppLogger.debug(
     'Notification traitée en background',
     name: 'fcm.handlers.background',
   );
@@ -96,7 +97,7 @@ Future<void> onBackgroundMessage(RemoteMessage message) async {
 /// }
 void _handleNotificationNavigation(Map<String, dynamic> data) {
   if (data.isEmpty) {
-    developer.log(
+    AppLogger.info(
       'Pas de données de navigation dans la notification',
       name: 'fcm.handlers',
     );
@@ -106,7 +107,7 @@ void _handleNotificationNavigation(Map<String, dynamic> data) {
   final type = data['type'] as String?;
   final target = data['target'] as String?;
 
-  developer.log(
+  AppLogger.info(
     'Navigation demandée - Type: $type, Target: $target',
     name: 'fcm.handlers',
   );

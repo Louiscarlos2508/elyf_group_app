@@ -79,4 +79,7 @@ final collectionPaths = <String, String Function(String?)>{
       'enterprises/${enterpriseId!}/gazSettings',
   'financial_reports': (enterpriseId) =>
       'enterprises/${enterpriseId!}/financialReports',
+
+  // Audit Trail module
+  'audit_trail': (enterpriseId) => 'enterprises/${enterpriseId!}/auditTrail',
 };

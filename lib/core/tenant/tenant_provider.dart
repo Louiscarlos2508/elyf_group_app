@@ -1,32 +1,14 @@
-import 'dart:developer' as developer;
+import '../logging/app_logger.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../auth/providers.dart';
 import '../auth/entities/enterprise_module_user.dart';
 import '../../features/administration/domain/entities/enterprise.dart';
 import '../../features/administration/application/providers.dart';
+import '../offline/providers.dart' show sharedPreferencesProvider;
 
-/// Classe helper pour gérer la persistance de l'entreprise active
-class ActiveEnterpriseIdManager {
-  static const String _key = 'active_enterprise_id';
-
-  static Future<String?> loadSavedEnterpriseId() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_key);
-  }
-
-  static Future<void> saveEnterpriseId(String enterpriseId) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_key, enterpriseId);
-  }
-
-  static Future<void> clearEnterpriseId() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_key);
-  }
-}
+const String _activeEnterpriseIdKey = 'active_enterprise_id';
 
 /// Provider pour l'ID de l'entreprise active
 ///
@@ -43,17 +25,17 @@ class ActiveEnterpriseIdNotifier extends AsyncNotifier<String?> {
   @override
   Future<String?> build() async {
     try {
-      final savedId = await ActiveEnterpriseIdManager.loadSavedEnterpriseId();
-      return savedId;
+      final prefs = ref.watch(sharedPreferencesProvider);
+      return prefs.getString(_activeEnterpriseIdKey);
     } catch (error) {
-      // Re-throw pour que AsyncNotifier gère l'erreur automatiquement
       rethrow;
     }
   }
 
   Future<void> setActiveEnterpriseId(String enterpriseId) async {
     try {
-      await ActiveEnterpriseIdManager.saveEnterpriseId(enterpriseId);
+      final prefs = ref.read(sharedPreferencesProvider);
+      await prefs.setString(_activeEnterpriseIdKey, enterpriseId);
       state = AsyncValue.data(enterpriseId);
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
@@ -62,7 +44,8 @@ class ActiveEnterpriseIdNotifier extends AsyncNotifier<String?> {
 
   Future<void> clearActiveEnterprise() async {
     try {
-      await ActiveEnterpriseIdManager.clearEnterpriseId();
+      final prefs = ref.read(sharedPreferencesProvider);
+      await prefs.remove(_activeEnterpriseIdKey);
       state = const AsyncValue.data(null);
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
@@ -98,16 +81,16 @@ final userAccessibleEnterprisesProvider = FutureProvider<List<Enterprise>>((
     return await Future.any([
       _fetchUserAccessibleEnterprises(ref),
       Future.delayed(const Duration(seconds: 10)).then((_) {
-        developer.log(
-          '⚠️ userAccessibleEnterprisesProvider: Timeout after 10 seconds',
+        AppLogger.warning(
+          'userAccessibleEnterprisesProvider: Timeout after 10 seconds',
           name: 'userAccessibleEnterprisesProvider',
         );
         return <Enterprise>[];
       }),
     ]);
   } catch (e, stackTrace) {
-    developer.log(
-      '❌ userAccessibleEnterprisesProvider: Error - $e',
+    AppLogger.error(
+      'userAccessibleEnterprisesProvider: Error - $e',
       name: 'userAccessibleEnterprisesProvider',
       error: e,
       stackTrace: stackTrace,
@@ -123,8 +106,8 @@ Future<List<Enterprise>> _fetchUserAccessibleEnterprises(Ref ref) async {
 
   // Si aucun utilisateur n'est connecté, retourner une liste vide
   if (currentUserId == null) {
-    developer.log(
-      '⚠️ userAccessibleEnterprisesProvider: No current user ID',
+    AppLogger.warning(
+      'userAccessibleEnterprisesProvider: No current user ID',
       name: 'userAccessibleEnterprisesProvider',
     );
     return [];
@@ -138,15 +121,15 @@ Future<List<Enterprise>> _fetchUserAccessibleEnterprises(Ref ref) async {
     currentUserId,
   );
 
-  developer.log(
-    '🔵 userAccessibleEnterprisesProvider: ${userAccesses.length} accès trouvés pour l\'utilisateur $currentUserId',
+  AppLogger.debug(
+    'userAccessibleEnterprisesProvider: ${userAccesses.length} accès trouvés pour l\'utilisateur $currentUserId',
     name: 'userAccessibleEnterprisesProvider',
   );
 
   // Log détaillé de tous les accès
   for (final access in userAccesses) {
-    developer.log(
-      '🔵 userAccessibleEnterprisesProvider: Accès - enterpriseId=${access.enterpriseId}, moduleId=${access.moduleId}, isActive=${access.isActive}',
+    AppLogger.debug(
+      'userAccessibleEnterprisesProvider: Accès - enterpriseId=${access.enterpriseId}, moduleId=${access.moduleId}, isActive=${access.isActive}',
       name: 'userAccessibleEnterprisesProvider',
     );
   }
@@ -157,8 +140,8 @@ Future<List<Enterprise>> _fetchUserAccessibleEnterprises(Ref ref) async {
       .map((access) => access.enterpriseId)
       .toSet();
 
-  developer.log(
-    '🔵 userAccessibleEnterprisesProvider: ${activeEnterpriseIds.length} entreprises uniques accessibles (IDs: ${activeEnterpriseIds.join(", ")})',
+  AppLogger.debug(
+    'userAccessibleEnterprisesProvider: ${activeEnterpriseIds.length} entreprises uniques accessibles (IDs: ${activeEnterpriseIds.join(", ")})',
     name: 'userAccessibleEnterprisesProvider',
   );
 
@@ -168,15 +151,15 @@ Future<List<Enterprise>> _fetchUserAccessibleEnterprises(Ref ref) async {
 
   // Log détaillé de toutes les entreprises récupérées
   final posCount = allEnterprises.where((e) => e.description?.contains("Point de vente") ?? false).length;
-  developer.log(
-    '🔵 userAccessibleEnterprisesProvider: ${allEnterprises.length} entreprises récupérées au total (dont $posCount points de vente)',
+  AppLogger.debug(
+    'userAccessibleEnterprisesProvider: ${allEnterprises.length} entreprises récupérées au total (dont $posCount points de vente)',
     name: 'userAccessibleEnterprisesProvider',
   );
   
   // Log des IDs de toutes les entreprises
   final allEnterpriseIds = allEnterprises.map((e) => e.id).toList();
-  developer.log(
-    '🔵 userAccessibleEnterprisesProvider: IDs de toutes les entreprises: ${allEnterpriseIds.join(", ")}',
+  AppLogger.debug(
+    'userAccessibleEnterprisesProvider: IDs de toutes les entreprises: ${allEnterpriseIds.join(", ")}',
     name: 'userAccessibleEnterprisesProvider',
   );
 
@@ -188,16 +171,16 @@ Future<List<Enterprise>> _fetchUserAccessibleEnterprises(Ref ref) async {
       )
       .toList();
 
-  developer.log(
-    '🔵 userAccessibleEnterprisesProvider: ${accessibleEnterprises.length} entreprises accessibles après filtrage',
+  AppLogger.debug(
+    'userAccessibleEnterprisesProvider: ${accessibleEnterprises.length} entreprises accessibles après filtrage',
     name: 'userAccessibleEnterprisesProvider',
   );
   
   // Log détaillé des entreprises accessibles
   for (final enterprise in accessibleEnterprises) {
     final isPos = enterprise.description?.contains("Point de vente") ?? false;
-    developer.log(
-      '🔵 userAccessibleEnterprisesProvider: Entreprise accessible - id=${enterprise.id}, name=${enterprise.name}, isPointOfSale=$isPos',
+    AppLogger.debug(
+      'userAccessibleEnterprisesProvider: Entreprise accessible - id=${enterprise.id}, name=${enterprise.name}, isPointOfSale=$isPos',
       name: 'userAccessibleEnterprisesProvider',
     );
   }
@@ -205,8 +188,8 @@ Future<List<Enterprise>> _fetchUserAccessibleEnterprises(Ref ref) async {
   // Log des entreprises non trouvées
   final notFoundIds = activeEnterpriseIds.where((id) => !allEnterpriseIds.contains(id)).toList();
   if (notFoundIds.isNotEmpty) {
-    developer.log(
-      '⚠️ userAccessibleEnterprisesProvider: ${notFoundIds.length} IDs d\'entreprises non trouvées dans la liste: ${notFoundIds.join(", ")}',
+    AppLogger.warning(
+      'userAccessibleEnterprisesProvider: ${notFoundIds.length} IDs d\'entreprises non trouvées dans la liste: ${notFoundIds.join(", ")}',
       name: 'userAccessibleEnterprisesProvider',
     );
   }

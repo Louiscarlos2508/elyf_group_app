@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/expense.dart';
@@ -53,6 +54,9 @@ class _RestockDialogState extends ConsumerState<RestockDialog> {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
+    final enterpriseId =
+        ref.read(activeEnterpriseProvider).value?.id ?? 'default';
+
     try {
       final qty = int.parse(_quantityController.text);
       final totalPrice = int.parse(_priceController.text);
@@ -62,6 +66,7 @@ class _RestockDialogState extends ConsumerState<RestockDialog> {
       final randomPart = (DateTime.now().microsecond % 1000).toString().padLeft(3, '0');
       final purchase = Purchase(
         id: 'local_purchase_${timestamp}_$randomPart',
+        enterpriseId: enterpriseId,
         date: DateTime.now(),
         items: [
           PurchaseItem(
@@ -86,6 +91,7 @@ class _RestockDialogState extends ConsumerState<RestockDialog> {
       // Créer la dépense associée
       final expense = Expense(
         id: 'local_expense_${purchase.id.replaceFirst('local_purchase_', '')}',
+        enterpriseId: enterpriseId,
         label: 'Achat: ${widget.product.name} (x$qty)',
         amountCfa: totalPrice,
         category: ExpenseCategory.stock,

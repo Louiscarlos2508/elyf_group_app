@@ -1,4 +1,3 @@
-import 'dart:developer' as developer;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -70,7 +69,7 @@ class PaymentSubmitHandler {
 
       // Invalider les providers pour rafraîchir l'UI
       if (context.mounted) {
-        developer.log(
+        AppLogger.debug(
           'Paiement enregistré, rafraîchissement des providers',
           name: 'PaymentSubmitHandler',
         );

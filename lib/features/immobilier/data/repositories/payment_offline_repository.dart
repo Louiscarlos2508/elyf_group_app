@@ -1,13 +1,11 @@
 import 'dart:convert';
 
 import '../../../../core/errors/error_handler.dart';
-import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/offline_repository.dart';
-import '../../../../shared/domain/entities/payment_method.dart';
 import '../../domain/entities/payment.dart';
 import '../../domain/repositories/payment_repository.dart';
 
-/// Offline-first repository for Payment entities.
+/// Offline-first repository for Payment entities (immobilier module).
 class PaymentOfflineRepository extends OfflineRepository<Payment>
     implements PaymentRepository {
   PaymentOfflineRepository({
@@ -22,78 +20,23 @@ class PaymentOfflineRepository extends OfflineRepository<Payment>
   @override
   String get collectionName => 'payments';
 
-  @override
-  Payment fromMap(Map<String, dynamic> map) {
-    return Payment(
-      id: map['id'] as String? ?? map['localId'] as String,
-      contractId: map['contractId'] as String,
-      amount: (map['amount'] as num?)?.toInt() ?? 0,
-      paymentDate: DateTime.parse(map['paymentDate'] as String),
-      paymentMethod: _parsePaymentMethod(map['paymentMethod'] as String),
-      status: _parsePaymentStatus(map['status'] as String),
-      contract: null, // Will be loaded separately if needed
-      month: map['month'] as int?,
-      year: map['year'] as int?,
-      receiptNumber: map['receiptNumber'] as String?,
-      notes: map['notes'] as String?,
-      paymentType: map['paymentType'] != null
-          ? _parsePaymentType(map['paymentType'] as String)
-          : null,
-      cashAmount: map['cashAmount'] != null
-          ? (map['cashAmount'] as num).toInt()
-          : null,
-      mobileMoneyAmount: map['mobileMoneyAmount'] != null
-          ? (map['mobileMoneyAmount'] as num).toInt()
-          : null,
-      createdAt: map['createdAt'] != null
-          ? DateTime.parse(map['createdAt'] as String)
-          : null,
-      updatedAt: map['updatedAt'] != null
-          ? DateTime.parse(map['updatedAt'] as String)
-          : null,
-      deletedAt: map['deletedAt'] != null
-          ? DateTime.parse(map['deletedAt'] as String)
-          : null,
-      deletedBy: map['deletedBy'] as String?,
-    );
-  }
+  String get moduleType => 'immobilier';
 
   @override
-  Map<String, dynamic> toMap(Payment entity) {
-    return {
-      'id': entity.id,
-      'contractId': entity.contractId,
-      'amount': entity.amount.toDouble(),
-      'paymentDate': entity.paymentDate.toIso8601String(),
-      'paymentMethod': entity.paymentMethod.name,
-      'status': entity.status.name,
-      'month': entity.month,
-      'year': entity.year,
-      'receiptNumber': entity.receiptNumber,
-      'notes': entity.notes,
-      'paymentType': entity.paymentType?.name,
-      'cashAmount': entity.cashAmount?.toDouble(),
-      'mobileMoneyAmount': entity.mobileMoneyAmount?.toDouble(),
-      'createdAt': entity.createdAt?.toIso8601String(),
-      'updatedAt': entity.updatedAt?.toIso8601String(),
-      'deletedAt': entity.deletedAt?.toIso8601String(),
-      'deletedBy': entity.deletedBy,
-    };
-  }
+  Payment fromMap(Map<String, dynamic> map) => Payment.fromMap(map);
+
+  @override
+  Map<String, dynamic> toMap(Payment entity) => entity.toMap();
 
   @override
   String getLocalId(Payment entity) {
-    if (entity.id.startsWith('local_')) {
-      return entity.id;
-    }
+    if (entity.id.isNotEmpty) return entity.id;
     return LocalIdGenerator.generate();
   }
 
   @override
   String? getRemoteId(Payment entity) {
-    if (!entity.id.startsWith('local_')) {
-      return entity.id;
-    }
+    if (!LocalIdGenerator.isLocalId(entity.id)) return entity.id;
     return null;
   }
 
@@ -109,7 +52,7 @@ class PaymentOfflineRepository extends OfflineRepository<Payment>
       localId: localId,
       remoteId: getRemoteId(entity),
       enterpriseId: enterpriseId,
-      moduleType: 'immobilier',
+      moduleType: moduleType,
       dataJson: jsonEncode(map),
       localUpdatedAt: DateTime.now(),
     );
@@ -123,7 +66,7 @@ class PaymentOfflineRepository extends OfflineRepository<Payment>
         collectionName: collectionName,
         remoteId: remoteId,
         enterpriseId: enterpriseId,
-        moduleType: 'immobilier',
+        moduleType: moduleType,
       );
       return;
     }
@@ -132,30 +75,27 @@ class PaymentOfflineRepository extends OfflineRepository<Payment>
       collectionName: collectionName,
       localId: localId,
       enterpriseId: enterpriseId,
-      moduleType: 'immobilier',
+      moduleType: moduleType,
     );
   }
 
   @override
   Future<Payment?> getByLocalId(String localId) async {
-    final byRemote = await driftService.records.findByRemoteId(
-      collectionName: collectionName,
-      remoteId: localId,
-      enterpriseId: enterpriseId,
-      moduleType: 'immobilier',
-    );
-    if (byRemote != null) {
-      return fromMap(jsonDecode(byRemote.dataJson) as Map<String, dynamic>);
-    }
-
-    final byLocal = await driftService.records.findByLocalId(
+    final record = await driftService.records.findByLocalId(
       collectionName: collectionName,
       localId: localId,
       enterpriseId: enterpriseId,
-      moduleType: 'immobilier',
+      moduleType: moduleType,
+    ) ?? await driftService.records.findByRemoteId(
+      collectionName: collectionName,
+      remoteId: localId,
+      enterpriseId: enterpriseId,
+      moduleType: moduleType,
     );
-    if (byLocal == null) return null;
-    return fromMap(jsonDecode(byLocal.dataJson) as Map<String, dynamic>);
+
+    if (record == null) return null;
+    final map = safeDecodeJson(record.dataJson, record.localId);
+    return map != null ? fromMap(map) : null;
   }
 
   @override
@@ -168,18 +108,14 @@ class PaymentOfflineRepository extends OfflineRepository<Payment>
     final rows = await driftService.records.listForEnterprise(
       collectionName: collectionName,
       enterpriseId: enterpriseId,
-      moduleType: 'immobilier',
+      moduleType: moduleType,
     );
     final entities = rows
-
-        .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
-
+        .map((r) => safeDecodeJson(r.dataJson, r.localId))
+        .where((m) => m != null)
+        .map((m) => fromMap(m!))
         .toList();
-
     
-
-    // Dédupliquer par remoteId pour éviter les doublons
-
     return deduplicateByRemoteId(entities);
   }
 
@@ -191,33 +127,14 @@ class PaymentOfflineRepository extends OfflineRepository<Payment>
         .watchForEnterprise(
           collectionName: collectionName,
           enterpriseId: enterpriseId,
-          moduleType: 'immobilier',
+          moduleType: moduleType,
         )
         .map((rows) {
           final entities = rows
-              .map(
-                (r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>),
-              )
-              .where((e) => e.deletedAt == null)
-              .toList();
-          return deduplicateByRemoteId(entities);
-        });
-  }
-
-  @override
-  Stream<List<Payment>> watchDeletedPayments() {
-    return driftService.records
-        .watchForEnterprise(
-          collectionName: collectionName,
-          enterpriseId: enterpriseId,
-          moduleType: 'immobilier',
-        )
-        .map((rows) {
-          final entities = rows
-              .map(
-                (r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>),
-              )
-              .where((e) => e.deletedAt != null)
+              .map((r) => safeDecodeJson(r.dataJson, r.localId))
+              .where((m) => m != null)
+              .map((m) => fromMap(m!))
+              .where((e) => !e.isDeleted)
               .toList();
           return deduplicateByRemoteId(entities);
         });
@@ -228,92 +145,73 @@ class PaymentOfflineRepository extends OfflineRepository<Payment>
     try {
       return await getByLocalId(id);
     } catch (error, stackTrace) {
-      final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      AppLogger.error(
-        'Error getting payment: $id - ${appException.message}',
-        name: 'PaymentOfflineRepository',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      throw appException;
+      throw ErrorHandler.instance.handleError(error, stackTrace);
     }
   }
 
   @override
   Future<List<Payment>> getPaymentsByContract(String contractId) async {
-    try {
-      final allPayments = await getAllForEnterprise(enterpriseId);
-      return allPayments.where((p) => p.contractId == contractId).toList();
-    } catch (error, stackTrace) {
-      final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      AppLogger.error(
-        'Error getting payments by contract: $contractId - ${appException.message}',
-        name: 'PaymentOfflineRepository',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      throw appException;
-    }
+    final all = await getAllPayments();
+    return all.where((p) => p.contractId == contractId).toList();
   }
 
   @override
-  Future<List<Payment>> getPaymentsByPeriod(
-    DateTime start,
-    DateTime end,
-  ) async {
+  Future<List<Payment>> getPaymentsByPeriod(DateTime start, DateTime end) async {
+    final all = await getAllPayments();
+    return all.where((p) {
+      return p.paymentDate.isAfter(start.subtract(const Duration(seconds: 1))) &&
+             p.paymentDate.isBefore(end.add(const Duration(seconds: 1)));
+    }).toList();
+  }
+
+  @override
+  Stream<List<Payment>> watchDeletedPayments() {
+    return driftService.records
+        .watchForEnterprise(
+          collectionName: collectionName,
+          enterpriseId: enterpriseId,
+          moduleType: moduleType,
+        )
+        .map((rows) {
+          final entities = rows
+              .map((r) => safeDecodeJson(r.dataJson, r.localId))
+              .where((m) => m != null)
+              .map((m) => fromMap(m!))
+              .where((e) => e.isDeleted)
+              .toList();
+          return deduplicateByRemoteId(entities);
+        });
+  }
+
+  @override
+  Future<void> restorePayment(String id) async {
     try {
-      final allPayments = await getAllForEnterprise(enterpriseId);
-      return allPayments.where((p) {
-        return (p.paymentDate.isAfter(start) ||
-                p.paymentDate.isAtSameMomentAs(start)) &&
-            (p.paymentDate.isBefore(end) ||
-                p.paymentDate.isAtSameMomentAs(end));
-      }).toList();
+      final payment = await getPaymentById(id);
+      if (payment != null) {
+        await save(payment.copyWith(
+          deletedAt: null,
+          deletedBy: null,
+        ));
+      }
     } catch (error, stackTrace) {
-      final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      AppLogger.error(
-        'Error getting payments by period: ${appException.message}',
-        name: 'PaymentOfflineRepository',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      throw appException;
+      throw ErrorHandler.instance.handleError(error, stackTrace);
     }
   }
 
   @override
   Future<Payment> createPayment(Payment payment) async {
     try {
-      final localId = getLocalId(payment);
-      final paymentWithLocalId = Payment(
+      final localId = payment.id.isEmpty ? LocalIdGenerator.generate() : payment.id;
+      final newPayment = payment.copyWith(
         id: localId,
-        contractId: payment.contractId,
-        amount: payment.amount,
-        paymentDate: payment.paymentDate,
-        paymentMethod: payment.paymentMethod,
-        status: payment.status,
-        contract: payment.contract,
-        month: payment.month,
-        year: payment.year,
-        receiptNumber: payment.receiptNumber,
-        notes: payment.notes,
-        paymentType: payment.paymentType,
-        cashAmount: payment.cashAmount,
-        mobileMoneyAmount: payment.mobileMoneyAmount,
-        createdAt: payment.createdAt,
+        enterpriseId: enterpriseId,
+        createdAt: payment.createdAt ?? DateTime.now(),
         updatedAt: DateTime.now(),
       );
-      await save(paymentWithLocalId);
-      return paymentWithLocalId;
+      await save(newPayment);
+      return newPayment;
     } catch (error, stackTrace) {
-      final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      AppLogger.error(
-        'Error creating payment: ${appException.message}',
-        name: 'PaymentOfflineRepository',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      throw appException;
+      throw ErrorHandler.instance.handleError(error, stackTrace);
     }
   }
 
@@ -324,14 +222,7 @@ class PaymentOfflineRepository extends OfflineRepository<Payment>
       await save(updatedPayment);
       return updatedPayment;
     } catch (error, stackTrace) {
-      final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      AppLogger.error(
-        'Error updating payment: ${payment.id} - ${appException.message}',
-        name: 'PaymentOfflineRepository',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      throw appException;
+      throw ErrorHandler.instance.handleError(error, stackTrace);
     }
   }
 
@@ -340,83 +231,13 @@ class PaymentOfflineRepository extends OfflineRepository<Payment>
     try {
       final payment = await getPaymentById(id);
       if (payment != null) {
-        final updatedPayment = payment.copyWith(
+        await save(payment.copyWith(
           deletedAt: DateTime.now(),
           deletedBy: 'system',
-        );
-        await save(updatedPayment);
+        ));
       }
     } catch (error, stackTrace) {
-      final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      AppLogger.error(
-        'Error deleting payment: $id - ${appException.message}',
-        name: 'PaymentOfflineRepository',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      throw appException;
-    }
-  }
-
-  @override
-  Future<void> restorePayment(String id) async {
-    try {
-      final payment = await getPaymentById(id);
-      if (payment != null) {
-        final updatedPayment = payment.copyWith(
-          deletedAt: null,
-          deletedBy: null,
-        );
-        await save(updatedPayment);
-      }
-    } catch (error, stackTrace) {
-      final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      AppLogger.error(
-        'Error restoring payment: $id - ${appException.message}',
-        name: 'PaymentOfflineRepository',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      throw appException;
-    }
-  }
-
-  PaymentMethod _parsePaymentMethod(String method) {
-    switch (method) {
-      case 'cash':
-        return PaymentMethod.cash;
-      case 'mobileMoney':
-        return PaymentMethod.mobileMoney;
-      case 'both':
-        return PaymentMethod.both;
-      default:
-        return PaymentMethod.cash;
-    }
-  }
-
-  PaymentStatus _parsePaymentStatus(String status) {
-    switch (status) {
-      case 'paid':
-        return PaymentStatus.paid;
-      case 'pending':
-        return PaymentStatus.pending;
-      case 'overdue':
-        return PaymentStatus.overdue;
-      case 'cancelled':
-        return PaymentStatus.cancelled;
-      default:
-        return PaymentStatus.pending;
-    }
-  }
-
-  PaymentType _parsePaymentType(String type) {
-    switch (type) {
-      case 'rent':
-        return PaymentType.rent;
-      case 'deposit':
-        return PaymentType.deposit;
-      default:
-        return PaymentType.rent;
+      throw ErrorHandler.instance.handleError(error, stackTrace);
     }
   }
 }

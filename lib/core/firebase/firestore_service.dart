@@ -1,5 +1,3 @@
-import 'dart:developer' as developer;
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../errors/error_handler.dart';
@@ -94,7 +92,7 @@ class FirestoreService {
 
       await docRef.set(dataWithMetadata, SetOptions(merge: merge));
 
-      developer.log(
+      AppLogger.debug(
         'Document set in Firestore: $docPath',
         name: 'firestore.service',
       );
@@ -167,12 +165,12 @@ class FirestoreService {
 
       await firestore.doc(docPath).update(dataWithMetadata);
 
-      developer.log(
+      AppLogger.debug(
         'Document updated in Firestore: $docPath',
         name: 'firestore.service',
       );
     } catch (e, stackTrace) {
-      developer.log(
+      AppLogger.error(
         'Error updating document in Firestore',
         name: 'firestore.service',
         error: e,
@@ -199,7 +197,7 @@ class FirestoreService {
 
       await firestore.doc(docPath).delete();
 
-      developer.log(
+      AppLogger.debug(
         'Document deleted from Firestore: $docPath',
         name: 'firestore.service',
       );

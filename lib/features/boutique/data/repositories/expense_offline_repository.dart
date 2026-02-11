@@ -1,10 +1,11 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/logging/app_logger.dart';
 
 import '../../../../core/offline/offline_repository.dart';
+import '../../../audit_trail/domain/entities/audit_record.dart';
+import '../../../audit_trail/domain/repositories/audit_trail_repository.dart';
 import '../../domain/entities/expense.dart';
 import '../../domain/repositories/expense_repository.dart';
 
@@ -17,51 +18,26 @@ class ExpenseOfflineRepository extends OfflineRepository<Expense>
     required super.connectivityService,
     required this.enterpriseId,
     required this.moduleType,
+    required this.auditTrailRepository,
+    this.userId = 'system',
   });
 
   final String enterpriseId;
   final String moduleType;
+  final AuditTrailRepository auditTrailRepository;
+  final String userId;
 
   @override
   String get collectionName => 'expenses';
 
   @override
   Expense fromMap(Map<String, dynamic> map) {
-    return Expense(
-      id: map['id'] as String? ?? map['localId'] as String,
-      label: map['label'] as String? ?? map['description'] as String? ?? '',
-      amountCfa:
-          (map['amountCfa'] as num?)?.toInt() ??
-          (map['amount'] as num?)?.toInt() ??
-          0,
-      category: _parseCategory(map['category'] as String?),
-      date: map['date'] != null
-          ? DateTime.parse(map['date'] as String)
-          : (map['expenseDate'] != null
-                ? DateTime.parse(map['expenseDate'] as String)
-                : DateTime.now()),
-      updatedAt: map['updatedAt'] != null
-          ? DateTime.parse(map['updatedAt'] as String)
-          : null,
-      receiptPath: map['receiptPath'] as String? ?? map['receipt'] as String?,
-    );
+    return Expense.fromMap(map, enterpriseId);
   }
 
   @override
   Map<String, dynamic> toMap(Expense entity) {
-    return {
-      'id': entity.id,
-      'label': entity.label,
-      'description': entity.label,
-      'amountCfa': entity.amountCfa.toDouble(),
-      'amount': entity.amountCfa.toDouble(),
-      'category': entity.category.name,
-      'date': entity.date.toIso8601String(),
-      'expenseDate': entity.date.toIso8601String(),
-      'deletedAt': entity.deletedAt?.toIso8601String(),
-      'updatedAt': entity.updatedAt?.toIso8601String(),
-      'receiptPath': entity.receiptPath,
-    };
+    return entity.toMap();
   }
 
   ExpenseCategory _parseCategory(String? categoryStr) {
@@ -191,7 +167,7 @@ class ExpenseOfflineRepository extends OfflineRepository<Expense>
 
   @override
   Future<List<Expense>> fetchExpenses({int limit = 50}) async {
-    developer.log(
+    AppLogger.debug(
       'Fetching expenses for enterprise: $enterpriseId',
       name: 'ExpenseOfflineRepository',
     );
@@ -208,19 +184,20 @@ class ExpenseOfflineRepository extends OfflineRepository<Expense>
   Future<String> createExpense(Expense expense) async {
     final localId = getLocalId(expense);
     // Create new expense with local ID
-    final newExpense = Expense(
+    final newExpense = expense.copyWith(
       id: localId,
-      label: expense.label,
-      amountCfa: expense.amountCfa,
-      category: expense.category,
-      date: expense.date,
-      notes: expense.notes,
-      receiptPath: expense.receiptPath,
-      deletedAt: expense.deletedAt,
-      deletedBy: expense.deletedBy,
+      enterpriseId: enterpriseId,
       updatedAt: DateTime.now(),
     );
     await save(newExpense);
+      
+    // Audit Log
+    await _logAudit(
+      action: 'create_expense',
+      entityId: localId,
+      metadata: {'label': expense.label, 'amountCfa': expense.amountCfa},
+    );
+
     return localId;
   }
 
@@ -229,18 +206,19 @@ class ExpenseOfflineRepository extends OfflineRepository<Expense>
     final expense = await getExpense(id);
     if (expense != null && !expense.isDeleted) {
       // Soft delete: marquer comme supprimé au lieu de supprimer physiquement
-      final deletedExpense = Expense(
-        id: expense.id,
-        label: expense.label,
-        amountCfa: expense.amountCfa,
-        category: expense.category,
-        date: expense.date,
-        notes: expense.notes,
+      final deletedExpense = expense.copyWith(
         deletedAt: DateTime.now(),
         deletedBy: deletedBy,
         updatedAt: DateTime.now(),
       );
       await save(deletedExpense);
+
+      // Audit Log
+      await _logAudit(
+        action: 'delete_expense',
+        entityId: id,
+        metadata: {'deletedBy': deletedBy},
+      );
     }
   }
 
@@ -249,18 +227,18 @@ class ExpenseOfflineRepository extends OfflineRepository<Expense>
     final expense = await getExpense(id);
     if (expense != null && expense.isDeleted) {
       // Restaurer: enlever deletedAt et deletedBy
-      final restoredExpense = Expense(
-        id: expense.id,
-        label: expense.label,
-        amountCfa: expense.amountCfa,
-        category: expense.category,
-        date: expense.date,
-        notes: expense.notes,
+      final restoredExpense = expense.copyWith(
         deletedAt: null,
         deletedBy: null,
         updatedAt: DateTime.now(),
       );
       await save(restoredExpense);
+
+      // Audit Log
+      await _logAudit(
+        action: 'restore_expense',
+        entityId: id,
+      );
     }
   }
 
@@ -359,5 +337,29 @@ class ExpenseOfflineRepository extends OfflineRepository<Expense>
       );
       return expenses;
     });
+  }
+
+  Future<void> _logAudit({
+    required String action,
+    required String entityId,
+    Map<String, dynamic>? metadata,
+  }) async {
+    try {
+      await auditTrailRepository.log(
+        AuditRecord(
+          id: '', // Generated by repository
+          enterpriseId: enterpriseId,
+          userId: userId,
+          module: 'boutique',
+          action: action,
+          entityId: entityId,
+          entityType: 'expense',
+          metadata: metadata,
+          timestamp: DateTime.now(),
+        ),
+      );
+    } catch (e) {
+      AppLogger.error('Failed to log expense audit: $action', error: e);
+    }
   }
 }

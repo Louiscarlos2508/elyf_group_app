@@ -1,8 +1,7 @@
-import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/core/logging/app_logger.dart';
 import 'package:elyf_groupe_app/core/permissions/modules/gaz_permissions.dart';
 import '../../../../../core/tenant/tenant_provider.dart'
     show activeEnterpriseProvider;
@@ -156,7 +155,7 @@ final accessibleGazSectionsProvider = FutureProvider<List<NavigationSection>>((
     final hasAccess = await adapter.hasAnyPermission(item.requiredPermissions);
 
     // Log pour déboguer les permissions
-    developer.log(
+    AppLogger.debug(
       'Section "${item.section.label}": permissions requises=${item.requiredPermissions}, hasAccess=$hasAccess',
       name: 'gaz.sections',
     );
@@ -164,14 +163,14 @@ final accessibleGazSectionsProvider = FutureProvider<List<NavigationSection>>((
     if (hasAccess) {
       accessibleSections.add(item.section);
     } else {
-      developer.log(
+      AppLogger.debug(
         'Section "${item.section.label}" exclue: pas de permission',
         name: 'gaz.sections',
       );
     }
   }
 
-  developer.log(
+  AppLogger.debug(
     'Sections accessibles: ${accessibleSections.map((s) => s.label).join(", ")}',
     name: 'gaz.sections',
   );

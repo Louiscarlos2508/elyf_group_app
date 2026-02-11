@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/expense.dart';
 import '../../domain/entities/product.dart';
@@ -71,6 +72,9 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog>
       formKey: _formKey,
       onLoadingChanged: (isLoading) => setState(() => _isLoading = isLoading),
       onSubmit: () async {
+        final enterpriseId =
+            ref.read(activeEnterpriseProvider).value?.id ?? 'default';
+
         // Stock initial (optionnel, 0 par défaut)
         final stockInitial = widget.product == null
             ? (int.tryParse(_stockController.text) ?? 0)
@@ -92,6 +96,7 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog>
           id:
               widget.product?.id ??
               'prod-${DateTime.now().millisecondsSinceEpoch}',
+          enterpriseId: enterpriseId,
           name: _nameController.text.trim(),
           price: int.parse(_priceController.text),
           stock: stockInitial,
@@ -119,6 +124,7 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog>
           if (stockInitial > 0 && totalPurchasePrice != null) {
             final expense = Expense(
               id: 'expense-stock-${product.id}',
+              enterpriseId: enterpriseId,
               label: 'Stock initial: ${product.name}',
               amountCfa: totalPurchasePrice,
               category: ExpenseCategory.other,

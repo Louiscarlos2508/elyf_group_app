@@ -1,10 +1,11 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import '../../../../core/domain/entities/attached_file.dart';
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/offline_repository.dart';
+import '../../../audit_trail/domain/entities/audit_record.dart';
+import '../../../audit_trail/domain/repositories/audit_trail_repository.dart';
 import '../../domain/entities/purchase.dart';
 import '../../domain/repositories/purchase_repository.dart';
 
@@ -17,106 +18,26 @@ class PurchaseOfflineRepository extends OfflineRepository<Purchase>
     required super.connectivityService,
     required this.enterpriseId,
     required this.moduleType,
+    required this.auditTrailRepository,
+    this.userId = 'system',
   });
 
   final String enterpriseId;
   final String moduleType;
+  final AuditTrailRepository auditTrailRepository;
+  final String userId;
 
   @override
   String get collectionName => 'purchases';
 
   @override
   Purchase fromMap(Map<String, dynamic> map) {
-    final items =
-        (map['items'] as List<dynamic>?)
-            ?.map(
-              (item) => PurchaseItem(
-                productId: item['productId'] as String,
-                productName: item['productName'] as String,
-                quantity: (item['quantity'] as num).toInt(),
-                purchasePrice: (item['purchasePrice'] as num).toInt(),
-                totalPrice: (item['totalPrice'] as num).toInt(),
-              ),
-            )
-            .toList() ??
-        [];
-
-    final attachedFilesRaw = map['attachedFiles'] as List<dynamic>?;
-    final attachedFiles = attachedFilesRaw?.map((f) {
-      final typeString = f['type'] as String? ?? 'document';
-      AttachedFileType fileType;
-      switch (typeString) {
-        case 'image':
-          fileType = AttachedFileType.image;
-          break;
-        case 'pdf':
-          fileType = AttachedFileType.pdf;
-          break;
-        default:
-          fileType = AttachedFileType.document;
-      }
-      return AttachedFile(
-        id: f['id'] as String,
-        name: f['name'] as String,
-        path:
-            f['path'] as String? ??
-            f['url'] as String? ??
-            '', // Support both path and url for backward compatibility
-        type: fileType,
-        size: (f['size'] as num?)?.toInt(),
-        uploadedAt: f['uploadedAt'] != null
-            ? DateTime.parse(f['uploadedAt'] as String)
-            : null,
-      );
-    }).toList();
-
-    return Purchase(
-      id: map['id'] as String? ?? map['localId'] as String,
-      date: DateTime.parse(map['date'] as String),
-      items: items,
-      totalAmount: (map['totalAmount'] as num).toInt(),
-      supplier: map['supplier'] as String?,
-      notes: map['notes'] as String?,
-      attachedFiles: attachedFiles,
-      updatedAt: map['updatedAt'] != null
-          ? DateTime.parse(map['updatedAt'] as String)
-          : null,
-    );
+    return Purchase.fromMap(map, enterpriseId);
   }
 
   @override
   Map<String, dynamic> toMap(Purchase entity) {
-    return {
-      'id': entity.id,
-      'date': entity.date.toIso8601String(),
-      'items': entity.items
-          .map(
-            (item) => {
-              'productId': item.productId,
-              'productName': item.productName,
-              'quantity': item.quantity,
-              'purchasePrice': item.purchasePrice,
-              'totalPrice': item.totalPrice,
-            },
-          )
-          .toList(),
-      'totalAmount': entity.totalAmount,
-      'supplier': entity.supplier,
-      'notes': entity.notes,
-      'attachedFiles': entity.attachedFiles
-          ?.map(
-            (f) => {
-              'id': f.id,
-              'name': f.name,
-              'path': f.path,
-              'type': f.type.name, // image, pdf, document
-              'size': f.size,
-              'uploadedAt': f.uploadedAt?.toIso8601String(),
-            },
-          )
-          .toList(),
-      'updatedAt': entity.updatedAt?.toIso8601String(),
-    };
+    return entity.toMap();
   }
 
   @override
@@ -207,7 +128,7 @@ class PurchaseOfflineRepository extends OfflineRepository<Purchase>
     try {
       return fromMap(map);
     } catch (e, stackTrace) {
-      developer.log(
+      AppLogger.error(
         'Error parsing Purchase from map: $e',
         name: 'PurchaseOfflineRepository',
         error: e,
@@ -250,7 +171,9 @@ class PurchaseOfflineRepository extends OfflineRepository<Purchase>
     
     // Trier par date décroissante
     deduplicatedPurchases.sort((a, b) => b.date.compareTo(a.date));
-    return deduplicatedPurchases;
+
+    // Filtrer les achats supprimés (soft delete)
+    return deduplicatedPurchases.where((purchase) => !purchase.isDeleted).toList();
   }
 
   // PurchaseRepository implementation
@@ -282,7 +205,7 @@ class PurchaseOfflineRepository extends OfflineRepository<Purchase>
       return await getByLocalId(id);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
+      AppLogger.error(
         'Error getting purchase: $id',
         name: 'PurchaseOfflineRepository',
         error: error,
@@ -296,17 +219,20 @@ class PurchaseOfflineRepository extends OfflineRepository<Purchase>
   Future<String> createPurchase(Purchase purchase) async {
     try {
       final localId = getLocalId(purchase);
-      final purchaseWithLocalId = Purchase(
+      final purchaseWithLocalId = purchase.copyWith(
         id: localId,
-        date: purchase.date,
-        items: purchase.items,
-        totalAmount: purchase.totalAmount,
-        supplier: purchase.supplier,
-        notes: purchase.notes,
-        attachedFiles: purchase.attachedFiles,
+        enterpriseId: enterpriseId,
         updatedAt: DateTime.now(),
       );
       await save(purchaseWithLocalId);
+      
+      // Audit Log
+      await _logAudit(
+        action: 'create_purchase',
+        entityId: localId,
+        metadata: {'supplier': purchase.supplier, 'totalAmount': purchase.totalAmount},
+      );
+
       return localId;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
@@ -358,9 +284,155 @@ class PurchaseOfflineRepository extends OfflineRepository<Purchase>
         } catch (_) {}
       }
       final deduplicatedPurchases = deduplicateByRemoteId(purchases);
+      // Trier par date décroissante
       deduplicatedPurchases.sort((a, b) => b.date.compareTo(a.date));
-      // On ne prend plus le limit ici pour s'assurer que les calculs de totaux soient corrects
+      // Filtrer les achats actifs
+      return deduplicatedPurchases.where((p) => !p.isDeleted).toList();
+    });
+  }
+
+  @override
+  Future<void> deletePurchase(String id, {String? deletedBy}) async {
+    try {
+      final purchase = await getPurchase(id);
+      if (purchase != null && !purchase.isDeleted) {
+        final deletedPurchase = purchase.copyWith(
+          deletedAt: DateTime.now(),
+          deletedBy: deletedBy,
+          updatedAt: DateTime.now(),
+        );
+        await save(deletedPurchase);
+
+        // Audit Log
+        await _logAudit(
+          action: 'delete_purchase',
+          entityId: id,
+          metadata: {'deletedBy': deletedBy},
+        );
+      }
+    } catch (error, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
+      AppLogger.error(
+        'Error deleting purchase: $id',
+        name: 'PurchaseOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      throw appException;
+    }
+  }
+
+  @override
+  Future<void> restorePurchase(String id) async {
+    try {
+      final purchase = await getPurchase(id);
+      if (purchase != null && purchase.isDeleted) {
+        final restoredPurchase = purchase.copyWith(
+          deletedAt: null,
+          deletedBy: null,
+          updatedAt: DateTime.now(),
+        );
+        await save(restoredPurchase);
+
+        // Audit Log
+        await _logAudit(
+          action: 'restore_purchase',
+          entityId: id,
+        );
+      }
+    } catch (error, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
+      AppLogger.error(
+        'Error restoring purchase: $id',
+        name: 'PurchaseOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      throw appException;
+    }
+  }
+
+  @override
+  Future<List<Purchase>> getDeletedPurchases() async {
+    try {
+      final rows = await driftService.records.listForEnterprise(
+        collectionName: collectionName,
+        enterpriseId: enterpriseId,
+        moduleType: moduleType,
+      );
+      final purchases = <Purchase>[];
+      for (final row in rows) {
+        final map = safeDecodeJson(row.dataJson, row.localId);
+        if (map == null) continue;
+        try {
+          final purchase = fromMap(map);
+          if (purchase.isDeleted) {
+            purchases.add(purchase);
+          }
+        } catch (_) {}
+      }
+      final deduplicatedPurchases = deduplicateByRemoteId(purchases);
+      deduplicatedPurchases.sort((a, b) => b.date.compareTo(a.date));
+      return deduplicatedPurchases;
+    } catch (error, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
+      AppLogger.error(
+        'Error fetching deleted purchases',
+        name: 'PurchaseOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      throw appException;
+    }
+  }
+
+  @override
+  Stream<List<Purchase>> watchDeletedPurchases() {
+    return driftService.records
+        .watchForEnterprise(
+          collectionName: collectionName,
+          enterpriseId: enterpriseId,
+          moduleType: moduleType,
+        )
+        .map((rows) {
+      final purchases = <Purchase>[];
+      for (final row in rows) {
+        final map = safeDecodeJson(row.dataJson, row.localId);
+        if (map == null) continue;
+        try {
+          final purchase = fromMap(map);
+          if (purchase.isDeleted) {
+            purchases.add(purchase);
+          }
+        } catch (_) {}
+      }
+      final deduplicatedPurchases = deduplicateByRemoteId(purchases);
+      deduplicatedPurchases.sort((a, b) => b.date.compareTo(a.date));
       return deduplicatedPurchases;
     });
+  }
+
+  Future<void> _logAudit({
+    required String action,
+    required String entityId,
+    Map<String, dynamic>? metadata,
+  }) async {
+    try {
+      await auditTrailRepository.log(
+        AuditRecord(
+          id: '', 
+          enterpriseId: enterpriseId,
+          userId: userId, 
+          module: 'boutique',
+          action: action,
+          entityId: entityId,
+          entityType: 'purchase',
+          metadata: metadata,
+          timestamp: DateTime.now(),
+        ),
+      );
+    } catch (e) {
+      AppLogger.error('Failed to log purchase audit: $action', error: e);
+    }
   }
 }

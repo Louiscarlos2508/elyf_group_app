@@ -57,7 +57,7 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final paymentsAsync = ref.watch(paymentsProvider);
+    final paymentsAsync = ref.watch(paymentsWithRelationsProvider);
 
     return DefaultTabController(
       length: 2,
@@ -81,7 +81,7 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
                   child: IconButton(
                     icon: const Icon(Icons.refresh, color: Colors.white),
                     onPressed: () {
-                      ref.invalidate(paymentsProvider);
+                      final _ = ref.refresh(paymentsWithRelationsProvider);
                       ref.invalidate(rentMatrixProvider);
                     },
                     tooltip: 'Actualiser',
@@ -429,7 +429,7 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
       try {
         final controller = ref.read(paymentControllerProvider);
         await controller.deletePayment(payment.id);
-        ref.invalidate(paymentsProvider);
+        ref.invalidate(paymentsWithRelationsProvider);
         if (mounted) {
           NotificationService.showSuccess(
             context,

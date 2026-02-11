@@ -1,5 +1,6 @@
 #!/usr/bin/env dart
 // Script to check architecture rules using dependency_validator
+// ignore_for_file: avoid_print
 
 import 'dart:io';
 

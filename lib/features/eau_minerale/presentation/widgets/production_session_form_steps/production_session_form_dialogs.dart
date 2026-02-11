@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
+import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 import '../../../domain/entities/bobine_usage.dart';
 import '../../../domain/entities/machine.dart';
 import '../../../domain/entities/production_day.dart';
@@ -88,9 +89,12 @@ class ProductionSessionFormDialogs {
     required Function(ProductionDay) onDayAdded,
     required Function(ProductionDay) onDayUpdated,
   }) async {
+    final enterpriseId = ref.read(activeEnterpriseIdProvider).value ?? '';
+
     // Créer une session temporaire pour le formulaire
     final tempSession = ProductionSession(
       id: session?.id ?? 'temp',
+      enterpriseId: enterpriseId,
       date: selectedDate,
       period: 1,
       heureDebut: heureDebut,
@@ -169,9 +173,12 @@ class ProductionSessionFormDialogs {
       reference: bobine.machineId,
     );
 
+    final enterpriseId = ref.read(activeEnterpriseIdProvider).value ?? '';
+
     // Créer une session temporaire pour le dialog
     final tempSession = ProductionSession(
       id: session?.id ?? 'temp',
+      enterpriseId: enterpriseId,
       date: selectedDate,
       period: 1,
       heureDebut: heureDebut,

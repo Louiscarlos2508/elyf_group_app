@@ -1,5 +1,6 @@
 import 'dart:async';
-import 'dart:developer' as developer;
+
+import '../logging/app_logger.dart';
 
 /// Métriques de synchronisation pour monitoring et analytics.
 ///
@@ -215,7 +216,7 @@ class SyncMetrics {
 
   /// Affiche un résumé des métriques dans les logs.
   void logSummary() {
-    developer.log(
+    AppLogger.info(
       '=== Sync Metrics Summary ===\n'
       'Total Operations: $totalOperations\n'
       'Successful: $successfulOperations (${(successRate * 100).toStringAsFixed(1)}%)\n'
@@ -257,12 +258,12 @@ class SyncMetricsExporter {
       //   parameters: metrics.toJson(),
       // );
 
-      developer.log(
+      AppLogger.info(
         'Metrics export to Firebase Analytics (not implemented - requires firebase_analytics package)',
         name: 'sync.metrics.export',
       );
     } catch (e) {
-      developer.log(
+      AppLogger.error(
         'Error exporting metrics to Firebase Analytics: $e',
         name: 'sync.metrics.export',
         error: e,
@@ -287,12 +288,12 @@ class SyncMetricsExporter {
       //   throw Exception('Failed to export metrics: ${response.statusCode}');
       // }
 
-      developer.log(
+      AppLogger.info(
         'Metrics export to HTTP endpoint (not implemented - requires http package)',
         name: 'sync.metrics.export',
       );
     } catch (e) {
-      developer.log(
+      AppLogger.error(
         'Error exporting metrics to HTTP endpoint: $e',
         name: 'sync.metrics.export',
         error: e,

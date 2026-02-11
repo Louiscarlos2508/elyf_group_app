@@ -1,13 +1,11 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import '../../../../core/errors/error_handler.dart';
-import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/offline_repository.dart';
 import '../../domain/entities/contract.dart';
 import '../../domain/repositories/contract_repository.dart';
 
-/// Offline-first repository for Contract entities.
+/// Offline-first repository for Contract entities (immobilier module).
 class ContractOfflineRepository extends OfflineRepository<Contract>
     implements ContractRepository {
   ContractOfflineRepository({
@@ -22,76 +20,23 @@ class ContractOfflineRepository extends OfflineRepository<Contract>
   @override
   String get collectionName => 'contracts';
 
-  @override
-  Contract fromMap(Map<String, dynamic> map) {
-    return Contract(
-      id: map['id'] as String? ?? map['localId'] as String,
-      propertyId: map['propertyId'] as String,
-      tenantId: map['tenantId'] as String,
-      startDate: DateTime.parse(map['startDate'] as String),
-      endDate: map['endDate'] != null
-          ? DateTime.parse(map['endDate'] as String)
-          : null,
-      monthlyRent: (map['monthlyRent'] as num?)?.toInt() ?? 0,
-      deposit: (map['deposit'] as num?)?.toInt() ?? 0,
-      status: _parseContractStatus(map['status'] as String),
-      property: null, // Will be loaded separately if needed
-      tenant: null, // Will be loaded separately if needed
-      paymentDay: map['paymentDay'] as int?,
-      notes: map['notes'] as String?,
-      depositInMonths: map['depositInMonths'] as int?,
-      createdAt: map['createdAt'] != null
-          ? DateTime.parse(map['createdAt'] as String)
-          : null,
-      updatedAt: map['updatedAt'] != null
-          ? DateTime.parse(map['updatedAt'] as String)
-          : null,
-      deletedAt: map['deletedAt'] != null
-          ? DateTime.parse(map['deletedAt'] as String)
-          : null,
-      deletedBy: map['deletedBy'] as String?,
-      attachedFiles: null, // Will be loaded separately if needed
-      entryInventory: map['entryInventory'] as String?,
-      exitInventory: map['exitInventory'] as String?,
-    );
-  }
+  String get moduleType => 'immobilier';
 
   @override
-  Map<String, dynamic> toMap(Contract entity) {
-    return {
-      'id': entity.id,
-      'propertyId': entity.propertyId,
-      'tenantId': entity.tenantId,
-      'startDate': entity.startDate.toIso8601String(),
-      'endDate': entity.endDate?.toIso8601String(),
-      'monthlyRent': entity.monthlyRent.toDouble(),
-      'deposit': entity.deposit.toDouble(),
-      'status': entity.status.name,
-      'paymentDay': entity.paymentDay,
-      'notes': entity.notes,
-      'depositInMonths': entity.depositInMonths,
-      'createdAt': entity.createdAt?.toIso8601String(),
-      'updatedAt': entity.updatedAt?.toIso8601String(),
-      'deletedAt': entity.deletedAt?.toIso8601String(),
-      'deletedBy': entity.deletedBy,
-      'entryInventory': entity.entryInventory,
-      'exitInventory': entity.exitInventory,
-    };
-  }
+  Contract fromMap(Map<String, dynamic> map) => Contract.fromMap(map);
+
+  @override
+  Map<String, dynamic> toMap(Contract entity) => entity.toMap();
 
   @override
   String getLocalId(Contract entity) {
-    if (entity.id.startsWith('local_')) {
-      return entity.id;
-    }
+    if (entity.id.isNotEmpty) return entity.id;
     return LocalIdGenerator.generate();
   }
 
   @override
   String? getRemoteId(Contract entity) {
-    if (!entity.id.startsWith('local_')) {
-      return entity.id;
-    }
+    if (!LocalIdGenerator.isLocalId(entity.id)) return entity.id;
     return null;
   }
 
@@ -107,7 +52,7 @@ class ContractOfflineRepository extends OfflineRepository<Contract>
       localId: localId,
       remoteId: getRemoteId(entity),
       enterpriseId: enterpriseId,
-      moduleType: 'immobilier',
+      moduleType: moduleType,
       dataJson: jsonEncode(map),
       localUpdatedAt: DateTime.now(),
     );
@@ -121,7 +66,7 @@ class ContractOfflineRepository extends OfflineRepository<Contract>
         collectionName: collectionName,
         remoteId: remoteId,
         enterpriseId: enterpriseId,
-        moduleType: 'immobilier',
+        moduleType: moduleType,
       );
       return;
     }
@@ -130,30 +75,27 @@ class ContractOfflineRepository extends OfflineRepository<Contract>
       collectionName: collectionName,
       localId: localId,
       enterpriseId: enterpriseId,
-      moduleType: 'immobilier',
+      moduleType: moduleType,
     );
   }
 
   @override
   Future<Contract?> getByLocalId(String localId) async {
-    final byRemote = await driftService.records.findByRemoteId(
-      collectionName: collectionName,
-      remoteId: localId,
-      enterpriseId: enterpriseId,
-      moduleType: 'immobilier',
-    );
-    if (byRemote != null) {
-      return fromMap(jsonDecode(byRemote.dataJson) as Map<String, dynamic>);
-    }
-
-    final byLocal = await driftService.records.findByLocalId(
+    final record = await driftService.records.findByLocalId(
       collectionName: collectionName,
       localId: localId,
       enterpriseId: enterpriseId,
-      moduleType: 'immobilier',
+      moduleType: moduleType,
+    ) ?? await driftService.records.findByRemoteId(
+      collectionName: collectionName,
+      remoteId: localId,
+      enterpriseId: enterpriseId,
+      moduleType: moduleType,
     );
-    if (byLocal == null) return null;
-    return fromMap(jsonDecode(byLocal.dataJson) as Map<String, dynamic>);
+
+    if (record == null) return null;
+    final map = safeDecodeJson(record.dataJson, record.localId);
+    return map != null ? fromMap(map) : null;
   }
 
   @override
@@ -166,18 +108,14 @@ class ContractOfflineRepository extends OfflineRepository<Contract>
     final rows = await driftService.records.listForEnterprise(
       collectionName: collectionName,
       enterpriseId: enterpriseId,
-      moduleType: 'immobilier',
+      moduleType: moduleType,
     );
     final entities = rows
-
-        .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
-
+        .map((r) => safeDecodeJson(r.dataJson, r.localId))
+        .where((m) => m != null)
+        .map((m) => fromMap(m!))
         .toList();
-
     
-
-    // Dédupliquer par remoteId pour éviter les doublons
-
     return deduplicateByRemoteId(entities);
   }
 
@@ -189,14 +127,14 @@ class ContractOfflineRepository extends OfflineRepository<Contract>
         .watchForEnterprise(
           collectionName: collectionName,
           enterpriseId: enterpriseId,
-          moduleType: 'immobilier',
+          moduleType: moduleType,
         )
         .map((rows) {
           final entities = rows
-              .map(
-                (r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>),
-              )
-              .where((e) => e.deletedAt == null)
+              .map((r) => safeDecodeJson(r.dataJson, r.localId))
+              .where((m) => m != null)
+              .map((m) => fromMap(m!))
+              .where((e) => !e.isDeleted)
               .toList();
           return deduplicateByRemoteId(entities);
         });
@@ -208,14 +146,14 @@ class ContractOfflineRepository extends OfflineRepository<Contract>
         .watchForEnterprise(
           collectionName: collectionName,
           enterpriseId: enterpriseId,
-          moduleType: 'immobilier',
+          moduleType: moduleType,
         )
         .map((rows) {
           final entities = rows
-              .map(
-                (r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>),
-              )
-              .where((e) => e.deletedAt != null)
+              .map((r) => safeDecodeJson(r.dataJson, r.localId))
+              .where((m) => m != null)
+              .map((m) => fromMap(m!))
+              .where((e) => e.isDeleted)
               .toList();
           return deduplicateByRemoteId(entities);
         });
@@ -226,103 +164,42 @@ class ContractOfflineRepository extends OfflineRepository<Contract>
     try {
       return await getByLocalId(id);
     } catch (error, stackTrace) {
-      final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      AppLogger.error(
-        'Error getting contract: $id - ${appException.message}',
-        name: 'ContractOfflineRepository',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      throw appException;
+      throw ErrorHandler.instance.handleError(error, stackTrace);
     }
   }
 
   @override
   Future<List<Contract>> getActiveContracts() async {
-    try {
-      final allContracts = await getAllForEnterprise(enterpriseId);
-      return allContracts.where((c) => c.isActive).toList();
-    } catch (error, stackTrace) {
-      final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error getting active contracts',
-        name: 'ContractOfflineRepository',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      throw appException;
-    }
+    final all = await getAllContracts();
+    return all.where((c) => c.isActive).toList();
   }
 
   @override
   Future<List<Contract>> getContractsByProperty(String propertyId) async {
-    try {
-      final allContracts = await getAllForEnterprise(enterpriseId);
-      return allContracts.where((c) => c.propertyId == propertyId).toList();
-    } catch (error, stackTrace) {
-      final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      AppLogger.error(
-        'Error getting contracts by property: $propertyId - ${appException.message}',
-        name: 'ContractOfflineRepository',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      throw appException;
-    }
+    final all = await getAllContracts();
+    return all.where((c) => c.propertyId == propertyId).toList();
   }
 
   @override
   Future<List<Contract>> getContractsByTenant(String tenantId) async {
-    try {
-      final allContracts = await getAllForEnterprise(enterpriseId);
-      return allContracts.where((c) => c.tenantId == tenantId).toList();
-    } catch (error, stackTrace) {
-      final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
-        'Error getting contracts by tenant: $tenantId',
-        name: 'ContractOfflineRepository',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      throw appException;
-    }
+    final all = await getAllContracts();
+    return all.where((c) => c.tenantId == tenantId).toList();
   }
 
   @override
   Future<Contract> createContract(Contract contract) async {
     try {
-      final localId = getLocalId(contract);
-      final contractWithLocalId = Contract(
+      final localId = contract.id.isEmpty ? LocalIdGenerator.generate() : contract.id;
+      final newContract = contract.copyWith(
         id: localId,
-        propertyId: contract.propertyId,
-        tenantId: contract.tenantId,
-        startDate: contract.startDate,
-        endDate: contract.endDate,
-        monthlyRent: contract.monthlyRent,
-        deposit: contract.deposit,
-        status: contract.status,
-        property: contract.property,
-        tenant: contract.tenant,
-        paymentDay: contract.paymentDay,
-        notes: contract.notes,
-        depositInMonths: contract.depositInMonths,
-        createdAt: contract.createdAt,
+        enterpriseId: enterpriseId,
+        createdAt: contract.createdAt ?? DateTime.now(),
         updatedAt: DateTime.now(),
-        attachedFiles: contract.attachedFiles,
-        entryInventory: contract.entryInventory,
-        exitInventory: contract.exitInventory,
       );
-      await save(contractWithLocalId);
-      return contractWithLocalId;
+      await save(newContract);
+      return newContract;
     } catch (error, stackTrace) {
-      final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      AppLogger.error(
-        'Error creating contract: ${appException.message}',
-        name: 'ContractOfflineRepository',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      throw appException;
+      throw ErrorHandler.instance.handleError(error, stackTrace);
     }
   }
 
@@ -333,14 +210,7 @@ class ContractOfflineRepository extends OfflineRepository<Contract>
       await save(updatedContract);
       return updatedContract;
     } catch (error, stackTrace) {
-      final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      AppLogger.error(
-        'Error updating contract: ${contract.id} - ${appException.message}',
-        name: 'ContractOfflineRepository',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      throw appException;
+      throw ErrorHandler.instance.handleError(error, stackTrace);
     }
   }
 
@@ -349,21 +219,13 @@ class ContractOfflineRepository extends OfflineRepository<Contract>
     try {
       final contract = await getContractById(id);
       if (contract != null) {
-        final updatedContract = contract.copyWith(
+        await save(contract.copyWith(
           deletedAt: DateTime.now(),
           deletedBy: 'system',
-        );
-        await save(updatedContract);
+        ));
       }
     } catch (error, stackTrace) {
-      final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      AppLogger.error(
-        'Error deleting contract: $id - ${appException.message}',
-        name: 'ContractOfflineRepository',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      throw appException;
+      throw ErrorHandler.instance.handleError(error, stackTrace);
     }
   }
 
@@ -372,36 +234,13 @@ class ContractOfflineRepository extends OfflineRepository<Contract>
     try {
       final contract = await getContractById(id);
       if (contract != null) {
-        final updatedContract = contract.copyWith(
+        await save(contract.copyWith(
           deletedAt: null,
           deletedBy: null,
-        );
-        await save(updatedContract);
+        ));
       }
     } catch (error, stackTrace) {
-      final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      AppLogger.error(
-        'Error restoring contract: $id - ${appException.message}',
-        name: 'ContractOfflineRepository',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      throw appException;
-    }
-  }
-
-  ContractStatus _parseContractStatus(String status) {
-    switch (status) {
-      case 'active':
-        return ContractStatus.active;
-      case 'expired':
-        return ContractStatus.expired;
-      case 'terminated':
-        return ContractStatus.terminated;
-      case 'pending':
-        return ContractStatus.pending;
-      default:
-        return ContractStatus.pending;
+      throw ErrorHandler.instance.handleError(error, stackTrace);
     }
   }
 }

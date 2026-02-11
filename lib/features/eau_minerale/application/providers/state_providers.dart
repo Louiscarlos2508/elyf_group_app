@@ -1,12 +1,13 @@
-import 'dart:developer' as developer;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
+import 'package:rxdart/rxdart.dart';
 
 import '../../../../core/errors/app_exceptions.dart';
 import '../../../../core/domain/entities/expense_balance_data.dart';
 import '../../domain/adapters/expense_balance_adapter.dart';
 import '../../domain/entities/daily_worker.dart';
 import '../../domain/entities/electricity_meter_type.dart';
+import '../../domain/entities/expense_record.dart';
 import '../../domain/entities/expense_report_data.dart';
 import '../../domain/entities/machine.dart';
 import '../../domain/entities/product.dart';
@@ -29,6 +30,9 @@ import '../../domain/entities/customer_credit.dart';
 import '../../domain/repositories/customer_repository.dart';
 import '../../domain/entities/weekly_salary_info.dart';
 import '../../domain/services/dashboard_calculation_service.dart';
+import '../controllers/sales_controller.dart';
+import '../controllers/finances_controller.dart';
+import '../controllers/salary_controller.dart';
 
 /// Provider pour récupérer le type de compteur configuré
 final electricityMeterTypeProvider =
@@ -279,34 +283,64 @@ final todayPaymentsStreamProvider = StreamProvider.autoDispose<List<CreditPaymen
   );
 });
 
-/// Derived state for daily dashboard KPIs (Real-time).
-final dailyDashboardSummaryProvider = Provider.autoDispose<AsyncValue<DailyDashboardMetrics>>((ref) {
-  final salesAsync = ref.watch(todaySalesStreamProvider);
-  final paymentsAsync = ref.watch(todayPaymentsStreamProvider);
-  
-  if (salesAsync.isLoading || paymentsAsync.isLoading) {
-    return const AsyncValue.loading();
-  }
-  
-  if (salesAsync.hasError) {
-    return AsyncValue.error(salesAsync.error!, salesAsync.stackTrace!);
-  }
-  
-  if (paymentsAsync.hasError) {
-     return AsyncValue.error(paymentsAsync.error!, paymentsAsync.stackTrace!);
-  }
-  
-  final sales = salesAsync.value ?? [];
-  final payments = paymentsAsync.value ?? [];
-  
+/// Stream for Monthly Credit Payments (Real-time).
+final monthCreditPaymentsStreamProvider = StreamProvider.autoDispose<List<CreditPayment>>((ref) {
+  final now = DateTime.now();
   final calculationService = ref.watch(dashboardCalculationServiceProvider);
+  final monthStart = calculationService.getMonthStart(now);
   
-  final metrics = calculationService.calculateDailyMetrics(
-    sales: sales,
-    creditPayments: payments,
+  return ref.watch(creditRepositoryProvider).watchPayments(
+    startDate: monthStart,
   );
+});
+
+
+/// Stream for Today's Production Sessions (Real-time)
+final todaySessionsStreamProvider = StreamProvider.autoDispose<List<ProductionSession>>((ref) {
+  final now = DateTime.now();
+  final startOfDay = DateTime(now.year, now.month, now.day);
+  final endOfDay = startOfDay.add(const Duration(days: 1)).subtract(const Duration(milliseconds: 1));
   
-  return AsyncValue.data(metrics);
+  return ref.watch(productionSessionRepositoryProvider).watchSessions(
+    startDate: startOfDay,
+    endDate: endOfDay,
+  );
+});
+
+
+/// Derived state for daily dashboard KPIs (Real-time).
+/// Uses rxdart to stabilize emissions and avoid flickering.
+final dailyDashboardSummaryProvider = StreamProvider.autoDispose<DailyDashboardMetrics>((ref) {
+  final now = DateTime.now();
+  final startOfDay = DateTime(now.year, now.month, now.day);
+  final endOfDay = startOfDay.add(const Duration(days: 1)).subtract(const Duration(milliseconds: 1));
+
+  final salesStream = ref.watch(saleRepositoryProvider).watchSales(
+    startDate: startOfDay,
+    endDate: endOfDay,
+  );
+  final paymentsStream = ref.watch(creditRepositoryProvider).watchPayments(
+    startDate: startOfDay,
+    endDate: endOfDay,
+  );
+  final sessionsStream = ref.watch(productionSessionRepositoryProvider).watchSessions(
+    startDate: startOfDay,
+    endDate: endOfDay,
+  );
+
+  return Rx.combineLatest3(
+    salesStream,
+    paymentsStream,
+    sessionsStream,
+    (List<Sale> sales, List<CreditPayment> payments, List<ProductionSession> sessions) {
+      final calculationService = ref.read(dashboardCalculationServiceProvider);
+      return calculationService.calculateDailyMetrics(
+        sales: sales,
+        creditPayments: payments,
+        sessions: sessions,
+      );
+    },
+  ).debounceTime(const Duration(milliseconds: 500));
 });
 
 /// Derived state for the monthly dashboard KPIs.
@@ -338,50 +372,79 @@ class MonthlyDashboardSummary {
 }
 
 final monthlyDashboardSummaryProvider =
-    FutureProvider.autoDispose<MonthlyDashboardSummary>((ref) async {
-  final sales = await ref.watch(salesStateProvider.future);
-  final finances = await ref.watch(financesStateProvider.future);
-  final sessions = await ref.watch(productionSessionsStateProvider.future);
-  final salaryState = await ref.watch(salaryStateProvider.future);
+    StreamProvider.autoDispose<MonthlyDashboardSummary>((ref) {
+  final now = DateTime.now();
+  final calculationService = ref.watch(dashboardCalculationServiceProvider);
+  final monthStart = calculationService.getMonthStart(now);
+
+  final salesStream = ref.watch(saleRepositoryProvider).watchSales();
+  final financesStream = ref.watch(financeRepositoryProvider).watchExpenses();
+  final sessionsStream = ref.watch(productionSessionRepositoryProvider).watchSessions();
+  final creditPaymentsStream = ref.watch(creditRepositoryProvider).watchPayments(
+    startDate: monthStart,
+  );
   
-  final creditRepo = ref.watch(creditRepositoryProvider);
+  // For salaryState, we use ref.watch and convert to stream to include it in combineLatest
+  final salaryStream = Stream.fromFuture(ref.watch(salaryStateProvider.future));
+
+  return Rx.combineLatest5(
+    salesStream,
+    financesStream,
+    sessionsStream,
+    salaryStream,
+    creditPaymentsStream,
+    (List<Sale> sales, List<ExpenseRecord> expenses, List<ProductionSession> sessions, 
+     SalaryState salaryState, List<CreditPayment> creditPayments) {
+      return _calculateMonthlySummary(
+        ref, 
+        SalesState(sales: sales), 
+        FinancesState(expenses: expenses), 
+        sessions, 
+        salaryState, 
+        creditPayments,
+      );
+    },
+  ).debounceTime(const Duration(milliseconds: 500));
+});
+
+/// Helper for monthly summary calculation to keep provider clean
+MonthlyDashboardSummary _calculateMonthlySummary(
+  Ref ref,
+  SalesState sales,
+  FinancesState finances,
+  List<ProductionSession> sessions,
+  SalaryState salaryState,
+  List<CreditPayment> creditPayments,
+) {
   final calculationService = ref.read(dashboardCalculationServiceProvider);
   final now = DateTime.now();
   final monthStart = calculationService.getMonthStart(now);
 
-  // Fetch credit payments for the month
-  final monthCreditPayments = await creditRepo.fetchPayments(startDate: monthStart);
-
   final metrics = calculationService.calculateMonthlyMetricsFromRecords(
     sales: sales.sales,
-    creditPayments: monthCreditPayments,
-    customers: [], // Not needed for primary KPIs here
+    creditPayments: creditPayments,
+    customers: [],
     expenses: finances.expenses,
     salaryPayments: salaryState.monthlySalaryPayments,
     productionPayments: salaryState.productionPayments,
-    sessions: sessions, // Now passing sessions for cost calculation
+    sessions: sessions,
     referenceDate: now,
   );
 
-  final monthTransactions = finances.expenses.where((e) => e.date.isAfter(monthStart) || e.date.isAtSameMomentAs(monthStart)).toList();
+  final monthTransactions = finances.expenses
+      .where((e) => e.date.isAfter(monthStart) || e.date.isAtSameMomentAs(monthStart))
+      .toList();
 
-  // Calculate separate credit recoveries and salary expenses for summary if needed
-  final creditRecoveries = monthCreditPayments.fold<int>(0, (sum, p) => sum + p.amount);
+  final creditRecoveries = creditPayments.fold<int>(0, (sum, p) => sum + p.amount);
+  
   final salaryExpenses = salaryState.monthlySalaryPayments
       .where((p) => p.date.isAfter(monthStart) || p.date.isAtSameMomentAs(monthStart))
       .fold<int>(0, (sum, p) => sum + p.amount) +
       salaryState.productionPayments
       .where((p) => p.paymentDate.isAfter(monthStart) || p.paymentDate.isAtSameMomentAs(monthStart))
       .fold<int>(0, (sum, p) => sum + p.totalAmount);
-      
-  // Debug log for verification
-  final sessionCosts = sessions
-      .where((s) =>
-          (s.date.isAfter(monthStart) || s.date.isAtSameMomentAs(monthStart)) &&
-          s.status.name != 'cancelled') // strict check
-      .fold<int>(0, (sum, s) => sum + (s.coutBobines ?? 0) + (s.coutElectricite ?? 0));
 
-  final summary = MonthlyDashboardSummary(
+  return MonthlyDashboardSummary(
     revenue: metrics.revenue,
     collections: metrics.collections,
     production: metrics.productionVolume,
@@ -393,14 +456,7 @@ final monthlyDashboardSummaryProvider =
     creditRecoveries: creditRecoveries,
     salaryExpenses: salaryExpenses,
   );
-
-  developer.log(
-    'Dashboard Summary Updated: rev=${metrics.revenue}, coll=${metrics.collections} (incl. rec=$creditRecoveries), prod=${metrics.productionVolume}, exp=${metrics.expenses} (incl. sal=$salaryExpenses, sessCosts=$sessionCosts)',
-    name: 'monthlyDashboardSummaryProvider',
-  );
-
-  return summary;
-});
+}
 
 final customerCreditsProvider = FutureProvider.autoDispose.family<List<Sale>, String>((ref, customerId) async {
   // Keep alive for 3 minutes to prevent rapid rebuilds

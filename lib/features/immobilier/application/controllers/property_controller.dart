@@ -1,13 +1,23 @@
+import '../../../audit_trail/domain/services/audit_trail_service.dart';
 import '../../../../core/errors/app_exceptions.dart';
 import '../../domain/entities/property.dart';
 import '../../domain/repositories/property_repository.dart';
 import '../../domain/services/immobilier_validation_service.dart';
 
 class PropertyController {
-  PropertyController(this._propertyRepository, this._validationService);
+  PropertyController(
+    this._propertyRepository,
+    this._validationService,
+    this._auditTrailService,
+    this._enterpriseId,
+    this._userId,
+  );
 
   final PropertyRepository _propertyRepository;
   final ImmobilierValidationService _validationService;
+  final AuditTrailService _auditTrailService;
+  final String _enterpriseId;
+  final String _userId;
 
   Future<List<Property>> fetchProperties() async {
     return await _propertyRepository.getAllProperties();
@@ -34,7 +44,9 @@ class PropertyController {
   }
 
   Future<Property> createProperty(Property property) async {
-    return await _propertyRepository.createProperty(property);
+    final created = await _propertyRepository.createProperty(property);
+    await _logAction('create', created.id, metadata: created.toMap());
+    return created;
   }
 
   /// Met à jour une propriété après validation.
@@ -60,7 +72,9 @@ class PropertyController {
       }
     }
 
-    return await _propertyRepository.updateProperty(property);
+    final updated = await _propertyRepository.updateProperty(property);
+    await _logAction('update', updated.id, metadata: updated.toMap());
+    return updated;
   }
 
   /// Supprime une propriété après validation.
@@ -77,9 +91,27 @@ class PropertyController {
     }
 
     await _propertyRepository.deleteProperty(id);
+    await _logAction('delete', id);
   }
 
   Future<void> restoreProperty(String id) async {
     await _propertyRepository.restoreProperty(id);
+    await _logAction('restore', id);
+  }
+
+  Future<void> _logAction(
+    String action,
+    String entityId, {
+    Map<String, dynamic>? metadata,
+  }) async {
+    await _auditTrailService.logAction(
+      enterpriseId: _enterpriseId,
+      userId: _userId,
+      module: 'immobilier',
+      action: action,
+      entityId: entityId,
+      entityType: 'property',
+      metadata: metadata,
+    );
   }
 }

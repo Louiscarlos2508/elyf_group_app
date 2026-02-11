@@ -1,7 +1,7 @@
-/// Représente le stock d'emballages (packs, sachets, etc.).
 class PackagingStock {
   const PackagingStock({
     required this.id,
+    required this.enterpriseId,
     required this.type,
     required this.quantity,
     required this.unit,
@@ -11,6 +11,8 @@ class PackagingStock {
     this.prixUnitaire,
     this.createdAt,
     this.updatedAt,
+    this.deletedAt,
+    this.deletedBy,
   }) : assert(quantity >= 0, 'La quantité ne peut pas être négative'),
        assert(unitsPerLot > 0, 'Le nombre d\'unités par lot doit être positif'),
        assert(
@@ -19,6 +21,7 @@ class PackagingStock {
        );
 
   final String id;
+  final String enterpriseId;
   final String type; // Type d'emballage (par défaut: "Emballage")
   final int quantity; // Quantité disponible (toujours en UNITÉS dans la base)
   final String unit; // Unité d'affichage (ex: "films", "sachets")
@@ -28,45 +31,17 @@ class PackagingStock {
   final int? prixUnitaire; // Prix d'achat unitaire (CFA)
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final DateTime? deletedAt;
+  final String? deletedBy;
 
   /// Retourne la quantité exprimée en lots
-  double get quantityInLots => quantity / unitsPerLot;
+// ... (rest of class)
 
-  /// Retourne le nombre de lots complets
-  int get fullLots => quantity ~/ unitsPerLot;
-
-  /// Retourne le surplus d'unités (après lots complets)
-  int get remainingUnits => quantity % unitsPerLot;
-
-  /// Libellé lisible de la quantité (ex: "2 lots et 50 unités")
-  String get quantityLabel {
-    if (unitsPerLot <= 1) return '$quantity $unit';
-    final lots = fullLots;
-    final units = remainingUnits;
-    if (lots == 0) return '$units $unit';
-    if (units == 0) return '$lots lot(s)';
-    return '$lots lot(s) + $units $unit';
-  }
-
-  /// Vérifie si le stock est faible (en dessous du seuil d'alerte)
-  bool get estStockFaible {
-    if (seuilAlerte == null) return false;
-    return quantity <= seuilAlerte!;
-  }
-
-  /// Calcule le pourcentage de stock restant par rapport au seuil d'alerte
-  double? get pourcentageRestant {
-    if (seuilAlerte == null || seuilAlerte == 0) return null;
-    return (quantity / seuilAlerte!) * 100;
-  }
-
-  /// Vérifie si le stock est suffisant pour une quantité donnée
-  bool peutSatisfaire(int quantiteDemandee) {
-    return quantity >= quantiteDemandee;
-  }
+  bool get isDeleted => deletedAt != null;
 
   PackagingStock copyWith({
     String? id,
+    String? enterpriseId,
     String? type,
     int? quantity,
     String? unit,
@@ -76,9 +51,12 @@ class PackagingStock {
     int? prixUnitaire,
     DateTime? createdAt,
     DateTime? updatedAt,
+    DateTime? deletedAt,
+    String? deletedBy,
   }) {
     return PackagingStock(
       id: id ?? this.id,
+      enterpriseId: enterpriseId ?? this.enterpriseId,
       type: type ?? this.type,
       quantity: quantity ?? this.quantity,
       unit: unit ?? this.unit,
@@ -88,6 +66,50 @@ class PackagingStock {
       prixUnitaire: prixUnitaire ?? this.prixUnitaire,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      deletedBy: deletedBy ?? this.deletedBy,
     );
+  }
+
+  factory PackagingStock.fromMap(Map<String, dynamic> map, String defaultEnterpriseId) {
+    return PackagingStock(
+      id: map['id'] as String? ?? map['localId'] as String,
+      enterpriseId: map['enterpriseId'] as String? ?? defaultEnterpriseId,
+      type: map['type'] as String? ?? '',
+      quantity: (map['quantity'] as num?)?.toInt() ?? 0,
+      unit: map['unit'] as String? ?? '',
+      unitsPerLot: (map['unitsPerLot'] as num?)?.toInt() ?? 1,
+      seuilAlerte: (map['seuilAlerte'] as num?)?.toInt(),
+      fournisseur: map['fournisseur'] as String?,
+      prixUnitaire: (map['prixUnitaire'] as num?)?.toInt(),
+      createdAt: map['createdAt'] != null
+          ? DateTime.parse(map['createdAt'] as String)
+          : null,
+      updatedAt: map['updatedAt'] != null
+          ? DateTime.parse(map['updatedAt'] as String)
+          : null,
+      deletedAt: map['deletedAt'] != null
+          ? DateTime.parse(map['deletedAt'] as String)
+          : null,
+      deletedBy: map['deletedBy'] as String?,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'enterpriseId': enterpriseId,
+      'type': type,
+      'quantity': quantity,
+      'unit': unit,
+      'unitsPerLot': unitsPerLot,
+      'seuilAlerte': seuilAlerte,
+      'fournisseur': fournisseur,
+      'prixUnitaire': prixUnitaire,
+      'createdAt': createdAt?.toIso8601String(),
+      'updatedAt': updatedAt?.toIso8601String(),
+      'deletedAt': deletedAt?.toIso8601String(),
+      'deletedBy': deletedBy,
+    };
   }
 }

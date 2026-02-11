@@ -74,6 +74,7 @@ class ProductionSessionFormActions {
   /// Build a ProductionSession from form data.
   static ProductionSession buildSession({
     required String? sessionId,
+    required String enterpriseId,
     required DateTime selectedDate,
     required DateTime heureDebut,
     required DateTime? heureFin,
@@ -91,6 +92,7 @@ class ProductionSessionFormActions {
   }) {
     return ProductionSession(
       id: sessionId ?? '',
+      enterpriseId: enterpriseId,
       date: selectedDate,
       period: period,
       heureDebut: heureDebut,

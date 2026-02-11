@@ -97,4 +97,40 @@ class ProductionEvent {
       createdAt: createdAt ?? this.createdAt,
     );
   }
+
+  factory ProductionEvent.fromMap(Map<String, dynamic> map) {
+    return ProductionEvent(
+      id: map['id'] as String? ?? '',
+      productionId: map['productionId'] as String? ?? '',
+      type: ProductionEventType.values.byName(map['type'] as String? ?? 'panne'),
+      date: DateTime.parse(map['date'] as String),
+      heure: DateTime.parse(map['heure'] as String),
+      motif: map['motif'] as String? ?? '',
+      duree: map['duree'] != null
+          ? Duration(milliseconds: (map['duree'] as num).toInt())
+          : null,
+      heureReprise: map['heureReprise'] != null
+          ? DateTime.parse(map['heureReprise'] as String)
+          : null,
+      notes: map['notes'] as String?,
+      createdAt: map['createdAt'] != null
+          ? DateTime.parse(map['createdAt'] as String)
+          : null,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'productionId': productionId,
+      'type': type.name,
+      'date': date.toIso8601String(),
+      'heure': heure.toIso8601String(),
+      'motif': motif,
+      'duree': duree?.inMilliseconds,
+      'heureReprise': heureReprise?.toIso8601String(),
+      'notes': notes,
+      'createdAt': createdAt?.toIso8601String(),
+    };
+  }
 }

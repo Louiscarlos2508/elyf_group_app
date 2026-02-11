@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/logging/app_logger.dart';
@@ -151,7 +150,7 @@ class FinanceOfflineRepository extends OfflineRepository<ExpenseRecord>
     try {
       return fromMap(map);
     } catch (e, stackTrace) {
-      developer.log(
+      AppLogger.error(
         'Error parsing ExpenseRecord from map: $e',
         name: 'FinanceOfflineRepository',
         error: e,
@@ -163,7 +162,7 @@ class FinanceOfflineRepository extends OfflineRepository<ExpenseRecord>
 
   @override
   Future<List<ExpenseRecord>> getAllForEnterprise(String enterpriseId) async {
-    developer.log(
+    AppLogger.debug(
       'Fetching all expenses for enterprise: $enterpriseId (module: $moduleType)',
       name: 'FinanceOfflineRepository',
     );
@@ -174,7 +173,7 @@ class FinanceOfflineRepository extends OfflineRepository<ExpenseRecord>
       moduleType: moduleType,
     );
 
-    developer.log(
+    AppLogger.debug(
       'Found ${rows.length} records for $collectionName / $enterpriseId',
       name: 'FinanceOfflineRepository',
     );
@@ -199,7 +198,7 @@ class FinanceOfflineRepository extends OfflineRepository<ExpenseRecord>
       }
     }
     
-    developer.log(
+    AppLogger.debug(
       'Successfully decoded ${expenses.length} expenses',
       name: 'FinanceOfflineRepository',
     );
@@ -207,7 +206,7 @@ class FinanceOfflineRepository extends OfflineRepository<ExpenseRecord>
     // Dédupliquer par remoteId pour éviter les doublons
     final deduplicatedExpenses = deduplicateByRemoteId(expenses);
 
-    developer.log(
+    AppLogger.debug(
       'Final list has ${deduplicatedExpenses.length} expenses after deduplication',
       name: 'FinanceOfflineRepository',
     );
@@ -336,7 +335,7 @@ class FinanceOfflineRepository extends OfflineRepository<ExpenseRecord>
       return localId;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
+      AppLogger.error(
         'Error creating expense',
         name: 'FinanceOfflineRepository',
         error: error,

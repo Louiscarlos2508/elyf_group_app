@@ -6,6 +6,7 @@ import 'tenant.dart';
 class Contract {
   Contract({
     required this.id,
+    required this.enterpriseId,
     required this.propertyId,
     required this.tenantId,
     required this.startDate,
@@ -28,6 +29,7 @@ class Contract {
   });
 
   final String id;
+  final String enterpriseId;
   final String propertyId;
   final String tenantId;
   final DateTime startDate;
@@ -84,6 +86,7 @@ class Contract {
 
   Contract copyWith({
     String? id,
+    String? enterpriseId,
     String? propertyId,
     String? tenantId,
     DateTime? startDate,
@@ -112,6 +115,7 @@ class Contract {
     // Pour l'instant, copyWith standard :
     return Contract(
       id: id ?? this.id,
+      enterpriseId: enterpriseId ?? this.enterpriseId,
       propertyId: propertyId ?? this.propertyId,
       tenantId: tenantId ?? this.tenantId,
       startDate: startDate ?? this.startDate,
@@ -131,6 +135,61 @@ class Contract {
       exitInventory: exitInventory ?? this.exitInventory,
       deletedAt: deletedAt ?? this.deletedAt,
       deletedBy: deletedBy ?? this.deletedBy,
+    );
+  }
+
+  /// Représentation sérialisable pour logs / audit trail / persistence.
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'enterpriseId': enterpriseId,
+      'propertyId': propertyId,
+      'tenantId': tenantId,
+      'startDate': startDate.toIso8601String(),
+      'endDate': endDate?.toIso8601String(),
+      'monthlyRent': monthlyRent,
+      'deposit': deposit,
+      'status': status.name,
+      'paymentDay': paymentDay,
+      'notes': notes,
+      'depositInMonths': depositInMonths,
+      'createdAt': createdAt?.toIso8601String(),
+      'updatedAt': updatedAt?.toIso8601String(),
+      'deletedAt': deletedAt?.toIso8601String(),
+      'deletedBy': deletedBy,
+      if (attachedFiles != null)
+        'attachedFiles': attachedFiles!.map((e) => e.toMap()).toList(),
+      'entryInventory': entryInventory,
+      'exitInventory': exitInventory,
+    };
+  }
+
+  factory Contract.fromMap(Map<String, dynamic> map) {
+    return Contract(
+      id: map['id'] as String,
+      enterpriseId: map['enterpriseId'] as String,
+      propertyId: map['propertyId'] as String,
+      tenantId: map['tenantId'] as String,
+      startDate: DateTime.parse(map['startDate'] as String),
+      endDate: map['endDate'] != null ? DateTime.parse(map['endDate'] as String) : null,
+      monthlyRent: (map['monthlyRent'] as num).toInt(),
+      deposit: (map['deposit'] as num).toInt(),
+      status: ContractStatus.values.firstWhere(
+        (e) => e.name == map['status'],
+        orElse: () => ContractStatus.pending,
+      ),
+      paymentDay: (map['paymentDay'] as num?)?.toInt(),
+      notes: map['notes'] as String?,
+      depositInMonths: (map['depositInMonths'] as num?)?.toInt(),
+      createdAt: map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : null,
+      updatedAt: map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : null,
+      deletedAt: map['deletedAt'] != null ? DateTime.parse(map['deletedAt'] as String) : null,
+      deletedBy: map['deletedBy'] as String?,
+      entryInventory: map['entryInventory'] as String?,
+      exitInventory: map['exitInventory'] as String?,
+      attachedFiles: (map['attachedFiles'] as List<dynamic>?)
+          ?.map<AttachedFile>((e) => AttachedFile.fromMap(e as Map<String, dynamic>))
+          .toList(),
     );
   }
 

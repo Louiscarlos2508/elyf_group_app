@@ -20,24 +20,32 @@ class DashboardTodaySection extends StatelessWidget {
     final todayRevenue = metrics.revenue;
     final todayCount = metrics.salesCount;
     final avgTicket = metrics.averageTicket;
+    final itemsCount = metrics.itemsCount;
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isWide = constraints.maxWidth > 600;
+        final isWide = constraints.maxWidth > 900;
         final cards = [
           ElyfStatsCard(
             label: "Chiffre d'Affaires",
             value: CurrencyFormatter.formatFCFA(todayRevenue),
             subtitle: '$todayCount vente(s)',
             icon: Icons.trending_up,
-            color: const Color(0xFF3B82F6),
+            color: Colors.blue,
+          ),
+          ElyfStatsCard(
+            label: 'Articles Vendus',
+            value: '$itemsCount',
+            subtitle: 'quantité totale',
+            icon: Icons.inventory_2_outlined,
+            color: Colors.orange,
           ),
           ElyfStatsCard(
             label: 'Ticket Moyen',
             value: CurrencyFormatter.formatFCFA(avgTicket),
             subtitle: todayCount > 0 ? 'par transaction' : 'aucune vente',
             icon: Icons.receipt,
-            color: AppColors.success,
+            color: Colors.green,
           ),
         ];
 
@@ -47,12 +55,24 @@ class DashboardTodaySection extends StatelessWidget {
               Expanded(child: cards[0]),
               const SizedBox(width: 16),
               Expanded(child: cards[1]),
+              const SizedBox(width: 16),
+              Expanded(child: cards[2]),
             ],
           );
         }
 
         return Column(
-          children: [cards[0], const SizedBox(height: 16), cards[1]],
+          children: [
+            Row(
+              children: [
+                Expanded(child: cards[0]),
+                const SizedBox(width: 16),
+                Expanded(child: cards[2]),
+              ],
+            ),
+            const SizedBox(height: 16),
+            cards[1],
+          ],
         );
       },
     );

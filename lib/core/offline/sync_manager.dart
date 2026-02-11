@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -85,7 +84,7 @@ class SyncManager {
   /// Initializes the sync manager and starts auto-sync if enabled.
   Future<void> initialize() async {
     if (_isInitialized) {
-      developer.log('SyncManager already initialized', name: 'offline.sync');
+      AppLogger.debug('SyncManager already initialized', name: 'offline.sync');
       return;
     }
 
@@ -95,7 +94,7 @@ class SyncManager {
     _startConnectivityListener();
     _isInitialized = true;
 
-    developer.log(
+    AppLogger.info(
       'SyncManager initialized with auto-sync every ${config.syncIntervalMinutes} minutes',
       name: 'offline.sync',
     );
@@ -104,7 +103,7 @@ class SyncManager {
   /// Syncs all pending operations.
   Future<SyncResult> syncPendingOperations() async {
     if (_isSyncing) {
-      developer.log('Sync already in progress', name: 'offline.sync');
+      AppLogger.debug('Sync already in progress', name: 'offline.sync');
       return SyncResult(
         success: false,
         message: 'Sync already in progress',
@@ -135,7 +134,7 @@ class SyncManager {
     }
 
     if (!isAuthenticated) {
-      developer.log(
+      AppLogger.info(
         'User logged out during sync, stopping sync operations',
         name: 'offline.sync',
       );
@@ -147,7 +146,7 @@ class SyncManager {
     }
 
     if (!_connectivityService.isOnline) {
-      developer.log('Device is offline, skipping sync', name: 'offline.sync');
+      AppLogger.debug('Device is offline, skipping sync', name: 'offline.sync');
       return SyncResult(
         success: false,
         message: 'Device is offline',
@@ -170,17 +169,56 @@ class SyncManager {
         );
       }
 
-      final operations = await _driftService.syncOperations.getPending(
+      final allPending = await _driftService.syncOperations.getPending(
         limit: config.batchSize,
       );
 
+      // Filter only "ready" operations (fresh ones or those past their backoff)
+      final operations = allPending.where((data) {
+        final operation = _driftService.syncOperations.toEntity(data);
+        if (operation.retryCount == 0) return true;
+        
+        // Calculate expected delay based on retry handler logic
+        final retryHandler = _processor.retryHandler;
+        final delayMs = retryHandler.calculateBackoffDelay(operation.retryCount);
+        final readyAt = operation.localUpdatedAt.add(Duration(milliseconds: delayMs));
+        
+        return DateTime.now().isAfter(readyAt);
+      }).toList();
+
+      if (operations.isEmpty && allPending.isNotEmpty) {
+        AppLogger.debug(
+          '${allPending.length} operations pending but none ready for retry yet',
+          name: 'offline.sync',
+        );
+        _isSyncing = false;
+        _syncStatusController.add(SyncProgress.completed(0));
+        return SyncResult(
+          success: true,
+          message: 'Retrying later...',
+          syncedCount: 0,
+        );
+      }
+
       int syncedCount = 0;
       int failedCount = 0;
+      int consecutiveFailures = 0;
+      const int maxConsecutiveFailures = 3;
       final List<String> errors = [];
 
       for (int i = 0; i < operations.length; i++) {
         final data = operations[i];
         final operation = _driftService.syncOperations.toEntity(data);
+
+        // Circuit breaker: stop if too many consecutive failures
+        if (consecutiveFailures >= maxConsecutiveFailures) {
+          AppLogger.warning(
+            'Too many consecutive failures ($consecutiveFailures), stopping sync loop',
+            name: 'offline.sync',
+          );
+          errors.add('Sync stopped: Too many consecutive failures');
+          break;
+        }
 
         _syncStatusController.add(
           SyncProgress.inProgress(
@@ -205,7 +243,7 @@ class SyncManager {
         }
 
         if (!stillAuthenticated) {
-          developer.log(
+          AppLogger.info(
             'User logged out during sync, stopping remaining operations',
             name: 'offline.sync',
           );
@@ -222,6 +260,7 @@ class SyncManager {
 
           final duration = DateTime.now().difference(startTime);
           syncedCount++;
+          consecutiveFailures = 0; // Reset consecutive failures on success
 
           // Enregistrer le succès dans les métriques
           _metrics.recordSuccess(
@@ -237,6 +276,7 @@ class SyncManager {
           final duration = DateTime.now().difference(startTime);
 
           failedCount++;
+          consecutiveFailures++;
           final errorMsg = e.toString();
           errors.add(errorMsg);
 
@@ -254,8 +294,8 @@ class SyncManager {
             retryCount: operation.retryCount,
           );
 
-          developer.log(
-            'Failed to sync operation ${operation.id}: $errorMsg',
+          AppLogger.error(
+            'Failed to sync operation ${operation.id} (consecutive: $consecutiveFailures): $errorMsg',
             name: 'offline.sync',
             error: e,
           );
@@ -278,7 +318,7 @@ class SyncManager {
         _metrics.logSummary();
       }
 
-      developer.log(
+      AppLogger.info(
         'Sync completed: ${result.syncedCount} synced, ${result.failedCount} failed',
         name: 'offline.sync',
       );
@@ -288,7 +328,7 @@ class SyncManager {
       _isSyncing = false;
       final errorMsg = 'Sync failed: $e';
       _syncStatusController.add(SyncProgress.failed(errorMsg));
-      developer.log(errorMsg, name: 'offline.sync', error: e);
+      AppLogger.error(errorMsg, name: 'offline.sync', error: e);
       return SyncResult(
         success: false,
         message: errorMsg,
@@ -352,7 +392,7 @@ class SyncManager {
       _driftService.syncOperations.fromEntity(operation),
     );
 
-    developer.log(
+    AppLogger.debug(
       'Queued create: $collectionName/$localId',
       name: 'offline.sync',
     );
@@ -397,7 +437,7 @@ class SyncManager {
       _driftService.syncOperations.fromEntity(operation),
     );
 
-    developer.log(
+    AppLogger.debug(
       'Queued update: $collectionName/${remoteId.isNotEmpty ? remoteId : localId}',
       name: 'offline.sync',
     );
@@ -431,7 +471,7 @@ class SyncManager {
       _driftService.syncOperations.fromEntity(operation),
     );
 
-    developer.log(
+    AppLogger.debug(
       'Queued delete: $collectionName/${remoteId.isNotEmpty ? remoteId : localId}',
       name: 'offline.sync',
     );
@@ -460,7 +500,7 @@ class SyncManager {
   /// Clears all pending operations.
   Future<void> clearPendingOperations() async {
     await _driftService.syncOperations.clearAll();
-    developer.log('Cleared all pending operations', name: 'offline.sync');
+    AppLogger.debug('Cleared all pending operations', name: 'offline.sync');
   }
 
   /// Starts automatic periodic sync.
@@ -487,7 +527,7 @@ class SyncManager {
       (status) {
         // Déclencher la synchronisation quand le réseau revient
         if (status.isOnline && !_isSyncing) {
-          developer.log(
+          AppLogger.info(
             'Network came back, triggering sync',
             name: 'offline.sync',
           );
@@ -495,7 +535,7 @@ class SyncManager {
         }
       },
       onError: (error) {
-        developer.log(
+        AppLogger.error(
           'Error in connectivity listener: $error',
           name: 'offline.sync',
           error: error,
@@ -552,7 +592,7 @@ class SyncManager {
     _metrics.logSummary();
     
     _isInitialized = false;
-    developer.log('SyncManager disposed', name: 'offline.sync');
+    AppLogger.info('SyncManager disposed', name: 'offline.sync');
   }
 }
 
@@ -629,43 +669,4 @@ class SyncProgress {
       SyncProgress._(status: SyncStatus.error, error: error);
 
   double get progress => total > 0 ? current / total : 0;
-}
-
-/// Conflict resolution strategy.
-enum ConflictResolution { serverWins, clientWins, lastWriteWins, merge }
-
-/// Resolves conflicts between local and server data.
-class ConflictResolver {
-  const ConflictResolver({
-    this.defaultStrategy = ConflictResolution.lastWriteWins,
-  });
-
-  final ConflictResolution defaultStrategy;
-
-  Map<String, dynamic> resolve({
-    required Map<String, dynamic> localData,
-    required Map<String, dynamic> serverData,
-    ConflictResolution? strategy,
-  }) {
-    final effectiveStrategy = strategy ?? defaultStrategy;
-
-    switch (effectiveStrategy) {
-      case ConflictResolution.serverWins:
-        return serverData;
-      case ConflictResolution.clientWins:
-        return localData;
-      case ConflictResolution.lastWriteWins:
-        final localUpdated = DateTime.tryParse(
-          localData['updatedAt'] as String? ?? '',
-        );
-        final serverUpdated = DateTime.tryParse(
-          serverData['updatedAt'] as String? ?? '',
-        );
-        if (localUpdated == null) return serverData;
-        if (serverUpdated == null) return localData;
-        return localUpdated.isAfter(serverUpdated) ? localData : serverData;
-      case ConflictResolution.merge:
-        return {...serverData, ...localData};
-    }
-  }
 }

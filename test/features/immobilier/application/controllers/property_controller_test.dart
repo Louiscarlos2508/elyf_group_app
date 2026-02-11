@@ -10,16 +10,51 @@ import '../../../../helpers/test_helpers.dart';
 
 import 'property_controller_test.mocks.dart';
 
+import 'package:elyf_groupe_app/features/audit_trail/domain/services/audit_trail_service.dart';
+
+class MockAuditTrailService extends Mock implements AuditTrailService {
+  @override
+  Future<String> logAction({
+    required String? enterpriseId,
+    required String? userId,
+    required String? module,
+    required String? action,
+    required String? entityId,
+    required String? entityType,
+    Map<String, dynamic>? metadata,
+  }) =>
+      super.noSuchMethod(
+        Invocation.method(#logAction, [], {
+          #enterpriseId: enterpriseId,
+          #userId: userId,
+          #module: module,
+          #action: action,
+          #entityId: entityId,
+          #entityType: entityType,
+          #metadata: metadata,
+        }),
+        returnValue: Future.value('test-log-id'),
+      );
+}
+
 @GenerateMocks([PropertyRepository, ImmobilierValidationService])
 void main() {
   late PropertyController controller;
   late MockPropertyRepository mockRepository;
   late MockImmobilierValidationService mockValidationService;
+  late MockAuditTrailService mockAuditService;
 
   setUp(() {
     mockRepository = MockPropertyRepository();
     mockValidationService = MockImmobilierValidationService();
-    controller = PropertyController(mockRepository, mockValidationService);
+    mockAuditService = MockAuditTrailService();
+    controller = PropertyController(
+      mockRepository,
+      mockValidationService,
+      mockAuditService,
+      'test-enterprise',
+      'test-user',
+    );
   });
 
   group('PropertyController', () {

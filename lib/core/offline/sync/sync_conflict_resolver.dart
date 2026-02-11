@@ -1,5 +1,3 @@
-import 'dart:developer' as developer;
-
 import '../../logging/app_logger.dart';
 
 /// Strategy for resolving sync conflicts between local and remote data.
@@ -37,7 +35,7 @@ class ConflictResolution {
 
 /// Service for resolving conflicts during synchronization.
 class SyncConflictResolver {
-  SyncConflictResolver({
+  const SyncConflictResolver({
     this.defaultStrategy = ConflictResolutionStrategy.lastWriteWins,
     this.customStrategies = const {},
   });
@@ -68,7 +66,7 @@ class SyncConflictResolver {
       );
     }
 
-    developer.log(
+    AppLogger.debug(
       'Conflict detected in $collectionName, using strategy: ${effectiveStrategy.name}',
       name: 'sync.conflict',
     );
@@ -183,43 +181,124 @@ class SyncConflictResolver {
     Map<String, dynamic> serverData,
     ConflictResolutionStrategy strategy,
   ) {
-    final merged = Map<String, dynamic>.from(serverData);
+    final localUpdatedAt = _parseTimestamp(localData['updatedAt']);
+    final serverUpdatedAt = _parseTimestamp(serverData['updatedAt']);
+
+    final result = _recursiveMerge(
+      localData,
+      serverData,
+      localUpdatedAt,
+      serverUpdatedAt,
+    );
+
+    return ConflictResolution(
+      resolvedData: result.mergedData,
+      strategy: strategy,
+      wasConflict: result.conflicts.isNotEmpty,
+      conflictDetails: result.conflicts.isEmpty
+          ? null
+          : 'Merged with ${result.conflicts.length} conflict(s): ${result.conflicts.take(5).join(', ')}${result.conflicts.length > 5 ? '...' : ''}',
+    );
+  }
+
+  /// Recursively merges two maps using timestamps to resolve conflicts.
+  _MergeResult _recursiveMerge(
+    Map<String, dynamic> local,
+    Map<String, dynamic> server,
+    DateTime? localTime,
+    DateTime? serverTime, [
+    int depth = 0,
+  ]) {
+    if (depth > 10) {
+      // Safety limit for recursion
+      return _MergeResult(server, ['Max recursion depth reached, using server value']);
+    }
+
+    final merged = Map<String, dynamic>.from(server);
     final conflicts = <String>[];
 
-    // Merge fields from local that are newer or missing in server
-    for (final entry in localData.entries) {
-      final key = entry.key;
-      final localValue = entry.value;
+    // Identify all unique keys
+    final allKeys = {...local.keys, ...server.keys};
 
-      // Skip metadata fields
-      if (key == 'id' || key == 'localId' || key == 'remoteId') {
+    for (final key in allKeys) {
+      // Skip metadata fields at top level
+      if (depth == 0 && (key == 'id' || key == 'localId' || key == 'remoteId')) {
         continue;
       }
 
-      // If server doesn't have this field, use local
-      if (!serverData.containsKey(key)) {
-        merged[key] = localValue;
+      final inLocal = local.containsKey(key);
+      final inServer = server.containsKey(key);
+
+      if (inLocal && !inServer) {
+        // Only in local: Add to merged
+        merged[key] = local[key];
         conflicts.add('$key: added from local');
         continue;
       }
 
-      final serverValue = serverData[key];
+      if (!inLocal && inServer) {
+        // Only in server: Keep server value (default)
+        continue;
+      }
 
-      // If values are different, prefer the one with newer timestamp
-      if (localValue != serverValue) {
-        // For now, keep server value (could be enhanced with field-level timestamps)
-        conflicts.add('$key: kept server value');
+      // In both: Compare values
+      final localVal = local[key];
+      final serverVal = server[key];
+
+      if (_isEqual(localVal, serverVal)) {
+        continue;
+      }
+
+      // Values are different
+      if (localVal is Map<String, dynamic> && serverVal is Map<String, dynamic>) {
+        // Recurse for nested maps
+        final nestedResult = _recursiveMerge(
+          localVal,
+          serverVal,
+          localTime,
+          serverTime,
+          depth + 1,
+        );
+        merged[key] = nestedResult.mergedData;
+        conflicts.addAll(nestedResult.conflicts.map((c) => '$key.$c'));
+      } else {
+        // Simple value conflict: use last-write-wins if possible
+        bool useLocal = false;
+        if (localTime != null && serverTime != null) {
+          useLocal = localTime.isAfter(serverTime);
+        }
+
+        if (useLocal) {
+          merged[key] = localVal;
+          conflicts.add('$key: local wins (newer)');
+        } else {
+          merged[key] = serverVal;
+          conflicts.add('$key: server wins (newer or default)');
+        }
       }
     }
 
-    return ConflictResolution(
-      resolvedData: merged,
-      strategy: strategy,
-      wasConflict: conflicts.isNotEmpty,
-      conflictDetails: conflicts.isEmpty
-          ? null
-          : 'Merged ${conflicts.length} fields: ${conflicts.join(', ')}',
-    );
+    return _MergeResult(merged, conflicts);
+  }
+
+  /// Deep equality check for various types.
+  bool _isEqual(dynamic a, dynamic b) {
+    if (identical(a, b)) return true;
+    if (a is Map && b is Map) {
+      if (a.length != b.length) return false;
+      for (final key in a.keys) {
+        if (!b.containsKey(key) || !_isEqual(a[key], b[key])) return false;
+      }
+      return true;
+    }
+    if (a is List && b is List) {
+      if (a.length != b.length) return false;
+      for (int i = 0; i < a.length; i++) {
+        if (!_isEqual(a[i], b[i])) return false;
+      }
+      return true;
+    }
+    return a == b;
   }
 
   /// Parses a timestamp from various formats.
@@ -262,7 +341,7 @@ class SyncConflictResolver {
 
     // Compare values
     for (final key in map1.keys) {
-      if (map1[key] != map2[key]) return false;
+      if (!_isEqual(map1[key], map2[key])) return false;
     }
 
     return true;
@@ -283,4 +362,11 @@ class SyncConflictException implements Exception {
 
   @override
   String toString() => 'SyncConflictException: $message';
+}
+
+/// Internal class to hold recursive merge results.
+class _MergeResult {
+  _MergeResult(this.mergedData, this.conflicts);
+  final Map<String, dynamic> mergedData;
+  final List<String> conflicts;
 }

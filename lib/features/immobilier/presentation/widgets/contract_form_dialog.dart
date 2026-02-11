@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/domain/entities/attached_file.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/immobilier/application/providers.dart';
+import '../../../../core/tenant/tenant_provider.dart';
 import '../../domain/entities/contract.dart';
 import '../../domain/entities/property.dart';
 import '../../domain/entities/tenant.dart';
@@ -154,11 +155,12 @@ class _ContractFormDialogState extends ConsumerState<ContractFormDialog>
         final deposit = validationService.calculateDeposit(
           monthlyRent: int.parse(_monthlyRentController.text),
           depositInMonths: depositInMonths,
-          depositAmount: int.tryParse(_depositController.text),
+          depositAmount          : int.tryParse(_depositController.text),
         );
-
+        final enterpriseId = ref.read(activeEnterpriseIdProvider).value ?? 'default';
         final contract = Contract(
           id: widget.contract?.id ?? IdGenerator.generate(),
+          enterpriseId: enterpriseId,
           propertyId: _selectedProperty!.id,
           tenantId: _selectedTenant!.id,
           startDate: _startDate,

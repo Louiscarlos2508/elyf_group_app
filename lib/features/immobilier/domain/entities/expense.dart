@@ -2,6 +2,7 @@
 class PropertyExpense {
   PropertyExpense({
     required this.id,
+    required this.enterpriseId,
     required this.propertyId,
     required this.amount,
     required this.expenseDate,
@@ -16,6 +17,7 @@ class PropertyExpense {
   });
 
   final String id;
+  final String enterpriseId;
   final String propertyId;
   final int amount;
   final DateTime expenseDate;
@@ -32,6 +34,7 @@ class PropertyExpense {
 
   PropertyExpense copyWith({
     String? id,
+    String? enterpriseId,
     String? propertyId,
     int? amount,
     DateTime? expenseDate,
@@ -46,6 +49,7 @@ class PropertyExpense {
   }) {
     return PropertyExpense(
       id: id ?? this.id,
+      enterpriseId: enterpriseId ?? this.enterpriseId,
       propertyId: propertyId ?? this.propertyId,
       amount: amount ?? this.amount,
       expenseDate: expenseDate ?? this.expenseDate,
@@ -57,6 +61,46 @@ class PropertyExpense {
       updatedAt: updatedAt ?? this.updatedAt,
       deletedAt: deletedAt ?? this.deletedAt,
       deletedBy: deletedBy ?? this.deletedBy,
+    );
+  }
+
+  /// Représentation sérialisable pour logs / audit trail / persistence.
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'enterpriseId': enterpriseId,
+      'propertyId': propertyId,
+      'amount': amount,
+      'expenseDate': expenseDate.toIso8601String(),
+      'category': category.name,
+      'description': description,
+      'property': property,
+      'receipt': receipt,
+      'createdAt': createdAt?.toIso8601String(),
+      'updatedAt': updatedAt?.toIso8601String(),
+      'deletedAt': deletedAt?.toIso8601String(),
+      'deletedBy': deletedBy,
+    };
+  }
+
+  factory PropertyExpense.fromMap(Map<String, dynamic> map) {
+    return PropertyExpense(
+      id: map['id'] as String,
+      enterpriseId: map['enterpriseId'] as String,
+      propertyId: map['propertyId'] as String,
+      amount: (map['amount'] as num).toInt(),
+      expenseDate: DateTime.parse(map['expenseDate'] as String),
+      category: ExpenseCategory.values.firstWhere(
+        (e) => e.name == map['category'],
+        orElse: () => ExpenseCategory.other,
+      ),
+      description: map['description'] as String,
+      property: map['property'] as String?,
+      receipt: map['receipt'] as String?,
+      createdAt: map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : null,
+      updatedAt: map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : null,
+      deletedAt: map['deletedAt'] != null ? DateTime.parse(map['deletedAt'] as String) : null,
+      deletedBy: map['deletedBy'] as String?,
     );
   }
 

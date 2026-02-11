@@ -22,21 +22,28 @@ class DashboardTodaySection extends ConsumerWidget {
 
         return LayoutBuilder(
           builder: (context, constraints) {
-            final isWide = constraints.maxWidth > 600;
+            final isWide = constraints.maxWidth > 900;
             final cards = [
               ElyfStatsCard(
                 label: 'Chiffre d\'Affaires',
-                value: CurrencyFormatter.formatCFA(todayRevenue),
+                value: CurrencyFormatter.formatFCFA(todayRevenue),
                 subtitle: '$todaySalesCount vente(s)',
                 icon: Icons.trending_up,
                 color: Colors.blue,
               ),
               ElyfStatsCard(
                 label: 'Encaissements',
-                value: CurrencyFormatter.formatCFA(todayCollections),
+                value: CurrencyFormatter.formatFCFA(todayCollections),
                 subtitle: '$collectionRate% collecté',
                 icon: Icons.attach_money,
                 color: Colors.green,
+              ),
+              ElyfStatsCard(
+                label: 'Production du Jour',
+                value: '${summary.productionVolume} packs',
+                subtitle: summary.productionVolume > 0 ? 'En cours' : 'Aucune session',
+                icon: Icons.factory_outlined,
+                color: Colors.purple,
               ),
             ];
 
@@ -46,12 +53,24 @@ class DashboardTodaySection extends ConsumerWidget {
                   Expanded(child: cards[0]),
                   const SizedBox(width: 16),
                   Expanded(child: cards[1]),
+                  const SizedBox(width: 16),
+                  Expanded(child: cards[2]),
                 ],
               );
             }
 
             return Column(
-              children: [cards[0], const SizedBox(height: 16), cards[1]],
+              children: [
+                Row(
+                  children: [
+                    Expanded(child: cards[0]),
+                    const SizedBox(width: 16),
+                    Expanded(child: cards[1]),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                cards[2],
+              ],
             );
           },
         );

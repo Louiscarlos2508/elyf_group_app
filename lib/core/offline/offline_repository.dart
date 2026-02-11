@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
 import 'dart:math';
 
 import 'package:meta/meta.dart';
@@ -74,7 +73,7 @@ abstract class OfflineRepository<T> with OptimisticUIRepositoryMixin<T> {
     
     final data = sanitizedData;
 
-    developer.log(
+    AppLogger.debug(
       'OfflineRepository.save: $collectionName/$localId',
       name: 'offline.repository',
     );
@@ -178,7 +177,7 @@ abstract class OfflineRepository<T> with OptimisticUIRepositoryMixin<T> {
         moduleType: moduleType,
       );
       if (byRemote != null) {
-        developer.log(
+        AppLogger.debug(
           'Entité existante trouvée par remoteId: $remoteId -> localId: ${byRemote.localId}',
           name: 'OfflineRepository.findExistingLocalId',
         );
@@ -211,7 +210,7 @@ abstract class OfflineRepository<T> with OptimisticUIRepositoryMixin<T> {
             // Comparer les entités (utiliser l'ID ou d'autres champs clés selon le type)
             if (getLocalId(entityFromMap) == entityId || 
                 getRemoteId(entityFromMap) == remoteId) {
-              developer.log(
+              AppLogger.debug(
                 'Entité existante trouvée par ID: $entityId -> localId: ${row.localId}',
                 name: 'OfflineRepository.findExistingLocalId',
               );
@@ -242,7 +241,7 @@ abstract class OfflineRepository<T> with OptimisticUIRepositoryMixin<T> {
     final remoteId = getRemoteId(entity);
     final enterpriseId = getEnterpriseId(entity);
 
-    developer.log(
+    AppLogger.debug(
       'OfflineRepository.delete: $collectionName/$localId',
       name: 'offline.repository',
     );
@@ -270,7 +269,7 @@ abstract class OfflineRepository<T> with OptimisticUIRepositoryMixin<T> {
   @protected
   Map<String, dynamic>? safeDecodeJson(String? jsonString, String recordId) {
     if (jsonString == null || jsonString.isEmpty) {
-      developer.log(
+      AppLogger.info(
         'Empty JSON string for $collectionName/$recordId',
         name: 'offline.repository',
       );
@@ -365,7 +364,7 @@ abstract class OfflineRepository<T> with OptimisticUIRepositoryMixin<T> {
     required String remoteId,
     DateTime? serverUpdatedAt,
   }) async {
-    developer.log(
+    AppLogger.debug(
       'markSynced: $collectionName/$localId -> $remoteId',
       name: 'offline.repository',
     );

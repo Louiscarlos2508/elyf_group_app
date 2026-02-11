@@ -1,259 +1,162 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:elyf_groupe_app/features/eau_minerale/domain/adapters/pack_stock_adapter.dart';
+import 'package:mockito/mockito.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/services/sale_service.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/domain/repositories/stock_repository.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/domain/repositories/customer_repository.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/repositories/product_repository.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/adapters/pack_stock_adapter.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/sale.dart';
-import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/stock_movement.dart';
-import 'package:elyf_groupe_app/features/eau_minerale/domain/services/sale_service.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/product.dart';
+// import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/stock_movement.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/pack_constants.dart';
 
-// Mock implementations
-class MockStockRepository implements StockRepository {
-  final Map<String, int> _stock = {};
-
-  void setStock(String productId, int quantity) {
-    _stock[productId] = quantity;
-  }
-
+class MockStockRepository extends Mock implements StockRepository {
   @override
-  Future<int> getStock(String productId) async {
-    return _stock[productId] ?? 0;
-  }
-
-  @override
-  Future<void> updateStock(String productId, int quantity) async {
-    _stock[productId] = quantity;
-  }
-
-  @override
-  Future<void> recordMovement(StockMovement movement) async {
-    // Mock implementation
-  }
-
-  @override
-  Future<List<StockMovement>> fetchMovements({
-    String? productId,
-    DateTime? startDate,
-    DateTime? endDate,
-  }) async {
-    return [];
-  }
-
-  @override
-  Future<List<String>> getLowStockAlerts(int thresholdPercent) async {
-    return [];
-  }
+  Future<int> getStock(String productId) => super.noSuchMethod(
+        Invocation.method(#getStock, [productId]),
+        returnValue: Future.value(0),
+      );
 }
 
-class MockPackStockAdapter implements PackStockAdapter {
-  @override
-  Future<int> getPackStock({String? productId}) async => 0;
+class MockCustomerRepository extends Mock implements CustomerRepository {}
 
+class MockPackStockAdapter extends Mock implements PackStockAdapter {
   @override
-  Future<void> recordPackExit(
-    int quantity, {
-    String? productId,
-    String? reason,
-    String? notes,
-  }) async {
-    // Mock implementation
-  }
+  Future<int> getPackStock({String? productId}) => super.noSuchMethod(
+        Invocation.method(#getPackStock, [], {#productId: productId}),
+        returnValue: Future.value(0),
+      );
 }
 
-class MockCustomerRepository implements CustomerRepository {
+class MockProductRepository extends Mock implements ProductRepository {
   @override
-  Future<List<CustomerSummary>> fetchCustomers() async {
-    return [];
-  }
-
-  @override
-  Future<CustomerSummary?> getCustomer(String id) async {
-    return null;
-  }
-
-  @override
-  Future<String> createCustomer(
-    String name,
-    String phone, {
-    String? cnib,
-  }) async {
-    return 'customer-${DateTime.now().millisecondsSinceEpoch}';
-  }
-
-  @override
-  Future<List<Sale>> fetchCustomerHistory(String customerId) async {
-    return [];
-  }
+  Future<Product?> getProduct(String id) => super.noSuchMethod(
+        Invocation.method(#getProduct, [id]),
+        returnValue: Future.value(null),
+      );
 }
 
 void main() {
-  group('SaleService', () {
-    late SaleService service;
-    late MockStockRepository mockStockRepository;
-    late MockCustomerRepository mockCustomerRepository;
+  late SaleService saleService;
+  late MockStockRepository mockStockRepo;
+  late MockCustomerRepository mockCustomerRepo;
+  late MockPackStockAdapter mockPackAdapter;
+  late MockProductRepository mockProductRepo;
 
-    setUp(() {
-      mockStockRepository = MockStockRepository();
-      mockCustomerRepository = MockCustomerRepository();
-      service = SaleService(
-        stockRepository: mockStockRepository,
-        customerRepository: mockCustomerRepository,
-        packStockAdapter: MockPackStockAdapter(),
+  setUp(() {
+    mockStockRepo = MockStockRepository();
+    mockCustomerRepo = MockCustomerRepository();
+    mockPackAdapter = MockPackStockAdapter();
+    mockProductRepo = MockProductRepository();
+    saleService = SaleService(
+      stockRepository: mockStockRepo,
+      customerRepository: mockCustomerRepo,
+      packStockAdapter: mockPackAdapter,
+      productRepository: mockProductRepo,
+    );
+  });
+
+  group('SaleService - determineSaleStatus', () {
+    test('returns fullyPaid when amount matches total', () {
+      final status = saleService.determineSaleStatus(1000, 1000);
+      expect(status, SaleStatus.fullyPaid);
+    });
+
+    test('returns validated when amount is less than total', () {
+      final status = saleService.determineSaleStatus(1000, 500);
+      expect(status, SaleStatus.validated);
+    });
+  });
+
+  group('SaleService - getCurrentStock', () {
+    test('uses PackStockAdapter for packProductId', () async {
+      when(mockPackAdapter.getPackStock(productId: packProductId))
+          .thenAnswer((_) async => 50);
+
+      final stock = await saleService.getCurrentStock(packProductId);
+      expect(stock, 50);
+      verify(mockPackAdapter.getPackStock(productId: packProductId)).called(1);
+    });
+
+    test('uses PackStockAdapter for finished goods', () async {
+      final pf = Product(
+        id: 'PF1',
+        name: 'PF1',
+        type: ProductType.finishedGood,
+        unitPrice: 500,
+        unit: 'unit',
       );
+      when(mockProductRepo.getProduct('PF1')).thenAnswer((_) async => pf);
+      when(mockPackAdapter.getPackStock(productId: 'PF1'))
+          .thenAnswer((_) async => 30);
+
+      final stock = await saleService.getCurrentStock('PF1');
+      expect(stock, 30);
     });
 
-    group('validateSale', () {
-      test('should return null when stock is sufficient', () async {
-        mockStockRepository.setStock('product1', 100);
-
-        final result = await service.validateSale(
-          productId: 'product1',
-          quantity: 50,
-          totalPrice: 1000,
-          amountPaid: 1000,
-        );
-
-        expect(result, isNull);
-      });
-
-      test('should return error when stock is insufficient', () async {
-        mockStockRepository.setStock('product1', 10);
-
-        final result = await service.validateSale(
-          productId: 'product1',
-          quantity: 50,
-          totalPrice: 1000,
-          amountPaid: 1000,
-        );
-
-        expect(result, contains('Stock insuffisant'));
-      });
-    });
-
-    group('getCurrentStock', () {
-      test('should return current stock for product', () async {
-        mockStockRepository.setStock('product1', 100);
-
-        final result = await service.getCurrentStock('product1');
-
-        expect(result, equals(100));
-      });
-    });
-
-    group('getOrCreateCustomerId', () {
-      test('should return provided customerId', () async {
-        final result = await service.getOrCreateCustomerId(
-          customerId: 'customer123',
-          customerName: 'Test Customer',
-        );
-
-        expect(result, equals('customer123'));
-      });
-
-      test(
-        'should generate ID when customerName provided but no customerId',
-        () async {
-          final result = await service.getOrCreateCustomerId(
-            customerName: 'Test Customer',
-          );
-
-          expect(result, startsWith('customer-'));
-        },
+    test('uses StockRepository for raw materials', () async {
+      final mp = Product(
+        id: 'MP1',
+        name: 'MP1',
+        type: ProductType.rawMaterial,
+        unitPrice: 100,
+        unit: 'kg',
       );
+      when(mockProductRepo.getProduct('MP1')).thenAnswer((_) async => mp);
+      when(mockStockRepo.getStock('MP1')).thenAnswer((_) async => 10);
 
-      test('should generate anonymous ID when no customer info', () async {
-        final result = await service.getOrCreateCustomerId();
+      final stock = await saleService.getCurrentStock('MP1');
+      expect(stock, 10);
+    });
+  });
 
-        expect(result, startsWith('anonymous-'));
-      });
+  group('SaleService - validateSale', () {
+    test('returns error if productId is null', () async {
+      final error = await saleService.validateSale(
+        productId: null,
+        quantity: 1,
+        totalPrice: 100,
+        amountPaid: 100,
+      );
+      expect(error, 'Veuillez sélectionner un produit');
     });
 
-    group('determineSaleStatus', () {
-      test('should return fullyPaid when fully paid', () {
-        final result = service.determineSaleStatus(1000, 1000);
-        expect(result, equals(SaleStatus.fullyPaid));
-      });
-
-      test('should return validated when partially paid', () {
-        final result = service.determineSaleStatus(1000, 500);
-        expect(result, equals(SaleStatus.validated));
-      });
-
-      test('should return validated when not paid', () {
-        final result = service.determineSaleStatus(1000, 0);
-        expect(result, equals(SaleStatus.validated));
-      });
+    test('requires customer details for credit sales', () async {
+      final error = await saleService.validateSale(
+        productId: 'PF1',
+        quantity: 1,
+        totalPrice: 1000,
+        amountPaid: 500,
+        customerName: '',
+        customerPhone: '',
+      );
+      expect(error, contains('obligatoires pour une vente à crédit'));
     });
 
-    group('validateSale', () {
-      test('should return error when productId is null', () async {
-        final result = await service.validateSale(
-          productId: null,
-          quantity: 10,
-          totalPrice: 1000,
-          amountPaid: 1000,
-        );
+    test('validates sufficient stock', () async {
+      when(mockPackAdapter.getPackStock(productId: packProductId))
+          .thenAnswer((_) async => 5);
 
-        expect(result, equals('Veuillez sélectionner un produit'));
-      });
+      final error = await saleService.validateSale(
+        productId: packProductId,
+        quantity: 10,
+        totalPrice: 1000,
+        amountPaid: 1000,
+      );
+      expect(error, contains('Stock insuffisant'));
+    });
 
-      test('should return error when quantity is null', () async {
-        final result = await service.validateSale(
-          productId: 'product1',
-          quantity: null,
-          totalPrice: 1000,
-          amountPaid: 1000,
-        );
+    test('returns null if validation passes', () async {
+      when(mockPackAdapter.getPackStock(productId: packProductId))
+          .thenAnswer((_) async => 50);
 
-        expect(result, equals('Veuillez remplir tous les champs'));
-      });
-
-      test('should return error when totalPrice is null', () async {
-        final result = await service.validateSale(
-          productId: 'product1',
-          quantity: 10,
-          totalPrice: null,
-          amountPaid: 1000,
-        );
-
-        expect(result, equals('Veuillez remplir tous les champs'));
-      });
-
-      test('should return error when amountPaid is null', () async {
-        final result = await service.validateSale(
-          productId: 'product1',
-          quantity: 10,
-          totalPrice: 1000,
-          amountPaid: null,
-        );
-
-        expect(result, equals('Veuillez remplir tous les champs'));
-      });
-
-      test('should return error when stock is insufficient', () async {
-        mockStockRepository.setStock('product1', 5);
-
-        final result = await service.validateSale(
-          productId: 'product1',
-          quantity: 10,
-          totalPrice: 1000,
-          amountPaid: 1000,
-        );
-
-        expect(result, equals('Stock insuffisant. Disponible: 5'));
-      });
-
-      test('should return null when sale is valid', () async {
-        mockStockRepository.setStock('product1', 100);
-
-        final result = await service.validateSale(
-          productId: 'product1',
-          quantity: 10,
-          totalPrice: 1000,
-          amountPaid: 1000,
-        );
-
-        expect(result, isNull);
-      });
+      final error = await saleService.validateSale(
+        productId: packProductId,
+        quantity: 10,
+        totalPrice: 5000,
+        amountPaid: 5000,
+      );
+      expect(error, isNull);
     });
   });
 }

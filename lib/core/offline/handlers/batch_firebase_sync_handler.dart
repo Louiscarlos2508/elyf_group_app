@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -9,7 +8,7 @@ import '../../logging/app_logger.dart';
 import '../drift/app_database.dart' show OfflineRecord;
 import '../drift_service.dart';
 import '../security/data_sanitizer.dart';
-import '../sync_manager.dart';
+import '../sync/sync_conflict_resolver.dart';
 import '../sync_status.dart';
 
 /// Batch Firebase Firestore sync handler for processing multiple operations efficiently.
@@ -25,13 +24,13 @@ class BatchFirebaseSyncHandler {
   BatchFirebaseSyncHandler({
     required this.firestore,
     required this.collectionPaths,
-    this.conflictResolver = const ConflictResolver(),
+    this.conflictResolver = const SyncConflictResolver(),
     DriftService? driftService,
   }) : _driftService = driftService;
 
   final FirebaseFirestore firestore;
   final Map<String, String Function(String? enterpriseId)> collectionPaths;
-  final ConflictResolver conflictResolver;
+  final SyncConflictResolver conflictResolver;
   final DriftService? _driftService;
 
   /// Maximum operations per batch (Firestore limit: 500).
@@ -148,7 +147,7 @@ class BatchFirebaseSyncHandler {
         results.addAll(deleteResults);
       }
     } catch (e, stackTrace) {
-      developer.log(
+      AppLogger.error(
         'Error processing batch for $collectionName: $e',
         name: 'offline.firebase.batch',
         error: e,
@@ -237,7 +236,7 @@ class BatchFirebaseSyncHandler {
         }
       }
 
-      developer.log(
+      AppLogger.debug(
         'Batch created ${remoteIdUpdates.length} documents',
         name: 'offline.firebase.batch',
       );
@@ -387,13 +386,14 @@ class BatchFirebaseSyncHandler {
       final finalData = conflictResolver.resolve(
         localData: localData,
         serverData: serverData,
+        collectionName: operation.collectionName,
       );
 
-      if (finalData == serverData) {
+      if (finalData.resolvedData == serverData) {
         return BatchOperationResult.success(); // No update needed
       }
 
-      final sanitizedFinalData = DataSanitizer.sanitizeMap(finalData);
+      final sanitizedFinalData = DataSanitizer.sanitizeMap(finalData.resolvedData);
       sanitizedFinalData['updatedAt'] = FieldValue.serverTimestamp();
       await docRef.update(sanitizedFinalData);
       
@@ -423,7 +423,7 @@ class BatchFirebaseSyncHandler {
         results[op.id] = BatchOperationResult.success();
       }
 
-      developer.log(
+      AppLogger.debug(
         'Batch deleted ${operations.length} documents',
         name: 'offline.firebase.batch',
       );

@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -11,6 +10,7 @@ import '../drift_service.dart';
 import '../sync_manager.dart';
 import '../sync_status.dart';
 import '../security/data_sanitizer.dart';
+import '../sync/sync_conflict_resolver.dart';
 
 /// Firebase Firestore implementation of [SyncOperationHandler].
 ///
@@ -22,13 +22,13 @@ class FirebaseSyncHandler implements SyncOperationHandler {
   FirebaseSyncHandler({
     required this.firestore,
     required this.collectionPaths,
-    this.conflictResolver = const ConflictResolver(),
+    this.conflictResolver = const SyncConflictResolver(),
     DriftService? driftService,
   }) : _driftService = driftService;
 
   final FirebaseFirestore firestore;
   final Map<String, String Function(String? enterpriseId)> collectionPaths;
-  final ConflictResolver conflictResolver;
+  final SyncConflictResolver conflictResolver;
   final DriftService? _driftService;
 
   @override
@@ -90,7 +90,7 @@ class FirebaseSyncHandler implements SyncOperationHandler {
         await docRef.set(sanitizedData, SetOptions(merge: false));
         remoteId = entityId;
         
-        developer.log(
+        AppLogger.debug(
           '✅ Created document with existing ID: $remoteId (collection: ${operation.collectionName}, path: ${collection.path})',
           name: 'offline.firebase',
         );
@@ -98,7 +98,7 @@ class FirebaseSyncHandler implements SyncOperationHandler {
         // Pour les entreprises, le remoteId est déjà l'ID, donc pas besoin de mise à jour
         // Mais on peut quand même logger pour vérifier
         if (operation.collectionName == 'enterprises') {
-          developer.log(
+          AppLogger.debug(
             '✅ Enterprise créée dans Firestore: id=$remoteId, name=${sanitizedData['name']}, type=${sanitizedData['type']}',
             name: 'offline.firebase',
           );
@@ -108,7 +108,7 @@ class FirebaseSyncHandler implements SyncOperationHandler {
         docRef = await collection.add(sanitizedData);
         remoteId = docRef.id;
         
-        developer.log(
+        AppLogger.debug(
           'Created document with new ID: $remoteId for ${operation.documentId}',
           name: 'offline.firebase',
         );
@@ -126,12 +126,12 @@ class FirebaseSyncHandler implements SyncOperationHandler {
               enterpriseId: operation.enterpriseId,
             );
 
-            developer.log(
+            AppLogger.debug(
               'Updated remoteId for ${operation.documentId} -> $remoteId',
               name: 'offline.firebase',
             );
           } catch (e, stackTrace) {
-            developer.log(
+            AppLogger.error(
               'Error updating remoteId after create: $e',
               name: 'offline.firebase',
               error: e,
@@ -177,7 +177,7 @@ class FirebaseSyncHandler implements SyncOperationHandler {
         // Utiliser l'ID du document comme remoteId
         await docRef.set(sanitizedData, SetOptions(merge: false));
         
-        developer.log(
+        AppLogger.debug(
           'Created document (converted from update): ${operation.documentId}',
           name: 'offline.firebase',
         );
@@ -195,7 +195,7 @@ class FirebaseSyncHandler implements SyncOperationHandler {
             );
           } catch (e) {
             // Logger mais ne pas bloquer
-            developer.log(
+            AppLogger.error(
               'Error updating remoteId after create (from update): $e',
               name: 'offline.firebase',
               error: e,
@@ -216,7 +216,7 @@ class FirebaseSyncHandler implements SyncOperationHandler {
         final finalData = Map<String, dynamic>.from(localData)
           ..['updatedAt'] = FieldValue.serverTimestamp();
         await docRef.update(finalData);
-        developer.log(
+        AppLogger.debug(
           'Updated document ${operation.documentId} (no server data)',
           name: 'offline.firebase',
         );
@@ -242,7 +242,7 @@ class FirebaseSyncHandler implements SyncOperationHandler {
       if (serverUpdatedAt != null &&
           localUpdatedAt != null &&
           serverUpdatedAt.isAfter(localUpdatedAt)) {
-      developer.log(
+      AppLogger.debug(
         'Conflict detected: Firestore version is newer than local for ${operation.documentId}. '
         'Updating local data instead of overwriting Firestore.',
         name: 'offline.firebase',
@@ -296,7 +296,7 @@ class FirebaseSyncHandler implements SyncOperationHandler {
             dataJson: jsonEncode(serverDataJson),
             localUpdatedAt: DateTime.now(),
           );
-          developer.log(
+          AppLogger.debug(
             'Local data updated with Firestore version for $localIdToUse',
             name: 'offline.firebase',
           );
@@ -316,17 +316,19 @@ class FirebaseSyncHandler implements SyncOperationHandler {
       return;
     }
 
-      // Résoudre le conflit en utilisant ConflictResolver
-      final finalData = conflictResolver.resolve(
+      // Résoudre le conflit en utilisant SyncConflictResolver
+      final resolution = conflictResolver.resolve(
         localData: localData,
         serverData: serverData,
+        collectionName: operation.collectionName,
       );
+      final finalData = resolution.resolvedData;
 
       // Vérifier si la résolution a choisi la version serveur
       // (dans ce cas, on n'a pas besoin de mettre à jour Firestore)
       final choseServer = finalData == serverData;
       if (choseServer) {
-        developer.log(
+        AppLogger.debug(
           'Conflict resolved in favor of server for ${operation.documentId}. '
           'No update needed.',
           name: 'offline.firebase',
@@ -339,7 +341,7 @@ class FirebaseSyncHandler implements SyncOperationHandler {
       sanitizedFinalData['updatedAt'] = FieldValue.serverTimestamp();
       await docRef.update(sanitizedFinalData);
 
-      developer.log(
+      AppLogger.debug(
         'Updated document ${operation.documentId} (conflict resolved)',
         name: 'offline.firebase',
       );
@@ -374,7 +376,7 @@ class FirebaseSyncHandler implements SyncOperationHandler {
       final docSnapshot = await docRef.get();
 
       if (!docSnapshot.exists) {
-        developer.log(
+        AppLogger.debug(
           'Document ${operation.documentId} already deleted',
           name: 'offline.firebase',
         );
@@ -382,7 +384,7 @@ class FirebaseSyncHandler implements SyncOperationHandler {
       }
 
       await docRef.delete();
-      developer.log(
+      AppLogger.debug(
         'Deleted document ${operation.documentId}',
         name: 'offline.firebase',
       );
@@ -390,7 +392,7 @@ class FirebaseSyncHandler implements SyncOperationHandler {
       // Gestion spécifique des erreurs Firestore
       // Pour delete, certaines erreurs peuvent être ignorées
       if (e.code == 'not-found') {
-        developer.log(
+        AppLogger.debug(
           'Document ${operation.documentId} already deleted (not-found)',
           name: 'offline.firebase',
         );
@@ -490,7 +492,7 @@ class MockSyncHandler implements SyncOperationHandler {
     }
 
     processedOperations.add(operation);
-    developer.log(
+    AppLogger.debug(
       'Mock processed: ${operation.operationType} '
       '${operation.collectionName}/${operation.documentId}',
       name: 'offline.mock',

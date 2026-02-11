@@ -180,8 +180,6 @@ class _CreditsContent extends ConsumerWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isWide = constraints.maxWidth > 600;
-
         return CustomScrollView(
           slivers: [
             // Header

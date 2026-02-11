@@ -3,6 +3,7 @@ import 'package:rxdart/rxdart.dart';
 
 export 'providers/permission_providers.dart';
 export 'providers/section_providers.dart';
+import '../../audit_trail/application/providers.dart';
 import 'providers/permission_providers.dart' show currentUserIdProvider;
 import '../../../../core/tenant/tenant_provider.dart'
     show activeEnterpriseProvider;
@@ -96,6 +97,8 @@ final productRepositoryProvider = Provider<ProductRepository>((ref) {
     connectivityService: connectivityService,
     enterpriseId: enterpriseId,
     moduleType: 'boutique',
+    auditTrailRepository: ref.watch(auditTrailRepositoryProvider),
+    userId: ref.watch(currentUserIdProvider),
   );
 });
 
@@ -115,6 +118,8 @@ final saleRepositoryProvider = Provider<SaleRepository>((ref) {
     connectivityService: connectivityService,
     enterpriseId: enterpriseId,
     moduleType: 'boutique',
+    auditTrailRepository: ref.watch(auditTrailRepositoryProvider),
+    userId: ref.watch(currentUserIdProvider),
   );
 });
 
@@ -137,6 +142,8 @@ final purchaseRepositoryProvider = Provider<PurchaseRepository>((ref) {
     connectivityService: connectivityService,
     enterpriseId: enterpriseId,
     moduleType: 'boutique',
+    auditTrailRepository: ref.watch(auditTrailRepositoryProvider),
+    userId: ref.watch(currentUserIdProvider),
   );
 });
 
@@ -156,6 +163,8 @@ final expenseRepositoryProvider = Provider<ExpenseRepository>((ref) {
     connectivityService: connectivityService,
     enterpriseId: enterpriseId,
     moduleType: 'boutique',
+    auditTrailRepository: ref.watch(auditTrailRepositoryProvider),
+    userId: ref.watch(currentUserIdProvider),
   );
 });
 
@@ -175,6 +184,7 @@ final storeControllerProvider = Provider<StoreController>(
     ref.watch(purchaseRepositoryProvider),
     ref.watch(expenseRepositoryProvider),
     ref.watch(reportRepositoryProvider),
+    ref.watch(auditTrailServiceProvider),
     ref.watch(currentUserIdProvider),
   ),
 );

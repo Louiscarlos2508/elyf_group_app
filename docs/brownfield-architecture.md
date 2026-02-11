@@ -38,13 +38,19 @@ lib/
 └── shared/            # Shared UI components and utilities
 ```
 
+## Sync Layer
+- **Path definition**: The single source of truth for Firestore collection paths is `lib/core/offline/sync_paths.dart`. It exports a map `collectionPaths` of type `Map<String, String Function(String?)>`: the key is the logical collection name (e.g. `'sales'`, `'enterprise_module_users'`), the value is a function that builds the Firestore path (typically `enterprises/$enterpriseId/...` for per-enterprise data).
+- **Bootstrap wiring**: In `lib/app/bootstrap.dart`, the same `collectionPaths` from `sync_paths.dart` is passed to `FirebaseSyncHandler(collectionPaths: collectionPaths)` and to `GlobalModuleRealtimeSyncService(collectionPaths: collectionPaths)`. No collection path is defined elsewhere for sync; all sync services use this single map.
+- **Rule for new features**: When adding a new feature module or a new synced collection, the collection name used in the feature's offline repository (e.g. `String get collectionName => 'my_collection';`) must be registered as a key in `lib/core/offline/sync_paths.dart` with the corresponding Firestore path builder. Otherwise sync will not run for that collection.
+
 ## Technical Debt and Known Issues
 ### Critical Technical Debt
-1. **Analysis Errors**: 415 issues found by `flutter analyze` including warnings and lints.
+1. **Analysis Errors**: Addressed in Story 1.1; `flutter analyze` returns 0 issues.
 2. **Global Singletons**: `lib/app/bootstrap.dart` manages multiple global nullable instances (e.g., `globalSyncManager`), which can be difficult to test and maintain.
-3. **Manual Sync Routes**: Mapping Firestore collection paths manually in `bootstrap.dart` is error-prone and hard to scale.
+3. **Manual Sync Routes**: Paths are centralized in `sync_paths.dart` and wired once in bootstrap; new collections must be added to `sync_paths.dart` (see Sync Layer above).
 
 ## Implementation Priorities (per BMAD)
-1. **Fix Analysis Issues**: Resolve the 415 lint warnings to stabilize the codebase.
+1. **Fix Analysis Issues**: Done (Story 1.1).
 2. **Modularize Bootstrap**: Refactor global instances into a more robust DI or service locator pattern (already using Riverpod, so could leverage it more).
-3. **Enhance Sync Layer**: Better abstraction for feature-specific sync logic.
+3. **Enhance Sync Layer**: Better abstraction for feature-specific sync logic; path coverage verified via Story 1.2.
+4. **Documentation and unit tests**: Done (Story 1.3). This document kept up to date; unit tests added for critical logic in eau_minerale (CreditService) and gaz (GasValidationService).

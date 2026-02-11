@@ -1,5 +1,6 @@
 import 'dart:math' as math;
-import 'dart:developer' as developer;
+
+import '../logging/app_logger.dart';
 
 import 'sync_manager.dart';
 
@@ -40,7 +41,7 @@ class RetryHandler {
   Future<void> waitForRetry(int retryCount) async {
     if (retryCount > 0) {
       final delayMs = calculateBackoffDelay(retryCount);
-      developer.log(
+      AppLogger.debug(
         'Retry $retryCount/${config.maxRetryAttempts}, waiting ${delayMs}ms',
         name: 'offline.retry',
       );

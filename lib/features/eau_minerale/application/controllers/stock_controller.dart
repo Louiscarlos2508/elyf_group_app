@@ -1,5 +1,5 @@
-import 'dart:developer' as developer;
 
+import '../../../../core/logging/app_logger.dart';
 import '../../../../core/errors/app_exceptions.dart';
 import '../../domain/entities/bobine_stock.dart';
 import '../../domain/pack_constants.dart';
@@ -364,9 +364,9 @@ class StockController {
     );
 
     // Log pour déboguer
-    developer.log(
+    AppLogger.debug(
       'Fetched ${bobineMovements.length} bobine movements and ${packagingMovements.length} packaging movements',
-      name: 'StockController.fetchAllMovements',
+      name: 'StockController',
     );
 
     // Convertir les mouvements de bobines
@@ -399,9 +399,9 @@ class StockController {
       );
     }).toList();
     
-    developer.log(
+    AppLogger.debug(
       'Converted to ${unifiedBobineMovements.length} unified bobine movements and ${unifiedPackagingMovements.length} unified packaging movements',
-      name: 'StockController.fetchAllMovements',
+      name: 'StockController',
     );
 
     // Récupérer les mouvements de produits finis (ajustements, ventes) depuis StockRepository

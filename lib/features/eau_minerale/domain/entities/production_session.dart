@@ -7,6 +7,7 @@ import 'production_session_status.dart';
 class ProductionSession {
   const ProductionSession({
     required this.id,
+    required this.enterpriseId,
     required this.date,
     required this.period,
     required this.heureDebut,
@@ -25,6 +26,10 @@ class ProductionSession {
     this.notes,
     this.createdAt,
     this.updatedAt,
+    this.createdBy,
+    this.updatedBy,
+    this.deletedAt,
+    this.deletedBy,
     this.status = ProductionSessionStatus.draft,
     this.cancelReason,
     this.events = const [],
@@ -32,6 +37,7 @@ class ProductionSession {
   });
 
   final String id;
+  final String enterpriseId;
   final DateTime date;
   final int period; // Période de production (pour compatibilité)
   final DateTime heureDebut;
@@ -53,6 +59,10 @@ class ProductionSession {
   final String? notes;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final String? createdBy;
+  final String? updatedBy;
+  final DateTime? deletedAt;
+  final String? deletedBy;
   final ProductionSessionStatus status;
   final List<ProductionEvent> events; // Événements (pannes, coupures, arrêts)
   final List<ProductionDay>
@@ -166,8 +176,11 @@ class ProductionSession {
     return events.where((event) => event.type == type).toList();
   }
 
+  bool get isDeleted => deletedAt != null;
+
   ProductionSession copyWith({
     String? id,
+    String? enterpriseId,
     DateTime? date,
     int? period,
     DateTime? heureDebut,
@@ -186,6 +199,10 @@ class ProductionSession {
     String? notes,
     DateTime? createdAt,
     DateTime? updatedAt,
+    String? createdBy,
+    String? updatedBy,
+    DateTime? deletedAt,
+    String? deletedBy,
     ProductionSessionStatus? status,
     String? cancelReason,
     List<ProductionEvent>? events,
@@ -193,6 +210,7 @@ class ProductionSession {
   }) {
     return ProductionSession(
       id: id ?? this.id,
+      enterpriseId: enterpriseId ?? this.enterpriseId,
       date: date ?? this.date,
       period: period ?? this.period,
       heureDebut: heureDebut ?? this.heureDebut,
@@ -214,10 +232,99 @@ class ProductionSession {
       notes: notes ?? this.notes,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      createdBy: createdBy ?? this.createdBy,
+      updatedBy: updatedBy ?? this.updatedBy,
+      deletedAt: deletedAt ?? this.deletedAt,
+      deletedBy: deletedBy ?? this.deletedBy,
       status: status ?? this.status,
       cancelReason: cancelReason ?? this.cancelReason,
       events: events ?? this.events,
       productionDays: productionDays ?? this.productionDays,
     );
+  }
+
+  factory ProductionSession.fromMap(
+    Map<String, dynamic> map,
+    String defaultEnterpriseId,
+  ) {
+    return ProductionSession(
+      id: map['id'] as String? ?? map['localId'] as String,
+      enterpriseId: map['enterpriseId'] as String? ?? defaultEnterpriseId,
+      date: DateTime.parse(map['date'] as String),
+      period: (map['period'] as num?)?.toInt() ?? 0,
+      heureDebut: DateTime.parse(map['heureDebut'] as String),
+      heureFin: map['heureFin'] != null
+          ? DateTime.parse(map['heureFin'] as String)
+          : null,
+      indexCompteurInitialKwh: (map['indexCompteurInitialKwh'] as num?)?.toInt(),
+      indexCompteurFinalKwh: (map['indexCompteurFinalKwh'] as num?)?.toInt(),
+      consommationCourant: (map['consommationCourant'] as num?)?.toDouble() ?? 0,
+      machinesUtilisees: List<String>.from(map['machinesUtilisees'] as List? ?? []),
+      bobinesUtilisees: (map['bobinesUtilisees'] as List? ?? [])
+          .map((e) => BobineUsage.fromMap(e as Map<String, dynamic>))
+          .toList(),
+      quantiteProduite: (map['quantiteProduite'] as num?)?.toInt() ?? 0,
+      quantiteProduiteUnite: map['quantiteProduiteUnite'] as String? ?? '',
+      emballagesUtilises: (map['emballagesUtilises'] as num?)?.toInt(),
+      coutBobines: (map['coutBobines'] as num?)?.toInt(),
+      coutEmballages: (map['coutEmballages'] as num?)?.toInt(),
+      coutElectricite: (map['coutElectricite'] as num?)?.toInt(),
+      notes: map['notes'] as String?,
+      createdAt: map['createdAt'] != null
+          ? DateTime.parse(map['createdAt'] as String)
+          : null,
+      updatedAt: map['updatedAt'] != null
+          ? DateTime.parse(map['updatedAt'] as String)
+          : null,
+      createdBy: map['createdBy'] as String?,
+      updatedBy: map['updatedBy'] as String?,
+      deletedAt: map['deletedAt'] != null
+          ? DateTime.parse(map['deletedAt'] as String)
+          : null,
+      deletedBy: map['deletedBy'] as String?,
+      status: ProductionSessionStatus.values.byName(
+        map['status'] as String? ?? 'draft',
+      ),
+      cancelReason: map['cancelReason'] as String?,
+      events: (map['events'] as List? ?? [])
+          .map((e) => ProductionEvent.fromMap(e as Map<String, dynamic>))
+          .toList(),
+      productionDays: (map['productionDays'] as List? ?? [])
+          .map((e) => ProductionDay.fromMap(e as Map<String, dynamic>, defaultEnterpriseId))
+          .toList(),
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'enterpriseId': enterpriseId,
+      'date': date.toIso8601String(),
+      'period': period,
+      'heureDebut': heureDebut.toIso8601String(),
+      'heureFin': heureFin?.toIso8601String(),
+      'indexCompteurInitialKwh': indexCompteurInitialKwh,
+      'indexCompteurFinalKwh': indexCompteurFinalKwh,
+      'consommationCourant': consommationCourant,
+      'machinesUtilisees': machinesUtilisees,
+      'bobinesUtilisees': bobinesUtilisees.map((e) => e.toMap()).toList(),
+      'quantiteProduite': quantiteProduite,
+      'quantiteProduiteUnite': quantiteProduiteUnite,
+      'emballagesUtilises': emballagesUtilises,
+      'coutBobines': coutBobines,
+      'coutEmballages': coutEmballages,
+      'coutElectricite': coutElectricite,
+      'notes': notes,
+      'createdAt': createdAt?.toIso8601String(),
+      'updatedAt': updatedAt?.toIso8601String(),
+      'createdBy': createdBy,
+      'updatedBy': updatedBy,
+      'deletedAt': deletedAt?.toIso8601String(),
+      'deletedBy': deletedBy,
+      'status': status.name,
+      'cancelReason': cancelReason,
+      'events': events.map((e) => e.toMap()).toList(),
+      'productionDays': productionDays.map((e) => e.toMap()).toList(),
+    };
   }
 }

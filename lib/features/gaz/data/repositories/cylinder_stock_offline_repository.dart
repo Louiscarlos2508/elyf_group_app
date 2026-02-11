@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/logging/app_logger.dart';
@@ -227,7 +226,7 @@ class CylinderStockOfflineRepository extends OfflineRepository<CylinderStock>
       }).toList();
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
+      AppLogger.error(
         'Error getting stocks by weight',
         name: 'CylinderStockOfflineRepository',
         error: error,
@@ -266,7 +265,7 @@ class CylinderStockOfflineRepository extends OfflineRepository<CylinderStock>
       }
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
+      AppLogger.error(
         'Error updating stock quantity: $id',
         name: 'CylinderStockOfflineRepository',
         error: error,
@@ -309,7 +308,7 @@ class CylinderStockOfflineRepository extends OfflineRepository<CylinderStock>
       return stocks.where((stock) => stock.siteId == siteId).toList();
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
+      AppLogger.error(
         'Error getting stocks by site',
         name: 'CylinderStockOfflineRepository',
         error: error,
@@ -343,7 +342,7 @@ class CylinderStockOfflineRepository extends OfflineRepository<CylinderStock>
       await save(stock);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
+      AppLogger.error(
         'Error updating stock: ${stock.id}',
         name: 'CylinderStockOfflineRepository',
         error: error,

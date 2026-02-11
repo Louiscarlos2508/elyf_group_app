@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'connectivity_service.dart';
 import 'drift_service.dart';
@@ -7,6 +8,17 @@ import 'sync_manager.dart';
 import 'sync_status.dart';
 import 'handlers/firebase_sync_handler.dart';
 import 'sync_paths.dart';
+import 'global_module_realtime_sync_service.dart';
+import '../../features/administration/data/services/firestore_sync_service.dart';
+import '../../features/administration/data/services/realtime_sync_service.dart';
+import '../firebase/providers.dart';
+import 'sync/sync_conflict_resolver.dart';
+
+/// Provider for SharedPreferences instance.
+/// Must be overridden in the ProviderContainer during bootstrap.
+final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
+  throw UnimplementedError('sharedPreferencesProvider must be overridden');
+});
 
 /// Provider for the Drift service singleton.
 final driftServiceProvider = Provider<DriftService>((ref) {
@@ -126,3 +138,49 @@ class SyncActionsNotifier extends Notifier<void> {
 final syncActionsProvider = NotifierProvider<SyncActionsNotifier, void>(
   SyncActionsNotifier.new,
 );
+
+/// Provider for FirestoreSyncService (Admin module)
+final firestoreSyncServiceProvider = Provider<FirestoreSyncService>((ref) {
+  final driftService = ref.watch(driftServiceProvider);
+  final firestore = ref.watch(firestoreProvider);
+  return FirestoreSyncService(
+    driftService: driftService,
+    firestore: firestore,
+  );
+});
+
+/// Provider for RealtimeSyncService (Admin module)
+final realtimeSyncServiceProvider = Provider<RealtimeSyncService>((ref) {
+  final driftService = ref.watch(driftServiceProvider);
+  final firestore = ref.watch(firestoreProvider);
+  final firestoreSync = ref.watch(firestoreSyncServiceProvider);
+  final service = RealtimeSyncService(
+    driftService: driftService,
+    firestore: firestore,
+    firestoreSync: firestoreSync,
+  );
+  ref.onDispose(() => service.dispose());
+  return service;
+});
+
+/// Provider for ConflictResolver
+final conflictResolverProvider = Provider<SyncConflictResolver>((ref) {
+  return SyncConflictResolver();
+});
+
+/// Provider for GlobalModuleRealtimeSyncService
+final globalModuleRealtimeSyncServiceProvider =
+    Provider<GlobalModuleRealtimeSyncService>((ref) {
+  final firestore = ref.watch(firestoreProvider);
+  final driftService = ref.watch(driftServiceProvider);
+  final syncManager = ref.watch(syncManagerProvider);
+  final conflictResolver = ref.watch(conflictResolverProvider);
+
+  return GlobalModuleRealtimeSyncService(
+    firestore: firestore,
+    driftService: driftService,
+    collectionPaths: collectionPaths,
+    syncManager: syncManager,
+    conflictResolver: conflictResolver,
+  );
+});

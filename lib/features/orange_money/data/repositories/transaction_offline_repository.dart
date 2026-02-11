@@ -3,6 +3,8 @@ import 'dart:convert';
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/offline_repository.dart';
+import '../../../audit_trail/domain/entities/audit_record.dart';
+import '../../../audit_trail/domain/repositories/audit_trail_repository.dart';
 import '../../domain/entities/transaction.dart';
 import '../../domain/repositories/transaction_repository.dart';
 
@@ -14,53 +16,25 @@ class TransactionOfflineRepository extends OfflineRepository<Transaction>
     required super.syncManager,
     required super.connectivityService,
     required this.enterpriseId,
+    required this.auditTrailRepository,
+    required this.userId,
   });
 
   final String enterpriseId;
+  final AuditTrailRepository auditTrailRepository;
+  final String userId;
 
   @override
   String get collectionName => 'transactions';
 
   @override
   Transaction fromMap(Map<String, dynamic> map) {
-    return Transaction(
-      id: map['id'] as String? ?? map['localId'] as String,
-      type: _parseType(map['type'] as String),
-      amount: (map['amount'] as num?)?.toInt() ?? 0,
-      phoneNumber: map['phoneNumber'] as String,
-      date: map['date'] != null
-          ? DateTime.parse(map['date'] as String)
-          : DateTime.now(),
-      status: _parseStatus(map['status'] as String),
-      customerName: map['customerName'] as String?,
-      commission: (map['commission'] as num?)?.toInt(),
-      fees: (map['fees'] as num?)?.toInt(),
-      reference: map['reference'] as String?,
-      notes: map['notes'] as String?,
-      createdBy: map['createdBy'] as String?,
-      updatedAt: map['updatedAt'] != null
-          ? DateTime.parse(map['updatedAt'] as String)
-          : null,
-    );
+    return Transaction.fromMap(map, enterpriseId);
   }
 
   @override
   Map<String, dynamic> toMap(Transaction entity) {
-    return {
-      'id': entity.id,
-      'type': entity.type.name,
-      'amount': entity.amount.toDouble(),
-      'phoneNumber': entity.phoneNumber,
-      'date': entity.date.toIso8601String(),
-      'status': entity.status.name,
-      'customerName': entity.customerName,
-      'commission': entity.commission?.toDouble(),
-      'fees': entity.fees?.toDouble(),
-      'reference': entity.reference,
-      'notes': entity.notes,
-      'createdBy': entity.createdBy,
-      'updatedAt': entity.updatedAt?.toIso8601String(),
-    };
+    return entity.toMap();
   }
 
   @override
@@ -149,9 +123,25 @@ class TransactionOfflineRepository extends OfflineRepository<Transaction>
     );
     final transactions = rows
         .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+        .where((t) => !t.isDeleted)
         .toList();
-    
-    // Dédupliquer par remoteId pour éviter les doublons
+
+    return deduplicateByRemoteId(transactions);
+  }
+
+  Future<List<Transaction>> getAllDeletedForEnterprise(
+    String enterpriseId,
+  ) async {
+    final rows = await driftService.records.listForEnterprise(
+      collectionName: collectionName,
+      enterpriseId: enterpriseId,
+      moduleType: 'orange_money',
+    );
+    final transactions = rows
+        .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+        .where((t) => t.isDeleted)
+        .toList();
+
     return deduplicateByRemoteId(transactions);
   }
 
@@ -236,22 +226,35 @@ class TransactionOfflineRepository extends OfflineRepository<Transaction>
   Future<String> createTransaction(Transaction transaction) async {
     try {
       final localId = getLocalId(transaction);
-      final transactionWithLocalId = Transaction(
+      final now = DateTime.now();
+      final transactionWithLocalId = transaction.copyWith(
         id: localId,
-        type: transaction.type,
-        amount: transaction.amount,
-        phoneNumber: transaction.phoneNumber,
-        date: transaction.date,
-        status: transaction.status,
-        customerName: transaction.customerName,
-        commission: transaction.commission,
-        fees: transaction.fees,
-        reference: transaction.reference,
-        notes: transaction.notes,
-        createdBy: transaction.createdBy,
-        updatedAt: DateTime.now(),
+        enterpriseId: enterpriseId,
+        createdAt: transaction.createdAt ?? now,
+        updatedAt: now,
+        createdBy: transaction.createdBy ?? userId,
       );
       await save(transactionWithLocalId);
+
+      // Audit Log
+      await auditTrailRepository.log(
+        AuditRecord(
+          id: LocalIdGenerator.generate(),
+          enterpriseId: enterpriseId,
+          userId: userId,
+          module: 'orange_money',
+          action: 'create_transaction',
+          entityId: localId,
+          entityType: 'transaction',
+          metadata: {
+            'type': transaction.type.name,
+            'amount': transaction.amount,
+            'phoneNumber': transaction.phoneNumber,
+          },
+          timestamp: now,
+        ),
+      );
+
       return localId;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
@@ -273,22 +276,33 @@ class TransactionOfflineRepository extends OfflineRepository<Transaction>
     try {
       final transaction = await getTransaction(transactionId);
       if (transaction != null) {
-        final updatedTransaction = Transaction(
-          id: transaction.id,
-          type: transaction.type,
-          amount: transaction.amount,
-          phoneNumber: transaction.phoneNumber,
-          date: transaction.date,
+        final now = DateTime.now();
+        final prevStatus = transaction.status;
+        final updatedTransaction = transaction.copyWith(
           status: status,
-          customerName: transaction.customerName,
-          commission: transaction.commission,
-          fees: transaction.fees,
-          reference: transaction.reference,
-          notes: transaction.notes,
-          createdBy: transaction.createdBy,
-          updatedAt: DateTime.now(),
+          updatedAt: now,
         );
         await save(updatedTransaction);
+
+        // Audit Log
+        if (prevStatus != status) {
+          await auditTrailRepository.log(
+            AuditRecord(
+              id: LocalIdGenerator.generate(),
+              enterpriseId: enterpriseId,
+              userId: userId,
+              module: 'orange_money',
+              action: 'update_transaction_status',
+              entityId: transactionId,
+              entityType: 'transaction',
+              metadata: {
+                'oldStatus': prevStatus.name,
+                'newStatus': status.name,
+              },
+              timestamp: now,
+            ),
+          );
+        }
       }
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
@@ -300,6 +314,180 @@ class TransactionOfflineRepository extends OfflineRepository<Transaction>
       );
       throw appException;
     }
+  }
+
+  @override
+  Future<void> deleteTransaction(String transactionId, String userId) async {
+    try {
+      final transaction = await getTransaction(transactionId);
+      if (transaction != null) {
+        final now = DateTime.now();
+        final updatedTransaction = transaction.copyWith(
+          deletedAt: now,
+          deletedBy: userId,
+          updatedAt: now,
+        );
+        await save(updatedTransaction);
+
+        // Audit Log
+        await auditTrailRepository.log(
+          AuditRecord(
+            id: LocalIdGenerator.generate(),
+            enterpriseId: enterpriseId,
+            userId: userId,
+            module: 'orange_money',
+            action: 'delete_transaction',
+            entityId: transactionId,
+            entityType: 'transaction',
+            metadata: {'amount': transaction.amount, 'type': transaction.type.name},
+            timestamp: now,
+          ),
+        );
+      }
+    } catch (error, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
+      AppLogger.error(
+        'Error deleting transaction: $transactionId',
+        name: 'TransactionOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      throw appException;
+    }
+  }
+
+  @override
+  Future<void> restoreTransaction(String transactionId) async {
+    try {
+      final rows = await driftService.records.listForEnterprise(
+        collectionName: collectionName,
+        enterpriseId: enterpriseId,
+        moduleType: 'orange_money',
+      );
+      
+      final transactionRow = rows.firstWhere(
+        (r) {
+          final data = jsonDecode(r.dataJson) as Map<String, dynamic>;
+          return data['id'] == transactionId || r.localId == transactionId;
+        },
+      );
+
+      final transaction = fromMap(jsonDecode(transactionRow.dataJson) as Map<String, dynamic>);
+      
+      final now = DateTime.now();
+      final updatedTransaction = transaction.copyWith(
+        deletedAt: null,
+        deletedBy: null,
+        updatedAt: now,
+      );
+      await save(updatedTransaction);
+
+      // Audit Log
+      await auditTrailRepository.log(
+        AuditRecord(
+          id: LocalIdGenerator.generate(),
+          enterpriseId: enterpriseId,
+          userId: userId,
+          module: 'orange_money',
+          action: 'restore_transaction',
+          entityId: transactionId,
+          entityType: 'transaction',
+          timestamp: now,
+        ),
+      );
+    } catch (error, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
+      AppLogger.error(
+        'Error restoring transaction: $transactionId',
+        name: 'TransactionOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      throw appException;
+    }
+  }
+
+  @override
+  Stream<List<Transaction>> watchTransactions({
+    DateTime? startDate,
+    DateTime? endDate,
+    TransactionType? type,
+    TransactionStatus? status,
+  }) {
+    return driftService.records
+        .watchForEnterprise(
+          collectionName: collectionName,
+          enterpriseId: enterpriseId,
+          moduleType: 'orange_money',
+        )
+        .map((rows) {
+      var transactions = rows
+          .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+          .where((t) => !t.isDeleted)
+          .toList();
+
+      if (startDate != null) {
+        transactions = transactions
+            .where((t) => t.date.isAfter(startDate) || t.date.isAtSameMomentAs(startDate))
+            .toList();
+      }
+      if (endDate != null) {
+        transactions = transactions
+            .where((t) => t.date.isBefore(endDate) || t.date.isAtSameMomentAs(endDate))
+            .toList();
+      }
+      if (type != null) {
+        transactions = transactions.where((t) => t.type == type).toList();
+      }
+      if (status != null) {
+        transactions = transactions.where((t) => t.status == status).toList();
+      }
+
+      transactions.sort((a, b) => b.date.compareTo(a.date));
+      return deduplicateByRemoteId(transactions);
+    });
+  }
+
+  @override
+  Stream<List<Transaction>> watchTransactionsByAgent(String agentId) {
+    // Currently Transactions don't have agentId field directly, 
+    // but they might be filtered by notes or other metadata if they were linked.
+    // If agentId is the same as createdBy, we use that.
+    return watchTransactions().map((list) {
+      return list.where((t) => t.createdBy == agentId).toList();
+    });
+  }
+
+  @override
+  Stream<List<Transaction>> watchTransactionsByPeriod(
+    DateTime start,
+    DateTime end,
+  ) {
+    return watchTransactions().map((list) {
+      return list.where((t) {
+        return (t.date.isAfter(start) || t.date.isAtSameMomentAs(start)) &&
+            (t.date.isBefore(end) || t.date.isAtSameMomentAs(end));
+      }).toList();
+    });
+  }
+
+  @override
+  Stream<List<Transaction>> watchDeletedTransactions() {
+    return driftService.records
+        .watchForEnterprise(
+          collectionName: collectionName,
+          enterpriseId: enterpriseId,
+          moduleType: 'orange_money',
+        )
+        .map((rows) {
+      final transactions = rows
+          .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+          .where((t) => t.isDeleted)
+          .toList();
+
+      transactions.sort((a, b) => (b.deletedAt ?? b.date).compareTo(a.deletedAt ?? a.date));
+      return deduplicateByRemoteId(transactions);
+    });
   }
 
   @override
@@ -359,30 +547,6 @@ class TransactionOfflineRepository extends OfflineRepository<Transaction>
         stackTrace: stackTrace,
       );
       throw appException;
-    }
-  }
-
-  TransactionType _parseType(String type) {
-    switch (type) {
-      case 'cashIn':
-        return TransactionType.cashIn;
-      case 'cashOut':
-        return TransactionType.cashOut;
-      default:
-        return TransactionType.cashIn;
-    }
-  }
-
-  TransactionStatus _parseStatus(String status) {
-    switch (status) {
-      case 'pending':
-        return TransactionStatus.pending;
-      case 'completed':
-        return TransactionStatus.completed;
-      case 'failed':
-        return TransactionStatus.failed;
-      default:
-        return TransactionStatus.pending;
     }
   }
 }

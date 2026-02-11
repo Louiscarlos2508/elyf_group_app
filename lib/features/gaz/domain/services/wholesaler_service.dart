@@ -1,4 +1,3 @@
-import 'dart:developer' as developer;
 
 
 import '../../../../core/errors/error_handler.dart';
@@ -99,14 +98,14 @@ class WholesalerService {
       final sortedWholesalers = wholesalers.values.toList()
         ..sort((a, b) => a.name.compareTo(b.name));
 
-      developer.log(
+      AppLogger.info(
         'Found ${sortedWholesalers.length} unique wholesalers',
         name: 'WholesalerService',
       );
 
       return sortedWholesalers;
     } catch (e, stackTrace) {
-      developer.log(
+      AppLogger.error(
         'Error getting all wholesalers',
         name: 'WholesalerService',
         error: e,

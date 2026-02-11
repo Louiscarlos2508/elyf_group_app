@@ -1,7 +1,8 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import 'package:crypto/crypto.dart';
+
+import 'package:elyf_groupe_app/core/logging/app_logger.dart';
 
 /// Service de déduplication intelligente pour détecter et fusionner les doublons.
 ///
@@ -106,7 +107,7 @@ class SmartDeduplicator {
       return duplicates.first;
     }
 
-    developer.log(
+    AppLogger.debug(
       'Merging ${duplicates.length} duplicates for $collectionName',
       name: 'smart.deduplicator',
     );
@@ -168,7 +169,7 @@ class SmartDeduplicator {
     );
     merged['updatedAt'] = latestUpdated.toIso8601String();
 
-    developer.log(
+    AppLogger.debug(
       'Merged ${duplicates.length} duplicates into one entity for $collectionName',
       name: 'smart.deduplicator',
     );
@@ -199,7 +200,7 @@ class SmartDeduplicator {
     duplicatesMap.removeWhere((key, value) => value.length <= 1);
 
     if (duplicatesMap.isNotEmpty) {
-      developer.log(
+      AppLogger.debug(
         'Found ${duplicatesMap.length} groups of duplicates in $collectionName '
         '(${duplicatesMap.values.map((v) => v.length).reduce((a, b) => a + b)} total duplicates)',
         name: 'smart.deduplicator',
@@ -262,7 +263,7 @@ class SmartDeduplicator {
       ...mergedDuplicates.values,
     ];
 
-    developer.log(
+    AppLogger.debug(
       'Deduplicated ${entities.length} entities to ${result.length} unique entities '
       'for $collectionName',
       name: 'smart.deduplicator',

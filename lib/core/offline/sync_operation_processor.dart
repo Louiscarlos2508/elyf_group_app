@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 
 import '../errors/error_handler.dart';
 import '../logging/app_logger.dart';
@@ -44,7 +43,7 @@ class SyncOperationProcessor {
       );
     }
 
-    developer.log(
+    AppLogger.debug(
       'Processing ${operation.operationType} for '
       '${operation.collectionName}/${operation.documentId}',
       name: 'offline.sync.processor',

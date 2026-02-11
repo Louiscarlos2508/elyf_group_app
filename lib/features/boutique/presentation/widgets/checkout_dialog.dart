@@ -6,6 +6,7 @@ import 'package:elyf_groupe_app/app/theme/app_colors.dart';
 import '../../../../../core/errors/app_exceptions.dart';
 import 'package:elyf_groupe_app/core/permissions/modules/boutique_permissions.dart';
 import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/cart_item.dart';
 import '../../domain/entities/sale.dart';
@@ -118,6 +119,7 @@ class _CheckoutDialogState extends ConsumerState<CheckoutDialog>
     }
 
     await handleFormSubmit(
+      // ignore: use_build_context_synchronously - mounted checked in form helper before showing dialogs
       context: context,
       formKey: _formKey,
       onLoadingChanged: (isLoading) => setState(() => _isLoading = isLoading),
@@ -137,10 +139,14 @@ class _CheckoutDialogState extends ConsumerState<CheckoutDialog>
           }
         }
 
+        final enterpriseId =
+            ref.read(activeEnterpriseProvider).value?.id ?? 'default';
+
         final timestamp = DateTime.now().millisecondsSinceEpoch;
         final randomPart = (DateTime.now().microsecond % 1000).toString().padLeft(3, '0');
         final sale = Sale(
           id: 'local_sale_${timestamp}_$randomPart',
+          enterpriseId: enterpriseId,
           date: DateTime.now(),
           items: widget.cartItems.map((item) {
             return SaleItem(

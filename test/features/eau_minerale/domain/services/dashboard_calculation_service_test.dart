@@ -17,6 +17,7 @@ void main() {
         final sales = [
           Sale(
             id: '1',
+            enterpriseId: 'test-enterprise',
             productId: 'p1',
             productName: 'Product 1',
             customerId: 'c1',
@@ -33,6 +34,7 @@ void main() {
           ),
           Sale(
             id: '2',
+            enterpriseId: 'test-enterprise',
             productId: 'p2',
             productName: 'Product 2',
             customerId: 'c2',
@@ -58,6 +60,7 @@ void main() {
         final sales = [
           Sale(
             id: '1',
+            enterpriseId: 'test-enterprise',
             productId: 'p1',
             productName: 'Product 1',
             customerId: 'c1',

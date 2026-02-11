@@ -157,7 +157,9 @@ class _ProductionEventDialogState extends State<ProductionEventDialog> {
                                   ],
                                 ),
                                 value: type,
+                                // ignore: deprecated_member_use - RadioGroup migration deferred
                                 groupValue: _selectedType,
+                                // ignore: deprecated_member_use - RadioGroup migration deferred
                                 onChanged: (v) => setState(() => _selectedType = v),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                               );

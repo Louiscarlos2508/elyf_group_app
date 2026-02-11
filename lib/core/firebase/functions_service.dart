@@ -1,5 +1,3 @@
-import 'dart:developer' as developer;
-
 import 'package:cloud_functions/cloud_functions.dart';
 
 import '../errors/app_exceptions.dart';
@@ -51,7 +49,7 @@ class FunctionsService {
 
     while (attempts < maxRetries) {
       try {
-        developer.log(
+        AppLogger.debug(
           'Calling Cloud Function: $functionName (attempt ${attempts + 1}/$maxRetries)',
           name: 'functions.service',
         );
@@ -64,7 +62,7 @@ class FunctionsService {
         final result = await callable.call(dataWithMetadata);
         final responseData = result.data as Map<String, dynamic>?;
 
-        developer.log(
+        AppLogger.debug(
           'Cloud Function $functionName succeeded',
           name: 'functions.service',
         );

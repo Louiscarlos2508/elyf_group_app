@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 export 'providers/permission_providers.dart';
 export 'providers/section_providers.dart';
+import '../../audit_trail/application/providers.dart';
 
 import '../../../../core/offline/drift_service.dart';
 import '../../../../core/offline/providers.dart';
@@ -290,7 +291,8 @@ final cylinderControllerProvider = Provider<CylinderController>((ref) {
 
 final gasControllerProvider = Provider<GasController>((ref) {
   final repo = ref.watch(gasRepositoryProvider);
-  return GasController(repo);
+  final auditService = ref.watch(auditTrailServiceProvider);
+  return GasController(repo, auditService);
 });
 
 final expenseControllerProvider = Provider<GazExpenseController>((ref) {

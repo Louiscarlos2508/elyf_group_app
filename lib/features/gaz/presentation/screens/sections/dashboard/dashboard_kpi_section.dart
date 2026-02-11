@@ -23,7 +23,6 @@ class DashboardKpiSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     // Utiliser le service pour les calculs
     final todaySales = GazCalculationService.calculateTodaySales(sales);
     final todayRevenue = GazCalculationService.calculateTodayRevenue(sales);
@@ -70,41 +69,41 @@ class DashboardKpiSection extends ConsumerWidget {
                 children: [
                   Expanded(
                     child: ElyfStatsCard(
-                      label: 'Ventes du jour',
+                      label: "Ventes du jour",
                       value: CurrencyFormatter.formatDouble(todayRevenue),
-                      subtitle: '${todaySales.length} vente(s)',
-                      icon: Icons.trending_up,
-                      color: theme.colorScheme.primary,
+                      subtitle: "${todaySales.length} vente(s)",
+                      icon: Icons.trending_up_rounded,
+                      color: const Color(0xFF3B82F6), // Vibrant Blue
                     ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
                     child: ElyfStatsCard(
-                      label: 'Dépenses du jour',
+                      label: "Dépenses du jour",
                       value: CurrencyFormatter.formatDouble(todayExpensesAmount),
-                      subtitle: '${todayExpenses.length} dépense(s)',
-                      icon: Icons.trending_down,
-                      color: theme.colorScheme.error,
+                      subtitle: "${todayExpenses.length} dépense(s)",
+                      icon: Icons.trending_down_rounded,
+                      color: const Color(0xFFEF4444), // Vibrant Red
                     ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
                     child: ElyfStatsCard(
-                      label: 'Bénéfice du jour',
+                      label: "Bénéfice du jour",
                       value: CurrencyFormatter.formatDouble(todayProfit),
-                      subtitle: todayProfit >= 0 ? 'Positif' : 'Négatif',
-                      icon: Icons.account_balance_wallet,
-                      color: const Color(0xFF00A63E),
+                      subtitle: todayProfit >= 0 ? "Bénéfice net" : "Déficit journalier",
+                      icon: Icons.account_balance_wallet_rounded,
+                      color: const Color(0xFF10B981), // Emerald Green
                     ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
                     child: ElyfStatsCard(
-                      label: 'Bouteilles pleines',
-                      value: '$fullBottles',
-                      subtitle: '$emptyBottles vides',
-                      icon: Icons.inventory_2,
-                      color: theme.colorScheme.secondary,
+                      label: "Bouteilles pleines",
+                      value: "$fullBottles",
+                      subtitle: "$emptyBottles vides",
+                      icon: Icons.inventory_2_rounded,
+                      color: const Color(0xFF8B5CF6), // Vibrant Violet
                     ),
                   ),
                 ],
@@ -118,21 +117,21 @@ class DashboardKpiSection extends ConsumerWidget {
                   children: [
                     Expanded(
                       child: ElyfStatsCard(
-                        label: 'Ventes du jour',
+                        label: "Ventes du jour",
                         value: CurrencyFormatter.formatDouble(todayRevenue),
-                        subtitle: '${todaySales.length} vente(s)',
-                        icon: Icons.trending_up,
-                        color: theme.colorScheme.primary,
+                        subtitle: "${todaySales.length} vente(s)",
+                        icon: Icons.trending_up_rounded,
+                        color: const Color(0xFF3B82F6),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: ElyfStatsCard(
-                        label: 'Dépenses du jour',
+                        label: "Dépenses du jour",
                         value: CurrencyFormatter.formatDouble(todayExpensesAmount),
-                        subtitle: '${todayExpenses.length} dépense(s)',
-                        icon: Icons.trending_down,
-                        color: theme.colorScheme.error,
+                        subtitle: "${todayExpenses.length} dépense(s)",
+                        icon: Icons.trending_down_rounded,
+                        color: const Color(0xFFEF4444),
                       ),
                     ),
                   ],
@@ -142,21 +141,21 @@ class DashboardKpiSection extends ConsumerWidget {
                   children: [
                     Expanded(
                       child: ElyfStatsCard(
-                        label: 'Bénéfice du jour',
+                        label: "Bénéfice du jour",
                         value: CurrencyFormatter.formatDouble(todayProfit),
-                        subtitle: todayProfit >= 0 ? 'Positif' : 'Négatif',
-                        icon: Icons.account_balance_wallet,
-                        color: const Color(0xFF00A63E),
+                        subtitle: todayProfit >= 0 ? "Bénéfice net" : "Déficit journalier",
+                        icon: Icons.account_balance_wallet_rounded,
+                        color: const Color(0xFF10B981),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: ElyfStatsCard(
-                        label: 'Bouteilles pleines',
-                        value: '$fullBottles',
-                        subtitle: '$emptyBottles vides',
-                        icon: Icons.inventory_2,
-                        color: theme.colorScheme.secondary,
+                        label: "Bouteilles pleines",
+                        value: "$fullBottles",
+                        subtitle: "$emptyBottles vides",
+                        icon: Icons.inventory_2_rounded,
+                        color: const Color(0xFF8B5CF6),
                       ),
                     ),
                   ],

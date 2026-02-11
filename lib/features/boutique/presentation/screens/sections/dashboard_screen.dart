@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 
 import 'package:elyf_groupe_app/features/boutique/application/providers.dart';
 import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
@@ -9,6 +10,7 @@ import '../../widgets/dashboard_low_stock_list.dart';
 import '../../widgets/dashboard_today_section.dart';
 import '../../widgets/dashboard_month_section.dart';
 
+import '../../widgets/boutique_stock_alert_banner.dart';
 import '../../widgets/restock_dialog.dart';
 import '../../widgets/boutique_header.dart';
 
@@ -18,6 +20,7 @@ class DashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final activeEnterprise = ref.watch(activeEnterpriseProvider).value;
     final salesAsync = ref.watch(recentSalesProvider);
     final lowStockAsync = ref.watch(lowStockProductsProvider);
 
@@ -26,7 +29,7 @@ class DashboardScreen extends ConsumerWidget {
         slivers: [
           // Header with Gradient
           BoutiqueHeader(
-            title: "BOUTIQUE",
+            title: activeEnterprise?.name.toUpperCase() ?? "BOUTIQUE",
             subtitle: "Tableau de Bord",
             gradientColors: [
               const Color(0xFF08BDBA), // Primary Teal/Cyan
@@ -53,6 +56,28 @@ class DashboardScreen extends ConsumerWidget {
                 ),
               ),
             ],
+          ),
+
+          // Stock Alert Banner
+          SliverToBoxAdapter(
+            child: lowStockAsync.when(
+              data: (products) {
+                if (products.isEmpty) return const SizedBox.shrink();
+                final product = products.first;
+                return BoutiqueStockAlertBanner(
+                  productName: product.name,
+                  currentStock: product.stock,
+                  onTap: () {
+                    showDialog(
+                      context: context,
+                      builder: (_) => RestockDialog(product: product),
+                    );
+                  },
+                );
+              },
+              loading: () => const SizedBox.shrink(),
+              error: (_, __) => const SizedBox.shrink(),
+            ),
           ),
 
           // Today section header

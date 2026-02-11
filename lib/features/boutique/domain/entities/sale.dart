@@ -2,6 +2,7 @@
 class Sale {
   const Sale({
     required this.id,
+    required this.enterpriseId,
     required this.date,
     required this.items,
     required this.totalAmount,
@@ -11,10 +12,14 @@ class Sale {
     this.notes,
     this.cashAmount = 0,
     this.mobileMoneyAmount = 0,
+    this.deletedAt,
+    this.deletedBy,
+    this.createdAt,
     this.updatedAt,
   });
 
   final String id;
+  final String enterpriseId;
   final DateTime date;
   final List<SaleItem> items;
   final int totalAmount; // Total in CFA
@@ -25,13 +30,127 @@ class Sale {
   final int cashAmount; // Montant payé en espèces (pour paiement mixte)
   final int
   mobileMoneyAmount; // Montant payé en Mobile Money (pour paiement mixte)
+  final DateTime? deletedAt;
+  final String? deletedBy;
+  final DateTime? createdAt;
   final DateTime? updatedAt;
+
+  bool get isDeleted => deletedAt != null;
 
   int get change => amountPaid > totalAmount ? amountPaid - totalAmount : 0;
 
   /// Vérifie si la somme des paiements correspond au montant payé
   bool get isPaymentSplitValid =>
       (cashAmount + mobileMoneyAmount) == amountPaid;
+
+  Sale copyWith({
+    String? id,
+    String? enterpriseId,
+    DateTime? date,
+    List<SaleItem>? items,
+    int? totalAmount,
+    int? amountPaid,
+    String? customerName,
+    PaymentMethod? paymentMethod,
+    String? notes,
+    int? cashAmount,
+    int? mobileMoneyAmount,
+    DateTime? deletedAt,
+    String? deletedBy,
+    DateTime? updatedAt,
+  }) {
+    return Sale(
+      id: id ?? this.id,
+      enterpriseId: enterpriseId ?? this.enterpriseId,
+      date: date ?? this.date,
+      items: items ?? this.items,
+      totalAmount: totalAmount ?? this.totalAmount,
+      amountPaid: amountPaid ?? this.amountPaid,
+      customerName: customerName ?? this.customerName,
+      paymentMethod: paymentMethod ?? this.paymentMethod,
+      notes: notes ?? this.notes,
+      cashAmount: cashAmount ?? this.cashAmount,
+      mobileMoneyAmount: mobileMoneyAmount ?? this.mobileMoneyAmount,
+      deletedAt: deletedAt ?? this.deletedAt,
+      deletedBy: deletedBy ?? this.deletedBy,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  factory Sale.fromMap(Map<String, dynamic> map, String defaultEnterpriseId) {
+    final items =
+        (map['items'] as List<dynamic>?)
+            ?.map((item) => SaleItem.fromMap(item as Map<String, dynamic>))
+            .toList() ??
+        [];
+
+    // Gérer l'enum PaymentMethod avec support pour "both"
+    PaymentMethod? paymentMethod;
+    if (map['paymentMethod'] != null) {
+      final methodStr = map['paymentMethod'] as String;
+      switch (methodStr) {
+        case 'cash':
+          paymentMethod = PaymentMethod.cash;
+          break;
+        case 'mobileMoney':
+          paymentMethod = PaymentMethod.mobileMoney;
+          break;
+        case 'both':
+          paymentMethod = PaymentMethod.both;
+          break;
+        default:
+          paymentMethod = PaymentMethod.cash;
+      }
+    }
+
+    return Sale(
+      id: map['id'] as String? ?? map['localId'] as String,
+      enterpriseId: map['enterpriseId'] as String? ?? defaultEnterpriseId,
+      date: DateTime.parse(map['date'] as String? ?? map['saleDate'] as String),
+      items: items,
+      totalAmount: (map['totalAmount'] as num).toInt(),
+      amountPaid: (map['amountPaid'] as num?)?.toInt() ?? 0,
+      customerName: map['customerName'] as String?,
+      paymentMethod: paymentMethod,
+      notes: map['notes'] as String?,
+      cashAmount: (map['cashAmount'] as num?)?.toInt() ?? 0,
+      mobileMoneyAmount: (map['mobileMoneyAmount'] as num?)?.toInt() ?? 0,
+      deletedAt: map['deletedAt'] != null
+          ? DateTime.parse(map['deletedAt'] as String)
+          : null,
+      deletedBy: map['deletedBy'] as String?,
+      createdAt: map['createdAt'] != null
+          ? DateTime.parse(map['createdAt'] as String)
+          : null,
+      updatedAt: map['updatedAt'] != null
+          ? DateTime.parse(map['updatedAt'] as String)
+          : null,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'enterpriseId': enterpriseId,
+      'date': date.toIso8601String(),
+      'saleDate': date.toIso8601String(),
+      'items': items.map((item) => item.toMap()).toList(),
+      'totalAmount': totalAmount.toDouble(),
+      'paidAmount': amountPaid.toDouble(),
+      'amountPaid': amountPaid.toDouble(),
+      'paymentMethod': paymentMethod?.name ?? 'cash',
+      'customerName': customerName,
+      'notes': notes,
+      'cashAmount': cashAmount.toDouble(),
+      'mobileMoneyAmount': mobileMoneyAmount.toDouble(),
+      'isComplete': amountPaid >= totalAmount,
+      'deletedAt': deletedAt?.toIso8601String(),
+      'deletedBy': deletedBy,
+      'createdAt': createdAt?.toIso8601String(),
+      'updatedAt': updatedAt?.toIso8601String(),
+    };
+  }
 }
 
 /// Represents an item in a sale.
@@ -41,6 +160,7 @@ class SaleItem {
     required this.productName,
     required this.quantity,
     required this.unitPrice,
+    this.purchasePrice,
     required this.totalPrice,
   });
 
@@ -48,7 +168,30 @@ class SaleItem {
   final String productName;
   final int quantity;
   final int unitPrice;
+  final int? purchasePrice;
   final int totalPrice;
+
+  factory SaleItem.fromMap(Map<String, dynamic> map) {
+    return SaleItem(
+      productId: map['productId'] as String,
+      productName: map['productName'] as String,
+      quantity: (map['quantity'] as num).toInt(),
+      unitPrice: (map['unitPrice'] as num).toInt(),
+      purchasePrice: (map['purchasePrice'] as num?)?.toInt(),
+      totalPrice: (map['totalPrice'] as num).toInt(),
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'productId': productId,
+      'productName': productName,
+      'quantity': quantity,
+      'unitPrice': unitPrice,
+      'purchasePrice': purchasePrice,
+      'totalPrice': totalPrice,
+    };
+  }
 }
 
 enum PaymentMethod {

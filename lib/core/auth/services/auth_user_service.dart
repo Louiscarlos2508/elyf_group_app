@@ -1,6 +1,3 @@
-import 'dart:developer' as developer;
-
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart'
     show FirebaseAuth, EmailAuthProvider, FirebaseAuthException;
 
@@ -17,17 +14,12 @@ import 'auth_storage_service.dart';
 /// et le changement de mot de passe.
 class AuthUserService {
   AuthUserService({
-    FirebaseAuth? firebaseAuth,
-    FirestoreUserService? firestoreUserService,
-    FirebaseFirestore? firestore,
-    AuthStorageService? authStorageService,
-  })  : _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance,
-        _firestoreUserService = firestoreUserService ??
-            FirestoreUserService(
-              firestore: firestore ?? FirebaseFirestore.instance,
-            ),
-        _authStorageService =
-            authStorageService ?? AuthStorageService();
+    required FirebaseAuth firebaseAuth,
+    required FirestoreUserService firestoreUserService,
+    required AuthStorageService authStorageService,
+  })  : _firebaseAuth = firebaseAuth,
+        _firestoreUserService = firestoreUserService,
+        _authStorageService = authStorageService;
 
   final FirebaseAuth _firebaseAuth;
   final FirestoreUserService _firestoreUserService;
@@ -144,7 +136,7 @@ class AuthUserService {
       // Sauvegarder dans le stockage sécurisé
       await _authStorageService.saveUser(appUser);
 
-      developer.log(
+      AppLogger.info(
         'First admin created successfully: ${appUser.email} (${appUser.id})',
         name: 'auth.user',
       );
@@ -227,7 +219,7 @@ class AuthUserService {
       // Étape 2: Mettre à jour le mot de passe
       await firebaseUser.updatePassword(newPassword);
 
-      developer.log(
+      AppLogger.info(
         'Password changed successfully for user: ${firebaseUser.uid}',
         name: 'auth.user',
       );

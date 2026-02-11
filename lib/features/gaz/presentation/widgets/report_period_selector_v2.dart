@@ -9,14 +9,16 @@ class GazReportPeriodSelectorV2 extends StatelessWidget {
     required this.endDate,
     required this.onStartDateSelected,
     required this.onEndDateSelected,
-    required this.onDownload,
+    required this.onDownloadPdf,
+    required this.onDownloadCsv,
   });
 
   final DateTime startDate;
   final DateTime endDate;
   final VoidCallback onStartDateSelected;
   final VoidCallback onEndDateSelected;
-  final VoidCallback onDownload;
+  final VoidCallback onDownloadPdf;
+  final VoidCallback onDownloadCsv;
 
   @override
   Widget build(BuildContext context) {
@@ -72,10 +74,21 @@ class GazReportPeriodSelectorV2 extends StatelessWidget {
                         ),
                         const SizedBox(width: 16),
                         IntrinsicWidth(
-                          child: ElyfButton(
-                            onPressed: onDownload,
-                            icon: Icons.download,
-                            child: const Text('Télécharger'),
+                          child: Row(
+                            children: [
+                              ElyfButton(
+                                onPressed: onDownloadPdf,
+                                icon: Icons.picture_as_pdf,
+                                child: const Text('PDF'),
+                              ),
+                              const SizedBox(width: 8),
+                              ElyfButton(
+                                onPressed: onDownloadCsv,
+                                icon: Icons.table_chart,
+                                variant: ElyfButtonVariant.outlined,
+                                child: const Text('CSV'),
+                              ),
+                            ],
                           ),
                         ),
                       ],
@@ -93,14 +106,26 @@ class GazReportPeriodSelectorV2 extends StatelessWidget {
                           date: endDate,
                           onTap: onEndDateSelected,
                         ),
-                        const SizedBox(height: 12),
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElyfButton(
-                            onPressed: onDownload,
-                            icon: Icons.download,
-                            child: const Text('Télécharger PDF'),
-                          ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ElyfButton(
+                                onPressed: onDownloadPdf,
+                                icon: Icons.picture_as_pdf,
+                                child: const Text('PDF'),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: ElyfButton(
+                                onPressed: onDownloadCsv,
+                                icon: Icons.table_chart,
+                                variant: ElyfButtonVariant.outlined,
+                                child: const Text('CSV'),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),

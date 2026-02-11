@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -9,6 +8,7 @@ import '../logging/app_logger.dart';
 import 'drift_service.dart';
 import 'module_realtime_sync_service.dart';
 import 'sync_manager.dart';
+import 'sync/sync_conflict_resolver.dart';
 
 /// Service global pour la synchronisation en temps réel de tous les modules.
 ///
@@ -26,14 +26,14 @@ class GlobalModuleRealtimeSyncService {
     required this.driftService,
     required this.collectionPaths,
     SyncManager? syncManager,
-    ConflictResolver? conflictResolver,
+    SyncConflictResolver? conflictResolver,
   })  : _syncManager = syncManager,
-        _conflictResolver = conflictResolver ?? const ConflictResolver();
+        _conflictResolver = conflictResolver ?? SyncConflictResolver();
 
   final FirebaseFirestore firestore;
   final DriftService driftService;
   final SyncManager? _syncManager;
-  final ConflictResolver _conflictResolver;
+  final SyncConflictResolver _conflictResolver;
   final Map<String, String Function(String p1)> collectionPaths;
 
   // Map pour stocker les services de sync par module/entreprise
@@ -52,7 +52,7 @@ class GlobalModuleRealtimeSyncService {
     if (_syncServices.containsKey(key)) {
       final existingService = _syncServices[key]!;
       if (existingService.isListeningTo(enterpriseId, moduleId)) {
-        developer.log(
+        AppLogger.debug(
           'Realtime sync already active for module $moduleId in enterprise $enterpriseId',
           name: 'global.module.sync',
         );
@@ -61,7 +61,7 @@ class GlobalModuleRealtimeSyncService {
     }
 
     try {
-      developer.log(
+      AppLogger.info(
         'Starting realtime sync for module $moduleId in enterprise $enterpriseId',
         name: 'global.module.sync',
       );
@@ -81,7 +81,7 @@ class GlobalModuleRealtimeSyncService {
 
       _syncServices[key] = syncService;
 
-      developer.log(
+      AppLogger.info(
         'Realtime sync started for module $moduleId in enterprise $enterpriseId',
         name: 'global.module.sync',
       );
@@ -109,7 +109,7 @@ class GlobalModuleRealtimeSyncService {
       try {
         await syncService.stopRealtimeSync();
         _syncServices.remove(key);
-        developer.log(
+        AppLogger.info(
           'Realtime sync stopped for module $moduleId in enterprise $enterpriseId',
           name: 'global.module.sync',
         );
@@ -127,7 +127,7 @@ class GlobalModuleRealtimeSyncService {
 
   /// Arrête toutes les synchronisations en temps réel.
   Future<void> stopAllRealtimeSync() async {
-    developer.log(
+    AppLogger.info(
       'Stopping all realtime syncs (${_syncServices.length} active)',
       name: 'global.module.sync',
     );
@@ -140,7 +140,7 @@ class GlobalModuleRealtimeSyncService {
     await Future.wait(futures);
     _syncServices.clear();
 
-    developer.log(
+    AppLogger.info(
       'All realtime syncs stopped',
       name: 'global.module.sync',
     );

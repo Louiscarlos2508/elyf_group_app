@@ -9,7 +9,8 @@ export 'services/auth_service.dart'
         currentUserIdProvider,
         isAuthenticatedProvider,
         currentUserProvider,
-        isAdminProvider;
+        isAdminProvider,
+        unifiedPermissionServiceProvider;
 
 // Providers pour le profil utilisateur
 export 'providers/user_profile_provider.dart' show currentUserProfileProvider;

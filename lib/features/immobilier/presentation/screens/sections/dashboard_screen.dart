@@ -24,7 +24,7 @@ class DashboardScreen extends ConsumerWidget {
     final propertiesAsync = ref.watch(propertiesProvider);
     final tenantsAsync = ref.watch(tenantsProvider);
     final contractsAsync = ref.watch(contractsProvider);
-    final paymentsAsync = ref.watch(paymentsProvider);
+    final paymentsAsync = ref.watch(paymentsWithRelationsProvider);
     final expensesAsync = ref.watch(expensesProvider);
     final calculationService = ref.watch(
       immobilierDashboardCalculationServiceProvider,

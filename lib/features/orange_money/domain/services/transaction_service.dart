@@ -29,6 +29,7 @@ class TransactionService {
   /// Crée une nouvelle transaction avec les données fournies.
   /// Le numéro est normalisé au format +226.
   static Transaction createTransaction({
+    required String enterpriseId,
     required TransactionType type,
     required int amount,
     required String phoneNumber,
@@ -39,6 +40,7 @@ class TransactionService {
         PhoneUtils.normalizeBurkina(phoneNumber.trim()) ?? phoneNumber.trim();
     return Transaction(
       id: _generateTransactionId(),
+      enterpriseId: enterpriseId,
       type: type,
       amount: amount,
       phoneNumber: normalized,

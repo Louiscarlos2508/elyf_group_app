@@ -2,6 +2,7 @@
 class PackagingStockMovement {
   const PackagingStockMovement({
     required this.id,
+    required this.enterpriseId,
     required this.packagingId,
     required this.packagingType,
     required this.type,
@@ -15,9 +16,12 @@ class PackagingStockMovement {
     this.notes,
     this.createdAt,
     this.updatedAt,
+    this.deletedAt,
+    this.deletedBy,
   });
 
   final String id;
+  final String enterpriseId;
   final String packagingId;
   final String packagingType;
   final PackagingMovementType type;
@@ -32,9 +36,14 @@ class PackagingStockMovement {
   final String? notes;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final DateTime? deletedAt;
+  final String? deletedBy;
+
+  bool get isDeleted => deletedAt != null;
 
   PackagingStockMovement copyWith({
     String? id,
+    String? enterpriseId,
     String? packagingId,
     String? packagingType,
     PackagingMovementType? type,
@@ -48,9 +57,12 @@ class PackagingStockMovement {
     String? notes,
     DateTime? createdAt,
     DateTime? updatedAt,
+    DateTime? deletedAt,
+    String? deletedBy,
   }) {
     return PackagingStockMovement(
       id: id ?? this.id,
+      enterpriseId: enterpriseId ?? this.enterpriseId,
       packagingId: packagingId ?? this.packagingId,
       packagingType: packagingType ?? this.packagingType,
       type: type ?? this.type,
@@ -64,7 +76,59 @@ class PackagingStockMovement {
       notes: notes ?? this.notes,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      deletedBy: deletedBy ?? this.deletedBy,
     );
+  }
+
+  factory PackagingStockMovement.fromMap(Map<String, dynamic> map, String defaultEnterpriseId) {
+    return PackagingStockMovement(
+      id: map['id'] as String? ?? map['localId'] as String,
+      enterpriseId: map['enterpriseId'] as String? ?? defaultEnterpriseId,
+      packagingId: map['packagingId'] as String? ?? '',
+      packagingType: map['packagingType'] as String? ?? '',
+      type: PackagingMovementType.values.byName(map['type'] as String? ?? 'entree'),
+      date: DateTime.parse(map['date'] as String),
+      quantite: (map['quantite'] as num?)?.toInt() ?? 0,
+      raison: map['raison'] as String? ?? '',
+      isInLots: map['isInLots'] as bool? ?? false,
+      quantiteSaisie: (map['quantiteSaisie'] as num?)?.toInt(),
+      productionId: map['productionId'] as String?,
+      fournisseur: map['fournisseur'] as String?,
+      notes: map['notes'] as String?,
+      createdAt: map['createdAt'] != null
+          ? DateTime.parse(map['createdAt'] as String)
+          : null,
+      updatedAt: map['updatedAt'] != null
+          ? DateTime.parse(map['updatedAt'] as String)
+          : null,
+      deletedAt: map['deletedAt'] != null
+          ? DateTime.parse(map['deletedAt'] as String)
+          : null,
+      deletedBy: map['deletedBy'] as String?,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'enterpriseId': enterpriseId,
+      'packagingId': packagingId,
+      'packagingType': packagingType,
+      'type': type.name,
+      'date': date.toIso8601String(),
+      'quantite': quantite,
+      'raison': raison,
+      'isInLots': isInLots,
+      'quantiteSaisie': quantiteSaisie,
+      'productionId': productionId,
+      'fournisseur': fournisseur,
+      'notes': notes,
+      'createdAt': createdAt?.toIso8601String(),
+      'updatedAt': updatedAt?.toIso8601String(),
+      'deletedAt': deletedAt?.toIso8601String(),
+      'deletedBy': deletedBy,
+    };
   }
 }
 

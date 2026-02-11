@@ -1,5 +1,3 @@
-import 'dart:developer' as developer;
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -10,8 +8,8 @@ import '../entities/entities.dart';
 import '../../tenant/tenant_provider.dart';
 import '../services/auth_service.dart';
 import '../../firebase/firestore_user_service.dart';
-import '../../../app/bootstrap.dart'
-    show globalRealtimeSyncService, globalModuleRealtimeSyncService;
+import '../../../core/offline/providers.dart'
+    show realtimeSyncServiceProvider, globalModuleRealtimeSyncServiceProvider;
 import '../../../core/offline/sync_paths.dart';
 import '../../../core/offline/drift_service.dart';
 import '../../../core/offline/module_data_sync_service.dart';
@@ -66,42 +64,43 @@ class AuthController {
 
       // Démarrer la synchronisation en arrière-plan (ne bloque pas la connexion)
       // Les données se chargeront progressivement après la connexion
-      if (globalRealtimeSyncService != null) {
-        // Si la synchronisation n'est pas en cours, la démarrer en arrière-plan
-        if (!globalRealtimeSyncService!.isListening) {
-          developer.log(
-            'Starting realtime sync in background after login...',
+      // Démarrer la synchronisation en arrière-plan (ne bloque pas la connexion)
+      // Les données se chargeront progressivement après la connexion
+      final realtimeSyncService = _ref.read(realtimeSyncServiceProvider);
+      // Si la synchronisation n'est pas en cours, la démarrer en arrière-plan
+      if (!realtimeSyncService.isListening) {
+        AppLogger.info(
+          'Starting realtime sync in background after login...',
+          name: 'auth.controller',
+        );
+        // Démarrer la sync en arrière-plan sans attendre
+        realtimeSyncService.startRealtimeSync(userId: user.id).catchError((error) {
+          AppLogger.error(
+            'Error starting realtime sync in background',
             name: 'auth.controller',
+            error: error,
           );
-          // Démarrer la sync en arrière-plan sans attendre
-          globalRealtimeSyncService!.startRealtimeSync(userId: user.id).catchError((error) {
-            developer.log(
-              'Error starting realtime sync in background',
-              name: 'auth.controller',
-              error: error,
-            );
-            // Continuer même si le démarrage échoue - les données peuvent déjà être en cache
-          });
-        } else {
-          developer.log(
-            'Realtime sync already running, skipping start',
-            name: 'auth.controller',
-          );
-        }
-        
-        // Ne PAS attendre le pull initial - permettre à l'utilisateur de se connecter immédiatement
-        // Les données se chargeront progressivement en arrière-plan
-        // Si les données sont déjà en cache (Drift), elles seront disponibles immédiatement
-        developer.log(
-          'Login completed - data will sync in background',
+          // Continuer même si le démarrage échoue - les données peuvent déjà être en cache
+        });
+      } else {
+        AppLogger.info(
+          'Realtime sync already running, skipping start',
           name: 'auth.controller',
         );
       }
+      
+      // Ne PAS attendre le pull initial - permettre à l'utilisateur de se connecter immédiatement
+      // Les données se chargeront progressivement en arrière-plan
+      // Si les données sont déjà en cache (Drift), elles seront disponibles immédiatement
+      AppLogger.info(
+        'Login completed - data will sync in background',
+        name: 'auth.controller',
+      );
 
       // Synchroniser les modules métier auxquels l'utilisateur a accès
       // (en arrière-plan, ne bloque pas la connexion)
       _syncUserModulesInBackground(user.id).catchError((error) {
-        developer.log(
+        AppLogger.warning(
           'Error syncing user modules after login (non-blocking): $error',
           name: 'auth.controller',
           error: error,
@@ -168,36 +167,34 @@ class AuthController {
 
     // Arrêter la synchronisation en temps réel des modules métier
     // (spécifique à l'utilisateur connecté)
-    if (globalModuleRealtimeSyncService != null) {
-      try {
-        await globalModuleRealtimeSyncService!.stopAllRealtimeSync();
-        developer.log(
-          'Stopped all module realtime syncs on logout',
-          name: 'auth.controller',
-        );
-      } catch (e) {
-        // ... (existing error handling)
-      }
+    try {
+      final globalModuleSync = _ref.read(globalModuleRealtimeSyncServiceProvider);
+      await globalModuleSync.stopAllRealtimeSync();
+      AppLogger.info(
+        'Stopped all module realtime syncs on logout',
+        name: 'auth.controller',
+      );
+    } catch (e) {
+      AppLogger.error('Error stopping module realtime syncs on logout: $e');
     }
 
     // Arrêter aussi la sync admin pour qu'elle puisse redémarrer pour le nouvel utilisateur
-    if (globalRealtimeSyncService != null) {
-      try {
-        await globalRealtimeSyncService!.stopRealtimeSync();
-        developer.log(
-          'Stopped admin realtime sync on logout',
-          name: 'auth.controller',
-        );
-      } catch (e) {
-        developer.log('Error stopping admin realtime sync on logout: $e');
-      }
+    try {
+      final realtimeSyncService = _ref.read(realtimeSyncServiceProvider);
+      await realtimeSyncService.stopRealtimeSync();
+      AppLogger.info(
+        'Stopped admin realtime sync on logout',
+        name: 'auth.controller',
+      );
+    } catch (e) {
+      AppLogger.error('Error stopping admin realtime sync on logout: $e');
     }
 
     // Nettoyer l'entreprise active
     try {
       await _ref.read(activeEnterpriseIdProvider.notifier).clearActiveEnterprise();
     } catch (e) {
-      developer.log('Error clearing active enterprise on logout: $e');
+      AppLogger.error('Error clearing active enterprise on logout: $e');
     }
 
     // Déconnecter de l'auth service
@@ -278,7 +275,7 @@ class AuthController {
     final adminController = _adminController;
     final firestore = _firestore;
     if (adminController == null || firestore == null) {
-      developer.log(
+      AppLogger.info(
         'AdminController or Firestore not available, skipping module sync',
         name: 'auth.controller',
       );
@@ -286,7 +283,7 @@ class AuthController {
     }
 
     try {
-      developer.log(
+      AppLogger.info(
         'Starting background sync of user modules for user $userId',
         name: 'auth.controller',
       );
@@ -300,14 +297,14 @@ class AuthController {
       final activeAccesses = userAccesses.where((access) => access.isActive).toList();
 
       if (activeAccesses.isEmpty) {
-        developer.log(
+        AppLogger.info(
           'No active module accesses found for user $userId',
           name: 'auth.controller',
         );
         return;
       }
 
-      developer.log(
+      AppLogger.info(
         'Found ${activeAccesses.length} active module accesses for user $userId',
         name: 'auth.controller',
       );
@@ -328,7 +325,7 @@ class AuthController {
       );
 
       // Démarrer la synchronisation en temps réel pour tous les modules
-      final globalModuleSync = globalModuleRealtimeSyncService;
+      final globalModuleSync = _ref.read(globalModuleRealtimeSyncServiceProvider);
 
       int syncedCount = 0;
       int realtimeSyncCount = 0;
@@ -338,7 +335,7 @@ class AuthController {
 
         for (final moduleId in moduleIds) {
           try {
-            developer.log(
+            AppLogger.info(
               'Syncing module $moduleId for enterprise $enterpriseId',
               name: 'auth.controller',
             );
@@ -350,30 +347,28 @@ class AuthController {
             syncedCount++;
 
             // 2. Démarrer la synchronisation en temps réel pour ce module
-            if (globalModuleSync != null) {
-              try {
-                await globalModuleSync.startRealtimeSync(
+            try {
+              await globalModuleSync.startRealtimeSync(
                   enterpriseId: enterpriseId,
                   moduleId: moduleId,
                 );
                 realtimeSyncCount++;
-                developer.log(
+                AppLogger.info(
                   'Realtime sync started for module $moduleId in enterprise $enterpriseId',
                   name: 'auth.controller',
                 );
-              } catch (e, stackTrace) {
-                final appException = ErrorHandler.instance.handleError(e, stackTrace);
-                AppLogger.warning(
-                  'Error starting realtime sync for module $moduleId: ${appException.message}',
-                  name: 'auth.controller',
-                  error: e,
-                  stackTrace: stackTrace,
-                );
-                // Continuer même si la sync en temps réel échoue
-              }
+            } catch (e, stackTrace) {
+              final appException = ErrorHandler.instance.handleError(e, stackTrace);
+              AppLogger.warning(
+                'Error starting realtime sync for module $moduleId: ${appException.message}',
+                name: 'auth.controller',
+                error: e,
+                stackTrace: stackTrace,
+              );
+              // Continuer même si la sync en temps réel échoue
             }
 
-            developer.log(
+            AppLogger.info(
               'Successfully synced module $moduleId for enterprise $enterpriseId',
               name: 'auth.controller',
             );
@@ -390,7 +385,7 @@ class AuthController {
         }
       }
 
-      developer.log(
+      AppLogger.info(
         'Background module sync completed: $syncedCount modules synced, $realtimeSyncCount realtime syncs started',
         name: 'auth.controller',
       );

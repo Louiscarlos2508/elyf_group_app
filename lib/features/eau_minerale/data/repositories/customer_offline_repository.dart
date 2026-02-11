@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/logging/app_logger.dart';
@@ -104,7 +103,7 @@ class CustomerOfflineRepository implements CustomerRepository {
   @override
   Future<List<CustomerSummary>> fetchCustomers() async {
     try {
-      developer.log(
+      AppLogger.debug(
         'Fetching customers for enterprise: $enterpriseId',
         name: 'CustomerOfflineRepository',
       );
@@ -218,7 +217,7 @@ class CustomerOfflineRepository implements CustomerRepository {
       return localId;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
+      AppLogger.error(
         'Error creating customer',
         name: 'CustomerOfflineRepository',
         error: error,

@@ -1,4 +1,3 @@
-import 'dart:developer' as developer;
 
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/logging/app_logger.dart';
@@ -151,7 +150,7 @@ class ReportOfflineRepository implements ReportRepository {
       );
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
+      AppLogger.error(
         'Error fetching sales for period',
         name: 'ReportOfflineRepository',
         error: error,
@@ -264,7 +263,7 @@ class ReportOfflineRepository implements ReportRepository {
       );
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
+      AppLogger.error(
         'Error fetching production report',
         name: 'ReportOfflineRepository',
         error: error,

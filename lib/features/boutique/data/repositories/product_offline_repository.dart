@@ -1,9 +1,10 @@
-import 'dart:developer' as developer;
 import 'dart:convert';
 
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/offline_repository.dart';
+import '../../../audit_trail/domain/entities/audit_record.dart';
+import '../../../audit_trail/domain/repositories/audit_trail_repository.dart';
 import '../../domain/entities/product.dart';
 import '../../domain/repositories/product_repository.dart';
 
@@ -16,61 +17,26 @@ class ProductOfflineRepository extends OfflineRepository<Product>
     required super.connectivityService,
     required this.enterpriseId,
     required this.moduleType,
+    required this.auditTrailRepository,
+    this.userId = 'system',
   });
 
   final String enterpriseId;
   final String moduleType;
+  final AuditTrailRepository auditTrailRepository;
+  final String userId;
 
   @override
   String get collectionName => 'products';
 
   @override
   Product fromMap(Map<String, dynamic> map) {
-    DateTime? deletedAt;
-    if (map['deletedAt'] != null) {
-      deletedAt = map['deletedAt'] is DateTime
-          ? map['deletedAt'] as DateTime
-          : DateTime.parse(map['deletedAt'] as String);
-    }
-    return Product(
-      id: map['id'] as String? ?? map['localId'] as String,
-      name: map['name'] as String,
-      price:
-          (map['price'] as num?)?.toInt() ??
-          (map['sellingPrice'] as num?)?.toInt() ??
-          0,
-      stock: (map['stock'] as num?)?.toInt() ?? 0,
-      description: map['description'] as String?,
-      category: map['category'] as String?,
-      imageUrl: map['imageUrl'] as String?,
-      barcode: map['barcode'] as String?,
-      purchasePrice: (map['purchasePrice'] as num?)?.toInt(),
-      deletedAt: deletedAt,
-      deletedBy: map['deletedBy'] as String?,
-      updatedAt: map['updatedAt'] != null
-          ? DateTime.parse(map['updatedAt'] as String)
-          : null,
-    );
+    return Product.fromMap(map, enterpriseId);
   }
 
   @override
   Map<String, dynamic> toMap(Product entity) {
-    return {
-      'id': entity.id,
-      'name': entity.name,
-      'price': entity.price,
-      'sellingPrice': entity.price,
-      'stock': entity.stock.toDouble(),
-      'description': entity.description,
-      'category': entity.category,
-      'imageUrl': entity.imageUrl,
-      'barcode': entity.barcode,
-      'purchasePrice': entity.purchasePrice?.toDouble(),
-      'isActive': true,
-      'deletedAt': entity.deletedAt?.toIso8601String(),
-      'deletedBy': entity.deletedBy,
-      'updatedAt': entity.updatedAt?.toIso8601String(),
-    };
+    return entity.toMap();
   }
 
   @override
@@ -241,13 +207,22 @@ class ProductOfflineRepository extends OfflineRepository<Product>
       final localId = getLocalId(product);
       final productWithLocalId = product.copyWith(
         id: localId,
+        enterpriseId: enterpriseId,
         updatedAt: DateTime.now(),
       );
       await save(productWithLocalId);
+      
+      // Audit Log
+      await _logAudit(
+        action: 'create_product',
+        entityId: localId,
+        metadata: {'name': product.name, 'price': product.price},
+      );
+
       return localId;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
+      AppLogger.error(
         'Error creating product',
         name: 'ProductOfflineRepository',
         error: error,
@@ -262,6 +237,13 @@ class ProductOfflineRepository extends OfflineRepository<Product>
     try {
       final updatedProduct = product.copyWith(updatedAt: DateTime.now());
       await save(updatedProduct);
+
+      // Audit Log
+      await _logAudit(
+        action: 'update_product',
+        entityId: product.id,
+        metadata: {'name': product.name, 'price': product.price},
+      );
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       AppLogger.error(
@@ -286,10 +268,17 @@ class ProductOfflineRepository extends OfflineRepository<Product>
           updatedAt: DateTime.now(),
         );
         await save(deletedProduct);
+
+        // Audit Log
+        await _logAudit(
+          action: 'delete_product',
+          entityId: id,
+          metadata: {'deletedBy': deletedBy},
+        );
       }
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
+      AppLogger.error(
         'Error deleting product: $id',
         name: 'ProductOfflineRepository',
         error: error,
@@ -311,6 +300,12 @@ class ProductOfflineRepository extends OfflineRepository<Product>
           updatedAt: DateTime.now(),
         );
         await save(restoredProduct);
+
+        // Audit Log
+        await _logAudit(
+          action: 'restore_product',
+          entityId: id,
+        );
       }
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
@@ -393,5 +388,29 @@ class ProductOfflineRepository extends OfflineRepository<Product>
       );
       return products;
     });
+  }
+
+  Future<void> _logAudit({
+    required String action,
+    required String entityId,
+    Map<String, dynamic>? metadata,
+  }) async {
+    try {
+      await auditTrailRepository.log(
+        AuditRecord(
+          id: '', // Generated by repository
+          enterpriseId: enterpriseId,
+          userId: userId,
+          module: 'boutique',
+          action: action,
+          entityId: entityId,
+          entityType: 'product',
+          metadata: metadata,
+          timestamp: DateTime.now(),
+        ),
+      );
+    } catch (e) {
+      AppLogger.error('Failed to log product audit: $action', error: e);
+    }
   }
 }

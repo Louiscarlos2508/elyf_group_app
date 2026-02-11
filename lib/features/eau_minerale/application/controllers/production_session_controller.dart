@@ -5,6 +5,7 @@ import '../../domain/entities/production_session.dart';
 import '../../domain/repositories/bobine_stock_quantity_repository.dart';
 import '../../domain/entities/production_session_status.dart';
 import '../../domain/repositories/production_session_repository.dart';
+import '../../../audit_trail/domain/services/audit_trail_service.dart';
 import 'stock_controller.dart';
 
 class ProductionSessionController {
@@ -12,11 +13,13 @@ class ProductionSessionController {
     this._repository,
     this._stockController,
     this._bobineStockQuantityRepository,
+    this._auditTrailService,
   );
 
   final ProductionSessionRepository _repository;
   final StockController _stockController;
   final BobineStockQuantityRepository _bobineStockQuantityRepository;
+  final AuditTrailService _auditTrailService;
 
   Future<List<ProductionSession>> fetchSessions({
     DateTime? startDate,
@@ -40,6 +43,24 @@ class ProductionSessionController {
   Future<ProductionSession> createSession(ProductionSession session) async {
     final savedSession = await _repository.createSession(session);
 
+    // Audit Log
+    try {
+      await _auditTrailService.logAction(
+        enterpriseId: savedSession.enterpriseId,
+        userId: savedSession.createdBy ?? 'unknown',
+        module: 'eau_minerale',
+        action: 'create_production_session',
+        entityId: savedSession.id,
+        entityType: 'production_session',
+        metadata: {
+          'status': savedSession.status.name,
+          'date': savedSession.date.toIso8601String(),
+        },
+      );
+    } catch (e) {
+      AppLogger.error('Failed to log production session audit', error: e);
+    }
+
     // Décrémenter le stock pour les bobines nouvelles (pas réutilisées)
     await _decrementerStockBobinesNouvelles(
       bobinesUtilisees: savedSession.bobinesUtilisees,
@@ -57,6 +78,26 @@ class ProductionSessionController {
     final sessionExistante = await _repository.fetchSessionById(session.id);
 
     final savedSession = await _repository.updateSession(session);
+
+    // Audit Log for Completion
+    if (savedSession.status == ProductionSessionStatus.completed &&
+        sessionExistante?.status != ProductionSessionStatus.completed) {
+      try {
+        await _auditTrailService.logAction(
+          enterpriseId: savedSession.enterpriseId,
+          userId: savedSession.updatedBy ?? savedSession.createdBy ?? 'unknown',
+          module: 'eau_minerale',
+          action: 'finalize_production_session',
+          entityId: savedSession.id,
+          entityType: 'production_session',
+          metadata: {
+            'quantiteProduite': savedSession.quantiteProduite,
+          },
+        );
+      } catch (e) {
+        AppLogger.error('Failed to log session finalization audit', error: e);
+      }
+    }
 
     // Gérer le stock des bobines (décrémenter nouvelles, mais pas les réutilisées)
     await _decrementerStockBobinesNouvelles(

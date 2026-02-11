@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:drift/native.dart';
 import 'package:elyf_groupe_app/core/offline/drift_service.dart';
 import 'package:elyf_groupe_app/core/offline/sync_manager.dart';
 import 'package:elyf_groupe_app/core/offline/connectivity_service.dart';
@@ -40,7 +41,7 @@ void main() {
 
     setUp(() async {
       final driftService = DriftService.instance;
-      await driftService.initialize();
+      await driftService.initialize(connection: NativeDatabase.memory());
       final connectivityService = MockConnectivityService(isOnline: true);
       await connectivityService.initialize();
       final syncManager = SyncManager(
@@ -159,8 +160,8 @@ void main() {
       );
 
       expect(stats['totalCommissions'], greaterThan(0));
-      expect(stats['pendingCommissions'], greaterThan(0));
-      expect(stats['paidCommissions'], greaterThan(0));
+      expect(stats['pendingCount'], greaterThan(0));
+      expect(stats['paidCount'], greaterThan(0));
     });
   });
 }

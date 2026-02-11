@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+// ignore: deprecated_member_use - WebDatabase still required for web; wasm migration deferred
 import 'package:drift/web.dart';
 
 /// Opens a database connection for Web.

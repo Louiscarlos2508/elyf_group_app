@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart' as shared;
+import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/expense.dart';
 
@@ -42,9 +43,12 @@ class _ExpenseFormDialogState extends ConsumerState<ExpenseFormDialog> {
     String? receiptPath,
   }) async {
     setState(() => _isLoading = true);
+    final enterpriseId =
+        ref.read(activeEnterpriseProvider).value?.id ?? 'default';
     try {
       final expense = Expense(
         id: 'local_${DateTime.now().millisecondsSinceEpoch}',
+        enterpriseId: enterpriseId,
         label: description,
         amountCfa: amount.toInt(),
         category: category,

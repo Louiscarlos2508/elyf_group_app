@@ -45,8 +45,6 @@ class SunmiV3Service {
     }
 
     try {
-      // TODO: Décommenter quand device_info_plus sera disponible
-
       final androidInfo = await _deviceInfo.androidInfo;
       final model = androidInfo.model.toLowerCase();
       final manufacturer = androidInfo.manufacturer.toLowerCase();
@@ -76,8 +74,6 @@ class SunmiV3Service {
     if (!await isSunmiDevice) return false;
 
     try {
-      // TODO: Décommenter quand sunmi_flutter_plugin_printer sera disponible
-
       // Activer les logs pour le développement (désactiver en production)
       await PrinterSdk.instance.log(true, 'SunmiV3Service');
 
@@ -197,7 +193,6 @@ class SunmiV3Service {
     }
 
     try {
-      // Initialiser l'imprimante si nécessaire
       if (!_isInitialized) {
         final initialized = await _initializePrinter();
         if (!initialized) {
@@ -208,8 +203,6 @@ class SunmiV3Service {
           return false;
         }
       }
-
-      // TODO: Décommenter quand sunmi_flutter_plugin_printer sera disponible
 
       // Vérifier si le printer est disponible
       if (_printer == null) {

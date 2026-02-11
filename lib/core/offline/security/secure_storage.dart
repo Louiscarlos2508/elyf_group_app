@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import 'package:flutter/foundation.dart';
 
@@ -49,7 +48,7 @@ class SecureDataHandler {
       if (isSensitiveField(entry.key)) {
         // Log in debug mode to help identify what's being filtered
         if (kDebugMode) {
-          developer.log(
+          AppLogger.debug(
             'Removing sensitive field: ${entry.key}',
             name: 'offline.security',
           );

@@ -20,7 +20,7 @@ class PaymentsReportContent extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final paymentsAsync = ref.watch(paymentsProvider);
+    final paymentsAsync = ref.watch(paymentsWithRelationsProvider);
 
     return paymentsAsync.when(
       data: (payments) {

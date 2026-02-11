@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/logging/app_logger.dart';
@@ -110,6 +109,7 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
       cashAmount: (metadata?['cashAmount'] as int?) ?? 0,
       orangeMoneyAmount: (metadata?['orangeMoneyAmount'] as int?) ?? 0,
       productionSessionId: metadata?['productionSessionId'] as String?,
+      enterpriseId: map['enterpriseId'] as String? ?? enterpriseId,
       updatedAt: map['updatedAt'] != null
           ? DateTime.tryParse(map['updatedAt'] as String)
           : null,
@@ -154,6 +154,7 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
       'productName': entity.productName,
       'quantity': entity.quantity,
       'unitPrice': entity.unitPrice,
+      'enterpriseId': entity.enterpriseId,
       'updatedAt': entity.updatedAt?.toIso8601String(),
     };
   }
@@ -228,7 +229,7 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
 
   @override
   Future<List<Sale>> getAllForEnterprise(String enterpriseId) async {
-    developer.log(
+    AppLogger.debug(
       'Fetching all sales for enterprise: $enterpriseId (module: eau_minerale)',
       name: 'SaleOfflineRepository',
     );
@@ -239,7 +240,7 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
       moduleType: 'eau_minerale',
     );
 
-    developer.log(
+    AppLogger.debug(
       'Found ${rows.length} records for $collectionName / $enterpriseId',
       name: 'SaleOfflineRepository',
     );
@@ -250,7 +251,7 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
         .map((map) => fromMap(map!))
         .toList();
 
-    developer.log(
+    AppLogger.debug(
         'Successfully decoded ${sales.length} sales',
         name: 'SaleOfflineRepository',
     );
@@ -268,7 +269,7 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
     String? customerId,
   }) async {
     try {
-      developer.log(
+      AppLogger.debug(
         'Fetching sales for enterprise: $enterpriseId',
         name: 'SaleOfflineRepository',
       );
@@ -324,7 +325,7 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
     SaleStatus? status,
     String? customerId,
   }) {
-    developer.log(
+    AppLogger.debug(
       'Watching sales for enterprise: $enterpriseId',
       name: 'SaleOfflineRepository',
     );
@@ -381,7 +382,7 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
       return await getByLocalId(id);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
+      AppLogger.error(
         'Error getting sale: $id',
         name: 'SaleOfflineRepository',
         error: error,
@@ -414,6 +415,7 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
         cashAmount: sale.cashAmount,
         orangeMoneyAmount: sale.orangeMoneyAmount,
         productionSessionId: sale.productionSessionId,
+        enterpriseId: sale.enterpriseId,
         updatedAt: DateTime.now(),
       );
       await save(saleWithLocalId);
@@ -439,7 +441,7 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
       }
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
+      AppLogger.error(
         'Error deleting sale: $saleId',
         name: 'SaleOfflineRepository',
         error: error,
@@ -475,6 +477,7 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
           cashAmount: sale.cashAmount,
           orangeMoneyAmount: sale.orangeMoneyAmount,
           productionSessionId: sale.productionSessionId,
+          enterpriseId: sale.enterpriseId,
           updatedAt: DateTime.now(),
         );
         // Utiliser la méthode save de la classe de base pour gérer la sync correctement

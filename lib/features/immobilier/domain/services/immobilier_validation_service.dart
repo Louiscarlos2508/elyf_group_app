@@ -222,6 +222,7 @@ class ImmobilierValidationService {
           contract.endDate!.isBefore(now)) {
         final updated = Contract(
           id: contract.id,
+          enterpriseId: contract.enterpriseId,
           propertyId: contract.propertyId,
           tenantId: contract.tenantId,
           startDate: contract.startDate,
@@ -249,6 +250,7 @@ class ImmobilierValidationService {
           payment.paymentDate.isBefore(now)) {
         final updated = Payment(
           id: payment.id,
+          enterpriseId: payment.enterpriseId,
           contractId: payment.contractId,
           amount: payment.amount,
           paymentDate: payment.paymentDate,

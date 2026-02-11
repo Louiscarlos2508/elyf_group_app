@@ -12,6 +12,7 @@ UserRole createTestUserRole({
   String? description,
   Set<String>? permissions,
   bool? isSystemRole,
+  String? moduleId,
 }) {
   return UserRole(
     id: id ?? 'role-1',
@@ -19,6 +20,7 @@ UserRole createTestUserRole({
     description: description ?? 'Test role description',
     permissions: permissions ?? {'read', 'write'},
     isSystemRole: isSystemRole ?? false,
+    moduleId: moduleId ?? 'general',
   );
 }
 
@@ -27,7 +29,7 @@ EnterpriseModuleUser createTestEnterpriseModuleUser({
   String? userId,
   String? enterpriseId,
   String? moduleId,
-  String? roleId,
+  List<String>? roleIds,
   Set<String>? customPermissions,
   bool? isActive,
 }) {
@@ -35,7 +37,7 @@ EnterpriseModuleUser createTestEnterpriseModuleUser({
     userId: userId ?? TestIds.userId1,
     enterpriseId: enterpriseId ?? TestIds.enterprise1,
     moduleId: moduleId ?? TestIds.moduleGaz,
-    roleId: roleId ?? 'role-1',
+    roleIds: roleIds ?? ['role-1'],
     customPermissions: customPermissions ?? {},
     isActive: isActive ?? true,
   );
@@ -68,13 +70,13 @@ EnterpriseModuleUser createActiveUser({
   String? userId,
   String? enterpriseId,
   String? moduleId,
-  String? roleId,
+  List<String>? roleIds,
 }) {
   return createTestEnterpriseModuleUser(
     userId: userId,
     enterpriseId: enterpriseId,
     moduleId: moduleId,
-    roleId: roleId,
+    roleIds: roleIds,
     isActive: true,
   );
 }
@@ -84,13 +86,13 @@ EnterpriseModuleUser createInactiveUser({
   String? userId,
   String? enterpriseId,
   String? moduleId,
-  String? roleId,
+  List<String>? roleIds,
 }) {
   return createTestEnterpriseModuleUser(
     userId: userId,
     enterpriseId: enterpriseId,
     moduleId: moduleId,
-    roleId: roleId,
+    roleIds: roleIds,
     isActive: false,
   );
 }

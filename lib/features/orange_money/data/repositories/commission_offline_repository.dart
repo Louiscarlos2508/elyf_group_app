@@ -1,9 +1,10 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/offline_repository.dart';
+import '../../../audit_trail/domain/entities/audit_record.dart';
+import '../../../audit_trail/domain/repositories/audit_trail_repository.dart';
 import '../../domain/entities/commission.dart';
 import '../../domain/repositories/commission_repository.dart';
 
@@ -15,60 +16,27 @@ class CommissionOfflineRepository extends OfflineRepository<Commission>
     required super.syncManager,
     required super.connectivityService,
     required this.enterpriseId,
-    required this.moduleType,
+    required this.auditTrailRepository,
+    required this.userId,
+    this.moduleType = 'orange_money',
   });
 
   final String enterpriseId;
   final String moduleType;
+  final AuditTrailRepository auditTrailRepository;
+  final String userId;
 
   @override
   String get collectionName => 'commissions';
 
   @override
   Commission fromMap(Map<String, dynamic> map) {
-    return Commission(
-      id: map['id'] as String? ?? map['localId'] as String,
-      period: map['period'] as String,
-      amount: (map['amount'] as num).toInt(),
-      status: CommissionStatus.values.firstWhere(
-        (e) => e.name == map['status'],
-        orElse: () => CommissionStatus.estimated,
-      ),
-      transactionsCount: (map['transactionsCount'] as num).toInt(),
-      estimatedAmount: (map['estimatedAmount'] as num).toInt(),
-      enterpriseId: map['enterpriseId'] as String,
-      paidAt: map['paidAt'] != null
-          ? DateTime.parse(map['paidAt'] as String)
-          : null,
-      paymentDueDate: map['paymentDueDate'] != null
-          ? DateTime.parse(map['paymentDueDate'] as String)
-          : null,
-      notes: map['notes'] as String?,
-      createdAt: map['createdAt'] != null
-          ? DateTime.parse(map['createdAt'] as String)
-          : null,
-      updatedAt: map['updatedAt'] != null
-          ? DateTime.parse(map['updatedAt'] as String)
-          : null,
-    );
+    return Commission.fromMap(map, enterpriseId);
   }
 
   @override
   Map<String, dynamic> toMap(Commission entity) {
-    return {
-      'id': entity.id,
-      'period': entity.period,
-      'amount': entity.amount,
-      'status': entity.status.name,
-      'transactionsCount': entity.transactionsCount,
-      'estimatedAmount': entity.estimatedAmount,
-      'enterpriseId': entity.enterpriseId,
-      'paidAt': entity.paidAt?.toIso8601String(),
-      'paymentDueDate': entity.paymentDueDate?.toIso8601String(),
-      'notes': entity.notes,
-      'createdAt': entity.createdAt?.toIso8601String(),
-      'updatedAt': entity.updatedAt?.toIso8601String(),
-    };
+    return entity.toMap();
   }
 
   @override
@@ -152,17 +120,30 @@ class CommissionOfflineRepository extends OfflineRepository<Commission>
       moduleType: moduleType,
     );
     final entities = rows
-
         .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
-
+        .where((c) => !c.isDeleted)
         .toList();
 
-    
-
     // Dédupliquer par remoteId pour éviter les doublons
+    return deduplicateByRemoteId(entities);
+  }
+
+  Future<List<Commission>> getAllDeletedForEnterprise(
+    String enterpriseId,
+  ) async {
+    final rows = await driftService.records.listForEnterprise(
+      collectionName: collectionName,
+      enterpriseId: enterpriseId,
+      moduleType: moduleType,
+    );
+    final entities = rows
+        .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+        .where((c) => c.isDeleted)
+        .toList();
 
     return deduplicateByRemoteId(entities);
   }
+
 
   // CommissionRepository implementation
 
@@ -183,7 +164,7 @@ class CommissionOfflineRepository extends OfflineRepository<Commission>
       }).toList();
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
+      AppLogger.error(
         'Error fetching commissions',
         name: 'CommissionOfflineRepository',
         error: error,
@@ -236,25 +217,37 @@ class CommissionOfflineRepository extends OfflineRepository<Commission>
   Future<String> createCommission(Commission commission) async {
     try {
       final localId = getLocalId(commission);
-      final commissionWithLocalId = Commission(
+      final now = DateTime.now();
+      final commissionWithLocalId = commission.copyWith(
         id: localId,
-        period: commission.period,
-        amount: commission.amount,
-        status: commission.status,
-        transactionsCount: commission.transactionsCount,
-        estimatedAmount: commission.estimatedAmount,
-        enterpriseId: commission.enterpriseId,
-        paidAt: commission.paidAt,
-        paymentDueDate: commission.paymentDueDate,
-        notes: commission.notes,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        enterpriseId: enterpriseId,
+        createdAt: commission.createdAt ?? now,
+        updatedAt: now,
       );
       await save(commissionWithLocalId);
+
+      // Audit Log
+      await auditTrailRepository.log(
+        AuditRecord(
+          id: LocalIdGenerator.generate(),
+          enterpriseId: enterpriseId,
+          userId: userId,
+          module: 'orange_money',
+          action: 'create_commission',
+          entityId: localId,
+          entityType: 'commission',
+          metadata: {
+            'period': commission.period,
+            'estimatedAmount': commission.estimatedAmount,
+          },
+          timestamp: now,
+        ),
+      );
+
       return localId;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
+      AppLogger.error(
         'Error creating commission',
         name: 'CommissionOfflineRepository',
         error: error,
@@ -267,21 +260,28 @@ class CommissionOfflineRepository extends OfflineRepository<Commission>
   @override
   Future<void> updateCommission(Commission commission) async {
     try {
-      final updated = Commission(
-        id: commission.id,
-        period: commission.period,
-        amount: commission.amount,
-        status: commission.status,
-        transactionsCount: commission.transactionsCount,
-        estimatedAmount: commission.estimatedAmount,
-        enterpriseId: commission.enterpriseId,
-        paidAt: commission.paidAt,
-        paymentDueDate: commission.paymentDueDate,
-        notes: commission.notes,
-        createdAt: commission.createdAt,
-        updatedAt: DateTime.now(),
-      );
+      final now = DateTime.now();
+      final updated = commission.copyWith(updatedAt: now);
       await save(updated);
+
+      // Audit Log
+      await auditTrailRepository.log(
+        AuditRecord(
+          id: LocalIdGenerator.generate(),
+          enterpriseId: enterpriseId,
+          userId: userId,
+          module: 'orange_money',
+          action: 'update_commission',
+          entityId: commission.id,
+          entityType: 'commission',
+          metadata: {
+            'period': commission.period,
+            'status': commission.status.name,
+            'amount': commission.amount,
+          },
+          timestamp: now,
+        ),
+      );
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       AppLogger.error(
@@ -292,6 +292,116 @@ class CommissionOfflineRepository extends OfflineRepository<Commission>
       );
       throw appException;
     }
+  }
+
+  @override
+  Future<void> deleteCommission(String commissionId, String userId) async {
+    try {
+      final commission = await getCommission(commissionId);
+      if (commission != null) {
+        final now = DateTime.now();
+        final updatedCommission = commission.copyWith(
+          deletedAt: now,
+          deletedBy: userId,
+          updatedAt: now,
+        );
+        await save(updatedCommission);
+
+        // Audit Log
+        await auditTrailRepository.log(
+          AuditRecord(
+            id: LocalIdGenerator.generate(),
+            enterpriseId: enterpriseId,
+            userId: userId,
+            module: 'orange_money',
+            action: 'delete_commission',
+            entityId: commissionId,
+            entityType: 'commission',
+            metadata: {'period': commission.period},
+            timestamp: now,
+          ),
+        );
+      }
+    } catch (error, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
+      AppLogger.error(
+        'Error deleting commission: $commissionId - ${appException.message}',
+        name: 'CommissionOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      throw appException;
+    }
+  }
+
+  @override
+  Future<void> restoreCommission(String commissionId) async {
+    try {
+      final rows = await driftService.records.listForEnterprise(
+        collectionName: collectionName,
+        enterpriseId: enterpriseId,
+        moduleType: moduleType,
+      );
+      
+      final row = rows.firstWhere(
+        (r) {
+          final data = jsonDecode(r.dataJson) as Map<String, dynamic>;
+          return data['id'] == commissionId || r.localId == commissionId;
+        },
+      );
+
+      final commission = fromMap(jsonDecode(row.dataJson) as Map<String, dynamic>);
+      
+      final now = DateTime.now();
+      final updatedCommission = commission.copyWith(
+        deletedAt: null,
+        deletedBy: null,
+        updatedAt: now,
+      );
+      await save(updatedCommission);
+
+      // Audit Log
+      await auditTrailRepository.log(
+        AuditRecord(
+          id: LocalIdGenerator.generate(),
+          enterpriseId: enterpriseId,
+          userId: userId,
+          module: 'orange_money',
+          action: 'restore_commission',
+          entityId: commissionId,
+          entityType: 'commission',
+          timestamp: now,
+        ),
+      );
+    } catch (error, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
+      AppLogger.error(
+        'Error restoring commission: $commissionId',
+        name: 'CommissionOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      throw appException;
+    }
+  }
+
+  @override
+  Stream<List<Commission>> watchDeletedCommissions() {
+    return driftService.records
+        .watchForEnterprise(
+          collectionName: collectionName,
+          enterpriseId: enterpriseId,
+          moduleType: moduleType,
+        )
+        .map((rows) {
+      final commissions = rows
+          .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+          .where((c) => c.isDeleted)
+          .toList();
+
+      commissions.sort((a, b) => (b.deletedAt ?? DateTime.now()).compareTo(a.deletedAt ?? DateTime.now()));
+      return deduplicateByRemoteId(commissions);
+    });
   }
 
   @override

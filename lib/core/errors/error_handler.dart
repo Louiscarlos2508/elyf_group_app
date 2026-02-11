@@ -77,6 +77,20 @@ class ErrorHandler {
       );
     }
 
+    if (errorString.contains('business') ||
+        errorString.contains('insufficient') ||
+        errorString.contains('liquidity') ||
+        errorString.contains('stock')) {
+      return BusinessException(
+        errorString.contains('insufficient') ||
+                errorString.contains('stock') ||
+                errorString.contains('liquidity')
+            ? error.toString()
+            : 'Une règle métier n\'est pas respectée.',
+        'BUSINESS_ERROR',
+      );
+    }
+
     // Erreur inconnue
     return UnknownException(
       'Une erreur inattendue s\'est produite. Veuillez réessayer.',
@@ -99,6 +113,7 @@ class ErrorHandler {
       NotFoundException() => 'Non trouvé',
       StorageException() => 'Erreur de stockage',
       SyncException() => 'Erreur de synchronisation',
+      BusinessException() => 'Règle métier',
       UnknownException() => 'Erreur',
       _ => 'Erreur',
     };

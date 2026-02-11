@@ -18,6 +18,26 @@ abstract class TransactionRepository {
     TransactionStatus status,
   );
 
+  Future<void> deleteTransaction(String transactionId, String userId);
+
+  Future<void> restoreTransaction(String transactionId);
+
+  Stream<List<Transaction>> watchTransactions({
+    DateTime? startDate,
+    DateTime? endDate,
+    TransactionType? type,
+    TransactionStatus? status,
+  });
+
+  Stream<List<Transaction>> watchTransactionsByAgent(String agentId);
+
+  Stream<List<Transaction>> watchTransactionsByPeriod(
+    DateTime start,
+    DateTime end,
+  );
+
+  Stream<List<Transaction>> watchDeletedTransactions();
+
   Future<Map<String, dynamic>> getStatistics({
     DateTime? startDate,
     DateTime? endDate,

@@ -48,10 +48,16 @@ class BoutiqueDashboardCalculationService {
     final count = todaySales.length;
     final avgTicket = count > 0 ? revenue ~/ count : 0;
 
+    // Calculer le nombre total d'articles vendus aujourd'hui
+    final itemsCount = todaySales.fold(0, (sum, s) {
+      return sum + s.items.fold(0, (itemSum, item) => itemSum + item.quantity);
+    });
+
     return DashboardTodayMetrics(
       revenue: revenue,
       salesCount: count,
       averageTicket: avgTicket,
+      itemsCount: itemsCount,
     );
   }
 
@@ -234,11 +240,13 @@ class DashboardTodayMetrics {
     required this.revenue,
     required this.salesCount,
     required this.averageTicket,
+    required this.itemsCount,
   });
 
   final int revenue;
   final int salesCount;
   final int averageTicket;
+  final int itemsCount;
 }
 
 /// Monthly dashboard metrics.

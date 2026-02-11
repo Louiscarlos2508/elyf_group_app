@@ -1,5 +1,3 @@
-import 'dart:developer' as developer;
-
 import 'package:firebase_messaging/firebase_messaging.dart';
 
 import '../errors/error_handler.dart';
@@ -37,7 +35,7 @@ class MessagingService {
       sound: true,
     );
 
-    developer.log(
+    AppLogger.info(
       'Notification permission status: ${settings.authorizationStatus}',
       name: 'messaging.service',
     );
@@ -50,7 +48,7 @@ class MessagingService {
     // Récupérer le token initial
     final token = await getToken();
     if (token != null) {
-      developer.log(
+      AppLogger.info(
         'FCM token obtained: ${token.substring(0, 20)}...',
         name: 'messaging.service',
       );
@@ -78,7 +76,7 @@ class MessagingService {
   Future<void> deleteToken() async {
     try {
       await messaging.deleteToken();
-      developer.log('FCM token deleted', name: 'messaging.service');
+      AppLogger.info('FCM token deleted', name: 'messaging.service');
     } catch (e, stackTrace) {
       final appException = ErrorHandler.instance.handleError(e, stackTrace);
       AppLogger.error(
@@ -103,7 +101,7 @@ class MessagingService {
       // S'abonner au topic de l'entreprise
       final enterpriseTopic = 'enterprise_$enterpriseId';
       await messaging.subscribeToTopic(enterpriseTopic);
-      developer.log(
+      AppLogger.info(
         'Subscribed to topic: $enterpriseTopic',
         name: 'messaging.service',
       );
@@ -112,7 +110,7 @@ class MessagingService {
       if (moduleId != null && moduleId.isNotEmpty) {
         final moduleTopic = 'enterprise_${enterpriseId}_module_$moduleId';
         await messaging.subscribeToTopic(moduleTopic);
-        developer.log(
+        AppLogger.info(
           'Subscribed to topic: $moduleTopic',
           name: 'messaging.service',
         );
@@ -138,7 +136,7 @@ class MessagingService {
       // Se désabonner du topic de l'entreprise
       final enterpriseTopic = 'enterprise_$enterpriseId';
       await messaging.unsubscribeFromTopic(enterpriseTopic);
-      developer.log(
+      AppLogger.info(
         'Unsubscribed from topic: $enterpriseTopic',
         name: 'messaging.service',
       );
@@ -147,7 +145,7 @@ class MessagingService {
       if (moduleId != null && moduleId.isNotEmpty) {
         final moduleTopic = 'enterprise_${enterpriseId}_module_$moduleId';
         await messaging.unsubscribeFromTopic(moduleTopic);
-        developer.log(
+        AppLogger.info(
           'Unsubscribed from topic: $moduleTopic',
           name: 'messaging.service',
         );
@@ -195,7 +193,7 @@ class MessagingService {
     // Cette méthode peut être utilisée pour documenter ou préparer la configuration.
     // Pour configurer l'importance des notifications, utilisez flutter_local_notifications
     // avec Importance enum, ou configurez directement dans AndroidManifest.xml.
-    developer.log(
+    AppLogger.info(
       'Android notification channel configured: $channelId',
       name: 'messaging.service',
     );
@@ -208,7 +206,7 @@ class MessagingService {
     bool presentSound = true,
   }) {
     // Note: La configuration iOS se fait généralement dans le code natif.
-    developer.log(
+    AppLogger.info(
       'iOS notification options configured',
       name: 'messaging.service',
     );

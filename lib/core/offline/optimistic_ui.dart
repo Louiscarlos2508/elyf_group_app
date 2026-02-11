@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 
 import '../errors/error_handler.dart';
 import '../logging/app_logger.dart';
@@ -49,7 +48,7 @@ class OptimisticUI<T> {
     try {
       // 1. Mettre à jour l'UI immédiatement (optimistic update)
       await onUpdate(entity);
-      developer.log(
+      AppLogger.debug(
         'Optimistic UI update applied',
         name: 'optimistic.ui',
       );
@@ -62,14 +61,14 @@ class OptimisticUI<T> {
         await onSuccess!(result);
       }
 
-      developer.log(
+      AppLogger.debug(
         'Optimistic UI operation succeeded',
         name: 'optimistic.ui',
       );
 
       return result;
     } catch (e, stackTrace) {
-      developer.log(
+      AppLogger.error(
         'Optimistic UI operation failed, rolling back: $e',
         name: 'optimistic.ui',
         error: e,
@@ -80,7 +79,7 @@ class OptimisticUI<T> {
       try {
         if (_previousState != null) {
           await onRollback(_previousState as T);
-          developer.log(
+          AppLogger.debug(
             'Optimistic UI rollback completed',
             name: 'optimistic.ui',
           );
@@ -116,7 +115,7 @@ class OptimisticUI<T> {
     try {
       // 1. Mettre à jour l'UI immédiatement (retirer de la liste)
       await onUpdate(entity);
-      developer.log(
+      AppLogger.debug(
         'Optimistic UI delete update applied',
         name: 'optimistic.ui',
       );
@@ -129,12 +128,12 @@ class OptimisticUI<T> {
         await onSuccess!(entity);
       }
 
-      developer.log(
+      AppLogger.debug(
         'Optimistic UI delete operation succeeded',
         name: 'optimistic.ui',
       );
     } catch (e, stackTrace) {
-      developer.log(
+      AppLogger.error(
         'Optimistic UI delete operation failed, rolling back: $e',
         name: 'optimistic.ui',
         error: e,
@@ -145,7 +144,7 @@ class OptimisticUI<T> {
       try {
         if (_previousState != null) {
           await onRollback(_previousState as T);
-          developer.log(
+          AppLogger.debug(
             'Optimistic UI delete rollback completed',
             name: 'optimistic.ui',
           );

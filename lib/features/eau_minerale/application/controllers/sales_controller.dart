@@ -1,20 +1,23 @@
-import 'dart:developer' as developer;
 import '../../domain/adapters/pack_stock_adapter.dart';
 import '../../domain/entities/sale.dart';
 import '../../domain/pack_constants.dart';
 import '../../domain/repositories/product_repository.dart';
 import '../../domain/repositories/sale_repository.dart';
+import '../../../audit_trail/domain/services/audit_trail_service.dart';
+import '../../../../core/logging/app_logger.dart';
 
 class SalesController {
   SalesController(
     this._saleRepository,
     this._packStockAdapter,
     this._productRepository,
+    this._auditTrailService,
   );
 
   final SaleRepository _saleRepository;
   final PackStockAdapter _packStockAdapter;
   final ProductRepository _productRepository;
+  final AuditTrailService _auditTrailService;
 
   Future<SalesState> fetchRecentSales() async {
     final sales = await _saleRepository.fetchSales();
@@ -47,7 +50,7 @@ class SalesController {
           final product = await _productRepository.getProduct(sale.productId);
           isOtherFinishedGood = product?.isFinishedGood == true;
         } catch (e) {
-          developer.log('Error checking finished good status: $e', name: 'elyf.sales');
+          AppLogger.error('Error checking finished good status: $e', name: 'SalesController');
         }
       }
 
@@ -62,18 +65,35 @@ class SalesController {
         } catch (e, st) {
           // Log but don't fail the entire sale creation if stock update fails? 
           // Usually better to fail if stock is critical, but here we want to avoid the crash.
-          developer.log(
-            'Failed to record pack exit for sale $id: $e',
-            name: 'elyf.sales',
+          AppLogger.error(
+            'Failed to record pack exit for sale $id',
             error: e,
             stackTrace: st,
           );
           // If we want to be strict, we'd rethrow, but here we aim for robustness.
         }
       }
+
+      // 4. Log to Audit Trail
+      try {
+        await _auditTrailService.logSale(
+          enterpriseId: sale.enterpriseId,
+          userId: userId,
+          saleId: id,
+          module: 'eau_minerale',
+          totalAmount: sale.totalPrice.toDouble(),
+          extraMetadata: {
+            'productName': sale.productName,
+            'quantity': sale.quantity,
+          },
+        );
+      } catch (e) {
+        AppLogger.error('Failed to log eau_minerale sale audit', error: e);
+      }
+
       return id;
     } catch (e, st) {
-      developer.log('Error in createSale: $e', name: 'elyf.sales', error: e, stackTrace: st);
+      AppLogger.error('Error in createSale: $e', name: 'SalesController', error: e, stackTrace: st);
       rethrow;
     }
   }

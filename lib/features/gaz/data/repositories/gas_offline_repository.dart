@@ -1,5 +1,5 @@
+
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import '../../../../core/errors/app_exceptions.dart';
 import '../../../../core/errors/error_handler.dart';
@@ -71,6 +71,8 @@ class GasOfflineRepository implements GasRepository {
       'saleType': entity.saleType.name,
       'customerName': entity.customerName,
       'customerPhone': entity.customerPhone,
+      'enterpriseId': entity.enterpriseId,
+      'createdBy': entity.createdBy,
       'notes': entity.notes,
       'tourId': entity.tourId,
       'wholesalerId': entity.wholesalerId,
@@ -89,6 +91,8 @@ class GasOfflineRepository implements GasRepository {
       saleType: _parseSaleType(map['saleType'] as String? ?? 'retail'),
       customerName: map['customerName'] as String?,
       customerPhone: map['customerPhone'] as String?,
+      enterpriseId: map['enterpriseId'] as String? ?? enterpriseId,
+      createdBy: map['createdBy'] as String?,
       notes: map['notes'] as String?,
       tourId: map['tourId'] as String?,
       wholesalerId: map['wholesalerId'] as String?,
@@ -212,7 +216,7 @@ class GasOfflineRepository implements GasRepository {
         if (byRemote != null) {
           // Cylinder existant trouvé, utiliser son localId
           localId = byRemote.localId;
-          developer.log(
+          AppLogger.debug(
             'Cylinder existant trouvé par remoteId lors de l\'ajout, utilisation du localId: $localId',
             name: 'GasOfflineRepository.addCylinder',
           );
@@ -236,14 +240,14 @@ class GasOfflineRepository implements GasRepository {
           
           if (found != null) {
             localId = found.localId;
-            developer.log(
+            AppLogger.debug(
               'Cylinder existant trouvé par weight+enterprise lors de l\'ajout, utilisation du localId: $localId',
               name: 'GasOfflineRepository.addCylinder',
             );
           } else {
             // Nouveau cylinder, générer un nouveau localId
             localId = LocalIdGenerator.generate();
-            developer.log(
+            AppLogger.debug(
               'Nouveau cylinder, génération du localId: $localId',
               name: 'GasOfflineRepository.addCylinder',
             );
@@ -384,7 +388,7 @@ class GasOfflineRepository implements GasRepository {
         enterpriseId: enterpriseId,
       );
       
-      developer.log(
+      AppLogger.debug(
         'Cylinder sauvegardé - localId: $localId, remoteId: $remoteId, cylinder.id: ${cylinder.id}',
         name: 'GasOfflineRepository.updateCylinder',
       );

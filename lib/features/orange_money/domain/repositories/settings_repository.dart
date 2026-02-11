@@ -17,4 +17,6 @@ abstract class SettingsRepository {
   );
 
   Future<void> updateSimNumber(String enterpriseId, String simNumber);
+
+  Stream<OrangeMoneySettings?> watchSettings(String enterpriseId);
 }

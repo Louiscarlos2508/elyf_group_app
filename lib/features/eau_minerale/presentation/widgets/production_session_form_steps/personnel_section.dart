@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../domain/entities/production_day.dart';
 import '../../../domain/entities/production_session.dart';
 import '../../../domain/entities/bobine_usage.dart';
+import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 import '../daily_personnel_form.dart';
 import 'production_session_form_helpers.dart';
 
@@ -28,7 +29,7 @@ class PersonnelSection extends ConsumerWidget {
   final List<String> machinesSelectionnees;
   final List bobinesUtilisees;
 
-  Widget _buildSectionHeader(BuildContext context) {
+  Widget _buildSectionHeader(BuildContext context, WidgetRef ref) {
     return Row(
       children: [
         Expanded(
@@ -41,7 +42,7 @@ class PersonnelSection extends ConsumerWidget {
         ),
         IntrinsicWidth(
           child: OutlinedButton.icon(
-            onPressed: () => _showPersonnelForm(context, selectedDate),
+            onPressed: () => _showPersonnelForm(context, ref, selectedDate),
             icon: const Icon(Icons.person_add, size: 18),
             label: const Text('Ajouter'),
           ),
@@ -107,11 +108,18 @@ class PersonnelSection extends ConsumerWidget {
     );
   }
 
-  Future<void> _showPersonnelForm(BuildContext context, DateTime date) async {
+  Future<void> _showPersonnelForm(
+    BuildContext context,
+    WidgetRef ref,
+    DateTime date,
+  ) async {
+    final enterpriseId = ref.read(activeEnterpriseIdProvider).value ?? '';
+
     final tempSession =
         session ??
         ProductionSession(
           id: 'temp',
+          enterpriseId: enterpriseId,
           date: selectedDate,
           period: 1,
           heureDebut: selectedDate,
@@ -160,7 +168,7 @@ class PersonnelSection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader(context),
+        _buildSectionHeader(context, ref),
         const SizedBox(height: 12),
         if (productionDays.isEmpty)
           _buildEmptyState(context)

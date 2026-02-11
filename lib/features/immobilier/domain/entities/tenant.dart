@@ -2,6 +2,7 @@
 class Tenant {
   Tenant({
     required this.id,
+    required this.enterpriseId,
     required this.fullName,
     required this.phone,
     this.address,
@@ -16,6 +17,7 @@ class Tenant {
   });
 
   final String id;
+  final String enterpriseId;
   final String fullName;
   final String phone;
   final String? address;
@@ -32,6 +34,7 @@ class Tenant {
 
   Tenant copyWith({
     String? id,
+    String? enterpriseId,
     String? fullName,
     String? phone,
     String? address,
@@ -46,6 +49,7 @@ class Tenant {
   }) {
     return Tenant(
       id: id ?? this.id,
+      enterpriseId: enterpriseId ?? this.enterpriseId,
       fullName: fullName ?? this.fullName,
       phone: phone ?? this.phone,
       address: address ?? this.address,
@@ -57,6 +61,43 @@ class Tenant {
       updatedAt: updatedAt ?? this.updatedAt,
       deletedAt: deletedAt ?? this.deletedAt,
       deletedBy: deletedBy ?? this.deletedBy,
+    );
+  }
+
+  /// Représentation sérialisable pour logs / audit trail / persistence.
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'enterpriseId': enterpriseId,
+      'fullName': fullName,
+      'phone': phone,
+      'address': address,
+      'idNumber': idNumber,
+      'emergencyContact': emergencyContact,
+      'idCardPath': idCardPath,
+      'notes': notes,
+      'createdAt': createdAt?.toIso8601String(),
+      'updatedAt': updatedAt?.toIso8601String(),
+      'deletedAt': deletedAt?.toIso8601String(),
+      'deletedBy': deletedBy,
+    };
+  }
+
+  factory Tenant.fromMap(Map<String, dynamic> map) {
+    return Tenant(
+      id: map['id'] as String,
+      enterpriseId: map['enterpriseId'] as String,
+      fullName: map['fullName'] as String,
+      phone: map['phone'] as String,
+      address: map['address'] as String?,
+      idNumber: map['idNumber'] as String?,
+      emergencyContact: map['emergencyContact'] as String?,
+      idCardPath: map['idCardPath'] as String?,
+      notes: map['notes'] as String?,
+      createdAt: map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : null,
+      updatedAt: map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : null,
+      deletedAt: map['deletedAt'] != null ? DateTime.parse(map['deletedAt'] as String) : null,
+      deletedBy: map['deletedBy'] as String?,
     );
   }
 

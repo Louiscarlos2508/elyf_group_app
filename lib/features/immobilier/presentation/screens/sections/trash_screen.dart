@@ -148,13 +148,13 @@ class _DeletedPaymentsTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final asyncData = ref.watch(deletedPaymentsProvider);
+    final asyncData = ref.watch(deletedPaymentsWithRelationsProvider);
     return _DeletedList<Payment>(
       asyncData: asyncData,
       emptyMessage: 'Aucun paiement supprimé',
       emptyIcon: Icons.payments_outlined,
       itemBuilder: (context, payment) => _DeletedPaymentCard(payment: payment),
-      onRetry: () => ref.invalidate(deletedPaymentsProvider),
+      onRetry: () => ref.invalidate(deletedPaymentsWithRelationsProvider),
     );
   }
 }
@@ -337,8 +337,8 @@ class _DeletedPaymentCard extends ConsumerWidget {
       permission: ImmobilierPermissions.restorePayment,
       onRestore: () async {
         await ref.read(paymentControllerProvider).restorePayment(payment.id);
-        ref.invalidate(deletedPaymentsProvider);
-        ref.invalidate(paymentsProvider);
+        ref.invalidate(deletedPaymentsWithRelationsProvider);
+        ref.invalidate(paymentsWithRelationsProvider);
       },
     );
   }

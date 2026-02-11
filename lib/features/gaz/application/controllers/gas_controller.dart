@@ -3,12 +3,16 @@ import 'package:flutter/material.dart';
 import '../../domain/entities/cylinder.dart';
 import '../../domain/entities/gas_sale.dart';
 import '../../domain/repositories/gas_repository.dart';
+import '../../../audit_trail/domain/services/audit_trail_service.dart';
+import '../../../../core/logging/app_logger.dart';
+import 'package:elyf_groupe_app/core/errors/app_exceptions.dart';
 
 /// Contrôleur pour la gestion des ventes de gaz.
 class GasController extends ChangeNotifier {
-  GasController(this._repository);
+  GasController(this._repository, this._auditTrailService);
 
   final GasRepository _repository;
+  final AuditTrailService _auditTrailService;
   bool _isLoading = false;
   List<Cylinder> _cylinders = [];
   List<GasSale> _sales = [];
@@ -46,7 +50,32 @@ class GasController extends ChangeNotifier {
   }
 
   Future<void> addSale(GasSale sale) async {
+    final cylinder = await _repository.getCylinderById(sale.cylinderId);
+    if (cylinder == null) {
+      throw BusinessException('Bouteille introuvable');
+    }
+    if (sale.quantity > cylinder.stock) {
+      throw BusinessException(
+        'Stock insuffisant pour ${cylinder.label}. Disponible: ${cylinder.stock}',
+      );
+    }
     await _repository.addSale(sale);
+
+    // Audit Log
+    try {
+      if (sale.createdBy != null) {
+        await _auditTrailService.logSale(
+          enterpriseId: sale.enterpriseId,
+          userId: sale.createdBy!,
+          saleId: sale.id,
+          module: 'gaz',
+          totalAmount: sale.totalAmount.toDouble(),
+        );
+      }
+    } catch (e) {
+      AppLogger.error('Failed to log gas sale audit', error: e);
+    }
+
     await loadSales();
   }
 

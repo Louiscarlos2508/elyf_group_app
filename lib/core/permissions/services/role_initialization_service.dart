@@ -1,6 +1,8 @@
-import 'package:elyf_groupe_app/core/permissions/data/predefined_roles.dart';
-import 'package:elyf_groupe_app/features/administration/application/providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../logging/app_logger.dart';
+import '../../../../features/administration/application/providers.dart';
+import '../data/predefined_roles.dart';
 
 /// Service d'initialisation des rôles prédéfinis
 class RoleInitializationService {
@@ -14,8 +16,7 @@ class RoleInitializationService {
   Future<void> initializePredefinedRoles() async {
     final adminController = _ref.read(adminControllerProvider);
 
-    // ignore: avoid_print
-    print('[ROLES] Initialisation des roles predefinis...');
+    AppLogger.info('Initialisation des roles predefinis...', name: 'roles');
 
     int created = 0;
     int skipped = 0;
@@ -28,34 +29,26 @@ class RoleInitializationService {
         final exists = existingRoles.any((r) => r.id == role.id);
 
         if (exists) {
-          // ignore: avoid_print
-          print('[ROLES] Role "${role.name}" existe deja, ignore');
+          AppLogger.debug('Role "${role.name}" existe deja, ignore', name: 'roles');
           skipped++;
           continue;
         }
 
         // Créer le rôle
         await adminController.createRole(role);
-        // ignore: avoid_print
-        print('[ROLES] Role "${role.name}" cree avec succes');
+        AppLogger.info('Role "${role.name}" cree avec succes', name: 'roles');
         created++;
       } catch (e) {
-        // ignore: avoid_print
-        print('[ROLES] Erreur lors de la creation du role "${role.name}": $e');
+        AppLogger.error('Erreur lors de la creation du role "${role.name}": $e', name: 'roles', error: e);
         errors++;
       }
     }
 
-    // ignore: avoid_print
-    print('\n[ROLES] Resume de l\'initialisation:');
-    // ignore: avoid_print
-    print('[ROLES]   Crees: $created');
-    // ignore: avoid_print
-    print('[ROLES]   Ignores: $skipped');
-    // ignore: avoid_print
-    print('[ROLES]   Erreurs: $errors');
-    // ignore: avoid_print
-    print('[ROLES]   Total: ${PredefinedRoles.allRoles.length}');
+    AppLogger.info('\nResume de l\'initialisation:', name: 'roles');
+    AppLogger.info('  Crees: $created', name: 'roles');
+    AppLogger.info('  Ignores: $skipped', name: 'roles');
+    AppLogger.info('  Erreurs: $errors', name: 'roles');
+    AppLogger.info('  Total: ${PredefinedRoles.allRoles.length}', name: 'roles');
   }
 
   /// Initialise uniquement les rôles pour un module spécifique
@@ -63,8 +56,7 @@ class RoleInitializationService {
     final adminController = _ref.read(adminControllerProvider);
     final roles = PredefinedRoles.getRolesForModule(moduleId);
 
-    // ignore: avoid_print
-    print('[ROLES] Initialisation des roles pour le module "$moduleId"...');
+    AppLogger.info('Initialisation des roles pour le module "$moduleId"...', name: 'roles');
 
     for (final role in roles) {
       try {
@@ -73,12 +65,10 @@ class RoleInitializationService {
 
         if (!exists) {
           await adminController.createRole(role);
-          // ignore: avoid_print
-          print('[ROLES] Role "${role.name}" cree');
+          AppLogger.info('Role "${role.name}" cree', name: 'roles');
         }
       } catch (e) {
-        // ignore: avoid_print
-        print('[ROLES] Erreur: $e');
+        AppLogger.error('Erreur: $e', name: 'roles', error: e);
       }
     }
   }

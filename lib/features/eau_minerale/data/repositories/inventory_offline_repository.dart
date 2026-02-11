@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import '../../../../core/errors/app_exceptions.dart';
 import '../../../../core/errors/error_handler.dart';
@@ -233,7 +232,7 @@ class InventoryOfflineRepository extends OfflineRepository<StockItem>
       rethrow;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
+      AppLogger.error(
         'Error updating stock item: ${item.id}',
         name: 'InventoryOfflineRepository',
         error: error,

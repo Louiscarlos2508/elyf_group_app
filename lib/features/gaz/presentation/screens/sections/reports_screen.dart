@@ -1,11 +1,17 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:open_file/open_file.dart';
+import 'package:path_provider/path_provider.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import 'package:elyf_groupe_app/core/pdf/gaz_report_pdf_service.dart';
+import 'package:elyf_groupe_app/shared/services/report_export_service.dart';
+import 'package:elyf_groupe_app/features/gaz/domain/services/gaz_report_calculation_service.dart';
 import '../../../domain/entities/report_data.dart';
+import '../../../domain/entities/gas_sale.dart';
+import '../../../domain/entities/expense.dart';
 import '../../widgets/expenses_report_content_v2.dart';
 import '../../widgets/financial_report_content_v2.dart';
 import '../../widgets/profit_report_content_v2.dart';
@@ -56,7 +62,7 @@ class _GazReportsScreenState extends ConsumerState<GazReportsScreen> {
     }
   }
 
-  Future<void> _downloadReport() async {
+  Future<void> _downloadPdf() async {
     try {
       // Afficher un indicateur de chargement
       if (!mounted) return;
@@ -119,6 +125,99 @@ class _GazReportsScreenState extends ConsumerState<GazReportsScreen> {
     }
   }
 
+  Future<void> _downloadCsv() async {
+    try {
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+
+      // Récupérer les ventes et dépenses pour la période
+      final salesAsync = ref.read(gasSalesProvider);
+      final expensesAsync = ref.read(gazExpensesProvider);
+
+      final allSales = salesAsync.when(
+        data: (data) => data,
+        loading: () => <GasSale>[],
+        error: (_, __) => <GasSale>[],
+      );
+
+      final allExpenses = expensesAsync.when(
+        data: (data) => data,
+        loading: () => <GazExpense>[],
+        error: (_, __) => <GazExpense>[],
+      );
+
+      final calculationService = GazReportCalculationService();
+      
+      // Filtrer par date
+      final filteredSales = calculationService.filterSalesByDateRange(
+        sales: allSales,
+        startDate: _startDate,
+        endDate: _endDate,
+      );
+      
+      final filteredExpenses = calculationService.filterExpensesByDateRange(
+        expenses: allExpenses,
+        startDate: _startDate,
+        endDate: _endDate,
+      );
+
+      final exportService = const ReportExportService();
+      
+      // Générer CSV pour les ventes
+      final salesCsv = exportService.exportToCsv(
+        headers: calculationService.getSalesCsvHeaders(),
+        rows: calculationService.mapSalesToCsvRows(filteredSales),
+      );
+
+      // Générer CSV pour les dépenses
+      final expensesCsv = exportService.exportToCsv(
+        headers: calculationService.getExpensesCsvHeaders(),
+        rows: calculationService.mapExpensesToCsvRows(filteredExpenses),
+      );
+
+      // Fusionner ou exporter séparément ? 
+      // Pour faire simple, exportons deux fichiers ou un combiné.
+      // Combinons les dans un seul fichier avec une séparation claire.
+      final combinedCsv = 'RAPPORT GAZ VENTES\n$salesCsv\n\nRAPPORT GAZ DEPENSES\n$expensesCsv';
+
+      final filename = exportService.generateFilename(
+        prefix: 'rapport_gaz_complet',
+        extension: 'csv',
+        startDate: _startDate,
+        endDate: _endDate,
+      );
+
+      final directory = await getTemporaryDirectory();
+      final file = File('${directory.path}/$filename');
+      await file.writeAsString(combinedCsv);
+
+      if (!mounted) return;
+      Navigator.of(context).pop();
+
+      // Ouvrir le fichier
+      final result = await OpenFile.open(file.path);
+      if (!mounted) return;
+
+      if (result.type != ResultType.done) {
+        NotificationService.showInfo(
+          context,
+          'CSV généré: ${file.path}',
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      NotificationService.showError(
+        context,
+        'Erreur lors de la génération CSV: $e',
+      );
+    }
+  }
+
   void _invalidateProviders() {
     ref.invalidate(gazReportDataProvider);
     ref.invalidate(gasSalesProvider);
@@ -155,7 +254,8 @@ class _GazReportsScreenState extends ConsumerState<GazReportsScreen> {
                   endDate: _endDate,
                   onStartDateSelected: () => _selectDate(context, true),
                   onEndDateSelected: () => _selectDate(context, false),
-                  onDownload: _downloadReport,
+                  onDownloadPdf: _downloadPdf,
+                  onDownloadCsv: _downloadCsv,
                 ),
               ),
             ),

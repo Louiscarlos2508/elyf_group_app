@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/orange_money/application/providers.dart';
+import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 import '../../../domain/entities/transaction.dart';
 import '../../../domain/services/transaction_service.dart';
 import '../../widgets/form_field_with_label.dart';
@@ -77,8 +78,10 @@ class _TransactionsV2ScreenState extends ConsumerState<TransactionsV2Screen>
     final customerName = '$firstName $lastName';
 
     try {
+      final enterpriseId = ref.read(activeEnterpriseProvider).value?.id ?? 'default';
       final controller = ref.read(orangeMoneyControllerProvider);
       await controller.createTransactionFromInput(
+        enterpriseId: enterpriseId,
         type: _selectedType,
         phoneNumber: phoneNumber,
         amountStr: amountStr,

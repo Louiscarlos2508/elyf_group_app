@@ -9,6 +9,7 @@
 library;
 
 export 'providers/controller_providers.dart';
+export 'controllers/stock_controller.dart' show StockState;
 export 'providers/permission_providers.dart';
 export 'providers/repository_providers.dart';
 export 'providers/service_providers.dart';

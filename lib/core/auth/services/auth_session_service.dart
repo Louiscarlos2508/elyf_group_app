@@ -1,10 +1,8 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 
 import 'package:firebase_auth/firebase_auth.dart'
     show FirebaseAuth, User, UserCredential, FirebaseAuthException;
 import 'package:firebase_core/firebase_core.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import '../../firebase/firestore_user_service.dart';
@@ -20,17 +18,12 @@ import 'auth_storage_service.dart';
 /// et le rechargement de l'utilisateur.
 class AuthSessionService {
   AuthSessionService({
-    FirebaseAuth? firebaseAuth,
-    FirestoreUserService? firestoreUserService,
-    FirebaseFirestore? firestore,
-    AuthStorageService? authStorageService,
-  })  : _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance,
-        _firestoreUserService = firestoreUserService ??
-            FirestoreUserService(
-              firestore: firestore ?? FirebaseFirestore.instance,
-            ),
-        _authStorageService =
-            authStorageService ?? AuthStorageService();
+    required FirebaseAuth firebaseAuth,
+    required FirestoreUserService firestoreUserService,
+    required AuthStorageService authStorageService,
+  })  : _firebaseAuth = firebaseAuth,
+        _firestoreUserService = firestoreUserService,
+        _authStorageService = authStorageService;
 
   final FirebaseAuth _firebaseAuth;
   final FirestoreUserService _firestoreUserService;
@@ -66,7 +59,7 @@ class AuthSessionService {
     try {
       // Vérifier d'abord si Firebase Core est initialisé
       if (Firebase.apps.isEmpty) {
-        developer.log(
+        AppLogger.info(
           'Firebase Core not initialized - will work in offline mode',
           name: 'auth.session',
         );
@@ -78,7 +71,7 @@ class AuthSessionService {
       // Migrer les données depuis SharedPreferences si nécessaire
       await _authStorageService.migrateFromSharedPreferences();
 
-      final isLoggedInLocal = await _authStorageService.isLoggedIn();
+      await _authStorageService.isLoggedIn();
 
       // Attendre activement que Firebase Auth restaure l'état
       // Passer de 2s à 5s pour être plus robuste lors des Hot Reloads/Restarts
@@ -86,7 +79,7 @@ class AuthSessionService {
       
       if (firebaseUser == null) {
         try {
-          developer.log(
+          AppLogger.debug(
             'Waiting for Firebase Auth to restore session...',
             name: 'auth.session',
           );
@@ -95,7 +88,7 @@ class AuthSessionService {
             onTimeout: () => null,
           );
         } catch (e) {
-          developer.log(
+          AppLogger.error(
             'Timeout waiting for authStateChanges(): $e',
             name: 'auth.session',
           );
@@ -107,7 +100,7 @@ class AuthSessionService {
 
       // LOGIQUE DE SÉCURITÉ CRITIQUE : Vérification de cohérence
       if (firebaseUser != null) {
-        developer.log(
+        AppLogger.info(
           'Firebase Auth confirmed user: ${firebaseUser.email} (${firebaseUser.uid})',
           name: 'auth.session',
         );
@@ -115,7 +108,7 @@ class AuthSessionService {
         if (localUser != null && localUser.id != firebaseUser.uid) {
           // ALERTE ROUGE : L'ID local ne correspond pas à l'ID Firebase
           // Cela peut arriver après un changement de compte rapide ou un bug de persistence
-          developer.log(
+          AppLogger.warning(
             'SECURITY ALERT: Local ID (${localUser.id}) mismatch with Firebase ID (${firebaseUser.uid}). '
             'Clearing stale local data...',
             name: 'auth.session',
@@ -128,13 +121,13 @@ class AuthSessionService {
       } else {
         // Pas d'utilisateur Firebase trouvé après l'attente
         if (localUser != null) {
-          developer.log(
+          AppLogger.info(
             'No Firebase user found. Falling back to secure local storage for offline access.',
             name: 'auth.session',
           );
           _updateUser(localUser);
         } else {
-          developer.log('No user session found (Firebase or Local).', name: 'auth.session');
+          AppLogger.info('No user session found (Firebase or Local).', name: 'auth.session');
           _updateUser(null);
         }
       }
@@ -165,7 +158,7 @@ class AuthSessionService {
 
       if (isFirebaseCoreError) {
         // Firebase Core n'est vraiment pas initialisé - c'est un problème critique
-        developer.log(
+        AppLogger.critical(
           'Firebase Core not initialized - this is a critical error',
           name: 'auth.session',
         );
@@ -175,7 +168,7 @@ class AuthSessionService {
         );
       } else if (isNetworkError) {
         // Erreur réseau - pas un problème d'initialisation, l'app peut fonctionner en offline
-        developer.log(
+        AppLogger.warning(
           'Network error during auth initialization (offline mode will be used)',
           name: 'auth.session',
         );
@@ -187,7 +180,7 @@ class AuthSessionService {
       // Pour les autres erreurs (Firestore permissions, timeout, etc.),
       // marquer comme initialisé pour permettre à l'app de continuer
       // L'utilisateur pourra se connecter et les données seront synchronisées
-      developer.log(
+      AppLogger.info(
         'Auth session initialized despite Firestore/network errors (will work on login)',
         name: 'auth.session',
       );
@@ -227,7 +220,7 @@ class AuthSessionService {
         );
       } else {
         // Utilisateur Firebase existe mais pas dans Firestore (rare), utiliser les données minimales
-        developer.log(
+        AppLogger.warning(
           'User not found in Firestore, fallback to minimal AppUser',
           name: 'auth.session',
         );
@@ -270,7 +263,7 @@ class AuthSessionService {
   void _updateUser(AppUser? user) {
     _currentUser = user;
     _userStreamController.add(user);
-    developer.log(
+    AppLogger.debug(
       'Auth user state updated: ${user?.email ?? "null"}',
       name: 'auth.session',
     );
@@ -315,7 +308,7 @@ class AuthSessionService {
           final isLoggedInLocal = await _authStorageService.isLoggedIn();
           final hasFirebaseUser = _firebaseAuth.currentUser != null;
           if (isLoggedInLocal && !hasFirebaseUser) {
-            developer.log(
+            AppLogger.warning(
               'Inconsistency detected during login: cleaning local auth data',
               name: 'auth.session',
             );
@@ -385,7 +378,7 @@ class AuthSessionService {
       // 3. Récupérer et synchroniser les données utilisateur (Firestore -> Cache -> State)
       await _fetchAndSyncFirestoreUser(firebaseUser);
       
-      developer.log(
+      AppLogger.info(
         'User successfully logged in: ${firebaseUser.email} (${firebaseUser.uid})',
         name: 'auth.session',
       );
@@ -432,13 +425,13 @@ class AuthSessionService {
         // Si ce n'est pas le cas, ne pas utiliser currentUser (c'est un utilisateur précédemment connecté)
         if (firebaseUser.email != null &&
             firebaseUser.email!.toLowerCase() != email.toLowerCase()) {
-          developer.log(
+          AppLogger.warning(
             'Current user email (${firebaseUser.email}) does not match login email ($email). Ignoring currentUser.',
             name: 'auth.session',
           );
         } else {
           // Firebase Auth a fonctionné ! Les erreurs GoogleApiManager/DEVELOPER_ERROR sont non-bloquantes
-          developer.log(
+          AppLogger.info(
             'Firebase Auth successful (user: ${firebaseUser.uid}). Error is non-critical (likely GoogleApiManager/DEVELOPER_ERROR): $e',
             name: 'auth.session',
           );
@@ -467,7 +460,7 @@ class AuthSessionService {
           errorString.contains('developer_error') ||
           errorString.contains('securityexception') ||
           errorString.contains('unknown calling package')) {
-        developer.log(
+        AppLogger.info(
           'GoogleApiManager/DEVELOPER_ERROR detected (non-critical). Checking if Firebase Auth actually worked...',
           name: 'auth.session',
         );
@@ -518,7 +511,7 @@ class AuthSessionService {
             finalUserCheck.uid.isNotEmpty &&
             finalUserCheck.email != null &&
             finalUserCheck.email!.toLowerCase() == email.toLowerCase()) {
-          developer.log(
+          AppLogger.info(
             'Firebase Auth worked after delay (user: ${finalUserCheck.uid}). Error was non-critical: $e',
             name: 'auth.session',
           );
@@ -585,7 +578,7 @@ class AuthSessionService {
     // Ne pas réinitialiser _isInitialized - Firebase Core reste initialisé
     // et le service doit rester prêt pour la prochaine connexion
 
-    developer.log('User signed out successfully', name: 'auth.session');
+    AppLogger.info('User signed out successfully', name: 'auth.session');
   }
 
   /// Recharger l'utilisateur depuis le stockage sécurisé
@@ -598,7 +591,7 @@ class AuthSessionService {
   /// Nettoie toutes les données locales d'authentification et réinitialise l'état.
   /// Cette méthode est utile pour résoudre les conflits entre SecureStorage et Firebase Auth.
   Future<void> forceReset() async {
-    developer.log('Force resetting auth session service...', name: 'auth.session');
+    AppLogger.info('Force resetting auth session service...', name: 'auth.session');
     await _authStorageService.clearLocalAuthData();
     try {
       await _firebaseAuth.signOut();
@@ -613,6 +606,6 @@ class AuthSessionService {
     }
     _updateUser(null);
     _isInitialized = false;
-    developer.log('Auth session service reset complete', name: 'auth.session');
+    AppLogger.info('Auth session service reset complete', name: 'auth.session');
   }
 }

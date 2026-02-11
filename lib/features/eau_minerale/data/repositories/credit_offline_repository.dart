@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/logging/app_logger.dart';
@@ -254,7 +253,7 @@ class CreditOfflineRepository extends OfflineRepository<CreditPayment>
     DateTime? startDate,
     DateTime? endDate,
   }) {
-    developer.log(
+    AppLogger.debug(
       'Watching credit payments for enterprise: $enterpriseId',
       name: 'CreditOfflineRepository',
     );
@@ -305,7 +304,7 @@ class CreditOfflineRepository extends OfflineRepository<CreditPayment>
       return allPayments.where((p) => p.saleId == saleId).toList();
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
+      AppLogger.error(
         'Error fetching sale payments: $saleId',
         name: 'CreditOfflineRepository',
         error: error,

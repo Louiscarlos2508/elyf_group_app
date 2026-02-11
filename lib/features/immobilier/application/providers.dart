@@ -1,10 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:collection/collection.dart';
 
 export 'providers/permission_providers.dart';
 export 'providers/section_providers.dart';
 export 'providers/filter_providers.dart';
 
+import '../../audit_trail/application/providers.dart';
+import 'providers/permission_providers.dart' show currentUserIdProvider;
 import '../../../../core/offline/drift_service.dart';
 import '../../../../core/offline/providers.dart';
 import '../../../../core/tenant/tenant_provider.dart';
@@ -163,6 +166,9 @@ final propertyControllerProvider = Provider<PropertyController>(
   (ref) => PropertyController(
     ref.watch(propertyRepositoryProvider),
     ref.watch(immobilierValidationServiceProvider),
+    ref.watch(auditTrailServiceProvider),
+    ref.watch(activeEnterpriseProvider).value?.id ?? 'default',
+    ref.watch(currentUserIdProvider) ?? 'unknown',
   ),
 );
 
@@ -170,6 +176,9 @@ final tenantControllerProvider = Provider<TenantController>(
   (ref) => TenantController(
     ref.watch(tenantRepositoryProvider),
     ref.watch(immobilierValidationServiceProvider),
+    ref.watch(auditTrailServiceProvider),
+    ref.watch(activeEnterpriseProvider).value?.id ?? 'default',
+    ref.watch(currentUserIdProvider) ?? 'unknown',
   ),
 );
 
@@ -178,6 +187,9 @@ final contractControllerProvider = Provider<ContractController>(
     ref.watch(contractRepositoryProvider),
     ref.watch(propertyRepositoryProvider),
     ref.watch(immobilierValidationServiceProvider),
+    ref.watch(auditTrailServiceProvider),
+    ref.watch(activeEnterpriseProvider).value?.id ?? 'default',
+    ref.watch(currentUserIdProvider) ?? 'unknown',
   ),
 );
 
@@ -185,11 +197,19 @@ final paymentControllerProvider = Provider<PaymentController>(
   (ref) => PaymentController(
     ref.watch(paymentRepositoryProvider),
     ref.watch(immobilierValidationServiceProvider),
+    ref.watch(auditTrailServiceProvider),
+    ref.watch(activeEnterpriseProvider).value?.id ?? 'default',
+    ref.watch(currentUserIdProvider) ?? 'unknown',
   ),
 );
 
 final expenseControllerProvider = Provider<PropertyExpenseController>(
-  (ref) => PropertyExpenseController(ref.watch(expenseRepositoryProvider)),
+  (ref) => PropertyExpenseController(
+    ref.watch(expenseRepositoryProvider),
+    ref.watch(auditTrailServiceProvider),
+    ref.watch(activeEnterpriseProvider).value?.id ?? 'default',
+    ref.watch(currentUserIdProvider) ?? 'unknown',
+  ),
 );
 
 // --- Basic Data Providers ---
@@ -240,6 +260,37 @@ final expensesProvider = StreamProvider.autoDispose<List<PropertyExpense>>((
   return controller.watchExpenses();
 });
 
+final paymentsWithRelationsProvider = StreamProvider.autoDispose<List<Payment>>((ref) {
+  final paymentsStream = ref.watch(paymentControllerProvider).watchPayments();
+  final contractsStream = ref.watch(contractControllerProvider).watchContracts();
+  final tenantsStream = ref.watch(tenantControllerProvider).watchTenants();
+  final propertiesStream = ref.watch(propertyControllerProvider).watchProperties();
+
+  return CombineLatestStream.combine4<List<Payment>, List<Contract>, List<Tenant>,
+      List<Property>, List<Payment>>(
+    paymentsStream,
+    contractsStream,
+    tenantsStream,
+    propertiesStream,
+    (payments, contracts, tenants, properties) {
+      return payments.map((p) {
+        final contract =
+            contracts.where((c) => c.id == p.contractId).firstOrNull;
+        if (contract != null) {
+          final tenant =
+              tenants.where((t) => t.id == contract.tenantId).firstOrNull;
+          final property =
+              properties.where((prop) => prop.id == contract.propertyId).firstOrNull;
+          return p.copyWith(
+            contract: contract.copyWith(tenant: tenant, property: property),
+          );
+        }
+        return p;
+      }).toList();
+    },
+  );
+});
+
 // --- Deleted Items Providers ---
 
 final deletedPropertiesProvider = StreamProvider.autoDispose<List<Property>>((
@@ -264,6 +315,41 @@ final deletedContractsProvider = StreamProvider.autoDispose<List<Contract>>((
 final deletedPaymentsProvider = StreamProvider.autoDispose<List<Payment>>((ref) {
   final controller = ref.watch(paymentControllerProvider);
   return controller.watchDeletedPayments();
+});
+
+final deletedPaymentsWithRelationsProvider =
+    StreamProvider.autoDispose<List<Payment>>((ref) {
+  final paymentsStream =
+      ref.watch(paymentControllerProvider).watchDeletedPayments();
+  final contractsStream =
+      ref.watch(contractControllerProvider).watchContracts();
+  final tenantsStream = ref.watch(tenantControllerProvider).watchTenants();
+  final propertiesStream =
+      ref.watch(propertyControllerProvider).watchProperties();
+
+  return CombineLatestStream.combine4<List<Payment>, List<Contract>, List<Tenant>,
+      List<Property>, List<Payment>>(
+    paymentsStream,
+    contractsStream,
+    tenantsStream,
+    propertiesStream,
+    (payments, contracts, tenants, properties) {
+      return payments.map((p) {
+        final contract =
+            contracts.where((c) => c.id == p.contractId).firstOrNull;
+        if (contract != null) {
+          final tenant =
+              tenants.where((t) => t.id == contract.tenantId).firstOrNull;
+          final property =
+              properties.where((prop) => prop.id == contract.propertyId).firstOrNull;
+          return p.copyWith(
+            contract: contract.copyWith(tenant: tenant, property: property),
+          );
+        }
+        return p;
+      }).toList();
+    },
+  );
 });
 
 final deletedExpensesProvider = StreamProvider.autoDispose<List<PropertyExpense>>((

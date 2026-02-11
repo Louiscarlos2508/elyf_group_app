@@ -4,6 +4,7 @@ import 'payment_status.dart';
 class ProductionDay {
   const ProductionDay({
     required this.id,
+    required this.enterpriseId,
     required this.productionId,
     required this.date,
     required this.personnelIds,
@@ -15,6 +16,8 @@ class ProductionDay {
     this.notes,
     this.createdAt,
     this.updatedAt,
+    this.deletedAt,
+    this.deletedBy,
     this.paymentStatus = PaymentStatus.unpaid,
     this.paymentId,
     this.datePaiement,
@@ -22,6 +25,9 @@ class ProductionDay {
 
   /// Identifiant unique du jour de production.
   final String id;
+
+  /// Identifiant de l'entreprise.
+  final String enterpriseId;
 
   /// Identifiant de la session de production associée.
   final String productionId;
@@ -57,6 +63,12 @@ class ProductionDay {
   /// Dernière mise à jour.
   final DateTime? updatedAt;
 
+  /// Date de suppression.
+  final DateTime? deletedAt;
+
+  /// Utilisateur ayant supprimé.
+  final String? deletedBy;
+
   /// Statut de paiement de ce jour de production.
   final PaymentStatus paymentStatus;
 
@@ -77,9 +89,11 @@ class ProductionDay {
 
   /// Indique si une production a été saisie pour ce jour.
   bool get aProduction => packsProduits > 0 || emballagesUtilises > 0;
+  bool get isDeleted => deletedAt != null;
 
   ProductionDay copyWith({
     String? id,
+    String? enterpriseId,
     String? productionId,
     DateTime? date,
     List<String>? personnelIds,
@@ -91,12 +105,15 @@ class ProductionDay {
     String? notes,
     DateTime? createdAt,
     DateTime? updatedAt,
+    DateTime? deletedAt,
+    String? deletedBy,
     PaymentStatus? paymentStatus,
     String? paymentId,
     DateTime? datePaiement,
   }) {
     return ProductionDay(
       id: id ?? this.id,
+      enterpriseId: enterpriseId ?? this.enterpriseId,
       productionId: productionId ?? this.productionId,
       date: date ?? this.date,
       personnelIds: personnelIds ?? this.personnelIds,
@@ -110,9 +127,72 @@ class ProductionDay {
       notes: notes ?? this.notes,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      deletedBy: deletedBy ?? this.deletedBy,
       paymentStatus: paymentStatus ?? this.paymentStatus,
       paymentId: paymentId ?? this.paymentId,
       datePaiement: datePaiement ?? this.datePaiement,
     );
+  }
+
+  factory ProductionDay.fromMap(
+    Map<String, dynamic> map,
+    String defaultEnterpriseId,
+  ) {
+    return ProductionDay(
+      id: map['id'] as String? ?? map['localId'] as String,
+      enterpriseId: map['enterpriseId'] as String? ?? defaultEnterpriseId,
+      productionId: map['productionId'] as String? ?? '',
+      date: DateTime.parse(map['date'] as String),
+      personnelIds: List<String>.from(map['personnelIds'] as List? ?? []),
+      nombrePersonnes: (map['nombrePersonnes'] as num?)?.toInt() ?? 0,
+      salaireJournalierParPersonne:
+          (map['salaireJournalierParPersonne'] as num?)?.toInt() ?? 0,
+      coutTotalPersonnelStored:
+          (map['coutTotalPersonnelStored'] as num?)?.toInt(),
+      packsProduits: (map['packsProduits'] as num?)?.toInt() ?? 0,
+      emballagesUtilises: (map['emballagesUtilises'] as num?)?.toInt() ?? 0,
+      notes: map['notes'] as String?,
+      createdAt: map['createdAt'] != null
+          ? DateTime.parse(map['createdAt'] as String)
+          : null,
+      updatedAt: map['updatedAt'] != null
+          ? DateTime.parse(map['updatedAt'] as String)
+          : null,
+      deletedAt: map['deletedAt'] != null
+          ? DateTime.parse(map['deletedAt'] as String)
+          : null,
+      deletedBy: map['deletedBy'] as String?,
+      paymentStatus: PaymentStatus.values.byName(
+        map['paymentStatus'] as String? ?? 'unpaid',
+      ),
+      paymentId: map['paymentId'] as String?,
+      datePaiement: map['datePaiement'] != null
+          ? DateTime.parse(map['datePaiement'] as String)
+          : null,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'enterpriseId': enterpriseId,
+      'productionId': productionId,
+      'date': date.toIso8601String(),
+      'personnelIds': personnelIds,
+      'nombrePersonnes': nombrePersonnes,
+      'salaireJournalierParPersonne': salaireJournalierParPersonne,
+      'coutTotalPersonnelStored': coutTotalPersonnelStored,
+      'packsProduits': packsProduits,
+      'emballagesUtilises': emballagesUtilises,
+      'notes': notes,
+      'createdAt': createdAt?.toIso8601String(),
+      'updatedAt': updatedAt?.toIso8601String(),
+      'deletedAt': deletedAt?.toIso8601String(),
+      'deletedBy': deletedBy,
+      'paymentStatus': paymentStatus.name,
+      'paymentId': paymentId,
+      'datePaiement': datePaiement?.toIso8601String(),
+    };
   }
 }

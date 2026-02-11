@@ -34,7 +34,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
-  late Animation<double> _backgroundAnimation;
   late Animation<double> _buttonScale;
 
   @override
@@ -65,9 +64,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       vsync: this,
       duration: const Duration(seconds: 20),
     )..repeat();
-    _backgroundAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _backgroundController, curve: Curves.linear),
-    );
 
     // Button animation
     _buttonController = AnimationController(

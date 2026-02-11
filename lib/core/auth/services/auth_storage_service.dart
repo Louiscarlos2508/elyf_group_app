@@ -1,5 +1,3 @@
-import 'dart:developer' as developer;
-
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../errors/error_handler.dart';
@@ -23,7 +21,14 @@ class AuthStorageService {
   static const String _prefsKeyMigrationDone =
       'auth_migration_to_secure_storage_done';
 
-  final SecureStorageService _secureStorage = SecureStorageService();
+  final SecureStorageService _secureStorage;
+  final SharedPreferences? _prefs;
+
+  AuthStorageService({
+    SecureStorageService? secureStorage,
+    SharedPreferences? prefs,
+  })  : _secureStorage = secureStorage ?? SecureStorageService(),
+        _prefs = prefs;
 
   /// Charge l'utilisateur depuis SecureStorage.
   ///
@@ -55,7 +60,7 @@ class AuthStorageService {
         );
       } else {
         // Données incomplètes dans SecureStorage, nettoyer
-        developer.log(
+        AppLogger.info(
           'Incomplete auth data in SecureStorage, clearing',
           name: 'auth.storage',
         );
@@ -101,7 +106,7 @@ class AuthStorageService {
       await _secureStorage.delete(_secureKeyCurrentUserDisplayName);
       await _secureStorage.delete(_secureKeyCurrentUserIsAdmin);
       await _secureStorage.delete(_secureKeyIsLoggedIn);
-      developer.log('Local auth data cleared', name: 'auth.storage');
+      AppLogger.info('Local auth data cleared', name: 'auth.storage');
     } catch (e, stackTrace) {
       final appException = ErrorHandler.instance.handleError(e, stackTrace);
       AppLogger.warning(
@@ -128,7 +133,7 @@ class AuthStorageService {
   /// l'initialisation.
   Future<void> migrateFromSharedPreferences() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
+      final prefs = _prefs ?? await SharedPreferences.getInstance();
       final migrationDone = prefs.getBool(_prefsKeyMigrationDone) ?? false;
 
       if (migrationDone) {

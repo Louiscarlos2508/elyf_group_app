@@ -18,6 +18,11 @@ Future<void> main() async {
   // Enregistrer le handler background AVANT toute autre initialisation Firebase
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-  await bootstrap();
-  runApp(const ProviderScope(child: ElyfApp()));
+  final container = await bootstrap();
+  runApp(
+    UncontrolledProviderScope(
+      container: container,
+      child: const ElyfApp(),
+    ),
+  );
 }

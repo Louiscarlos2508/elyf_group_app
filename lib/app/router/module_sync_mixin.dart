@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/errors/error_handler.dart';
 import '../../core/logging/app_logger.dart';
 
-import '../../app/bootstrap.dart' show globalModuleRealtimeSyncService;
+import '../../core/offline/providers.dart' show globalModuleRealtimeSyncServiceProvider;
 
 /// Mixin pour déclencher la synchronisation en temps réel lors de l'accès à un module.
 ///
@@ -84,15 +84,8 @@ mixin ModuleSyncMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
       return;
     }
 
-    // Vérifier si le service global est disponible
-    final globalSync = globalModuleRealtimeSyncService;
-    if (globalSync == null) {
-      developer.log(
-        'GlobalModuleRealtimeSyncService not available, skipping sync',
-        name: 'module.sync.mixin',
-      );
-      return;
-    }
+    // Vérifier si le service global est disponible via Riverpod
+    final globalSync = ref.read(globalModuleRealtimeSyncServiceProvider);
 
     // Vérifier si la synchronisation est déjà active pour ce module
     // Cela évite les duplications : si la sync a été démarrée après la connexion,

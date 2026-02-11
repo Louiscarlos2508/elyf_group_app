@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -94,14 +93,14 @@ class ModuleDataSyncService {
     final collectionsToSync = collections ?? moduleCollections[moduleId] ?? [];
 
     if (collectionsToSync.isEmpty) {
-      developer.log(
+      AppLogger.info(
         'No collections configured for module $moduleId, skipping sync',
         name: 'module.sync',
       );
       return;
     }
     try {
-      developer.log(
+      AppLogger.info(
         'Starting sync for module $moduleId in enterprise $enterpriseId',
         name: 'module.sync',
       );
@@ -110,7 +109,7 @@ class ModuleDataSyncService {
         try {
           // Vérifier si un chemin est configuré pour cette collection
           if (!collectionPaths.containsKey(collectionName)) {
-            developer.log(
+            AppLogger.info(
               'No path configured for collection $collectionName, skipping sync',
               name: 'module.sync',
             );
@@ -135,7 +134,7 @@ class ModuleDataSyncService {
         }
       }
 
-      developer.log(
+      AppLogger.info(
         'Sync completed for module $moduleId in enterprise $enterpriseId',
         name: 'module.sync',
       );
@@ -199,7 +198,7 @@ class ModuleDataSyncService {
           'updatedAt',
           isGreaterThan: Timestamp.fromDate(lastSyncAt),
         );
-        developer.log(
+        AppLogger.debug(
           'Delta sync for $collectionName since ${lastSyncAt.toIso8601String()}',
           name: 'module.sync',
         );
@@ -208,8 +207,8 @@ class ModuleDataSyncService {
       // Récupérer les documents (tous ou seulement modifiés)
       final snapshot = await query.get();
 
-      developer.log(
-        '🔵 SYNC: Syncing $collectionName for enterprise $enterpriseId: ${snapshot.docs.length} documents found in Firestore',
+      AppLogger.debug(
+        'SYNC: Syncing $collectionName for enterprise $enterpriseId: ${snapshot.docs.length} documents found in Firestore',
         name: 'module.sync',
       );
 
@@ -257,8 +256,8 @@ class ModuleDataSyncService {
             final parentEnterpriseId = sanitizedData['parentEnterpriseId'] as String? ??
                                        sanitizedData['enterpriseId'] as String? ??
                                        'unknown';
-            developer.log(
-              '🔵 SYNC: Point de vente "$posName" (id: $documentId) - parentEnterpriseId=$parentEnterpriseId, stockage avec enterpriseId=$storageEnterpriseId (entreprise gaz) dans Drift',
+            AppLogger.debug(
+              'SYNC: Point de vente "$posName" (id: $documentId) - parentEnterpriseId=$parentEnterpriseId, stockage avec enterpriseId=$storageEnterpriseId (entreprise gaz) dans Drift',
               name: 'module.sync',
             );
           }
@@ -287,8 +286,8 @@ class ModuleDataSyncService {
           );
           
           if (collectionName == 'pointOfSale') {
-            developer.log(
-              '🔵 SYNC: Point de vente sauvegardé dans Drift avec enterpriseId=$storageEnterpriseId, moduleType=$moduleId',
+            AppLogger.debug(
+              'SYNC: Point de vente sauvegardé dans Drift avec enterpriseId=$storageEnterpriseId, moduleType=$moduleId',
               name: 'module.sync',
             );
           }
@@ -304,7 +303,7 @@ class ModuleDataSyncService {
         }
       }
 
-      developer.log(
+      AppLogger.info(
         'Completed syncing $collectionName: ${snapshot.docs.length} documents',
         name: 'module.sync',
       );

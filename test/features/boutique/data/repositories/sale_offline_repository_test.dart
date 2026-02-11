@@ -9,17 +9,8 @@ import 'package:elyf_groupe_app/core/offline/sync_manager.dart';
 
 void main() {
   group('SaleOfflineRepository', () {
-    late SaleOfflineRepository repository;
-
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
-      repository = SaleOfflineRepository(
-        driftService: MockDriftService(),
-        syncManager: MockSyncManager(),
-        connectivityService: MockConnectivityService(),
-        enterpriseId: 'test-enterprise',
-        moduleType: 'boutique',
-      );
     });
 
     test('getSalesInPeriod filters sales correctly', () async {
@@ -32,6 +23,7 @@ void main() {
       // Define test data
       final saleYesterday = Sale(
         id: '1',
+        enterpriseId: 'test-enterprise',
         date: yesterday,
         items: [],
         totalAmount: 1000,
@@ -39,6 +31,7 @@ void main() {
       );
       final saleToday = Sale(
         id: '2',
+        enterpriseId: 'test-enterprise',
         date: today,
         items: [],
         totalAmount: 2000,
@@ -46,6 +39,7 @@ void main() {
       );
       final saleTomorrow = Sale(
         id: '3',
+        enterpriseId: 'test-enterprise',
         date: tomorrow,
         items: [],
         totalAmount: 3000,

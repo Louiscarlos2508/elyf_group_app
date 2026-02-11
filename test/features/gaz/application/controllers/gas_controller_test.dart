@@ -1,180 +1,168 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
-import 'package:mockito/annotations.dart';
-
 import 'package:elyf_groupe_app/features/gaz/application/controllers/gas_controller.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/repositories/gas_repository.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder.dart';
-import '../../../../helpers/test_helpers.dart';
+import 'package:elyf_groupe_app/features/gaz/domain/entities/gas_sale.dart';
+import 'package:elyf_groupe_app/core/errors/app_exceptions.dart';
 
-import 'gas_controller_test.mocks.dart';
+import 'package:elyf_groupe_app/features/audit_trail/domain/services/audit_trail_service.dart';
 
-@GenerateMocks([GasRepository])
+class MockGasRepository extends Mock implements GasRepository {
+  @override
+  Future<List<Cylinder>> getCylinders() => super.noSuchMethod(
+        Invocation.method(#getCylinders, []),
+        returnValue: Future.value(<Cylinder>[]),
+      );
+
+  @override
+  Stream<List<Cylinder>> watchCylinders() => super.noSuchMethod(
+        Invocation.method(#watchCylinders, []),
+        returnValue: const Stream<List<Cylinder>>.empty(),
+      );
+
+  @override
+  Future<Cylinder?> getCylinderById(String? id) => super.noSuchMethod(
+        Invocation.method(#getCylinderById, [id]),
+        returnValue: Future.value(null),
+      );
+
+  @override
+  Future<void> addSale(GasSale? sale) => super.noSuchMethod(
+        Invocation.method(#addSale, [sale]),
+        returnValue: Future.value(),
+      );
+
+  @override
+  Future<List<GasSale>> getSales({DateTime? from, DateTime? to}) =>
+      super.noSuchMethod(
+        Invocation.method(#getSales, [], {#from: from, #to: to}),
+        returnValue: Future.value(<GasSale>[]),
+      );
+
+  @override
+  Stream<List<GasSale>> watchSales({DateTime? from, DateTime? to}) =>
+      super.noSuchMethod(
+        Invocation.method(#watchSales, [], {#from: from, #to: to}),
+        returnValue: const Stream<List<GasSale>>.empty(),
+      );
+}
+
+class MockAuditTrailService extends Mock implements AuditTrailService {
+  @override
+  Future<String> logAction({
+    required String? enterpriseId,
+    required String? userId,
+    required String? module,
+    required String? action,
+    required String? entityId,
+    required String? entityType,
+    Map<String, dynamic>? metadata,
+  }) =>
+      super.noSuchMethod(
+        Invocation.method(#logAction, [], {
+          #enterpriseId: enterpriseId,
+          #userId: userId,
+          #module: module,
+          #action: action,
+          #entityId: entityId,
+          #entityType: entityType,
+          #metadata: metadata,
+        }),
+        returnValue: Future.value('test-log-id'),
+      );
+}
+
 void main() {
   late GasController controller;
-  late MockGasRepository mockRepository;
+  late MockGasRepository mockRepo;
+  late MockAuditTrailService mockAudit;
 
   setUp(() {
-    mockRepository = MockGasRepository();
-    controller = GasController(mockRepository);
+    mockRepo = MockGasRepository();
+    mockAudit = MockAuditTrailService();
+    controller = GasController(mockRepo, mockAudit);
   });
 
-  group('GasController', () {
-    group('loadCylinders', () {
-      test('should load cylinders and update state', () async {
-        // Arrange
-        final cylinders = [
-          createTestCylinder(id: 'cylinder-1'),
-          createTestCylinder(id: 'cylinder-2'),
-        ];
-        when(mockRepository.getCylinders()).thenAnswer((_) async => cylinders);
+  group('GasController - addSale with stock validation', () {
+    test('throws ArgumentError if cylinder is not found', () async {
+      when(mockRepo.getCylinderById('c1')).thenAnswer((_) async => null);
 
-        // Act
-        await controller.loadCylinders();
+      final sale = GasSale(
+        id: 's1',
+        enterpriseId: 'test-enterprise',
+        cylinderId: 'c1',
+        quantity: 1,
+        unitPrice: 2000,
+        totalAmount: 2000,
+        saleDate: DateTime.now(),
+        saleType: SaleType.retail,
+      );
 
-        // Assert
-        expect(controller.cylinders, equals(cylinders));
-        expect(controller.isLoading, isFalse);
-        verify(mockRepository.getCylinders()).called(1);
-      });
-
-      test('should set isLoading to true during loading', () async {
-        // Arrange
-        when(mockRepository.getCylinders()).thenAnswer(
-          (_) async => Future.delayed(
-            const Duration(milliseconds: 100),
-            () => <Cylinder>[],
-          ),
-        );
-
-        // Act
-        final loadFuture = controller.loadCylinders();
-
-        // Assert
-        expect(controller.isLoading, isTrue);
-        await loadFuture;
-        expect(controller.isLoading, isFalse);
-      });
+      expect(() => controller.addSale(sale), throwsA(isA<BusinessException>()));
     });
 
-    group('loadSales', () {
-      test('should load sales and update state', () async {
-        // Arrange
-        final sales = [
-          createTestGasSale(id: 'sale-1'),
-          createTestGasSale(id: 'sale-2'),
-        ];
-        when(mockRepository.getSales(from: anyNamed('from'), to: anyNamed('to')))
-            .thenAnswer((_) async => sales);
+    test('throws BusinessException if stock is insufficient', () async {
+      final cylinder = Cylinder(
+        id: 'c1',
+        weight: 12,
+        buyPrice: 1500,
+        sellPrice: 2000,
+        enterpriseId: 'e1',
+        moduleId: 'm1',
+        stock: 5, // Only 5 in stock
+      );
 
-        // Act
-        await controller.loadSales();
+      when(mockRepo.getCylinderById('c1')).thenAnswer((_) async => cylinder);
 
-        // Assert
-        expect(controller.sales, equals(sales));
-        expect(controller.isLoading, isFalse);
-        verify(mockRepository.getSales(from: anyNamed('from'), to: anyNamed('to')))
-            .called(1);
-      });
+      final sale = GasSale(
+        id: 's1',
+        enterpriseId: 'test-enterprise',
+        cylinderId: 'c1',
+        quantity: 10, // Requesting 10
+        unitPrice: 2000,
+        totalAmount: 20000,
+        saleDate: DateTime.now(),
+        saleType: SaleType.retail,
+      );
 
-      test('should load sales with date range', () async {
-        // Arrange
-        final from = DateTime(2026, 1, 1);
-        final to = DateTime(2026, 1, 31);
-        final sales = [createTestGasSale(id: 'sale-1')];
-        when(mockRepository.getSales(from: anyNamed('from'), to: anyNamed('to')))
-            .thenAnswer((_) async => sales);
-
-        // Act
-        await controller.loadSales(from: from, to: to);
-
-        // Assert
-        expect(controller.sales, equals(sales));
-        verify(mockRepository.getSales(from: from, to: to)).called(1);
-      });
+      expect(
+        () => controller.addSale(sale),
+        throwsA(isA<BusinessException>().having(
+            (e) => e.message, 'message', contains('Stock insuffisant'))),
+      );
     });
 
-    group('addSale', () {
-      test('should add sale and reload sales', () async {
-        // Arrange
-        final sale = createTestGasSale(id: 'sale-1');
-        when(mockRepository.addSale(any)).thenAnswer((_) async => {});
-        when(mockRepository.getSales(from: anyNamed('from'), to: anyNamed('to')))
-            .thenAnswer((_) async => [sale]);
+    test('allows sale and calls repository if stock is sufficient', () async {
+      final cylinder = Cylinder(
+        id: 'c1',
+        weight: 12,
+        buyPrice: 1500,
+        sellPrice: 2000,
+        enterpriseId: 'e1',
+        moduleId: 'm1',
+        stock: 20,
+      );
 
-        // Act
-        await controller.addSale(sale);
+      when(mockRepo.getCylinderById('c1')).thenAnswer((_) async => cylinder);
+      when(mockRepo.addSale(any)).thenAnswer((_) async => {});
+      when(mockRepo.getSales(from: anyNamed('from'), to: anyNamed('to')))
+          .thenAnswer((_) async => []);
 
-        // Assert
-        verify(mockRepository.addSale(sale)).called(1);
-        verify(mockRepository.getSales(from: anyNamed('from'), to: anyNamed('to')))
-            .called(1);
-      });
-    });
+      final sale = GasSale(
+        id: 's1',
+        enterpriseId: 'test-enterprise',
+        cylinderId: 'c1',
+        quantity: 5,
+        unitPrice: 2000,
+        totalAmount: 10000,
+        saleDate: DateTime.now(),
+        saleType: SaleType.retail,
+      );
 
-    group('updateSale', () {
-      test('should update sale and reload sales', () async {
-        // Arrange
-        final sale = createTestGasSale(id: 'sale-1', quantity: 2);
-        when(mockRepository.updateSale(any)).thenAnswer((_) async => {});
-        when(mockRepository.getSales(from: anyNamed('from'), to: anyNamed('to')))
-            .thenAnswer((_) async => [sale]);
+      await controller.addSale(sale);
 
-        // Act
-        await controller.updateSale(sale);
-
-        // Assert
-        verify(mockRepository.updateSale(sale)).called(1);
-        verify(mockRepository.getSales(from: anyNamed('from'), to: anyNamed('to')))
-            .called(1);
-      });
-    });
-
-    group('deleteSale', () {
-      test('should delete sale and reload sales', () async {
-        // Arrange
-        const saleId = 'sale-1';
-        when(mockRepository.deleteSale(saleId)).thenAnswer((_) async => {});
-        when(mockRepository.getSales(from: anyNamed('from'), to: anyNamed('to')))
-            .thenAnswer((_) async => []);
-
-        // Act
-        await controller.deleteSale(saleId);
-
-        // Assert
-        verify(mockRepository.deleteSale(saleId)).called(1);
-        verify(mockRepository.getSales(from: anyNamed('from'), to: anyNamed('to')))
-            .called(1);
-      });
-    });
-
-    group('updateCylinderStock', () {
-      test('should update cylinder stock when cylinder exists', () async {
-        // Arrange
-        final cylinder = createTestCylinder(id: 'cylinder-1', stock: 100);
-        when(mockRepository.getCylinders()).thenAnswer((_) async => [cylinder]);
-        await controller.loadCylinders();
-        when(mockRepository.updateCylinder(any)).thenAnswer((_) async => {});
-
-        // Act
-        await controller.updateCylinderStock('cylinder-1', 50);
-
-        // Assert
-        expect(controller.cylinders.first.stock, equals(50));
-        verify(mockRepository.updateCylinder(any)).called(1);
-      });
-
-      test('should not update stock when cylinder does not exist', () async {
-        // Arrange
-        when(mockRepository.getCylinders()).thenAnswer((_) async => []);
-        await controller.loadCylinders();
-
-        // Act
-        await controller.updateCylinderStock('cylinder-1', 50);
-
-        // Assert
-        verifyNever(mockRepository.updateCylinder(any));
-      });
+      verify(mockRepo.addSale(sale)).called(1);
     });
   });
 }

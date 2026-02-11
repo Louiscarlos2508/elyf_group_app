@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import '../../../../core/errors/app_exceptions.dart';
 import '../../../../core/errors/error_handler.dart';
@@ -224,7 +223,7 @@ class TourOfflineRepository extends OfflineRepository<Tour>
       localUpdatedAt: DateTime.now(),
     );
     
-    developer.log(
+    AppLogger.debug(
       'Tour sauvegardé - localId: $localId, remoteId: $remoteId, entity.id: ${entity.id}, existing: ${existingLocalId != null}',
       name: 'TourOfflineRepository.saveToLocal',
     );
@@ -253,14 +252,14 @@ class TourOfflineRepository extends OfflineRepository<Tour>
 
   @override
   Future<Tour?> getByLocalId(String id) async {
-    developer.log(
+    AppLogger.debug(
       'getByLocalId appelé avec ID: $id',
       name: 'TourOfflineRepository.getByLocalId',
     );
     
     // Si l'ID commence par 'local_', c'est un localId, chercher directement par localId
     if (id.startsWith('local_')) {
-      developer.log(
+      AppLogger.debug(
         'Recherche par localId: $id',
         name: 'TourOfflineRepository.getByLocalId',
       );
@@ -271,7 +270,7 @@ class TourOfflineRepository extends OfflineRepository<Tour>
         moduleType: moduleType,
       );
       if (byLocal != null) {
-        developer.log(
+        AppLogger.debug(
           'Tour trouvé par localId',
           name: 'TourOfflineRepository.getByLocalId',
         );
@@ -280,7 +279,7 @@ class TourOfflineRepository extends OfflineRepository<Tour>
         map['localId'] = byLocal.localId;
         return fromMap(map);
       }
-      developer.log(
+      AppLogger.debug(
         'Tour non trouvé par localId',
         name: 'TourOfflineRepository.getByLocalId',
       );
@@ -288,7 +287,7 @@ class TourOfflineRepository extends OfflineRepository<Tour>
     }
     
     // Sinon, c'est peut-être un remoteId, chercher d'abord par remoteId
-    developer.log(
+    AppLogger.debug(
       'Recherche par remoteId: $id',
       name: 'TourOfflineRepository.getByLocalId',
     );
@@ -299,7 +298,7 @@ class TourOfflineRepository extends OfflineRepository<Tour>
       moduleType: moduleType,
     );
     if (byRemote != null) {
-      developer.log(
+      AppLogger.debug(
         'Tour trouvé par remoteId, localId: ${byRemote.localId}',
         name: 'TourOfflineRepository.getByLocalId',
       );
@@ -310,7 +309,7 @@ class TourOfflineRepository extends OfflineRepository<Tour>
     }
     
     // Si pas trouvé par remoteId, essayer par localId au cas où
-    developer.log(
+    AppLogger.debug(
       'Tour non trouvé par remoteId, essai par localId: $id',
       name: 'TourOfflineRepository.getByLocalId',
     );
@@ -321,7 +320,7 @@ class TourOfflineRepository extends OfflineRepository<Tour>
       moduleType: moduleType,
     );
     if (byLocal != null) {
-      developer.log(
+      AppLogger.debug(
         'Tour trouvé par localId (fallback)',
         name: 'TourOfflineRepository.getByLocalId',
       );
@@ -331,7 +330,7 @@ class TourOfflineRepository extends OfflineRepository<Tour>
       return fromMap(map);
     }
     
-    developer.log(
+    AppLogger.debug(
       'Tour non trouvé avec ID: $id',
       name: 'TourOfflineRepository.getByLocalId',
     );
@@ -389,7 +388,7 @@ class TourOfflineRepository extends OfflineRepository<Tour>
       }
     }
     
-    developer.log(
+    AppLogger.debug(
       'Tours récupérés: ${rows.length}, après déduplication par ID: ${toursByLocalId.length}',
       name: 'TourOfflineRepository.getAllForEnterprise',
     );
@@ -456,7 +455,7 @@ class TourOfflineRepository extends OfflineRepository<Tour>
   @override
   Future<Tour?> getTourById(String id) async {
     try {
-      developer.log(
+      AppLogger.debug(
         'Recherche du tour avec ID: $id',
         name: 'TourOfflineRepository.getTourById',
       );
@@ -467,14 +466,14 @@ class TourOfflineRepository extends OfflineRepository<Tour>
       // Si pas trouvé, essayer de chercher dans tous les tours de l'entreprise
       // au cas où l'ID dans le JSON ne correspond pas au localId
       if (tour == null) {
-        developer.log(
+        AppLogger.debug(
           'Tour non trouvé avec getByLocalId, recherche dans tous les tours',
           name: 'TourOfflineRepository.getTourById',
         );
         final allTours = await getAllForEnterprise(enterpriseId);
         try {
           tour = allTours.firstWhere((t) => t.id == id);
-          developer.log(
+          AppLogger.debug(
             'Tour trouvé dans la liste avec ID: ${tour.id}',
             name: 'TourOfflineRepository.getTourById',
           );
@@ -489,7 +488,7 @@ class TourOfflineRepository extends OfflineRepository<Tour>
           return null;
         }
       } else {
-        developer.log(
+        AppLogger.debug(
           'Tour trouvé avec getByLocalId, ID: ${tour.id}',
           name: 'TourOfflineRepository.getTourById',
         );
@@ -550,7 +549,7 @@ class TourOfflineRepository extends OfflineRepository<Tour>
   @override
   Future<void> updateStatus(String id, TourStatus status) async {
     try {
-      developer.log(
+      AppLogger.debug(
         'Mise à jour du statut du tour: $id vers $status',
         name: 'TourOfflineRepository.updateStatus',
       );
@@ -564,7 +563,7 @@ class TourOfflineRepository extends OfflineRepository<Tour>
       }
       
       // Logger les données existantes pour vérifier qu'elles sont préservées
-      developer.log(
+      AppLogger.debug(
         'Tour récupéré - Collections: ${tour.collections.length}, TransportExpenses: ${tour.transportExpenses.length}',
         name: 'TourOfflineRepository.updateStatus',
       );
@@ -605,14 +604,14 @@ class TourOfflineRepository extends OfflineRepository<Tour>
       updated = updated.copyWith(updatedAt: DateTime.now());
       
       // Vérifier que les données sont préservées
-      developer.log(
+      AppLogger.debug(
         'Tour mis à jour - Collections: ${updated.collections.length}, TransportExpenses: ${updated.transportExpenses.length}, Status: ${updated.status}',
         name: 'TourOfflineRepository.updateStatus',
       );
       
       await save(updated);
       
-      developer.log(
+      AppLogger.debug(
         'Tour sauvegardé avec succès',
         name: 'TourOfflineRepository.updateStatus',
       );

@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/tenant/tenant_provider.dart';
 import '../../../administration/domain/entities/enterprise.dart';
-import '../../../../shared/presentation/widgets/elyf_ui/organisms/elyf_app_bar.dart';
 import '../../../../shared/presentation/widgets/widgets.dart';
 
 class ModuleMenuScreen extends ConsumerStatefulWidget {

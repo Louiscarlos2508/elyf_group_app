@@ -1,10 +1,19 @@
+import '../../../audit_trail/domain/services/audit_trail_service.dart';
 import '../../domain/entities/expense.dart';
 import '../../domain/repositories/expense_repository.dart';
 
 class PropertyExpenseController {
-  PropertyExpenseController(this._expenseRepository);
+  PropertyExpenseController(
+    this._expenseRepository,
+    this._auditTrailService,
+    this._enterpriseId,
+    this._userId,
+  );
 
   final PropertyExpenseRepository _expenseRepository;
+  final AuditTrailService _auditTrailService;
+  final String _enterpriseId;
+  final String _userId;
 
   Future<List<PropertyExpense>> fetchExpenses() async {
     return await _expenseRepository.getAllExpenses();
@@ -40,18 +49,40 @@ class PropertyExpenseController {
   }
 
   Future<PropertyExpense> createExpense(PropertyExpense expense) async {
-    return await _expenseRepository.createExpense(expense);
+    final created = await _expenseRepository.createExpense(expense);
+    await _logAction('create', created.id, metadata: created.toMap());
+    return created;
   }
 
   Future<PropertyExpense> updateExpense(PropertyExpense expense) async {
-    return await _expenseRepository.updateExpense(expense);
+    final updated = await _expenseRepository.updateExpense(expense);
+    await _logAction('update', updated.id, metadata: updated.toMap());
+    return updated;
   }
 
   Future<void> deleteExpense(String id) async {
     await _expenseRepository.deleteExpense(id);
+    await _logAction('delete', id);
   }
 
   Future<void> restoreExpense(String id) async {
     await _expenseRepository.restoreExpense(id);
+    await _logAction('restore', id);
+  }
+
+  Future<void> _logAction(
+    String action,
+    String entityId, {
+    Map<String, dynamic>? metadata,
+  }) async {
+    await _auditTrailService.logAction(
+      enterpriseId: _enterpriseId,
+      userId: _userId,
+      module: 'immobilier',
+      action: action,
+      entityId: entityId,
+      entityType: 'expense',
+      metadata: metadata,
+    );
   }
 }

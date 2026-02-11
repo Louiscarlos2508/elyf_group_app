@@ -16,6 +16,12 @@ abstract class CommissionRepository {
 
   Future<void> updateCommission(Commission commission);
 
+  Future<void> deleteCommission(String commissionId, String userId);
+
+  Future<void> restoreCommission(String commissionId);
+
+  Stream<List<Commission>> watchDeletedCommissions();
+
   /// Obtenir les statistiques des commissions.
   Future<Map<String, dynamic>> getStatistics({String? enterpriseId});
 }

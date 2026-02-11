@@ -28,7 +28,6 @@ class ManualMockPurchaseRepository implements PurchaseRepository {
   Future<List<Purchase>> getPurchasesInPeriod(DateTime start, DateTime end) async => purchases;
   @override
   Future<List<Purchase>> fetchPurchases({int limit = 50}) async => purchases;
-  @override
   Future<List<Purchase>> fetchRecentPurchases({int limit = 50}) async => purchases;
   @override
   Stream<List<Purchase>> watchPurchases({int limit = 50}) => Stream.value(purchases);
@@ -44,7 +43,6 @@ class ManualMockExpenseRepository implements ExpenseRepository {
   Future<List<Expense>> getExpensesInPeriod(DateTime start, DateTime end) async => expenses;
   @override
   Future<List<Expense>> fetchExpenses({int limit = 50}) async => expenses;
-  @override
   Future<List<Expense>> fetchRecentExpenses({int limit = 50}) async => expenses;
   @override
   Stream<List<Expense>> watchExpenses({int limit = 50}) => Stream.value(expenses);
@@ -58,6 +56,8 @@ class ManualMockExpenseRepository implements ExpenseRepository {
   Future<void> restoreExpense(String id) async {}
   @override
   Future<List<Expense>> getDeletedExpenses() async => [];
+  @override
+  Stream<List<Expense>> watchDeletedExpenses() => Stream.value([]);
 }
 
 void main() {
@@ -83,17 +83,18 @@ void main() {
       final end = DateTime(2025, 1, 31, 23, 59, 59);
 
       mockSaleRepository.sales = [
-        Sale(id: 's1', date: DateTime(2025, 1, 10), items: [], totalAmount: 1000, amountPaid: 1000),
-        Sale(id: 's2', date: DateTime(2025, 1, 15), items: [], totalAmount: 2000, amountPaid: 2000),
+        Sale(id: 's1', enterpriseId: 'test-enterprise', date: DateTime(2025, 1, 10), items: [], totalAmount: 1000, amountPaid: 1000),
+        Sale(id: 's2', enterpriseId: 'test-enterprise', date: DateTime(2025, 1, 15), items: [], totalAmount: 2000, amountPaid: 2000),
       ];
 
       mockPurchaseRepository.purchases = [
-        Purchase(id: 'p1', date: DateTime(2025, 1, 5), items: [], totalAmount: 500),
+        Purchase(id: 'p1', enterpriseId: 'test-enterprise', date: DateTime(2025, 1, 5), items: [], totalAmount: 500),
       ];
 
       mockExpenseRepository.expenses = [
         Expense(
           id: 'e1', 
+          enterpriseId: 'test-enterprise',
           label: 'Rent', 
           amountCfa: 300, 
           category: ExpenseCategory.rent,

@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 export 'providers/permission_providers.dart';
 export 'providers/section_providers.dart';
+import '../../../../core/auth/providers.dart';
+import '../../audit_trail/application/providers.dart';
 
 import '../application/controllers/agents_controller.dart';
 import '../application/controllers/commissions_controller.dart';
@@ -47,18 +49,27 @@ final transactionRepositoryProvider = Provider<TransactionRepository>((ref) {
   final driftService = DriftService.instance;
   final syncManager = ref.watch(syncManagerProvider);
   final connectivityService = ref.watch(connectivityServiceProvider);
+  final auditTrailRepository = ref.watch(auditTrailRepositoryProvider);
+  final userId = ref.watch(currentUserIdProvider) ?? 'system';
 
   return TransactionOfflineRepository(
     driftService: driftService,
     syncManager: syncManager,
     connectivityService: connectivityService,
     enterpriseId: enterpriseId,
+    auditTrailRepository: auditTrailRepository,
+    userId: userId,
   );
 });
 
 /// Provider for Orange Money controller.
 final orangeMoneyControllerProvider = Provider<OrangeMoneyController>(
-  (ref) => OrangeMoneyController(ref.watch(transactionRepositoryProvider)),
+  (ref) => OrangeMoneyController(
+    ref.watch(transactionRepositoryProvider),
+    ref.watch(liquidityRepositoryProvider),
+    ref.watch(auditTrailServiceProvider),
+    ref.watch(currentUserIdProvider) ?? 'system',
+  ),
 );
 
 /// Provider for Orange Money state.
@@ -124,18 +135,26 @@ final agentRepositoryProvider = Provider<AgentRepository>((ref) {
   final driftService = DriftService.instance;
   final syncManager = ref.watch(syncManagerProvider);
   final connectivityService = ref.watch(connectivityServiceProvider);
+  final auditTrailRepository = ref.watch(auditTrailRepositoryProvider);
+  final userId = ref.watch(currentUserIdProvider) ?? 'system';
 
   return AgentOfflineRepository(
     driftService: driftService,
     syncManager: syncManager,
     connectivityService: connectivityService,
     enterpriseId: enterpriseId,
+    auditTrailRepository: auditTrailRepository,
+    userId: userId,
   );
 });
 
 /// Provider for agents controller.
 final agentsControllerProvider = Provider<AgentsController>(
-  (ref) => AgentsController(ref.watch(agentRepositoryProvider)),
+  (ref) => AgentsController(
+    ref.watch(agentRepositoryProvider),
+    ref.watch(auditTrailServiceProvider),
+    ref.watch(currentUserIdProvider) ?? 'system',
+  ),
 );
 
 /// Provider for commission repository.
@@ -145,6 +164,8 @@ final commissionRepositoryProvider = Provider<CommissionRepository>((ref) {
   final driftService = DriftService.instance;
   final syncManager = ref.watch(syncManagerProvider);
   final connectivityService = ref.watch(connectivityServiceProvider);
+  final auditTrailRepository = ref.watch(auditTrailRepositoryProvider);
+  final userId = ref.watch(currentUserIdProvider) ?? 'system';
 
   return CommissionOfflineRepository(
     driftService: driftService,
@@ -152,12 +173,17 @@ final commissionRepositoryProvider = Provider<CommissionRepository>((ref) {
     connectivityService: connectivityService,
     enterpriseId: enterpriseId,
     moduleType: 'orange_money',
+    auditTrailRepository: auditTrailRepository,
+    userId: userId,
   );
 });
 
 /// Provider for commissions controller.
 final commissionsControllerProvider = Provider<CommissionsController>(
-  (ref) => CommissionsController(ref.watch(commissionRepositoryProvider)),
+  (ref) => CommissionsController(
+    ref.watch(commissionRepositoryProvider),
+    ref.watch(currentUserIdProvider) ?? 'system',
+  ),
 );
 
 /// Provider for settings repository.
@@ -167,6 +193,8 @@ final settingsRepositoryProvider = Provider<SettingsRepository>((ref) {
   final driftService = DriftService.instance;
   final syncManager = ref.watch(syncManagerProvider);
   final connectivityService = ref.watch(connectivityServiceProvider);
+  final auditTrailRepository = ref.watch(auditTrailRepositoryProvider);
+  final userId = ref.watch(currentUserIdProvider) ?? 'system';
 
   return SettingsOfflineRepository(
     driftService: driftService,
@@ -174,12 +202,17 @@ final settingsRepositoryProvider = Provider<SettingsRepository>((ref) {
     connectivityService: connectivityService,
     enterpriseId: enterpriseId,
     moduleType: 'orange_money',
+    auditTrailRepository: auditTrailRepository,
+    userId: userId,
   );
 });
 
 /// Provider for settings controller.
 final settingsControllerProvider = Provider<SettingsController>(
-  (ref) => SettingsController(ref.watch(settingsRepositoryProvider)),
+  (ref) => SettingsController(
+    ref.watch(settingsRepositoryProvider),
+    ref.watch(currentUserIdProvider) ?? 'system',
+  ),
 );
 
 /// Provider for liquidity repository.
@@ -189,6 +222,8 @@ final liquidityRepositoryProvider = Provider<LiquidityRepository>((ref) {
   final driftService = DriftService.instance;
   final syncManager = ref.watch(syncManagerProvider);
   final connectivityService = ref.watch(connectivityServiceProvider);
+  final auditTrailRepository = ref.watch(auditTrailRepositoryProvider);
+  final userId = ref.watch(currentUserIdProvider) ?? 'system';
 
   return LiquidityOfflineRepository(
     driftService: driftService,
@@ -196,12 +231,18 @@ final liquidityRepositoryProvider = Provider<LiquidityRepository>((ref) {
     connectivityService: connectivityService,
     enterpriseId: enterpriseId,
     moduleType: 'orange_money',
+    auditTrailRepository: auditTrailRepository,
+    userId: userId,
   );
 });
 
 /// Provider for liquidity controller.
 final liquidityControllerProvider = Provider<LiquidityController>(
-  (ref) => LiquidityController(ref.watch(liquidityRepositoryProvider)),
+  (ref) => LiquidityController(
+    ref.watch(liquidityRepositoryProvider),
+    ref.watch(auditTrailServiceProvider),
+    ref.watch(currentUserIdProvider) ?? 'system',
+  ),
 );
 
 /// Provider for agents list with filters.

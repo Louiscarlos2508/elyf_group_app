@@ -1,4 +1,3 @@
-import 'dart:developer' as developer;
 import 'dart:convert';
 
 import '../../../../core/errors/app_exceptions.dart';
@@ -210,7 +209,7 @@ class MachineOfflineRepository extends OfflineRepository<Machine>
   @override
   Future<List<Machine>> fetchMachines({bool? estActive}) async {
     try {
-      developer.log(
+      AppLogger.debug(
         'Fetching machines for enterprise: $enterpriseId',
         name: 'MachineOfflineRepository',
       );
@@ -253,7 +252,7 @@ class MachineOfflineRepository extends OfflineRepository<Machine>
       // Vérifier si une machine avec la même référence existe déjà
       final existingMachine = await findMachineByReference(machine.reference);
       if (existingMachine != null) {
-        developer.log(
+        AppLogger.debug(
           'Machine with reference ${machine.reference} already exists: ${existingMachine.id}',
           name: 'MachineOfflineRepository',
         );

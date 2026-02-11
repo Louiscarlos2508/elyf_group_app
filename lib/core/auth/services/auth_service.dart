@@ -1,12 +1,17 @@
-import 'package:firebase_auth/firebase_auth.dart' show FirebaseAuth;
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../core/offline/providers.dart' show sharedPreferencesProvider;
+import '../../firebase/providers.dart' show firebaseAuthProvider, firestoreProvider;
 
 import '../../firebase/firestore_user_service.dart';
 import '../entities/app_user.dart';
 import 'auth_session_service.dart';
 import 'auth_user_service.dart';
 import 'auth_storage_service.dart';
+import '../../permissions/services/permission_service.dart';
+import '../../tenant/tenant_provider.dart';
+import '../../../features/administration/application/providers.dart';
+import 'firestore_permission_service.dart';
 
 /// Service d'authentification avec Firebase Auth et Firestore.
 ///
@@ -25,26 +30,10 @@ class AuthService {
   final AuthUserService _userService;
 
   AuthService({
-    FirebaseAuth? firebaseAuth,
-    FirestoreUserService? firestoreUserService,
-    FirebaseFirestore? firestore,
-    AuthStorageService? authStorageService,
-    AuthSessionService? authSessionService,
-    AuthUserService? authUserService,
-  })  : _sessionService = authSessionService ??
-            AuthSessionService(
-              firebaseAuth: firebaseAuth,
-              firestoreUserService: firestoreUserService,
-              firestore: firestore,
-              authStorageService: authStorageService,
-            ),
-        _userService = authUserService ??
-            AuthUserService(
-              firebaseAuth: firebaseAuth,
-              firestoreUserService: firestoreUserService,
-              firestore: firestore,
-              authStorageService: authStorageService,
-            );
+    required AuthSessionService sessionService,
+    required AuthUserService userService,
+  })  : _sessionService = sessionService,
+        _userService = userService;
 
   /// Initialiser le service (charger l'utilisateur depuis Firebase Auth et Firestore)
   Future<void> initialize() async {
@@ -139,9 +128,41 @@ class AuthService {
   }
 }
 
+
 /// Provider pour le service Firestore des utilisateurs
 final firestoreUserServiceProvider = Provider<FirestoreUserService>((ref) {
-  return FirestoreUserService(firestore: FirebaseFirestore.instance);
+  final firestore = ref.watch(firestoreProvider);
+  return FirestoreUserService(firestore: firestore);
+});
+
+/// Provider pour le service de stockage de l'authentification
+final authStorageServiceProvider = Provider<AuthStorageService>((ref) {
+  final prefs = ref.watch(sharedPreferencesProvider);
+  return AuthStorageService(prefs: prefs);
+});
+
+/// Provider pour le service de session de l'authentification
+final authSessionServiceProvider = Provider<AuthSessionService>((ref) {
+  final firebaseAuth = ref.watch(firebaseAuthProvider);
+  final firestoreUserService = ref.watch(firestoreUserServiceProvider);
+  final authStorageService = ref.watch(authStorageServiceProvider);
+  return AuthSessionService(
+    firebaseAuth: firebaseAuth,
+    firestoreUserService: firestoreUserService,
+    authStorageService: authStorageService,
+  );
+});
+
+/// Provider pour le service utilisateur de l'authentification
+final authUserServiceProvider = Provider<AuthUserService>((ref) {
+  final firebaseAuth = ref.watch(firebaseAuthProvider);
+  final firestoreUserService = ref.watch(firestoreUserServiceProvider);
+  final authStorageService = ref.watch(authStorageServiceProvider);
+  return AuthUserService(
+    firebaseAuth: firebaseAuth,
+    firestoreUserService: firestoreUserService,
+    authStorageService: authStorageService,
+  );
 });
 
 /// Provider pour le service d'authentification
@@ -150,8 +171,11 @@ final firestoreUserServiceProvider = Provider<FirestoreUserService>((ref) {
 /// L'initialisation est gérée par le provider currentUserProvider qui attend
 /// que le service soit initialisé avant de l'utiliser.
 final authServiceProvider = Provider<AuthService>((ref) {
+  final sessionService = ref.watch(authSessionServiceProvider);
+  final userService = ref.watch(authUserServiceProvider);
   return AuthService(
-    firestoreUserService: ref.watch(firestoreUserServiceProvider),
+    sessionService: sessionService,
+    userService: userService,
   );
 });
 
@@ -197,3 +221,23 @@ final isAdminProvider = Provider<bool>((ref) {
     orElse: () => false,
   );
 });
+
+/// Provider unifié pour le service de permissions.
+///
+/// Implémenté par FirestorePermissionService qui utilise AdminController.
+final unifiedPermissionServiceProvider = Provider<PermissionService>((ref) {
+  final adminRepository = ref.watch(adminRepositoryProvider);
+  
+  return FirestorePermissionService(
+    adminRepository: adminRepository,
+    getActiveEnterpriseId: () {
+      final activeEnterpriseAsync = ref.read(activeEnterpriseIdProvider);
+      return activeEnterpriseAsync.when(
+        data: (id) => id,
+        loading: () => null,
+        error: (_, __) => null,
+      );
+    },
+  );
+});
+

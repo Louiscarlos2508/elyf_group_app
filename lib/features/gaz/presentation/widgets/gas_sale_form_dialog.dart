@@ -13,6 +13,7 @@ import 'gas_sale_form/gas_sale_submit_handler.dart';
 import 'gas_sale_form/price_stock_manager.dart';
 import 'gas_sale_form/quantity_and_total_widget.dart';
 import 'gas_sale_form/tour_wholesaler_selector_widget.dart';
+import 'gas_print_receipt_button.dart';
 
 /// Dialog de formulaire pour créer une vente de gaz.
 class GasSaleFormDialog extends ConsumerStatefulWidget {
@@ -37,6 +38,7 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
   Tour? _selectedTour;
   String? _selectedWholesalerId;
   String? _selectedWholesalerName;
+  GasSale? _completedSale;
 
   @override
   void initState() {
@@ -112,7 +114,7 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
 
     final quantity = int.tryParse(_quantityController.text) ?? 1;
 
-    await GasSaleSubmitHandler.submit(
+    final sale = await GasSaleSubmitHandler.submit(
       context: context,
       ref: ref,
       selectedCylinder: _selectedCylinder!,
@@ -140,6 +142,10 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
           : null,
       onLoadingChanged: () => setState(() => _isLoading = !_isLoading),
     );
+
+    if (sale != null && mounted) {
+      setState(() => _completedSale = sale);
+    }
   }
 
   @override
@@ -246,14 +252,65 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
                       customerPhoneController: _customerPhoneController,
                       notesController: _notesController,
                     ),
-                    const SizedBox(height: 24),
-                    FormDialogActions(
-                      onCancel: () => Navigator.of(context).pop(),
-                      onSubmit: () => _submit(enterpriseId),
-                      submitLabel: 'Enregistrer la vente',
-                      isLoading: _isLoading,
-                      submitEnabled: !_isLoading && enterpriseId != null,
-                    ),
+                    if (_completedSale != null) ...[
+                      const SizedBox(height: 24),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.primaryContainer.withValues(
+                            alpha: 0.3,
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          children: [
+                            Row(
+                              children: [
+                                  const Icon(
+                                    Icons.check_circle_rounded,
+                                    color: Colors.green,
+                                    size: 24,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      'Vente enregistrée avec succès',
+                                      style: theme.textTheme.titleMedium?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.green,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            GasPrintReceiptButton(
+                              sale: _completedSale!,
+                              cylinderLabel: _selectedCylinder?.label,
+                              onPrintSuccess: () {
+                                Navigator.of(context).pop();
+                              },
+                            ),
+                            const SizedBox(height: 12),
+                            OutlinedButton(
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                              },
+                              child: const Text('Fermer'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ] else ...[
+                      const SizedBox(height: 24),
+                      FormDialogActions(
+                        onCancel: () => Navigator.of(context).pop(),
+                        onSubmit: () => _submit(enterpriseId),
+                        submitLabel: 'Enregistrer la vente',
+                        isLoading: _isLoading,
+                        submitEnabled: !_isLoading && enterpriseId != null,
+                      ),
+                    ],
                   ],
                 ),
               ),

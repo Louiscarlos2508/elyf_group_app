@@ -188,22 +188,56 @@ class DashboardTrendsChart extends ConsumerWidget {
                     spots: salesSpots,
                     isCurved: true,
                     color: theme.colorScheme.primary,
-                    barWidth: 3,
-                    dotData: const FlDotData(show: false),
+                    barWidth: 4,
+                    isStrokeCapRound: true,
+                    dotData: FlDotData(
+                      show: true,
+                      getDotPainter: (spot, percent, barData, index) =>
+                          FlDotCirclePainter(
+                        radius: 4,
+                        color: Colors.white,
+                        strokeWidth: 2,
+                        strokeColor: theme.colorScheme.primary,
+                      ),
+                    ),
                     belowBarData: BarAreaData(
                       show: true,
-                      color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                      gradient: LinearGradient(
+                        colors: [
+                          theme.colorScheme.primary.withValues(alpha: 0.3),
+                          theme.colorScheme.primary.withValues(alpha: 0.0),
+                        ],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
                     ),
                   ),
                   LineChartBarData(
                     spots: productionSpots,
                     isCurved: true,
-                    color: Colors.purple,
-                    barWidth: 3,
-                    dotData: const FlDotData(show: false),
+                    color: Colors.purple.shade400,
+                    barWidth: 4,
+                    isStrokeCapRound: true,
+                    dotData: FlDotData(
+                      show: true,
+                      getDotPainter: (spot, percent, barData, index) =>
+                          FlDotCirclePainter(
+                        radius: 4,
+                        color: Colors.white,
+                        strokeWidth: 2,
+                        strokeColor: Colors.purple.shade400,
+                      ),
+                    ),
                     belowBarData: BarAreaData(
                       show: true,
-                      color: Colors.purple.withValues(alpha: 0.1),
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.purple.shade400.withValues(alpha: 0.3),
+                          Colors.purple.shade400.withValues(alpha: 0.0),
+                        ],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
                     ),
                   ),
                 ],

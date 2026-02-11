@@ -1,4 +1,4 @@
-import 'dart:developer' as developer;
+import '../../../../core/logging/app_logger.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/offline/drift_service.dart';
@@ -40,7 +40,7 @@ final saleRepositoryProvider = Provider<SaleRepository>((ref) {
   final enterpriseIdValue = ref.watch(activeEnterpriseIdProvider);
   final enterpriseId = enterpriseIdValue.value ?? 'default';
   
-  developer.log(
+  AppLogger.debug(
     'Creating SaleRepository with enterpriseId: $enterpriseId (state: ${enterpriseIdValue.isLoading ? "loading" : "ready"})',
     name: 'repository_providers',
   );
@@ -128,7 +128,7 @@ final financeRepositoryProvider = Provider<FinanceRepository>((ref) {
   final enterpriseIdValue = ref.watch(activeEnterpriseIdProvider);
   final enterpriseId = enterpriseIdValue.value ?? 'default';
 
-  developer.log(
+  AppLogger.debug(
     'Creating FinanceRepository with enterpriseId: $enterpriseId',
     name: 'repository_providers',
   );
@@ -181,7 +181,7 @@ final productionSessionRepositoryProvider =
       final enterpriseIdValue = ref.watch(activeEnterpriseIdProvider);
       final enterpriseId = enterpriseIdValue.value ?? 'default';
 
-      developer.log(
+      AppLogger.debug(
         'Creating ProductionSessionRepository with enterpriseId: $enterpriseId',
         name: 'repository_providers',
       );

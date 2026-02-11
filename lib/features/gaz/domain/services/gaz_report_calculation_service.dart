@@ -144,6 +144,72 @@ class GazReportCalculationService {
       byCategory: byCategory,
     );
   }
+
+  /// Generates CSV headers for sales.
+  List<String> getSalesCsvHeaders() {
+    return [
+      'ID',
+      'Date',
+      'Type',
+      'ID Bouteille',
+      'Quantité',
+      'Prix Unitaire',
+      'Montant Total',
+      'Client',
+      'Téléphone Client',
+      'Tour',
+      'Grossiste',
+      'Notes'
+    ];
+  }
+
+  /// Maps a list of gas sales to CSV rows.
+  List<List<dynamic>> mapSalesToCsvRows(List<GasSale> sales) {
+    return sales.map((sale) {
+      return [
+        sale.id,
+        sale.saleDate.toIso8601String(),
+        sale.saleType.label,
+        sale.cylinderId,
+        sale.quantity,
+        sale.unitPrice,
+        sale.totalAmount,
+        sale.customerName ?? '',
+        sale.customerPhone ?? '',
+        sale.tourId ?? '',
+        sale.wholesalerName ?? '',
+        sale.notes ?? '',
+      ];
+    }).toList();
+  }
+
+  /// Generates CSV headers for expenses.
+  List<String> getExpensesCsvHeaders() {
+    return [
+      'ID',
+      'Date',
+      'Catégorie',
+      'Description',
+      'Montant',
+      'Type',
+      'Notes'
+    ];
+  }
+
+  /// Maps a list of gas expenses to CSV rows.
+  List<List<dynamic>> mapExpensesToCsvRows(List<GazExpense> expenses) {
+    return expenses.map((expense) {
+      return [
+        expense.id,
+        expense.date.toIso8601String(),
+        expense.category.label,
+        expense.description,
+        expense.amount,
+        expense.isFixed ? 'Fixe' : 'Variable',
+        expense.notes ?? '',
+      ];
+    }).toList();
+  }
 }
 
 /// Sales analysis result.

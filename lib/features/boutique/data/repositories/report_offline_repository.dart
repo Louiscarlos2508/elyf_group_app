@@ -1,4 +1,3 @@
-import 'dart:developer' as developer;
 
 import 'package:rxdart/rxdart.dart';
 import '../../../../core/errors/error_handler.dart';
@@ -168,7 +167,7 @@ class ReportOfflineRepository implements ReportRepository {
       );
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      developer.log(
+      AppLogger.error(
         'Error getting sales report',
         name: 'ReportOfflineRepository',
         error: error,

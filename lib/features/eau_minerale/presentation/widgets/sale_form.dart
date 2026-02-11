@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../domain/entities/sale.dart';
 import '../../domain/entities/product.dart';
@@ -291,8 +292,11 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
         final productName = product.id == packProductId
             ? packName
             : product.name;
+        final enterpriseId = ref.read(activeEnterpriseIdProvider).value ?? '';
+
         final sale = Sale(
           id: '',
+          enterpriseId: enterpriseId,
           productId: productId,
           productName: productName,
           quantity: _quantity!,

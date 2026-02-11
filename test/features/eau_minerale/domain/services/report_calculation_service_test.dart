@@ -26,6 +26,7 @@ void main() {
         final sales = [
           Sale(
             id: '1',
+            enterpriseId: 'test-enterprise',
             date: DateTime(2024, 1, 15),
             productId: 'p1',
             productName: 'Product 1',
@@ -41,6 +42,7 @@ void main() {
           ),
           Sale(
             id: '2',
+            enterpriseId: 'test-enterprise',
             date: DateTime(2024, 2, 15),
             productId: 'p2',
             productName: 'Product 2',
@@ -117,6 +119,7 @@ void main() {
         final sales = [
           Sale(
             id: '1',
+            enterpriseId: 'test-enterprise',
             date: DateTime.now(),
             productId: 'p1',
             productName: 'Product 1',
@@ -132,6 +135,7 @@ void main() {
           ),
           Sale(
             id: '2',
+            enterpriseId: 'test-enterprise',
             date: DateTime.now(),
             productId: 'p2',
             productName: 'Product 2',
@@ -162,6 +166,7 @@ void main() {
         final sales = [
           Sale(
             id: '1',
+            enterpriseId: 'test-enterprise',
             date: DateTime.now(),
             productId: 'p1',
             productName: 'Product 1',
@@ -177,6 +182,7 @@ void main() {
           ),
           Sale(
             id: '2',
+            enterpriseId: 'test-enterprise',
             date: DateTime.now(),
             productId: 'p2',
             productName: 'Product 2',

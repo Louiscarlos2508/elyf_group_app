@@ -44,6 +44,11 @@ class SyncException extends AppException {
   const SyncException(super.message, [super.code]);
 }
 
+/// Exception pour les erreurs métier (règles de gestion non respectées).
+class BusinessException extends AppException {
+  const BusinessException(super.message, [super.code]);
+}
+
 /// Exception pour les erreurs inconnues.
 class UnknownException extends AppException {
   const UnknownException(super.message, [super.code]);

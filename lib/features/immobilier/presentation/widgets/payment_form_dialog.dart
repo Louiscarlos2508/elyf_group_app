@@ -6,6 +6,7 @@ import 'package:elyf_groupe_app/shared.dart';
 import '../../../../../shared/domain/entities/payment_method.dart';
 import '../../../../core/pdf/unified_payment_pdf_service.dart';
 import 'package:elyf_groupe_app/features/immobilier/application/providers.dart';
+import '../../../../core/tenant/tenant_provider.dart';
 import '../../domain/entities/contract.dart';
 import '../../domain/entities/payment.dart';
 import 'payment_form_fields.dart';
@@ -124,8 +125,10 @@ class _PaymentFormDialogState extends ConsumerState<PaymentFormDialog>
       formKey: _formKey,
       onLoadingChanged: (isLoading) => setState(() => _isSaving = isLoading),
       onSubmit: () async {
+        final enterpriseId = ref.read(activeEnterpriseIdProvider).value ?? 'default';
         final payment = Payment(
           id: widget.payment?.id ?? IdGenerator.generate(),
+          enterpriseId: enterpriseId,
           contractId: _selectedContract!.id,
           amount: int.parse(_amountController.text),
           paymentDate: _paymentDate,
@@ -155,7 +158,7 @@ class _PaymentFormDialogState extends ConsumerState<PaymentFormDialog>
         }
 
         if (mounted) {
-          ref.invalidate(paymentsProvider);
+          ref.invalidate(paymentsWithRelationsProvider);
           Navigator.of(context).pop(payment);
 
           // Proposer de générer la facture uniquement pour les nouveaux paiements

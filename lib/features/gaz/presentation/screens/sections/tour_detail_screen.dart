@@ -1,7 +1,7 @@
-import 'dart:developer' as developer;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'package:elyf_groupe_app/core/logging/app_logger.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
@@ -53,7 +53,7 @@ class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
         body: const Center(child: CircularProgressIndicator()),
       ),
       error: (e, stackTrace) {
-        developer.log(
+        AppLogger.error(
           'Erreur lors du chargement du tour',
           name: 'TourDetailScreen',
           error: e,
@@ -156,7 +156,7 @@ class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
                               );
                               await controller.moveToNextStep(tour.id);
                               if (mounted && context.mounted) {
-                                developer.log(
+                                AppLogger.debug(
                                   'Changement d\'étape effectué, rafraîchissement des providers',
                                   name: 'TourDetailScreen',
                                 );

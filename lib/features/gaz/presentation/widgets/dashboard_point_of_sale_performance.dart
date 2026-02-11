@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-
-import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/shared/presentation/widgets/elyf_ui/organisms/elyf_card.dart';
 import '../../../../../shared/utils/currency_formatter.dart';
 import '../../domain/entities/point_of_sale.dart';
 
@@ -23,121 +22,131 @@ class DashboardPointOfSalePerformance extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Container(
-      padding: const EdgeInsets.all(25),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: Colors.black.withValues(alpha: 0.1),
-          width: 1.3,
-        ),
-      ),
+    return ElyfCard(
+      isGlass: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Title with icon
           Row(
             children: [
-              Icon(Icons.store, size: 20, color: const Color(0xFF0A0A0A)),
+              Icon(
+                Icons.store_rounded,
+                size: 20,
+                color: theme.colorScheme.onSurface,
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   "Performance par point de vente (aujourd'hui)",
                   style: theme.textTheme.titleMedium?.copyWith(
-                    fontSize: 16,
-                    fontWeight: FontWeight.normal,
-                    color: const Color(0xFF0A0A0A),
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 30),
+          const SizedBox(height: 24),
           // List of points of sale
           if (pointsOfSale.isEmpty)
             Center(
               child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Text(
-                  'Aucun point de vente',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ),
-            )
-          else
-            ...pointsOfSale.map((pos) {
-              final sales = salesByPos[pos.id] ?? 0.0;
-              final stock = stockByPos[pos.id] ?? 0;
-              final salesCount = salesCountByPos?[pos.id] ?? 0;
-
-              return Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.all(17),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF9FAFB),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: const Color(0xFFE5E7EB),
-                    width: 1.3,
-                  ),
-                ),
-                child: Row(
+                padding: const EdgeInsets.symmetric(vertical: 32),
+                child: Column(
                   children: [
-                    // Icon
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFDBEAFE),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(
-                        Icons.store,
-                        size: 20,
-                        color: Color(0xFF3B82F6),
-                      ),
+                    Icon(
+                      Icons.storefront_outlined,
+                      size: 48,
+                      color: theme.colorScheme.outline.withValues(alpha: 0.5),
                     ),
-                    const SizedBox(width: 12),
-                    // Name and details
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            pos.name,
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontSize: 16,
-                              fontWeight: FontWeight.normal,
-                              color: const Color(0xFF101828),
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '$salesCount vente(s) • $stock bouteilles en stock',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              fontSize: 12,
-                              color: const Color(0xFF6A7282),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    // Sales amount
+                    const SizedBox(height: 16),
                     Text(
-                      CurrencyFormatter.formatDouble(sales),
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontSize: 18,
-                        fontWeight: FontWeight.normal,
-                        color: const Color(0xFF00A63E),
+                      'Aucun point de vente enregistré',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontStyle: FontStyle.italic,
                       ),
                     ),
                   ],
                 ),
-              );
-            }),
+              ),
+            )
+          else
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: pointsOfSale.length,
+              separatorBuilder: (context, index) => const SizedBox(height: 12),
+              itemBuilder: (context, index) {
+                final pos = pointsOfSale[index];
+                final sales = salesByPos[pos.id] ?? 0.0;
+                final stock = stockByPos[pos.id] ?? 0;
+                final salesCount = salesCountByPos?[pos.id] ?? 0;
+
+                return Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: theme.colorScheme.outline.withValues(alpha: 0.1),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      // Icon
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF3B82F6).withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.store_rounded,
+                          size: 22,
+                          color: Color(0xFF3B82F6),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      // Name and details
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              pos.name,
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '$salesCount vente(s) • $stock en stock',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      // Sales amount
+                      Text(
+                        CurrencyFormatter.formatDouble(sales),
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w900,
+                          color: const Color(0xFF10B981),
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
         ],
       ),
     );

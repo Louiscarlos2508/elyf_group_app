@@ -1,8 +1,7 @@
-import 'dart:developer' as developer;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/core/logging/app_logger.dart';
 
 import '../../../../../../core/errors/app_exceptions.dart';
 
@@ -37,8 +36,8 @@ class GazSettingsScreen extends ConsumerWidget {
         final effectiveModuleId = moduleId ?? 'gaz';
         
         // Debug: Log l'entreprise active
-        developer.log(
-          '🔵 GazSettingsScreen: enterprise=${enterprise?.name} (${enterprise?.id}), type=${enterprise?.type}, effectiveEnterpriseId=$effectiveEnterpriseId',
+        AppLogger.debug(
+          'GazSettingsScreen: enterprise=${enterprise?.name} (${enterprise?.id}), type=${enterprise?.type}, effectiveEnterpriseId=$effectiveEnterpriseId',
           name: 'GazSettingsScreen',
         );
         final theme = Theme.of(context);
@@ -283,8 +282,8 @@ class GazSettingsScreen extends ConsumerWidget {
                 )
                     : ElyfButton(
                         onPressed: () async {
-                          developer.log(
-                            '🔵 [SETTINGS] Bouton "Nouveau point de vente" cliqué',
+                          AppLogger.debug(
+                            '[SETTINGS] Bouton "Nouveau point de vente" cliqué',
                             name: 'GazSettingsScreen',
                           );
 

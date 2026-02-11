@@ -1,3 +1,4 @@
+import '../../../audit_trail/domain/services/audit_trail_service.dart';
 import '../../../../core/errors/app_exceptions.dart';
 import '../../domain/entities/contract.dart';
 import '../../domain/entities/property.dart';
@@ -10,11 +11,17 @@ class ContractController {
     this._contractRepository,
     this._propertyRepository,
     this._validationService,
+    this._auditTrailService,
+    this._enterpriseId,
+    this._userId,
   );
 
   final ContractRepository _contractRepository;
   final PropertyRepository _propertyRepository;
   final ImmobilierValidationService _validationService;
+  final AuditTrailService _auditTrailService;
+  final String _enterpriseId;
+  final String _userId;
 
   Future<List<Contract>> fetchContracts() async {
     return await _contractRepository.getAllContracts();
@@ -68,6 +75,7 @@ class ContractController {
       if (property != null && property.status != PropertyStatus.rented) {
         final updatedProperty = Property(
           id: property.id,
+          enterpriseId: property.enterpriseId,
           address: property.address,
           city: property.city,
           propertyType: property.propertyType,
@@ -85,6 +93,7 @@ class ContractController {
       }
     }
 
+    await _logAction('create', createdContract.id, metadata: createdContract.toMap());
     return createdContract;
   }
 
@@ -145,6 +154,7 @@ class ContractController {
       if (newStatus != null) {
         final updatedProperty = Property(
           id: property.id,
+          enterpriseId: property.enterpriseId,
           address: property.address,
           city: property.city,
           propertyType: property.propertyType,
@@ -162,6 +172,7 @@ class ContractController {
       }
     }
 
+    await _logAction('update', updatedContract.id, metadata: updatedContract.toMap());
     return updatedContract;
   }
 
@@ -196,6 +207,7 @@ class ContractController {
         if (property != null && property.status == PropertyStatus.rented) {
           final updatedProperty = Property(
             id: property.id,
+            enterpriseId: property.enterpriseId,
             address: property.address,
             city: property.city,
             propertyType: property.propertyType,
@@ -213,9 +225,27 @@ class ContractController {
         }
       }
     }
+    await _logAction('delete', id);
   }
 
   Future<void> restoreContract(String id) async {
     await _contractRepository.restoreContract(id);
+    await _logAction('restore', id);
+  }
+
+  Future<void> _logAction(
+    String action,
+    String entityId, {
+    Map<String, dynamic>? metadata,
+  }) async {
+    await _auditTrailService.logAction(
+      enterpriseId: _enterpriseId,
+      userId: _userId,
+      module: 'immobilier',
+      action: action,
+      entityId: entityId,
+      entityType: 'contract',
+      metadata: metadata,
+    );
   }
 }

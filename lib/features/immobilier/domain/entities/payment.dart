@@ -5,6 +5,7 @@ import 'contract.dart';
 class Payment {
   Payment({
     required this.id,
+    required this.enterpriseId,
     required this.contractId,
     required this.amount,
     required this.paymentDate,
@@ -25,6 +26,7 @@ class Payment {
   });
 
   final String id;
+  final String enterpriseId;
   final String contractId;
   final int amount;
   final DateTime paymentDate;
@@ -48,6 +50,7 @@ class Payment {
 
   Payment copyWith({
     String? id,
+    String? enterpriseId,
     String? contractId,
     int? amount,
     DateTime? paymentDate,
@@ -68,6 +71,7 @@ class Payment {
   }) {
     return Payment(
       id: id ?? this.id,
+      enterpriseId: enterpriseId ?? this.enterpriseId,
       contractId: contractId ?? this.contractId,
       amount: amount ?? this.amount,
       paymentDate: paymentDate ?? this.paymentDate,
@@ -85,6 +89,64 @@ class Payment {
       updatedAt: updatedAt ?? this.updatedAt,
       deletedAt: deletedAt ?? this.deletedAt,
       deletedBy: deletedBy ?? this.deletedBy,
+    );
+  }
+
+  /// Représentation sérialisable pour logs / audit trail / persistence.
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'enterpriseId': enterpriseId,
+      'contractId': contractId,
+      'amount': amount,
+      'paymentDate': paymentDate.toIso8601String(),
+      'paymentMethod': paymentMethod.name,
+      'status': status.name,
+      'month': month,
+      'year': year,
+      'receiptNumber': receiptNumber,
+      'notes': notes,
+      'paymentType': paymentType?.name,
+      'cashAmount': cashAmount,
+      'mobileMoneyAmount': mobileMoneyAmount,
+      'createdAt': createdAt?.toIso8601String(),
+      'updatedAt': updatedAt?.toIso8601String(),
+      'deletedAt': deletedAt?.toIso8601String(),
+      'deletedBy': deletedBy,
+    };
+  }
+
+  factory Payment.fromMap(Map<String, dynamic> map) {
+    return Payment(
+      id: map['id'] as String,
+      enterpriseId: map['enterpriseId'] as String,
+      contractId: map['contractId'] as String,
+      amount: (map['amount'] as num).toInt(),
+      paymentDate: DateTime.parse(map['paymentDate'] as String),
+      paymentMethod: PaymentMethod.values.firstWhere(
+        (e) => e.name == map['paymentMethod'],
+        orElse: () => PaymentMethod.cash,
+      ),
+      status: PaymentStatus.values.firstWhere(
+        (e) => e.name == map['status'],
+        orElse: () => PaymentStatus.pending,
+      ),
+      month: (map['month'] as num?)?.toInt(),
+      year: (map['year'] as num?)?.toInt(),
+      receiptNumber: map['receiptNumber'] as String?,
+      notes: map['notes'] as String?,
+      paymentType: map['paymentType'] != null
+          ? PaymentType.values.firstWhere(
+              (e) => e.name == map['paymentType'],
+              orElse: () => PaymentType.rent,
+            )
+          : null,
+      cashAmount: (map['cashAmount'] as num?)?.toInt(),
+      mobileMoneyAmount: (map['mobileMoneyAmount'] as num?)?.toInt(),
+      createdAt: map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : null,
+      updatedAt: map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : null,
+      deletedAt: map['deletedAt'] != null ? DateTime.parse(map['deletedAt'] as String) : null,
+      deletedBy: map['deletedBy'] as String?,
     );
   }
 

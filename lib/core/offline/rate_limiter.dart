@@ -1,5 +1,6 @@
 import 'dart:async';
-import 'dart:developer' as developer;
+
+import '../logging/app_logger.dart';
 
 /// Rate limiter pour éviter trop de requêtes simultanées.
 ///
@@ -40,7 +41,7 @@ class RateLimiter {
       final waitTime = DateTime.now().difference(oldestTimestamp);
       if (waitTime.inMilliseconds < 1000) {
         final waitMs = 1000 - waitTime.inMilliseconds;
-        developer.log(
+        AppLogger.debug(
           'Rate limit reached, waiting ${waitMs}ms',
           name: 'rate.limiter',
         );

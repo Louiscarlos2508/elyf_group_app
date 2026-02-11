@@ -13,7 +13,7 @@ import '../../../domain/entities/gas_sale.dart';
 class GasSaleSubmitHandler {
   GasSaleSubmitHandler._();
 
-  static Future<bool> submit({
+  static Future<GasSale?> submit({
     required BuildContext context,
     required WidgetRef ref,
     required Cylinder selectedCylinder,
@@ -33,12 +33,12 @@ class GasSaleSubmitHandler {
   }) async {
     // Vérifier le stock disponible
     if (quantity > availableStock) {
-      if (!context.mounted) return false;
+      if (!context.mounted) return null;
       NotificationService.showError(
         context,
         'Stock insuffisant. Stock disponible: $availableStock',
       );
-      return false;
+      return null;
     }
 
     onLoadingChanged();
@@ -50,6 +50,7 @@ class GasSaleSubmitHandler {
               customerPhone.trim());
       final sale = GasSale(
         id: 'sale-${DateTime.now().millisecondsSinceEpoch}',
+        enterpriseId: enterpriseId,
         cylinderId: selectedCylinder.id,
         quantity: quantity,
         unitPrice: unitPrice,
@@ -96,7 +97,7 @@ class GasSaleSubmitHandler {
         );
       }
 
-      if (!context.mounted) return false;
+      if (!context.mounted) return sale;
 
       // Invalider les providers
       ref.invalidate(gasSalesProvider);
@@ -108,16 +109,12 @@ class GasSaleSubmitHandler {
         )),
       );
 
-      Navigator.of(context).pop();
+      // Ne pas popper ici, laisser le dialog gérer le succès
+      // Navigator.of(context).pop();
 
-      NotificationService.showSuccess(
-        context,
-        'Vente enregistrée avec succès: ${CurrencyFormatter.formatDouble(totalAmount)}',
-      );
-
-      return true;
+      return sale;
     } catch (e, stackTrace) {
-      if (!context.mounted) return false;
+      if (!context.mounted) return null;
       final appException = ErrorHandler.instance.handleError(e, stackTrace);
       AppLogger.error(
         'Erreur lors de l\'enregistrement de la vente: ${appException.message}',
@@ -129,7 +126,7 @@ class GasSaleSubmitHandler {
         context,
         ErrorHandler.instance.getUserMessage(appException),
       );
-      return false;
+      return null;
     } finally {
       onLoadingChanged();
     }

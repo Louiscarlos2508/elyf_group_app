@@ -43,6 +43,7 @@ void main() {
       () async {
         final product = Product(
           id: 'test-product-1',
+          enterpriseId: 'test-enterprise',
           name: 'Test Product',
           price: 1000,
           stock: 10,
@@ -65,6 +66,7 @@ void main() {
     test('getProduct should return product by localId', () async {
       final product = Product(
         id: 'test-product-1',
+        enterpriseId: 'test-enterprise',
         name: 'Test Product',
         price: 1000,
         stock: 10,
@@ -80,6 +82,7 @@ void main() {
     test('updateProduct should update existing product', () async {
       final product = Product(
         id: 'test-product-1',
+        enterpriseId: 'test-enterprise',
         name: 'Test Product',
         price: 1000,
         stock: 10,
@@ -88,6 +91,7 @@ void main() {
       final localId = await repository.createProduct(product);
       final updated = Product(
         id: localId,
+        enterpriseId: 'test-enterprise',
         name: 'Updated Product',
         price: 2000,
         stock: 20,
@@ -105,6 +109,7 @@ void main() {
     test('deleteProduct should remove product from local storage', () async {
       final product = Product(
         id: 'test-product-1',
+        enterpriseId: 'test-enterprise',
         name: 'Test Product',
         price: 1000,
         stock: 10,
@@ -120,12 +125,14 @@ void main() {
     test('fetchProducts should return products for enterprise', () async {
       final product1 = Product(
         id: 'test-product-1',
+        enterpriseId: 'test-enterprise',
         name: 'Product 1',
         price: 1000,
         stock: 10,
       );
       final product2 = Product(
         id: 'test-product-2',
+        enterpriseId: 'test-enterprise',
         name: 'Product 2',
         price: 2000,
         stock: 20,
@@ -146,6 +153,7 @@ void main() {
       () async {
         final product = Product(
           id: 'test-product-1',
+          enterpriseId: 'test-enterprise',
           name: 'Test Product',
           price: 1000,
           stock: 10,

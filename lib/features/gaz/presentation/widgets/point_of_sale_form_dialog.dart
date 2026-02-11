@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'dart:developer' as developer;
-
 import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/core/logging/app_logger.dart';
 import '../../../../core/tenant/tenant_provider.dart' show activeEnterpriseProvider;
 import '../../application/providers.dart' as gaz_providers;
 import '../../domain/entities/point_of_sale.dart';
@@ -44,7 +43,7 @@ class _PointOfSaleFormDialogState extends ConsumerState<PointOfSaleFormDialog>
   @override
   void initState() {
     super.initState();
-    developer.log(
+    AppLogger.debug(
       'PointOfSaleFormDialog.initState: pointOfSale=${widget.pointOfSale?.id ?? "null"}, enterpriseId=${widget.enterpriseId}, moduleId=${widget.moduleId}',
       name: 'PointOfSaleFormDialog',
     );

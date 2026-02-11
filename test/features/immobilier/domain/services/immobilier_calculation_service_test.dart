@@ -18,6 +18,7 @@ void main() {
         final payments = [
           Payment(
             id: 'payment-1',
+            enterpriseId: 'test-enterprise',
             contractId: 'contract-1',
             amount: 50000,
             paymentDate: DateTime(2026, 1, 1),
@@ -26,6 +27,7 @@ void main() {
           ),
           Payment(
             id: 'payment-2',
+            enterpriseId: 'test-enterprise',
             contractId: 'contract-2',
             amount: 75000,
             paymentDate: DateTime(2026, 1, 2),
@@ -48,6 +50,7 @@ void main() {
         final expenses = [
           PropertyExpense(
             id: 'expense-1',
+            enterpriseId: 'test-enterprise',
             propertyId: 'property-1',
             amount: 10000,
             expenseDate: DateTime(2026, 1, 1),
@@ -56,6 +59,7 @@ void main() {
           ),
           PropertyExpense(
             id: 'expense-2',
+            enterpriseId: 'test-enterprise',
             propertyId: 'property-2',
             amount: 15000,
             expenseDate: DateTime(2026, 1, 2),

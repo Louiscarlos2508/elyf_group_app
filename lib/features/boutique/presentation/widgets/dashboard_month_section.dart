@@ -34,14 +34,14 @@ class DashboardMonthSection extends StatelessWidget {
             value: CurrencyFormatter.formatFCFA(monthRevenue),
             subtitle: '$monthSalesCount ventes',
             icon: Icons.trending_up,
-            color: const Color(0xFF3B82F6),
+            color: Colors.blue,
           ),
           ElyfStatsCard(
             label: 'Achats',
             value: CurrencyFormatter.formatFCFA(monthPurchasesAmount),
             subtitle: 'Approvisionnements',
             icon: Icons.shopping_bag,
-            color: const Color(0xFFF59E0B),
+            color: Colors.orange,
           ),
           ElyfStatsCard(
             label: 'Dépenses',
@@ -55,7 +55,7 @@ class DashboardMonthSection extends StatelessWidget {
             value: CurrencyFormatter.formatFCFA(monthProfit),
             subtitle: monthProfit >= 0 ? 'Profit' : 'Déficit',
             icon: Icons.account_balance_wallet,
-            color: monthProfit >= 0 ? AppColors.success : theme.colorScheme.error,
+            color: monthProfit >= 0 ? Colors.green : Colors.red,
           ),
         ];
 

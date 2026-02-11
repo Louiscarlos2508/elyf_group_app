@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
@@ -50,7 +49,7 @@ class ConnectivityService {
         },
       );
     } catch (error) {
-      developer.log(
+      AppLogger.error(
         'Failed to initialize connectivity service',
         name: 'offline.connectivity',
         error: error,
@@ -64,7 +63,7 @@ class ConnectivityService {
     if (newStatus != _currentStatus) {
       _currentStatus = newStatus;
       _controller.add(_currentStatus);
-      developer.log(
+      AppLogger.debug(
         'Connectivity changed: $_currentStatus',
         name: 'offline.connectivity',
       );

@@ -72,6 +72,7 @@ Cylinder createTestCylinder({
 /// Crée une GasSale de test.
 GasSale createTestGasSale({
   String? id,
+  String? enterpriseId,
   String? cylinderId,
   int? quantity,
   double? unitPrice,
@@ -84,6 +85,7 @@ GasSale createTestGasSale({
 }) {
   return GasSale(
     id: id ?? 'sale-1',
+    enterpriseId: enterpriseId ?? 'enterprise-1',
     cylinderId: cylinderId ?? 'cylinder-1',
     quantity: quantity ?? 1,
     unitPrice: unitPrice ?? 6000.0,
@@ -122,6 +124,7 @@ GazExpense createTestGazExpense({
 /// Crée une Property de test.
 Property createTestProperty({
   String? id,
+  String? enterpriseId,
   String? address,
   String? city,
   PropertyType? propertyType,
@@ -135,6 +138,7 @@ Property createTestProperty({
 }) {
   return Property(
     id: id ?? 'property-1',
+    enterpriseId: enterpriseId ?? 'enterprise-1',
     address: address ?? '123 Test Street',
     city: city ?? 'Test City',
     propertyType: propertyType ?? PropertyType.house,
@@ -153,9 +157,9 @@ Property createTestProperty({
 /// Crée un Tenant de test.
 Tenant createTestTenant({
   String? id,
+  String? enterpriseId,
   String? fullName,
   String? phone,
-  String? email,
   String? address,
   String? idNumber,
   String? emergencyContact,
@@ -163,9 +167,9 @@ Tenant createTestTenant({
 }) {
   return Tenant(
     id: id ?? 'tenant-1',
+    enterpriseId: enterpriseId ?? 'enterprise-1',
     fullName: fullName ?? 'John Doe',
     phone: phone ?? '+226 70 12 34 56',
-    email: email ?? 'john.doe@example.com',
     address: address,
     idNumber: idNumber,
     emergencyContact: emergencyContact,
@@ -178,6 +182,7 @@ Tenant createTestTenant({
 /// Crée un Contract de test.
 Contract createTestContract({
   String? id,
+  String? enterpriseId,
   String? propertyId,
   String? tenantId,
   DateTime? startDate,
@@ -193,6 +198,7 @@ Contract createTestContract({
 }) {
   return Contract(
     id: id ?? 'contract-1',
+    enterpriseId: enterpriseId ?? 'enterprise-1',
     propertyId: propertyId ?? 'property-1',
     tenantId: tenantId ?? 'tenant-1',
     startDate: startDate ?? DateTime(2026, 1, 1),

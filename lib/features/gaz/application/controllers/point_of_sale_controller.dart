@@ -1,4 +1,4 @@
-import 'dart:developer' as developer;
+import '../../../../core/logging/app_logger.dart';
 
 import '../../domain/entities/point_of_sale.dart';
 import '../../domain/repositories/point_of_sale_repository.dart';
@@ -14,7 +14,7 @@ class PointOfSaleController {
     required String enterpriseId,
     required String moduleId,
   }) async {
-    developer.log(
+    AppLogger.debug(
       'PointOfSaleController.getPointsOfSale: enterpriseId=$enterpriseId, moduleId=$moduleId',
       name: 'PointOfSaleController',
     );
@@ -22,7 +22,7 @@ class PointOfSaleController {
       enterpriseId: enterpriseId,
       moduleId: moduleId,
     );
-    developer.log(
+    AppLogger.debug(
       'PointOfSaleController.getPointsOfSale: trouvé ${result.length} points de vente',
       name: 'PointOfSaleController',
     );

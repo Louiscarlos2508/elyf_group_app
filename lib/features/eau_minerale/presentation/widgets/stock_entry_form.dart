@@ -1,4 +1,3 @@
-import 'dart:developer' as developer;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -63,43 +62,43 @@ class StockEntryFormState extends ConsumerState<StockEntryForm> {
 
   /// Méthode publique pour soumettre le formulaire (utilisée par FormDialog).
   Future<bool> submit() async {
-    developer.log('StockEntryForm.submit() called', name: 'StockEntryForm');
+    AppLogger.debug('StockEntryForm.submit() called', name: 'StockEntryForm');
     
     if (widget.onSubmit != null) {
-      developer.log('Using widget.onSubmit', name: 'StockEntryForm');
+      AppLogger.debug('Using widget.onSubmit', name: 'StockEntryForm');
       return await widget.onSubmit!();
     }
     
     if (!_formKey.currentState!.validate()) {
-      developer.log('Form validation failed', name: 'StockEntryForm');
+      AppLogger.debug('Form validation failed', name: 'StockEntryForm');
       return false;
     }
 
-    developer.log('Starting stock entry submission', name: 'StockEntryForm');
+    AppLogger.debug('Starting stock entry submission', name: 'StockEntryForm');
     setState(() => _isLoading = true);
     try {
-      developer.log('Reading stock controller', name: 'StockEntryForm');
+      AppLogger.debug('Reading stock controller', name: 'StockEntryForm');
       final stockController = ref.read(stockControllerProvider);
       final quantiteStr = _quantityController.text.trim();
-      developer.log('Quantité saisie: "$quantiteStr"', name: 'StockEntryForm');
+      AppLogger.debug('Quantité saisie: "$quantiteStr"', name: 'StockEntryForm');
       
       // Valider et parser la quantité
       if (quantiteStr.isEmpty) {
-        developer.log('Quantité vide - validation failed', name: 'StockEntryForm');
+        AppLogger.debug('Quantité vide - validation failed', name: 'StockEntryForm');
         throw const ValidationException('La quantité est requise', 'MISSING_QUANTITY');
       }
       
       final quantite = int.tryParse(quantiteStr);
       if (quantite == null || quantite <= 0) {
-        developer.log('Quantité invalide: $quantite', name: 'StockEntryForm');
+        AppLogger.debug('Quantité invalide: $quantite', name: 'StockEntryForm');
         throw const ValidationException('La quantité doit être un nombre entier positif', 'INVALID_QUANTITY');
       }
       
-      developer.log('Quantité validée: $quantite, Type: $_selectedType', name: 'StockEntryForm');
+      AppLogger.debug('Quantité validée: $quantite, Type: $_selectedType', name: 'StockEntryForm');
 
       switch (_selectedType) {
         case _StockEntryType.bobine:
-          developer.log('Recording bobine entry - calling recordBobineEntry', name: 'StockEntryForm');
+          AppLogger.debug('Recording bobine entry - calling recordBobineEntry', name: 'StockEntryForm');
           await stockController.recordBobineEntry(
             bobineType: _bobineType,
             quantite: quantite,
@@ -114,7 +113,7 @@ class StockEntryFormState extends ConsumerState<StockEntryForm> {
           break;
 
         case _StockEntryType.emballage:
-          developer.log('Recording packaging entry - starting', name: 'StockEntryForm');
+          AppLogger.debug('Recording packaging entry - starting', name: 'StockEntryForm');
           
           // Récupérer ou créer le stock d'emballages
           final packagingController = ref.read(
@@ -151,7 +150,7 @@ class StockEntryFormState extends ConsumerState<StockEntryForm> {
              // Cela permet de gérer les changements de conditionnement (ex: passage de 1000 à 500)
              final newUnitsPerLot = int.tryParse(_unitsPerLotController.text) ?? 1;
              if (newUnitsPerLot > 0 && stockEmballage.unitsPerLot != newUnitsPerLot) {
-               developer.log('Updating unitsPerLot from ${stockEmballage.unitsPerLot} to $newUnitsPerLot', name: 'StockEntryForm');
+               AppLogger.debug('Updating unitsPerLot from ${stockEmballage.unitsPerLot} to $newUnitsPerLot', name: 'StockEntryForm');
                await packagingController.save(stockEmballage.copyWith(unitsPerLot: newUnitsPerLot));
              }
           }
@@ -188,11 +187,11 @@ class StockEntryFormState extends ConsumerState<StockEntryForm> {
       }
 
       if (!mounted) {
-        developer.log('Widget not mounted after submission', name: 'StockEntryForm');
+        AppLogger.debug('Widget not mounted after submission', name: 'StockEntryForm');
         return false;
       }
       
-      developer.log('Submission successful, invalidating state', name: 'StockEntryForm');
+      AppLogger.debug('Submission successful, invalidating state', name: 'StockEntryForm');
       ref.invalidate(stockStateProvider);
       // Invalider tous les providers de mouvements pour rafraîchir l'historique
       ref.invalidate(stockMovementsProvider);
@@ -200,10 +199,10 @@ class StockEntryFormState extends ConsumerState<StockEntryForm> {
       final message = _selectedType == _StockEntryType.bobine
           ? '$quantite bobine(s) ajoutée(s)'
           : '$quantite emballage(s) ajouté(s)';
-      developer.log('Showing success message: $message', name: 'StockEntryForm');
+      AppLogger.debug('Showing success message: $message', name: 'StockEntryForm');
       NotificationService.showSuccess(context, message);
       
-      developer.log('Returning true - FormDialog will close', name: 'StockEntryForm');
+      AppLogger.debug('Returning true - FormDialog will close', name: 'StockEntryForm');
       // Ne pas fermer le dialog ici - le FormDialog le fera automatiquement
       // si on retourne true
       return true;

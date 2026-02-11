@@ -1,4 +1,4 @@
-import 'dart:developer' as developer;
+import '../../../../core/logging/app_logger.dart';
 
 import '../entities/point_of_sale.dart';
 import '../repositories/point_of_sale_repository.dart';
@@ -29,14 +29,14 @@ class PointOfSaleService {
     required String createdByUserId,
     List<String>? cylinderIds,
   }) async {
-    developer.log(
+    AppLogger.debug(
       'Création d\'un point de vente avec Enterprise: $name, parentEnterpriseId=$parentEnterpriseId',
       name: 'PointOfSaleService.createPointOfSaleWithEnterprise',
     );
 
     // Vérifier que parentEnterpriseId n'est pas un point de vente (ne commence pas par 'pos_')
     if (parentEnterpriseId.startsWith('pos_')) {
-      developer.log(
+      AppLogger.warning(
         'ATTENTION: parentEnterpriseId commence par "pos_", ce qui suggère qu\'il s\'agit d\'un point de vente, pas de l\'entreprise mère. '
         'parentEnterpriseId=$parentEnterpriseId',
         name: 'PointOfSaleService.createPointOfSaleWithEnterprise',
@@ -62,11 +62,11 @@ class PointOfSaleService {
     );
 
     await pointOfSaleRepository.addPointOfSale(pointOfSale);
-    developer.log(
+    AppLogger.info(
       '✅ PointOfSale créé: id=${pointOfSale.id}, parentEnterpriseId=$parentEnterpriseId',
       name: 'PointOfSaleService.createPointOfSaleWithEnterprise',
     );
-    developer.log(
+    AppLogger.info(
       '📍 Le point de vente sera synchronisé vers: enterprises/$parentEnterpriseId/pointofsale/${pointOfSale.id}',
       name: 'PointOfSaleService.createPointOfSaleWithEnterprise',
     );
@@ -74,7 +74,7 @@ class PointOfSaleService {
     // Note: Les accès utilisateur pour les points de vente doivent être gérés séparément
     // car les points de vente ne sont pas des entreprises séparées dans la collection globale
     // L'accès se fait via l'entreprise mère (parentEnterpriseId) avec des permissions spécifiques
-    developer.log(
+    AppLogger.info(
       'ℹ️ Les accès utilisateur pour ce point de vente doivent être gérés via l\'entreprise mère ($parentEnterpriseId)',
       name: 'PointOfSaleService.createPointOfSaleWithEnterprise',
     );
