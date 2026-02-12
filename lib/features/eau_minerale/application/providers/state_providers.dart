@@ -640,6 +640,7 @@ final creditsDashboardProvider = FutureProvider.autoDispose<CreditsDashboardStat
       final credits = creditSales.map((sale) {
         return CustomerCredit(
           id: sale.id,
+          enterpriseId: sale.enterpriseId,
           saleId: sale.id,
           amount: sale.totalPrice,
           amountPaid: sale.amountPaid,

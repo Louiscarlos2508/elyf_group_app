@@ -24,6 +24,7 @@ class FinishedProductsCard extends StatelessWidget {
     if (finishedGoods.isEmpty) {
       pack = StockItem(
         id: packStockItemId,
+        enterpriseId: 'default',
         name: packName,
         quantity: 0,
         unit: packUnit,
@@ -41,6 +42,7 @@ class FinishedProductsCard extends StatelessWidget {
       } else {
         pack = StockItem(
           id: packStockItemId,
+          enterpriseId: 'default',
           name: packName,
           quantity: 0,
           unit: packUnit,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'widgets.dart';
+import 'elyf_ui/organisms/elyf_app_bar.dart';
 import '../../../core/tenant/tenant_provider.dart';
 
 // Re-export NavigationSection so subclasses can use it
@@ -81,8 +82,8 @@ abstract class BaseModuleShellScreenState<T extends BaseModuleShellScreen>
   /// Widget affiché en cas d'erreur.
   Widget buildError(Object error, StackTrace? stackTrace) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(appTitle),
+      appBar: ElyfAppBar(
+        title: appTitle,
         actions: _buildAppBarActions(),
       ),
       body: Center(
@@ -115,8 +116,8 @@ abstract class BaseModuleShellScreenState<T extends BaseModuleShellScreen>
   /// Widget affiché quand aucune section n'est accessible.
   Widget buildNoAccess() {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(appTitle),
+      appBar: ElyfAppBar(
+        title: appTitle,
         actions: _buildAppBarActions(),
       ),
       body: const Center(
@@ -185,8 +186,8 @@ abstract class BaseModuleShellScreenState<T extends BaseModuleShellScreen>
     // Une seule section : pas de navigation
     if (sections.length < 2) {
       return Scaffold(
-        appBar: AppBar(
-          title: Text(appTitle),
+        appBar: ElyfAppBar(
+          title: appTitle,
           actions: _buildAppBarActions(),
         ),
         body: IndexedStack(

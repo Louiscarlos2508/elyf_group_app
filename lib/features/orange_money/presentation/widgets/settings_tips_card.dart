@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:elyf_groupe_app/shared.dart';
 
 /// Card widget for tips and recommendations.
 class SettingsTipsCard extends StatelessWidget {
@@ -6,85 +7,100 @@ class SettingsTipsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final theme = Theme.of(context);
+    
+    return ElyfCard(
       padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF0FDF4),
-        border: Border.all(color: const Color(0xFFB9F8CF), width: 1.219),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
+      elevation: 4,
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: const Color(0xFFDCFCE7),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: const Icon(
-              Icons.lightbulb,
-              color: Color(0xFF0D542B),
-              size: 20,
-            ),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF00C897).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.lightbulb_outline_rounded, size: 22, color: Color(0xFF00C897)),
+              ),
+              const SizedBox(width: 16),
+              Text(
+                'Conseils d\'Utilisation',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  fontFamily: 'Outfit',
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  '💡 Conseils d\'utilisation',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.normal,
-                    color: Color(0xFF0D542B),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                _buildTipItem(
-                  'Notifications :',
-                  'Activez toutes les alertes pour ne manquer aucune information importante',
-                ),
-                _buildTipItem(
-                  'Seuil liquidité :',
-                  'Ajustez selon vos besoins quotidiens moyens (minimum recommandé : 50 000 F)',
-                ),
-                _buildTipItem(
-                  'Échéances :',
-                  'Configurez l\'alerte 3-5 jours avant pour avoir le temps de préparer les paiements',
-                ),
-                _buildTipItem(
-                  'Sécurité :',
-                  'Changez régulièrement votre mot de passe dans la section Profil',
-                ),
-              ],
-            ),
+          const SizedBox(height: 32),
+          _buildTipItem(
+            context,
+            'Optimisation Alertes',
+            'Maintenez toutes les notifications actives pour une réactivité maximale sur la liquidité.',
+          ),
+          const SizedBox(height: 16),
+          _buildTipItem(
+            context,
+            'Gestion Liquidité',
+            'Le seuil de 50.000 F est un minimum conseillé pour assurer la continuité de service.',
+          ),
+          const SizedBox(height: 16),
+          _buildTipItem(
+            context,
+            'Sécurité SIM',
+            'Assurez-vous que le numéro configuré correspond exactement à la SIM de service.',
+          ),
+          const SizedBox(height: 16),
+          _buildTipItem(
+            context,
+            'Pointages RIGOUREUX',
+            'Un double pointage quotidien garantit l\'exactitude de vos commissions en fin de mois.',
           ),
         ],
       ),
     );
   }
 
-  Widget _buildTipItem(String boldText, String text) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 4),
-      child: RichText(
-        text: TextSpan(
-          style: const TextStyle(
-            fontSize: 14,
-            color: Color(0xFF016630),
-            fontWeight: FontWeight.normal,
-          ),
-          children: [
-            TextSpan(
-              text: '• $boldText ',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            TextSpan(text: text),
-          ],
+  Widget _buildTipItem(BuildContext context, String title, String description) {
+    final theme = Theme.of(context);
+    
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(top: 4.0),
+          child: Icon(Icons.stars_rounded, size: 16, color: Color(0xFF00C897)),
         ),
-      ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title.toUpperCase(),
+                style: theme.textTheme.labelSmall?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  color: const Color(0xFF00C897),
+                  letterSpacing: 0.8,
+                  fontFamily: 'Outfit',
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                description,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+                  height: 1.5,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

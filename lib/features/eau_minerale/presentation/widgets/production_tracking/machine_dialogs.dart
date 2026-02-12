@@ -46,7 +46,7 @@ class MachineDialogs {
 
     final machinesUtiliseesIds = session.machinesUtilisees.toSet();
     final machinesActives =
-        allMachines.where((m) => m.estActive).toList();
+        allMachines.where((m) => m.isActive).toList();
     final machinesDisponibles = machinesActives
         .where((m) => !machinesUtiliseesIds.contains(m.id))
         .toList();

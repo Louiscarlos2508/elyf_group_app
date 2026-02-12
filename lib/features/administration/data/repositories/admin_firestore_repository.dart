@@ -203,6 +203,25 @@ class AdminFirestoreRepository implements AdminRepository {
   }
 
   @override
+  Future<EnterpriseModuleUser?> getUserEnterpriseModuleUser({
+    required String userId,
+    required String enterpriseId,
+    required String moduleId,
+  }) async {
+    final snapshot = await _enterpriseModuleUsers
+        .where('userId', isEqualTo: userId)
+        .where('enterpriseId', isEqualTo: enterpriseId) // Correction: should be enterpriseId not userId
+        .where('moduleId', isEqualTo: moduleId)
+        .limit(1)
+        .get();
+    
+    if (snapshot.docs.isNotEmpty) {
+      return EnterpriseModuleUser.fromMap(snapshot.docs.first.data());
+    }
+    return null;
+  }
+
+  @override
   Future<void> assignUserToEnterprise(
     EnterpriseModuleUser enterpriseModuleUser,
   ) async {

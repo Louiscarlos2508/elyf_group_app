@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/shared/presentation/widgets/elyf_ui/organisms/elyf_app_bar.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 
 class EauMineraleShellScreen extends ConsumerStatefulWidget {
@@ -49,7 +50,7 @@ class _EauMineraleShellScreenState
         // Show message if no sections accessible
         if (accessibleSections.isEmpty) {
           return Scaffold(
-            appBar: AppBar(title: const Text('Eau Minérale • Module')),
+            appBar: ElyfAppBar(title: 'Eau Minérale • Module'),
             body: const Center(
               child: Padding(
                 padding: EdgeInsets.all(24),
@@ -81,7 +82,7 @@ class _EauMineraleShellScreenState
         // Show navigation only if 2+ sections
         if (navigationSections.length < 2) {
           return Scaffold(
-            appBar: AppBar(title: const Text('Eau Minérale • Module')),
+            appBar: ElyfAppBar(title: 'Eau Minérale • Module'),
             body: IndexedStack(
               index: currentIndex,
               children: navigationSections.map((s) => s.builder()).toList(),
@@ -89,18 +90,20 @@ class _EauMineraleShellScreenState
           );
         }
 
-        return AdaptiveNavigationScaffold(
-          sections: navigationSections,
-          appTitle: 'Eau Minérale • Module',
-          selectedIndex: currentIndex,
-          onIndexChanged: (i) {
-            if (i < accessibleSections.length) {
-              setState(() => _index = i);
-            }
-          },
-          isLoading: false,
-          enterpriseId: widget.enterpriseId,
-          moduleId: widget.moduleId,
+        return DoubleTapToExit(
+          child: AdaptiveNavigationScaffold(
+            sections: navigationSections,
+            appTitle: 'Eau Minérale • Module',
+            selectedIndex: currentIndex,
+            onIndexChanged: (i) {
+              if (i < accessibleSections.length) {
+                setState(() => _index = i);
+              }
+            },
+            isLoading: false,
+            enterpriseId: widget.enterpriseId,
+            moduleId: widget.moduleId,
+          ),
         );
       },
       loading: () => const ModuleLoadingAnimation(
@@ -109,7 +112,7 @@ class _EauMineraleShellScreenState
         message: 'Chargement des modules...',
       ),
       error: (error, stack) => Scaffold(
-        appBar: AppBar(title: const Text('Eau Minérale • Module')),
+        appBar: ElyfAppBar(title: 'Eau Minérale • Module'),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),

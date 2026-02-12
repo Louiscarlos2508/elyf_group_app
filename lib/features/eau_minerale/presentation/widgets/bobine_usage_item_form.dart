@@ -49,7 +49,7 @@ class _BobineUsageItemFormState extends ConsumerState<BobineUsageItemForm> {
     final usage = BobineUsage(
       bobineType: bobineStock.type,
       machineId: _machineSelectionnee!.id,
-      machineName: _machineSelectionnee!.nom,
+      machineName: _machineSelectionnee!.name,
       dateInstallation: now,
       heureInstallation: now,
       dateUtilisation: now,
@@ -140,7 +140,7 @@ class _BobineUsageItemFormState extends ConsumerState<BobineUsageItemForm> {
               prefixIcon: Icon(Icons.precision_manufacturing),
             ),
             items: widget.machinesDisponibles.map((machine) {
-              return DropdownMenuItem(value: machine, child: Text(machine.nom));
+              return DropdownMenuItem(value: machine, child: Text(machine.name));
             }).toList(),
             onChanged: (machine) {
               setState(() => _machineSelectionnee = machine);

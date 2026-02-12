@@ -1,0 +1,32 @@
+Analyzing orange_money...                                       
+
+warning • Unused import: '../../../../core/auth/providers.dart' • lib/features/orange_money/application/providers.dart:5:8 • unused_import
+warning • Dead code • lib/features/orange_money/application/providers.dart:66:51 • dead_code
+warning • The left operand can't be null, so the right operand is never executed • lib/features/orange_money/application/providers.dart:66:54 • dead_null_aware_expression
+warning • Dead code • lib/features/orange_money/application/providers.dart:154:51 • dead_code
+warning • The left operand can't be null, so the right operand is never executed • lib/features/orange_money/application/providers.dart:154:54 • dead_null_aware_expression
+warning • Dead code • lib/features/orange_money/application/providers.dart:185:51 • dead_code
+warning • The left operand can't be null, so the right operand is never executed • lib/features/orange_money/application/providers.dart:185:54 • dead_null_aware_expression
+warning • Dead code • lib/features/orange_money/application/providers.dart:216:51 • dead_code
+warning • The left operand can't be null, so the right operand is never executed • lib/features/orange_money/application/providers.dart:216:54 • dead_null_aware_expression
+warning • Dead code • lib/features/orange_money/application/providers.dart:245:51 • dead_code
+warning • The left operand can't be null, so the right operand is never executed • lib/features/orange_money/application/providers.dart:245:54 • dead_null_aware_expression
+warning • Unused import: '../entities/transaction.dart' • lib/features/orange_money/domain/repositories/liquidity_repository.dart:2:8 • unused_import
+warning • Unused import: '../entities/orange_money_settings.dart' • lib/features/orange_money/domain/services/liquidity_service.dart:2:8 • unused_import
+   info • The import of '../../../../../shared/utils/currency_formatter.dart' is unnecessary because all of the used elements are also provided by the import of 'package:elyf_groupe_app/shared.dart' • lib/features/orange_money/presentation/screens/sections/commissions_screen.dart:16:8 • unnecessary_import
+   info • The import of '../../../../../shared/utils/notification_service.dart' is unnecessary because all of the used elements are also provided by the import of 'package:elyf_groupe_app/shared.dart' • lib/features/orange_money/presentation/screens/sections/commissions_screen.dart:17:8 • unnecessary_import
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/orange_money/presentation/screens/sections/commissions_screen.dart:174:33 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/orange_money/presentation/screens/sections/commissions_screen.dart:191:42 • deprecated_member_use
+warning • The declaration '_showAddCommissionDialog' isn't referenced • lib/features/orange_money/presentation/screens/sections/commissions_screen.dart:703:8 • unused_element
+warning • The '!' will have no effect because the receiver can't be null • lib/features/orange_money/presentation/screens/sections/liquidity_screen.dart:186:69 • unnecessary_non_null_assertion
+   info • Don't use 'BuildContext's across async gaps • lib/features/orange_money/presentation/screens/sections/liquidity_screen.dart:400:39 • use_build_context_synchronously
+   info • Statements in an if should be enclosed in a block • lib/features/orange_money/presentation/screens/sections/settings_screen.dart:75:7 • curly_braces_in_flow_control_structures
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/orange_money/presentation/widgets/commission_alerts_card.dart:99:49 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/orange_money/presentation/widgets/commission_alerts_card.dart:106:36 • deprecated_member_use
+   info • The import of '../../../../shared/utils/notification_service.dart' is unnecessary because all of the used elements are also provided by the import of '../../../../shared/shared.dart' • lib/features/orange_money/presentation/widgets/commission_declaration_dialog.dart:10:8 • unnecessary_import
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/orange_money/presentation/widgets/commission_discrepancy_indicator.dart:54:29 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/orange_money/presentation/widgets/commission_status_badge.dart:37:29 • deprecated_member_use
+   info • The import of '../../../../shared/utils/notification_service.dart' is unnecessary because all of the used elements are also provided by the import of 'package:elyf_groupe_app/shared.dart' • lib/features/orange_money/presentation/widgets/commission_validation_dialog.dart:6:8 • unnecessary_import
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/orange_money/presentation/widgets/commission_validation_dialog.dart:297:28 • deprecated_member_use
+
+28 issues found. (ran in 4.8s)

@@ -24,43 +24,11 @@ class FinanceOfflineRepository extends OfflineRepository<ExpenseRecord>
   String get collectionName => 'expense_records';
 
   @override
-  ExpenseRecord fromMap(Map<String, dynamic> map) {
-    return ExpenseRecord(
-      id: map['id'] as String? ?? map['localId'] as String,
-      label: map['label'] as String,
-      amountCfa: (map['amountCfa'] as num).toInt(),
-      category: ExpenseCategory.values.firstWhere(
-        (e) => e.name == map['category'],
-        orElse: () => ExpenseCategory.autres,
-      ),
-      date: DateTime.parse(map['date'] as String),
-      productionId: map['productionId'] as String?,
-      notes: map['notes'] as String?,
-      createdAt: map['createdAt'] != null
-          ? DateTime.parse(map['createdAt'] as String)
-          : null,
-      updatedAt: map['updatedAt'] != null
-          ? DateTime.parse(map['updatedAt'] as String)
-          : null,
-      receiptPath: map['receiptPath'] as String?,
-    );
-  }
+  ExpenseRecord fromMap(Map<String, dynamic> map) =>
+      ExpenseRecord.fromMap(map, enterpriseId);
 
   @override
-  Map<String, dynamic> toMap(ExpenseRecord entity) {
-    return {
-      'id': entity.id,
-      'label': entity.label,
-      'amountCfa': entity.amountCfa,
-      'category': entity.category.name,
-      'date': entity.date.toIso8601String(),
-      'productionId': entity.productionId,
-      'notes': entity.notes,
-      'createdAt': entity.createdAt?.toIso8601String(),
-      'updatedAt': entity.updatedAt?.toIso8601String(),
-      'receiptPath': entity.receiptPath,
-    };
-  }
+  Map<String, dynamic> toMap(ExpenseRecord entity) => entity.toMap();
 
   @override
   String getLocalId(ExpenseRecord entity) {
@@ -95,22 +63,15 @@ class FinanceOfflineRepository extends OfflineRepository<ExpenseRecord>
 
   @override
   Future<void> deleteFromLocal(ExpenseRecord entity) async {
-    final remoteId = getRemoteId(entity);
-    if (remoteId != null) {
-      await driftService.records.deleteByRemoteId(
-        collectionName: collectionName,
-        remoteId: remoteId,
-        enterpriseId: enterpriseId,
-        moduleType: moduleType,
-      );
-      return;
-    }
-    final localId = getLocalId(entity);
-    await driftService.records.deleteByLocalId(
-      collectionName: collectionName,
-      localId: localId,
-      enterpriseId: enterpriseId,
-      moduleType: moduleType,
+    // Soft-delete
+    final deletedExpense = entity.copyWith(
+      deletedAt: DateTime.now(),
+    );
+    await saveToLocal(deletedExpense);
+    
+    AppLogger.info(
+      'Soft-deleted expense record: ${entity.id}',
+      name: 'FinanceOfflineRepository',
     );
   }
 
@@ -125,18 +86,8 @@ class FinanceOfflineRepository extends OfflineRepository<ExpenseRecord>
     if (byRemote != null) {
       final map = safeDecodeJson(byRemote.dataJson, localId);
       if (map == null) return null;
-      try {
-        return fromMap(map);
-      } catch (e, stackTrace) {
-        final appException = ErrorHandler.instance.handleError(e, stackTrace);
-        AppLogger.warning(
-          'Error parsing ExpenseRecord from map: ${appException.message}',
-          name: 'FinanceOfflineRepository',
-          error: e,
-          stackTrace: stackTrace,
-        );
-        return null;
-      }
+      final expense = fromMap(map);
+      return expense.isDeleted ? null : expense;
     }
     final byLocal = await driftService.records.findByLocalId(
       collectionName: collectionName,
@@ -147,17 +98,8 @@ class FinanceOfflineRepository extends OfflineRepository<ExpenseRecord>
     if (byLocal == null) return null;
     final map = safeDecodeJson(byLocal.dataJson, localId);
     if (map == null) return null;
-    try {
-      return fromMap(map);
-    } catch (e, stackTrace) {
-      AppLogger.error(
-        'Error parsing ExpenseRecord from map: $e',
-        name: 'FinanceOfflineRepository',
-        error: e,
-        stackTrace: stackTrace,
-      );
-      return null;
-    }
+    final expense = fromMap(map);
+    return expense.isDeleted ? null : expense;
   }
 
   @override
@@ -185,7 +127,10 @@ class FinanceOfflineRepository extends OfflineRepository<ExpenseRecord>
       if (map == null) continue; // Ignorer les données corrompues
       
       try {
-        expenses.add(fromMap(map));
+        final expense = fromMap(map);
+        if (!expense.isDeleted) {
+          expenses.add(expense);
+        }
       } catch (e, stackTrace) {
         final appException = ErrorHandler.instance.handleError(e, stackTrace);
         AppLogger.warning(
@@ -318,7 +263,7 @@ class FinanceOfflineRepository extends OfflineRepository<ExpenseRecord>
                 .toList();
           }
 
-          return expenses;
+          return expenses.where((e) => !e.isDeleted).toList();
         });
   }
 
@@ -326,12 +271,13 @@ class FinanceOfflineRepository extends OfflineRepository<ExpenseRecord>
   Future<String> createExpense(ExpenseRecord expense) async {
     try {
       final localId = getLocalId(expense);
-      final expenseWithLocalId = expense.copyWith(
+      final expenseToSave = expense.copyWith(
         id: localId,
+        enterpriseId: enterpriseId,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
-      await save(expenseWithLocalId);
+      await save(expenseToSave);
       return localId;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
@@ -348,7 +294,10 @@ class FinanceOfflineRepository extends OfflineRepository<ExpenseRecord>
   @override
   Future<void> updateExpense(ExpenseRecord expense) async {
     try {
-      final updated = expense.copyWith(updatedAt: DateTime.now());
+      final updated = expense.copyWith(
+        enterpriseId: enterpriseId,
+        updatedAt: DateTime.now(),
+      );
       await save(updated);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);

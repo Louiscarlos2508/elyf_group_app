@@ -24,41 +24,11 @@ class CylinderLeakOfflineRepository extends OfflineRepository<CylinderLeak>
   String get collectionName => 'cylinder_leaks';
 
   @override
-  CylinderLeak fromMap(Map<String, dynamic> map) {
-    return CylinderLeak(
-      id: map['id'] as String? ?? map['localId'] as String,
-      cylinderId: map['cylinderId'] as String,
-      weight: (map['weight'] as num).toInt(),
-      reportedDate: DateTime.parse(map['reportedDate'] as String),
-      status: LeakStatus.values.firstWhere(
-        (e) => e.name == map['status'],
-        orElse: () => LeakStatus.reported,
-      ),
-      tourId: map['tourId'] as String?,
-      exchangeDate: map['exchangeDate'] != null
-          ? DateTime.parse(map['exchangeDate'] as String)
-          : null,
-      notes: map['notes'] as String?,
-      updatedAt: map['updatedAt'] != null
-          ? DateTime.parse(map['updatedAt'] as String)
-          : null,
-    );
-  }
+  CylinderLeak fromMap(Map<String, dynamic> map) =>
+      CylinderLeak.fromMap(map, enterpriseId);
 
   @override
-  Map<String, dynamic> toMap(CylinderLeak entity) {
-    return {
-      'id': entity.id,
-      'cylinderId': entity.cylinderId,
-      'weight': entity.weight,
-      'reportedDate': entity.reportedDate.toIso8601String(),
-      'status': entity.status.name,
-      'tourId': entity.tourId,
-      'exchangeDate': entity.exchangeDate?.toIso8601String(),
-      'notes': entity.notes,
-      'updatedAt': entity.updatedAt?.toIso8601String(),
-    };
-  }
+  Map<String, dynamic> toMap(CylinderLeak entity) => entity.toMap();
 
   @override
   String getLocalId(CylinderLeak entity) {
@@ -95,22 +65,15 @@ class CylinderLeakOfflineRepository extends OfflineRepository<CylinderLeak>
 
   @override
   Future<void> deleteFromLocal(CylinderLeak entity) async {
-    final remoteId = getRemoteId(entity);
-    if (remoteId != null) {
-      await driftService.records.deleteByRemoteId(
-        collectionName: collectionName,
-        remoteId: remoteId,
-        enterpriseId: enterpriseId,
-        moduleType: moduleType,
-      );
-      return;
-    }
-    final localId = getLocalId(entity);
-    await driftService.records.deleteByLocalId(
-      collectionName: collectionName,
-      localId: localId,
-      enterpriseId: enterpriseId,
-      moduleType: moduleType,
+    // Soft-delete
+    final deletedLeak = entity.copyWith(
+      deletedAt: DateTime.now(),
+    );
+    await saveToLocal(deletedLeak);
+    
+    AppLogger.info(
+      'Soft-deleted cylinder leak: ${entity.id}',
+      name: 'CylinderLeakOfflineRepository',
     );
   }
 
@@ -123,7 +86,8 @@ class CylinderLeakOfflineRepository extends OfflineRepository<CylinderLeak>
       moduleType: moduleType,
     );
     if (byRemote != null) {
-      return fromMap(jsonDecode(byRemote.dataJson) as Map<String, dynamic>);
+      final leak = fromMap(jsonDecode(byRemote.dataJson) as Map<String, dynamic>);
+      return leak.isDeleted ? null : leak;
     }
     final byLocal = await driftService.records.findByLocalId(
       collectionName: collectionName,
@@ -132,7 +96,8 @@ class CylinderLeakOfflineRepository extends OfflineRepository<CylinderLeak>
       moduleType: moduleType,
     );
     if (byLocal == null) return null;
-    return fromMap(jsonDecode(byLocal.dataJson) as Map<String, dynamic>);
+    final leak = fromMap(jsonDecode(byLocal.dataJson) as Map<String, dynamic>);
+    return leak.isDeleted ? null : leak;
   }
 
   @override
@@ -144,9 +109,9 @@ class CylinderLeakOfflineRepository extends OfflineRepository<CylinderLeak>
     );
     final entities = rows
 
-        .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
-
-        .toList();
+      .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+      .where((l) => !l.isDeleted)
+      .toList();
 
     
 
@@ -194,7 +159,8 @@ class CylinderLeakOfflineRepository extends OfflineRepository<CylinderLeak>
               .map((r) {
                 try {
                   final map = jsonDecode(r.dataJson) as Map<String, dynamic>;
-                  return fromMap(map);
+                  final leak = fromMap(map);
+                  return leak.isDeleted ? null : leak;
                 } catch (e) {
                   return null;
                 }

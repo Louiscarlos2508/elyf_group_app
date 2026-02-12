@@ -21,7 +21,7 @@ class MachineSelectorField extends ConsumerWidget {
 
     return machinesAsync.when(
       data: (machines) {
-        final machinesActives = machines.where((m) => m.estActive).toList();
+        final machinesActives = machines.where((m) => m.isActive).toList();
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -41,7 +41,7 @@ class MachineSelectorField extends ConsumerWidget {
                     machine.id,
                   );
                   return FilterChip(
-                    label: Text(machine.nom),
+                    label: Text(machine.name),
                     selected: estSelectionnee,
                     onSelected: (selected) {
                       final nouvellesMachines = List<String>.from(

@@ -102,21 +102,34 @@ class AgentsDialogs {
 
   /// Affiche le dialog de confirmation de suppression.
   static Future<bool?> showDeleteDialog(BuildContext context, Agent agent) {
+    final theme = Theme.of(context);
+    
     return showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Supprimer l\'agent'),
-        content: Text('Êtes-vous sûr de vouloir supprimer ${agent.name} ?'),
+        title: Text(
+          'Supprimer l\'agent',
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w800,
+            fontFamily: 'Outfit',
+          ),
+        ),
+        content: Text('Êtes-vous sûr de vouloir supprimer ${agent.name} ? Cette action est irréversible.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Annuler'),
+            child: Text(
+              'Annuler',
+              style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+            ),
           ),
           ElevatedButton(
             onPressed: () => Navigator.of(context).pop(true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
+              backgroundColor: theme.colorScheme.error,
+              foregroundColor: theme.colorScheme.onError,
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
             child: const Text('Supprimer'),
           ),

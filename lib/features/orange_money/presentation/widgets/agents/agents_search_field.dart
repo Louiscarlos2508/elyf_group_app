@@ -8,32 +8,48 @@ class AgentsSearchField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
     return SizedBox(
-      width: 210.586,
-      height: 36,
+      height: 44,
       child: TextField(
         onChanged: onChanged,
+        style: theme.textTheme.bodyMedium?.copyWith(fontFamily: 'Outfit'),
         decoration: InputDecoration(
-          hintText: 'Rechercher (nom, tél, SIM)...',
-          hintStyle: const TextStyle(color: Color(0xFF717182), fontSize: 14),
-          prefixIcon: const Padding(
-            padding: EdgeInsets.only(left: 12, right: 8),
-            child: Icon(Icons.search, size: 16, color: Color(0xFF717182)),
+          hintText: 'Rechercher agent...',
+          hintStyle: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+            fontFamily: 'Outfit',
           ),
-          prefixIconConstraints: const BoxConstraints(
-            minWidth: 16,
-            minHeight: 16,
+          prefixIcon: Icon(
+            Icons.search_rounded,
+            size: 20,
+            color: theme.colorScheme.onSurfaceVariant,
           ),
           filled: true,
-          fillColor: const Color(0xFFF3F3F5),
+          fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide.none,
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(
+              color: theme.colorScheme.outline.withValues(alpha: 0.2),
+              width: 1,
+            ),
           ),
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 40,
-            vertical: 10,
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(
+              color: theme.colorScheme.outline.withValues(alpha: 0.2),
+              width: 1,
+            ),
           ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(
+              color: theme.colorScheme.primary.withValues(alpha: 0.5),
+              width: 1.5,
+            ),
+          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         ),
       ),
     );

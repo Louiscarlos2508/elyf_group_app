@@ -24,6 +24,15 @@ abstract class AdminRepository {
     String moduleId,
   );
 
+  /// Get specific enterprise module user for a user in an enterprise and module
+  Future<EnterpriseModuleUser?> getUserEnterpriseModuleUser({
+    required String userId,
+    required String enterpriseId,
+    required String moduleId,
+  });
+
+  /// Assign a user to an enterprise and module with a role
+
   /// Assign a user to an enterprise and module with a role
   Future<void> assignUserToEnterprise(
     EnterpriseModuleUser enterpriseModuleUser,

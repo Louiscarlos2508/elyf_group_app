@@ -12,6 +12,10 @@ class Employee {
     this.position,
     this.hireDate,
     this.paiementsMensuels = const [],
+    this.updatedAt,
+    this.createdAt,
+    this.deletedAt,
+    this.deletedBy,
   });
 
   final String id;
@@ -23,40 +27,89 @@ class Employee {
   final DateTime? hireDate;
   final List<SalaryPayment>
   paiementsMensuels; // Historique des paiements mensuels
+  final DateTime? updatedAt;
+  final DateTime? createdAt;
+  final DateTime? deletedAt;
+  final String? deletedBy;
 
-  /// Vérifie si l'employé est permanent (fixe).
-  bool get estPermanent => type == EmployeeType.fixed;
-
-  /// Récupère les paiements pour un mois donné.
-  List<SalaryPayment> paiementsPourMois(int annee, int mois) {
-    return paiementsMensuels.where((paiement) {
-      return paiement.date.year == annee && paiement.date.month == mois;
-    }).toList();
-  }
-
-  /// Vérifie si le salaire a été payé pour un mois donné.
-  bool salairePayePourMois(int annee, int mois) {
-    return paiementsPourMois(annee, mois).isNotEmpty;
-  }
-
-  /// Calcule le total des paiements pour une année donnée.
-  int totalPaiementsAnnee(int annee) {
-    return paiementsMensuels
-        .where((p) => p.date.year == annee)
-        .fold<int>(0, (sum, p) => sum + p.amount);
-  }
-
-  factory Employee.sample(int index) {
+  Employee copyWith({
+    String? id,
+    String? name,
+    String? phone,
+    EmployeeType? type,
+    int? monthlySalary,
+    String? position,
+    DateTime? hireDate,
+    List<SalaryPayment>? paiementsMensuels,
+    DateTime? updatedAt,
+    DateTime? createdAt,
+    DateTime? deletedAt,
+    String? deletedBy,
+  }) {
     return Employee(
-      id: 'employee-$index',
-      name: 'Employé ${index + 1}',
-      phone: '+22177000${100 + index}',
-      type: EmployeeType.fixed, // Tous les employés samples sont permanents
-      monthlySalary: 50000 + (index * 10000),
-      position: index.isEven ? 'Opérateur' : 'Superviseur',
-      hireDate: DateTime.now().subtract(Duration(days: 30 * (index + 1))),
+      id: id ?? this.id,
+      name: name ?? this.name,
+      phone: phone ?? this.phone,
+      type: type ?? this.type,
+      monthlySalary: monthlySalary ?? this.monthlySalary,
+      position: position ?? this.position,
+      hireDate: hireDate ?? this.hireDate,
+      paiementsMensuels: paiementsMensuels ?? this.paiementsMensuels,
+      updatedAt: updatedAt ?? this.updatedAt,
+      createdAt: createdAt ?? this.createdAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      deletedBy: deletedBy ?? this.deletedBy,
     );
   }
+
+  factory Employee.fromMap(Map<String, dynamic> map) {
+    final paymentsRaw = map['paiementsMensuels'] as List<dynamic>? ?? [];
+    final payments = paymentsRaw
+        .map((p) => SalaryPayment.fromMap(p as Map<String, dynamic>))
+        .toList();
+
+    return Employee(
+      id: map['id'] as String? ?? map['localId'] as String,
+      name: map['name'] as String? ?? '',
+      phone: map['phone'] as String? ?? '',
+      type: EmployeeType.values.byName(map['type'] as String? ?? 'fixed'),
+      monthlySalary: (map['monthlySalary'] as num?)?.toInt() ?? 0,
+      position: map['position'] as String?,
+      hireDate: map['hireDate'] != null
+          ? DateTime.parse(map['hireDate'] as String)
+          : null,
+      paiementsMensuels: payments,
+      updatedAt: map['updatedAt'] != null
+          ? DateTime.parse(map['updatedAt'] as String)
+          : null,
+      createdAt: map['createdAt'] != null
+          ? DateTime.parse(map['createdAt'] as String)
+          : null,
+      deletedAt: map['deletedAt'] != null
+          ? DateTime.parse(map['deletedAt'] as String)
+          : null,
+      deletedBy: map['deletedBy'] as String?,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'name': name,
+      'phone': phone,
+      'type': type.name,
+      'monthlySalary': monthlySalary,
+      'position': position,
+      'hireDate': hireDate?.toIso8601String(),
+      'paiementsMensuels': paiementsMensuels.map((p) => p.toMap()).toList(),
+      'updatedAt': updatedAt?.toIso8601String(),
+      'createdAt': createdAt?.toIso8601String(),
+      'deletedAt': deletedAt?.toIso8601String(),
+      'deletedBy': deletedBy,
+    };
+  }
+
+  bool get isDeleted => deletedAt != null;
 }
 
 enum EmployeeType {

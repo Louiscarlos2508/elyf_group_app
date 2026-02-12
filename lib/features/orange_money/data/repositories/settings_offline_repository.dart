@@ -5,8 +5,9 @@ import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/offline_repository.dart';
 import '../../../audit_trail/domain/entities/audit_record.dart';
 import '../../../audit_trail/domain/repositories/audit_trail_repository.dart';
-import '../../domain/entities/settings.dart';
+import '../../domain/entities/orange_money_settings.dart';
 import '../../domain/repositories/settings_repository.dart';
+import '../../../../shared/utils/id_generator.dart';
 
 /// Offline-first repository for OrangeMoneySettings entities.
 class SettingsOfflineRepository extends OfflineRepository<OrangeMoneySettings>
@@ -100,14 +101,8 @@ class SettingsOfflineRepository extends OfflineRepository<OrangeMoneySettings>
       moduleType: moduleType,
     );
     final entities = rows
-
         .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
-
         .toList();
-
-    
-
-    // Dédupliquer par remoteId pour éviter les doublons
 
     return deduplicateByRemoteId(entities);
   }
@@ -144,7 +139,7 @@ class SettingsOfflineRepository extends OfflineRepository<OrangeMoneySettings>
       // Audit Log
       await auditTrailRepository.log(
         AuditRecord(
-          id: LocalIdGenerator.generate(),
+          id: IdGenerator.generate(),
           enterpriseId: enterpriseId,
           userId: userId,
           module: 'orange_money',
@@ -152,7 +147,7 @@ class SettingsOfflineRepository extends OfflineRepository<OrangeMoneySettings>
           entityId: _getSettingsId(settings.enterpriseId),
           entityType: 'settings',
           metadata: {
-            'simNumber': settings.simNumber,
+            'enterpriseId': settings.enterpriseId,
           },
           timestamp: now,
         ),
@@ -171,15 +166,21 @@ class SettingsOfflineRepository extends OfflineRepository<OrangeMoneySettings>
 
   @override
   Future<void> updateNotifications(
-    String enterpriseId,
-    NotificationSettings notifications,
-  ) async {
+    String enterpriseId, {
+    bool? enableLiquidityAlerts,
+    bool? enableCommissionReminders,
+    bool? enableCheckpointReminders,
+    bool? enableTransactionAlerts,
+  }) async {
     try {
       final current = await getSettings(enterpriseId);
       if (current != null) {
         final now = DateTime.now();
         final updated = current.copyWith(
-          notifications: notifications,
+          enableLiquidityAlerts: enableLiquidityAlerts ?? current.enableLiquidityAlerts,
+          enableCommissionReminders: enableCommissionReminders ?? current.enableCommissionReminders,
+          enableCheckpointReminders: enableCheckpointReminders ?? current.enableCheckpointReminders,
+          enableTransactionAlerts: enableTransactionAlerts ?? current.enableTransactionAlerts,
           updatedAt: now,
         );
         await save(updated);
@@ -187,7 +188,7 @@ class SettingsOfflineRepository extends OfflineRepository<OrangeMoneySettings>
         // Audit Log
         await auditTrailRepository.log(
           AuditRecord(
-            id: LocalIdGenerator.generate(),
+            id: IdGenerator.generate(),
             enterpriseId: enterpriseId,
             userId: userId,
             module: 'orange_money',
@@ -195,8 +196,8 @@ class SettingsOfflineRepository extends OfflineRepository<OrangeMoneySettings>
             entityId: _getSettingsId(enterpriseId),
             entityType: 'settings',
             metadata: {
-              'lowLiquidityAlert': notifications.lowLiquidityAlert,
-              'paymentDueAlert': notifications.paymentDueAlert,
+              'enableLiquidityAlerts': enableLiquidityAlerts,
+              'enableCommissionReminders': enableCommissionReminders,
             },
             timestamp: now,
           ),
@@ -216,15 +217,21 @@ class SettingsOfflineRepository extends OfflineRepository<OrangeMoneySettings>
 
   @override
   Future<void> updateThresholds(
-    String enterpriseId,
-    ThresholdSettings thresholds,
-  ) async {
+    String enterpriseId, {
+    int? criticalLiquidityThreshold,
+    double? checkpointDiscrepancyThreshold,
+    int? commissionReminderDays,
+    int? largeTransactionThreshold,
+  }) async {
     try {
       final current = await getSettings(enterpriseId);
       if (current != null) {
         final now = DateTime.now();
         final updated = current.copyWith(
-          thresholds: thresholds,
+          criticalLiquidityThreshold: criticalLiquidityThreshold ?? current.criticalLiquidityThreshold,
+          checkpointDiscrepancyThreshold: checkpointDiscrepancyThreshold ?? current.checkpointDiscrepancyThreshold,
+          commissionReminderDays: commissionReminderDays ?? current.commissionReminderDays,
+          largeTransactionThreshold: largeTransactionThreshold ?? current.largeTransactionThreshold,
           updatedAt: now,
         );
         await save(updated);
@@ -232,7 +239,7 @@ class SettingsOfflineRepository extends OfflineRepository<OrangeMoneySettings>
         // Audit Log
         await auditTrailRepository.log(
           AuditRecord(
-            id: LocalIdGenerator.generate(),
+            id: IdGenerator.generate(),
             enterpriseId: enterpriseId,
             userId: userId,
             module: 'orange_money',
@@ -240,8 +247,8 @@ class SettingsOfflineRepository extends OfflineRepository<OrangeMoneySettings>
             entityId: _getSettingsId(enterpriseId),
             entityType: 'settings',
             metadata: {
-              'criticalLiquidityThreshold': thresholds.criticalLiquidityThreshold,
-              'paymentDueDaysBefore': thresholds.paymentDueDaysBefore,
+              'criticalLiquidityThreshold': criticalLiquidityThreshold,
+              'checkpointDiscrepancyThreshold': checkpointDiscrepancyThreshold,
             },
             timestamp: now,
           ),
@@ -251,6 +258,125 @@ class SettingsOfflineRepository extends OfflineRepository<OrangeMoneySettings>
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       AppLogger.error(
         'Error updating thresholds',
+        name: 'SettingsOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      throw appException;
+    }
+  }
+
+  @override
+  Future<OrangeMoneySettings> createDefaultSettings(String enterpriseId) async {
+    try {
+      final defaultSettings = OrangeMoneySettings(
+        id: _getSettingsId(enterpriseId),
+        enterpriseId: enterpriseId,
+        createdAt: DateTime.now(),
+      );
+      await saveSettings(defaultSettings);
+      return defaultSettings;
+    } catch (error, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
+      AppLogger.error(
+        'Error creating default settings',
+        name: 'SettingsOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      throw appException;
+    }
+  }
+
+  @override
+  Future<void> updateCommissionTiers(
+    String enterpriseId, {
+    List<CommissionTier>? cashInTiers,
+    List<CommissionTier>? cashOutTiers,
+  }) async {
+    try {
+      final current = await getSettings(enterpriseId);
+      if (current != null) {
+        final now = DateTime.now();
+        final updated = current.copyWith(
+          cashInTiers: cashInTiers ?? current.cashInTiers,
+          cashOutTiers: cashOutTiers ?? current.cashOutTiers,
+          updatedAt: now,
+        );
+        await save(updated);
+
+        // Audit Log
+        await auditTrailRepository.log(
+          AuditRecord(
+            id: IdGenerator.generate(),
+            enterpriseId: enterpriseId,
+            userId: userId,
+            module: 'orange_money',
+            action: 'update_commission_tiers',
+            entityId: _getSettingsId(enterpriseId),
+            entityType: 'settings',
+            metadata: {
+              'cashInTiersCount': cashInTiers?.length,
+              'cashOutTiersCount': cashOutTiers?.length,
+            },
+            timestamp: now,
+          ),
+        );
+      }
+    } catch (error, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
+      AppLogger.error(
+        'Error updating commission tiers',
+        name: 'SettingsOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      throw appException;
+    }
+  }
+
+  @override
+  Future<void> updateCommissionValidation(
+    String enterpriseId, {
+    double? commissionDiscrepancyMinor,
+    double? commissionDiscrepancySignificant,
+    bool? autoValidateConformeCommissions,
+  }) async {
+    try {
+      final current = await getSettings(enterpriseId);
+      if (current != null) {
+        final now = DateTime.now();
+        final updated = current.copyWith(
+          commissionDiscrepancyMinor: commissionDiscrepancyMinor ?? current.commissionDiscrepancyMinor,
+          commissionDiscrepancySignificant: commissionDiscrepancySignificant ?? current.commissionDiscrepancySignificant,
+          autoValidateConformeCommissions: autoValidateConformeCommissions ?? current.autoValidateConformeCommissions,
+          updatedAt: now,
+        );
+        await save(updated);
+
+        // Audit Log
+        await auditTrailRepository.log(
+          AuditRecord(
+            id: IdGenerator.generate(),
+            enterpriseId: enterpriseId,
+            userId: userId,
+            module: 'orange_money',
+            action: 'update_commission_validation',
+            entityId: _getSettingsId(enterpriseId),
+            entityType: 'settings',
+            metadata: {
+              'commissionDiscrepancyMinor': commissionDiscrepancyMinor,
+              'commissionDiscrepancySignificant': commissionDiscrepancySignificant,
+              'autoValidateConformeCommissions': autoValidateConformeCommissions,
+            },
+            timestamp: now,
+          ),
+        );
+      }
+    } catch (error, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
+      AppLogger.error(
+        'Error updating commission validation settings',
         name: 'SettingsOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -274,7 +400,7 @@ class SettingsOfflineRepository extends OfflineRepository<OrangeMoneySettings>
         // Audit Log
         await auditTrailRepository.log(
           AuditRecord(
-            id: LocalIdGenerator.generate(),
+            id: IdGenerator.generate(),
             enterpriseId: enterpriseId,
             userId: userId,
             module: 'orange_money',
@@ -289,7 +415,7 @@ class SettingsOfflineRepository extends OfflineRepository<OrangeMoneySettings>
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       AppLogger.error(
-        'Error updating SIM number: ${appException.message}',
+        'Error updating SIM number',
         name: 'SettingsOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -308,7 +434,6 @@ class SettingsOfflineRepository extends OfflineRepository<OrangeMoneySettings>
         )
         .map((rows) {
       if (rows.isEmpty) return null;
-      // Il n'y a qu'un seul record de settings par entreprise
       return fromMap(jsonDecode(rows.first.dataJson) as Map<String, dynamic>);
     });
   }

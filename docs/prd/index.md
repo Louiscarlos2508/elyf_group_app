@@ -18,4 +18,5 @@
 - [Epic 11: Immobilier Module Stabilization](./epic-11.md)
 - [Epic 12: Boutique Module Stabilization](./epic-12.md)
 - [Epic 13: Orange Money Module Stabilization](./epic-13.md)
+- [Epic 14: Eau Minérale & Gaz Module Stabilization](./epic-14.md)
 - [Success Metrics](./success-metrics.md)

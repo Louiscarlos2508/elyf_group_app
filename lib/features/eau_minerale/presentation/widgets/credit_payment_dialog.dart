@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
+import '../../../../core/tenant/tenant_provider.dart';
 import '../../domain/entities/credit_payment.dart';
 import '../../domain/entities/sale.dart';
 import 'credit_payment/credit_payment_footer.dart';
@@ -169,8 +170,10 @@ class _CreditPaymentDialogState extends ConsumerState<CreditPaymentDialog>
       onLoadingChanged: (isLoading) => setState(() => _isLoading = isLoading),
       onSubmit: () async {
         final creditService = ref.read(creditServiceProvider);
+        final enterpriseId = ref.read(activeEnterpriseProvider).value?.id ?? 'default';
         final payment = CreditPayment(
           id: '',
+          enterpriseId: enterpriseId,
           saleId: _selectedSale!.id,
           amount: amount,
           date: DateTime.now(),

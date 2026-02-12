@@ -2,8 +2,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 export 'providers/permission_providers.dart';
 export 'providers/section_providers.dart';
-import '../../../../core/auth/providers.dart';
+import '../../../../core/auth/providers.dart' hide currentUserIdProvider;
 import '../../audit_trail/application/providers.dart';
+import '../../administration/application/providers.dart';
 
 import '../application/controllers/agents_controller.dart';
 import '../application/controllers/commissions_controller.dart';
@@ -28,13 +29,25 @@ import '../domain/repositories/liquidity_repository.dart';
 import '../domain/repositories/settings_repository.dart';
 import '../domain/repositories/transaction_repository.dart';
 import '../domain/services/commission_calculation_service.dart';
+import '../domain/services/commission_service.dart';
 import '../domain/services/transaction_validation_service.dart';
+import '../domain/services/liquidity_service.dart';
+import 'providers/permission_providers.dart';
 
 /// Provider for CommissionCalculationService.
 final commissionCalculationServiceProvider =
     Provider<CommissionCalculationService>(
       (ref) => CommissionCalculationService(),
     );
+
+/// Provider for CommissionService (Hybrid Model).
+final commissionServiceProvider = Provider<CommissionService>((ref) {
+  return CommissionService(
+    commissionRepository: ref.watch(commissionRepositoryProvider),
+    settingsRepository: ref.watch(settingsRepositoryProvider),
+    transactionRepository: ref.watch(transactionRepositoryProvider),
+  );
+});
 
 /// Provider for TransactionValidationService.
 final transactionValidationServiceProvider =
@@ -67,8 +80,11 @@ final orangeMoneyControllerProvider = Provider<OrangeMoneyController>(
   (ref) => OrangeMoneyController(
     ref.watch(transactionRepositoryProvider),
     ref.watch(liquidityRepositoryProvider),
+    ref.watch(settingsRepositoryProvider),
     ref.watch(auditTrailServiceProvider),
     ref.watch(currentUserIdProvider) ?? 'system',
+    ref.watch(orangeMoneyPermissionAdapterProvider),
+    ref.watch(activeEnterpriseProvider).value?.id ?? 'default',
   ),
 );
 
@@ -154,6 +170,8 @@ final agentsControllerProvider = Provider<AgentsController>(
     ref.watch(agentRepositoryProvider),
     ref.watch(auditTrailServiceProvider),
     ref.watch(currentUserIdProvider) ?? 'system',
+    ref.watch(orangeMoneyPermissionAdapterProvider),
+    ref.watch(activeEnterpriseProvider).value?.id ?? 'default',
   ),
 );
 
@@ -183,6 +201,8 @@ final commissionsControllerProvider = Provider<CommissionsController>(
   (ref) => CommissionsController(
     ref.watch(commissionRepositoryProvider),
     ref.watch(currentUserIdProvider) ?? 'system',
+    ref.watch(orangeMoneyPermissionAdapterProvider),
+    ref.watch(activeEnterpriseProvider).value?.id ?? 'default',
   ),
 );
 
@@ -236,12 +256,24 @@ final liquidityRepositoryProvider = Provider<LiquidityRepository>((ref) {
   );
 });
 
+/// Provider for liquidity service.
+final liquidityServiceProvider = Provider<LiquidityService>((ref) {
+  return LiquidityService(
+    liquidityRepository: ref.watch(liquidityRepositoryProvider),
+    settingsRepository: ref.watch(settingsRepositoryProvider),
+    transactionRepository: ref.watch(transactionRepositoryProvider),
+  );
+});
+
 /// Provider for liquidity controller.
 final liquidityControllerProvider = Provider<LiquidityController>(
   (ref) => LiquidityController(
     ref.watch(liquidityRepositoryProvider),
     ref.watch(auditTrailServiceProvider),
     ref.watch(currentUserIdProvider) ?? 'system',
+    ref.watch(orangeMoneyPermissionAdapterProvider),
+    ref.watch(activeEnterpriseProvider).value?.id ?? 'default',
+    ref.watch(liquidityServiceProvider),
   ),
 );
 
@@ -450,3 +482,22 @@ final dailyTransactionStatsProvider = FutureProvider.autoDispose
         };
       }
     });
+
+/// Provider for accessible enterprises map (id -> name).
+final networkEnterprisesProvider = FutureProvider.autoDispose<Map<String, String>>((ref) async {
+    final adapter = ref.watch(orangeMoneyPermissionAdapterProvider);
+    final enterpriseRepo = ref.watch(enterpriseRepositoryProvider); // Assuming this provider exists, let's check
+    final activeId = ref.watch(activeEnterpriseProvider).value?.id ?? '';
+    
+    final accessibleIds = await adapter.getAccessibleEnterpriseIds(activeId);
+    
+    // Optimization: If only 1, no need to fetch all names if we don't want to
+    if (accessibleIds.length <= 1) {
+      return {};
+    }
+
+    final allEnterprises = await enterpriseRepo.getAllEnterprises();
+    final accessibleEnterprises = allEnterprises.where((e) => accessibleIds.contains(e.id));
+    
+    return {for (var e in accessibleEnterprises) e.id: e.name};
+});

@@ -4,6 +4,9 @@ import 'package:intl/intl.dart';
 import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import '../../../domain/entities/liquidity_checkpoint.dart';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:elyf_groupe_app/features/orange_money/application/providers.dart';
+
 /// Widget affichant la liste des pointages de liquidité.
 class LiquidityCheckpointsList extends StatelessWidget {
   const LiquidityCheckpointsList({super.key, required this.checkpoints});
@@ -36,13 +39,46 @@ class LiquidityCheckpointsList extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    dateFormat.format(checkpoint.date),
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.normal,
-                      color: Color(0xFF101828),
-                    ),
+                  Row(
+                    children: [
+                      Text(
+                        dateFormat.format(checkpoint.date),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.normal,
+                          color: Color(0xFF101828),
+                        ),
+                      ),
+                      // Display enterprise name if in network view
+                      Consumer(
+                        builder: (context, ref, _) {
+                          final enterprisesMap = ref.watch(networkEnterprisesProvider).value ?? {};
+                          final enterpriseName = enterprisesMap[checkpoint.enterpriseId];
+                          
+                          if (enterpriseName != null) {
+                            return Padding(
+                              padding: const EdgeInsets.only(left: 8),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade200,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  enterpriseName,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.grey.shade700,
+                                  ),
+                                ),
+                              ),
+                            );
+                          }
+                          return const SizedBox.shrink();
+                        },
+                      ),
+                    ],
                   ),
                   Row(
                     mainAxisSize: MainAxisSize.min,
@@ -140,6 +176,10 @@ class LiquidityCheckpointsList extends StatelessWidget {
                     titleColor: const Color(0xFF7C3AED),
                     cashAmount: checkpoint.eveningCashAmount ?? 0,
                     simAmount: checkpoint.eveningSimAmount ?? 0,
+                    theoreticalCash: checkpoint.theoreticalCash,
+                    theoreticalSim: checkpoint.theoreticalSim,
+                    requiresJustification: checkpoint.requiresJustification,
+                    discrepancyPercentage: checkpoint.discrepancyPercentage,
                   ),
                 if (hasMorning && hasEvening) ...[
                   const SizedBox(height: 12),
@@ -277,6 +317,10 @@ class _PeriodCard extends StatelessWidget {
     required this.titleColor,
     required this.cashAmount,
     required this.simAmount,
+    this.theoreticalCash,
+    this.theoreticalSim,
+    this.requiresJustification = false,
+    this.discrepancyPercentage,
   });
 
   final String title;
@@ -284,6 +328,10 @@ class _PeriodCard extends StatelessWidget {
   final Color titleColor;
   final int cashAmount;
   final int simAmount;
+  final int? theoreticalCash;
+  final int? theoreticalSim;
+  final bool requiresJustification;
+  final double? discrepancyPercentage;
 
   @override
   Widget build(BuildContext context) {
@@ -292,24 +340,32 @@ class _PeriodCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: BorderRadius.circular(10),
+        border: requiresJustification ? Border.all(color: const Color(0xFFFCA5A5), width: 1) : null,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: titleColor,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: titleColor,
+                ),
+              ),
+              if (requiresJustification)
+                const Icon(Icons.warning_amber_rounded, size: 16, color: Color(0xFFDC2626)),
+            ],
           ),
           if (cashAmount > 0 || simAmount > 0) ...[
             const SizedBox(height: 8),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                if (cashAmount > 0) ...[
+                if (cashAmount > 0 || theoreticalCash != null) ...[
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -329,11 +385,16 @@ class _PeriodCard extends StatelessWidget {
                             color: titleColor,
                           ),
                         ),
+                        if (theoreticalCash != null)
+                          Text(
+                            'Théo: ${CurrencyFormatter.formatShort(theoreticalCash!)}',
+                            style: const TextStyle(fontSize: 10, color: Color(0xFF64748B)),
+                          ),
                       ],
                     ),
                   ),
                 ],
-                if (simAmount > 0) ...[
+                if (simAmount > 0 || theoreticalSim != null) ...[
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -353,11 +414,23 @@ class _PeriodCard extends StatelessWidget {
                             color: titleColor,
                           ),
                         ),
+                        if (theoreticalSim != null)
+                          Text(
+                            'Théo: ${CurrencyFormatter.formatShort(theoreticalSim!)}',
+                            style: const TextStyle(fontSize: 10, color: Color(0xFF64748B)),
+                          ),
                       ],
                     ),
                   ),
                 ],
               ],
+            ),
+          ],
+          if (requiresJustification && discrepancyPercentage != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              '⚠️ Écart détecté: ${discrepancyPercentage!.toStringAsFixed(1)}%',
+              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFDC2626)),
             ),
           ],
         ],

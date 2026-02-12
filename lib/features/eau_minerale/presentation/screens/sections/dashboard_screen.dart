@@ -26,24 +26,24 @@ class DashboardScreen extends ConsumerWidget {
             // Header with Premium Gradient
             SliverToBoxAdapter(
               child: Container(
-                margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 36),
+                margin: const EdgeInsets.fromLTRB(20, 24, 20, 12),
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 48),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
+                  gradient: const LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      theme.colorScheme.primary,
-                      const Color(0xFF00C2FF), // Cyan for Water Module
-                      const Color(0xFF0369A1), // Deep Blue
+                      Color(0xFF0F4C75), // Deep Water Blue
+                      Color(0xFF3282B8), // Mid Water Blue
+                      Color(0xFF00C2FF), // Vibrant Cyan
                     ],
                   ),
                   borderRadius: BorderRadius.circular(32),
                   boxShadow: [
                     BoxShadow(
-                      color: theme.colorScheme.primary.withValues(alpha: 0.25),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8),
+                      color: const Color(0xFF0F4C75).withValues(alpha: 0.25),
+                      blurRadius: 25,
+                      offset: const Offset(0, 12),
                     ),
                   ],
                 ),
@@ -54,27 +54,32 @@ class DashboardScreen extends ConsumerWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(20),
+                              color: Colors.white.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(24),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.3),
+                                width: 1,
+                              ),
                             ),
                             child: Text(
                               activeEnterprise?.name.toUpperCase() ?? "EAU MINÉRALE",
                               style: theme.textTheme.labelMedium?.copyWith(
                                 color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1.1,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 1.5,
                               ),
                             ),
                           ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 20),
                           Text(
                             "Tableau de Bord",
-                            style: theme.textTheme.headlineMedium?.copyWith(
-                              fontWeight: FontWeight.w800,
+                            style: theme.textTheme.headlineLarge?.copyWith(
+                              fontWeight: FontWeight.w900,
                               color: Colors.white,
-                              letterSpacing: -0.5,
+                              letterSpacing: -1.5,
+                              fontSize: 36,
                             ),
                           ),
                         ],
@@ -102,7 +107,7 @@ class DashboardScreen extends ConsumerWidget {
             ),
 
             // Today section
-            const SectionHeader(
+            const SliverSectionHeader(
               title: "AUJOURD'HUI",
               top: AppSpacing.lg,
               bottom: AppSpacing.md,
@@ -115,7 +120,7 @@ class DashboardScreen extends ConsumerWidget {
             ),
 
             // Month KPIs section
-            const SectionHeader(
+            const SliverSectionHeader(
               title: 'CE MOIS',
               bottom: AppSpacing.sm,
             ),
@@ -127,7 +132,7 @@ class DashboardScreen extends ConsumerWidget {
             ),
 
             // Trends chart section
-            const SectionHeader(
+            const SliverSectionHeader(
               title: 'TENDANCES',
               bottom: AppSpacing.sm,
             ),

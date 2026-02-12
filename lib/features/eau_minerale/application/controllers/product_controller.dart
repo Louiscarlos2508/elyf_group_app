@@ -4,9 +4,10 @@ import '../../domain/repositories/product_repository.dart';
 
 /// Controller pour gérer les produits.
 class ProductController {
-  ProductController(this._repository);
+  ProductController(this._repository, this.enterpriseId);
 
   final ProductRepository _repository;
+  final String enterpriseId;
 
   /// Garantit l'existence du produit Pack. Le crée avec prix 200 CFA si absent.
   /// Retourne toujours un [Product] avec [packProductId] pour aligner Stock / Ventes.
@@ -22,6 +23,7 @@ class ProductController {
       if (pack.id != packProductId) {
         return Product(
           id: packProductId,
+          enterpriseId: enterpriseId,
           name: pack.name,
           type: pack.type,
           unitPrice: pack.unitPrice,
@@ -31,8 +33,9 @@ class ProductController {
       }
       return pack;
     }
-    const defaultPack = Product(
+    final defaultPack = Product(
       id: packProductId,
+      enterpriseId: enterpriseId,
       name: packName,
       type: ProductType.finishedGood,
       unitPrice: 200,
@@ -54,6 +57,7 @@ class ProductController {
           p.id != packProductId) {
         return Product(
           id: packProductId,
+          enterpriseId: enterpriseId,
           name: p.name,
           type: p.type,
           unitPrice: p.unitPrice,

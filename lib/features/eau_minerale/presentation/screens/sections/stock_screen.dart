@@ -70,7 +70,7 @@ class StockScreen extends ConsumerWidget {
     final state = ref.watch(stockStateProvider);
     return state.when(
       data: (data) => _StockContentWithFilters(
-          state: data,
+          state: data as StockState,
           onStockEntry: () => _showStockEntry(context, ref),
           onStockAdjustment: () => _showStockAdjustment(context, ref),
         ),

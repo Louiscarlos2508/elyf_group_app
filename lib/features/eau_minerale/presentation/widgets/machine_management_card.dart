@@ -168,7 +168,7 @@ class _MachineManagementCardState extends ConsumerState<MachineManagementCard> {
       builder: (context) => AlertDialog(
         title: const Text('Supprimer la machine'),
         content: Text(
-          'Êtes-vous sûr de vouloir supprimer "${machine.nom}" ?\n\n'
+          'Êtes-vous sûr de vouloir supprimer "${machine.name}" ?\n\n'
           'Cette action est irréversible.',
         ),
         actions: [

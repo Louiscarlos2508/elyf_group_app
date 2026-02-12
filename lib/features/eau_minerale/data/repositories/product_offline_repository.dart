@@ -22,44 +22,15 @@ class ProductOfflineRepository extends OfflineRepository<Product>
   String get collectionName => 'products';
 
   @override
-  Product fromMap(Map<String, dynamic> map) {
-    return Product(
-      id: map['id'] as String? ?? map['remoteId'] as String,
-      name: map['name'] as String,
-      type: _parseProductType(
-        map['category'] as String? ?? map['type'] as String? ?? 'finishedGood',
-      ),
-      unitPrice:
-          (map['unitPrice'] as num?)?.toInt() ??
-          (map['sellingPrice'] as num?)?.toInt() ??
-          0,
-      unit: map['unit'] as String? ?? 'Unité',
-      description: map['description'] as String?,
-    );
-  }
+  Product fromMap(Map<String, dynamic> map) =>
+      Product.fromMap(map, enterpriseId);
 
   @override
-  Map<String, dynamic> toMap(Product entity) {
-    return {
-      'id': entity.id,
-      'name': entity.name,
-      'type': entity.type.name,
-      'category': entity.type.name,
-      'unitPrice': entity.unitPrice.toDouble(),
-      'sellingPrice': entity.unitPrice.toDouble(),
-      'unit': entity.unit,
-      'description': entity.description,
-      'isActive': true,
-    };
-  }
+  Map<String, dynamic> toMap(Product entity) => entity.toMap();
 
   @override
   String getLocalId(Product entity) {
-    // ProductCollection uses remoteId as primary identifier
-    // For local products, we'll use the entity.id directly
-    if (entity.id.startsWith('local_')) {
-      return entity.id;
-    }
+    if (entity.id.isNotEmpty) return entity.id;
     return LocalIdGenerator.generate();
   }
 
@@ -92,22 +63,15 @@ class ProductOfflineRepository extends OfflineRepository<Product>
 
   @override
   Future<void> deleteFromLocal(Product entity) async {
-    final remoteId = getRemoteId(entity);
-    if (remoteId != null) {
-      await driftService.records.deleteByRemoteId(
-        collectionName: collectionName,
-        remoteId: remoteId,
-        enterpriseId: enterpriseId,
-        moduleType: 'eau_minerale',
-      );
-      return;
-    }
-    final localId = getLocalId(entity);
-    await driftService.records.deleteByLocalId(
-      collectionName: collectionName,
-      localId: localId,
-      enterpriseId: enterpriseId,
-      moduleType: 'eau_minerale',
+    // Soft-delete
+    final deletedProduct = entity.copyWith(
+      deletedAt: DateTime.now(),
+    );
+    await saveToLocal(deletedProduct);
+    
+    AppLogger.info(
+      'Soft-deleted product: ${entity.id}',
+      name: 'ProductOfflineRepository',
     );
   }
 
@@ -120,7 +84,8 @@ class ProductOfflineRepository extends OfflineRepository<Product>
       moduleType: 'eau_minerale',
     );
     if (byRemote != null) {
-      return fromMap(jsonDecode(byRemote.dataJson) as Map<String, dynamic>);
+      final product = fromMap(jsonDecode(byRemote.dataJson) as Map<String, dynamic>);
+      return product.isDeleted ? null : product;
     }
 
     final byLocal = await driftService.records.findByLocalId(
@@ -130,7 +95,8 @@ class ProductOfflineRepository extends OfflineRepository<Product>
       moduleType: 'eau_minerale',
     );
     if (byLocal == null) return null;
-    return fromMap(jsonDecode(byLocal.dataJson) as Map<String, dynamic>);
+    final product = fromMap(jsonDecode(byLocal.dataJson) as Map<String, dynamic>);
+    return product.isDeleted ? null : product;
   }
 
   @override
@@ -141,15 +107,11 @@ class ProductOfflineRepository extends OfflineRepository<Product>
       moduleType: 'eau_minerale',
     );
     final entities = rows
-
         .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
-
+        .where((product) => !product.isDeleted)
         .toList();
 
-    
-
     // Dédupliquer par remoteId pour éviter les doublons
-
     return deduplicateByRemoteId(entities);
   }
 
@@ -194,17 +156,13 @@ class ProductOfflineRepository extends OfflineRepository<Product>
   @override
   Future<String> createProduct(Product product) async {
     try {
-      final localId = getLocalId(product);
-      final productWithLocalId = Product(
-        id: localId,
-        name: product.name,
-        type: product.type,
-        unitPrice: product.unitPrice,
-        unit: product.unit,
-        description: product.description,
+      final productToSave = product.copyWith(
+        id: getLocalId(product),
+        enterpriseId: enterpriseId,
+        createdAt: DateTime.now(),
       );
-      await save(productWithLocalId);
-      return localId;
+      await save(productToSave);
+      return productToSave.id;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       AppLogger.error(
@@ -220,7 +178,8 @@ class ProductOfflineRepository extends OfflineRepository<Product>
   @override
   Future<void> updateProduct(Product product) async {
     try {
-      await save(product);
+      final updated = product.copyWith(updatedAt: DateTime.now());
+      await save(updated);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       AppLogger.error(
@@ -249,19 +208,6 @@ class ProductOfflineRepository extends OfflineRepository<Product>
         stackTrace: stackTrace,
       );
       throw appException;
-    }
-  }
-
-  ProductType _parseProductType(String type) {
-    switch (type) {
-      case 'rawMaterial':
-      case 'MP':
-        return ProductType.rawMaterial;
-      case 'finishedGood':
-      case 'PF':
-        return ProductType.finishedGood;
-      default:
-        return ProductType.finishedGood;
     }
   }
 }

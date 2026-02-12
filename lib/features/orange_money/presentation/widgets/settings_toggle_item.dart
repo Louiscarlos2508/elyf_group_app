@@ -17,16 +17,10 @@ class SettingsToggleItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 72,
-      padding: const EdgeInsets.symmetric(horizontal: 17, vertical: 1),
-      decoration: BoxDecoration(
-        border: Border.all(
-          color: Colors.black.withValues(alpha: 0.1),
-          width: 1.22,
-        ),
-        borderRadius: BorderRadius.circular(10),
-      ),
+    final theme = Theme.of(context);
+    
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
           Expanded(
@@ -36,35 +30,35 @@ class SettingsToggleItem extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.normal,
-                    color: Color(0xFF0A0A0A),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w900,
+                    color: theme.colorScheme.onSurface,
+                    fontFamily: 'Outfit',
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   description,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.normal,
-                    color: Color(0xFF4A5565),
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                    height: 1.4,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 16),
-          Transform.scale(
-            scale: 1.0,
-            child: Switch(
-              value: value,
-              onChanged: onChanged,
-              activeThumbColor: Colors.white,
-              activeTrackColor: const Color(0xFF030213),
-              inactiveThumbColor: Colors.white,
-              inactiveTrackColor: const Color(0xFF030213),
-            ),
+          const SizedBox(width: 24),
+          Switch.adaptive(
+            value: value,
+            onChanged: onChanged,
+            activeTrackColor: theme.colorScheme.primary.withValues(alpha: 0.3),
+            thumbColor: WidgetStateProperty.resolveWith<Color?>((states) {
+              if (states.contains(WidgetState.selected)) {
+                return theme.colorScheme.primary;
+              }
+              return null;
+            }),
           ),
         ],
       ),

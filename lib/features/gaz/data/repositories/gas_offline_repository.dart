@@ -32,73 +32,13 @@ class GasOfflineRepository implements GasRepository {
   static const String _cylindersCollection = 'cylinders';
   static const String _salesCollection = 'gas_sales';
 
-  // Helpers pour Cylinder
+  // Cylinder Helpers
+  Map<String, dynamic> _cylinderToMap(Cylinder entity) => entity.toMap();
+  Cylinder _cylinderFromMap(Map<String, dynamic> map) => Cylinder.fromMap(map, enterpriseId);
 
-  Map<String, dynamic> _cylinderToMap(Cylinder entity) {
-    return {
-      'id': entity.id,
-      'weight': entity.weight,
-      'buyPrice': entity.buyPrice,
-      'sellPrice': entity.sellPrice,
-      'enterpriseId': entity.enterpriseId,
-      'moduleId': entity.moduleId,
-      'stock': entity.stock,
-    };
-  }
-
-  Cylinder _cylinderFromMap(Map<String, dynamic> map) {
-    return Cylinder(
-      id: map['id'] as String? ?? map['localId'] as String,
-      weight: (map['weight'] as num?)?.toInt() ?? 0,
-      buyPrice: (map['buyPrice'] as num?)?.toDouble() ?? 0.0,
-      sellPrice: (map['sellPrice'] as num?)?.toDouble() ?? 0.0,
-      enterpriseId: map['enterpriseId'] as String? ?? enterpriseId,
-      moduleId: map['moduleId'] as String? ?? 'gaz',
-      stock: (map['stock'] as num?)?.toInt() ?? 0,
-    );
-  }
-
-  // Helpers pour GasSale
-
-  Map<String, dynamic> _gasSaleToMap(GasSale entity) {
-    return {
-      'id': entity.id,
-      'cylinderId': entity.cylinderId,
-      'quantity': entity.quantity,
-      'unitPrice': entity.unitPrice,
-      'totalAmount': entity.totalAmount,
-      'saleDate': entity.saleDate.toIso8601String(),
-      'saleType': entity.saleType.name,
-      'customerName': entity.customerName,
-      'customerPhone': entity.customerPhone,
-      'enterpriseId': entity.enterpriseId,
-      'createdBy': entity.createdBy,
-      'notes': entity.notes,
-      'tourId': entity.tourId,
-      'wholesalerId': entity.wholesalerId,
-      'wholesalerName': entity.wholesalerName,
-    };
-  }
-
-  GasSale _gasSaleFromMap(Map<String, dynamic> map) {
-    return GasSale(
-      id: map['id'] as String? ?? map['localId'] as String,
-      cylinderId: map['cylinderId'] as String,
-      quantity: (map['quantity'] as num?)?.toInt() ?? 0,
-      unitPrice: (map['unitPrice'] as num?)?.toDouble() ?? 0.0,
-      totalAmount: (map['totalAmount'] as num?)?.toDouble() ?? 0.0,
-      saleDate: DateTime.parse(map['saleDate'] as String),
-      saleType: _parseSaleType(map['saleType'] as String? ?? 'retail'),
-      customerName: map['customerName'] as String?,
-      customerPhone: map['customerPhone'] as String?,
-      enterpriseId: map['enterpriseId'] as String? ?? enterpriseId,
-      createdBy: map['createdBy'] as String?,
-      notes: map['notes'] as String?,
-      tourId: map['tourId'] as String?,
-      wholesalerId: map['wholesalerId'] as String?,
-      wholesalerName: map['wholesalerName'] as String?,
-    );
-  }
+  // GasSale Helpers
+  Map<String, dynamic> _gasSaleToMap(GasSale entity) => entity.toMap();
+  GasSale _gasSaleFromMap(Map<String, dynamic> map) => GasSale.fromMap(map, enterpriseId);
 
   // Implémentation de GasRepository - Cylinders
 
@@ -121,6 +61,7 @@ class GasOfflineRepository implements GasRepository {
             }
           })
           .whereType<Cylinder>()
+          .where((c) => !c.isDeleted)
           .toList()
         ..sort((a, b) => a.weight.compareTo(b.weight));
     } catch (error, stackTrace) {
@@ -154,6 +95,7 @@ class GasOfflineRepository implements GasRepository {
                 }
               })
               .whereType<Cylinder>()
+              .where((c) => !c.isDeleted)
               .toList()
             ..sort((a, b) => a.weight.compareTo(b.weight));
         });
@@ -172,7 +114,7 @@ class GasOfflineRepository implements GasRepository {
         try {
           final map = jsonDecode(row.dataJson) as Map<String, dynamic>;
           final cylinder = _cylinderFromMap(map);
-          if (cylinder.id == id) {
+          if (cylinder.id == id && !cylinder.isDeleted) {
             return cylinder;
           }
         } catch (_) {
@@ -410,32 +352,31 @@ class GasOfflineRepository implements GasRepository {
       final cylinder = await getCylinderById(id);
       if (cylinder == null) return;
 
-      final localId = cylinder.id.startsWith('local_')
-          ? cylinder.id
-          : LocalIdGenerator.generate();
+      // Soft-delete: update with deletedAt instead of actual deletion
+      final deletedCylinder = cylinder.copyWith(
+        deletedAt: DateTime.now(),
+      );
+      
+      final localId = deletedCylinder.id;
       final remoteId = cylinder.id.startsWith('local_') ? null : cylinder.id;
+      final map = _cylinderToMap(deletedCylinder);
 
-      if (remoteId != null) {
-        await driftService.records.deleteByRemoteId(
-          collectionName: _cylindersCollection,
-          remoteId: remoteId,
-          enterpriseId: enterpriseId,
-          moduleType: 'gaz',
-        );
-      } else {
-        await driftService.records.deleteByLocalId(
-          collectionName: _cylindersCollection,
-          localId: localId,
-          enterpriseId: enterpriseId,
-          moduleType: 'gaz',
-        );
-      }
+      await driftService.records.upsert(
+        collectionName: _cylindersCollection,
+        localId: localId,
+        remoteId: remoteId,
+        enterpriseId: enterpriseId,
+        moduleType: 'gaz',
+        dataJson: jsonEncode(map),
+        localUpdatedAt: DateTime.now(),
+      );
 
-      // Sync automatique
-      await syncManager.queueDelete(
+      // Sync automatique (update au lieu de delete pour soft-delete)
+      await syncManager.queueUpdate(
         collectionName: _cylindersCollection,
         localId: localId,
         remoteId: remoteId ?? localId,
+        data: map,
         enterpriseId: enterpriseId,
       );
     } catch (error, stackTrace) {
@@ -471,6 +412,7 @@ class GasOfflineRepository implements GasRepository {
             }
           })
           .whereType<GasSale>()
+          .where((s) => !s.isDeleted)
           .toList();
 
       if (from != null) {
@@ -512,6 +454,7 @@ class GasOfflineRepository implements GasRepository {
                 }
               })
               .whereType<GasSale>()
+              .where((s) => !s.isDeleted)
               .toList();
 
           if (from != null) {
@@ -538,7 +481,7 @@ class GasOfflineRepository implements GasRepository {
         try {
           final map = jsonDecode(row.dataJson) as Map<String, dynamic>;
           final sale = _gasSaleFromMap(map);
-          if (sale.id == id) {
+          if (sale.id == id && !sale.isDeleted) {
             return sale;
           }
         } catch (_) {
@@ -643,32 +586,31 @@ class GasOfflineRepository implements GasRepository {
       final sale = await getSaleById(id);
       if (sale == null) return;
 
-      final localId = sale.id.startsWith('local_')
-          ? sale.id
-          : LocalIdGenerator.generate();
-      final remoteId = sale.id.startsWith('local_') ? null : sale.id;
+      // Soft-delete
+      final deletedSale = sale.copyWith(
+        deletedAt: DateTime.now(),
+      );
 
-      if (remoteId != null) {
-        await driftService.records.deleteByRemoteId(
-          collectionName: _salesCollection,
-          remoteId: remoteId,
-          enterpriseId: enterpriseId,
-          moduleType: 'gaz',
-        );
-      } else {
-        await driftService.records.deleteByLocalId(
-          collectionName: _salesCollection,
-          localId: localId,
-          enterpriseId: enterpriseId,
-          moduleType: 'gaz',
-        );
-      }
+      final localId = deletedSale.id;
+      final remoteId = sale.id.startsWith('local_') ? null : sale.id;
+      final map = _gasSaleToMap(deletedSale);
+
+      await driftService.records.upsert(
+        collectionName: _salesCollection,
+        localId: localId,
+        remoteId: remoteId,
+        enterpriseId: enterpriseId,
+        moduleType: 'gaz',
+        dataJson: jsonEncode(map),
+        localUpdatedAt: DateTime.now(),
+      );
 
       // Sync automatique
-      await syncManager.queueDelete(
+      await syncManager.queueUpdate(
         collectionName: _salesCollection,
         localId: localId,
         remoteId: remoteId ?? localId,
+        data: map,
         enterpriseId: enterpriseId,
       );
     } catch (error, stackTrace) {
@@ -680,19 +622,6 @@ class GasOfflineRepository implements GasRepository {
         stackTrace: stackTrace,
       );
       rethrow;
-    }
-  }
-
-  SaleType _parseSaleType(String type) {
-    switch (type.toLowerCase()) {
-      case 'retail':
-      case 'detail':
-        return SaleType.retail;
-      case 'wholesale':
-      case 'gros':
-        return SaleType.wholesale;
-      default:
-        return SaleType.retail;
     }
   }
 }

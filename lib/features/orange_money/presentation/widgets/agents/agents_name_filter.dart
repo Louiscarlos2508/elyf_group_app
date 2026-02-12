@@ -13,35 +13,43 @@ class AgentsNameFilter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
     return Container(
-      width: 210.586,
-      height: 36,
-      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 1.219),
+      height: 44,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: const Color(0xFFF3F3F5),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.transparent, width: 1.219),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: theme.colorScheme.outline.withValues(alpha: 0.2),
+          width: 1,
+        ),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String?>(
           value: value,
-          hint: const Text(
-            'Nom',
-            style: TextStyle(fontSize: 14, color: Color(0xFF0A0A0A)),
+          hint: Text(
+            'Trier par',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontFamily: 'Outfit',
+            ),
           ),
-          isExpanded: true,
-          icon: const Icon(
-            Icons.keyboard_arrow_down,
-            size: 16,
-            color: Color(0xFF0A0A0A),
+          isExpanded: false,
+          icon: Icon(
+            Icons.keyboard_arrow_down_rounded,
+            size: 20,
+            color: theme.colorScheme.onSurfaceVariant,
           ),
           items: const [
             DropdownMenuItem(
               value: null,
-              child: Text(
-                'Nom',
-                style: TextStyle(fontSize: 14, color: Color(0xFF0A0A0A)),
-              ),
+              child: Text('Défaut'),
+            ),
+            DropdownMenuItem(
+              value: 'name',
+              child: Text('Nom (A-Z)'),
             ),
           ],
           onChanged: onChanged,

@@ -8,6 +8,7 @@ import '../../widgets/reports/report_net_balance_card.dart';
 import '../../widgets/reports/report_period_selector.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
+import '../../widgets/orange_money_header.dart';
 
 /// Enhanced reports screen with period selector and detailed statistics.
 class ReportsScreen extends ConsumerStatefulWidget {
@@ -77,15 +78,22 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   Widget build(BuildContext context) {
     final statsKey =
         '${_startDate?.millisecondsSinceEpoch ?? ''}|${_endDate?.millisecondsSinceEpoch ?? ''}';
+    final theme = Theme.of(context);
     final statsAsync = ref.watch(reportsStatisticsProvider(statsKey));
 
     return Container(
       color: const Color(0xFFF9FAFB),
       child: CustomScrollView(
         slivers: [
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
+          OrangeMoneyHeader(
+            title: 'Analytique Performance',
+            subtitle: "Visualisez vos performances historiques et exportez vos données d'activité.",
+            badgeText: 'RAPPORTS & ANALYSES',
+            badgeIcon: Icons.bar_chart_rounded,
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.all(24),
+            sliver: SliverToBoxAdapter(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -97,7 +105,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                     onTodaySelected: _setToday,
                     onSevenDaysSelected: _setSevenDays,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 24),
                   statsAsync.when(
                     data: (stats) => Column(
                       children: [

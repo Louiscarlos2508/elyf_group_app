@@ -250,7 +250,7 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
   }
 
   Widget _buildSectionHeader(ThemeData theme) {
-    return SectionHeader(
+    return SliverSectionHeader(
       title: 'LISTE DES PAIEMENTS',
       top: AppSpacing.lg,
       bottom: AppSpacing.sm,

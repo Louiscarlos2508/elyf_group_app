@@ -6,6 +6,7 @@ import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 
 import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/daily_worker.dart';
 import '../../../../shared/utils/notification_service.dart';
+import '../../../../core/tenant/tenant_provider.dart';
 import '../../application/providers/repository_providers.dart';
 
 import '../../application/providers/state_providers.dart';
@@ -245,6 +246,7 @@ class _SalaryAnalysisContentState extends ConsumerState<SalaryAnalysisContent> {
                   
                   final newWorker = DailyWorker(
                     id: stat.workerId,
+                    enterpriseId: current?.enterpriseId ?? ref.read(activeEnterpriseProvider).value?.id ?? 'default',
                     name: nameController.text.trim(),
                     phone: phoneController.text.trim(),
                     salaireJournalier: current?.salaireJournalier ?? 0,

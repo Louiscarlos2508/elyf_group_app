@@ -36,4 +36,26 @@ class ProductionPaymentPerson {
       totalAmount: totalAmount ?? this.totalAmount,
     );
   }
+
+  factory ProductionPaymentPerson.fromMap(Map<String, dynamic> map) {
+    return ProductionPaymentPerson(
+      workerId: map['workerId'] as String?,
+      name: map['name'] as String? ?? '',
+      pricePerDay: (map['pricePerDay'] as num?)?.toInt() ??
+          (map['dailyRate'] as num?)?.toInt() ??
+          0,
+      daysWorked: (map['daysWorked'] as num?)?.toInt() ?? 0,
+      totalAmount: (map['totalAmount'] as num?)?.toInt(),
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'workerId': workerId,
+      'name': name,
+      'pricePerDay': pricePerDay,
+      'daysWorked': daysWorked,
+      'totalAmount': totalAmount,
+    };
+  }
 }

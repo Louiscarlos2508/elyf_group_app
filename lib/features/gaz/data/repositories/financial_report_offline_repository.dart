@@ -25,46 +25,11 @@ class FinancialReportOfflineRepository
   String get collectionName => 'financial_reports';
 
   @override
-  FinancialReport fromMap(Map<String, dynamic> map) {
-    return FinancialReport(
-      id: map['id'] as String? ?? map['localId'] as String,
-      enterpriseId: map['enterpriseId'] as String,
-      reportDate: DateTime.parse(map['reportDate'] as String),
-      period: ReportPeriod.values.firstWhere(
-        (e) => e.name == map['period'],
-        orElse: () => ReportPeriod.daily,
-      ),
-      totalRevenue: (map['totalRevenue'] as num).toDouble(),
-      totalExpenses: (map['totalExpenses'] as num).toDouble(),
-      loadingEventExpenses: (map['loadingEventExpenses'] as num).toDouble(),
-      fixedCharges: (map['fixedCharges'] as num).toDouble(),
-      variableCharges: (map['variableCharges'] as num).toDouble(),
-      salaries: (map['salaries'] as num).toDouble(),
-      netAmount: (map['netAmount'] as num).toDouble(),
-      status: ReportStatus.values.firstWhere(
-        (e) => e.name == map['status'],
-        orElse: () => ReportStatus.draft,
-      ),
-    );
-  }
+  FinancialReport fromMap(Map<String, dynamic> map) =>
+      FinancialReport.fromMap(map, enterpriseId);
 
   @override
-  Map<String, dynamic> toMap(FinancialReport entity) {
-    return {
-      'id': entity.id,
-      'enterpriseId': entity.enterpriseId,
-      'reportDate': entity.reportDate.toIso8601String(),
-      'period': entity.period.name,
-      'totalRevenue': entity.totalRevenue,
-      'totalExpenses': entity.totalExpenses,
-      'loadingEventExpenses': entity.loadingEventExpenses,
-      'fixedCharges': entity.fixedCharges,
-      'variableCharges': entity.variableCharges,
-      'salaries': entity.salaries,
-      'netAmount': entity.netAmount,
-      'status': entity.status.name,
-    };
-  }
+  Map<String, dynamic> toMap(FinancialReport entity) => entity.toMap();
 
   @override
   String getLocalId(FinancialReport entity) {
@@ -101,22 +66,15 @@ class FinancialReportOfflineRepository
 
   @override
   Future<void> deleteFromLocal(FinancialReport entity) async {
-    final remoteId = getRemoteId(entity);
-    if (remoteId != null) {
-      await driftService.records.deleteByRemoteId(
-        collectionName: collectionName,
-        remoteId: remoteId,
-        enterpriseId: enterpriseId,
-        moduleType: moduleType,
-      );
-      return;
-    }
-    final localId = getLocalId(entity);
-    await driftService.records.deleteByLocalId(
-      collectionName: collectionName,
-      localId: localId,
-      enterpriseId: enterpriseId,
-      moduleType: moduleType,
+    // Soft-delete
+    final deletedReport = entity.copyWith(
+      deletedAt: DateTime.now(),
+    );
+    await saveToLocal(deletedReport);
+    
+    AppLogger.info(
+      'Soft-deleted financial report: ${entity.id}',
+      name: 'FinancialReportOfflineRepository',
     );
   }
 
@@ -129,7 +87,8 @@ class FinancialReportOfflineRepository
       moduleType: moduleType,
     );
     if (byRemote != null) {
-      return fromMap(jsonDecode(byRemote.dataJson) as Map<String, dynamic>);
+      final report = fromMap(jsonDecode(byRemote.dataJson) as Map<String, dynamic>);
+      return report.isDeleted ? null : report;
     }
     final byLocal = await driftService.records.findByLocalId(
       collectionName: collectionName,
@@ -138,7 +97,8 @@ class FinancialReportOfflineRepository
       moduleType: moduleType,
     );
     if (byLocal == null) return null;
-    return fromMap(jsonDecode(byLocal.dataJson) as Map<String, dynamic>);
+    final report = fromMap(jsonDecode(byLocal.dataJson) as Map<String, dynamic>);
+    return report.isDeleted ? null : report;
   }
 
   @override
@@ -149,9 +109,8 @@ class FinancialReportOfflineRepository
       moduleType: moduleType,
     );
     final entities = rows
-
         .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
-
+        .where((r) => !r.isDeleted)
         .toList();
 
     
@@ -218,6 +177,7 @@ class FinancialReportOfflineRepository
                 }
               })
               .whereType<FinancialReport>()
+              .where((r) => !r.isDeleted)
               .toList();
 
           final deduplicated = deduplicateByRemoteId(entities);
@@ -252,8 +212,13 @@ class FinancialReportOfflineRepository
   Future<String> generateReport(FinancialReport report) async {
     try {
       final localId = getLocalId(report);
-      final reportWithLocalId = report.copyWith(id: localId);
-      await save(reportWithLocalId);
+      final reportToSave = report.copyWith(
+        id: localId,
+        enterpriseId: enterpriseId,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+      await save(reportToSave);
       return localId;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
@@ -270,7 +235,11 @@ class FinancialReportOfflineRepository
   @override
   Future<void> updateReport(FinancialReport report) async {
     try {
-      await save(report);
+      final updated = report.copyWith(
+        enterpriseId: enterpriseId,
+        updatedAt: DateTime.now(),
+      );
+      await save(updated);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       AppLogger.error(

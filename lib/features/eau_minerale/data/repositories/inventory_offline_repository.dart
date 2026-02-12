@@ -26,31 +26,11 @@ class InventoryOfflineRepository extends OfflineRepository<StockItem>
   String get collectionName => 'stock_items';
 
   @override
-  StockItem fromMap(Map<String, dynamic> map) {
-    return StockItem(
-      id: map['id'] as String? ?? map['localId'] as String,
-      name: map['name'] as String,
-      quantity: (map['quantity'] as num).toDouble(),
-      unit: map['unit'] as String,
-      type: StockType.values.firstWhere(
-        (e) => e.name == map['type'],
-        orElse: () => StockType.finishedGoods,
-      ),
-      updatedAt: DateTime.parse(map['updatedAt'] as String),
-    );
-  }
+  StockItem fromMap(Map<String, dynamic> map) =>
+      StockItem.fromMap(map, enterpriseId);
 
   @override
-  Map<String, dynamic> toMap(StockItem entity) {
-    return {
-      'id': entity.id,
-      'name': entity.name,
-      'quantity': entity.quantity,
-      'unit': entity.unit,
-      'type': entity.type.name,
-      'updatedAt': entity.updatedAt.toIso8601String(),
-    };
-  }
+  Map<String, dynamic> toMap(StockItem entity) => entity.toMap();
 
   @override
   String getLocalId(StockItem entity) {
@@ -85,22 +65,15 @@ class InventoryOfflineRepository extends OfflineRepository<StockItem>
 
   @override
   Future<void> deleteFromLocal(StockItem entity) async {
-    final remoteId = getRemoteId(entity);
-    if (remoteId != null) {
-      await driftService.records.deleteByRemoteId(
-        collectionName: collectionName,
-        remoteId: remoteId,
-        enterpriseId: enterpriseId,
-        moduleType: moduleType,
-      );
-      return;
-    }
-    final localId = getLocalId(entity);
-    await driftService.records.deleteByLocalId(
-      collectionName: collectionName,
-      localId: localId,
-      enterpriseId: enterpriseId,
-      moduleType: moduleType,
+    // Soft-delete
+    final deletedItem = entity.copyWith(
+      deletedAt: DateTime.now(),
+    );
+    await saveToLocal(deletedItem);
+    
+    AppLogger.info(
+      'Soft-deleted stock item: ${entity.id}',
+      name: 'InventoryOfflineRepository',
     );
   }
 
@@ -113,7 +86,8 @@ class InventoryOfflineRepository extends OfflineRepository<StockItem>
       moduleType: moduleType,
     );
     if (byRemote != null) {
-      return fromMap(jsonDecode(byRemote.dataJson) as Map<String, dynamic>);
+      final item = fromMap(jsonDecode(byRemote.dataJson) as Map<String, dynamic>);
+      return item.isDeleted ? null : item;
     }
     final byLocal = await driftService.records.findByLocalId(
       collectionName: collectionName,
@@ -122,7 +96,8 @@ class InventoryOfflineRepository extends OfflineRepository<StockItem>
       moduleType: moduleType,
     );
     if (byLocal == null) return null;
-    return fromMap(jsonDecode(byLocal.dataJson) as Map<String, dynamic>);
+    final item = fromMap(jsonDecode(byLocal.dataJson) as Map<String, dynamic>);
+    return item.isDeleted ? null : item;
   }
 
   @override
@@ -133,9 +108,8 @@ class InventoryOfflineRepository extends OfflineRepository<StockItem>
       moduleType: moduleType,
     );
     final entities = rows
-
         .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
-
+        .where((item) => !item.isDeleted)
         .toList();
 
     
@@ -178,54 +152,11 @@ class InventoryOfflineRepository extends OfflineRepository<StockItem>
           'INVALID_QUANTITY',
         );
       }
-      final updated = StockItem(
-        id: item.id,
-        name: item.name,
-        quantity: item.quantity,
-        unit: item.unit,
-        type: item.type,
+      final updated = item.copyWith(
+        enterpriseId: enterpriseId,
         updatedAt: DateTime.now(),
       );
-      final remoteId = getRemoteId(updated);
-      if (remoteId == null || remoteId.isEmpty) {
-        await save(updated);
-        return;
-      }
-      final existing = await driftService.records.findByRemoteId(
-        collectionName: collectionName,
-        remoteId: remoteId,
-        enterpriseId: enterpriseId,
-        moduleType: moduleType,
-      );
-      if (existing == null) {
-        await save(updated);
-        return;
-      }
-      final localId = existing.localId;
-      final rawMap = toMap(updated)..['localId'] = localId;
-      final sanitized = DataSanitizer.sanitizeMap(rawMap);
-      DataSanitizer.validateJsonSize(jsonEncode(sanitized));
-      final now = DateTime.now();
-      await driftService.db.transaction(() async {
-        await driftService.records.upsert(
-          collectionName: collectionName,
-          localId: localId,
-          remoteId: remoteId,
-          enterpriseId: enterpriseId,
-          moduleType: moduleType,
-          dataJson: jsonEncode(sanitized),
-          localUpdatedAt: now,
-        );
-        if (enableAutoSync) {
-          await syncManager.queueUpdate(
-            collectionName: collectionName,
-            localId: localId,
-            remoteId: remoteId,
-            data: sanitized,
-            enterpriseId: enterpriseId,
-          );
-        }
-      });
+      await save(updated);
     } on ValidationException {
       rethrow;
     } on DataSizeException {

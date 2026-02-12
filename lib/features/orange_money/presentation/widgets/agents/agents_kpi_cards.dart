@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-
-import '../../widgets/kpi_card.dart';
-import 'agents_format_helpers.dart';
+import 'package:elyf_groupe_app/shared.dart';
 
 /// Widget pour afficher les cartes KPI des agents.
 class AgentsKpiCards extends StatelessWidget {
@@ -15,50 +13,63 @@ class AgentsKpiCards extends StatelessWidget {
     final retraits = stats['withdrawalsToday'] as int? ?? 0;
     final alertes = stats['lowLiquidityAlerts'] as int? ?? 0;
 
-    return Row(
-      children: [
-        Expanded(
-          child: KpiCard(
-            label: 'Recharges (jour)',
-            value: AgentsFormatHelpers.formatCurrencyCompact(recharges),
-            icon: Icons.arrow_downward,
-            valueColor: const Color(0xFF00A63E),
-            valueStyle: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.normal,
-              color: Color(0xFF00A63E),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isNarrow = constraints.maxWidth < 400;
+        
+        return Column(
+          children: [
+            if (isNarrow) ...[
+              ElyfStatsCard(
+                label: 'Recharges (Jour)',
+                value: CurrencyFormatter.formatFCFA(recharges),
+                icon: Icons.south_west_rounded,
+                color: const Color(0xFF00C897),
+                isGlass: true,
+              ),
+              const SizedBox(height: 16),
+              ElyfStatsCard(
+                label: 'Retraits (Jour)',
+                value: CurrencyFormatter.formatFCFA(retraits),
+                icon: Icons.north_east_rounded,
+                color: const Color(0xFFFF4D4D),
+                isGlass: true,
+              ),
+            ] else
+              Row(
+                children: [
+                  Expanded(
+                    child: ElyfStatsCard(
+                      label: 'Recharges (Jour)',
+                      value: CurrencyFormatter.formatFCFA(recharges),
+                      icon: Icons.south_west_rounded,
+                      color: const Color(0xFF00C897),
+                      isGlass: true,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: ElyfStatsCard(
+                      label: 'Retraits (Jour)',
+                      value: CurrencyFormatter.formatFCFA(retraits),
+                      icon: Icons.north_east_rounded,
+                      color: const Color(0xFFFF4D4D),
+                      isGlass: true,
+                    ),
+                  ),
+                ],
+              ),
+            const SizedBox(height: 16),
+            ElyfStatsCard(
+              label: 'Alertes Liquidité',
+              value: alertes.toString(),
+              icon: Icons.warning_amber_rounded,
+              color: const Color(0xFFFFB319),
+              isGlass: true,
             ),
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: KpiCard(
-            label: 'Retraits (jour)',
-            value: AgentsFormatHelpers.formatCurrencyCompact(retraits),
-            icon: Icons.arrow_upward,
-            valueColor: const Color(0xFFE7000B),
-            valueStyle: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.normal,
-              color: Color(0xFFE7000B),
-            ),
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: KpiCard(
-            label: 'Alertes liquidité',
-            value: alertes.toString(),
-            icon: Icons.warning,
-            valueColor: const Color(0xFFD08700),
-            valueStyle: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.normal,
-              color: Color(0xFFD08700),
-            ),
-          ),
-        ),
-      ],
+          ],
+        );
+      },
     );
   }
 }

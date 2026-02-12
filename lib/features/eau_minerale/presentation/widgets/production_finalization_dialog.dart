@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/core/logging/app_logger.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
+import '../../../../core/tenant/tenant_provider.dart';
 import '../../domain/entities/packaging_stock.dart';
 import '../../domain/entities/production_session.dart';
 import '../../domain/entities/production_session_status.dart';
@@ -252,10 +253,12 @@ class _ProductionFinalizationDialogState
                   'Aucun stock d\'emballages trouvé. Création d\'un nouveau stock.',
                   name: 'eau_minerale.production',
                 );
+                final enterpriseId = ref.read(activeEnterpriseProvider).value?.id ?? 'default';
                 // Créer un stock par défaut
                 final nouveauStock = await packagingController.save(
                   PackagingStock(
                     id: 'packaging-default',
+                    enterpriseId: enterpriseId,
                     type: 'Emballage',
                     quantity: 0, // Sera mis à jour lors de la réception
                     unit: 'unité',

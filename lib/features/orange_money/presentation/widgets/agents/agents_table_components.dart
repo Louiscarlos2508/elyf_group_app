@@ -13,108 +13,124 @@ class AgentsTableComponents {
         ? dateFormat.format(agent.createdAt!)
         : 'N/A';
 
-    return SizedBox(
-      width: 171.673,
-      child: Padding(
-        padding: const EdgeInsets.only(left: 8, top: 8.61, bottom: 8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
+    return Builder(
+      builder: (context) {
+        final theme = Theme.of(context);
+        return SizedBox(
+          width: 180, // standardized width
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Flexible(
-                  child: Text(
-                    agent.name,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.normal,
-                      color: Color(0xFF0A0A0A),
-                      height: 1.2,
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        agent.name,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: theme.colorScheme.onSurface,
+                          fontFamily: 'Outfit',
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                      ),
                     ),
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                  ),
+                    if (isLowLiquidity)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 4),
+                        child: Icon(
+                          Icons.warning_amber_rounded,
+                          size: 14,
+                          color: theme.colorScheme.error,
+                        ),
+                      ),
+                  ],
                 ),
-                if (isLowLiquidity)
-                  const Padding(
-                    padding: EdgeInsets.only(left: 4),
-                    child: Icon(
-                      Icons.warning_amber_rounded,
-                      size: 12,
-                      color: Color(0xFFFDC700),
-                    ),
+                Text(
+                  'Depuis le $dateStr',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                    fontFamily: 'Outfit',
                   ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
               ],
             ),
-            Text(
-              'Depuis le $dateStr',
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.normal,
-                color: Color(0xFF6A7282),
-                height: 1.2,
-              ),
-              overflow: TextOverflow.ellipsis,
-              maxLines: 1,
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
   /// Construit le badge de l'opérateur.
   static Widget buildOperatorBadge(MobileOperator operator) {
-    return Container(
-      height: 22.438,
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 1),
-      decoration: BoxDecoration(
-        border: Border.all(
-          color: Colors.black.withValues(alpha: 0.1),
-          width: 1.219,
-        ),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Center(
-        child: Text(
-          operator.label,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.normal,
-            color: Color(0xFF0A0A0A),
+    return Builder(
+      builder: (context) {
+        final theme = Theme.of(context);
+        return Container(
+          height: 24,
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainer,
+            border: Border.all(
+              color: theme.colorScheme.outline.withValues(alpha: 0.3),
+              width: 1,
+            ),
+            borderRadius: BorderRadius.circular(12),
           ),
-        ),
-      ),
+          child: Center(
+            child: Text(
+              operator.label,
+              style: theme.textTheme.labelSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: theme.colorScheme.onSurface,
+                fontFamily: 'Outfit',
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
   /// Construit le chip de statut.
   static Widget buildStatusChip(AgentStatus status) {
     final isActive = status == AgentStatus.active;
-    return Container(
-      height: 22.438,
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 1),
-      decoration: BoxDecoration(
-        color: isActive ? const Color(0xFF030213) : Colors.transparent,
-        border: isActive
-            ? Border.all(color: Colors.transparent, width: 1.219)
-            : Border.all(
-                color: Colors.black.withValues(alpha: 0.1),
-                width: 1.219,
-              ),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Center(
-        child: Text(
-          status.label,
-          style: TextStyle(
-            color: isActive ? Colors.white : const Color(0xFF6A7282),
-            fontSize: 12,
-            fontWeight: FontWeight.normal,
+    return Builder(
+      builder: (context) {
+        final theme = Theme.of(context);
+        final isActive = status == AgentStatus.active;
+        return Container(
+          height: 24,
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+          decoration: BoxDecoration(
+            color: isActive 
+                ? theme.colorScheme.primaryContainer 
+                : theme.colorScheme.surfaceVariant.withValues(alpha: 0.3),
+            border: Border.all(
+              color: isActive 
+                  ? theme.colorScheme.primary.withValues(alpha: 0.5)
+                  : theme.colorScheme.outline.withValues(alpha: 0.3),
+              width: 1,
+            ),
+            borderRadius: BorderRadius.circular(12),
           ),
-        ),
-      ),
+          child: Center(
+            child: Text(
+              status.label,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: isActive ? theme.colorScheme.onPrimaryContainer : theme.colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w800,
+                fontFamily: 'Outfit',
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -159,31 +175,43 @@ class AgentsTableComponents {
     required VoidCallback onPressed,
     Color? color,
   }) {
-    return Container(
-      width: 38.437,
-      height: 32,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(
-          color: Colors.black.withValues(alpha: 0.1),
-          width: 1.219,
-        ),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onPressed,
-          borderRadius: BorderRadius.circular(8),
-          child: Center(
-            child: Icon(
-              icon,
-              size: 16,
-              color: color ?? const Color(0xFF0A0A0A),
+    return Builder(
+      builder: (context) {
+        final theme = Theme.of(context);
+        return Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            border: Border.all(
+              color: theme.colorScheme.outline.withValues(alpha: 0.2),
+              width: 1,
+            ),
+            borderRadius: BorderRadius.circular(10),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onPressed,
+              borderRadius: BorderRadius.circular(10),
+              child: Center(
+                child: Icon(
+                  icon,
+                  size: 18,
+                  color: color ?? theme.colorScheme.onSurface,
+                ),
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

@@ -14,34 +14,34 @@ class AppTheme {
     final scheme = ColorScheme.fromSeed(
       seedColor: AppColors.primary,
       brightness: Brightness.light,
-      surface: AppColors.bgLight,
+      surface: AppColors.surfaceLight,
       onSurface: AppColors.textDisplayLight,
       primary: AppColors.primary,
       secondary: AppColors.accent,
       outline: AppColors.borderLight,
     );
-    return _buildTheme(scheme, status);
+    return _buildTheme(scheme, status, AppColors.bgLight);
   }
 
   static ThemeData dark(AppBootStatus status) {
     final scheme = ColorScheme.fromSeed(
       seedColor: AppColors.primary,
       brightness: Brightness.dark,
-      surface: AppColors.bgDark,
+      surface: AppColors.surfaceDark,
       onSurface: AppColors.textDisplayDark,
       primary: AppColors.primaryLight,
       secondary: AppColors.accentLight,
       outline: AppColors.borderDark,
     );
-    return _buildTheme(scheme, status);
+    return _buildTheme(scheme, status, AppColors.bgDark);
   }
 
-  static ThemeData _buildTheme(ColorScheme colors, AppBootStatus status) {
+  static ThemeData _buildTheme(ColorScheme colors, AppBootStatus status, Color scaffoldBg) {
     final textTheme = buildAppTextTheme(colors);
     final base = ThemeData(
       useMaterial3: true,
       colorScheme: colors,
-      scaffoldBackgroundColor: colors.surface,
+      scaffoldBackgroundColor: scaffoldBg,
       textTheme: textTheme,
       cardTheme: buildCardTheme(colors),
       filledButtonTheme: buildFilledButtonTheme(colors),

@@ -213,7 +213,7 @@ class _PropertiesScreenState extends ConsumerState<PropertiesScreen> {
                   ),
 
                   // Search and Filters Section Header
-                  SectionHeader(
+                  SliverSectionHeader(
                     title: 'LISTE DES PROPRIÉTÉS',
                     top: AppSpacing.lg,
                     bottom: AppSpacing.sm,

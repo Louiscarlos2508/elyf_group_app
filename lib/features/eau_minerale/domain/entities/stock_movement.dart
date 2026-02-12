@@ -126,6 +126,7 @@ class StockMovement {
 
     return StockMovement(
       id: 'movement-$index',
+      enterpriseId: 'mock-enterprise',
       date: DateTime.now().subtract(Duration(days: index)),
       productName: products[index % products.length],
       type: index.isEven ? StockMovementType.entry : StockMovementType.exit,

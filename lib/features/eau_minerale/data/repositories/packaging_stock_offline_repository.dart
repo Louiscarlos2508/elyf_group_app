@@ -29,38 +29,11 @@ class PackagingStockOfflineRepository extends OfflineRepository<PackagingStock>
   String get movementsCollection => CollectionNames.packagingStockMovements;
 
   @override
-  PackagingStock fromMap(Map<String, dynamic> map) {
-    return PackagingStock(
-      id: map['id'] as String? ?? map['localId'] as String,
-      type: map['type'] as String,
-      quantity: (map['quantity'] as num).toInt(),
-      unit: map['unit'] as String? ?? 'unités',
-      seuilAlerte: (map['seuilAlerte'] as num?)?.toInt(),
-      fournisseur: map['fournisseur'] as String?,
-      prixUnitaire: (map['prixUnitaire'] as num?)?.toInt(),
-      createdAt: map['createdAt'] != null
-          ? DateTime.parse(map['createdAt'] as String)
-          : null,
-      updatedAt: map['updatedAt'] != null
-          ? DateTime.parse(map['updatedAt'] as String)
-          : null,
-    );
-  }
+  PackagingStock fromMap(Map<String, dynamic> map) =>
+      PackagingStock.fromMap(map, enterpriseId);
 
   @override
-  Map<String, dynamic> toMap(PackagingStock entity) {
-    return {
-      'id': entity.id,
-      'type': entity.type,
-      'quantity': entity.quantity,
-      'unit': entity.unit,
-      'seuilAlerte': entity.seuilAlerte,
-      'fournisseur': entity.fournisseur,
-      'prixUnitaire': entity.prixUnitaire,
-      'createdAt': entity.createdAt?.toIso8601String(),
-      'updatedAt': entity.updatedAt?.toIso8601String(),
-    };
-  }
+  Map<String, dynamic> toMap(PackagingStock entity) => entity.toMap();
 
   @override
   String getLocalId(PackagingStock entity) {
@@ -116,22 +89,15 @@ class PackagingStockOfflineRepository extends OfflineRepository<PackagingStock>
 
   @override
   Future<void> deleteFromLocal(PackagingStock entity) async {
-    final remoteId = getRemoteId(entity);
-    if (remoteId != null) {
-      await driftService.records.deleteByRemoteId(
-        collectionName: collectionName,
-        remoteId: remoteId,
-        enterpriseId: enterpriseId,
-        moduleType: moduleType,
-      );
-      return;
-    }
-    final localId = getLocalId(entity);
-    await driftService.records.deleteByLocalId(
-      collectionName: collectionName,
-      localId: localId,
-      enterpriseId: enterpriseId,
-      moduleType: moduleType,
+    // Soft-delete
+    final deletedStock = entity.copyWith(
+      deletedAt: DateTime.now(),
+    );
+    await saveToLocal(deletedStock);
+    
+    AppLogger.info(
+      'Soft-deleted packaging stock: ${entity.id}',
+      name: 'PackagingStockOfflineRepository',
     );
   }
 
@@ -145,7 +111,8 @@ class PackagingStockOfflineRepository extends OfflineRepository<PackagingStock>
       moduleType: moduleType,
     );
     if (byRemote != null) {
-      return fromMap(jsonDecode(byRemote.dataJson) as Map<String, dynamic>);
+      final stock = fromMap(jsonDecode(byRemote.dataJson) as Map<String, dynamic>);
+      return stock.isDeleted ? null : stock;
     }
     
     // Chercher par localId
@@ -197,7 +164,8 @@ class PackagingStockOfflineRepository extends OfflineRepository<PackagingStock>
       }
     }
     
-    return fromMap(jsonDecode(record.dataJson) as Map<String, dynamic>);
+    final stock = fromMap(jsonDecode(record.dataJson) as Map<String, dynamic>);
+    return stock.isDeleted ? null : stock;
   }
 
   @override
@@ -217,6 +185,7 @@ class PackagingStockOfflineRepository extends OfflineRepository<PackagingStock>
           }
           return fromMap(map);
         })
+        .where((s) => !s.isDeleted)
         .toList();
 
     // Dédupliquer par remoteId d'abord (garde le plus récent pour chaque remoteId)
@@ -324,7 +293,8 @@ class PackagingStockOfflineRepository extends OfflineRepository<PackagingStock>
           }
         }
         final record = matchingByRemote.first;
-        return fromMap(jsonDecode(record.dataJson) as Map<String, dynamic>);
+        final stock = fromMap(jsonDecode(record.dataJson) as Map<String, dynamic>);
+        return stock.isDeleted ? null : stock;
       }
       
       // Chercher par localId
@@ -403,21 +373,15 @@ class PackagingStockOfflineRepository extends OfflineRepository<PackagingStock>
           ? movement.id
           : LocalIdGenerator.generate();
       final remoteId = movement.id.startsWith('local_') ? null : movement.id;
-      final map = {
-        'id': localId,
-        'localId': localId,
-        'packagingId': movement.packagingId,
-        'packagingType': movement.packagingType,
-        'type': movement.type.name,
-        'quantite': movement.quantite,
-        'date': movement.date.toIso8601String(),
-        'raison': movement.raison,
-        'productionId': movement.productionId,
-        'fournisseur': movement.fournisseur,
-        'notes': movement.notes,
-        'createdAt': movement.createdAt?.toIso8601String(),
-        'updatedAt': DateTime.now().toIso8601String(),
-      };
+      
+      final movementWithAudit = movement.copyWith(
+        id: localId,
+        createdAt: movement.createdAt ?? DateTime.now(),
+        updatedAt: DateTime.now(),
+        enterpriseId: enterpriseId,
+      );
+      
+      final map = movementWithAudit.toMap()..['localId'] = localId;
 
       await driftService.records.upsert(
         collectionName: movementsCollection,
@@ -484,6 +448,7 @@ class PackagingStockOfflineRepository extends OfflineRepository<PackagingStock>
             : 'packaging-${movement.packagingType.toLowerCase().replaceAll(' ', '-')}';
         stock = PackagingStock(
           id: stockId,
+          enterpriseId: enterpriseId,
           type: movement.packagingType,
           quantity: initialQuantity,
           unit: 'unité',
@@ -560,32 +525,8 @@ class PackagingStockOfflineRepository extends OfflineRepository<PackagingStock>
       final movements = rows.map((r) {
         try {
           final map = jsonDecode(r.dataJson) as Map<String, dynamic>;
-          // Utiliser remoteId si disponible, sinon localId (comme pour les bobines)
-          final movementId = r.remoteId ?? map['localId'] as String? ?? map['id'] as String? ?? r.localId;
-          return PackagingStockMovement(
-            id: movementId,
-            packagingId: map['packagingId'] as String,
-            packagingType: map['packagingType'] as String? ?? '',
-            type: PackagingMovementType.values.firstWhere(
-              (e) => e.name == map['type'],
-              orElse: () => PackagingMovementType.ajustement,
-            ),
-            quantite:
-                (map['quantite'] as num?)?.toInt() ??
-                (map['quantity'] as num?)?.toInt() ??
-                0,
-            date: DateTime.parse(map['date'] as String),
-            raison: map['raison'] as String? ?? map['reason'] as String? ?? '',
-            productionId: map['productionId'] as String?,
-            fournisseur: map['fournisseur'] as String?,
-            notes: map['notes'] as String?,
-            createdAt: map['createdAt'] != null
-                ? DateTime.parse(map['createdAt'] as String)
-                : null,
-            updatedAt: map['updatedAt'] != null
-                ? DateTime.parse(map['updatedAt'] as String)
-                : null,
-          );
+          final movement = PackagingStockMovement.fromMap(map, enterpriseId);
+          return movement.isDeleted ? null : movement;
         } catch (e, stackTrace) {
           AppLogger.warning(
             'Error parsing packaging movement record ${r.localId}: $e',

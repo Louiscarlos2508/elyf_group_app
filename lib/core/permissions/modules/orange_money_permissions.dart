@@ -180,5 +180,43 @@ class OrangeMoneyPermissions {
     viewProfile,
     editProfile,
     changePassword,
+    viewProfile,
+    editProfile,
+    changePassword,
+    
+    // Hierarchy & Validation
+    viewNetworkDashboard,
+    viewChildTransactions,
+    validateLiquidityDiscrepancy,
+    declareCommission,
   ];
+
+  // Hierarchy
+  static const viewNetworkDashboard = ActionPermission(
+    id: 'view_network_dashboard',
+    name: 'Voir le tableau de bord réseau',
+    module: 'orange_money',
+    description: 'Permet de voir les statistiques consolidées du réseau',
+  );
+
+  static const viewChildTransactions = ActionPermission(
+    id: 'view_child_transactions',
+    name: 'Voir les transactions des sous-agents',
+    module: 'orange_money',
+    description: 'Permet de voir les transactions des entités filles',
+  );
+
+  static const validateLiquidityDiscrepancy = ActionPermission(
+    id: 'validate_liquidity_discrepancy',
+    name: 'Valider les écarts de liquidité',
+    module: 'orange_money',
+    description: 'Permet de valider les justifications d\'écart de liquidité',
+  );
+
+  static const declareCommission = ActionPermission(
+    id: 'declare_commission',
+    name: 'Déclarer une commission',
+    module: 'orange_money',
+    description: 'Permet de déclarer une commission mensuelle',
+  );
 }

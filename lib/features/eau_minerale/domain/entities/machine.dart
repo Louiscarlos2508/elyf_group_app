@@ -2,50 +2,103 @@
 class Machine {
   const Machine({
     required this.id,
-    required this.nom,
+    required this.enterpriseId,
+    required this.name,
     required this.reference,
     this.description,
-    this.estActive = true,
+    this.isActive = true,
     this.puissanceKw,
     this.dateInstallation,
     this.createdAt,
     this.updatedAt,
+    this.deletedAt,
+    this.deletedBy,
   });
 
   final String id;
-  final String nom; // Nom de la machine
+  final String enterpriseId;
+  final String name; // Nom de la machine
   final String reference; // Référence unique
   final String? description;
-  final bool estActive; // Indique si la machine est active
-  final double? puissanceKw; // Puissance en kW (pour calcul consommation)
+  final bool isActive; // Indique si la machine est active
+  final double? puissanceKw; // Puissance en kW
   final DateTime? dateInstallation;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final DateTime? deletedAt;
+  final String? deletedBy;
 
-  /// Vérifie si la machine est disponible pour utilisation
-  bool get estDisponible => estActive;
+  bool get isDeleted => deletedAt != null;
 
   Machine copyWith({
     String? id,
-    String? nom,
+    String? enterpriseId,
+    String? name,
     String? reference,
     String? description,
-    bool? estActive,
+    bool? isActive,
     double? puissanceKw,
     DateTime? dateInstallation,
     DateTime? createdAt,
     DateTime? updatedAt,
+    DateTime? deletedAt,
+    String? deletedBy,
   }) {
     return Machine(
       id: id ?? this.id,
-      nom: nom ?? this.nom,
+      enterpriseId: enterpriseId ?? this.enterpriseId,
+      name: name ?? this.name,
       reference: reference ?? this.reference,
       description: description ?? this.description,
-      estActive: estActive ?? this.estActive,
+      isActive: isActive ?? this.isActive,
       puissanceKw: puissanceKw ?? this.puissanceKw,
       dateInstallation: dateInstallation ?? this.dateInstallation,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      deletedBy: deletedBy ?? this.deletedBy,
     );
+  }
+
+  factory Machine.fromMap(Map<String, dynamic> map, String defaultEnterpriseId) {
+    return Machine(
+      id: map['id'] as String? ?? map['localId'] as String,
+      enterpriseId: map['enterpriseId'] as String? ?? defaultEnterpriseId,
+      name: map['name'] as String? ?? map['nom'] as String? ?? '',
+      reference: map['reference'] as String? ?? '',
+      description: map['description'] as String?,
+      isActive: map['isActive'] as bool? ?? map['estActive'] as bool? ?? true,
+      puissanceKw: (map['puissanceKw'] as num?)?.toDouble(),
+      dateInstallation: map['dateInstallation'] != null
+          ? DateTime.parse(map['dateInstallation'] as String)
+          : null,
+      createdAt: map['createdAt'] != null
+          ? DateTime.parse(map['createdAt'] as String)
+          : null,
+      updatedAt: map['updatedAt'] != null
+          ? DateTime.parse(map['updatedAt'] as String)
+          : null,
+      deletedAt: map['deletedAt'] != null
+          ? DateTime.parse(map['deletedAt'] as String)
+          : null,
+      deletedBy: map['deletedBy'] as String?,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'enterpriseId': enterpriseId,
+      'name': name,
+      'reference': reference,
+      'description': description,
+      'isActive': isActive,
+      'puissanceKw': puissanceKw,
+      'dateInstallation': dateInstallation?.toIso8601String(),
+      'createdAt': createdAt?.toIso8601String(),
+      'updatedAt': updatedAt?.toIso8601String(),
+      'deletedAt': deletedAt?.toIso8601String(),
+      'deletedBy': deletedBy,
+    };
   }
 }

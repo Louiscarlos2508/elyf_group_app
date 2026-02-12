@@ -27,6 +27,7 @@ class DailyWorkerStorageService {
   Future<DailyWorker> addWorker(DailyWorker worker) async {
     final newWorker = DailyWorker(
       id: worker.id.isEmpty ? IdGenerator.generate() : worker.id,
+      enterpriseId: worker.enterpriseId,
       name: worker.name,
       phone: worker.phone,
       salaireJournalier: worker.salaireJournalier,
@@ -42,6 +43,7 @@ class DailyWorkerStorageService {
   Future<DailyWorker> updateWorker(DailyWorker worker) async {
     final updatedWorker = DailyWorker(
       id: worker.id,
+      enterpriseId: worker.enterpriseId,
       name: worker.name,
       phone: worker.phone,
       salaireJournalier: worker.salaireJournalier,

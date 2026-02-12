@@ -155,6 +155,7 @@ class _DailyPersonnelFormState extends ConsumerState<DailyPersonnelForm> {
       id:
           widget.existingDay?.id ??
           'day-${DateTime.now().millisecondsSinceEpoch}',
+      enterpriseId: widget.session.enterpriseId,
       productionId: widget.session.id,
       date: widget.date,
       personnelIds: _selectedWorkerIds.toList(),

@@ -227,41 +227,76 @@ class PredefinedRoles {
   // MODULE MOBILE MONEY
   // ========================================
 
-  /// Agent Principal Mobile Money
-  /// Gère les transactions et sous-agents
-  static final agentPrincipalMM = UserRole(
-    id: 'agent_principal_mm',
-    name: 'Agent Principal',
+  /// Administrateur Orange Money (Agent Principal)
+  /// Gère tout le réseau, transactions, liquidité et commissions
+  static final omAdmin = UserRole(
+    id: 'om_admin',
+    name: 'Administrateur Orange Money',
     description:
-        'Gère les transactions Mobile Money et supervise les sous-agents',
+        'Gestion complète du réseau Orange Money : transactions, sous-agents, commissions, liquidité',
     moduleId: 'orange_money',
     allowedEnterpriseTypes: {EnterpriseType.mobileMoneyAgent},
     permissions: {
       'view_dashboard',
+      'view_network_dashboard',
       'create_transaction',
       'view_transactions',
+      'view_child_transactions',
       'manage_float',
       'view_float',
       'manage_sub_agents',
       'view_commissions',
+      'calculate_commissions',
+      'pay_commissions',
+      'validate_liquidity_discrepancy',
       'view_reports',
+      'create_checkpoint',
+      'view_liquidity',
     },
     isSystemRole: true,
   );
 
-  /// Sous-Agent Mobile Money
-  /// Effectue les transactions
-  static final sousAgentMM = UserRole(
-    id: 'sous_agent_mm',
-    name: 'Sous-Agent',
-    description: 'Effectue les transactions Mobile Money',
+  /// Superviseur Orange Money
+  /// Valide les commissions et surveille le réseau
+  static final omSupervisor = UserRole(
+    id: 'om_supervisor',
+    name: 'Superviseur Orange Money',
+    description:
+        'Supervision du réseau, validation des commissions et écarts de liquidité',
     moduleId: 'orange_money',
-    allowedEnterpriseTypes: {EnterpriseType.mobileMoneySubAgent},
+    allowedEnterpriseTypes: {EnterpriseType.mobileMoneyAgent},
     permissions: {
+      'view_dashboard',
+      'view_network_dashboard',
+      'view_transactions',
+      'view_child_transactions',
+      'view_float',
+      'view_commissions',
+      'validate_commissions',
+      'validate_liquidity_discrepancy',
+      'view_reports',
+      'view_liquidity',
+    },
+    isSystemRole: true,
+  );
+
+  /// Agent Orange Money (Sous-Agent/Vendeur)
+  /// Effectue les transactions et déclare ses commissions
+  static final omAgent = UserRole(
+    id: 'om_agent',
+    name: 'Agent Orange Money',
+    description: 'Effectue les transactions et gère sa caisse',
+    moduleId: 'orange_money',
+    allowedEnterpriseTypes: {EnterpriseType.mobileMoneySubAgent, EnterpriseType.mobileMoneyKiosk},
+    permissions: {
+      'view_dashboard',
       'create_transaction',
       'view_transactions',
       'view_float',
-      'view_dashboard',
+      'create_checkpoint',
+      'view_liquidity',
+      'declare_commission',
+      'view_commissions',
     },
     isSystemRole: true,
   );
@@ -343,7 +378,7 @@ class PredefinedRoles {
       vendeurEau,
     ],
     'boutique': [gerantBoutique, vendeurBoutique],
-    'orange_money': [agentPrincipalMM, sousAgentMM],
+    'orange_money': [omAdmin, omSupervisor, omAgent],
     'administration': [administrateur, auditeur],
   };
 
@@ -366,8 +401,9 @@ class PredefinedRoles {
     vendeurBoutique,
 
     // Mobile Money
-    agentPrincipalMM,
-    sousAgentMM,
+    omAdmin,
+    omSupervisor,
+    omAgent,
 
     // Génériques
     administrateur,

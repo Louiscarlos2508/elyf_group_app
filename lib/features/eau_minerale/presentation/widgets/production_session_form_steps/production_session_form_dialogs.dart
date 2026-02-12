@@ -166,14 +166,15 @@ class ProductionSessionFormDialogs {
     required int bobineIndex,
     required Function() onBobineRemoved,
   }) async {
+    final enterpriseId = ref.read(activeEnterpriseIdProvider).value ?? '';
+    
     // Créer un objet Machine à partir des infos de la bobine
     final machine = Machine(
       id: bobine.machineId,
-      nom: bobine.machineName,
+      name: bobine.machineName,
+      enterpriseId: enterpriseId,
       reference: bobine.machineId,
     );
-
-    final enterpriseId = ref.read(activeEnterpriseIdProvider).value ?? '';
 
     // Créer une session temporaire pour le dialog
     final tempSession = ProductionSession(

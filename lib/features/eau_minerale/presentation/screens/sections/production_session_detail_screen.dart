@@ -286,7 +286,7 @@ class _ProductionSessionDetailContent extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: session.machinesUtilisees.map((machineId) {
                         final machine = machines.where((m) => m.id == machineId).firstOrNull;
-                        final name = machine?.nom ?? machineId;
+                        final name = machine?.name ?? machineId;
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 4),
                           child: Row(

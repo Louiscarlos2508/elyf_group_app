@@ -224,7 +224,7 @@ class _BreakdownMachineItem extends StatelessWidget {
           ),
         ),
         title: Text(
-          machine.nom,
+          machine.name,
           style: theme.textTheme.titleSmall?.copyWith(
             fontWeight: FontWeight.bold,
           ),

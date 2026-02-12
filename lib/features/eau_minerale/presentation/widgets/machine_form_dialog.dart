@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
+import '../../../../core/tenant/tenant_provider.dart';
 import '../../domain/entities/machine.dart';
 
 /// Dialog pour ajouter/modifier une machine.
@@ -30,11 +31,11 @@ class _MachineFormDialogState extends ConsumerState<MachineFormDialog>
   void initState() {
     super.initState();
     if (widget.machine != null) {
-      _nomController.text = widget.machine!.nom;
+      _nomController.text = widget.machine!.name;
       _referenceController.text = widget.machine!.reference;
       _descriptionController.text = widget.machine!.description ?? '';
       _puissanceController.text = widget.machine!.puissanceKw?.toString() ?? '';
-      _estActive = widget.machine!.estActive;
+      _estActive = widget.machine!.isActive;
       _dateInstallation = widget.machine!.dateInstallation;
     }
   }
@@ -66,14 +67,16 @@ class _MachineFormDialogState extends ConsumerState<MachineFormDialog>
       formKey: _formKey,
       onLoadingChanged: (isLoading) => setState(() => _isLoading = isLoading),
       onSubmit: () async {
+        final enterpriseId = ref.read(activeEnterpriseProvider).value?.id ?? 'default';
         final machine = Machine(
           id: widget.machine?.id ?? '',
-          nom: _nomController.text.trim(),
+          enterpriseId: widget.machine?.enterpriseId ?? enterpriseId,
+          name: _nomController.text.trim(),
           reference: _referenceController.text.trim(),
           description: _descriptionController.text.trim().isEmpty
               ? null
               : _descriptionController.text.trim(),
-          estActive: _estActive,
+          isActive: _estActive,
           puissanceKw: _puissanceController.text.trim().isEmpty
               ? null
               : double.tryParse(_puissanceController.text.trim()),

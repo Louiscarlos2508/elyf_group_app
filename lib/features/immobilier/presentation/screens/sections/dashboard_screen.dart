@@ -61,7 +61,7 @@ class DashboardScreen extends ConsumerWidget {
           ),
 
           // Today section header
-          SectionHeader(
+          SliverSectionHeader(
             title: "AUJOURD'HUI",
             top: AppSpacing.sm,
             bottom: AppSpacing.sm,
@@ -79,7 +79,7 @@ class DashboardScreen extends ConsumerWidget {
           ),
 
           // Month section header
-          const SectionHeader(
+          const SliverSectionHeader(
             title: 'CE MOIS',
             bottom: AppSpacing.sm,
           ),
@@ -112,7 +112,7 @@ class DashboardScreen extends ConsumerWidget {
           ),
 
           // Alerts section header
-          const SectionHeader(
+          const SliverSectionHeader(
             title: 'ALERTES',
             bottom: AppSpacing.sm,
           ),

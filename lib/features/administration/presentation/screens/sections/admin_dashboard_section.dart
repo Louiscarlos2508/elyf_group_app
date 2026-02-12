@@ -22,8 +22,8 @@ class AdminDashboardSection extends ConsumerWidget {
       slivers: [
         SliverToBoxAdapter(
           child: Container(
-            margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
+            margin: const EdgeInsets.fromLTRB(20, 24, 20, 8),
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 40),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
@@ -31,15 +31,15 @@ class AdminDashboardSection extends ConsumerWidget {
                 colors: [
                   theme.colorScheme.primary,
                   theme.colorScheme.primary.withValues(alpha: 0.8),
-                  const Color(0xFF4F46E5), // Indigo
+                  theme.colorScheme.secondary.withValues(alpha: 0.2), // Subtle accent touch
                 ],
               ),
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(32),
               boxShadow: [
                 BoxShadow(
-                  color: theme.colorScheme.primary.withValues(alpha: 0.3),
-                  blurRadius: 12,
-                  offset: const Offset(0, 6),
+                  color: theme.colorScheme.primary.withValues(alpha: 0.2),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
                 ),
               ],
             ),
@@ -52,47 +52,56 @@ class AdminDashboardSection extends ConsumerWidget {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Administration',
-                          style: theme.textTheme.labelLarge?.copyWith(
-                            color: Colors.white.withValues(alpha: 0.9),
-                            fontWeight: FontWeight.w500,
-                            letterSpacing: 1.2,
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            'ADMINISTRATION',
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 1.5,
+                            ),
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 16),
                         Text(
                           'Tableau de bord',
                           style: theme.textTheme.headlineMedium?.copyWith(
                             color: Colors.white,
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: -1,
                           ),
                         ),
                       ],
                     ),
                     if (isSyncing)
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(24),
                         ),
                         child: Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
                             const SizedBox(
-                              width: 10,
-                              height: 10,
+                              width: 14,
+                              height: 14,
                               child: CircularProgressIndicator(
-                                strokeWidth: 2,
+                                strokeWidth: 2.5,
                                 color: Colors.white,
                               ),
                             ),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: 10),
                             Text(
-                              'LIVE',
+                              'SYNC',
                               style: theme.textTheme.labelSmall?.copyWith(
                                 color: Colors.white,
-                                fontWeight: FontWeight.bold,
+                                fontWeight: FontWeight.w900,
                               ),
                             ),
                           ],
@@ -100,11 +109,13 @@ class AdminDashboardSection extends ConsumerWidget {
                       ),
                   ],
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 28),
                 Text(
-                  'Vue d\'ensemble du système et gestion des entreprises.',
+                  'Gérez votre réseau d\'entreprises et supervisez les accès système en temps réel.',
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: Colors.white.withValues(alpha: 0.8),
+                    color: Colors.white.withValues(alpha: 0.9),
+                    fontWeight: FontWeight.w500,
+                    height: 1.5,
                   ),
                 ),
               ],
@@ -125,7 +136,7 @@ class AdminDashboardSection extends ConsumerWidget {
                           label: 'Entreprises',
                           value: stats.totalEnterprises.toString(),
                           subtitle: '${stats.activeEnterprises} actives',
-                          icon: Icons.business_rounded,
+                          icon: Icons.business_center_rounded,
                           color: theme.colorScheme.primary,
                           isGlass: true,
                         ),
@@ -135,9 +146,9 @@ class AdminDashboardSection extends ConsumerWidget {
                         child: ElyfStatsCard(
                           label: 'Rôles',
                           value: stats.totalRoles.toString(),
-                          subtitle: 'Rôles définis',
-                          icon: Icons.shield_rounded,
-                          color: const Color(0xFF6366F1), // Indigo
+                          subtitle: 'Définitions d\'accès',
+                          icon: Icons.admin_panel_settings_rounded,
+                          color: const Color(0xFF6366F1), // Deep Indigo
                           isGlass: true,
                         ),
                       ),
@@ -151,8 +162,8 @@ class AdminDashboardSection extends ConsumerWidget {
                           label: 'Utilisateurs',
                           value: stats.totalUsers.toString(),
                           subtitle: '${stats.activeUsers} actifs',
-                          icon: Icons.people_alt_rounded,
-                          color: const Color(0xFF10B981), // Success Emerald
+                          icon: Icons.account_circle_rounded,
+                          color: const Color(0xFF00C897), // Success Emerald
                           isGlass: true,
                         ),
                       ),
@@ -161,8 +172,8 @@ class AdminDashboardSection extends ConsumerWidget {
                         child: ElyfStatsCard(
                           label: 'Attributions',
                           value: stats.totalAssignments.toString(),
-                          subtitle: 'Accès / Modules',
-                          icon: Icons.link_rounded,
+                          subtitle: 'Modules liés',
+                          icon: Icons.hub_rounded,
                           color: theme.colorScheme.secondary,
                           isGlass: true,
                         ),

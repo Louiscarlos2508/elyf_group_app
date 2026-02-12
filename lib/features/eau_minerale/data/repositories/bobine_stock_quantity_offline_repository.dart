@@ -30,88 +30,14 @@ class BobineStockQuantityOfflineRepository
   String get movementsCollectionName => CollectionNames.bobineStockMovements;
 
   @override
-  BobineStock fromMap(Map<String, dynamic> map) {
-    return BobineStock(
-      id: map['id'] as String? ?? map['localId'] as String,
-      type: map['type'] as String,
-      quantity: (map['quantity'] as num?)?.toInt() ?? 0,
-      unit: map['unit'] as String? ?? 'unités',
-      seuilAlerte: map['seuilAlerte'] != null
-          ? (map['seuilAlerte'] as num).toInt()
-          : null,
-      fournisseur: map['fournisseur'] as String?,
-      prixUnitaire: map['prixUnitaire'] != null
-          ? (map['prixUnitaire'] as num).toInt()
-          : null,
-      createdAt: map['createdAt'] != null
-          ? DateTime.parse(map['createdAt'] as String)
-          : null,
-      updatedAt: map['updatedAt'] != null
-          ? DateTime.parse(map['updatedAt'] as String)
-          : null,
-    );
-  }
+  BobineStock fromMap(Map<String, dynamic> map) =>
+      BobineStock.fromMap(map, enterpriseId);
 
   @override
-  Map<String, dynamic> toMap(BobineStock entity) {
-    return {
-      'id': entity.id,
-      'type': entity.type,
-      'quantity': entity.quantity,
-      'unit': entity.unit,
-      if (entity.seuilAlerte != null) 'seuilAlerte': entity.seuilAlerte,
-      if (entity.fournisseur != null) 'fournisseur': entity.fournisseur,
-      if (entity.prixUnitaire != null) 'prixUnitaire': entity.prixUnitaire,
-      if (entity.createdAt != null)
-        'createdAt': entity.createdAt!.toIso8601String(),
-      if (entity.updatedAt != null)
-        'updatedAt': entity.updatedAt!.toIso8601String(),
-    };
-  }
+  Map<String, dynamic> toMap(BobineStock entity) => entity.toMap();
 
-  Map<String, dynamic> _movementToMap(BobineStockMovement movement) {
-    return {
-      'id': movement.id,
-      'bobineId': movement.bobineId,
-      'bobineReference': movement.bobineReference,
-      'type': movement.type.name,
-      'date': movement.date.toIso8601String(),
-      'quantite': movement.quantite,
-      'raison': movement.raison,
-      if (movement.productionId != null) 'productionId': movement.productionId,
-      if (movement.machineId != null) 'machineId': movement.machineId,
-      if (movement.notes != null) 'notes': movement.notes,
-      if (movement.createdAt != null)
-        'createdAt': movement.createdAt!.toIso8601String(),
-    };
-  }
-
-  BobineStockMovement _movementFromMap(Map<String, dynamic> map) {
-    return BobineStockMovement(
-      id: map['id'] as String? ?? map['localId'] as String,
-      bobineId: map['bobineId'] as String,
-      bobineReference: map['bobineReference'] as String,
-      type: _parseMovementType(map['type'] as String? ?? 'entree'),
-      date: map['date'] != null
-          ? DateTime.parse(map['date'] as String)
-          : DateTime.now(),
-      quantite: (map['quantite'] as num?)?.toDouble() ?? 0.0,
-      raison: map['raison'] as String? ?? '',
-      productionId: map['productionId'] as String?,
-      machineId: map['machineId'] as String?,
-      notes: map['notes'] as String?,
-      createdAt: map['createdAt'] != null
-          ? DateTime.parse(map['createdAt'] as String)
-          : null,
-    );
-  }
-
-  BobineMovementType _parseMovementType(String type) {
-    return BobineMovementType.values.firstWhere(
-      (e) => e.name == type,
-      orElse: () => BobineMovementType.entree,
-    );
-  }
+  Map<String, dynamic> _movementToMap(BobineStockMovement movement) => movement.toMap();
+  BobineStockMovement _movementFromMap(Map<String, dynamic> map) => BobineStockMovement.fromMap(map, enterpriseId);
 
   @override
   String getLocalId(BobineStock entity) {
@@ -165,12 +91,15 @@ class BobineStockQuantityOfflineRepository
 
   @override
   Future<void> deleteFromLocal(BobineStock entity) async {
-    final localId = getLocalId(entity);
-    await driftService.records.deleteByLocalId(
-      collectionName: collectionName,
-      localId: localId,
-      enterpriseId: enterpriseId,
-      moduleType: 'eau_minerale',
+    // Soft-delete
+    final deletedStock = entity.copyWith(
+      deletedAt: DateTime.now(),
+    );
+    await saveToLocal(deletedStock);
+    
+    AppLogger.info(
+      'Soft-deleted bobine stock: ${entity.id}',
+      name: 'BobineStockQuantityOfflineRepository',
     );
   }
 
@@ -187,11 +116,8 @@ class BobineStockQuantityOfflineRepository
       if (record == null) return null;
 
       final map = jsonDecode(record.dataJson) as Map<String, dynamic>;
-      map['localId'] = record.localId;
-      if (record.remoteId != null) {
-        map['id'] = record.remoteId;
-      }
-      return fromMap(map);
+      final stock = fromMap(map);
+      return stock.isDeleted ? null : stock;
     } catch (e, stackTrace) {
       final appException = ErrorHandler.instance.handleError(e, stackTrace);
       AppLogger.error(
@@ -220,7 +146,9 @@ class BobineStockQuantityOfflineRepository
           map['id'] = record.remoteId;
         }
         return fromMap(map);
-      }).toList();
+      })
+      .where((stock) => !stock.isDeleted)
+      .toList();
 
       // Dédupliquer par remoteId d'abord
       final deduplicatedByRemoteId = deduplicateByRemoteId(stocks);
@@ -357,8 +285,15 @@ class BobineStockQuantityOfflineRepository
           ? movement.id
           : LocalIdGenerator.generate();
       final remoteId = movement.id.startsWith('local_') ? null : movement.id;
-      final map = _movementToMap(movement)..['localId'] = localId;
-      final now = DateTime.now();
+      
+      final movementWithAudit = movement.copyWith(
+        id: localId,
+        enterpriseId: enterpriseId,
+        createdAt: movement.createdAt ?? DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+      
+      final map = movementWithAudit.toMap()..['localId'] = localId;
 
       await driftService.records.upsert(
         collectionName: movementsCollectionName,
@@ -367,7 +302,7 @@ class BobineStockQuantityOfflineRepository
         enterpriseId: enterpriseId,
         moduleType: 'eau_minerale',
         dataJson: jsonEncode(map),
-        localUpdatedAt: movement.createdAt ?? now,
+        localUpdatedAt: DateTime.now(),
       );
 
       // Queue sync operation
@@ -390,6 +325,7 @@ class BobineStockQuantityOfflineRepository
 
       // Chercher le stock par type (plus fiable que par ID car l'ID peut changer)
       var stock = await fetchByType(movement.bobineReference);
+      final now = DateTime.now();
       
       // Si le stock n'existe pas, le créer avec la quantité initiale basée sur le mouvement
       if (stock == null) {
@@ -408,6 +344,7 @@ class BobineStockQuantityOfflineRepository
         final stockId = 'bobine-${movement.bobineReference.toLowerCase().replaceAll(' ', '-')}';
         stock = BobineStock(
           id: stockId,
+          enterpriseId: enterpriseId,
           type: movement.bobineReference,
           quantity: initialQuantity,
           unit: 'unité',
@@ -479,12 +416,9 @@ class BobineStockQuantityOfflineRepository
 
       var movements = records.map((record) {
         final map = jsonDecode(record.dataJson) as Map<String, dynamic>;
-        map['localId'] = record.localId;
-        if (record.remoteId != null) {
-          map['id'] = record.remoteId;
-        }
-        return _movementFromMap(map);
-      }).toList();
+        final movement = _movementFromMap(map);
+        return movement.isDeleted ? null : movement;
+      }).whereType<BobineStockMovement>().toList();
 
       // Apply filters
       if (bobineStockId != null) {

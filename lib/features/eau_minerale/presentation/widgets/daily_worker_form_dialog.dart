@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
+import '../../../../core/tenant/tenant_provider.dart';
 import '../../domain/entities/daily_worker.dart';
 
 /// Dialog pour ajouter ou modifier un ouvrier journalier.
@@ -62,11 +63,13 @@ class _DailyWorkerFormDialogState extends ConsumerState<DailyWorkerFormDialog> {
 
     try {
       final repository = ref.read(dailyWorkerRepositoryProvider);
+      final enterpriseId = ref.read(activeEnterpriseProvider).value?.id ?? 'default';
 
       final worker = DailyWorker(
         id:
             widget.worker?.id ??
             'worker-${DateTime.now().millisecondsSinceEpoch}',
+        enterpriseId: widget.worker?.enterpriseId ?? enterpriseId,
         name: name,
         phone: phone,
         salaireJournalier: salaire,

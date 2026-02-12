@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:elyf_groupe_app/shared.dart';
 
 /// Card widget for SIM configuration settings.
 class SettingsSimCard extends StatefulWidget {
@@ -43,160 +44,143 @@ class _SettingsSimCardState extends State<SettingsSimCard> {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
-        side: BorderSide(
-          color: Colors.black.withValues(alpha: 0.1),
-          width: 1.219,
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.sim_card, size: 20, color: Color(0xFF0A0A0A)),
-                const SizedBox(width: 8),
-                const Text(
-                  'Configuration SIM',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.normal,
-                    color: Color(0xFF0A0A0A),
-                  ),
+    final theme = Theme.of(context);
+    
+    return ElyfCard(
+      padding: const EdgeInsets.all(24),
+      elevation: 4,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-              ],
+                child: Icon(Icons.sim_card_rounded, size: 22, color: theme.colorScheme.primary),
+              ),
+              const SizedBox(width: 16),
+              Text(
+                'Configuration SIM',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  fontFamily: 'Outfit',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 32),
+          Text(
+            'Identifiant SIM Orange Money',
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w800,
+              fontFamily: 'Outfit',
             ),
-            const SizedBox(height: 16),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Numéro SIM pour toutes les transactions',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF0A0A0A),
-                    fontWeight: FontWeight.normal,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF3F3F5),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.transparent, width: 1.219),
-                  ),
-                  child: TextField(
-                    controller: _controller,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF0A0A0A),
-                    ),
-                    decoration: InputDecoration(
-                      hintText: 'sim_123456789',
-                      hintStyle: const TextStyle(
-                        fontSize: 14,
-                        color: Color(0xFF717182),
-                      ),
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 4,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            controller: _controller,
+            decoration: InputDecoration(
+              hintText: 'Ex: sim_123456789',
+              prefixIcon: Icon(Icons.phone_android_rounded, size: 20, color: theme.colorScheme.primary),
+              filled: true,
+              fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Checkbox(
-                  value: true,
-                  onChanged: null,
-                  activeColor: const Color(0xFF030213),
-                ),
-                const Expanded(
-                  child: Text(
-                    '📱 Ce numéro sera automatiquement utilisé pour toutes les transactions Mobile Money',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF4A5565),
-                      fontWeight: FontWeight.normal,
-                    ),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              fontFamily: 'Outfit',
+            ),
+            onChanged: widget.onSimNumberChanged,
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Icon(Icons.info_outline_rounded, size: 16, color: theme.colorScheme.onSurfaceVariant),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Ce numéro sera utilisé pour router toutes les transactions Mobile Money.',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                    height: 1.4,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            _buildSimConfiguredBox(_controller.text),
-          ],
-        ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 32),
+          _buildSimConfiguredBox(theme, _controller.text),
+        ],
       ),
     );
   }
 
-  Widget _buildSimConfiguredBox(String simText) {
-    final displaySim = simText.isEmpty ? 'sim_123456789' : simText;
+  Widget _buildSimConfiguredBox(ThemeData theme, String simText) {
+    final displaySim = simText.isEmpty ? 'SIM non configurée' : simText;
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(17, 17, 1, 1),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFFF0FDF4),
-        border: Border.all(color: const Color(0xFFB9F8CF), width: 1.219),
-        borderRadius: BorderRadius.circular(10),
+        color: const Color(0xFF00C897).withValues(alpha: 0.05),
+        border: Border.all(color: const Color(0xFF00C897).withValues(alpha: 0.1)),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 40,
-            height: 40,
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: const Color(0xFFDCFCE7),
-              borderRadius: BorderRadius.circular(20),
+              color: const Color(0xFF00C897).withValues(alpha: 0.1),
+              shape: BoxShape.circle,
             ),
             child: const Icon(
-              Icons.check_circle,
+              Icons.check_circle_rounded,
               size: 20,
-              color: Color(0xFF0D542B),
+              color: Color(0xFF00C897),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  '✅ SIM configurée',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.normal,
-                    color: Color(0xFF0D542B),
+                Text(
+                  'Statut du routage',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: const Color(0xFF008967),
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.5,
+                    fontFamily: 'Outfit',
                   ),
                 ),
                 const SizedBox(height: 4),
                 RichText(
                   text: TextSpan(
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF016630),
-                      fontWeight: FontWeight.normal,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: const Color(0xFF008967).withValues(alpha: 0.8),
+                      height: 1.4,
+                      fontFamily: 'Outfit',
                     ),
                     children: [
-                      const TextSpan(text: 'SIM '),
+                      const TextSpan(text: 'La SIM '),
                       TextSpan(
                         text: displaySim,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                        style: const TextStyle(fontWeight: FontWeight.w900, decoration: TextDecoration.underline),
                       ),
                       const TextSpan(
                         text:
-                            ' sera utilisée automatiquement. Plus besoin de la sélectionner à chaque transaction !',
+                            ' est bien configurée comme canal de communication par défaut.',
                       ),
                     ],
                   ),

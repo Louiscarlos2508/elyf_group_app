@@ -7,7 +7,6 @@ class Cylinder {
     required this.sellPrice,
     required this.enterpriseId,
     required this.moduleId,
-    required this.moduleId,
     this.stock = 0,
     this.createdAt,
     this.updatedAt,

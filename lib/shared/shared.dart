@@ -3,3 +3,4 @@
 
 export 'presentation/presentation.dart';
 export 'utils/utils.dart';
+export '../app/theme/app_colors.dart';

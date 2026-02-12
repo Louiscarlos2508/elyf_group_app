@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
+import '../../../../core/tenant/tenant_provider.dart';
 import '../../domain/entities/expense_record.dart';
 
 /// Form for creating/editing an expense record.
@@ -62,8 +63,10 @@ class ExpenseFormState extends ConsumerState<ExpenseForm> {
     if (!_formKey.currentState!.validate()) return;
 
     try {
+      final enterpriseId = ref.read(activeEnterpriseProvider).value?.id ?? 'default';
       final expense = ExpenseRecord(
         id: widget.expense?.id ?? '',
+        enterpriseId: widget.expense?.enterpriseId ?? enterpriseId,
         label: _labelController.text.trim(),
         amountCfa: int.parse(_amountController.text),
         category: _category,

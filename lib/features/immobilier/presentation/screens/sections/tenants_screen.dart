@@ -169,7 +169,7 @@ class _TenantsScreenState extends ConsumerState<TenantsScreen> {
                   ),
 
                   // Section header
-                  SectionHeader(
+                  SliverSectionHeader(
                     title: 'LISTE DES LOCATAIRES',
                     top: AppSpacing.lg,
                     bottom: AppSpacing.sm,

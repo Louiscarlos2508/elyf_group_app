@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../adaptive_navigation_scaffold.dart';
+import 'package:elyf_groupe_app/app/theme/app_colors.dart';
 
 /// A premium Drawer implementation for Elyf Group App.
 class ElyfDrawer extends StatelessWidget {
@@ -64,11 +65,11 @@ class ElyfDrawer extends StatelessWidget {
                       child: Container(
                         decoration: BoxDecoration(
                           color: isSelected 
-                              ? theme.colorScheme.primaryContainer 
+                              ? theme.colorScheme.primary.withValues(alpha: 0.1)
                               : Colors.transparent,
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(16),
                           border: isSelected 
-                            ? Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.1))
+                            ? Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.15))
                             : null,
                         ),
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -85,11 +86,12 @@ class ElyfDrawer extends StatelessWidget {
                             Expanded(
                               child: Text(
                                 section.label,
-                                style: theme.textTheme.titleSmall?.copyWith(
+                                style: theme.textTheme.labelLarge?.copyWith(
                                   color: isSelected 
                                       ? theme.colorScheme.primary 
                                       : theme.colorScheme.onSurface,
-                                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                                  fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
+                                  fontFamily: 'Outfit',
                                 ),
                               ),
                             ),
@@ -133,13 +135,12 @@ class ElyfDrawer extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
       decoration: BoxDecoration(
-        color: theme.colorScheme.primary, // Solid brand color
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
             theme.colorScheme.primary,
-            Color.lerp(theme.colorScheme.primary, Colors.black, 0.2)!,
+            AppColors.primaryLight,
           ],
         ),
       ),

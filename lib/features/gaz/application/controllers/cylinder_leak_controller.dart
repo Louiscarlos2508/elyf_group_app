@@ -42,6 +42,7 @@ class CylinderLeakController {
     // Créer l'enregistrement de fuite
     final leak = CylinderLeak(
       id: '',
+      enterpriseId: enterpriseId,
       cylinderId: cylinderId,
       weight: weight,
       reportedDate: DateTime.now(),

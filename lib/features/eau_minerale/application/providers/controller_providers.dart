@@ -18,6 +18,7 @@ import '../controllers/sales_controller.dart';
 import '../controllers/salary_controller.dart';
 import '../controllers/stock_controller.dart';
 import '../../../audit_trail/application/providers.dart';
+import '../../../../core/tenant/tenant_provider.dart';
 import 'repository_providers.dart';
 
 // Controller Providers
@@ -26,8 +27,13 @@ final inventoryControllerProvider = Provider<InventoryController>(
 );
 
 final productControllerProvider = Provider<ProductController>(
-  (ref) => ProductController(
-      ref.watch(eauMineraleProductRepositoryProvider)),
+  (ref) {
+    final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+    return ProductController(
+      ref.watch(eauMineraleProductRepositoryProvider),
+      enterpriseId,
+    );
+  },
 );
 
 final activityControllerProvider = Provider<ActivityController>(
@@ -51,12 +57,16 @@ final packagingStockControllerProvider = Provider<PackagingStockController>(
 );
 
 final stockControllerProvider = Provider<StockController>(
-  (ref) => StockController(
-    ref.watch(inventoryRepositoryProvider),
-    ref.watch(bobineStockQuantityRepositoryProvider),
-    ref.watch(packagingStockRepositoryProvider),
-    ref.watch(stockRepositoryProvider),
-  ),
+  (ref) {
+    final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+    return StockController(
+      ref.watch(inventoryRepositoryProvider),
+      ref.watch(bobineStockQuantityRepositoryProvider),
+      ref.watch(packagingStockRepositoryProvider),
+      ref.watch(stockRepositoryProvider),
+      enterpriseId,
+    );
+  },
 );
 
 final packStockAdapterProvider = Provider<PackStockAdapter>((ref) {

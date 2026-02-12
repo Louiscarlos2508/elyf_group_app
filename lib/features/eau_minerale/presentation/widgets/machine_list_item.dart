@@ -41,7 +41,7 @@ class MachineListItem extends StatelessWidget {
                 width: 52,
                 height: 52,
                 decoration: BoxDecoration(
-                  color: machine.estActive
+                  color: machine.isActive
                       ? colors.primary.withValues(alpha: 0.08)
                       : colors.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(14),
@@ -49,7 +49,7 @@ class MachineListItem extends StatelessWidget {
                 child: Icon(
                   Icons.precision_manufacturing_outlined,
                   size: 26,
-                  color: machine.estActive
+                  color: machine.isActive
                       ? colors.primary
                       : colors.onSurfaceVariant,
                 ),
@@ -63,14 +63,14 @@ class MachineListItem extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Text(
-                            machine.nom,
+                            machine.name,
                             style: theme.textTheme.titleSmall?.copyWith(
                               fontWeight: FontWeight.bold,
                               letterSpacing: -0.2,
                             ),
                           ),
                         ),
-                        _buildStatusBadge(theme, machine.estActive),
+                        _buildStatusBadge(theme, machine.isActive),
                       ],
                     ),
                     const SizedBox(height: 4),

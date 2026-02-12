@@ -24,50 +24,11 @@ class PointOfSaleOfflineRepository extends OfflineRepository<PointOfSale>
   String get collectionName => 'pointOfSale';
 
   @override
-  PointOfSale fromMap(Map<String, dynamic> map) {
-    // Support pour l'ancien format (enterpriseId) et le nouveau (parentEnterpriseId)
-    final parentEnterpriseId = map['parentEnterpriseId'] as String? ??
-        map['enterpriseId'] as String? ??
-        '';
-    
-    return PointOfSale(
-      id: map['id'] as String? ?? map['localId'] as String,
-      name: map['name'] as String,
-      address: map['address'] as String,
-      contact: map['contact'] as String,
-      parentEnterpriseId: parentEnterpriseId,
-      moduleId: map['moduleId'] as String,
-      isActive: map['isActive'] as bool? ?? true,
-      cylinderIds:
-          (map['cylinderIds'] as List<dynamic>?)
-              ?.map((e) => e as String)
-              .toList() ??
-          [],
-      createdAt: map['createdAt'] != null
-          ? DateTime.parse(map['createdAt'] as String)
-          : null,
-      updatedAt: map['updatedAt'] != null
-          ? DateTime.parse(map['updatedAt'] as String)
-          : null,
-    );
-  }
+  PointOfSale fromMap(Map<String, dynamic> map) =>
+      PointOfSale.fromMap(map, enterpriseId);
 
   @override
-  Map<String, dynamic> toMap(PointOfSale entity) {
-    return {
-      'id': entity.id,
-      'name': entity.name,
-      'address': entity.address,
-      'contact': entity.contact,
-      'parentEnterpriseId': entity.parentEnterpriseId, // ⚠️ IMPORTANT : stocker explicitement
-      'enterpriseId': entity.enterpriseId, // Pour compatibilité avec l'ancien format
-      'moduleId': entity.moduleId,
-      'isActive': entity.isActive,
-      'cylinderIds': entity.cylinderIds,
-      'createdAt': entity.createdAt?.toIso8601String(),
-      'updatedAt': entity.updatedAt?.toIso8601String(),
-    };
-  }
+  Map<String, dynamic> toMap(PointOfSale entity) => entity.toMap();
 
   @override
   String getLocalId(PointOfSale entity) {
@@ -120,22 +81,15 @@ class PointOfSaleOfflineRepository extends OfflineRepository<PointOfSale>
 
   @override
   Future<void> deleteFromLocal(PointOfSale entity) async {
-    final remoteId = getRemoteId(entity);
-    if (remoteId != null) {
-      await driftService.records.deleteByRemoteId(
-        collectionName: collectionName,
-        remoteId: remoteId,
-        enterpriseId: enterpriseId,
-        moduleType: moduleType,
-      );
-      return;
-    }
-    final localId = getLocalId(entity);
-    await driftService.records.deleteByLocalId(
-      collectionName: collectionName,
-      localId: localId,
-      enterpriseId: enterpriseId,
-      moduleType: moduleType,
+    // Soft-delete
+    final deletedPos = entity.copyWith(
+      deletedAt: DateTime.now(),
+    );
+    await saveToLocal(deletedPos);
+    
+    AppLogger.info(
+      'Soft-deleted point of sale: ${entity.id}',
+      name: 'PointOfSaleOfflineRepository',
     );
   }
 
@@ -148,7 +102,8 @@ class PointOfSaleOfflineRepository extends OfflineRepository<PointOfSale>
       moduleType: moduleType,
     );
     if (byRemote != null) {
-      return fromMap(jsonDecode(byRemote.dataJson) as Map<String, dynamic>);
+      final pos = fromMap(jsonDecode(byRemote.dataJson) as Map<String, dynamic>);
+      return pos.isDeleted ? null : pos;
     }
     final byLocal = await driftService.records.findByLocalId(
       collectionName: collectionName,
@@ -157,7 +112,8 @@ class PointOfSaleOfflineRepository extends OfflineRepository<PointOfSale>
       moduleType: moduleType,
     );
     if (byLocal == null) return null;
-    return fromMap(jsonDecode(byLocal.dataJson) as Map<String, dynamic>);
+    final pos = fromMap(jsonDecode(byLocal.dataJson) as Map<String, dynamic>);
+    return pos.isDeleted ? null : pos;
   }
 
   @override
@@ -224,6 +180,7 @@ class PointOfSaleOfflineRepository extends OfflineRepository<PointOfSale>
           try {
             final map = jsonDecode(r.dataJson) as Map<String, dynamic>;
             final entity = fromMap(map);
+            if (entity.isDeleted) return null;
             AppLogger.debug(
               'PointOfSale trouvé: id=${entity.id}, name=${entity.name}, parentEnterpriseId=${entity.parentEnterpriseId}',
               name: 'PointOfSaleOfflineRepository.getAllForEnterprise',
@@ -293,7 +250,8 @@ class PointOfSaleOfflineRepository extends OfflineRepository<PointOfSale>
               .map((r) {
                 try {
                   final map = jsonDecode(r.dataJson) as Map<String, dynamic>;
-                  return fromMap(map);
+                  final pos = fromMap(map);
+                  return pos.isDeleted ? null : pos;
                 } catch (e) {
                   return null;
                 }

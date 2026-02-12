@@ -35,7 +35,26 @@ class PackagingStock {
   final String? deletedBy;
 
   /// Retourne la quantité exprimée en lots
-// ... (rest of class)
+  double get lotsRestants => quantity / unitsPerLot;
+
+  /// Vérifie si le stock peut satisfaire une demande de [besoinEnUnites]
+  bool peutSatisfaire(int besoinEnUnites) => quantity >= besoinEnUnites;
+
+  /// Vérifie si le stock est faible
+  bool get estStockFaible {
+    if (seuilAlerte == null) return false;
+    return quantity <= seuilAlerte!;
+  }
+
+  /// Retourne le pourcentage de stock restant par rapport au seuil (si applicable)
+  /// ou une valeur relative pour l'affichage.
+  double get pourcentageRestant {
+    if (seuilAlerte == null || seuilAlerte == 0) return 1.0;
+    return (quantity / (seuilAlerte! * 2)).clamp(0.0, 1.0);
+  }
+
+  /// Libellé formaté de la quantité
+  String get quantityLabel => '$quantity $unit (${lotsRestants.toStringAsFixed(1)} lots)';
 
   bool get isDeleted => deletedAt != null;
 

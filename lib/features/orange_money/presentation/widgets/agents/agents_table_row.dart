@@ -24,13 +24,15 @@ class AgentsTableRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
     return Container(
-      height: 52.608,
+      height: 56, // Standard row height
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(
-            color: Colors.black.withValues(alpha: 0.1),
-            width: 1.219,
+            color: theme.colorScheme.outline.withValues(alpha: 0.2),
+            width: 1,
           ),
         ),
       ),

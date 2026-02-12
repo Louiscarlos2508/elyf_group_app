@@ -32,6 +32,10 @@ class FinancialReport {
     required this.salaries,
     required this.netAmount,
     required this.status,
+    this.createdAt,
+    this.updatedAt,
+    this.deletedAt,
+    this.deletedBy,
   });
 
   final String id;
@@ -46,6 +50,12 @@ class FinancialReport {
   final double salaries;
   final double netAmount; // Reliquat pour siège
   final ReportStatus status;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+  final DateTime? deletedAt;
+  final String? deletedBy;
+
+  bool get isDeleted => deletedAt != null;
 
   FinancialReport copyWith({
     String? id,
@@ -60,6 +70,10 @@ class FinancialReport {
     double? salaries,
     double? netAmount,
     ReportStatus? status,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    DateTime? deletedAt,
+    String? deletedBy,
   }) {
     return FinancialReport(
       id: id ?? this.id,
@@ -74,6 +88,58 @@ class FinancialReport {
       salaries: salaries ?? this.salaries,
       netAmount: netAmount ?? this.netAmount,
       status: status ?? this.status,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      deletedBy: deletedBy ?? this.deletedBy,
     );
+  }
+
+  factory FinancialReport.fromMap(Map<String, dynamic> map, String defaultEnterpriseId) {
+    return FinancialReport(
+      id: map['id'] as String? ?? map['localId'] as String,
+      enterpriseId: map['enterpriseId'] as String? ?? defaultEnterpriseId,
+      reportDate: DateTime.parse(map['reportDate'] as String),
+      period: ReportPeriod.values.firstWhere(
+        (e) => e.name == map['period'],
+        orElse: () => ReportPeriod.daily,
+      ),
+      totalRevenue: (map['totalRevenue'] as num?)?.toDouble() ?? 0.0,
+      totalExpenses: (map['totalExpenses'] as num?)?.toDouble() ?? 0.0,
+      loadingEventExpenses: (map['loadingEventExpenses'] as num?)?.toDouble() ?? 0.0,
+      fixedCharges: (map['fixedCharges'] as num?)?.toDouble() ?? 0.0,
+      variableCharges: (map['variableCharges'] as num?)?.toDouble() ?? 0.0,
+      salaries: (map['salaries'] as num?)?.toDouble() ?? 0.0,
+      netAmount: (map['netAmount'] as num?)?.toDouble() ?? 0.0,
+      status: ReportStatus.values.firstWhere(
+        (e) => e.name == map['status'],
+        orElse: () => ReportStatus.draft,
+      ),
+      createdAt: map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : null,
+      updatedAt: map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : null,
+      deletedAt: map['deletedAt'] != null ? DateTime.parse(map['deletedAt'] as String) : null,
+      deletedBy: map['deletedBy'] as String?,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'enterpriseId': enterpriseId,
+      'reportDate': reportDate.toIso8601String(),
+      'period': period.name,
+      'totalRevenue': totalRevenue,
+      'totalExpenses': totalExpenses,
+      'loadingEventExpenses': loadingEventExpenses,
+      'fixedCharges': fixedCharges,
+      'variableCharges': variableCharges,
+      'salaries': salaries,
+      'netAmount': netAmount,
+      'status': status.name,
+      'createdAt': createdAt?.toIso8601String(),
+      'updatedAt': updatedAt?.toIso8601String(),
+      'deletedAt': deletedAt?.toIso8601String(),
+      'deletedBy': deletedBy,
+    };
   }
 }

@@ -115,7 +115,7 @@ class ProductionService {
         final nouvelleBobineUsage = BobineUsage(
           bobineType: bobineStock.type,
           machineId: machineId,
-          machineName: machine.nom,
+          machineName: machine.name,
           dateInstallation: maintenant,
           heureInstallation: maintenant,
           estInstallee: true,

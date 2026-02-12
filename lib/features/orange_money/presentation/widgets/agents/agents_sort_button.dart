@@ -8,18 +8,25 @@ class AgentsSortButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
     return SizedBox(
-      height: 32,
+      height: 40,
       child: TextButton.icon(
         onPressed: onPressed,
-        icon: const Icon(Icons.swap_vert, size: 16, color: Color(0xFF0A0A0A)),
-        label: const Text(
-          'Croissant',
-          style: TextStyle(fontSize: 14, color: Color(0xFF0A0A0A)),
+        icon: Icon(Icons.swap_vert_rounded, size: 20, color: theme.colorScheme.onSurface),
+        label: Text(
+          'Trier par nom',
+          style: theme.textTheme.labelLarge?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: theme.colorScheme.onSurface,
+            fontFamily: 'Outfit',
+          ),
         ),
         style: TextButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          backgroundColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       ),
     );

@@ -197,6 +197,25 @@ class AdminOfflineRepository implements AdminRepository {
   }
 
   @override
+  Future<EnterpriseModuleUser?> getUserEnterpriseModuleUser({
+    required String userId,
+    required String enterpriseId,
+    required String moduleId,
+  }) async {
+    final all = await getEnterpriseModuleUsers();
+    try {
+      return all.firstWhere(
+        (emu) =>
+            emu.userId == userId &&
+            emu.enterpriseId == enterpriseId &&
+            emu.moduleId == moduleId,
+      );
+    } catch (e) {
+      return null;
+    }
+  }
+
+  @override
   Future<void> assignUserToEnterprise(
     EnterpriseModuleUser enterpriseModuleUser,
   ) async {

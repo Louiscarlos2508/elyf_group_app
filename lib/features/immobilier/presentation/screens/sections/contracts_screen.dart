@@ -210,7 +210,7 @@ class _ContractsScreenState extends ConsumerState<ContractsScreen> {
                   ),
 
                   // Section header
-                  SectionHeader(
+                  SliverSectionHeader(
                     title: 'LISTE DES CONTRATS',
                     top: AppSpacing.lg,
                     bottom: AppSpacing.sm,

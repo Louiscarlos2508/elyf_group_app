@@ -31,6 +31,9 @@ class Tour {
     this.cancelledDate,
     this.notes,
     this.updatedAt,
+    this.createdAt,
+    this.deletedAt,
+    this.deletedBy,
   });
 
   final String id;
@@ -48,6 +51,9 @@ class Tour {
   final DateTime? cancelledDate;
   final String? notes;
   final DateTime? updatedAt;
+  final DateTime? createdAt;
+  final DateTime? deletedAt;
+  final String? deletedBy;
 
   Tour copyWith({
     String? id,
@@ -65,6 +71,9 @@ class Tour {
     DateTime? cancelledDate,
     String? notes,
     DateTime? updatedAt,
+    DateTime? createdAt,
+    DateTime? deletedAt,
+    String? deletedBy,
   }) {
     return Tour(
       id: id ?? this.id,
@@ -85,8 +94,86 @@ class Tour {
       cancelledDate: cancelledDate ?? this.cancelledDate,
       notes: notes ?? this.notes,
       updatedAt: updatedAt ?? this.updatedAt,
+      createdAt: createdAt ?? this.createdAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      deletedBy: deletedBy ?? this.deletedBy,
     );
   }
+
+  factory Tour.fromMap(Map<String, dynamic> map, String defaultEnterpriseId) {
+    // Utiliser localId en priorité car c'est l'ID réellement utilisé dans la base de données
+    // Si localId n'existe pas, utiliser id comme fallback
+    final tourId = map['localId'] as String? ?? map['id'] as String? ?? '';
+
+    return Tour(
+      id: tourId,
+      enterpriseId: map['enterpriseId'] as String? ?? defaultEnterpriseId,
+      tourDate: DateTime.parse(map['tourDate'] as String),
+      status: TourStatus.values.byName(map['status'] as String? ?? 'collection'),
+      collections: (map['collections'] as List<dynamic>?)
+              ?.map((c) => Collection.fromMap(c as Map<String, dynamic>))
+              .toList() ??
+          [],
+      loadingFeePerBottle: (map['loadingFeePerBottle'] as num?)?.toDouble() ?? 0.0,
+      unloadingFeePerBottle:
+          (map['unloadingFeePerBottle'] as num?)?.toDouble() ?? 0.0,
+      transportExpenses: (map['transportExpenses'] as List<dynamic>?)
+              ?.map((e) => TransportExpense.fromMap(e as Map<String, dynamic>))
+              .toList() ??
+          [],
+      collectionCompletedDate: map['collectionCompletedDate'] != null
+          ? DateTime.parse(map['collectionCompletedDate'] as String)
+          : null,
+      transportCompletedDate: map['transportCompletedDate'] != null
+          ? DateTime.parse(map['transportCompletedDate'] as String)
+          : null,
+      returnCompletedDate: map['returnCompletedDate'] != null
+          ? DateTime.parse(map['returnCompletedDate'] as String)
+          : null,
+      closureDate: map['closureDate'] != null
+          ? DateTime.parse(map['closureDate'] as String)
+          : null,
+      cancelledDate: map['cancelledDate'] != null
+          ? DateTime.parse(map['cancelledDate'] as String)
+          : null,
+      notes: map['notes'] as String?,
+      updatedAt: map['updatedAt'] != null
+          ? DateTime.parse(map['updatedAt'] as String)
+          : null,
+      createdAt: map['createdAt'] != null
+          ? DateTime.parse(map['createdAt'] as String)
+          : null,
+      deletedAt: map['deletedAt'] != null
+          ? DateTime.parse(map['deletedAt'] as String)
+          : null,
+      deletedBy: map['deletedBy'] as String?,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'enterpriseId': enterpriseId,
+      'tourDate': tourDate.toIso8601String(),
+      'status': status.name,
+      'collections': collections.map((c) => c.toMap()).toList(),
+      'loadingFeePerBottle': loadingFeePerBottle,
+      'unloadingFeePerBottle': unloadingFeePerBottle,
+      'transportExpenses': transportExpenses.map((e) => e.toMap()).toList(),
+      'collectionCompletedDate': collectionCompletedDate?.toIso8601String(),
+      'transportCompletedDate': transportCompletedDate?.toIso8601String(),
+      'returnCompletedDate': returnCompletedDate?.toIso8601String(),
+      'closureDate': closureDate?.toIso8601String(),
+      'cancelledDate': cancelledDate?.toIso8601String(),
+      'notes': notes,
+      'updatedAt': updatedAt?.toIso8601String(),
+      'createdAt': createdAt?.toIso8601String(),
+      'deletedAt': deletedAt?.toIso8601String(),
+      'deletedBy': deletedBy,
+    };
+  }
+
+  bool get isDeleted => deletedAt != null;
 
   /// Calcule le total des bouteilles à charger.
   int get totalBottlesToLoad {

@@ -37,134 +37,17 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
   String? getEnterpriseId(Sale entity) => enterpriseId;
 
   @override
-  Sale fromMap(Map<String, dynamic> map) {
-    // Extract metadata if stored in a dedicated key or notes (legacy)
-    Map<String, dynamic>? metadata;
-    if (map['metadata'] != null) {
-      try {
-        final metaStr = map['metadata'] as String;
-        metadata = jsonDecode(metaStr) as Map<String, dynamic>;
-      } catch (e) {
-        // Not valid JSON
-      }
-    }
-    
-    if (metadata == null && map['notes'] != null && map['notes'].toString().trim().startsWith('{')) {
-      try {
-        metadata = jsonDecode(map['notes'] as String) as Map<String, dynamic>;
-      } catch (e) {
-        // Not JSON, treat as regular notes
-      }
-    }
-
-    return Sale(
-      id: map['id'] as String? ?? map['localId'] as String,
-      productId:
-          map['productId'] as String? ??
-          (metadata?['productId'] as String?) ??
-          '',
-      productName:
-          map['productName'] as String? ??
-          (metadata?['productName'] as String?) ??
-          '',
-      quantity:
-          (map['quantity'] as num?)?.toInt() ??
-          (metadata?['quantity'] as int?) ??
-          0,
-      unitPrice:
-          (map['unitPrice'] as num?)?.toInt() ??
-          (metadata?['unitPrice'] as int?) ??
-          0,
-      totalPrice:
-          (map['totalPrice'] as num?)?.toInt() ??
-          (map['totalAmount'] as num?)?.toInt() ??
-          0,
-      amountPaid:
-          (map['amountPaid'] as num?)?.toInt() ??
-          (map['paidAmount'] as num?)?.toInt() ??
-          0,
-      customerName: map['customerName'] as String? ?? '',
-      customerPhone:
-          map['customerPhone'] as String? ??
-          (metadata?['customerPhone'] as String?) ??
-          '',
-      customerId:
-          map['customerId'] as String? ??
-          (metadata?['customerId'] as String?) ??
-          '',
-      date: map['date'] != null
-          ? DateTime.parse(map['date'] as String)
-          : (map['saleDate'] != null
-                ? DateTime.parse(map['saleDate'] as String)
-                : DateTime.now()),
-      status: _parseSaleStatus(
-        map['status'] as String? ??
-            (map['isComplete'] == true ? 'fullyPaid' : 'validated'),
-      ),
-      createdBy: map['createdBy'] as String? ?? map['soldBy'] as String? ?? '',
-      customerCnib:
-          map['customerCnib'] as String? ??
-          (metadata?['customerCnib'] as String?),
-      notes: metadata == null ? map['notes'] as String? : null,
-      cashAmount: (metadata?['cashAmount'] as int?) ?? 0,
-      orangeMoneyAmount: (metadata?['orangeMoneyAmount'] as int?) ?? 0,
-      productionSessionId: metadata?['productionSessionId'] as String?,
-      enterpriseId: map['enterpriseId'] as String? ?? enterpriseId,
-      updatedAt: map['updatedAt'] != null
-          ? DateTime.tryParse(map['updatedAt'] as String)
-          : null,
-    );
-  }
+  Sale fromMap(Map<String, dynamic> map) => Sale.fromMap(map, enterpriseId);
 
   @override
-  Map<String, dynamic> toMap(Sale entity) {
-    // Store additional fields in metadata JSON within notes
-    final metadata = <String, dynamic>{
-      if (entity.cashAmount > 0) 'cashAmount': entity.cashAmount,
-      if (entity.orangeMoneyAmount > 0)
-        'orangeMoneyAmount': entity.orangeMoneyAmount,
-      if (entity.productionSessionId != null)
-        'productionSessionId': entity.productionSessionId,
-      'productId': entity.productId,
-      'productName': entity.productName,
-      'quantity': entity.quantity,
-      'unitPrice': entity.unitPrice,
-      if (entity.customerPhone.isNotEmpty)
-        'customerPhone': entity.customerPhone,
-      if (entity.customerCnib != null) 'customerCnib': entity.customerCnib,
-    };
-
-    return {
-      'id': entity.id,
-      'date': entity.date.toIso8601String(),
-      'saleDate': entity.date.toIso8601String(),
-      'totalAmount': entity.totalPrice.toDouble(),
-      'paidAmount': entity.amountPaid.toDouble(),
-      'amountPaid': entity.amountPaid.toDouble(),
-      'customerName': entity.customerName,
-      'customerId': entity.customerId,
-      'paymentMethod': entity.isCredit ? 'credit' : 'cash',
-      'notes': entity.notes,
-      'metadata': jsonEncode(metadata),
-      'soldBy': entity.createdBy,
-      'isComplete': entity.isFullyPaid,
-      'status': entity.status.name,
-      // Store product info for SaleItem creation
-      'productId': entity.productId,
-      'productName': entity.productName,
-      'quantity': entity.quantity,
-      'unitPrice': entity.unitPrice,
-      'enterpriseId': entity.enterpriseId,
-      'updatedAt': entity.updatedAt?.toIso8601String(),
-    };
-  }
-
+  Map<String, dynamic> toMap(Sale entity) => entity.toMap();
 
   @override
   Future<void> saveToLocal(Sale entity) async {
     final map = toMap(entity);
     final localId = getLocalId(entity);
-    map['localId'] = localId;
+    map['localId'] = localId; // Ensure localId is present in map for some legacy consumers
+    
     await driftService.records.upsert(
       collectionName: collectionName,
       localId: localId,
@@ -178,23 +61,16 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
 
   @override
   Future<void> deleteFromLocal(Sale entity) async {
-    final remoteId = getRemoteId(entity);
-    final localId = getLocalId(entity);
-
-    if (remoteId != null) {
-      await driftService.records.deleteByRemoteId(
-        collectionName: collectionName,
-        remoteId: remoteId,
-        enterpriseId: enterpriseId,
-        moduleType: 'eau_minerale',
-      );
-      return;
-    }
-    await driftService.records.deleteByLocalId(
-      collectionName: collectionName,
-      localId: localId,
-      enterpriseId: enterpriseId,
-      moduleType: 'eau_minerale',
+    // Soft-delete: update the record with deletedAt instead of removing it
+    final deletedSale = entity.copyWith(
+      deletedAt: DateTime.now(),
+      // deletedBy could be added here if we had the current user
+    );
+    await saveToLocal(deletedSale);
+    
+    AppLogger.info(
+      'Soft-deleted sale: ${entity.id} (enterprise: $enterpriseId)',
+      name: 'SaleOfflineRepository',
     );
   }
 
@@ -207,7 +83,8 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
       moduleType: 'eau_minerale',
     );
     if (byRemote != null) {
-      return fromMap(jsonDecode(byRemote.dataJson) as Map<String, dynamic>);
+      final sale = fromMap(jsonDecode(byRemote.dataJson) as Map<String, dynamic>);
+      return sale.isDeleted ? null : sale;
     }
 
     final byLocal = await driftService.records.findByLocalId(
@@ -217,7 +94,8 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
       moduleType: 'eau_minerale',
     );
     if (byLocal == null) return null;
-    return fromMap(jsonDecode(byLocal.dataJson) as Map<String, dynamic>);
+    final sale = fromMap(jsonDecode(byLocal.dataJson) as Map<String, dynamic>);
+    return sale.isDeleted ? null : sale;
   }
 
   @override
@@ -249,6 +127,7 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
         .map((row) => safeDecodeJson(row.dataJson, row.localId))
         .where((map) => map != null)
         .map((map) => fromMap(map!))
+        .where((sale) => !sale.isDeleted)
         .toList();
 
     AppLogger.debug(
@@ -341,6 +220,7 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
               .map((row) => safeDecodeJson(row.dataJson, row.localId))
               .where((map) => map != null)
               .map((map) => fromMap(map!))
+              .where((sale) => !sale.isDeleted)
               .toList();
 
           if (startDate != null) {
@@ -395,31 +275,14 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
   @override
   Future<String> createSale(Sale sale) async {
     try {
-      final localId = getLocalId(sale);
-      final saleWithLocalId = Sale(
-        id: localId,
-        productId: sale.productId,
-        productName: sale.productName,
-        quantity: sale.quantity,
-        unitPrice: sale.unitPrice,
-        totalPrice: sale.totalPrice,
-        amountPaid: sale.amountPaid,
-        customerName: sale.customerName,
-        customerPhone: sale.customerPhone,
-        customerId: sale.customerId,
-        date: sale.date,
-        status: sale.status,
-        createdBy: sale.createdBy,
-        customerCnib: sale.customerCnib,
-        notes: sale.notes,
-        cashAmount: sale.cashAmount,
-        orangeMoneyAmount: sale.orangeMoneyAmount,
-        productionSessionId: sale.productionSessionId,
-        enterpriseId: sale.enterpriseId,
+      final saleToSave = sale.copyWith(
+        id: getLocalId(sale),
+        enterpriseId: enterpriseId,
+        createdAt: sale.createdAt ?? DateTime.now(),
         updatedAt: DateTime.now(),
       );
-      await save(saleWithLocalId);
-      return localId;
+      await save(saleToSave);
+      return saleToSave.id;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       AppLogger.error(
@@ -456,28 +319,11 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
     try {
       final sale = await getSale(saleId);
       if (sale != null) {
-        final updatedSale = Sale(
-          id: sale.id,
-          productId: sale.productId,
-          productName: sale.productName,
-          quantity: sale.quantity,
-          unitPrice: sale.unitPrice,
-          totalPrice: sale.totalPrice,
+        final updatedSale = sale.copyWith(
           amountPaid: newAmountPaid,
-          customerName: sale.customerName,
-          customerPhone: sale.customerPhone,
-          customerId: sale.customerId,
-          date: sale.date,
           status: newAmountPaid >= sale.totalPrice
               ? SaleStatus.fullyPaid
               : SaleStatus.validated,
-          createdBy: sale.createdBy,
-          customerCnib: sale.customerCnib,
-          notes: sale.notes,
-          cashAmount: sale.cashAmount,
-          orangeMoneyAmount: sale.orangeMoneyAmount,
-          productionSessionId: sale.productionSessionId,
-          enterpriseId: sale.enterpriseId,
           updatedAt: DateTime.now(),
         );
         // Utiliser la méthode save de la classe de base pour gérer la sync correctement
@@ -492,17 +338,6 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
         stackTrace: stackTrace,
       );
       throw appException;
-    }
-  }
-
-  SaleStatus _parseSaleStatus(String status) {
-    switch (status) {
-      case 'validated':
-        return SaleStatus.validated;
-      case 'fullyPaid':
-        return SaleStatus.fullyPaid;
-      default:
-        return SaleStatus.validated;
     }
   }
 }

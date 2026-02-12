@@ -178,7 +178,7 @@ class _MachineBreakdownDialogState
                               style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                             ),
                             Text(
-                              widget.machine.nom,
+                              widget.machine.name,
                               style: theme.textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
                             ),
                           ],

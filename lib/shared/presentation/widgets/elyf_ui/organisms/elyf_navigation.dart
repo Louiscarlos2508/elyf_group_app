@@ -147,7 +147,8 @@ class ElyfNavigationRail extends StatelessWidget {
         color: theme.colorScheme.surface,
         border: Border(
           right: BorderSide(
-            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+            color: theme.colorScheme.outline.withValues(alpha: 0.1),
+            width: 1,
           ),
         ),
       ),
@@ -201,7 +202,8 @@ class _RailItem extends StatelessWidget {
     // Determines text style based on selection
     final textStyle = theme.textTheme.labelLarge?.copyWith(
                   color: isSelected ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                  fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
+                  fontFamily: 'Outfit',
                 );
 
     if (!extended) {
@@ -244,8 +246,9 @@ class _RailItem extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           decoration: isSelected
               ? BoxDecoration(
-                  color: theme.colorScheme.primaryContainer.withValues(alpha: 0.5),
-                  borderRadius: BorderRadius.circular(12),
+                  color: theme.colorScheme.primary.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.1)),
                 )
               : null,
           child: Row(

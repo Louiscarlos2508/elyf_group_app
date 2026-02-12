@@ -33,9 +33,14 @@ class BobineStock {
 
   /// Vérifie si le stock est faible (en dessous du seuil d'alerte)
   bool get estStockFaible {
-// ... (rest of class)
+    if (seuilAlerte == null) return false;
+    return quantity <= seuilAlerte!;
+  }
 
   bool get isDeleted => deletedAt != null;
+
+  /// Vérifie si le stock peut satisfaire une demande de [besoinEnUnites]
+  bool peutSatisfaire(int besoinEnUnites) => quantity >= besoinEnUnites;
 
   BobineStock copyWith({
     String? id,

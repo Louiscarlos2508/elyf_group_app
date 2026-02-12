@@ -9,6 +9,7 @@ import '../../../domain/services/transaction_service.dart';
 import '../../widgets/form_field_with_label.dart';
 import '../../widgets/new_customer_form_card.dart';
 import '../../widgets/transaction_type_selector.dart';
+import '../../widgets/orange_money_header.dart';
 import 'transactions_history_screen.dart';
 
 /// New transactions screen with tabs for new transaction and history.
@@ -132,10 +133,18 @@ class _TransactionsV2ScreenState extends ConsumerState<TransactionsV2Screen>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
-      color: const Color(0xFFF9FAFB), // Background color from Figma
+      color: const Color(0xFFF9FAFB),
       child: Column(
         children: [
+          OrangeMoneyHeader(
+            title: 'Flux de Trésorerie',
+            subtitle: 'Gérez vos dépôts et retraits avec une traçabilité complète.',
+            badgeText: 'TRANSACTIONS',
+            badgeIcon: Icons.swap_horiz_rounded,
+            asSliver: false,
+          ),
           _buildTabBar(),
           Expanded(
             child: TabBarView(
@@ -250,8 +259,6 @@ class _TransactionsV2ScreenState extends ConsumerState<TransactionsV2Screen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildHeader(),
-          const SizedBox(height: 24),
           TransactionTypeSelector(
             selectedType: _selectedType,
             onTypeChanged: (TransactionType type) {

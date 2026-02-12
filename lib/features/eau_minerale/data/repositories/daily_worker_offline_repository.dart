@@ -24,52 +24,11 @@ class DailyWorkerOfflineRepository extends OfflineRepository<DailyWorker>
   String get collectionName => 'daily_workers';
 
   @override
-  DailyWorker fromMap(Map<String, dynamic> map) {
-    final workDaysRaw = map['joursTravailles'] as List<dynamic>? ?? [];
-    final workDays = workDaysRaw.map((w) {
-      final wm = w as Map<String, dynamic>;
-      return WorkDay(
-        date: DateTime.parse(wm['date'] as String),
-        productionId: wm['productionId'] as String,
-        salaireJournalier: (wm['salaireJournalier'] as num).toInt(),
-      );
-    }).toList();
-
-    return DailyWorker(
-      id: map['id'] as String? ?? map['localId'] as String,
-      name: map['name'] as String,
-      phone: map['phone'] as String? ?? '',
-      salaireJournalier: (map['salaireJournalier'] as num).toInt(),
-      joursTravailles: workDays,
-      createdAt: map['createdAt'] != null
-          ? DateTime.parse(map['createdAt'] as String)
-          : null,
-      updatedAt: map['updatedAt'] != null
-          ? DateTime.parse(map['updatedAt'] as String)
-          : null,
-    );
-  }
+  DailyWorker fromMap(Map<String, dynamic> map) =>
+      DailyWorker.fromMap(map, enterpriseId);
 
   @override
-  Map<String, dynamic> toMap(DailyWorker entity) {
-    return {
-      'id': entity.id,
-      'name': entity.name,
-      'phone': entity.phone,
-      'salaireJournalier': entity.salaireJournalier,
-      'joursTravailles': entity.joursTravailles
-          .map(
-            (w) => {
-              'date': w.date.toIso8601String(),
-              'productionId': w.productionId,
-              'salaireJournalier': w.salaireJournalier,
-            },
-          )
-          .toList(),
-      'createdAt': entity.createdAt?.toIso8601String(),
-      'updatedAt': entity.updatedAt?.toIso8601String(),
-    };
-  }
+  Map<String, dynamic> toMap(DailyWorker entity) => entity.toMap();
 
   @override
   String getLocalId(DailyWorker entity) {
@@ -104,22 +63,15 @@ class DailyWorkerOfflineRepository extends OfflineRepository<DailyWorker>
 
   @override
   Future<void> deleteFromLocal(DailyWorker entity) async {
-    final remoteId = getRemoteId(entity);
-    if (remoteId != null) {
-      await driftService.records.deleteByRemoteId(
-        collectionName: collectionName,
-        remoteId: remoteId,
-        enterpriseId: enterpriseId,
-        moduleType: moduleType,
-      );
-      return;
-    }
-    final localId = getLocalId(entity);
-    await driftService.records.deleteByLocalId(
-      collectionName: collectionName,
-      localId: localId,
-      enterpriseId: enterpriseId,
-      moduleType: moduleType,
+    // Soft-delete
+    final deletedWorker = entity.copyWith(
+      deletedAt: DateTime.now(),
+    );
+    await saveToLocal(deletedWorker);
+    
+    AppLogger.info(
+      'Soft-deleted worker: ${entity.id}',
+      name: 'DailyWorkerOfflineRepository',
     );
   }
 
@@ -132,7 +84,8 @@ class DailyWorkerOfflineRepository extends OfflineRepository<DailyWorker>
       moduleType: moduleType,
     );
     if (byRemote != null) {
-      return fromMap(jsonDecode(byRemote.dataJson) as Map<String, dynamic>);
+      final worker = fromMap(jsonDecode(byRemote.dataJson) as Map<String, dynamic>);
+      return worker.isDeleted ? null : worker;
     }
     final byLocal = await driftService.records.findByLocalId(
       collectionName: collectionName,
@@ -141,7 +94,8 @@ class DailyWorkerOfflineRepository extends OfflineRepository<DailyWorker>
       moduleType: moduleType,
     );
     if (byLocal == null) return null;
-    return fromMap(jsonDecode(byLocal.dataJson) as Map<String, dynamic>);
+    final worker = fromMap(jsonDecode(byLocal.dataJson) as Map<String, dynamic>);
+    return worker.isDeleted ? null : worker;
   }
 
   @override
@@ -152,14 +106,9 @@ class DailyWorkerOfflineRepository extends OfflineRepository<DailyWorker>
       moduleType: moduleType,
     );
     final entities = rows
-
         .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
-
+        .where((worker) => !worker.isDeleted)
         .toList();
-
-    
-
-    // Dédupliquer par remoteId pour éviter les doublons
 
     return deduplicateByRemoteId(entities);
   }

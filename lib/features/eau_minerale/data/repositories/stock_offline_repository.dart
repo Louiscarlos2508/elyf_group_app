@@ -28,44 +28,11 @@ class StockOfflineRepository extends OfflineRepository<StockMovement>
   String get collectionName => CollectionNames.stockMovements;
 
   @override
-  StockMovement fromMap(Map<String, dynamic> map) {
-    return StockMovement(
-      id: map['id'] as String? ?? map['localId'] as String,
-      date: DateTime.parse(map['date'] as String),
-      productName:
-          map['productName'] as String? ??
-          map['productId'] as String? ??
-          'Unknown',
-      type: StockMovementType.values.firstWhere(
-        (e) => e.name == map['type'],
-        orElse: () => StockMovementType.entry,
-      ),
-      reason: map['reason'] as String? ?? '',
-      quantity: (map['quantity'] as num).toDouble(),
-      unit: map['unit'] as String? ?? 'unité',
-      productionId: map['productionId'] as String?,
-      notes: map['notes'] as String?,
-      updatedAt: map['updatedAt'] != null
-          ? DateTime.parse(map['updatedAt'] as String)
-          : null,
-    );
-  }
+  StockMovement fromMap(Map<String, dynamic> map) =>
+      StockMovement.fromMap(map, enterpriseId);
 
   @override
-  Map<String, dynamic> toMap(StockMovement entity) {
-    return {
-      'id': entity.id,
-      'date': entity.date.toIso8601String(),
-      'productName': entity.productName,
-      'type': entity.type.name,
-      'reason': entity.reason,
-      'quantity': entity.quantity,
-      'unit': entity.unit,
-      if (entity.productionId != null) 'productionId': entity.productionId,
-      if (entity.notes != null) 'notes': entity.notes,
-      'updatedAt': entity.updatedAt?.toIso8601String(),
-    };
-  }
+  Map<String, dynamic> toMap(StockMovement entity) => entity.toMap();
 
   @override
   String getLocalId(StockMovement entity) {
@@ -100,22 +67,15 @@ class StockOfflineRepository extends OfflineRepository<StockMovement>
 
   @override
   Future<void> deleteFromLocal(StockMovement entity) async {
-    final remoteId = getRemoteId(entity);
-    if (remoteId != null) {
-      await driftService.records.deleteByRemoteId(
-        collectionName: collectionName,
-        remoteId: remoteId,
-        enterpriseId: enterpriseId,
-        moduleType: moduleType,
-      );
-      return;
-    }
-    final localId = getLocalId(entity);
-    await driftService.records.deleteByLocalId(
-      collectionName: collectionName,
-      localId: localId,
-      enterpriseId: enterpriseId,
-      moduleType: moduleType,
+    // Soft-delete
+    final deletedMovement = entity.copyWith(
+      deletedAt: DateTime.now(),
+    );
+    await saveToLocal(deletedMovement);
+    
+    AppLogger.info(
+      'Soft-deleted stock movement: ${entity.id}',
+      name: 'StockOfflineRepository',
     );
   }
 
@@ -128,7 +88,8 @@ class StockOfflineRepository extends OfflineRepository<StockMovement>
       moduleType: moduleType,
     );
     if (byRemote != null) {
-      return fromMap(jsonDecode(byRemote.dataJson) as Map<String, dynamic>);
+      final movement = fromMap(jsonDecode(byRemote.dataJson) as Map<String, dynamic>);
+      return movement.isDeleted ? null : movement;
     }
     final byLocal = await driftService.records.findByLocalId(
       collectionName: collectionName,
@@ -137,7 +98,8 @@ class StockOfflineRepository extends OfflineRepository<StockMovement>
       moduleType: moduleType,
     );
     if (byLocal == null) return null;
-    return fromMap(jsonDecode(byLocal.dataJson) as Map<String, dynamic>);
+    final movement = fromMap(jsonDecode(byLocal.dataJson) as Map<String, dynamic>);
+    return movement.isDeleted ? null : movement;
   }
 
   @override
@@ -149,9 +111,9 @@ class StockOfflineRepository extends OfflineRepository<StockMovement>
     );
     final entities = rows
 
-        .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
-
-        .toList();
+      .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+      .where((m) => !m.isDeleted)
+      .toList();
 
     
 
@@ -205,22 +167,18 @@ class StockOfflineRepository extends OfflineRepository<StockMovement>
   @override
   Future<void> recordMovement(StockMovement movement) async {
     try {
-      // Create copy with updatedAt if not present
-      final movementToSave = movement.updatedAt != null
-          ? movement
-          : StockMovement(
-              id: movement.id,
-              date: movement.date,
-              productName: movement.productName,
-              type: movement.type,
-              reason: movement.reason,
-              quantity: movement.quantity,
-              unit: movement.unit,
-              productionId: movement.productionId,
-              notes: movement.notes,
-              updatedAt: DateTime.now(),
-            );
-      await save(movementToSave);
+      final localId = movement.id.startsWith('local_')
+          ? movement.id
+          : LocalIdGenerator.generate();
+      
+      final movementWithAudit = movement.copyWith(
+        id: localId,
+        enterpriseId: enterpriseId,
+        createdAt: movement.createdAt ?? DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+      
+      await save(movementWithAudit);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       AppLogger.error(

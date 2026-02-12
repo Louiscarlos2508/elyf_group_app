@@ -27,167 +27,11 @@ class TourOfflineRepository extends OfflineRepository<Tour>
   String get collectionName => 'tours';
 
   @override
-  Tour fromMap(Map<String, dynamic> map) {
-    // Utiliser localId en priorité car c'est l'ID réellement utilisé dans la base de données
-    // Si localId n'existe pas, utiliser id comme fallback
-    final tourId = map['localId'] as String? ?? map['id'] as String? ?? '';
-    return Tour(
-      id: tourId,
-      enterpriseId: map['enterpriseId'] as String,
-      tourDate: DateTime.parse(map['tourDate'] as String),
-      status: TourStatus.values.firstWhere(
-        (e) => e.name == map['status'],
-        orElse: () => TourStatus.collection,
-      ),
-      collections:
-          (map['collections'] as List<dynamic>?)
-              ?.map((c) => _collectionFromMap(c as Map<String, dynamic>))
-              .toList() ??
-          [],
-      loadingFeePerBottle: (map['loadingFeePerBottle'] as num).toDouble(),
-      unloadingFeePerBottle: (map['unloadingFeePerBottle'] as num).toDouble(),
-      transportExpenses:
-          (map['transportExpenses'] as List<dynamic>?)
-              ?.map((e) => _transportExpenseFromMap(e as Map<String, dynamic>))
-              .toList() ??
-          [],
-      collectionCompletedDate: map['collectionCompletedDate'] != null
-          ? DateTime.parse(map['collectionCompletedDate'] as String)
-          : null,
-      transportCompletedDate: map['transportCompletedDate'] != null
-          ? DateTime.parse(map['transportCompletedDate'] as String)
-          : null,
-      returnCompletedDate: map['returnCompletedDate'] != null
-          ? DateTime.parse(map['returnCompletedDate'] as String)
-          : null,
-      closureDate: map['closureDate'] != null
-          ? DateTime.parse(map['closureDate'] as String)
-          : null,
-      cancelledDate: map['cancelledDate'] != null
-          ? DateTime.parse(map['cancelledDate'] as String)
-          : null,
-      notes: map['notes'] as String?,
-      updatedAt: map['updatedAt'] != null
-          ? DateTime.parse(map['updatedAt'] as String)
-          : null,
-    );
-  }
-
-  Collection _collectionFromMap(Map<String, dynamic> map) {
-    // Convert cylinderQuantities/pointOfSaleId to new structure
-    final cylinderQuantities =
-        (map['cylinderQuantities'] as Map<String, dynamic>?)?.map(
-          (k, v) => MapEntry(int.parse(k), (v as num).toInt()),
-        ) ??
-        (map['emptyBottles'] as Map<String, dynamic>?)?.map(
-          (k, v) => MapEntry(int.parse(k), (v as num).toInt()),
-        ) ??
-        {};
-
-    // Récupérer unitPricesByWeight si disponible (pour prix en gros par poids)
-    final unitPricesByWeightRaw =
-        map['unitPricesByWeight'] as Map<String, dynamic>?;
-    final unitPricesByWeight = unitPricesByWeightRaw?.map(
-          (k, v) => MapEntry(int.parse(k), (v as num).toDouble()),
-        );
-
-    // Récupérer les fuites si disponibles
-    final leaksRaw = map['leaks'] as Map<String, dynamic>?;
-    final leaks = leaksRaw?.map(
-          (k, v) => MapEntry(int.parse(k), (v as num).toInt()),
-        ) ?? <int, int>{};
-
-    return Collection(
-      id: map['id'] as String? ?? map['pointOfSaleId'] as String? ?? '',
-      type: CollectionType.values.firstWhere(
-        (e) => e.name == (map['type'] as String?),
-        orElse: () => CollectionType.pointOfSale,
-      ),
-      clientId:
-          map['clientId'] as String? ?? map['pointOfSaleId'] as String? ?? '',
-      clientName:
-          map['clientName'] as String? ??
-          map['pointOfSaleName'] as String? ??
-          '',
-      clientPhone: map['clientPhone'] as String? ?? '',
-      emptyBottles: cylinderQuantities,
-      unitPrice:
-          (map['unitPrice'] as num?)?.toDouble() ??
-          (map['amountDue'] as num?)?.toDouble() ??
-          0.0,
-      unitPricesByWeight: unitPricesByWeight,
-      leaks: leaks,
-      amountPaid: (map['amountPaid'] as num?)?.toDouble() ?? 0.0,
-      paymentDate: map['paymentDate'] != null
-          ? DateTime.parse(map['paymentDate'] as String)
-          : null,
-    );
-  }
-
-  TransportExpense _transportExpenseFromMap(Map<String, dynamic> map) {
-    return TransportExpense(
-      id: map['id'] as String,
-      description: map['description'] as String,
-      amount: (map['amount'] as num).toDouble(),
-      expenseDate: map['expenseDate'] != null
-          ? DateTime.parse(map['expenseDate'] as String)
-          : DateTime.now(),
-    );
-  }
+  Tour fromMap(Map<String, dynamic> map) =>
+      Tour.fromMap(map, enterpriseId);
 
   @override
-  Map<String, dynamic> toMap(Tour entity) {
-    return {
-      'id': entity.id,
-      'enterpriseId': entity.enterpriseId,
-      'tourDate': entity.tourDate.toIso8601String(),
-      'status': entity.status.name,
-      'collections': entity.collections.map(_collectionToMap).toList(),
-      'loadingFeePerBottle': entity.loadingFeePerBottle,
-      'unloadingFeePerBottle': entity.unloadingFeePerBottle,
-      'transportExpenses': entity.transportExpenses
-          .map(_transportExpenseToMap)
-          .toList(),
-      'collectionCompletedDate': entity.collectionCompletedDate
-          ?.toIso8601String(),
-      'transportCompletedDate': entity.transportCompletedDate
-          ?.toIso8601String(),
-      'returnCompletedDate': entity.returnCompletedDate?.toIso8601String(),
-      'closureDate': entity.closureDate?.toIso8601String(),
-      'cancelledDate': entity.cancelledDate?.toIso8601String(),
-      'notes': entity.notes,
-      'updatedAt': entity.updatedAt?.toIso8601String(),
-    };
-  }
-
-  Map<String, dynamic> _collectionToMap(Collection collection) {
-    return {
-      'id': collection.id,
-      'type': collection.type.name,
-      'clientId': collection.clientId,
-      'clientName': collection.clientName,
-      'clientPhone': collection.clientPhone,
-      'emptyBottles': collection.emptyBottles.map(
-        (k, v) => MapEntry(k.toString(), v),
-      ),
-      'unitPrice': collection.unitPrice,
-      'unitPricesByWeight': collection.unitPricesByWeight?.map(
-        (k, v) => MapEntry(k.toString(), v),
-      ),
-      'leaks': collection.leaks.map((k, v) => MapEntry(k.toString(), v)),
-      'amountPaid': collection.amountPaid,
-      'paymentDate': collection.paymentDate?.toIso8601String(),
-    };
-  }
-
-  Map<String, dynamic> _transportExpenseToMap(TransportExpense expense) {
-    return {
-      'id': expense.id,
-      'description': expense.description,
-      'amount': expense.amount,
-      'expenseDate': expense.expenseDate.toIso8601String(),
-    };
-  }
+  Map<String, dynamic> toMap(Tour entity) => entity.toMap();
 
   @override
   String getLocalId(Tour entity) {
@@ -231,22 +75,15 @@ class TourOfflineRepository extends OfflineRepository<Tour>
 
   @override
   Future<void> deleteFromLocal(Tour entity) async {
-    final remoteId = getRemoteId(entity);
-    if (remoteId != null) {
-      await driftService.records.deleteByRemoteId(
-        collectionName: collectionName,
-        remoteId: remoteId,
-        enterpriseId: enterpriseId,
-        moduleType: moduleType,
-      );
-      return;
-    }
-    final localId = getLocalId(entity);
-    await driftService.records.deleteByLocalId(
-      collectionName: collectionName,
-      localId: localId,
-      enterpriseId: enterpriseId,
-      moduleType: moduleType,
+    // Soft-delete
+    final deletedTour = entity.copyWith(
+      deletedAt: DateTime.now(),
+    );
+    await saveToLocal(deletedTour);
+    
+    AppLogger.info(
+      'Soft-deleted tour: ${entity.id}',
+      name: 'TourOfflineRepository',
     );
   }
 
@@ -305,7 +142,8 @@ class TourOfflineRepository extends OfflineRepository<Tour>
       final map = jsonDecode(byRemote.dataJson) as Map<String, dynamic>;
       map['id'] = byRemote.localId;
       map['localId'] = byRemote.localId;
-      return fromMap(map);
+      final tour = fromMap(map);
+      return tour.isDeleted ? null : tour;
     }
     
     // Si pas trouvé par remoteId, essayer par localId au cas où
@@ -327,7 +165,8 @@ class TourOfflineRepository extends OfflineRepository<Tour>
       final map = jsonDecode(byLocal.dataJson) as Map<String, dynamic>;
       map['id'] = byLocal.localId;
       map['localId'] = byLocal.localId;
-      return fromMap(map);
+      final tour = fromMap(map);
+      return tour.isDeleted ? null : tour;
     }
     
     AppLogger.debug(
@@ -361,15 +200,15 @@ class TourOfflineRepository extends OfflineRepository<Tour>
       enterpriseId: enterpriseId,
       moduleType: moduleType,
     );
-    final tours = rows.map((r) {
-      final map = jsonDecode(r.dataJson) as Map<String, dynamic>;
-      // Utiliser le localId de la base de données comme ID principal
-      // C'est l'ID réellement utilisé pour stocker et rechercher le tour
-      map['id'] = r.localId;
-      map['localId'] = r.localId;
-      final tour = fromMap(map);
-      return tour;
-    }).toList();
+    final tours = rows
+        .map((r) {
+          final map = jsonDecode(r.dataJson) as Map<String, dynamic>;
+          map['id'] = r.localId;
+          map['localId'] = r.localId;
+          return fromMap(map);
+        })
+        .where((t) => !t.isDeleted)
+        .toList();
     
     // Dédupliquer par remoteId pour éviter les doublons
     final deduplicated = deduplicateByRemoteId(tours);
@@ -419,7 +258,8 @@ class TourOfflineRepository extends OfflineRepository<Tour>
                   final map = jsonDecode(r.dataJson) as Map<String, dynamic>;
                   map['id'] = r.localId;
                   map['localId'] = r.localId;
-                  return fromMap(map);
+                  final tour = fromMap(map);
+                  return tour.isDeleted ? null : tour;
                 } catch (e) {
                   return null;
                 }

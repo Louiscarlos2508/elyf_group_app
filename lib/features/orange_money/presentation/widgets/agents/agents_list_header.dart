@@ -15,52 +15,63 @@ class AgentsListHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    final theme = Theme.of(context);
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Liste des agents ($agentCount)',
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.normal,
-            color: Color(0xFF0A0A0A),
-          ),
-        ),
-        const Spacer(),
-        SizedBox(
-          height: 36,
-          child: ElevatedButton.icon(
-            onPressed: onAddAgent,
-            icon: const Icon(Icons.add, size: 16),
-            label: const Text('Nouvel agent', style: TextStyle(fontSize: 14)),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFF54900),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Text(
+                'Liste des agents ($agentCount)',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  fontFamily: 'Outfit',
+                ),
               ),
             ),
-          ),
+          ],
         ),
-        const SizedBox(width: 8),
-        SizedBox(
-          height: 36,
-          child: ElevatedButton.icon(
-            onPressed: onRecharge,
-            icon: const Icon(Icons.arrow_downward, size: 16),
-            label: const Text(
-              'Recharge / Retrait',
-              style: TextStyle(fontSize: 14),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00A63E),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            SizedBox(
+              height: 40,
+              child: ElevatedButton.icon(
+                onPressed: onAddAgent,
+                icon: const Icon(Icons.add_rounded, size: 18),
+                label: const Text('Nouvel agent'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: theme.colorScheme.primary,
+                  foregroundColor: Colors.white,
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
               ),
             ),
-          ),
+            SizedBox(
+              height: 40,
+              child: ElevatedButton.icon(
+                onPressed: onRecharge,
+                icon: const Icon(Icons.swap_vert_rounded, size: 18),
+                label: const Text('Recharge / Retrait'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF00C897), // Success green
+                  foregroundColor: Colors.white,
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ],
     );

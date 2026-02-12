@@ -28,34 +28,11 @@ class CreditOfflineRepository extends OfflineRepository<CreditPayment>
   String get collectionName => 'credit_payments';
 
   @override
-  CreditPayment fromMap(Map<String, dynamic> map) {
-    return CreditPayment(
-      id: map['id'] as String? ?? map['localId'] as String,
-      saleId: map['saleId'] as String,
-      amount: (map['amount'] as num).toInt(),
-      date: DateTime.parse(map['date'] as String),
-      notes: map['notes'] as String?,
-      cashAmount: (map['cashAmount'] as num?)?.toInt() ?? 0,
-      orangeMoneyAmount: (map['orangeMoneyAmount'] as num?)?.toInt() ?? 0,
-      updatedAt: map['updatedAt'] != null
-          ? DateTime.tryParse(map['updatedAt'] as String)
-          : null,
-    );
-  }
+  CreditPayment fromMap(Map<String, dynamic> map) =>
+      CreditPayment.fromMap(map, enterpriseId);
 
   @override
-  Map<String, dynamic> toMap(CreditPayment entity) {
-    return {
-      'id': entity.id,
-      'saleId': entity.saleId,
-      'amount': entity.amount,
-      'date': entity.date.toIso8601String(),
-      'notes': entity.notes,
-      'cashAmount': entity.cashAmount,
-      'orangeMoneyAmount': entity.orangeMoneyAmount,
-      'updatedAt': entity.updatedAt?.toIso8601String(),
-    };
-  }
+  Map<String, dynamic> toMap(CreditPayment entity) => entity.toMap();
 
   @override
   String getLocalId(CreditPayment entity) {
@@ -90,22 +67,15 @@ class CreditOfflineRepository extends OfflineRepository<CreditPayment>
 
   @override
   Future<void> deleteFromLocal(CreditPayment entity) async {
-    final remoteId = getRemoteId(entity);
-    if (remoteId != null) {
-      await driftService.records.deleteByRemoteId(
-        collectionName: collectionName,
-        remoteId: remoteId,
-        enterpriseId: enterpriseId,
-        moduleType: moduleType,
-      );
-      return;
-    }
-    final localId = getLocalId(entity);
-    await driftService.records.deleteByLocalId(
-      collectionName: collectionName,
-      localId: localId,
-      enterpriseId: enterpriseId,
-      moduleType: moduleType,
+    // Soft-delete
+    final deletedPayment = entity.copyWith(
+      deletedAt: DateTime.now(),
+    );
+    await saveToLocal(deletedPayment);
+    
+    AppLogger.info(
+      'Soft-deleted credit payment: ${entity.id}',
+      name: 'CreditOfflineRepository',
     );
   }
 
@@ -118,7 +88,8 @@ class CreditOfflineRepository extends OfflineRepository<CreditPayment>
       moduleType: moduleType,
     );
     if (byRemote != null) {
-      return fromMap(jsonDecode(byRemote.dataJson) as Map<String, dynamic>);
+      final payment = fromMap(jsonDecode(byRemote.dataJson) as Map<String, dynamic>);
+      return payment.isDeleted ? null : payment;
     }
     final byLocal = await driftService.records.findByLocalId(
       collectionName: collectionName,
@@ -127,7 +98,8 @@ class CreditOfflineRepository extends OfflineRepository<CreditPayment>
       moduleType: moduleType,
     );
     if (byLocal == null) return null;
-    return fromMap(jsonDecode(byLocal.dataJson) as Map<String, dynamic>);
+    final payment = fromMap(jsonDecode(byLocal.dataJson) as Map<String, dynamic>);
+    return payment.isDeleted ? null : payment;
   }
 
   @override
@@ -138,9 +110,8 @@ class CreditOfflineRepository extends OfflineRepository<CreditPayment>
       moduleType: moduleType,
     );
     final entities = rows
-
         .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
-
+        .where((p) => !p.isDeleted)
         .toList();
 
     
@@ -235,7 +206,7 @@ class CreditOfflineRepository extends OfflineRepository<CreditPayment>
             .toList();
       }
 
-      return filteredPayments;
+      return filteredPayments.where((p) => !p.isDeleted).toList();
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       AppLogger.error(
@@ -269,6 +240,7 @@ class CreditOfflineRepository extends OfflineRepository<CreditPayment>
               .map((row) => safeDecodeJson(row.dataJson, row.localId))
               .where((map) => map != null)
               .map((map) => fromMap(map!))
+              .where((p) => !p.isDeleted)
               .toList();
 
           if (startDate != null) {
@@ -318,25 +290,21 @@ class CreditOfflineRepository extends OfflineRepository<CreditPayment>
   Future<String> recordPayment(CreditPayment payment) async {
     try {
       final localId = getLocalId(payment);
-      final paymentWithLocalId = CreditPayment(
+      final paymentToSave = payment.copyWith(
         id: localId,
-        saleId: payment.saleId,
-        amount: payment.amount,
-        date: payment.date,
-        notes: payment.notes,
-        cashAmount: payment.cashAmount,
-        orangeMoneyAmount: payment.orangeMoneyAmount,
+        enterpriseId: enterpriseId,
+        createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
       
       // Enregistrer localement
-      await saveToLocal(paymentWithLocalId);
+      await saveToLocal(paymentToSave);
       
       // Mettre en file d'attente pour la synchronisation
       await syncManager.queueCreate(
         collectionName: collectionName,
         localId: localId,
-        data: toMap(paymentWithLocalId),
+        data: paymentToSave.toMap(),
         enterpriseId: enterpriseId,
       );
       return localId;

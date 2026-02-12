@@ -10,6 +10,7 @@ import '../../../../core/logging/app_logger.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
+import '../../../../core/tenant/tenant_provider.dart';
 import '../../domain/entities/packaging_stock.dart';
 
 /// Formulaire pour ajouter des matières premières en stock (bobines, emballages, autres).
@@ -127,8 +128,10 @@ class StockEntryFormState extends ConsumerState<StockEntryForm> {
             // Créer un nouveau stock d'emballages avec le facteur de conversion renseigné
             final unitsPerLot = int.tryParse(_unitsPerLotController.text) ?? 1;
             final packagingId = 'packaging-emballage';
+            final enterpriseId = ref.read(activeEnterpriseProvider).value?.id ?? 'default';
             stockEmballage = PackagingStock(
               id: packagingId,
+              enterpriseId: enterpriseId,
               type: 'Emballage',
               quantity: 0, 
               unit: 'unité',

@@ -2,22 +2,68 @@ import '../../domain/entities/agent.dart';
 import '../../domain/repositories/agent_repository.dart';
 import '../../../audit_trail/domain/services/audit_trail_service.dart';
 import '../../../../core/logging/app_logger.dart';
+import '../../domain/adapters/orange_money_permission_adapter.dart';
 
 /// Controller for managing affiliated agents.
 class AgentsController {
-  AgentsController(this._repository, this._auditTrailService, this.userId);
+  AgentsController(
+    this._repository,
+    this._auditTrailService,
+    this.userId,
+    this._permissionAdapter,
+    this._activeEnterpriseId,
+  );
 
   final AgentRepository _repository;
   final AuditTrailService _auditTrailService;
   final String userId;
+  final OrangeMoneyPermissionAdapter _permissionAdapter;
+  final String _activeEnterpriseId;
 
   Future<List<Agent>> fetchAgents({
     String? enterpriseId,
     AgentStatus? status,
     String? searchQuery,
   }) async {
+    // If specific enterprise requested, use it
+    if (enterpriseId != null) {
+      return await _repository.fetchAgents(
+        enterpriseId: enterpriseId,
+        status: status,
+        searchQuery: searchQuery,
+      );
+    }
+
+    // Otherwise, check hierarchy
+    final accessibleIds = await _permissionAdapter.getAccessibleEnterpriseIds(_activeEnterpriseId);
+
+    if (accessibleIds.length > 1) {
+       // Note: Repository likely needs fetchAgentsByEnterprises or we iterate.
+       // For now, let's assuming repo doesn't have it, we might need to iterate or add it to repo.
+       // Checking AgentRepository... it might only have fetchAgents.
+       // Let's check AgentRepository first.
+       // Actually, to avoid breaking, let's implement basic iteration here if repo missing method.
+       // But better to add it to repo.
+       // Let's assume for now we use `activeEnterpriseId` if no method, 
+       // OR even better: just iterate here if necessary.
+       // Wait, I should have checked AgentRepository. 
+       // I will assume for this step I need to add it or iterate.
+       // Let's implement iteration as fallback safe approach.
+       
+       List<Agent> allAgents = [];
+       for (final id in accessibleIds) {
+          final agents = await _repository.fetchAgents(
+            enterpriseId: id,
+            status: status,
+            searchQuery: searchQuery,
+          );
+          allAgents.addAll(agents);
+       }
+       return allAgents;
+    }
+
     return await _repository.fetchAgents(
-      enterpriseId: enterpriseId,
+      enterpriseId: _activeEnterpriseId,
       status: status,
       searchQuery: searchQuery,
     );

@@ -28,68 +28,76 @@ class AgentsTable extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         border: Border.all(
-          color: Colors.black.withValues(alpha: 0.1),
-          width: 1.219,
+          color: theme.colorScheme.outline.withValues(alpha: 0.3),
+          width: 1,
         ),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(16),
       ),
-      child: Column(
-        children: [
-          // Table header
-          Container(
-            height: 40,
-            decoration: BoxDecoration(
-              border: Border(
-                bottom: BorderSide(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  width: 1.219,
+      child: Scrollbar(
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Table header
+              Container(
+                height: 48, // Improved height for header
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                  border: Border(
+                    bottom: BorderSide(
+                      color: theme.colorScheme.outline.withValues(alpha: 0.3),
+                      width: 1,
+                    ),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    AgentsTableCell.buildHeader('Agent', 171.673),
+                    AgentsTableCell.buildHeader('Téléphone', 122.274),
+                    AgentsTableCell.buildHeader('N° SIM', 135.989),
+                    AgentsTableCell.buildHeader('Opérateur', 84.741),
+                    AgentsTableCell.buildHeader(
+                      'Liquidité',
+                      100.884,
+                      alignRight: false,
+                    ),
+                    AgentsTableCell.buildHeader(
+                      '%Commission',
+                      110.178,
+                      alignRight: true,
+                    ),
+                    AgentsTableCell.buildHeader('Statut', 62.246),
+                    AgentsTableCell.buildHeader('Actions', 185.92),
+                  ],
                 ),
               ),
-            ),
-            child: Row(
-              children: [
-                AgentsTableCell.buildHeader('Agent', 171.673),
-                AgentsTableCell.buildHeader('Téléphone', 122.274),
-                AgentsTableCell.buildHeader('N° SIM', 135.989),
-                AgentsTableCell.buildHeader('Opérateur', 84.741),
-                AgentsTableCell.buildHeader(
-                  'Liquidité',
-                  100.884,
-                  alignRight: false,
-                ),
-                AgentsTableCell.buildHeader(
-                  '%Commission',
-                  110.178,
-                  alignRight: true,
-                ),
-                AgentsTableCell.buildHeader('Statut', 62.246),
-                AgentsTableCell.buildHeader('Actions', 185.92),
-              ],
-            ),
+              // Table body
+              if (agents.isEmpty)
+                Container(
+                  width: 973, // Total width of all columns
+                  height: 128,
+                  alignment: Alignment.center,
+                  child: Text(
+                    'Aucun agent trouvé',
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      color: const Color(0xFF6A7282),
+                    ),
+                  ),
+                )
+              else
+                ...agents.map((agent) {
+                  return AgentsTableRow(
+                    agent: agent,
+                    onView: () => onView(agent),
+                    onRefresh: () => onRefresh(agent),
+                    onEdit: () => onEdit(agent),
+                    onDelete: () => onDelete(agent),
+                  );
+                }),
+            ],
           ),
-          // Table body
-          if (agents.isEmpty)
-            Container(
-              height: 128,
-              alignment: Alignment.center,
-              child: Text(
-                'Aucun agent trouvé',
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: const Color(0xFF6A7282),
-                ),
-              ),
-            )
-          else
-            ...agents.map((agent) {
-              return AgentsTableRow(
-                agent: agent,
-                onView: () => onView(agent),
-                onRefresh: () => onRefresh(agent),
-                onEdit: () => onEdit(agent),
-                onDelete: () => onDelete(agent),
-              );
-            }),
-        ],
+        ),
       ),
     );
   }

@@ -1,4 +1,4 @@
-/// Represents a liquidity checkpoint (pointage de liquidité).
+/// Represents a liquidity checkpoint (pointage de liquidité) with theoretical calculation.
 class LiquidityCheckpoint {
   const LiquidityCheckpoint({
     required this.id,
@@ -14,6 +14,15 @@ class LiquidityCheckpoint {
     this.morningSimAmount, // SIM du pointage du matin (FCFA)
     this.eveningCashAmount, // Cash du pointage du soir (FCFA)
     this.eveningSimAmount, // SIM du pointage du soir (FCFA)
+    this.theoreticalCash, // Cash théorique calculé (FCFA)
+    this.theoreticalSim, // SIM théorique calculé (FCFA)
+    this.cashDiscrepancy, // Écart cash (réel - théorique)
+    this.simDiscrepancy, // Écart SIM (réel - théorique)
+    this.discrepancyPercentage, // Écart total en %
+    this.requiresJustification = false, // Si écart > seuil
+    this.justification, // Justification de l'écart
+    this.validatedBy, // Qui a validé l'écart
+    this.validatedAt, // Date de validation
     this.notes,
     this.deletedAt,
     this.deletedBy,
@@ -34,6 +43,20 @@ class LiquidityCheckpoint {
   final int? morningSimAmount; // SIM du pointage du matin (FCFA)
   final int? eveningCashAmount; // Cash du pointage du soir (FCFA)
   final int? eveningSimAmount; // SIM du pointage du soir (FCFA)
+
+  // CALCUL THÉORIQUE (pour pointage du soir)
+  final int? theoreticalCash; // Cash théorique calculé
+  final int? theoreticalSim; // SIM théorique calculé
+  final int? cashDiscrepancy; // Écart cash (réel - théorique)
+  final int? simDiscrepancy; // Écart SIM (réel - théorique)
+  final double? discrepancyPercentage; // Écart en %
+
+  // VALIDATION ÉCART
+  final bool requiresJustification; // Si écart > seuil
+  final String? justification; // Justification de l'écart
+  final String? validatedBy; // Qui a validé l'écart
+  final DateTime? validatedAt; // Date de validation
+
   final String? notes;
   final DateTime? deletedAt;
   final String? deletedBy;
@@ -42,18 +65,27 @@ class LiquidityCheckpoint {
 
   bool get isDeleted => deletedAt != null;
 
-  /// Vérifie si le pointage du matin est effectué.
+  /// Vérifie si le pointage du matin est effectué
   bool get hasMorningCheckpoint =>
       (morningCashAmount != null && morningCashAmount! > 0) ||
       (morningSimAmount != null && morningSimAmount! > 0);
 
-  /// Vérifie si le pointage du soir est effectué.
+  /// Vérifie si le pointage du soir est effectué
   bool get hasEveningCheckpoint =>
       (eveningCashAmount != null && eveningCashAmount! > 0) ||
       (eveningSimAmount != null && eveningSimAmount! > 0);
 
-  /// Vérifie si les deux pointages sont effectués.
+  /// Vérifie si les deux pointages sont effectués
   bool get isComplete => hasMorningCheckpoint && hasEveningCheckpoint;
+
+  /// Vérifie si l'écart est validé
+  bool get isValidated => validatedAt != null;
+
+  /// Écart total absolu
+  int? get totalDiscrepancy {
+    if (cashDiscrepancy == null || simDiscrepancy == null) return null;
+    return cashDiscrepancy!.abs() + simDiscrepancy!.abs();
+  }
 
   LiquidityCheckpoint copyWith({
     String? id,
@@ -69,6 +101,15 @@ class LiquidityCheckpoint {
     int? morningSimAmount,
     int? eveningCashAmount,
     int? eveningSimAmount,
+    int? theoreticalCash,
+    int? theoreticalSim,
+    int? cashDiscrepancy,
+    int? simDiscrepancy,
+    double? discrepancyPercentage,
+    bool? requiresJustification,
+    String? justification,
+    String? validatedBy,
+    DateTime? validatedAt,
     String? notes,
     DateTime? deletedAt,
     String? deletedBy,
@@ -89,6 +130,17 @@ class LiquidityCheckpoint {
       morningSimAmount: morningSimAmount ?? this.morningSimAmount,
       eveningCashAmount: eveningCashAmount ?? this.eveningCashAmount,
       eveningSimAmount: eveningSimAmount ?? this.eveningSimAmount,
+      theoreticalCash: theoreticalCash ?? this.theoreticalCash,
+      theoreticalSim: theoreticalSim ?? this.theoreticalSim,
+      cashDiscrepancy: cashDiscrepancy ?? this.cashDiscrepancy,
+      simDiscrepancy: simDiscrepancy ?? this.simDiscrepancy,
+      discrepancyPercentage:
+          discrepancyPercentage ?? this.discrepancyPercentage,
+      requiresJustification:
+          requiresJustification ?? this.requiresJustification,
+      justification: justification ?? this.justification,
+      validatedBy: validatedBy ?? this.validatedBy,
+      validatedAt: validatedAt ?? this.validatedAt,
       notes: notes ?? this.notes,
       deletedAt: deletedAt ?? this.deletedAt,
       deletedBy: deletedBy ?? this.deletedBy,
@@ -115,6 +167,18 @@ class LiquidityCheckpoint {
       morningSimAmount: (map['morningSimAmount'] as num?)?.toInt(),
       eveningCashAmount: (map['eveningCashAmount'] as num?)?.toInt(),
       eveningSimAmount: (map['eveningSimAmount'] as num?)?.toInt(),
+      theoreticalCash: (map['theoreticalCash'] as num?)?.toInt(),
+      theoreticalSim: (map['theoreticalSim'] as num?)?.toInt(),
+      cashDiscrepancy: (map['cashDiscrepancy'] as num?)?.toInt(),
+      simDiscrepancy: (map['simDiscrepancy'] as num?)?.toInt(),
+      discrepancyPercentage:
+          (map['discrepancyPercentage'] as num?)?.toDouble(),
+      requiresJustification: map['requiresJustification'] as bool? ?? false,
+      justification: map['justification'] as String?,
+      validatedBy: map['validatedBy'] as String?,
+      validatedAt: map['validatedAt'] != null
+          ? DateTime.parse(map['validatedAt'] as String)
+          : null,
       notes: map['notes'] as String?,
       deletedAt: map['deletedAt'] != null
           ? DateTime.parse(map['deletedAt'] as String)
@@ -144,6 +208,15 @@ class LiquidityCheckpoint {
       'morningSimAmount': morningSimAmount,
       'eveningCashAmount': eveningCashAmount,
       'eveningSimAmount': eveningSimAmount,
+      'theoreticalCash': theoreticalCash,
+      'theoreticalSim': theoreticalSim,
+      'cashDiscrepancy': cashDiscrepancy,
+      'simDiscrepancy': simDiscrepancy,
+      'discrepancyPercentage': discrepancyPercentage,
+      'requiresJustification': requiresJustification,
+      'justification': justification,
+      'validatedBy': validatedBy,
+      'validatedAt': validatedAt?.toIso8601String(),
       'notes': notes,
       'deletedAt': deletedAt?.toIso8601String(),
       'deletedBy': deletedBy,

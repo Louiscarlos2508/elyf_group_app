@@ -1,7 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/administration/application/providers.dart'
-    show permissionServiceProvider;
+    show 
+      permissionServiceProvider, 
+      adminRepositoryProvider, 
+      enterpriseRepositoryProvider;
 import '../../../../core/permissions/services/permission_service.dart';
 import '../../../../core/auth/providers.dart' as auth;
 import '../../domain/adapters/orange_money_permission_adapter.dart';
@@ -28,5 +31,13 @@ final orangeMoneyPermissionAdapterProvider =
       (ref) => OrangeMoneyPermissionAdapter(
         permissionService: ref.watch(centralizedPermissionServiceProvider),
         userId: ref.watch(currentUserIdProvider),
+        adminRepository: ref.watch(adminRepositoryProvider),
+        enterpriseRepository: ref.watch(enterpriseRepositoryProvider),
       ),
     );
+
+/// Provider to check if user can validate commissions.
+final canValidateCommissionProvider = FutureProvider.autoDispose<bool>((ref) async {
+  final adapter = ref.watch(orangeMoneyPermissionAdapterProvider);
+  return await adapter.hasPermission('validate_commission');
+});

@@ -7,6 +7,7 @@ import '../../../audit_trail/domain/entities/audit_record.dart';
 import '../../../audit_trail/domain/repositories/audit_trail_repository.dart';
 import '../../domain/entities/liquidity_checkpoint.dart';
 import '../../domain/repositories/liquidity_repository.dart';
+import '../../../../shared/utils/id_generator.dart';
 
 /// Offline-first repository for LiquidityCheckpoint entities.
 class LiquidityOfflineRepository extends OfflineRepository<LiquidityCheckpoint>
@@ -170,7 +171,47 @@ class LiquidityOfflineRepository extends OfflineRepository<LiquidityCheckpoint>
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       AppLogger.error(
-        'Error fetching checkpoints: ${appException.message}',
+        'Error fetching checkpoints',
+        name: 'LiquidityOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      throw appException;
+    }
+  }
+
+  @override
+  Future<List<LiquidityCheckpoint>> fetchCheckpointsByEnterprises(
+    List<String> enterpriseIds, {
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    try {
+      final rows = await driftService.records.listForEnterprises(
+        collectionName: collectionName,
+        enterpriseIds: enterpriseIds,
+        moduleType: moduleType,
+      );
+      
+      final checkpoints = rows
+          .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+          .where((c) => !c.isDeleted)
+          .toList();
+
+      final filtered = checkpoints.where((c) {
+        if (startDate != null && c.date.isBefore(startDate)) return false;
+        if (endDate != null && c.date.isAfter(endDate)) return false;
+        return true;
+      }).toList();
+
+      // Dédupliquer et trier
+      final deduplicated = deduplicateByRemoteId(filtered);
+      deduplicated.sort((a, b) => b.date.compareTo(a.date));
+      return deduplicated;
+    } catch (error, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
+      AppLogger.error(
+        'Error fetching checkpoints for enterprises',
         name: 'LiquidityOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -186,7 +227,7 @@ class LiquidityOfflineRepository extends OfflineRepository<LiquidityCheckpoint>
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       AppLogger.error(
-        'Error getting checkpoint: $checkpointId - ${appException.message}',
+        'Error getting checkpoint: $checkpointId',
         name: 'LiquidityOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -210,7 +251,7 @@ class LiquidityOfflineRepository extends OfflineRepository<LiquidityCheckpoint>
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       AppLogger.error(
-        'Error getting today checkpoint: ${appException.message}',
+        'Error getting today checkpoint',
         name: 'LiquidityOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -235,7 +276,7 @@ class LiquidityOfflineRepository extends OfflineRepository<LiquidityCheckpoint>
       // Audit Log
       await auditTrailRepository.log(
         AuditRecord(
-          id: LocalIdGenerator.generate(),
+          id: IdGenerator.generate(),
           enterpriseId: enterpriseId,
           userId: userId,
           module: 'orange_money',
@@ -255,7 +296,7 @@ class LiquidityOfflineRepository extends OfflineRepository<LiquidityCheckpoint>
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       AppLogger.error(
-        'Error creating checkpoint: ${appException.message}',
+        'Error creating checkpoint',
         name: 'LiquidityOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -274,7 +315,7 @@ class LiquidityOfflineRepository extends OfflineRepository<LiquidityCheckpoint>
       // Audit Log
       await auditTrailRepository.log(
         AuditRecord(
-          id: LocalIdGenerator.generate(),
+          id: IdGenerator.generate(),
           enterpriseId: enterpriseId,
           userId: userId,
           module: 'orange_money',
@@ -291,7 +332,7 @@ class LiquidityOfflineRepository extends OfflineRepository<LiquidityCheckpoint>
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       AppLogger.error(
-        'Error updating checkpoint: ${checkpoint.id} - ${appException.message}',
+        'Error updating checkpoint: ${checkpoint.id}',
         name: 'LiquidityOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -316,7 +357,7 @@ class LiquidityOfflineRepository extends OfflineRepository<LiquidityCheckpoint>
         // Audit Log
         await auditTrailRepository.log(
           AuditRecord(
-            id: LocalIdGenerator.generate(),
+            id: IdGenerator.generate(),
             enterpriseId: enterpriseId,
             userId: userId,
             module: 'orange_money',
@@ -331,7 +372,7 @@ class LiquidityOfflineRepository extends OfflineRepository<LiquidityCheckpoint>
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       AppLogger.error(
-        'Error deleting checkpoint: $checkpointId - ${appException.message}',
+        'Error deleting checkpoint: $checkpointId',
         name: 'LiquidityOfflineRepository',
         error: error,
         stackTrace: stackTrace,
@@ -369,7 +410,7 @@ class LiquidityOfflineRepository extends OfflineRepository<LiquidityCheckpoint>
       // Audit Log
       await auditTrailRepository.log(
         AuditRecord(
-          id: LocalIdGenerator.generate(),
+          id: IdGenerator.generate(),
           enterpriseId: enterpriseId,
           userId: userId,
           module: 'orange_money',
@@ -439,6 +480,164 @@ class LiquidityOfflineRepository extends OfflineRepository<LiquidityCheckpoint>
     });
   }
 
+  // Theoretical Calculation Methods
+
+  @override
+  Future<LiquidityCheckpoint?> getMorningCheckpoint({
+    required String enterpriseId,
+    required DateTime date,
+  }) async {
+    try {
+      final startOfDay = DateTime(date.year, date.month, date.day);
+      final endOfDay = DateTime(date.year, date.month, date.day, 23, 59, 59);
+      final checkpoints = await fetchCheckpoints(
+        enterpriseId: enterpriseId,
+        startDate: startOfDay,
+        endDate: endOfDay,
+      );
+      
+      // Chercher le pointage du matin
+      for (final checkpoint in checkpoints) {
+        if (checkpoint.type == LiquidityCheckpointType.morning ||
+            (checkpoint.morningCashAmount != null && checkpoint.morningSimAmount != null)) {
+          return checkpoint;
+        }
+      }
+      
+      return null;
+    } catch (error, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
+      AppLogger.error(
+        'Error getting morning checkpoint',
+        name: 'LiquidityOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      throw appException;
+    }
+  }
+
+  @override
+  Future<List<LiquidityCheckpoint>> getCheckpointsRequiringJustification(
+    String enterpriseId,
+  ) async {
+    try {
+      final checkpoints = await getAllForEnterprise(enterpriseId);
+      return checkpoints
+          .where((c) => c.requiresJustification && !c.isValidated)
+          .toList();
+    } catch (error, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
+      AppLogger.error(
+        'Error getting checkpoints requiring justification',
+        name: 'LiquidityOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      throw appException;
+    }
+  }
+
+  @override
+  Future<LiquidityCheckpoint> createCheckpointWithCalculation({
+    required String enterpriseId,
+    required LiquidityCheckpointType type,
+    required int cashAmount,
+    required int simAmount,
+    String? notes,
+  }) async {
+    try {
+      final checkpoint = LiquidityCheckpoint(
+        id: LocalIdGenerator.generate(),
+        enterpriseId: enterpriseId,
+        date: DateTime.now(),
+        type: type,
+        amount: cashAmount + simAmount,
+        cashAmount: cashAmount,
+        simAmount: simAmount,
+        notes: notes,
+        createdAt: DateTime.now(),
+      );
+
+      await createCheckpoint(checkpoint);
+      return checkpoint;
+    } catch (error, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
+      AppLogger.error(
+        'Error creating checkpoint with calculation',
+        name: 'LiquidityOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      throw appException;
+    }
+  }
+
+  @override
+  Future<TheoreticalLiquidity> calculateTheoreticalLiquidity({
+    required String enterpriseId,
+    required DateTime date,
+    required int morningCash,
+    required int morningSim,
+  }) async {
+    throw UnimplementedError(
+      'Use LiquidityService.calculateTheoreticalLiquidity instead',
+    );
+  }
+
+  @override
+  Future<LiquidityCheckpoint> validateDiscrepancy({
+    required String checkpointId,
+    required String validatedBy,
+    required String justification,
+  }) async {
+    try {
+      final checkpoint = await getCheckpoint(checkpointId);
+      if (checkpoint == null) {
+        throw Exception('Checkpoint not found: $checkpointId');
+      }
+
+      final now = DateTime.now();
+      final updated = checkpoint.copyWith(
+        justification: justification,
+        validatedBy: validatedBy,
+        validatedAt: now,
+        updatedAt: now,
+      );
+
+      await save(updated);
+
+      // Audit Log
+      await auditTrailRepository.log(
+        AuditRecord(
+          id: LocalIdGenerator.generate(),
+          enterpriseId: enterpriseId,
+          userId: userId,
+          module: 'orange_money',
+          action: 'validate_liquidity_discrepancy',
+          entityId: checkpointId,
+          entityType: 'liquidity_checkpoint',
+          metadata: {
+            'discrepancyPercentage': checkpoint.discrepancyPercentage,
+            'justification': justification,
+          },
+          timestamp: now,
+        ),
+      );
+
+      return updated;
+    } catch (error, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
+      AppLogger.error(
+        'Error validating discrepancy',
+        name: 'LiquidityOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      throw appException;
+    }
+  }
+
   @override
   Future<Map<String, dynamic>> getStatistics({
     String? enterpriseId,
@@ -468,7 +667,7 @@ class LiquidityOfflineRepository extends OfflineRepository<LiquidityCheckpoint>
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       AppLogger.error(
-        'Error getting liquidity statistics: ${appException.message}',
+        'Error getting liquidity statistics',
         name: 'LiquidityOfflineRepository',
         error: error,
         stackTrace: stackTrace,

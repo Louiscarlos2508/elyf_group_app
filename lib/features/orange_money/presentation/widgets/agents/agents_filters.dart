@@ -28,33 +28,34 @@ class AgentsFilters extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    final theme = Theme.of(context);
+    
+    return Wrap(
+      spacing: 12,
+      runSpacing: 12,
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        Expanded(child: AgentsSearchField(onChanged: onSearchChanged)),
-        const SizedBox(width: 16),
-        AgentsStatusFilter(value: statusFilter, onChanged: onStatusChanged),
-        const SizedBox(width: 16),
-        AgentsNameFilter(value: sortBy, onChanged: onSortChanged),
-        const SizedBox(width: 16),
+        // Search field - take full width on mobile, or 300 on tablet+
         SizedBox(
-          width: 210.586,
-          height: 36,
-          child: OutlinedButton(
+          width: MediaQuery.of(context).size.width < 600 ? double.infinity : 300,
+          child: AgentsSearchField(onChanged: onSearchChanged),
+        ),
+        AgentsStatusFilter(value: statusFilter, onChanged: onStatusChanged),
+        AgentsNameFilter(value: sortBy, onChanged: onSortChanged),
+        SizedBox(
+          height: 44, // Taller button for easier touch
+          child: OutlinedButton.icon(
             onPressed: onReset,
+            icon: const Icon(Icons.refresh_rounded, size: 18),
+            label: const Text('Réinitialiser'),
             style: OutlinedButton.styleFrom(
-              backgroundColor: Colors.white,
-              side: BorderSide(
-                color: Colors.black.withValues(alpha: 0.1),
-                width: 1.219,
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 17, vertical: 9),
+              backgroundColor: theme.colorScheme.surface,
+              side: BorderSide(color: theme.colorScheme.outline.withValues(alpha: 0.5)),
+              foregroundColor: theme.colorScheme.onSurface,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 0),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(12),
               ),
-            ),
-            child: const Text(
-              'Réinitialiser',
-              style: TextStyle(fontSize: 14, color: Color(0xFF0A0A0A)),
             ),
           ),
         ),

@@ -549,4 +549,116 @@ class TransactionOfflineRepository extends OfflineRepository<Transaction>
       throw appException;
     }
   }
+
+  @override
+  Future<List<Transaction>> fetchTransactionsByEnterprises(
+    List<String> enterpriseIds, {
+    DateTime? startDate,
+    DateTime? endDate,
+    TransactionType? type,
+    TransactionStatus? status,
+  }) async {
+    try {
+      AppLogger.debug(
+        'Fetching transactions for ${enterpriseIds.length} enterprises',
+        name: 'TransactionOfflineRepository',
+      );
+      
+      final rows = await driftService.records.listForEnterprises(
+        collectionName: collectionName,
+        enterpriseIds: enterpriseIds,
+        moduleType: 'orange_money',
+      );
+      
+      var allTransactions = rows
+          .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+          .where((t) => !t.isDeleted)
+          .toList();
+
+      if (startDate != null) {
+        allTransactions = allTransactions
+            .where(
+              (t) =>
+                  t.date.isAfter(startDate) ||
+                  t.date.isAtSameMomentAs(startDate),
+            )
+            .toList();
+      }
+
+      if (endDate != null) {
+        allTransactions = allTransactions
+            .where(
+              (t) =>
+                  t.date.isBefore(endDate) || t.date.isAtSameMomentAs(endDate),
+            )
+            .toList();
+      }
+
+      if (type != null) {
+        allTransactions = allTransactions.where((t) => t.type == type).toList();
+      }
+
+      if (status != null) {
+        allTransactions = allTransactions
+            .where((t) => t.status == status)
+            .toList();
+      }
+
+      // Sort by date descending
+      allTransactions.sort((a, b) => b.date.compareTo(a.date));
+
+      return deduplicateByRemoteId(allTransactions);
+    } catch (error, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
+      AppLogger.error(
+        'Error fetching transactions for enterprises: ${appException.message}',
+        name: 'TransactionOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      throw appException;
+    }
+  }
+
+  @override
+  Stream<List<Transaction>> watchTransactionsByEnterprises(
+    List<String> enterpriseIds, {
+    DateTime? startDate,
+    DateTime? endDate,
+    TransactionType? type,
+    TransactionStatus? status,
+  }) {
+    return driftService.records
+        .watchForEnterprises(
+          collectionName: collectionName,
+          enterpriseIds: enterpriseIds,
+          moduleType: 'orange_money',
+        )
+        .map((rows) {
+      var transactions = rows
+          .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+          .where((t) => !t.isDeleted)
+          .toList();
+
+      if (startDate != null) {
+        transactions = transactions
+            .where((t) => t.date.isAfter(startDate) || t.date.isAtSameMomentAs(startDate))
+            .toList();
+      }
+      if (endDate != null) {
+        transactions = transactions
+            .where((t) => t.date.isBefore(endDate) || t.date.isAtSameMomentAs(endDate))
+            .toList();
+      }
+      if (type != null) {
+        transactions = transactions.where((t) => t.type == type).toList();
+      }
+      if (status != null) {
+        transactions = transactions.where((t) => t.status == status).toList();
+      }
+
+      transactions.sort((a, b) => b.date.compareTo(a.date));
+      return deduplicateByRemoteId(transactions);
+    });
+  }
 }

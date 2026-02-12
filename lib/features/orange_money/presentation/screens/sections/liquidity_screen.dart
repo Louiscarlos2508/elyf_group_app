@@ -13,6 +13,8 @@ import '../../widgets/liquidity/liquidity_checkpoints_list.dart';
 import '../../widgets/liquidity/liquidity_empty_state.dart';
 import '../../widgets/liquidity/liquidity_checkpoint_card.dart';
 import '../../widgets/liquidity/liquidity_tabs.dart';
+import '../../widgets/orange_money_header.dart';
+import '../../widgets/liquidity/justification_dialog.dart';
 
 /// Screen for managing liquidity checkpoints.
 class LiquidityScreen extends ConsumerStatefulWidget {
@@ -32,6 +34,7 @@ class _LiquidityScreenState extends ConsumerState<LiquidityScreen> {
   @override
   Widget build(BuildContext context) {
     final enterpriseKey = widget.enterpriseId ?? '';
+    final theme = Theme.of(context);
     final todayCheckpointAsync = ref.watch(
       todayLiquidityCheckpointProvider(enterpriseKey),
     );
@@ -50,22 +53,31 @@ class _LiquidityScreenState extends ConsumerState<LiquidityScreen> {
       liquidityCheckpointsProvider((allCheckpointsKey)),
     );
 
-    return Container(
-      color: const Color(0xFFF9FAFB),
-      child: SingleChildScrollView(
-        padding: EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildTodayTrackingCard(context, todayCheckpointAsync),
-            SizedBox(height: AppSpacing.md),
-            _buildHistorySection(
-              context,
-              _selectedTab == 0 ? recentCheckpointsAsync : allCheckpointsAsync,
-              _selectedTab == 0 ? recentCheckpointsKey : allCheckpointsKey,
+    return Scaffold(
+      backgroundColor: theme.colorScheme.surface,
+      body: CustomScrollView(
+        slivers: [
+          OrangeMoneyHeader(
+            title: 'Suivi de Liquidité',
+            subtitle: 'Contrôlez vos pointages matin et soir pour garantir la sécurité de vos fonds.',
+            badgeText: 'LIQUIDITÉ',
+            badgeIcon: Icons.water_drop_rounded,
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.all(24),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                _buildTodayTrackingCard(context, todayCheckpointAsync, theme),
+                const SizedBox(height: 24),
+                _buildHistorySection(
+                  context,
+                  _selectedTab == 0 ? recentCheckpointsAsync : allCheckpointsAsync,
+                  _selectedTab == 0 ? recentCheckpointsKey : allCheckpointsKey,
+                ),
+              ]),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -73,9 +85,10 @@ class _LiquidityScreenState extends ConsumerState<LiquidityScreen> {
   Widget _buildTodayTrackingCard(
     BuildContext context,
     AsyncValue<LiquidityCheckpoint?> todayCheckpointAsync,
+    ThemeData theme,
   ) {
     final today = DateTime.now();
-    final dateFormat = DateFormat('yyyy-MM-dd');
+    final dateFormat = DateFormat('dd MMMM yyyy', 'fr');
     final formattedDate = dateFormat.format(today);
 
     final enterpriseKey = widget.enterpriseId ?? '';
@@ -89,56 +102,70 @@ class _LiquidityScreenState extends ConsumerState<LiquidityScreen> {
       dailyTransactionStatsProvider(dailyStatsKey),
     );
 
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFFEFF6FF),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFBEDBFF), width: 1.219),
-      ),
-      padding: const EdgeInsets.all(25),
+    return ElyfCard(
+      padding: const EdgeInsets.all(24),
+      elevation: 4,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildDateHeader(formattedDate),
-          const SizedBox(height: 30),
+          _buildDateHeader(formattedDate, theme),
+          const SizedBox(height: 32),
           todayCheckpointAsync.when(
             data: (checkpoint) => _buildCheckpointCards(context, checkpoint),
             loading: () => const LoadingIndicator(),
             error: (error, stackTrace) => _buildCheckpointCards(context, null),
           ),
-          const SizedBox(height: 16),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 0),
-            child: todayCheckpointAsync.when(
-              data: (checkpoint) => dailyStatsAsync.when(
-                data: (stats) => LiquidityDailyActivitySection(
-                  checkpoint: checkpoint,
-                  stats: stats,
-                ),
-                loading: () => const SizedBox.shrink(),
-                error: (_, __) => const SizedBox.shrink(),
+          const SizedBox(height: 32),
+          todayCheckpointAsync.when(
+            data: (checkpoint) => dailyStatsAsync.when(
+              data: (stats) => LiquidityDailyActivitySection(
+                checkpoint: checkpoint,
+                stats: stats,
               ),
               loading: () => const SizedBox.shrink(),
               error: (_, __) => const SizedBox.shrink(),
             ),
+            loading: () => const SizedBox.shrink(),
+            error: (_, __) => const SizedBox.shrink(),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildDateHeader(String formattedDate) {
+  Widget _buildDateHeader(String formattedDate, ThemeData theme) {
     return Row(
       children: [
-        const Icon(Icons.calendar_today, size: 20, color: Color(0xFF1C398E)),
-        const SizedBox(width: 8),
-        Text(
-          'Suivi du jour - $formattedDate',
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.normal,
-            color: Color(0xFF1C398E),
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primary.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(12),
           ),
+          child: Icon(Icons.calendar_month_rounded, size: 22, color: theme.colorScheme.primary),
+        ),
+        const SizedBox(width: 16),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Aujourd\'hui',
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.5,
+                fontFamily: 'Outfit',
+              ),
+            ),
+            Text(
+              formattedDate,
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w900,
+                color: theme.colorScheme.onSurface,
+                fontFamily: 'Outfit',
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -174,11 +201,16 @@ class _LiquidityScreenState extends ConsumerState<LiquidityScreen> {
             hasCheckpoint: checkpoint?.hasEveningCheckpoint ?? false,
             cashAmount: checkpoint?.eveningCashAmount,
             simAmount: checkpoint?.eveningSimAmount,
+            requiresJustification: checkpoint?.requiresJustification ?? false,
+            discrepancyPercentage: checkpoint?.discrepancyPercentage,
             onPressed: () => _showCheckpointDialog(
               context,
               LiquidityCheckpointType.evening,
               checkpoint,
             ),
+            onJustifyPressed: checkpoint?.requiresJustification == true && !checkpoint!.isValidated
+                ? () => _showJustificationDialog(context, checkpoint!)
+                : null,
           ),
         ),
       ],
@@ -207,16 +239,10 @@ class _LiquidityScreenState extends ConsumerState<LiquidityScreen> {
     AsyncValue<List<LiquidityCheckpoint>> checkpointsAsync,
     String providerKey,
   ) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: Colors.black.withValues(alpha: 0.1),
-          width: 1.219,
-        ),
-      ),
-      padding: const EdgeInsets.all(25),
+    final theme = Theme.of(context);
+    
+    return ElyfCard(
+      padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -224,10 +250,10 @@ class _LiquidityScreenState extends ConsumerState<LiquidityScreen> {
             _selectedTab == 0
                 ? '7 derniers jours'
                 : 'Tous les pointages (${checkpointsAsync.value?.length ?? 0})',
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.normal,
-              color: Color(0xFF0A0A0A),
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w800,
+              color: theme.colorScheme.onSurface,
+              fontFamily: 'Outfit',
             ),
           ),
           const SizedBox(height: 24),
@@ -372,6 +398,26 @@ class _LiquidityScreenState extends ConsumerState<LiquidityScreen> {
       }
 
       _invalidateProviders();
+    }
+  }
+
+  void _showJustificationDialog(BuildContext context, LiquidityCheckpoint checkpoint) async {
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => JustificationDialog(
+        checkpointId: checkpoint.id,
+        discrepancyPercentage: checkpoint.discrepancyPercentage ?? 0.0,
+      ),
+    );
+
+    if (result != null && mounted) {
+      final controller = ref.read(liquidityControllerProvider);
+      await controller.validateDiscrepancy(
+        checkpointId: checkpoint.id,
+        justification: result,
+      );
+      _invalidateProviders();
+      NotificationService.showSuccess(context, 'Justification enregistrée');
     }
   }
 

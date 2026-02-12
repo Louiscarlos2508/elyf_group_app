@@ -7,12 +7,12 @@ import 'package:elyf_groupe_app/features/orange_money/application/providers.dart
 import '../../../domain/entities/agent.dart';
 import '../../widgets/agents/agents_dialogs.dart';
 import '../../widgets/agents/agents_filters.dart';
-import '../../widgets/agents/agents_header.dart';
 import '../../widgets/agents/agents_kpi_cards.dart';
 import '../../widgets/agents/agents_list_header.dart';
 import '../../widgets/agents/agents_low_liquidity_banner.dart';
 import '../../widgets/agents/agents_sort_button.dart';
 import '../../widgets/agents/agents_table.dart';
+import '../../widgets/orange_money_header.dart';
 
 /// Screen for managing affiliated agents.
 class AgentsScreen extends ConsumerStatefulWidget {
@@ -31,35 +31,55 @@ class _AgentsScreenState extends ConsumerState<AgentsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final agentsKey =
         '${widget.enterpriseId ?? ''}|${_statusFilter?.name ?? ''}|$_searchQuery';
     final statsKey = widget.enterpriseId ?? '';
 
-    final agentsAsync = ref.watch(agentsProvider((agentsKey)));
-    final statsAsync = ref.watch(agentsDailyStatisticsProvider((statsKey)));
+    final agentsAsync = ref.watch(agentsProvider(agentsKey));
+    final statsAsync = ref.watch(agentsDailyStatisticsProvider(statsKey));
 
     return Container(
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      color: theme.colorScheme.surfaceContainerHighest,
       child: CustomScrollView(
         slivers: [
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.all(AppSpacing.lg),
+          OrangeMoneyHeader(
+            title: 'Gestion des Agents',
+            subtitle:
+                'Gérez votre réseau de distribution, surveillez la liquidité et supervisez les recharges.',
+            badgeText: 'AGENTS AFFILIÉS',
+            badgeIcon: Icons.people_alt_rounded,
+            additionalActions: [
+              OutlinedButton.icon(
+                onPressed: () {
+                  NotificationService.showInfo(
+                    context,
+                    'Historique global - Fonctionnalité à venir',
+                  );
+                },
+                icon: const Icon(Icons.history_rounded,
+                    size: 16, color: Colors.white),
+                label: const Text(
+                  'Historique',
+                  style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold),
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: Colors.white.withValues(alpha: 0.5)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20)),
+                ),
+              ),
+            ],
+          ),
+          SliverPadding(
+            padding: EdgeInsets.all(AppSpacing.lg),
+            sliver: SliverToBoxAdapter(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  AgentsHeader(
-                    onHistoryPressed: () {
-                      // ✅ TODO résolu: Navigate to global history
-                      // Pour l'instant, on affiche un message
-                      // L'écran d'historique sera créé dans une prochaine étape
-                      NotificationService.showInfo(
-                        context,
-                        'Historique global - Fonctionnalité à venir',
-                      );
-                    },
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
                   _buildKpiSection(agentsAsync, statsAsync, ref),
                   const SizedBox(height: AppSpacing.lg),
                   _buildAgentsListSection(agentsAsync, ref),
@@ -171,18 +191,9 @@ class _AgentsScreenState extends ConsumerState<AgentsScreen> {
   }
 
   Widget _buildAgentsList(BuildContext context, List<Agent> agents) {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-        side: BorderSide(
-          color: Colors.black.withValues(alpha: 0.1),
-          width: 1.219,
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
+    return ElyfCard(
+      padding: const EdgeInsets.all(24),
+      child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             AgentsListHeader(
@@ -265,8 +276,7 @@ class _AgentsScreenState extends ConsumerState<AgentsScreen> {
             ),
           ],
         ),
-      ),
-    );
+      );
   }
 
   void _showAgentDialog(BuildContext context, Agent? agent) {

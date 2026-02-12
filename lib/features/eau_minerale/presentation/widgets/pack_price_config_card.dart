@@ -86,6 +86,7 @@ class _PackPriceConfigCardState extends ConsumerState<PackPriceConfigCard> {
     try {
       final updatedProduct = Product(
         id: _packProduct!.id,
+        enterpriseId: _packProduct!.enterpriseId,
         name: _packProduct!.name,
         type: _packProduct!.type,
         unitPrice: newPrice,

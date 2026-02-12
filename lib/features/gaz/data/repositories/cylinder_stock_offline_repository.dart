@@ -25,35 +25,11 @@ class CylinderStockOfflineRepository extends OfflineRepository<CylinderStock>
   String get collectionName => 'cylinder_stocks';
 
   @override
-  CylinderStock fromMap(Map<String, dynamic> map) {
-    return CylinderStock(
-      id: map['id'] as String? ?? map['localId'] as String,
-      cylinderId: map['cylinderId'] as String,
-      weight: (map['weight'] as num).toInt(),
-      status: CylinderStatus.values.firstWhere(
-        (e) => e.name == map['status'],
-        orElse: () => CylinderStatus.full,
-      ),
-      quantity: (map['quantity'] as num).toInt(),
-      enterpriseId: map['enterpriseId'] as String,
-      siteId: map['siteId'] as String?,
-      updatedAt: DateTime.parse(map['updatedAt'] as String),
-    );
-  }
+  CylinderStock fromMap(Map<String, dynamic> map) =>
+      CylinderStock.fromMap(map, enterpriseId);
 
   @override
-  Map<String, dynamic> toMap(CylinderStock entity) {
-    return {
-      'id': entity.id,
-      'cylinderId': entity.cylinderId,
-      'weight': entity.weight,
-      'status': entity.status.name,
-      'quantity': entity.quantity,
-      'enterpriseId': entity.enterpriseId,
-      'siteId': entity.siteId,
-      'updatedAt': entity.updatedAt.toIso8601String(),
-    };
-  }
+  Map<String, dynamic> toMap(CylinderStock entity) => entity.toMap();
 
   @override
   String getLocalId(CylinderStock entity) {
@@ -90,22 +66,15 @@ class CylinderStockOfflineRepository extends OfflineRepository<CylinderStock>
 
   @override
   Future<void> deleteFromLocal(CylinderStock entity) async {
-    final remoteId = getRemoteId(entity);
-    if (remoteId != null) {
-      await driftService.records.deleteByRemoteId(
-        collectionName: collectionName,
-        remoteId: remoteId,
-        enterpriseId: enterpriseId,
-        moduleType: moduleType,
-      );
-      return;
-    }
-    final localId = getLocalId(entity);
-    await driftService.records.deleteByLocalId(
-      collectionName: collectionName,
-      localId: localId,
-      enterpriseId: enterpriseId,
-      moduleType: moduleType,
+    // Soft-delete
+    final deletedStock = entity.copyWith(
+      deletedAt: DateTime.now(),
+    );
+    await saveToLocal(deletedStock);
+    
+    AppLogger.info(
+      'Soft-deleted cylinder stock: ${entity.id}',
+      name: 'CylinderStockOfflineRepository',
     );
   }
 
@@ -118,7 +87,8 @@ class CylinderStockOfflineRepository extends OfflineRepository<CylinderStock>
       moduleType: moduleType,
     );
     if (byRemote != null) {
-      return fromMap(jsonDecode(byRemote.dataJson) as Map<String, dynamic>);
+      final stock = fromMap(jsonDecode(byRemote.dataJson) as Map<String, dynamic>);
+      return stock.isDeleted ? null : stock;
     }
     final byLocal = await driftService.records.findByLocalId(
       collectionName: collectionName,
@@ -127,7 +97,8 @@ class CylinderStockOfflineRepository extends OfflineRepository<CylinderStock>
       moduleType: moduleType,
     );
     if (byLocal == null) return null;
-    return fromMap(jsonDecode(byLocal.dataJson) as Map<String, dynamic>);
+    final stock = fromMap(jsonDecode(byLocal.dataJson) as Map<String, dynamic>);
+    return stock.isDeleted ? null : stock;
   }
 
   @override
@@ -139,9 +110,9 @@ class CylinderStockOfflineRepository extends OfflineRepository<CylinderStock>
     );
     final entities = rows
 
-        .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
-
-        .toList();
+      .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+      .where((s) => !s.isDeleted)
+      .toList();
 
     
 
@@ -194,7 +165,8 @@ class CylinderStockOfflineRepository extends OfflineRepository<CylinderStock>
               .map((r) {
                 try {
                   final map = jsonDecode(r.dataJson) as Map<String, dynamic>;
-                  return fromMap(map);
+                  final stock = fromMap(map);
+                  return stock.isDeleted ? null : stock;
                 } catch (e) {
                   return null;
                 }

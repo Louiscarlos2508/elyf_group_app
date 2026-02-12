@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 
 CardThemeData buildCardTheme(ColorScheme colors) {
   return CardThemeData(
-    elevation: 4,
+    elevation: 8,
     margin: EdgeInsets.zero,
     color: colors.surface,
-    shadowColor: Colors.black.withValues(alpha: 0.05),
+    shadowColor: colors.primary.withValues(alpha: 0.08),
     shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(24),
       side: BorderSide(color: colors.outline.withValues(alpha: 0.1)),
     ),
   );

@@ -19,12 +19,14 @@ class StockController {
     this._bobineStockQuantityRepository,
     this._packagingStockRepository,
     this._stockRepository,
+    this.enterpriseId,
   );
 
   final InventoryRepository _inventoryRepository;
   final BobineStockQuantityRepository _bobineStockQuantityRepository;
   final PackagingStockRepository _packagingStockRepository;
   final StockRepository _stockRepository;
+  final String enterpriseId;
 
   Future<StockState> fetchSnapshot() async {
     final items = await _inventoryRepository.fetchStockItems();
@@ -78,6 +80,7 @@ class StockController {
       // Créer le stock en mémoire seulement (ne pas sauvegarder avec quantity: 0)
       stock = BobineStock(
         id: stockId, // ID fixe basé sur le type pour garantir la cohérence
+        enterpriseId: enterpriseId,
         type: bobineType,
         quantity: 0, // Sera mis à jour par recordMovement
         unit: 'unité',
@@ -97,6 +100,7 @@ class StockController {
     // Enregistrer le mouvement (qui créera le stock s'il est nouveau et mettra à jour la quantité)
     final movement = BobineStockMovement(
       id: 'movement-${DateTime.now().millisecondsSinceEpoch}',
+      enterpriseId: enterpriseId,
       bobineId: stockId, // Utiliser l'ID du stock (existant ou nouvellement créé)
       bobineReference: bobineType,
       type: BobineMovementType.entree,
@@ -138,6 +142,7 @@ class StockController {
     // Enregistrer le mouvement (qui mettra automatiquement à jour le stock)
     final movement = BobineStockMovement(
       id: 'movement-${DateTime.now().millisecondsSinceEpoch}',
+      enterpriseId: enterpriseId,
       bobineId:
           stock.id, // Utiliser l'ID du stock au lieu d'une bobine individuelle
       bobineReference: bobineType,
@@ -169,6 +174,7 @@ class StockController {
       // avec un ID temporaire
       final movement = BobineStockMovement(
         id: 'movement-${DateTime.now().millisecondsSinceEpoch}',
+        enterpriseId: enterpriseId,
         bobineId: 'unknown',
         bobineReference: bobineType,
         type: BobineMovementType.retrait,
@@ -185,6 +191,7 @@ class StockController {
 
     final movement = BobineStockMovement(
       id: 'movement-${DateTime.now().millisecondsSinceEpoch}',
+      enterpriseId: enterpriseId,
       bobineId: stock.id,
       bobineReference: bobineType,
       type: BobineMovementType.retrait,
@@ -223,6 +230,7 @@ class StockController {
     // recordMovement met automatiquement à jour le stock (comme pour les bobines)
     final movement = PackagingStockMovement(
       id: 'movement-${DateTime.now().millisecondsSinceEpoch}',
+      enterpriseId: enterpriseId,
       packagingId: packagingId,
       packagingType: packagingType,
       type: PackagingMovementType.sortie,
@@ -284,6 +292,7 @@ class StockController {
       // Créer le stock en mémoire seulement
       stock = PackagingStock(
         id: fixedPackagingId,
+        enterpriseId: enterpriseId,
         type: packagingType,
         quantity: 0,
         unit: 'unité',
@@ -319,6 +328,7 @@ class StockController {
     // Enregistrer le mouvement
     final movement = PackagingStockMovement(
       id: 'movement-${DateTime.now().millisecondsSinceEpoch}',
+      enterpriseId: enterpriseId,
       packagingId: fixedPackagingId,
       packagingType: packagingType,
       type: PackagingMovementType.entree,
@@ -373,6 +383,7 @@ class StockController {
     final unifiedBobineMovements = bobineMovements.map((m) {
       return StockMovement(
         id: m.id,
+        enterpriseId: enterpriseId,
         date: m.date,
         productName: m.bobineReference, // bobineReference est déjà "Bobine"
         type: _convertBobineMovementType(m.type),
@@ -388,6 +399,7 @@ class StockController {
     final unifiedPackagingMovements = packagingMovements.map((m) {
       return StockMovement(
         id: m.id,
+        enterpriseId: enterpriseId,
         date: m.date,
         productName: m.packagingType,
         type: _convertPackagingMovementType(m.type),
@@ -477,6 +489,7 @@ class StockController {
     // Enregistrer le mouvement dans l'historique
     final movement = StockMovement(
       id: 'movement-${DateTime.now().millisecondsSinceEpoch}',
+      enterpriseId: enterpriseId,
       date: DateTime.now(),
       productName: itemName,
       type: type,
@@ -490,6 +503,7 @@ class StockController {
     // Mettre à jour le stock
     final updatedItem = StockItem(
       id: item.id,
+      enterpriseId: enterpriseId,
       name: item.name,
       quantity: newQuantity,
       unit: item.unit,
@@ -533,6 +547,7 @@ class StockController {
     if (finishedGoodsStock == null) {
       finishedGoodsStock = StockItem(
         id: packStockItemId,
+        enterpriseId: enterpriseId,
         name: packName,
         quantity: quantiteProduite.toDouble(),
         unit: packUnit,
@@ -543,6 +558,7 @@ class StockController {
       // Mettre à jour le stock existant en ajoutant la quantité produite
       finishedGoodsStock = StockItem(
         id: finishedGoodsStock.id,
+        enterpriseId: enterpriseId,
         name: finishedGoodsStock.name,
         quantity: finishedGoodsStock.quantity + quantiteProduite.toDouble(),
         unit: finishedGoodsStock.unit,
@@ -591,6 +607,7 @@ class StockController {
     // 4. Création d'un item Pack par défaut si rien trouvé
     final created = StockItem(
       id: packStockItemId,
+      enterpriseId: enterpriseId,
       name: packName,
       quantity: 0,
       unit: packUnit,
@@ -625,6 +642,7 @@ class StockController {
     if (expected < 0 || pack.quantity == expected) return false;
     final updated = StockItem(
       id: pack.id,
+      enterpriseId: enterpriseId,
       name: pack.name,
       quantity: expected,
       unit: pack.unit,

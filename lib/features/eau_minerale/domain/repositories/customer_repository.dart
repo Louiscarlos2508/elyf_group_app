@@ -5,6 +5,7 @@ abstract class CustomerRepository {
   Future<List<CustomerSummary>> fetchCustomers();
   Future<CustomerSummary?> getCustomer(String id);
   Future<String> createCustomer(String name, String phone, {String? cnib});
+  Future<void> deleteCustomer(String id);
   Future<List<Sale>> fetchCustomerHistory(String customerId);
 }
 

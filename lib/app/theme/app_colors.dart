@@ -8,55 +8,71 @@ class AppColors {
   const AppColors._();
 
   // ============================================================================
-  // BRAND COLORS
+  // BRAND COLORS (Premium HSL Variants)
   // ============================================================================
 
-  /// Principal Blue - Professional & Trustworthy
-  static const Color primary = Color(0xFF1B5E8D);
-  static const Color primaryLight = Color(0xFF4B8AB8);
-  static const Color primaryDark = Color(0xFF0F3D5E);
+  /// Principal Blue - Deep & Sophisticated
+  static const Color primary = Color(0xFF0F4C75);
+  static const Color primaryLight = Color(0xFF3282B8);
+  static const Color primaryDark = Color(0xFF1B262C);
 
-  /// Golden Accent - Premium & Quality
-  static const Color accent = Color(0xFFFCCF4D);
-  static const Color accentLight = Color(0xFFFDE08A);
-  static const Color accentDark = Color(0xFFC7A13B);
-
-  // ============================================================================
-  // SEMANTIC COLORS
-  // ============================================================================
-
-  static const Color success = Color(0xFF1BB57B);
-  static const Color warning = Color(0xFFFF9800);
-  static const Color danger = Color(0xFFE94E77);
-  static const Color info = Color(0xFF2196F3);
+  /// Golden Accent - Vibrant & Premium
+  static const Color accent = Color(0xFFFFD700);
+  static const Color accentLight = Color(0xFFFFE066);
+  static const Color accentDark = Color(0xFFCCAC00);
 
   // ============================================================================
-  // NEUTRAL COLORS (Light Theme)
+  // SEMANTIC COLORS (Vibrant)
   // ============================================================================
 
-  static const Color bgLight = Color(0xFFF8FAFC);
+  static const Color success = Color(0xFF00C897);
+  static const Color warning = Color(0xFFFFB319);
+  static const Color danger = Color(0xFFFF4D4D);
+  static const Color info = Color(0xFF00A8FF);
+
+  // ============================================================================
+  // NEUTRAL COLORS (Light Theme - Soft & Clean)
+  // ============================================================================
+
+  static const Color bgLight = Color(0xFFF0F5F9);
   static const Color surfaceLight = Colors.white;
-  static const Color textBodyLight = Color(0xFF334155);
-  static const Color textDisplayLight = Color(0xFF0F172A);
-  static const Color borderLight = Color(0xFFE2E8F0);
+  static const Color textBodyLight = Color(0xFF52616B);
+  static const Color textDisplayLight = Color(0xFF1B262C);
+  static const Color borderLight = Color(0xFFE1E8EE);
 
   // ============================================================================
-  // NEUTRAL COLORS (Dark Theme)
+  // NEUTRAL COLORS (Dark Theme - Deep & Elegant)
   // ============================================================================
 
-  static const Color bgDark = Color(0xFF0F172A);
-  static const Color surfaceDark = Color(0xFF1E293B);
-  static const Color textBodyDark = Color(0xFF94A3B8);
-  static const Color textDisplayDark = Color(0xFFF8FAFC);
-  static const Color borderDark = Color(0xFF334155);
+  static const Color bgDark = Color(0xFF0F111A);
+  static const Color surfaceDark = Color(0xFF1A1D2B);
+  static const Color textBodyDark = Color(0xFFA0AEC0);
+  static const Color textDisplayDark = Color(0xFFF7FAFC);
+  static const Color borderDark = Color(0xFF2D3748);
 
   // ============================================================================
-  // DEPRECATED / LEGACY (Keep for compatibility during refactoring)
+  // PREMIUM EFFECTS (Gradients & Glassmorphism)
   // ============================================================================
-  static const Color seed = primary;
-  static const Color neutral50 = Color(0xFFFAFAFA);
-  static const Color neutral100 = Color(0xFFF5F5F5);
-  static const Color neutral200 = Color(0xFFE0E0E0);
-  static const Color neutral600 = Color(0xFF757575);
-  static const Color neutral900 = Color(0xFF212121);
+
+  static final List<Color> mainGradient = [
+    const Color(0xFF0F4C75),
+    const Color(0xFF3282B8),
+  ];
+
+  static final List<Color> waterGradient = [
+    const Color(0xFF00C2FF),
+    const Color(0xFF00A8FF),
+    const Color(0xFF007AFF),
+  ];
+
+  static final List<Color> orangeMoneyGradient = [
+    const Color(0xFFFF6B00), // Deep Premium Orange
+    const Color(0xFFFF9E00), // Vibrant Gold/Orange
+    const Color(0xFFFFC300), // Soft Accent Gold
+  ];
+
+  static const Color glassWhite = Color(0x1AFFFFFF);
+  static const Color glassBlack = Color(0x1A000000);
+  static const Color glassBorderWhite = Color(0x33FFFFFF);
+  static const Color glassBorderBlack = Color(0x33000000);
 }

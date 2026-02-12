@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:elyf_groupe_app/shared.dart';
 
 /// Card widget for account information.
 class SettingsAccountCard extends StatelessWidget {
@@ -6,148 +7,135 @@ class SettingsAccountCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(25, 25, 1, 1),
-      decoration: BoxDecoration(
-        color: const Color(0xFFEFF6FF),
-        border: Border.all(color: const Color(0xFFBEDBFF), width: 1.219),
-        borderRadius: BorderRadius.circular(14),
-      ),
+    final theme = Theme.of(context);
+    
+    return ElyfCard(
+      padding: const EdgeInsets.all(24),
+      elevation: 4,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.person, size: 20, color: Color(0xFF0A0A0A)),
-              const SizedBox(width: 8),
-              const Text(
-                'Mon compte',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.normal,
-                  color: Color(0xFF0A0A0A),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(Icons.person_rounded, size: 22, color: theme.colorScheme.primary),
+              ),
+              const SizedBox(width: 16),
+              Text(
+                'Mon Compte',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  fontFamily: 'Outfit',
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 32),
           Row(
             children: [
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Utilisateur connecté',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Color(0xFF4A5565),
-                        fontWeight: FontWeight.normal,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      'Mobile Money Admin',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.normal,
-                        color: Color(0xFF101828),
-                      ),
-                    ),
-                  ],
+                child: _buildAccountDetail(
+                  context,
+                  label: 'Utilisateur Connecté',
+                  value: 'Mobile Money Admin',
+                  icon: Icons.badge_outlined,
                 ),
               ),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Rôle',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Color(0xFF4A5565),
-                        fontWeight: FontWeight.normal,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF3E8FF),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Text(
-                        'Administrateur',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF6E11B0),
-                          fontWeight: FontWeight.normal,
-                        ),
-                      ),
-                    ),
-                  ],
+                child: _buildAccountDetail(
+                  context,
+                  label: 'Rôle',
+                  value: 'Administrateur',
+                  icon: Icons.admin_panel_settings_outlined,
+                  isBadge: true,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
           Row(
             children: [
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Nom d\'utilisateur',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Color(0xFF4A5565),
-                        fontWeight: FontWeight.normal,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      '@admin_mm',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.normal,
-                        color: Color(0xFF101828),
-                      ),
-                    ),
-                  ],
+                child: _buildAccountDetail(
+                  context,
+                  label: 'Identifiant',
+                  value: '@admin_mm',
+                  icon: Icons.alternate_email_rounded,
                 ),
               ),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Téléphone',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Color(0xFF4A5565),
-                        fontWeight: FontWeight.normal,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      '0701234567',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.normal,
-                        color: Color(0xFF101828),
-                      ),
-                    ),
-                  ],
+                child: _buildAccountDetail(
+                  context,
+                  label: 'Téléphone',
+                  value: '0701234567',
+                  icon: Icons.phone_android_rounded,
                 ),
               ),
             ],
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildAccountDetail(
+    BuildContext context, {
+    required String label,
+    required String value,
+    required IconData icon,
+    bool isBadge = false,
+  }) {
+    final theme = Theme.of(context);
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: theme.textTheme.labelMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+            fontWeight: FontWeight.w700,
+            fontFamily: 'Outfit',
+          ),
+        ),
+        const SizedBox(height: 8),
+        if (isBadge)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.secondary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              value,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.secondary,
+                fontWeight: FontWeight.w900,
+                fontFamily: 'Outfit',
+              ),
+            ),
+          )
+        else
+          Row(
+            children: [
+              Icon(icon, size: 16, color: theme.colorScheme.primary),
+              const SizedBox(width: 8),
+              Text(
+                value,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  color: theme.colorScheme.onSurface,
+                  fontFamily: 'Outfit',
+                ),
+              ),
+            ],
+          ),
+      ],
     );
   }
 }

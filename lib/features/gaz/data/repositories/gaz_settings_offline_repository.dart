@@ -24,35 +24,11 @@ class GazSettingsOfflineRepository extends OfflineRepository<GazSettings>
   String get collectionName => 'gaz_settings';
 
   @override
-  GazSettings fromMap(Map<String, dynamic> map) {
-    final wholesalePricesRaw = map['wholesalePrices'] as Map<String, dynamic>?;
-    final wholesalePrices =
-        wholesalePricesRaw?.map(
-          (k, v) => MapEntry(int.parse(k), (v as num).toDouble()),
-        ) ??
-        {};
-
-    return GazSettings(
-      enterpriseId: map['enterpriseId'] as String,
-      moduleId: map['moduleId'] as String,
-      wholesalePrices: wholesalePrices,
-      updatedAt: map['updatedAt'] != null
-          ? DateTime.parse(map['updatedAt'] as String)
-          : null,
-    );
-  }
+  GazSettings fromMap(Map<String, dynamic> map) =>
+      GazSettings.fromMap(map, enterpriseId);
 
   @override
-  Map<String, dynamic> toMap(GazSettings entity) {
-    return {
-      'enterpriseId': entity.enterpriseId,
-      'moduleId': entity.moduleId,
-      'wholesalePrices': entity.wholesalePrices.map(
-        (k, v) => MapEntry(k.toString(), v),
-      ),
-      'updatedAt': entity.updatedAt?.toIso8601String(),
-    };
-  }
+  Map<String, dynamic> toMap(GazSettings entity) => entity.toMap();
 
   String _getSettingsId(String enterpriseId, String moduleId) {
     return 'settings_${enterpriseId}_$moduleId';
@@ -88,12 +64,15 @@ class GazSettingsOfflineRepository extends OfflineRepository<GazSettings>
 
   @override
   Future<void> deleteFromLocal(GazSettings entity) async {
-    final localId = getLocalId(entity);
-    await driftService.records.deleteByLocalId(
-      collectionName: collectionName,
-      localId: localId,
-      enterpriseId: enterpriseId,
-      moduleType: moduleType,
+    // Soft-delete
+    final deletedSettings = entity.copyWith(
+      deletedAt: DateTime.now(),
+    );
+    await saveToLocal(deletedSettings);
+    
+    AppLogger.info(
+      'Soft-deleted gaz settings: ${entity.enterpriseId}',
+      name: 'GazSettingsOfflineRepository',
     );
   }
 
@@ -106,7 +85,8 @@ class GazSettingsOfflineRepository extends OfflineRepository<GazSettings>
       moduleType: moduleType,
     );
     if (record == null) return null;
-    return fromMap(jsonDecode(record.dataJson) as Map<String, dynamic>);
+    final settings = fromMap(jsonDecode(record.dataJson) as Map<String, dynamic>);
+    return settings.isDeleted ? null : settings;
   }
 
   @override
@@ -118,9 +98,9 @@ class GazSettingsOfflineRepository extends OfflineRepository<GazSettings>
     );
     final entities = rows
 
-        .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
-
-        .toList();
+      .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+      .where((s) => !s.isDeleted)
+      .toList();
 
     
 
@@ -167,7 +147,8 @@ class GazSettingsOfflineRepository extends OfflineRepository<GazSettings>
           final row = rows.where((r) => r.localId == settingsId).firstOrNull;
           if (row == null) return null;
           try {
-            return fromMap(jsonDecode(row.dataJson) as Map<String, dynamic>);
+            final settings = fromMap(jsonDecode(row.dataJson) as Map<String, dynamic>);
+            return settings.isDeleted ? null : settings;
           } catch (e) {
             return null;
           }

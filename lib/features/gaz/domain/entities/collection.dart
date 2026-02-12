@@ -68,6 +68,79 @@ class Collection {
     );
   }
 
+  factory Collection.fromMap(Map<String, dynamic> map) {
+    // Convert cylinderQuantities/pointOfSaleId to new structure
+    final cylinderQuantities =
+        (map['cylinderQuantities'] as Map<String, dynamic>?)?.map(
+              (k, v) => MapEntry(int.parse(k), (v as num).toInt()),
+            ) ??
+            (map['emptyBottles'] as Map<String, dynamic>?)?.map(
+              (k, v) => MapEntry(int.parse(k), (v as num).toInt()),
+            ) ??
+            {};
+
+    // Récupérer unitPricesByWeight si disponible (pour prix en gros par poids)
+    final unitPricesByWeightRaw =
+        map['unitPricesByWeight'] as Map<String, dynamic>?;
+    final unitPricesByWeight = unitPricesByWeightRaw?.map(
+      (k, v) => MapEntry(int.parse(k), (v as num).toDouble()),
+    );
+
+    // Récupérer les fuites si disponibles
+    final leaksRaw = map['leaks'] as Map<String, dynamic>?;
+    final leaks = leaksRaw?.map(
+          (k, v) => MapEntry(int.parse(k), (v as num).toInt()),
+        ) ??
+        <int, int>{};
+
+    return Collection(
+      id: map['id'] as String? ?? map['pointOfSaleId'] as String? ?? '',
+      type: CollectionType.values.firstWhere(
+        (e) => e.name == (map['type'] as String?),
+        orElse: () => CollectionType.pointOfSale,
+      ),
+      clientId:
+          map['clientId'] as String? ?? map['pointOfSaleId'] as String? ?? '',
+      clientName:
+          map['clientName'] as String? ??
+          map['pointOfSaleName'] as String? ??
+          '',
+      clientPhone: map['clientPhone'] as String? ?? '',
+      clientAddress: map['clientAddress'] as String?,
+      emptyBottles: cylinderQuantities,
+      unitPrice: (map['unitPrice'] as num?)?.toDouble() ??
+          (map['amountDue'] as num?)?.toDouble() ??
+          0.0,
+      unitPricesByWeight: unitPricesByWeight,
+      leaks: leaks,
+      amountPaid: (map['amountPaid'] as num?)?.toDouble() ?? 0.0,
+      paymentDate: map['paymentDate'] != null
+          ? DateTime.parse(map['paymentDate'] as String)
+          : null,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'type': type.name,
+      'clientId': clientId,
+      'clientName': clientName,
+      'clientPhone': clientPhone,
+      'clientAddress': clientAddress,
+      'emptyBottles': emptyBottles.map(
+        (k, v) => MapEntry(k.toString(), v),
+      ),
+      'unitPrice': unitPrice,
+      'unitPricesByWeight': unitPricesByWeight?.map(
+        (k, v) => MapEntry(k.toString(), v),
+      ),
+      'leaks': leaks.map((k, v) => MapEntry(k.toString(), v)),
+      'amountPaid': amountPaid,
+      'paymentDate': paymentDate?.toIso8601String(),
+    };
+  }
+
   /// Calcule le total des bouteilles collectées.
   int get totalBottles {
     return emptyBottles.values.fold<int>(0, (sum, qty) => sum + qty);

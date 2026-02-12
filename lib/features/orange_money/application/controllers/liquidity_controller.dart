@@ -6,20 +6,55 @@ import '../../../audit_trail/domain/services/audit_trail_service.dart';
 import '../../../../core/logging/app_logger.dart';
 
 /// Controller for managing liquidity checkpoints.
+import '../../domain/adapters/orange_money_permission_adapter.dart';
+import '../../domain/services/liquidity_service.dart';
+
+/// Controller for managing liquidity checkpoints.
 class LiquidityController {
-  LiquidityController(this._repository, this._auditTrailService, this.userId);
+  LiquidityController(
+    this._repository,
+    this._auditTrailService,
+    this.userId,
+    this._permissionAdapter,
+    this._activeEnterpriseId,
+    this._liquidityService,
+  );
 
   final LiquidityRepository _repository;
   final AuditTrailService _auditTrailService;
   final String userId;
+  final OrangeMoneyPermissionAdapter _permissionAdapter;
+  final String _activeEnterpriseId;
+  final LiquidityService _liquidityService;
 
   Future<List<LiquidityCheckpoint>> fetchCheckpoints({
     String? enterpriseId,
     DateTime? startDate,
     DateTime? endDate,
   }) async {
+    // If specific enterprise requested, use it
+    if (enterpriseId != null) {
+      return await _repository.fetchCheckpoints(
+        enterpriseId: enterpriseId,
+        startDate: startDate,
+        endDate: endDate,
+      );
+    }
+
+    // Otherwise, check hierarchy
+    final accessibleIds = await _permissionAdapter.getAccessibleEnterpriseIds(_activeEnterpriseId);
+
+    if (accessibleIds.length > 1) {
+      return await _repository.fetchCheckpointsByEnterprises(
+        accessibleIds.toList(),
+        startDate: startDate,
+        endDate: endDate,
+      );
+    }
+
+    // Default to active enterprise
     return await _repository.fetchCheckpoints(
-      enterpriseId: enterpriseId,
+      enterpriseId: _activeEnterpriseId,
       startDate: startDate,
       endDate: endDate,
     );
@@ -56,23 +91,14 @@ class LiquidityController {
       );
     }
 
-    // Créer le checkpoint via le service
-    final checkpoint = LiquidityCheckpointService.createCheckpointFromInput(
-      existingId: existingId,
+    // Créer le checkpoint via le service (pour bénéficier du calcul théorique si soir)
+    final checkpoint = await _liquidityService.createCheckpoint(
       enterpriseId: enterpriseId,
-      date: date,
-      period: period,
+      type: period,
       cashAmount: cashAmount,
       simAmount: simAmount,
       notes: notes,
-      existingCheckpoint: existingCheckpoint,
     );
-
-    if (existingCheckpoint != null) {
-      await _repository.updateCheckpoint(checkpoint);
-    } else {
-      await _repository.createCheckpoint(checkpoint);
-    }
 
     // Log to Audit Trail
     try {
@@ -88,6 +114,7 @@ class LiquidityController {
         metadata: {
           'period': period.name,
           'total': cashAmount + simAmount,
+          'requiresJustification': checkpoint.requiresJustification,
         },
       );
     } catch (e) {
@@ -95,6 +122,17 @@ class LiquidityController {
     }
 
     return checkpoint.id;
+  }
+
+  Future<LiquidityCheckpoint> validateDiscrepancy({
+    required String checkpointId,
+    required String justification,
+  }) async {
+    return await _liquidityService.validateDiscrepancy(
+      checkpointId: checkpointId,
+      validatedBy: userId,
+      justification: justification,
+    );
   }
 
   Future<String> createCheckpoint(LiquidityCheckpoint checkpoint) async {
@@ -132,8 +170,41 @@ class LiquidityController {
     DateTime? startDate,
     DateTime? endDate,
   }) async {
+    // If specific enterprise requested, use it
+    if (enterpriseId != null) {
+      return await _repository.getStatistics(
+        enterpriseId: enterpriseId,
+        startDate: startDate,
+        endDate: endDate,
+      );
+    }
+
+    // Check hierarchy
+    final accessibleIds = await _permissionAdapter.getAccessibleEnterpriseIds(_activeEnterpriseId);
+
+    if (accessibleIds.length > 1) {
+       final checkpoints = await _repository.fetchCheckpointsByEnterprises(
+        accessibleIds.toList(),
+        startDate: startDate,
+        endDate: endDate,
+      );
+
+      final totalAmount = checkpoints.fold<int>(0, (sum, c) => sum + c.amount);
+      final completedCheckpoints = checkpoints.where((c) => c.isComplete).toList();
+
+      return {
+        'totalCheckpoints': checkpoints.length,
+        'completedCheckpoints': completedCheckpoints.length,
+        'totalLiquidity': totalAmount,
+        'averageLiquidity': checkpoints.isEmpty
+            ? 0
+            : totalAmount ~/ checkpoints.length,
+        'isNetworkView': true,
+      };
+    }
+
     return await _repository.getStatistics(
-      enterpriseId: enterpriseId,
+      enterpriseId: _activeEnterpriseId,
       startDate: startDate,
       endDate: endDate,
     );

@@ -36,6 +36,7 @@ class SalaryPayment {
     String? period,
     String? notes,
     Uint8List? signature,
+    String? signerName,
   }) {
     return SalaryPayment(
       id: id ?? this.id,
@@ -46,6 +47,37 @@ class SalaryPayment {
       period: period ?? this.period,
       notes: notes ?? this.notes,
       signature: signature ?? this.signature,
+      signerName: signerName ?? this.signerName,
     );
+  }
+
+  factory SalaryPayment.fromMap(Map<String, dynamic> map) {
+    return SalaryPayment(
+      id: map['id'] as String,
+      employeeId: map['employeeId'] as String,
+      employeeName: map['employeeName'] as String,
+      amount: (map['amount'] as num).toInt(),
+      date: DateTime.parse(map['date'] as String),
+      period: map['period'] as String,
+      notes: map['notes'] as String?,
+      signature: map['signature'] != null
+          ? Uint8List.fromList((map['signature'] as List<dynamic>).cast<int>())
+          : null,
+      signerName: map['signerName'] as String?,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'employeeId': employeeId,
+      'employeeName': employeeName,
+      'amount': amount,
+      'date': date.toIso8601String(),
+      'period': period,
+      'notes': notes,
+      'signature': signature?.toList(),
+      'signerName': signerName,
+    };
   }
 }

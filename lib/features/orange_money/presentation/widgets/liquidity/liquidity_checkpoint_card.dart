@@ -13,7 +13,10 @@ class LiquidityCheckpointCard extends StatelessWidget {
     required this.hasCheckpoint,
     this.cashAmount,
     this.simAmount,
+    this.requiresJustification = false,
+    this.discrepancyPercentage,
     required this.onPressed,
+    this.onJustifyPressed,
   });
 
   final String title;
@@ -22,7 +25,10 @@ class LiquidityCheckpointCard extends StatelessWidget {
   final bool hasCheckpoint;
   final int? cashAmount;
   final int? simAmount;
+  final bool requiresJustification;
+  final double? discrepancyPercentage;
   final VoidCallback onPressed;
+  final VoidCallback? onJustifyPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -48,12 +54,15 @@ class LiquidityCheckpointCard extends StatelessWidget {
       children: [
         Icon(icon, size: 20, color: iconColor),
         const SizedBox(width: 8),
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.normal,
-            color: Color(0xFF101828),
+        Flexible(
+          child: Text(
+            title,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.normal,
+              color: Color(0xFF101828),
+            ),
+            overflow: TextOverflow.ellipsis,
           ),
         ),
         if (hasCheckpoint) ...[
@@ -92,12 +101,16 @@ class LiquidityCheckpointCard extends StatelessWidget {
             style: TextStyle(fontSize: 14, color: Color(0xFF4A5565)),
           ),
           const SizedBox(height: 4),
-          Text(
-            CurrencyFormatter.formatFCFA(cashAmount!),
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.normal,
-              color: Color(0xFF101828),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              CurrencyFormatter.formatFCFA(cashAmount!),
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.normal,
+                color: Color(0xFF101828),
+              ),
             ),
           ),
           const SizedBox(height: 12),
@@ -108,12 +121,58 @@ class LiquidityCheckpointCard extends StatelessWidget {
             style: TextStyle(fontSize: 14, color: Color(0xFF4A5565)),
           ),
           const SizedBox(height: 4),
-          Text(
-            CurrencyFormatter.formatFCFA(simAmount!),
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.normal,
-              color: Color(0xFF155DFC),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              CurrencyFormatter.formatFCFA(simAmount!),
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.normal,
+                color: Color(0xFF155DFC),
+              ),
+            ),
+          ),
+        ],
+        if (requiresJustification) ...[
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFEF2F2),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFFFCA5A5)),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.warning_amber_rounded, size: 16, color: Color(0xFFB91C1C)),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        'Écart détecté: ${discrepancyPercentage?.toStringAsFixed(1)}%',
+                        style: const TextStyle(fontSize: 11, color: Color(0xFFB91C1C), fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  height: 28,
+                  child: ElevatedButton(
+                    onPressed: onJustifyPressed,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFB91C1C),
+                      foregroundColor: Colors.white,
+                      padding: EdgeInsets.zero,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                    ),
+                    child: const Text('Justifier', style: TextStyle(fontSize: 11)),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -144,13 +203,16 @@ class LiquidityCheckpointCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            child: const Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.add, size: 16),
-                SizedBox(width: 4),
-                Text('Faire le pointage', style: TextStyle(fontSize: 14)),
-              ],
+            child: const FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.add, size: 16),
+                  SizedBox(width: 4),
+                  Text('Faire le pointage', style: TextStyle(fontSize: 14)),
+                ],
+              ),
             ),
           ),
         ),

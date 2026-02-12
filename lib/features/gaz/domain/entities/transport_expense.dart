@@ -25,4 +25,24 @@ class TransportExpense {
       expenseDate: expenseDate ?? this.expenseDate,
     );
   }
+
+  factory TransportExpense.fromMap(Map<String, dynamic> map) {
+    return TransportExpense(
+      id: map['id'] as String? ?? '',
+      description: map['description'] as String? ?? '',
+      amount: (map['amount'] as num?)?.toDouble() ?? 0.0,
+      expenseDate: map['expenseDate'] != null
+          ? DateTime.parse(map['expenseDate'] as String)
+          : DateTime.now(),
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'description': description,
+      'amount': amount,
+      'expenseDate': expenseDate.toIso8601String(),
+    };
+  }
 }

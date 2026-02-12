@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:elyf_groupe_app/shared.dart';
 
 /// Card widget for system information.
 class SettingsSystemInfoCard extends StatelessWidget {
@@ -6,106 +7,110 @@ class SettingsSystemInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
-        side: BorderSide(
-          color: Colors.black.withValues(alpha: 0.1),
-          width: 1.219,
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(
-                  Icons.info_outline,
-                  size: 20,
-                  color: Color(0xFF0A0A0A),
+    final theme = Theme.of(context);
+    
+    return ElyfCard(
+      padding: const EdgeInsets.all(24),
+      elevation: 4,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                const SizedBox(width: 8),
-                const Text(
-                  'Informations système',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.normal,
-                    color: Color(0xFF0A0A0A),
-                  ),
+                child: Icon(Icons.info_outline_rounded, size: 22, color: theme.colorScheme.primary),
+              ),
+              const SizedBox(width: 16),
+              Text(
+                'Informations Système',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  fontFamily: 'Outfit',
                 ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(child: _buildInfoItem('Version', '1.0.0')),
-                Expanded(
-                  child: _buildInfoItem('Dernière mise à jour', '16 Nov 2024'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 32),
+          Wrap(
+            spacing: 32,
+            runSpacing: 24,
+            children: [
+              _buildInfoItem(context, 'Version', '1.0.0'),
+              _buildInfoItem(context, 'Mise à jour', '16 Fév 2026'),
+              _buildInfoItem(context, 'Entreprise', 'Groupe ELYF'),
+              _buildInfoItem(context, 'Status', 'Connecté'),
+            ],
+          ),
+          const Divider(height: 48, thickness: 0.5),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                Expanded(child: _buildInfoItem('Entreprise', 'Groupe ELYF')),
-                Expanded(child: _buildInfoItem('Application', 'Mobile Money')),
-              ],
-            ),
-            const Divider(height: 32),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(Icons.settings, size: 20, color: Color(0xFF0A0A0A)),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'ELYF Mobile Money',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.normal,
-                          color: Color(0xFF101828),
-                        ),
+                child: Icon(Icons.description_outlined, size: 20, color: theme.colorScheme.onSurfaceVariant),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'À propos du Module',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        color: theme.colorScheme.onSurface,
+                        fontFamily: 'Outfit',
                       ),
-                      const SizedBox(height: 4),
-                      const Text(
-                        'Application de gestion des transactions Mobile Money, liquidité et commissions pour le Groupe ELYF. Optimisée pour tablette avec système multi-utilisateurs et sécurité renforcée.',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Color(0xFF4A5565),
-                          fontWeight: FontWeight.normal,
-                        ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Application métier optimisée pour la gestion temps réel des flux Orange Money. Inclut la traçabilité des commissions, le suivi de liquidité et la supervision multi-agents.',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                        height: 1.5,
+                        fontWeight: FontWeight.w500,
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ],
-        ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildInfoItem(String label, String value) {
+  Widget _buildInfoItem(BuildContext context, String label, String value) {
+    final theme = Theme.of(context);
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.normal,
-            color: Color(0xFF4A5565),
+          style: theme.textTheme.labelMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+            fontWeight: FontWeight.w700,
+            fontFamily: 'Outfit',
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 6),
         Text(
           value,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.normal,
-            color: Color(0xFF101828),
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w900,
+            color: theme.colorScheme.onSurface,
+            fontFamily: 'Outfit',
           ),
         ),
       ],

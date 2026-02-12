@@ -199,8 +199,9 @@ class _AdaptiveNavigationScaffoldState
     final theme = Theme.of(context);
     final sectionsCount = widget.sections.length;
 
-    // Si plus de 5 sections, utiliser un drawer pour une meilleure ergonomie (étendu de 4 à 5)
-    if (sectionsCount > 5) {
+    // Augmenté de 5 à 8 : l'utilisateur préfère la Bottom Nav même avec beaucoup de sections.
+    // ElyfBottomNavigationBar supporte le défilement horizontal.
+    if (sectionsCount > 8) {
       return _buildMobileWithDrawer(theme);
     }
 

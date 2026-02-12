@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
+import '../../../../core/tenant/tenant_provider.dart';
 import '../../domain/entities/daily_worker.dart';
 import '../../domain/entities/production_payment.dart';
 import '../../domain/entities/production_payment_person.dart';
@@ -395,15 +396,16 @@ class _WeeklySalaryCalculatorState
                
                if (name.isEmpty) return;
                Navigator.pop(dialogContext);
-               
-               try {
-                 final worker = DailyWorker(
-                    id: info.workerId,
-                    name: name,
-                    phone: phone, 
-                    salaireJournalier: info.dailySalary,
-                    joursTravailles: [],
-                 );
+                              try {
+                  final enterpriseId = ref.read(activeEnterpriseProvider).value?.id ?? 'default';
+                  final worker = DailyWorker(
+                     id: info.workerId,
+                     enterpriseId: enterpriseId,
+                     name: name,
+                     phone: phone, 
+                     salaireJournalier: info.dailySalary,
+                     joursTravailles: [],
+                  );
                  
                  await ref.read(dailyWorkerRepositoryProvider).createWorker(worker);
                  

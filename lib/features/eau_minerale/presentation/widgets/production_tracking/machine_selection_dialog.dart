@@ -29,7 +29,7 @@ class MachineSelectionDialog {
             itemBuilder: (context, index) {
               final machine = machinesDisponibles[index];
               return ListTile(
-                title: Text(machine.nom),
+                title: Text(machine.name),
                 onTap: () => Navigator.of(context).pop(machine),
               );
             },

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
+import '../../../../core/tenant/tenant_provider.dart';
 import '../../../../core/errors/app_exceptions.dart';
 import '../../domain/entities/stock_item.dart';
 import '../../domain/pack_constants.dart';
@@ -103,8 +104,10 @@ class StockAdjustmentFormState
           // Enregistrer le mouvement d'ajustement (retrait uniquement)
           final movementType = BobineMovementType.retrait;
 
+          final enterpriseId = ref.read(activeEnterpriseProvider).value?.id ?? 'default';
           final movement = BobineStockMovement(
             id: 'movement-${DateTime.now().millisecondsSinceEpoch}',
+            enterpriseId: enterpriseId,
             bobineId: stock.id,
             bobineReference: _bobineType,
             type: movementType,
@@ -150,8 +153,10 @@ class StockAdjustmentFormState
           // recordMovement met automatiquement à jour le stock (comme pour les bobines)
           final movementType = PackagingMovementType.ajustement;
 
+          final enterpriseId = ref.read(activeEnterpriseProvider).value?.id ?? 'default';
           final movement = PackagingStockMovement(
             id: 'movement-${DateTime.now().millisecondsSinceEpoch}',
+            enterpriseId: enterpriseId,
             packagingId: packagingStock.id,
             packagingType: 'Emballage',
             type: movementType,

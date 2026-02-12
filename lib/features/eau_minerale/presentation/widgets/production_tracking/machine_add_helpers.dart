@@ -58,7 +58,7 @@ class MachineAddHelpers {
       ref.invalidate(productionSessionDetailProvider((session.id)));
       NotificationService.showSuccess(
         context,
-        'Machine ${machine.nom} ajoutée. Bobine non finie réutilisée: ${bobineNonFinie.bobineType}',
+        'Machine ${machine.name} ajoutée. Bobine non finie réutilisée: ${bobineNonFinie.bobineType}',
       );
     }
   }
@@ -88,7 +88,7 @@ class MachineAddHelpers {
       ref.invalidate(productionSessionDetailProvider((session.id)));
       NotificationService.showSuccess(
         context,
-        'Machine ${machine.nom} ajoutée avec succès',
+        'Machine ${machine.name} ajoutée avec succès',
       );
     }
   }

@@ -24,37 +24,11 @@ class GazExpenseOfflineRepository extends OfflineRepository<GazExpense>
   String get collectionName => 'gaz_expenses';
 
   @override
-  GazExpense fromMap(Map<String, dynamic> map) {
-    return GazExpense(
-      id: map['id'] as String? ?? map['localId'] as String,
-      category: ExpenseCategory.values.firstWhere(
-        (e) => e.name == map['category'],
-        orElse: () => ExpenseCategory.other,
-      ),
-      amount: (map['amount'] as num).toDouble(),
-      description: map['description'] as String,
-      date: DateTime.parse(map['date'] as String),
-      enterpriseId: map['enterpriseId'] as String,
-      isFixed: map['isFixed'] as bool? ?? false,
-      notes: map['notes'] as String?,
-      receiptPath: map['receiptPath'] as String?,
-    );
-  }
+  GazExpense fromMap(Map<String, dynamic> map) =>
+      GazExpense.fromMap(map, enterpriseId);
 
   @override
-  Map<String, dynamic> toMap(GazExpense entity) {
-    return {
-      'id': entity.id,
-      'category': entity.category.name,
-      'amount': entity.amount,
-      'description': entity.description,
-      'date': entity.date.toIso8601String(),
-      'enterpriseId': entity.enterpriseId,
-      'isFixed': entity.isFixed,
-      'notes': entity.notes,
-      'receiptPath': entity.receiptPath,
-    };
-  }
+  Map<String, dynamic> toMap(GazExpense entity) => entity.toMap();
 
   @override
   String getLocalId(GazExpense entity) {
@@ -91,22 +65,15 @@ class GazExpenseOfflineRepository extends OfflineRepository<GazExpense>
 
   @override
   Future<void> deleteFromLocal(GazExpense entity) async {
-    final remoteId = getRemoteId(entity);
-    if (remoteId != null) {
-      await driftService.records.deleteByRemoteId(
-        collectionName: collectionName,
-        remoteId: remoteId,
-        enterpriseId: enterpriseId,
-        moduleType: moduleType,
-      );
-      return;
-    }
-    final localId = getLocalId(entity);
-    await driftService.records.deleteByLocalId(
-      collectionName: collectionName,
-      localId: localId,
-      enterpriseId: enterpriseId,
-      moduleType: moduleType,
+    // Soft-delete
+    final deletedExpense = entity.copyWith(
+      deletedAt: DateTime.now(),
+    );
+    await saveToLocal(deletedExpense);
+    
+    AppLogger.info(
+      'Soft-deleted gaz expense: ${entity.id}',
+      name: 'GazExpenseOfflineRepository',
     );
   }
 
@@ -119,7 +86,8 @@ class GazExpenseOfflineRepository extends OfflineRepository<GazExpense>
       moduleType: moduleType,
     );
     if (byRemote != null) {
-      return fromMap(jsonDecode(byRemote.dataJson) as Map<String, dynamic>);
+      final expense = fromMap(jsonDecode(byRemote.dataJson) as Map<String, dynamic>);
+      return expense.isDeleted ? null : expense;
     }
     final byLocal = await driftService.records.findByLocalId(
       collectionName: collectionName,
@@ -128,7 +96,8 @@ class GazExpenseOfflineRepository extends OfflineRepository<GazExpense>
       moduleType: moduleType,
     );
     if (byLocal == null) return null;
-    return fromMap(jsonDecode(byLocal.dataJson) as Map<String, dynamic>);
+    final expense = fromMap(jsonDecode(byLocal.dataJson) as Map<String, dynamic>);
+    return expense.isDeleted ? null : expense;
   }
 
   @override
@@ -139,9 +108,8 @@ class GazExpenseOfflineRepository extends OfflineRepository<GazExpense>
       moduleType: moduleType,
     );
     final entities = rows
-
         .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
-
+        .where((expense) => !expense.isDeleted)
         .toList();
 
     
@@ -194,6 +162,7 @@ class GazExpenseOfflineRepository extends OfflineRepository<GazExpense>
                 }
               })
               .whereType<GazExpense>()
+              .where((expense) => !expense.isDeleted)
               .toList();
 
           final deduplicated = deduplicateByRemoteId(entities);
@@ -226,8 +195,13 @@ class GazExpenseOfflineRepository extends OfflineRepository<GazExpense>
   Future<void> addExpense(GazExpense expense) async {
     try {
       final localId = getLocalId(expense);
-      final expenseWithLocalId = expense.copyWith(id: localId);
-      await save(expenseWithLocalId);
+      final expenseToSave = expense.copyWith(
+        id: localId,
+        enterpriseId: enterpriseId,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+      await save(expenseToSave);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       AppLogger.error(
@@ -243,7 +217,11 @@ class GazExpenseOfflineRepository extends OfflineRepository<GazExpense>
   @override
   Future<void> updateExpense(GazExpense expense) async {
     try {
-      await save(expense);
+      final updated = expense.copyWith(
+        enterpriseId: enterpriseId,
+        updatedAt: DateTime.now(),
+      );
+      await save(updated);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       AppLogger.error(

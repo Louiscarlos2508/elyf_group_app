@@ -33,6 +33,7 @@ class TransactionService {
     required TransactionType type,
     required int amount,
     required String phoneNumber,
+    int? commission,
     String? customerName,
     String? createdBy,
   }) {
@@ -46,6 +47,7 @@ class TransactionService {
       phoneNumber: normalized,
       date: DateTime.now(),
       status: TransactionStatus.pending,
+      commission: commission,
       customerName: customerName?.trim(),
       createdBy: createdBy,
     );

@@ -64,7 +64,7 @@ class _BobineInstallationFormState
             if (bobineNonFinieTrouvee == null) {
               bobineNonFinieTrouvee = bobine;
               AppLogger.debug(
-                'Bobine non finie trouvée pour ${widget.machine.nom}: ${bobine.bobineType} dans session ${session.id}',
+                'Bobine non finie trouvée pour ${widget.machine.name}: ${bobine.bobineType} dans session ${session.id}',
                 name: 'eau_minerale.production',
               );
             }
@@ -140,7 +140,7 @@ class _BobineInstallationFormState
         usage = BobineUsage(
           bobineType: bobineStock.type,
           machineId: widget.machine.id,
-          machineName: widget.machine.nom,
+          machineName: widget.machine.name,
           dateInstallation: dateHeureInstallation,
           heureInstallation: dateHeureInstallation,
           estInstallee: true,
@@ -209,7 +209,7 @@ class _BobineInstallationFormState
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Machine: ${widget.machine.nom}',
+                              '${widget.machine.name} (${widget.machine.reference})',
                               style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900, color: colors.onSurface),
                             ),
                             Text(

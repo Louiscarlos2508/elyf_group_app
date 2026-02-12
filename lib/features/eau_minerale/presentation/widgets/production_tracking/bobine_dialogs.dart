@@ -5,6 +5,7 @@ import '../../../domain/entities/bobine_usage.dart';
 import '../../../domain/entities/machine.dart';
 import '../../../domain/entities/production_session.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
+import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 import '../bobine_finish_dialog.dart';
 import '../machine_breakdown_dialog.dart';
 import 'package:elyf_groupe_app/shared.dart';
@@ -19,9 +20,11 @@ class BobineDialogs {
     ProductionSession session,
     BobineUsage bobine,
   ) {
+    final enterpriseId = ref.read(activeEnterpriseProvider).value?.id ?? 'default';
     final machine = Machine(
       id: bobine.machineId,
-      nom: bobine.machineName,
+      name: bobine.machineName,
+      enterpriseId: enterpriseId,
       reference: bobine.machineId,
     );
 

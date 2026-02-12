@@ -68,6 +68,8 @@ class CustomerOfflineRepository implements CustomerRepository {
     );
   }
 
+  bool _isDeleted(Map<String, dynamic> map) => map['deletedAt'] != null;
+
   /// Gets a customer by ID from local storage.
   Future<Map<String, dynamic>?> _getCustomerById(String id) async {
     final byRemote = await driftService.records.findByRemoteId(
@@ -76,7 +78,10 @@ class CustomerOfflineRepository implements CustomerRepository {
       enterpriseId: enterpriseId,
       moduleType: 'eau_minerale',
     );
-    if (byRemote != null) return _recordToMap(byRemote.dataJson);
+    if (byRemote != null) {
+      final map = _recordToMap(byRemote.dataJson);
+      return _isDeleted(map) ? null : map;
+    }
 
     final byLocal = await driftService.records.findByLocalId(
       collectionName: collectionName,
@@ -85,7 +90,8 @@ class CustomerOfflineRepository implements CustomerRepository {
       moduleType: 'eau_minerale',
     );
     if (byLocal == null) return null;
-    return _recordToMap(byLocal.dataJson);
+    final map = _recordToMap(byLocal.dataJson);
+    return _isDeleted(map) ? null : map;
   }
 
   /// Gets all customers for the enterprise.
@@ -95,7 +101,10 @@ class CustomerOfflineRepository implements CustomerRepository {
       enterpriseId: enterpriseId,
       moduleType: 'eau_minerale',
     );
-    return rows.map((r) => _recordToMap(r.dataJson)).toList();
+    return rows
+        .map((r) => _recordToMap(r.dataJson))
+        .where((map) => !_isDeleted(map))
+        .toList();
   }
 
   // CustomerRepository interface implementation
@@ -219,6 +228,49 @@ class CustomerOfflineRepository implements CustomerRepository {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       AppLogger.error(
         'Error creating customer',
+        name: 'CustomerOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      throw appException;
+    }
+  }
+
+  @override
+  Future<void> deleteCustomer(String id) async {
+    try {
+      final record = await driftService.records.findByLocalId(
+        collectionName: collectionName,
+        localId: id,
+        enterpriseId: enterpriseId,
+        moduleType: 'eau_minerale',
+      ) ?? await driftService.records.findByRemoteId(
+        collectionName: collectionName,
+        remoteId: id,
+        enterpriseId: enterpriseId,
+        moduleType: 'eau_minerale',
+      );
+
+      if (record != null) {
+        final map = _recordToMap(record.dataJson);
+        map['deletedAt'] = DateTime.now().toIso8601String();
+        
+        await driftService.records.upsert(
+          collectionName: collectionName,
+          localId: record.localId,
+          remoteId: record.remoteId,
+          enterpriseId: enterpriseId,
+          moduleType: 'eau_minerale',
+          dataJson: jsonEncode(map),
+          localUpdatedAt: DateTime.now(),
+        );
+
+        AppLogger.info('Soft-deleted customer: $id', name: 'CustomerOfflineRepository');
+      }
+    } catch (error, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
+      AppLogger.error(
+        'Error deleting customer: $id',
         name: 'CustomerOfflineRepository',
         error: error,
         stackTrace: stackTrace,

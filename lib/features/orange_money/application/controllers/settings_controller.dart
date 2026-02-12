@@ -1,4 +1,4 @@
-import '../../domain/entities/settings.dart';
+import '../../domain/entities/orange_money_settings.dart';
 import '../../domain/repositories/settings_repository.dart';
 
 /// Controller for managing Orange Money settings.
@@ -21,17 +21,35 @@ class SettingsController {
   }
 
   Future<void> updateNotifications(
-    String enterpriseId,
-    NotificationSettings notifications,
-  ) async {
-    return await _repository.updateNotifications(enterpriseId, notifications);
+    String enterpriseId, {
+    bool? enableLiquidityAlerts,
+    bool? enableCommissionReminders,
+    bool? enableCheckpointReminders,
+    bool? enableTransactionAlerts,
+  }) async {
+    return await _repository.updateNotifications(
+      enterpriseId,
+      enableLiquidityAlerts: enableLiquidityAlerts,
+      enableCommissionReminders: enableCommissionReminders,
+      enableCheckpointReminders: enableCheckpointReminders,
+      enableTransactionAlerts: enableTransactionAlerts,
+    );
   }
 
   Future<void> updateThresholds(
-    String enterpriseId,
-    ThresholdSettings thresholds,
-  ) async {
-    return await _repository.updateThresholds(enterpriseId, thresholds);
+    String enterpriseId, {
+    int? criticalLiquidityThreshold,
+    double? checkpointDiscrepancyThreshold,
+    int? commissionReminderDays,
+    int? largeTransactionThreshold,
+  }) async {
+    return await _repository.updateThresholds(
+      enterpriseId,
+      criticalLiquidityThreshold: criticalLiquidityThreshold,
+      checkpointDiscrepancyThreshold: checkpointDiscrepancyThreshold,
+      commissionReminderDays: commissionReminderDays,
+      largeTransactionThreshold: largeTransactionThreshold,
+    );
   }
 
   Future<void> updateSimNumber(String enterpriseId, String simNumber) async {
