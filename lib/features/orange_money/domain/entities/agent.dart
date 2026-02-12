@@ -10,6 +10,9 @@ class Agent {
     required this.commissionRate,
     required this.status,
     required this.enterpriseId,
+    this.type = AgentType.internal,
+    this.attachmentUrls = const [],
+    this.notes,
     this.deletedAt,
     this.deletedBy,
     this.createdAt,
@@ -26,6 +29,9 @@ class Agent {
   commissionRate; // Taux de commission en pourcentage (ex: 2.5 pour 2.5%)
   final AgentStatus status;
   final String enterpriseId;
+  final AgentType type;
+  final List<String> attachmentUrls;
+  final String? notes;
   final DateTime? deletedAt;
   final String? deletedBy;
   final DateTime? createdAt;
@@ -49,6 +55,9 @@ class Agent {
     double? commissionRate,
     AgentStatus? status,
     String? enterpriseId,
+    AgentType? type,
+    List<String>? attachmentUrls,
+    String? notes,
     DateTime? deletedAt,
     String? deletedBy,
     DateTime? createdAt,
@@ -64,6 +73,9 @@ class Agent {
       commissionRate: commissionRate ?? this.commissionRate,
       status: status ?? this.status,
       enterpriseId: enterpriseId ?? this.enterpriseId,
+      type: type ?? this.type,
+      attachmentUrls: attachmentUrls ?? this.attachmentUrls,
+      notes: notes ?? this.notes,
       deletedAt: deletedAt ?? this.deletedAt,
       deletedBy: deletedBy ?? this.deletedBy,
       createdAt: createdAt ?? this.createdAt,
@@ -82,6 +94,14 @@ class Agent {
       commissionRate: (map['commissionRate'] as num).toDouble(),
       status: AgentStatus.values.byName(map['status'] as String),
       enterpriseId: map['enterpriseId'] as String? ?? defaultEnterpriseId,
+      type: map['type'] != null
+          ? AgentType.values.byName(map['type'] as String)
+          : AgentType.internal,
+      attachmentUrls: (map['attachmentUrls'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          const [],
+      notes: map['notes'] as String?,
       deletedAt: map['deletedAt'] != null
           ? DateTime.parse(map['deletedAt'] as String)
           : null,
@@ -106,6 +126,9 @@ class Agent {
       'commissionRate': commissionRate,
       'status': status.name,
       'enterpriseId': enterpriseId,
+      'type': type.name,
+      'attachmentUrls': attachmentUrls,
+      'notes': notes,
       'deletedAt': deletedAt?.toIso8601String(),
       'deletedBy': deletedBy,
       'createdAt': createdAt?.toIso8601String(),
@@ -115,6 +138,8 @@ class Agent {
 }
 
 enum AgentStatus { active, inactive, suspended }
+
+enum AgentType { internal, external }
 
 enum MobileOperator { orange, mtn, moov, other }
 
@@ -142,6 +167,17 @@ extension MobileOperatorExtension on MobileOperator {
         return 'Moov';
       case MobileOperator.other:
         return 'Autre';
+    }
+  }
+}
+
+extension AgentTypeExtension on AgentType {
+  String get label {
+    switch (this) {
+      case AgentType.internal:
+        return 'Succursale';
+      case AgentType.external:
+        return 'Partenaire';
     }
   }
 }

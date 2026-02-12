@@ -5,7 +5,7 @@ import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
 import 'package:elyf_groupe_app/features/orange_money/application/providers.dart';
 import '../../../domain/entities/agent.dart';
-import '../agent_form_dialog.dart';
+import 'add_agent_modal.dart';
 import '../agent_recharge_dialog.dart'
     show AgentRechargeDialog, AgentTransactionType;
 import 'agents_format_helpers.dart';
@@ -22,26 +22,20 @@ class AgentsDialogs {
     AgentStatus? statusFilter,
     void Function() onSuccess,
   ) {
-    showDialog(
-      context: context,
-      builder: (context) => AgentFormDialog(
-        agent: agent,
-        onSave: (Agent savedAgent) async {
-          final controller = ref.read(agentsControllerProvider);
-          if (agent == null) {
-            await controller.createAgent(savedAgent);
-          } else {
-            await controller.updateAgent(savedAgent);
-          }
-          if (context.mounted) {
-            final agentsKey =
-                '$enterpriseId|${statusFilter?.name ?? ''}|$searchQuery';
-            ref.invalidate(agentsProvider((agentsKey)));
-            onSuccess();
-          }
-        },
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddAgentModal(agent: agent),
+        fullscreenDialog: true,
       ),
-    );
+    ).then((result) {
+      if (result == true) {
+        final agentsKey =
+            '$enterpriseId|${statusFilter?.name ?? ''}|$searchQuery';
+        ref.invalidate(agentsProvider((agentsKey)));
+        onSuccess();
+      }
+    });
   }
 
   /// Affiche le dialog de recharge/retrait.

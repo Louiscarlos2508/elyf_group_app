@@ -7,6 +7,7 @@ import '../../../audit_trail/domain/services/audit_trail_service.dart';
 import '../../../../core/logging/app_logger.dart';
 import 'package:elyf_groupe_app/core/errors/app_exceptions.dart';
 
+import '../../domain/entities/liquidity_checkpoint.dart';
 import '../../domain/adapters/orange_money_permission_adapter.dart';
 
 class OrangeMoneyController {
@@ -65,8 +66,14 @@ class OrangeMoneyController {
       transactions = await _repository.fetchTransactions();
       statistics = await _repository.getStatistics();
     }
+    
+    final todayCheckpoint = await _liquidityRepository.getTodayCheckpoint(_activeEnterpriseId);
 
-    return OrangeMoneyState(transactions: transactions, statistics: statistics);
+    return OrangeMoneyState(
+      transactions: transactions, 
+      statistics: statistics,
+      todayCheckpoint: todayCheckpoint,
+    );
   }
 
   /// Crée une transaction avec validation.
@@ -256,8 +263,10 @@ class OrangeMoneyState {
   const OrangeMoneyState({
     required this.transactions,
     required this.statistics,
+    this.todayCheckpoint,
   });
 
   final List<Transaction> transactions;
   final Map<String, dynamic> statistics;
+  final LiquidityCheckpoint? todayCheckpoint;
 }

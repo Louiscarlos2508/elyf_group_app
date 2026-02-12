@@ -81,7 +81,7 @@ class AgentsTable extends StatelessWidget {
                   child: Text(
                     'Aucun agent trouvé',
                     style: theme.textTheme.bodyLarge?.copyWith(
-                      color: const Color(0xFF6A7282),
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
                 )

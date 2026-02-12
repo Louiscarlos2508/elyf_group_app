@@ -49,14 +49,48 @@ class AgentsTableComponents {
                       ),
                   ],
                 ),
-                Text(
-                  'Depuis le $dateStr',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
-                    fontFamily: 'Outfit',
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: agent.type == AgentType.internal
+                            ? theme.colorScheme.primary.withValues(alpha: 0.1)
+                            : theme.colorScheme.tertiary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(
+                          color: agent.type == AgentType.internal
+                              ? theme.colorScheme.primary.withValues(alpha: 0.2)
+                              : theme.colorScheme.tertiary.withValues(alpha: 0.2),
+                          width: 0.5,
+                        ),
+                      ),
+                      child: Text(
+                        agent.type == AgentType.internal ? 'Succursale' : 'Partenaire',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: agent.type == AgentType.internal
+                              ? theme.colorScheme.primary
+                              : theme.colorScheme.tertiary,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        dateStr,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                          fontFamily: 'Outfit',
+                          fontSize: 11,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -103,7 +137,6 @@ class AgentsTableComponents {
     return Builder(
       builder: (context) {
         final theme = Theme.of(context);
-        final isActive = status == AgentStatus.active;
         return Container(
           height: 24,
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
@@ -142,31 +175,36 @@ class AgentsTableComponents {
     required VoidCallback onDelete,
     required double width,
   }) {
-    return SizedBox(
-      width: width,
-      child: Padding(
-        padding: const EdgeInsets.only(
-          left: 8,
-          top: 10.61,
-          right: 8,
-          bottom: 10.61,
-        ),
-        child: Row(
-          children: [
-            _buildActionButton(icon: Icons.visibility, onPressed: onView),
-            const SizedBox(width: 4),
-            _buildActionButton(icon: Icons.refresh, onPressed: onRefresh),
-            const SizedBox(width: 4),
-            _buildActionButton(icon: Icons.edit, onPressed: onEdit),
-            const SizedBox(width: 4),
-            _buildActionButton(
-              icon: Icons.close,
-              color: Colors.red,
-              onPressed: onDelete,
+    return Builder(
+      builder: (context) {
+        final theme = Theme.of(context);
+        return SizedBox(
+          width: width,
+          child: Padding(
+            padding: const EdgeInsets.only(
+              left: 8,
+              top: 10.61,
+              right: 8,
+              bottom: 10.61,
             ),
-          ],
-        ),
-      ),
+            child: Row(
+              children: [
+                _buildActionButton(icon: Icons.visibility, onPressed: onView),
+                const SizedBox(width: 4),
+                _buildActionButton(icon: Icons.refresh, onPressed: onRefresh),
+                const SizedBox(width: 4),
+                _buildActionButton(icon: Icons.edit, onPressed: onEdit),
+                const SizedBox(width: 4),
+                _buildActionButton(
+                  icon: Icons.close,
+                  color: theme.colorScheme.error,
+                  onPressed: onDelete,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 

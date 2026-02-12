@@ -28,7 +28,7 @@ class AgentsHeader extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 const Text(
-                  'Gérez vos agents affiliés et leurs transactions de recharge',
+                  'Gérez vos sous-agences et suivez leurs performances',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.normal,

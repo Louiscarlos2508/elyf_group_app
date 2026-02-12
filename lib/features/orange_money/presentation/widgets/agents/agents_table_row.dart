@@ -49,7 +49,7 @@ class AgentsTableRow extends StatelessWidget {
             AgentsFormatHelpers.formatCurrency(agent.liquidity),
             100.884,
             alignRight: false,
-            color: agent.liquidity == 0 ? const Color(0xFFE7000B) : null,
+            color: agent.liquidity == 0 ? theme.colorScheme.error : null,
           ),
           AgentsTableCell.buildCell(
             '${agent.commissionRate}%',

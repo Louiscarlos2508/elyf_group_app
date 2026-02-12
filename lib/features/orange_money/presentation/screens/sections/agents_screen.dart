@@ -44,7 +44,7 @@ class _AgentsScreenState extends ConsumerState<AgentsScreen> {
       child: CustomScrollView(
         slivers: [
           OrangeMoneyHeader(
-            title: 'Gestion des Agents',
+            title: 'Points de Vente',
             subtitle:
                 'Gérez votre réseau de distribution, surveillez la liquidité et supervisez les recharges.',
             badgeText: 'AGENTS AFFILIÉS',
@@ -60,7 +60,7 @@ class _AgentsScreenState extends ConsumerState<AgentsScreen> {
                 icon: const Icon(Icons.history_rounded,
                     size: 16, color: Colors.white),
                 label: const Text(
-                  'Historique',
+                  'Nouveau PDV',
                   style: TextStyle(
                       fontSize: 14,
                       color: Colors.white,

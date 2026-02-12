@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
 import 'package:elyf_groupe_app/features/orange_money/application/providers.dart';
+import '../../application/controllers/orange_money_controller.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -19,20 +20,34 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildData(BuildContext context, WidgetRef ref, dynamic data) {
+  Widget _buildData(BuildContext context, WidgetRef ref, OrangeMoneyState data) {
     final theme = Theme.of(context);
     final stats = data.statistics;
     final cashInTotal = stats['cashInTotal'] as int? ?? 0;
     final cashOutTotal = stats['cashOutTotal'] as int? ?? 0;
     final totalCommission = stats['totalCommission'] as int? ?? 0;
-    final totalTransactions = stats['totalTransactions'] as int? ?? 0;
     final pendingTransactions = stats['pendingTransactions'] as int? ?? 0;
+    
+    // Checkpoint & Balances
+    final todayCheckpoint = data.todayCheckpoint;
+    final startSim = todayCheckpoint?.simAmount ?? todayCheckpoint?.morningSimAmount ?? 0;
+    final startCash = todayCheckpoint?.cashAmount ?? todayCheckpoint?.morningCashAmount ?? 0;
+    
+    // Current Balance Calculation:
+    // SIM = Start + CashOut (Customer gives SIM, Agent gets SIM?? NO. Agent sends SIM)
+    // Agent SIM Balance decreases on CashIn (sends to customer)
+    // Agent SIM Balance increases on CashOut (receives from customer)
+    final currentSim = startSim - cashInTotal + cashOutTotal;
+    
+    // Agent Cash Balance increases on CashIn (receives cash)
+    // Agent Cash Balance decreases on CashOut (gives cash)
+    final currentCash = startCash + cashInTotal - cashOutTotal;
 
     return CustomScrollView(
       slivers: [
         OrangeMoneyHeader(
           title: 'Tableau de Bord',
-          subtitle: 'Suivez vos flux et commissions en temps réel avec une précision maximale.',
+          subtitle: 'Vue d\'ensemble de votre activité du jour.',
           additionalActions: [
             if (stats['isNetworkView'] == true)
               Container(
@@ -61,57 +76,158 @@ class DashboardScreen extends ConsumerWidget {
           ],
         ),
         const SliverToBoxAdapter(child: SizedBox(height: 24)),
+
+        // 1. Pointage Alert (if missing)
+        if (todayCheckpoint == null)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 0),
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 24),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.error,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: theme.colorScheme.error.withValues(alpha: 0.3),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.access_time_filled, color: Colors.white),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Pointage Matin Requis',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                          Text(
+                            'Effectuez votre pointage pour démarrer.',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.9),
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 16),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+        // 2. Solde Actuel (SIM & Espèces)
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Wrap(
-              spacing: 16,
-              runSpacing: 16,
+            child: Row(
               children: [
-                SizedBox(
-                  width: (MediaQuery.of(context).size.width - 48 - 16) / 2,
-                  child: ElyfStatsCard(
-                    label: 'Cash-In Total',
-                    value: CurrencyFormatter.formatFCFA(cashInTotal),
-                    icon: Icons.south_west_rounded,
-                    color: theme.colorScheme.primary,
-                    isGlass: true,
+                Expanded(
+                  child: _buildBalanceCard(
+                    context, 
+                    'Solde SIM (Estimé)', 
+                    currentSim, 
+                    Icons.sim_card, 
+                    theme.colorScheme.primary,
                   ),
                 ),
-                SizedBox(
-                  width: (MediaQuery.of(context).size.width - 48 - 16) / 2,
-                  child: ElyfStatsCard(
-                    label: 'Cash-Out Total',
-                    value: CurrencyFormatter.formatFCFA(cashOutTotal),
-                    icon: Icons.north_east_rounded,
-                    color: theme.colorScheme.secondary,
-                    isGlass: true,
-                  ),
-                ),
-                SizedBox(
-                  width: (MediaQuery.of(context).size.width - 48 - 16) / 2,
-                  child: ElyfStatsCard(
-                    label: 'Commissions',
-                    value: CurrencyFormatter.formatFCFA(totalCommission),
-                    icon: Icons.payments_rounded,
-                    color: const Color(0xFF00C897), // Pro success green
-                    isGlass: true,
-                  ),
-                ),
-                SizedBox(
-                  width: (MediaQuery.of(context).size.width - 48 - 16) / 2,
-                  child: ElyfStatsCard(
-                    label: 'Transactions',
-                    value: totalTransactions.toString(),
-                    icon: Icons.receipt_long_rounded,
-                    color: theme.colorScheme.tertiary,
-                    isGlass: true,
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _buildBalanceCard(
+                    context, 
+                    'En Caisse', 
+                    currentCash, 
+                    Icons.account_balance_wallet, 
+                    const Color(0xFF00C897),
                   ),
                 ),
               ],
             ),
           ),
         ),
+
+        const SliverToBoxAdapter(child: SizedBox(height: 24)),
+
+        // 3. Actions Rapides
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'ACTIONS RAPIDES',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onSurfaceVariant,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildActionButton(
+                        context,
+                        'Dépôt',
+                        Icons.south_west_rounded,
+                        theme.colorScheme.primary,
+                        () {}, // TODO naviguer vers Dépôt
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: _buildActionButton(
+                        context,
+                        'Retrait',
+                        Icons.north_east_rounded,
+                        theme.colorScheme.secondary,
+                        () {}, // TODO naviguer vers Retrait
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+
+         const SliverToBoxAdapter(child: SizedBox(height: 24)),
+
+         // 4. Synthèse Commissions (Focus)
+         SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+             child: ElyfStatsCard(
+                label: 'Commissions du Jour',
+                value: CurrencyFormatter.formatFCFA(totalCommission),
+                icon: Icons.payments_rounded,
+                color: theme.colorScheme.tertiary,
+                isGlass: true,
+             ),
+          ),
+         ),
+
         if (pendingTransactions > 0)
           SliverToBoxAdapter(
             child: Padding(
@@ -140,7 +256,91 @@ class DashboardScreen extends ConsumerWidget {
               ),
             ),
           ),
+          
+          const SliverToBoxAdapter(child: SizedBox(height: 100)),
       ],
+    );
+  }
+
+  Widget _buildBalanceCard(BuildContext context, String label, int amount, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 18, color: color),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: color,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            CurrencyFormatter.formatFCFA(amount),
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              fontFamily: 'Outfit',
+              letterSpacing: -0.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButton(BuildContext context, String label, IconData icon, Color color, VoidCallback onTap) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: color.withValues(alpha: 0.3),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: Colors.white, size: 28),
+              const SizedBox(height: 8),
+              Text(
+                label,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 16,
+                  fontFamily: 'Outfit',
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

@@ -134,28 +134,25 @@ class _CommissionDeclarationDialogState
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 1. Affichage montant estimé
-              _buildEstimatedAmountCard(),
-              const SizedBox(height: 16),
-
-              // 2. Détails calcul (expandable)
-              if (widget.commission.calculationDetails != null)
-                _buildCalculationDetails(),
-
-              const SizedBox(height: 16),
-
-              // 3. Saisie montant SMS
+              // 1. Saisie montant SMS (PRIORITAIRE)
               TextFormField(
                 controller: _declaredAmountController,
                 keyboardType: TextInputType.number,
+                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 inputFormatters: [
                   FilteringTextInputFormatter.digitsOnly,
                 ],
-                decoration: const InputDecoration(
-                  labelText: 'Montant SMS Opérateur (FCFA)',
-                  hintText: 'Montant exact du SMS Orange Money',
-                  prefixIcon: Icon(Icons.message),
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: 'Montant SMS (Reçu)',
+                  labelStyle: const TextStyle(fontSize: 16),
+                  hintText: 'ex: 50000',
+                  prefixIcon: const Icon(Icons.message),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(width: 2),
+                  ),
+                  filled: true,
+                  fillColor: Colors.blue.shade50.withOpacity(0.3),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -170,30 +167,50 @@ class _CommissionDeclarationDialogState
                 onChanged: _calculateDiscrepancy,
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
 
-              // 4. Affichage écart en temps réel
-              if (_declaredAmount != null && _declaredAmount! > 0)
-                CommissionDiscrepancyIndicator(
-                  estimatedAmount: widget.commission.estimatedAmount,
-                  declaredAmount: _declaredAmount!,
-                  showDetails: true,
-                ),
-
-              const SizedBox(height: 16),
-
-              // 5. Upload screenshot SMS
+              // 2. Upload screenshot SMS (OBLIGATOIRE)
               _buildImagePicker(),
 
+              const SizedBox(height: 24),
+              
+              // 3. Vérification Système (Replié par défaut)
+              ExpansionTile(
+                title: const Text(
+                  'Vérification Système',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                subtitle: _declaredAmount != null 
+                    ? CommissionDiscrepancyIndicator(
+                        estimatedAmount: widget.commission.estimatedAmount,
+                        declaredAmount: _declaredAmount!,
+                        showDetails: false,
+                      )
+                    : const Text('Comparer avec le calcul théorique'),
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      children: [
+                        _buildEstimatedAmountCard(),
+                        const SizedBox(height: 16),
+                        if (widget.commission.calculationDetails != null)
+                          _buildCalculationDetails(), // This will be nested, but OK for now or I should flatten it.
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+
               const SizedBox(height: 16),
 
-              // 6. Notes optionnelles
+              // 4. Notes optionnelles
               TextFormField(
                 controller: _notesController,
-                maxLines: 3,
+                maxLines: 2,
                 decoration: const InputDecoration(
-                  labelText: 'Notes (optionnel)',
-                  hintText: 'Commentaires ou observations',
+                  labelText: 'Notes',
+                  prefixIcon: Icon(Icons.note),
                   border: OutlineInputBorder(),
                 ),
               ),
