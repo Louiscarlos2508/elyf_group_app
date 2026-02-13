@@ -12,10 +12,14 @@ class Sale {
     this.notes,
     this.cashAmount = 0,
     this.mobileMoneyAmount = 0,
+    this.cardAmount = 0,
     this.deletedAt,
     this.deletedBy,
     this.createdAt,
     this.updatedAt,
+    this.number,
+    this.ticketHash,
+    this.previousHash,
   });
 
   final String id;
@@ -28,12 +32,15 @@ class Sale {
   final PaymentMethod? paymentMethod;
   final String? notes;
   final int cashAmount; // Montant payé en espèces (pour paiement mixte)
-  final int
-  mobileMoneyAmount; // Montant payé en Mobile Money (pour paiement mixte)
+  final int mobileMoneyAmount; // Montant payé en Mobile Money
+  final int cardAmount; // Montant payé par carte
   final DateTime? deletedAt;
   final String? deletedBy;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final String? number; // Numéro de facture (ex: FAC-20240212-001)
+  final String? ticketHash;
+  final String? previousHash;
 
   bool get isDeleted => deletedAt != null;
 
@@ -41,7 +48,7 @@ class Sale {
 
   /// Vérifie si la somme des paiements correspond au montant payé
   bool get isPaymentSplitValid =>
-      (cashAmount + mobileMoneyAmount) == amountPaid;
+      (cashAmount + mobileMoneyAmount + cardAmount) == amountPaid;
 
   Sale copyWith({
     String? id,
@@ -55,9 +62,13 @@ class Sale {
     String? notes,
     int? cashAmount,
     int? mobileMoneyAmount,
+    int? cardAmount,
     DateTime? deletedAt,
     String? deletedBy,
     DateTime? updatedAt,
+    String? number,
+    String? ticketHash,
+    String? previousHash,
   }) {
     return Sale(
       id: id ?? this.id,
@@ -71,10 +82,14 @@ class Sale {
       notes: notes ?? this.notes,
       cashAmount: cashAmount ?? this.cashAmount,
       mobileMoneyAmount: mobileMoneyAmount ?? this.mobileMoneyAmount,
+      cardAmount: cardAmount ?? this.cardAmount,
       deletedAt: deletedAt ?? this.deletedAt,
       deletedBy: deletedBy ?? this.deletedBy,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      number: number ?? this.number,
+      ticketHash: ticketHash ?? this.ticketHash,
+      previousHash: previousHash ?? this.previousHash,
     );
   }
 
@@ -96,6 +111,9 @@ class Sale {
         case 'mobileMoney':
           paymentMethod = PaymentMethod.mobileMoney;
           break;
+        case 'card':
+          paymentMethod = PaymentMethod.card;
+          break;
         case 'both':
           paymentMethod = PaymentMethod.both;
           break;
@@ -116,6 +134,7 @@ class Sale {
       notes: map['notes'] as String?,
       cashAmount: (map['cashAmount'] as num?)?.toInt() ?? 0,
       mobileMoneyAmount: (map['mobileMoneyAmount'] as num?)?.toInt() ?? 0,
+      cardAmount: (map['cardAmount'] as num?)?.toInt() ?? 0,
       deletedAt: map['deletedAt'] != null
           ? DateTime.parse(map['deletedAt'] as String)
           : null,
@@ -126,6 +145,9 @@ class Sale {
       updatedAt: map['updatedAt'] != null
           ? DateTime.parse(map['updatedAt'] as String)
           : null,
+      number: map['number'] as String?,
+      ticketHash: map['ticketHash'] as String?,
+      previousHash: map['previousHash'] as String?,
     );
   }
 
@@ -144,11 +166,15 @@ class Sale {
       'notes': notes,
       'cashAmount': cashAmount.toDouble(),
       'mobileMoneyAmount': mobileMoneyAmount.toDouble(),
+      'cardAmount': cardAmount.toDouble(),
       'isComplete': amountPaid >= totalAmount,
       'deletedAt': deletedAt?.toIso8601String(),
       'deletedBy': deletedBy,
       'createdAt': createdAt?.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
+      'number': number,
+      'ticketHash': ticketHash,
+      'previousHash': previousHash,
     };
   }
 }
@@ -197,5 +223,6 @@ class SaleItem {
 enum PaymentMethod {
   cash,
   mobileMoney,
+  card,
   both, // Permet de payer avec les deux méthodes en même temps
 }

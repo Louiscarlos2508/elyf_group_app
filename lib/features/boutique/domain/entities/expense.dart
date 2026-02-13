@@ -1,3 +1,5 @@
+import 'sale.dart' show PaymentMethod;
+
 /// Represents an expense for the boutique.
 class Expense {
   const Expense({
@@ -7,12 +9,14 @@ class Expense {
     required this.amountCfa,
     required this.category,
     required this.date,
+    this.paymentMethod = PaymentMethod.cash,
     this.notes,
     this.deletedAt, // Date de suppression (soft delete)
     this.deletedBy, // ID de l'utilisateur qui a supprimé
     this.createdAt,
     this.updatedAt,
     this.receiptPath,
+    this.number,
   });
 
   final String id;
@@ -21,12 +25,14 @@ class Expense {
   final int amountCfa; // Montant en CFA
   final ExpenseCategory category;
   final DateTime date;
+  final PaymentMethod paymentMethod;
   final String? notes;
   final DateTime? deletedAt; // Date de suppression (soft delete)
   final String? deletedBy; // ID de l'utilisateur qui a supprimé
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final String? receiptPath;
+  final String? number; // Numéro de dépense (ex: DEP-20240212-001)
 
   /// Indique si la dépense est supprimée (soft delete)
   bool get isDeleted => deletedAt != null;
@@ -38,11 +44,13 @@ class Expense {
     int? amountCfa,
     ExpenseCategory? category,
     DateTime? date,
+    PaymentMethod? paymentMethod,
     String? notes,
     DateTime? deletedAt,
     String? deletedBy,
     DateTime? updatedAt,
     String? receiptPath,
+    String? number,
   }) {
     return Expense(
       id: id ?? this.id,
@@ -51,12 +59,14 @@ class Expense {
       amountCfa: amountCfa ?? this.amountCfa,
       category: category ?? this.category,
       date: date ?? this.date,
+      paymentMethod: paymentMethod ?? this.paymentMethod,
       notes: notes ?? this.notes,
       deletedAt: deletedAt ?? this.deletedAt,
       deletedBy: deletedBy ?? this.deletedBy,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       receiptPath: receiptPath ?? this.receiptPath,
+      number: number ?? this.number,
     );
   }
 
@@ -75,6 +85,10 @@ class Expense {
           : (map['expenseDate'] != null
                 ? DateTime.parse(map['expenseDate'] as String)
                 : DateTime.now()),
+      paymentMethod: PaymentMethod.values.firstWhere(
+        (e) => e.name == (map['paymentMethod'] as String? ?? 'cash'),
+        orElse: () => PaymentMethod.cash,
+      ),
       deletedAt: map['deletedAt'] != null
           ? DateTime.parse(map['deletedAt'] as String)
           : null,
@@ -86,6 +100,7 @@ class Expense {
           ? DateTime.parse(map['updatedAt'] as String)
           : null,
       receiptPath: map['receiptPath'] as String? ?? map['receipt'] as String?,
+      number: map['number'] as String?,
     );
   }
 
@@ -98,6 +113,7 @@ class Expense {
       'amountCfa': amountCfa.toDouble(),
       'amount': amountCfa.toDouble(),
       'category': category.name,
+      'paymentMethod': paymentMethod.name,
       'date': date.toIso8601String(),
       'expenseDate': date.toIso8601String(),
       'deletedAt': deletedAt?.toIso8601String(),
@@ -105,6 +121,7 @@ class Expense {
       'createdAt': createdAt?.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
       'receiptPath': receiptPath,
+      'number': number,
     };
   }
 

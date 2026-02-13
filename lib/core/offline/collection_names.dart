@@ -53,4 +53,8 @@ class CollectionNames {
   // Collections Boutique
   static const String purchases = 'purchases';
   static const String expenses = 'expenses';
+  static const String suppliers = 'suppliers';
+  static const String supplierSettlements = 'supplier_settlements';
+  static const String treasuryOperations = 'treasury_operations';
+  static const String closings = 'closings';
 }

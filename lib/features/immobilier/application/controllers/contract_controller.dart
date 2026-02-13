@@ -47,6 +47,13 @@ class ContractController {
     return await _contractRepository.getContractsByProperty(propertyId);
   }
 
+  Future<Contract?> getActiveContractForProperty(String propertyId) async {
+    final contracts = await getContractsByProperty(propertyId);
+    return contracts
+        .where((c) => c.status == ContractStatus.active)
+        .firstOrNull;
+  }
+
   Future<List<Contract>> getContractsByTenant(String tenantId) async {
     return await _contractRepository.getContractsByTenant(tenantId);
   }

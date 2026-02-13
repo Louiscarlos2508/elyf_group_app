@@ -1,11 +1,13 @@
-import 'package:flutter/material.dart';
 
-import '../../../../core/printing/sunmi_v3_service.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../../core/printing/printer_provider.dart';
 import '../../../../core/printing/templates/gas_receipt_template.dart';
 import '../../domain/entities/gas_sale.dart';
 
-/// Bouton d'impression de facture pour le gaz avec détection automatique Sunmi.
-class GasPrintReceiptButton extends StatefulWidget {
+/// Bouton d'impression de facture pour le gaz supportant plusieurs imprimantes via activePrinterProvider.
+class GasPrintReceiptButton extends ConsumerStatefulWidget {
   const GasPrintReceiptButton({
     super.key,
     required this.sale,
@@ -20,12 +22,11 @@ class GasPrintReceiptButton extends StatefulWidget {
   final void Function(String error)? onPrintError;
 
   @override
-  State<GasPrintReceiptButton> createState() => _GasPrintReceiptButtonState();
+  ConsumerState<GasPrintReceiptButton> createState() => _GasPrintReceiptButtonState();
 }
 
-class _GasPrintReceiptButtonState extends State<GasPrintReceiptButton> {
+class _GasPrintReceiptButtonState extends ConsumerState<GasPrintReceiptButton> {
   bool _isPrinting = false;
-  bool _isSunmiDevice = false;
   bool _isPrinterAvailable = false;
 
   @override
@@ -35,25 +36,22 @@ class _GasPrintReceiptButtonState extends State<GasPrintReceiptButton> {
   }
 
   Future<void> _checkPrinterAvailability() async {
-    final sunmi = SunmiV3Service.instance;
-    final isSunmi = await sunmi.isSunmiDevice;
-    final isAvailable = isSunmi && await sunmi.isPrinterAvailable();
+    final printer = ref.read(activePrinterProvider);
+    final isAvailable = await printer.isAvailable();
 
     if (mounted) {
       setState(() {
-        _isSunmiDevice = isSunmi;
         _isPrinterAvailable = isAvailable;
       });
     }
   }
 
   Future<void> _printReceipt() async {
-    if (!_isPrinterAvailable) {
-      widget.onPrintError?.call(
-        _isSunmiDevice
-            ? 'Imprimante non disponible'
-            : 'Imprimante Sunmi non détectée',
-      );
+    final printer = ref.read(activePrinterProvider);
+    final isAvailable = await printer.isAvailable();
+
+    if (!isAvailable) {
+      widget.onPrintError?.call('Imprimante non disponible. Veuillez vérifier la connexion dans les réglages.');
       return;
     }
 
@@ -66,7 +64,7 @@ class _GasPrintReceiptButtonState extends State<GasPrintReceiptButton> {
       );
       final content = template.generate();
 
-      final success = await SunmiV3Service.instance.printReceipt(content);
+      final success = await printer.printReceipt(content);
 
       if (!mounted) return;
 
@@ -110,18 +108,13 @@ class _GasPrintReceiptButtonState extends State<GasPrintReceiptButton> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    // Ne pas afficher le bouton si l'appareil n'est pas Sunmi
-    if (!_isSunmiDevice) {
-      return const SizedBox.shrink();
-    }
-
     return FilledButton.icon(
-      onPressed: _isPrinting || !_isPrinterAvailable ? null : _printReceipt,
+      onPressed: _isPrinting ? null : _printReceipt,
       icon: _isPrinting
           ? const SizedBox(
               width: 16,
               height: 16,
-              child: CircularProgressIndicator(strokeWidth: 2),
+              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
             )
           : const Icon(Icons.print),
       label: Text(_isPrinting ? 'Impression...' : 'Imprimer la facture'),

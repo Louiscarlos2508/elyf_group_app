@@ -193,6 +193,55 @@ abstract class BaseReportPdfService {
     );
   }
 
+  /// Construit une section avec un tableau de données.
+  pw.Widget buildTableSection({
+    required String title,
+    required List<String> headers,
+    required List<List<String>> rows,
+    List<pw.TextAlign>? columnAlignments,
+  }) {
+    return pw.Container(
+      margin: const pw.EdgeInsets.only(bottom: 20),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Text(
+            title,
+            style: pw.TextStyle(
+              fontSize: 16,
+              fontWeight: pw.FontWeight.bold,
+              color: PdfColors.blueGrey700,
+            ),
+          ),
+          pw.SizedBox(height: 12),
+          pw.TableHelper.fromTextArray(
+            headers: headers,
+            data: rows,
+            headerStyle: pw.TextStyle(
+              fontWeight: pw.FontWeight.bold,
+              color: PdfColors.white,
+            ),
+            headerDecoration: const pw.BoxDecoration(
+              color: PdfColors.blueGrey800,
+            ),
+            cellHeight: 25,
+            cellAlignment: pw.Alignment.centerLeft,
+            cellAlignments: columnAlignments?.asMap().map(
+                  (index, alignment) => MapEntry(
+                    index,
+                    alignment == pw.TextAlign.right
+                        ? pw.Alignment.centerRight
+                        : pw.Alignment.centerLeft,
+                  ),
+                ) ??
+                {},
+            border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
+          ),
+        ],
+      ),
+    );
+  }
+
   /// Formate un montant en devise.
   String formatCurrency(int amount) {
     return '${amount.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]} ')} FCFA';

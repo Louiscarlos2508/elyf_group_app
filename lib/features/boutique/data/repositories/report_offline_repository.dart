@@ -111,6 +111,32 @@ class ReportOfflineRepository implements ReportRepository {
   }
 
   @override
+  Future<FullBoutiqueReportData> getFullReportData(
+    ReportPeriod period, {
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    final start = _getStartDate(period, startDate: startDate);
+    final end = _getEndDate(period, endDate: endDate);
+
+    final general = await getReportData(period, startDate: start, endDate: end);
+    final sales = await getSalesReport(period, startDate: start, endDate: end);
+    final purchases = await getPurchasesReport(period, startDate: start, endDate: end);
+    final expenses = await getExpensesReport(period, startDate: start, endDate: end);
+    final profit = await getProfitReport(period, startDate: start, endDate: end);
+
+    return FullBoutiqueReportData(
+      general: general,
+      sales: sales,
+      purchases: purchases,
+      expenses: expenses,
+      profit: profit,
+      startDate: start,
+      endDate: end,
+    );
+  }
+
+  @override
   Future<SalesReportData> getSalesReport(
     ReportPeriod period, {
     DateTime? startDate,
@@ -208,7 +234,7 @@ class ReportOfflineRepository implements ReportRepository {
 
       final supplierTotals = <String, SupplierSummary>{};
       for (final purchase in periodPurchases) {
-        final supplier = purchase.supplier ?? 'Non spécifié';
+        final supplier = purchase.supplierId ?? 'Non spécifié';
         final existing = supplierTotals[supplier];
         if (existing != null) {
           supplierTotals[supplier] = SupplierSummary(
@@ -509,7 +535,7 @@ class ReportOfflineRepository implements ReportRepository {
 
         final supplierTotals = <String, SupplierSummary>{};
         for (final purchase in periodPurchases) {
-          final supplier = purchase.supplier ?? 'Non spécifié';
+          final supplier = purchase.supplierId ?? 'Non spécifié';
           final existing = supplierTotals[supplier];
           if (existing != null) {
             supplierTotals[supplier] = SupplierSummary(
@@ -638,6 +664,34 @@ class ReportOfflineRepository implements ReportRepository {
           netProfit: netProfit,
           grossMarginPercentage: grossMarginPercentage,
           netMarginPercentage: netMarginPercentage,
+        );
+      },
+    );
+  }
+
+  @override
+  Stream<FullBoutiqueReportData> watchFullReportData(
+    ReportPeriod period, {
+    DateTime? startDate,
+    DateTime? endDate,
+  }) {
+    return CombineLatestStream.combine5(
+      watchReportData(period, startDate: startDate, endDate: endDate),
+      watchSalesReport(period, startDate: startDate, endDate: endDate),
+      watchPurchasesReport(period, startDate: startDate, endDate: endDate),
+      watchExpensesReport(period, startDate: startDate, endDate: endDate),
+      watchProfitReport(period, startDate: startDate, endDate: endDate),
+      (general, sales, purchases, expenses, profit) {
+        final start = _getStartDate(period, startDate: startDate);
+        final end = _getEndDate(period, endDate: endDate);
+        return FullBoutiqueReportData(
+          general: general,
+          sales: sales,
+          purchases: purchases,
+          expenses: expenses,
+          profit: profit,
+          startDate: start,
+          endDate: end,
         );
       },
     );

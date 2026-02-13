@@ -1,6 +1,7 @@
-import 'dart:convert';
+import 'package:drift/drift.dart';
 
 import '../../../../core/errors/error_handler.dart';
+import '../../../../core/offline/drift/app_database.dart';
 import '../../../../core/offline/offline_repository.dart';
 import '../../domain/entities/tenant.dart';
 import '../../domain/repositories/tenant_repository.dart';
@@ -46,56 +47,59 @@ class TenantOfflineRepository extends OfflineRepository<Tenant>
   @override
   Future<void> saveToLocal(Tenant entity) async {
     final localId = getLocalId(entity);
-    final map = toMap(entity)..['localId'] = localId;
-    await driftService.records.upsert(
-      collectionName: collectionName,
-      localId: localId,
-      remoteId: getRemoteId(entity),
-      enterpriseId: enterpriseId,
-      moduleType: moduleType,
-      dataJson: jsonEncode(map),
-      localUpdatedAt: DateTime.now(),
+    final companion = TenantsTableCompanion(
+      id: Value(localId),
+      enterpriseId: Value(enterpriseId),
+      fullName: Value(entity.fullName),
+      phone: Value(entity.phone),
+      address: Value(entity.address),
+      idNumber: Value(entity.idNumber),
+      emergencyContact: Value(entity.emergencyContact),
+      idCardPath: Value(entity.idCardPath),
+      notes: Value(entity.notes),
+      createdAt: Value(entity.createdAt ?? DateTime.now()),
+      updatedAt: Value(DateTime.now()),
+      deletedAt: Value(entity.deletedAt),
+      deletedBy: Value(entity.deletedBy),
     );
+
+    await driftService.db.into(driftService.db.tenantsTable).insertOnConflictUpdate(companion);
   }
 
   @override
   Future<void> deleteFromLocal(Tenant entity) async {
-    final remoteId = getRemoteId(entity);
-    if (remoteId != null) {
-      await driftService.records.deleteByRemoteId(
-        collectionName: collectionName,
-        remoteId: remoteId,
-        enterpriseId: enterpriseId,
-        moduleType: moduleType,
-      );
-      return;
-    }
     final localId = getLocalId(entity);
-    await driftService.records.deleteByLocalId(
-      collectionName: collectionName,
-      localId: localId,
-      enterpriseId: enterpriseId,
-      moduleType: moduleType,
-    );
+    await (driftService.db.delete(driftService.db.tenantsTable)
+          ..where((t) => t.id.equals(localId)))
+        .go();
   }
 
   @override
   Future<Tenant?> getByLocalId(String localId) async {
-    final record = await driftService.records.findByLocalId(
-      collectionName: collectionName,
-      localId: localId,
-      enterpriseId: enterpriseId,
-      moduleType: moduleType,
-    ) ?? await driftService.records.findByRemoteId(
-      collectionName: collectionName,
-      remoteId: localId,
-      enterpriseId: enterpriseId,
-      moduleType: moduleType,
-    );
+    final query = driftService.db.select(driftService.db.tenantsTable)
+      ..where((t) => t.id.equals(localId));
+    final row = await query.getSingleOrNull();
 
-    if (record == null) return null;
-    final map = safeDecodeJson(record.dataJson, record.localId);
-    return map != null ? fromMap(map) : null;
+    if (row == null) return null;
+    return _fromEntity(row);
+  }
+
+  Tenant _fromEntity(TenantEntity entity) {
+    return Tenant(
+      id: entity.id,
+      enterpriseId: entity.enterpriseId,
+      fullName: entity.fullName,
+      phone: entity.phone,
+      address: entity.address,
+      idNumber: entity.idNumber,
+      emergencyContact: entity.emergencyContact,
+      idCardPath: entity.idCardPath,
+      notes: entity.notes,
+      createdAt: entity.createdAt,
+      updatedAt: entity.updatedAt,
+      deletedAt: entity.deletedAt,
+      deletedBy: entity.deletedBy,
+    );
   }
 
   @override
@@ -105,58 +109,26 @@ class TenantOfflineRepository extends OfflineRepository<Tenant>
 
   @override
   Future<List<Tenant>> getAllForEnterprise(String enterpriseId) async {
-    final rows = await driftService.records.listForEnterprise(
-      collectionName: collectionName,
-      enterpriseId: enterpriseId,
-      moduleType: moduleType,
-    );
-    final tenants = rows
-        .map((r) => safeDecodeJson(r.dataJson, r.localId))
-        .where((m) => m != null)
-        .map((m) => fromMap(m!))
-        .toList();
-    
-    return deduplicateByRemoteId(tenants);
+    final query = driftService.db.select(driftService.db.tenantsTable)
+      ..where((t) => t.enterpriseId.equals(enterpriseId));
+    final rows = await query.get();
+    return rows.map(_fromEntity).toList();
   }
 
   // TenantRepository interface implementation
 
   @override
   Stream<List<Tenant>> watchTenants() {
-    return driftService.records
-        .watchForEnterprise(
-          collectionName: collectionName,
-          enterpriseId: enterpriseId,
-          moduleType: moduleType,
-        )
-        .map((rows) {
-          final entities = rows
-              .map((r) => safeDecodeJson(r.dataJson, r.localId))
-              .where((m) => m != null)
-              .map((m) => fromMap(m!))
-              .where((e) => !e.isDeleted)
-              .toList();
-          return deduplicateByRemoteId(entities);
-        });
+    final query = driftService.db.select(driftService.db.tenantsTable)
+      ..where((t) => t.enterpriseId.equals(enterpriseId) & t.deletedAt.isNull());
+    return query.watch().map((rows) => rows.map(_fromEntity).toList());
   }
 
   @override
   Stream<List<Tenant>> watchDeletedTenants() {
-    return driftService.records
-        .watchForEnterprise(
-          collectionName: collectionName,
-          enterpriseId: enterpriseId,
-          moduleType: moduleType,
-        )
-        .map((rows) {
-          final entities = rows
-              .map((r) => safeDecodeJson(r.dataJson, r.localId))
-              .where((m) => m != null)
-              .map((m) => fromMap(m!))
-              .where((e) => e.isDeleted)
-              .toList();
-          return deduplicateByRemoteId(entities);
-        });
+    final query = driftService.db.select(driftService.db.tenantsTable)
+      ..where((t) => t.enterpriseId.equals(enterpriseId) & t.deletedAt.isNotNull());
+    return query.watch().map((rows) => rows.map(_fromEntity).toList());
   }
 
   @override

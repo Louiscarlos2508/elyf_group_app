@@ -9,6 +9,7 @@ import '../../../domain/entities/expense.dart' show PropertyExpense;
 import '../../../domain/entities/payment.dart';
 import '../../../domain/entities/property.dart';
 import '../../../domain/entities/tenant.dart';
+import '../../../domain/entities/maintenance_ticket.dart';
 import '../../../domain/services/dashboard_calculation_service.dart';
 import '../../widgets/dashboard_alerts_section.dart';
 import '../../widgets/immobilier_header.dart';
@@ -26,6 +27,7 @@ class DashboardScreen extends ConsumerWidget {
     final contractsAsync = ref.watch(contractsProvider);
     final paymentsAsync = ref.watch(paymentsWithRelationsProvider);
     final expensesAsync = ref.watch(expensesProvider);
+    final ticketsAsync = ref.watch(maintenanceTicketsProvider);
     final calculationService = ref.watch(
       immobilierDashboardCalculationServiceProvider,
     );
@@ -94,6 +96,7 @@ class DashboardScreen extends ConsumerWidget {
                 contractsAsync: contractsAsync,
                 paymentsAsync: paymentsAsync,
                 expensesAsync: expensesAsync,
+                ticketsAsync: ticketsAsync,
                 calculationService: calculationService,
                 onRevenueTap: () => _navigateToSection(context, ref, 'Paiements',
                     onNavigation: () {
@@ -107,6 +110,7 @@ class DashboardScreen extends ConsumerWidget {
                   ref.read(propertyListFilterProvider.notifier).set(
                       PropertyStatus.rented);
                 }),
+                onMaintenanceTap: () => _navigateToSection(context, ref, 'Maintenance'),
               ),
             ),
           ),
@@ -194,11 +198,13 @@ class _DashboardMonthKpis extends StatelessWidget {
     required this.contractsAsync,
     required this.paymentsAsync,
     required this.expensesAsync,
+    required this.ticketsAsync,
     required this.calculationService,
     this.onRevenueTap,
     this.onExpensesTap,
     this.onProfitTap,
     this.onOccupancyTap,
+    this.onMaintenanceTap,
   });
 
   final AsyncValue<List<Property>> propertiesAsync;
@@ -206,11 +212,13 @@ class _DashboardMonthKpis extends StatelessWidget {
   final AsyncValue<List<Contract>> contractsAsync;
   final AsyncValue<List<Payment>> paymentsAsync;
   final AsyncValue expensesAsync;
+  final AsyncValue<List<MaintenanceTicket>> ticketsAsync;
   final ImmobilierDashboardCalculationService calculationService;
   final VoidCallback? onRevenueTap;
   final VoidCallback? onExpensesTap;
   final VoidCallback? onProfitTap;
   final VoidCallback? onOccupancyTap;
+  final VoidCallback? onMaintenanceTap;
 
   @override
   Widget build(BuildContext context) {
@@ -224,28 +232,38 @@ class _DashboardMonthKpis extends StatelessWidget {
                   data: (payments) {
                     return expensesAsync.when(
                       data: (expenses) {
-                        // Use calculation service for business logic
-                        final metrics = calculationService
-                            .calculateMonthlyMetrics(
-                              properties: properties,
-                              tenants: (tenants as List).cast<Tenant>(),
-                              contracts: contracts,
-                              payments: payments,
-                              expenses: (expenses as List)
-                                  .cast<PropertyExpense>(),
-                            );
+                        return ticketsAsync.when(
+                          data: (tickets) {
+                             // Use calculation service for business logic
+                            final metrics = calculationService
+                                .calculateMonthlyMetrics(
+                                  properties: properties,
+                                  tenants: (tenants as List).cast<Tenant>(),
+                                  contracts: contracts,
+                                  payments: payments,
+                                  expenses: (expenses as List)
+                                      .cast<PropertyExpense>(),
+                                  tickets: tickets,
+                                );
 
-                        return DashboardMonthSectionV2(
-                          monthRevenue: metrics.monthRevenue,
-                          monthPaymentsCount: metrics.monthPaymentsCount, // Used calculated count
-                          monthExpensesAmount: metrics.monthExpensesTotal,
-                          monthProfit: metrics.netRevenue,
-                          occupancyRate: metrics.occupancyRate,
-                          collectionRate: metrics.collectionRate, // Pass rate
-                          onRevenueTap: onRevenueTap,
-                          onExpensesTap: onExpensesTap,
-                          onProfitTap: onProfitTap,
-                          onOccupancyTap: onOccupancyTap,
+                            return DashboardMonthSectionV2(
+                              monthRevenue: metrics.monthRevenue,
+                              monthPaymentsCount: metrics.monthPaymentsCount,
+                              monthExpensesAmount: metrics.monthExpensesTotal,
+                              monthProfit: metrics.netRevenue,
+                              occupancyRate: metrics.occupancyRate,
+                              collectionRate: metrics.collectionRate,
+                              openTickets: metrics.totalOpenTickets,
+                              highPriorityTickets: metrics.highPriorityTickets,
+                              onRevenueTap: onRevenueTap,
+                              onExpensesTap: onExpensesTap,
+                              onProfitTap: onProfitTap,
+                              onOccupancyTap: onOccupancyTap,
+                              onMaintenanceTap: onMaintenanceTap,
+                            );
+                          },
+                          loading: () => AppShimmers.statsGrid(context),
+                          error: (_, __) => const SizedBox.shrink(),
                         );
                       },
                       loading: () => AppShimmers.statsGrid(context),

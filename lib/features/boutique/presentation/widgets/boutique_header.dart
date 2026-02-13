@@ -9,6 +9,7 @@ class BoutiqueHeader extends StatelessWidget {
     this.shadowColor,
     this.additionalActions,
     this.bottom,
+    this.showBackButton = false,
   });
 
   final String title;
@@ -17,6 +18,7 @@ class BoutiqueHeader extends StatelessWidget {
   final Color? shadowColor;
   final List<Widget>? additionalActions;
   final Widget? bottom;
+  final bool showBackButton;
 
   @override
   Widget build(BuildContext context) {
@@ -45,6 +47,20 @@ class BoutiqueHeader extends StatelessWidget {
           children: [
             Row(
               children: [
+                if (showBackButton)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 16),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: IconButton(
+                        icon: const Icon(Icons.arrow_back, color: Colors.white),
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                    ),
+                  ),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,

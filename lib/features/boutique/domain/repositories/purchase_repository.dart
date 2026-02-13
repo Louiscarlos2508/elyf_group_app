@@ -6,6 +6,7 @@ abstract class PurchaseRepository {
   Future<Purchase?> getPurchase(String id);
   Future<String> createPurchase(Purchase purchase);
   Future<List<Purchase>> getPurchasesInPeriod(DateTime start, DateTime end);
+  Future<int> getCountForDate(DateTime date);
   Future<void> deletePurchase(String id, {String? deletedBy});
   Future<void> restorePurchase(String id);
   Future<List<Purchase>> getDeletedPurchases();

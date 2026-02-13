@@ -13,27 +13,20 @@ class PaymentSplitter extends StatefulWidget {
     required this.onSplitChanged,
     this.initialCashAmount = 0,
     this.initialMobileMoneyAmount = 0,
-    this.cashLabel = 'Cash',
+    this.initialCardAmount = 0,
+    this.cashLabel = 'Espèces',
     this.mobileMoneyLabel = 'Mobile Money',
+    this.cardLabel = 'Carte Bancaire',
   });
 
-  /// Montant total à répartir
   final int totalAmount;
-
-  /// Callback appelé quand la répartition change
-  final void Function(int cashAmount, int mobileMoneyAmount) onSplitChanged;
-
-  /// Montant initial en cash
+  final void Function(int cashAmount, int mobileMoneyAmount, int cardAmount) onSplitChanged;
   final int initialCashAmount;
-
-  /// Montant initial en mobile money
   final int initialMobileMoneyAmount;
-
-  /// Label personnalisé pour cash (ex: "Espèces")
+  final int initialCardAmount;
   final String cashLabel;
-
-  /// Label personnalisé pour mobile money (ex: "Orange Money")
   final String mobileMoneyLabel;
+  final String cardLabel;
 
   @override
   State<PaymentSplitter> createState() => _PaymentSplitterState();
@@ -42,26 +35,23 @@ class PaymentSplitter extends StatefulWidget {
 class _PaymentSplitterState extends State<PaymentSplitter> {
   late TextEditingController _cashController;
   late TextEditingController _mobileMoneyController;
+  late TextEditingController _cardController;
 
   @override
   void initState() {
     super.initState();
     _cashController = TextEditingController(
-      text: widget.initialCashAmount > 0
-          ? widget.initialCashAmount.toString()
-          : '',
+      text: widget.initialCashAmount > 0 ? widget.initialCashAmount.toString() : '',
     );
     _mobileMoneyController = TextEditingController(
-      text: widget.initialMobileMoneyAmount > 0
-          ? widget.initialMobileMoneyAmount.toString()
-          : '',
+      text: widget.initialMobileMoneyAmount > 0 ? widget.initialMobileMoneyAmount.toString() : '',
+    );
+    _cardController = TextEditingController(
+      text: widget.initialCardAmount > 0 ? widget.initialCardAmount.toString() : '',
     );
 
-    // Appeler onSplitChanged après le premier frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _updateSplit();
-      }
+      if (mounted) _updateSplit();
     });
   }
 
@@ -69,28 +59,20 @@ class _PaymentSplitterState extends State<PaymentSplitter> {
   void dispose() {
     _cashController.dispose();
     _mobileMoneyController.dispose();
+    _cardController.dispose();
     super.dispose();
   }
 
   void _updateSplit() {
     final cash = int.tryParse(_cashController.text) ?? 0;
     final mobileMoney = int.tryParse(_mobileMoneyController.text) ?? 0;
-    widget.onSplitChanged(cash, mobileMoney);
+    final card = int.tryParse(_cardController.text) ?? 0;
+    widget.onSplitChanged(cash, mobileMoney, card);
   }
 
-  void _onCashChanged(String value) {
+  void _onFieldChanged(String _) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _updateSplit();
-      }
-    });
-  }
-
-  void _onMobileMoneyChanged(String value) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _updateSplit();
-      }
+      if (mounted) _updateSplit();
     });
   }
 
@@ -100,7 +82,8 @@ class _PaymentSplitterState extends State<PaymentSplitter> {
     final colors = theme.colorScheme;
     final cash = int.tryParse(_cashController.text) ?? 0;
     final mobileMoney = int.tryParse(_mobileMoneyController.text) ?? 0;
-    final total = cash + mobileMoney;
+    final card = int.tryParse(_cardController.text) ?? 0;
+    final total = cash + mobileMoney + card;
     final isValid = total == widget.totalAmount;
     final remaining = widget.totalAmount - total;
 
@@ -119,108 +102,68 @@ class _PaymentSplitterState extends State<PaymentSplitter> {
         children: [
           Text(
             'Répartition du paiement',
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+            style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
-          TextFormField(
-            controller: _cashController,
-            decoration: InputDecoration(
-              labelText: '${widget.cashLabel} (FCFA)',
-              prefixIcon: const Icon(Icons.money),
-              helperText: cash > 0 ? CurrencyFormatter.formatFCFA(cash) : null,
-            ),
-            keyboardType: TextInputType.number,
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            onChanged: _onCashChanged,
-            validator: (value) {
-              final amount = int.tryParse(value ?? '') ?? 0;
-              if (amount < 0) return 'Montant invalide';
-              if (amount + mobileMoney > widget.totalAmount) {
-                return 'Dépasse le total';
-              }
-              return null;
-            },
-          ),
+          _buildField(_cashController, widget.cashLabel, Icons.money, cash),
+          const SizedBox(height: 12),
+          _buildField(_mobileMoneyController, widget.mobileMoneyLabel, Icons.account_balance_wallet, mobileMoney),
+          const SizedBox(height: 12),
+          _buildField(_cardController, widget.cardLabel, Icons.credit_card, card),
           const SizedBox(height: 16),
-          TextFormField(
-            controller: _mobileMoneyController,
-            decoration: InputDecoration(
-              labelText: '${widget.mobileMoneyLabel} (FCFA)',
-              prefixIcon: const Icon(Icons.account_balance_wallet),
-              helperText: mobileMoney > 0
-                  ? CurrencyFormatter.formatFCFA(mobileMoney)
-                  : null,
-            ),
-            keyboardType: TextInputType.number,
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            onChanged: _onMobileMoneyChanged,
-            validator: (value) {
-              final amount = int.tryParse(value ?? '') ?? 0;
-              if (amount < 0) return 'Montant invalide';
-              if (amount + cash > widget.totalAmount) {
-                return 'Dépasse le total';
-              }
-              return null;
-            },
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: isValid
-                  ? colors.primaryContainer.withValues(alpha: 0.3)
-                  : colors.errorContainer.withValues(alpha: 0.3),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Total saisi',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      CurrencyFormatter.formatFCFA(total),
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: isValid ? colors.primary : colors.error,
-                      ),
-                    ),
-                  ],
+          _buildSummary(theme, colors, total, isValid, remaining),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildField(TextEditingController controller, String label, IconData icon, int value) {
+    return TextFormField(
+      controller: controller,
+      decoration: InputDecoration(
+        labelText: '$label (FCFA)',
+        prefixIcon: Icon(icon),
+        helperText: value > 0 ? CurrencyFormatter.formatFCFA(value) : null,
+      ),
+      keyboardType: TextInputType.number,
+      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+      onChanged: _onFieldChanged,
+    );
+  }
+
+  Widget _buildSummary(ThemeData theme, ColorScheme colors, int total, bool isValid, int remaining) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isValid
+            ? colors.primaryContainer.withValues(alpha: 0.3)
+            : colors.errorContainer.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Total saisi', style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold)),
+              Text(
+                CurrencyFormatter.formatFCFA(total),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: isValid ? colors.primary : colors.error,
                 ),
-                const SizedBox(height: 4),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('Total attendu', style: theme.textTheme.bodySmall),
-                    Text(
-                      CurrencyFormatter.formatFCFA(widget.totalAmount),
-                      style: theme.textTheme.bodySmall,
-                    ),
-                  ],
-                ),
-                if (!isValid) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    remaining > 0
-                        ? 'Reste à saisir: ${CurrencyFormatter.formatFCFA(remaining)}'
-                        : 'Dépassement: ${CurrencyFormatter.formatFCFA(-remaining)}',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colors.error,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ],
-            ),
+              ),
+            ],
           ),
+          if (!isValid) ...[
+            const SizedBox(height: 4),
+            Text(
+              remaining > 0
+                  ? 'Reste: ${CurrencyFormatter.formatFCFA(remaining)}'
+                  : 'Dépassement: ${CurrencyFormatter.formatFCFA(-remaining)}',
+              style: theme.textTheme.bodySmall?.copyWith(color: colors.error, fontWeight: FontWeight.bold),
+            ),
+          ],
         ],
       ),
     );

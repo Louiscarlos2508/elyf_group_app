@@ -1,3 +1,4 @@
+import 'sale.dart' show PaymentMethod;
 import '../../../../core/domain/entities/attached_file.dart';
 
 /// Represents a purchase (achat) of products for the boutique.
@@ -8,13 +9,17 @@ class Purchase {
     required this.date,
     required this.items,
     required this.totalAmount,
-    this.supplier,
+    this.paymentMethod = PaymentMethod.cash,
+    this.supplierId,
+    this.paidAmount,
+    this.debtAmount,
     this.notes,
     this.attachedFiles,
     this.deletedAt,
     this.deletedBy,
     this.createdAt,
     this.updatedAt,
+    this.number,
   });
 
   final String id;
@@ -22,7 +27,10 @@ class Purchase {
   final DateTime date;
   final List<PurchaseItem> items;
   final int totalAmount; // Montant total en CFA
-  final String? supplier; // Fournisseur
+  final PaymentMethod paymentMethod;
+  final String? supplierId; // ID du Fournisseur
+  final int? paidAmount; // Montant payé
+  final int? debtAmount; // Montant restant à payer (dette)
   final String? notes; // Notes additionnelles
   final List<AttachedFile>?
   attachedFiles; // Fichiers joints (factures, photos, etc.)
@@ -30,6 +38,7 @@ class Purchase {
   final String? deletedBy;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final String? number; // Numéro d'achat (ex: ACH-20240212-001)
 
   bool get isDeleted => deletedAt != null;
 
@@ -39,13 +48,17 @@ class Purchase {
     DateTime? date,
     List<PurchaseItem>? items,
     int? totalAmount,
-    String? supplier,
+    PaymentMethod? paymentMethod,
+    String? supplierId,
+    int? paidAmount,
+    int? debtAmount,
     String? notes,
     List<AttachedFile>? attachedFiles,
     DateTime? deletedAt,
     String? deletedBy,
     DateTime? createdAt,
     DateTime? updatedAt,
+    String? number,
   }) {
     return Purchase(
       id: id ?? this.id,
@@ -53,13 +66,17 @@ class Purchase {
       date: date ?? this.date,
       items: items ?? this.items,
       totalAmount: totalAmount ?? this.totalAmount,
-      supplier: supplier ?? this.supplier,
+      paymentMethod: paymentMethod ?? this.paymentMethod,
+      supplierId: supplierId ?? this.supplierId,
+      paidAmount: paidAmount ?? this.paidAmount,
+      debtAmount: debtAmount ?? this.debtAmount,
       notes: notes ?? this.notes,
       attachedFiles: attachedFiles ?? this.attachedFiles,
       deletedAt: deletedAt ?? this.deletedAt,
       deletedBy: deletedBy ?? this.deletedBy,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      number: number ?? this.number,
     );
   }
 
@@ -79,7 +96,13 @@ class Purchase {
       date: DateTime.parse(map['date'] as String),
       items: items,
       totalAmount: (map['totalAmount'] as num).toInt(),
-      supplier: map['supplier'] as String?,
+      paymentMethod: PaymentMethod.values.firstWhere(
+        (e) => e.name == (map['paymentMethod'] as String? ?? 'cash'),
+        orElse: () => PaymentMethod.cash,
+      ),
+      supplierId: map['supplierId'] as String? ?? map['supplier'] as String?,
+      paidAmount: (map['paidAmount'] as num?)?.toInt(),
+      debtAmount: (map['debtAmount'] as num?)?.toInt(),
       notes: map['notes'] as String?,
       attachedFiles: attachedFiles,
       deletedAt: map['deletedAt'] != null
@@ -92,6 +115,7 @@ class Purchase {
       updatedAt: map['updatedAt'] != null
           ? DateTime.parse(map['updatedAt'] as String)
           : null,
+      number: map['number'] as String?,
     );
   }
 
@@ -102,13 +126,17 @@ class Purchase {
       'date': date.toIso8601String(),
       'items': items.map((item) => item.toMap()).toList(),
       'totalAmount': totalAmount,
-      'supplier': supplier,
+      'paymentMethod': paymentMethod.name,
+      'supplierId': supplierId,
+      'paidAmount': paidAmount,
+      'debtAmount': debtAmount,
       'notes': notes,
       'attachedFiles': attachedFiles?.map((f) => f.toMap()).toList(),
       'deletedAt': deletedAt?.toIso8601String(),
       'deletedBy': deletedBy,
       'createdAt': createdAt?.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
+      'number': number,
     };
   }
 }

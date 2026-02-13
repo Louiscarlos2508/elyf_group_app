@@ -17,6 +17,8 @@ class AuditRecord {
   final String entityId; // ID of the affected entity
   final String entityType; // e.g., 'transaction', 'production_session'
   final Map<String, dynamic>? metadata; // Any additional info (diffs, amounts, etc.)
+  final String? hash; // Cryptographic hash of this record
+  final String? previousHash; // Hash of the previous record in the chain
   final DateTime timestamp;
   final DateTime? updatedAt;
 
@@ -29,6 +31,8 @@ class AuditRecord {
     required this.entityId,
     required this.entityType,
     this.metadata,
+    this.hash,
+    this.previousHash,
     required this.timestamp,
     this.updatedAt,
   });
@@ -43,6 +47,8 @@ class AuditRecord {
     String? entityId,
     String? entityType,
     Map<String, dynamic>? metadata,
+    String? hash,
+    String? previousHash,
     DateTime? timestamp,
     DateTime? updatedAt,
   }) {
@@ -55,6 +61,8 @@ class AuditRecord {
       entityId: entityId ?? this.entityId,
       entityType: entityType ?? this.entityType,
       metadata: metadata ?? this.metadata,
+      hash: hash ?? this.hash,
+      previousHash: previousHash ?? this.previousHash,
       timestamp: timestamp ?? this.timestamp,
       updatedAt: updatedAt ?? this.updatedAt,
     );

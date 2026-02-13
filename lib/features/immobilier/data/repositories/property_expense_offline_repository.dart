@@ -1,6 +1,7 @@
-import 'dart:convert';
+import 'package:drift/drift.dart';
 
 import '../../../../core/errors/error_handler.dart';
+import '../../../../core/offline/drift/app_database.dart';
 import '../../../../core/offline/offline_repository.dart';
 import '../../domain/entities/expense.dart';
 import '../../domain/repositories/expense_repository.dart';
@@ -46,56 +47,60 @@ class PropertyExpenseOfflineRepository extends OfflineRepository<PropertyExpense
   @override
   Future<void> saveToLocal(PropertyExpense entity) async {
     final localId = getLocalId(entity);
-    final map = toMap(entity)..['localId'] = localId;
-    await driftService.records.upsert(
-      collectionName: collectionName,
-      localId: localId,
-      remoteId: getRemoteId(entity),
-      enterpriseId: enterpriseId,
-      moduleType: moduleType,
-      dataJson: jsonEncode(map),
-      localUpdatedAt: DateTime.now(),
+    final companion = PropertyExpensesTableCompanion(
+      id: Value(localId),
+      enterpriseId: Value(enterpriseId),
+      propertyId: Value(entity.propertyId),
+      amount: Value(entity.amount),
+      expenseDate: Value(entity.expenseDate),
+      category: Value(entity.category.name),
+      description: Value(entity.description),
+      receipt: Value(entity.receipt),
+      createdAt: Value(entity.createdAt ?? DateTime.now()),
+      updatedAt: Value(DateTime.now()),
+      deletedAt: Value(entity.deletedAt),
+      deletedBy: Value(entity.deletedBy),
     );
+
+    await driftService.db.into(driftService.db.propertyExpensesTable).insertOnConflictUpdate(companion);
   }
 
   @override
   Future<void> deleteFromLocal(PropertyExpense entity) async {
-    final remoteId = getRemoteId(entity);
-    if (remoteId != null) {
-      await driftService.records.deleteByRemoteId(
-        collectionName: collectionName,
-        remoteId: remoteId,
-        enterpriseId: enterpriseId,
-        moduleType: moduleType,
-      );
-      return;
-    }
     final localId = getLocalId(entity);
-    await driftService.records.deleteByLocalId(
-      collectionName: collectionName,
-      localId: localId,
-      enterpriseId: enterpriseId,
-      moduleType: moduleType,
-    );
+    await (driftService.db.delete(driftService.db.propertyExpensesTable)
+          ..where((t) => t.id.equals(localId)))
+        .go();
   }
 
   @override
   Future<PropertyExpense?> getByLocalId(String localId) async {
-    final record = await driftService.records.findByLocalId(
-      collectionName: collectionName,
-      localId: localId,
-      enterpriseId: enterpriseId,
-      moduleType: moduleType,
-    ) ?? await driftService.records.findByRemoteId(
-      collectionName: collectionName,
-      remoteId: localId,
-      enterpriseId: enterpriseId,
-      moduleType: moduleType,
-    );
+    final query = driftService.db.select(driftService.db.propertyExpensesTable)
+      ..where((t) => t.id.equals(localId));
+    final row = await query.getSingleOrNull();
 
-    if (record == null) return null;
-    final map = safeDecodeJson(record.dataJson, record.localId);
-    return map != null ? fromMap(map) : null;
+    if (row == null) return null;
+    return _fromEntity(row);
+  }
+
+  PropertyExpense _fromEntity(PropertyExpenseEntity entity) {
+    return PropertyExpense(
+      id: entity.id,
+      enterpriseId: entity.enterpriseId,
+      propertyId: entity.propertyId,
+      amount: entity.amount,
+      expenseDate: entity.expenseDate,
+      category: ExpenseCategory.values.firstWhere(
+        (e) => e.name == entity.category,
+        orElse: () => ExpenseCategory.other,
+      ),
+      description: entity.description,
+      receipt: entity.receipt,
+      createdAt: entity.createdAt,
+      updatedAt: entity.updatedAt,
+      deletedAt: entity.deletedAt,
+      deletedBy: entity.deletedBy,
+    );
   }
 
   @override
@@ -105,39 +110,19 @@ class PropertyExpenseOfflineRepository extends OfflineRepository<PropertyExpense
 
   @override
   Future<List<PropertyExpense>> getAllForEnterprise(String enterpriseId) async {
-    final rows = await driftService.records.listForEnterprise(
-      collectionName: collectionName,
-      enterpriseId: enterpriseId,
-      moduleType: moduleType,
-    );
-    final entities = rows
-        .map((r) => safeDecodeJson(r.dataJson, r.localId))
-        .where((m) => m != null)
-        .map((m) => fromMap(m!))
-        .toList();
-    
-    return deduplicateByRemoteId(entities);
+    final query = driftService.db.select(driftService.db.propertyExpensesTable)
+      ..where((t) => t.enterpriseId.equals(enterpriseId));
+    final rows = await query.get();
+    return rows.map(_fromEntity).toList();
   }
 
   // PropertyExpenseRepository interface implementation
 
   @override
   Stream<List<PropertyExpense>> watchExpenses() {
-    return driftService.records
-        .watchForEnterprise(
-          collectionName: collectionName,
-          enterpriseId: enterpriseId,
-          moduleType: moduleType,
-        )
-        .map((rows) {
-          final entities = rows
-              .map((r) => safeDecodeJson(r.dataJson, r.localId))
-              .where((m) => m != null)
-              .map((m) => fromMap(m!))
-              .where((e) => !e.isDeleted)
-              .toList();
-          return deduplicateByRemoteId(entities);
-        });
+    final query = driftService.db.select(driftService.db.propertyExpensesTable)
+      ..where((t) => t.enterpriseId.equals(enterpriseId).and(t.deletedAt.isNull()));
+    return query.watch().map((rows) => rows.map(_fromEntity).toList());
   }
 
   @override
@@ -217,21 +202,9 @@ class PropertyExpenseOfflineRepository extends OfflineRepository<PropertyExpense
 
   @override
   Stream<List<PropertyExpense>> watchDeletedExpenses() {
-    return driftService.records
-        .watchForEnterprise(
-          collectionName: collectionName,
-          enterpriseId: enterpriseId,
-          moduleType: moduleType,
-        )
-        .map((rows) {
-          final entities = rows
-              .map((r) => safeDecodeJson(r.dataJson, r.localId))
-              .where((m) => m != null)
-              .map((m) => fromMap(m!))
-              .where((e) => e.isDeleted)
-              .toList();
-          return deduplicateByRemoteId(entities);
-        });
+    final query = driftService.db.select(driftService.db.propertyExpensesTable)
+      ..where((t) => t.enterpriseId.equals(enterpriseId).and(t.deletedAt.isNotNull()));
+    return query.watch().map((rows) => rows.map(_fromEntity).toList());
   }
 
   @override

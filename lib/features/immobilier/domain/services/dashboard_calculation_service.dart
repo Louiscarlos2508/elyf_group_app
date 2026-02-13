@@ -1,5 +1,6 @@
 import '../entities/contract.dart';
 import '../entities/expense.dart' show PropertyExpense;
+import '../entities/maintenance_ticket.dart';
 import '../entities/payment.dart';
 import '../entities/property.dart';
 import '../entities/report_period.dart';
@@ -18,6 +19,7 @@ class ImmobilierDashboardCalculationService {
     required List<Contract> contracts,
     required List<Payment> payments,
     required List<PropertyExpense> expenses,
+    List<MaintenanceTicket> tickets = const [],
     DateTime? referenceDate,
   }) {
     final now = referenceDate ?? DateTime.now();
@@ -78,6 +80,19 @@ class ImmobilierDashboardCalculationService {
         ? (monthRevenue / totalMonthlyRent) * 100
         : 0.0;
 
+    // Maintenance
+    final openTickets = tickets
+        .where((t) =>
+            t.status == MaintenanceStatus.open ||
+            t.status == MaintenanceStatus.inProgress)
+        .length;
+    final highPriority = tickets
+        .where((t) =>
+            (t.priority == MaintenancePriority.high ||
+                t.priority == MaintenancePriority.critical) &&
+            t.status != MaintenanceStatus.closed)
+        .length;
+
     return ImmobilierDashboardMetrics(
       totalProperties: totalProperties,
       availableProperties: availableProperties,
@@ -91,6 +106,8 @@ class ImmobilierDashboardCalculationService {
       netRevenue: netRevenue,
       occupancyRate: occupancyRate,
       collectionRate: collectionRate, // Pass collectionRate
+      totalOpenTickets: openTickets,
+      highPriorityTickets: highPriority,
     );
   }
 
@@ -213,6 +230,8 @@ class ImmobilierDashboardMetrics {
     required this.netRevenue,
     required this.occupancyRate,
     required this.collectionRate, // Added parameter
+    required this.totalOpenTickets,
+    required this.highPriorityTickets,
   });
 
   final int totalProperties;
@@ -227,6 +246,8 @@ class ImmobilierDashboardMetrics {
   final int netRevenue;
   final double occupancyRate;
   final double collectionRate; // Added field
+  final int totalOpenTickets;
+  final int highPriorityTickets;
 }
 
 /// Métriques calculées pour une période donnée (utilisé pour les rapports PDF).

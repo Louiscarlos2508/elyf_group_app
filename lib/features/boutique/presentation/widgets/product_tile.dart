@@ -10,161 +10,236 @@ import '../../domain/entities/product.dart';
 
 class ProductTile extends StatelessWidget {
   const ProductTile({
-    super.key,
+    Key? key,
     required this.product,
     required this.onTap,
     this.onRestock,
+    this.onAdjust,
+    this.onDuplicate,
+    this.onPriceHistory,
     this.showRestockButton = false,
-  });
+    this.isEnabled = true,
+  }) : super(key: key);
 
   final Product product;
   final VoidCallback onTap;
   final VoidCallback? onRestock;
+  final VoidCallback? onAdjust;
+  final VoidCallback? onDuplicate;
+  final VoidCallback? onPriceHistory;
   final bool showRestockButton;
+  final bool isEnabled;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isLowStock = product.stock <= 10 && product.stock > 0;
+    final isLowStock = product.stock <= product.lowStockThreshold && product.stock > 0;
     final isOutOfStock = product.stock == 0;
+    final effectivelyEnabled = isEnabled && !isOutOfStock;
 
-    return ElyfCard(
-      padding: EdgeInsets.zero,
-      onTap: !isOutOfStock ? onTap : null,
-      elevation: 2,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Image Section
-          Expanded(
-            flex: 5,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                Container(
-                  color: theme.colorScheme.surfaceContainerHighest,
-                  child: product.imageUrl != null
-                      ? _buildProductImage(product.imageUrl!, theme)
-                      : _buildPlaceholder(theme),
-                ),
-                // Out of stock overlay
-                if (isOutOfStock)
-                  Container(
-                    color: Colors.black.withValues(alpha: 0.6),
-                    child: Center(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.white, width: 2),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          'RUPTURE',
-                          style: theme.textTheme.labelLarge?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 2,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                // Category badge if any
-                if (product.category != null && !isOutOfStock)
-                  Positioned(
-                    top: 8,
-                    left: 8,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.5),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        product.category!.toUpperCase(),
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: Colors.white,
-                          fontSize: 9,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          // Info Section
-          Expanded(
-            flex: 4,
-            child: Padding(
-              padding: const EdgeInsets.all(8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
+    return Opacity(
+      opacity: isEnabled ? 1.0 : 0.6,
+      child: ElyfCard(
+        padding: EdgeInsets.zero,
+        onTap: effectivelyEnabled ? onTap : null,
+        elevation: 2,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Image Section
+            Expanded(
+              flex: 5,
+              child: Stack(
+                fit: StackFit.expand,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        product.name,
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          height: 1.0,
-                          fontSize: 11,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 1),
-                      FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text(
-                          CurrencyFormatter.formatFCFA(product.price),
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w900,
-                            color: theme.colorScheme.primary,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
-                    ],
+                  Container(
+                    color: theme.colorScheme.surfaceContainerHighest,
+                    child: product.imageUrl != null
+                        ? _buildProductImage(product.imageUrl!, theme)
+                        : _buildPlaceholder(theme),
                   ),
-                  const SizedBox(height: 4),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Stock Chip
-                      _buildStockChip(theme, isOutOfStock, isLowStock),
-                      if (showRestockButton && onRestock != null)
-                        Material(
-                          color: theme.colorScheme.primaryContainer,
-                          borderRadius: BorderRadius.circular(8),
-                          child: InkWell(
-                            onTap: onRestock,
-                            borderRadius: BorderRadius.circular(8),
-                            child: Padding(
-                              padding: const EdgeInsets.all(4),
-                              child: Icon(
-                                Icons.add_rounded,
-                                size: 16,
-                                color: theme.colorScheme.onPrimaryContainer,
-                              ),
+                  // Out of stock overlay
+                  if (isOutOfStock)
+                    Container(
+                      color: Colors.black.withValues(alpha: 0.6),
+                      child: Center(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.white, width: 2),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            'RUPTURE',
+                            style: theme.textTheme.labelLarge?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 2,
                             ),
                           ),
                         ),
-                    ],
-                  ),
+                      ),
+                    ),
+                  // Category badge if any
+                  if (product.categoryId != null && !isOutOfStock)
+                    Positioned(
+                      top: 8,
+                      left: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.5),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          product.categoryId!.toUpperCase(),
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
-          ),
-        ],
+            // Info Section
+            Expanded(
+              flex: 4,
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          product.name,
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            height: 1.0,
+                            fontSize: 11,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 1),
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            CurrencyFormatter.formatFCFA(product.price),
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w900,
+                              color: theme.colorScheme.primary,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        // Stock Chip
+                        _buildStockChip(theme, isOutOfStock, isLowStock),
+                        const Spacer(),
+                        if (onPriceHistory != null)
+                          Material(
+                            color: theme.colorScheme.tertiaryContainer,
+                            borderRadius: BorderRadius.circular(8),
+                            child: InkWell(
+                              onTap: onPriceHistory,
+                              borderRadius: BorderRadius.circular(8),
+                              child: Padding(
+                                padding: const EdgeInsets.all(4),
+                                child: Icon(
+                                  Icons.show_chart_rounded,
+                                  size: 16,
+                                  color: theme.colorScheme.onTertiaryContainer,
+                                ),
+                              ),
+                            ),
+                          ),
+                        if (onDuplicate != null)
+                          Padding(
+                            padding: const EdgeInsets.only(left: 4),
+                            child: Material(
+                              color: theme.colorScheme.surfaceContainerHighest,
+                              borderRadius: BorderRadius.circular(8),
+                              child: InkWell(
+                                onTap: onDuplicate,
+                                borderRadius: BorderRadius.circular(8),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(4),
+                                  child: Icon(
+                                    Icons.content_copy_rounded,
+                                    size: 16,
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        if (showRestockButton)
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const SizedBox(width: 4),
+                              if (onAdjust != null)
+                                Material(
+                                  color: theme.colorScheme.secondaryContainer,
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: InkWell(
+                                    onTap: onAdjust,
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(4),
+                                      child: Icon(
+                                        Icons.tune_rounded,
+                                        size: 16,
+                                        color: theme.colorScheme.onSecondaryContainer,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              if (onRestock != null) ...[
+                                const SizedBox(width: 4),
+                                Material(
+                                  color: theme.colorScheme.primaryContainer,
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: InkWell(
+                                    onTap: onRestock,
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(4),
+                                      child: Icon(
+                                        Icons.add_rounded,
+                                        size: 16,
+                                        color: theme.colorScheme.onPrimaryContainer,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

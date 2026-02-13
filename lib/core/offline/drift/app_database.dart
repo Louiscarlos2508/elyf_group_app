@@ -1,6 +1,13 @@
 import 'package:drift/drift.dart';
 
 import 'connection.dart';
+import '../../../../features/boutique/data/datasources/local/tables/sales_table.dart';
+import '../../../../features/boutique/data/datasources/local/tables/sale_items_table.dart';
+import '../../../../features/immobilier/data/datasources/local/tables/properties_table.dart';
+import '../../../../features/immobilier/data/datasources/local/tables/tenants_table.dart';
+import '../../../../features/immobilier/data/datasources/local/tables/contracts_table.dart';
+import '../../../../features/immobilier/data/datasources/local/tables/payments_table.dart';
+import '../../../../features/immobilier/data/datasources/local/tables/expenses_table.dart';
 
 part 'app_database.g.dart';
 
@@ -56,24 +63,58 @@ class SyncOperations extends Table {
   ];
 }
 
-@DriftDatabase(tables: [OfflineRecords, SyncOperations])
+@DriftDatabase(tables: [
+  OfflineRecords,
+  SyncOperations,
+  SalesTable,
+  SaleItemsTable,
+  PropertiesTable,
+  TenantsTable,
+  ContractsTable,
+  ImmobilierPaymentsTable,
+  PropertyExpensesTable,
+])
 class AppDatabase extends _$AppDatabase {
-  AppDatabase([QueryExecutor? e]) : super(e ?? openDriftConnection());
+  AppDatabase(QueryExecutor? connection) : super(connection ?? openDriftConnection());
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration {
     return MigrationStrategy(
+      onCreate: (m) async {
+        await m.createAll();
+      },
       onUpgrade: (migrator, from, to) async {
         if (from < 2) {
-          // Add sync_operations table
           await migrator.createTable(syncOperations);
+          // Add table for Boutique sales if updating from < v2
+          await migrator.createTable(salesTable);
+          await migrator.createTable(saleItemsTable);
         }
         if (from < 3) {
-          // Add priority column to sync_operations
           await migrator.addColumn(syncOperations, syncOperations.priority);
+        }
+        if (from < 4) {
+          // This block is now redundant if from < 2 creates salesTable and saleItemsTable
+          // but keeping it for faithful reproduction of the provided migration logic.
+          // The provided instruction's migration logic for from < 2 already creates salesTable and saleItemsTable.
+          // The original code had this:
+          // await migrator.createTable(salesTable);
+          // await migrator.createTable(saleItemsTable);
+        } else if (from < 5) {
+          // Only add if not created in step 4
+          await migrator.addColumn(salesTable, salesTable.number as GeneratedColumn<String>);
+        }
+        if (from < 6) {
+          await migrator.createTable(propertiesTable);
+          await migrator.createTable(tenantsTable);
+          await migrator.createTable(contractsTable);
+          await migrator.createTable(immobilierPaymentsTable);
+        }
+        if (from < 7) {
+          await migrator.createTable(propertyExpensesTable);
         }
       },
     );

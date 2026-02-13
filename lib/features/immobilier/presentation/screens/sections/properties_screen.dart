@@ -12,6 +12,7 @@ import '../../widgets/property_filters.dart';
 import '../../widgets/property_form_dialog.dart';
 import '../../widgets/contract_form_dialog.dart';
 import '../../widgets/expense_form_dialog.dart';
+import '../../widgets/payment_form_dialog.dart';
 import '../../widgets/property_list_empty_state.dart';
 import '../../widgets/property_list_helpers.dart';
 import '../../widgets/property_list_sliver.dart';
@@ -81,8 +82,40 @@ class _PropertiesScreenState extends ConsumerState<PropertiesScreen> {
         },
         onAddContract: () => _showContractForm(property: property),
         onAddExpense: () => _showExpenseForm(property: property),
+        onAddPayment: () => _showPaymentFormForProperty(property),
       ),
     );
+  }
+
+  Future<void> _showPaymentFormForProperty(Property property) async {
+    try {
+      // Trouver le contrat actif
+      final contractController = ref.read(contractControllerProvider);
+      final activeContract = await contractController.getActiveContractForProperty(property.id);
+
+      if (activeContract == null) {
+        if (mounted) {
+          NotificationService.showWarning(
+            context,
+            'Aucun contrat actif trouvé pour cette propriété.',
+          );
+        }
+        return;
+      }
+
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => PaymentFormDialog(
+            initialContract: activeContract,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        NotificationService.showError(context, 'Erreur: $e');
+      }
+    }
   }
 
   void _showContractForm({Property? property}) {

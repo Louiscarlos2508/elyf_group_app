@@ -15,6 +15,7 @@ import '../../widgets/expenses_table.dart';
 import '../../widgets/monthly_expense_summary.dart';
 import '../../widgets/permission_guard.dart';
 import '../../widgets/boutique_header.dart';
+import 'package:open_file/open_file.dart';
 
 /// Expenses screen with professional UI - style eau_minerale.
 class ExpensesScreen extends ConsumerWidget {
@@ -92,6 +93,18 @@ class ExpensesScreen extends ConsumerWidget {
                             );
                           },
                           tooltip: 'Bilan des dépenses',
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: IconButton(
+                          icon: const Icon(Icons.download, color: Colors.white),
+                          onPressed: () => _exportData(context, ref, expenses),
+                          tooltip: 'Exporter CSV',
                         ),
                       ),
                       if (isWide) ...[
@@ -238,6 +251,20 @@ class ExpensesScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _exportData(BuildContext context, WidgetRef ref, List<Expense> expenses) async {
+    final exportService = ref.read(boutiqueExportServiceProvider);
+    try {
+      final file = await exportService.exportExpenses(expenses);
+      if (context.mounted) {
+        await OpenFile.open(file.path);
+      }
+    } catch (e) {
+      if (context.mounted) {
+        NotificationService.showError(context, 'Erreur lors de l\'export: $e');
+      }
+    }
   }
 
   void _showExpenseDetail(BuildContext context, Expense expense) {

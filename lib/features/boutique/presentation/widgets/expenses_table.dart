@@ -104,6 +104,7 @@ class ExpensesTable extends StatelessWidget {
         ),
         columns: const [
           DataColumn(label: Text('Libellé')),
+          DataColumn(label: Text('N°')),
           DataColumn(label: Text('Catégorie')),
           DataColumn(label: Text('Montant'), numeric: true),
           DataColumn(label: Text('Actions')),
@@ -144,6 +145,7 @@ class ExpensesTable extends StatelessWidget {
                   ],
                 ),
               ),
+              DataCell(Text(expense.number ?? '-')),
               DataCell(
                 Container(
                   padding: const EdgeInsets.symmetric(
@@ -230,7 +232,7 @@ class ExpensesTable extends StatelessWidget {
           subtitle: Row(
             children: [
               Text(
-                _getCategoryLabel(expense.category),
+                '${expense.number ?? ""} • ${_getCategoryLabel(expense.category)}',
                 style: theme.textTheme.bodySmall?.copyWith(color: color),
               ),
               if (expense.receiptPath != null) ...[

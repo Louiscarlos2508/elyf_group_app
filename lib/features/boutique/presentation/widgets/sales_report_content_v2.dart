@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/shared.dart';
+import 'package:intl/intl.dart';
 
 import '../../application/providers.dart';
 import '../../domain/entities/report_data.dart';
-import '../../../../app/theme/app_colors.dart';
+import 'sale_detail_dialog.dart';
 
 /// Content widget for sales report tab - style eau_minerale.
 class SalesReportContentV2 extends ConsumerWidget {
@@ -109,6 +109,17 @@ class SalesReportContentV2 extends ConsumerWidget {
               ),
               const SizedBox(height: 16),
               _buildStatistics(theme, data),
+              const SizedBox(height: 32),
+
+              // Liste des transactions
+              Text(
+                'Historique des Transactions',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+              _buildTransactionList(context, ref),
             ],
           );
         },
@@ -208,6 +219,79 @@ class SalesReportContentV2 extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildTransactionList(BuildContext context, WidgetRef ref) {
+    final recentSalesAsync = ref.watch(recentSalesProvider);
+    final theme = Theme.of(context);
+
+    return recentSalesAsync.when(
+      data: (sales) {
+        if (sales.isEmpty) {
+          return const Center(child: Text('Aucune transaction récente'));
+        }
+        return ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: sales.length,
+          itemBuilder: (context, index) {
+            final sale = sales[index];
+            return ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.receipt_long, color: AppColors.primary),
+              ),
+              title: Text(
+                'Vente ${sale.number ?? "#${sale.id.substring(0, 8)}"}',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              subtitle: Text(
+                DateFormat('dd/MM à HH:mm').format(sale.date),
+              ),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        CurrencyFormatter.formatFCFA(sale.totalAmount),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      Text(
+                        sale.paymentMethod?.name ?? 'cash',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(width: 8),
+                  PrintReceiptButton(sale: sale),
+                ],
+              ),
+              onTap: () {
+                showDialog(
+                  context: context,
+                  builder: (context) => SaleDetailDialog(sale: sale),
+                );
+              },
+            );
+          },
+        );
+      },
+      loading: () => ElyfShimmer(child: ElyfShimmer.listTile()),
+      error: (e, _) => Text('Erreur: $e'),
     );
   }
 }

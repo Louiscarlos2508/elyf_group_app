@@ -28,7 +28,16 @@ class ModuleDataSyncService {
   ///
   /// Définit quelles collections doivent être synchronisées pour chaque module.
   static const Map<String, List<String>> moduleCollections = {
-    'boutique': ['products', 'sales', 'purchases', 'expenses'],
+    'boutique': [
+      'products',
+      'sales',
+      'purchases',
+      'expenses',
+      'suppliers',
+      'supplier_settlements',
+      'treasury_operations',
+      'closings',
+    ],
     'eau_minerale': [
       CollectionNames.products,
       CollectionNames.sales,

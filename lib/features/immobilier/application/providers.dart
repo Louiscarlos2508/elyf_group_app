@@ -41,6 +41,10 @@ import '../domain/services/immobilier_validation_service.dart';
 import '../domain/services/property_calculation_service.dart';
 import '../domain/services/property_validation_service.dart';
 import '../domain/services/validation/contract_validation_service.dart';
+import '../data/repositories/maintenance_offline_repository.dart';
+import '../domain/entities/maintenance_ticket.dart';
+import '../domain/repositories/maintenance_repository.dart';
+import 'controllers/maintenance_controller.dart';
 
 // --- Services ---
 
@@ -476,4 +480,40 @@ final propertyProfitabilityProvider = StreamProvider.autoDispose
           );
         },
       );
+    });
+// --- Maintenance Providers ---
+
+final maintenanceRepositoryProvider = Provider<MaintenanceRepository>((ref) {
+  final enterpriseId =
+      ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+  final driftService = DriftService.instance;
+  final syncManager = ref.watch(syncManagerProvider);
+  final connectivityService = ref.watch(connectivityServiceProvider);
+
+  return MaintenanceOfflineRepository(
+    driftService: driftService,
+    syncManager: syncManager,
+    connectivityService: connectivityService,
+    enterpriseId: enterpriseId,
+  );
+});
+
+final maintenanceControllerProvider = Provider<MaintenanceController>(
+  (ref) => MaintenanceController(
+    ref.watch(maintenanceRepositoryProvider),
+    ref.watch(auditTrailServiceProvider),
+    ref.watch(activeEnterpriseProvider).value?.id ?? 'default',
+    ref.watch(currentUserIdProvider) ?? 'unknown',
+  ),
+);
+
+final maintenanceTicketsProvider = StreamProvider.autoDispose<List<MaintenanceTicket>>((ref) {
+  final controller = ref.watch(maintenanceControllerProvider);
+  return controller.watchAllTickets();
+});
+
+final maintenanceTicketsByPropertyProvider = StreamProvider.autoDispose
+    .family<List<MaintenanceTicket>, String>((ref, propertyId) {
+      final controller = ref.watch(maintenanceControllerProvider);
+      return controller.watchTicketsByProperty(propertyId);
     });

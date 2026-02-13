@@ -3,6 +3,7 @@ import '../entities/product.dart';
 /// Repository for managing stock/inventory.
 abstract class StockRepository {
   Future<void> updateStock(String productId, int quantity);
+  Future<void> recordAdjustment(String productId, int quantity, String reason);
   Future<int> getStock(String productId);
   Future<List<Product>> getLowStockProducts({int threshold = 10});
   Stream<int> watchStock(String productId);

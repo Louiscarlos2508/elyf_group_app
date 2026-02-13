@@ -12,9 +12,10 @@ import '../../domain/entities/payment.dart';
 import 'payment_form_fields.dart';
 
 class PaymentFormDialog extends ConsumerStatefulWidget {
-  const PaymentFormDialog({super.key, this.payment});
+  const PaymentFormDialog({super.key, this.payment, this.initialContract});
 
   final Payment? payment;
+  final Contract? initialContract;
 
   @override
   ConsumerState<PaymentFormDialog> createState() => _PaymentFormDialogState();
@@ -66,6 +67,11 @@ class _PaymentFormDialogState extends ConsumerState<PaymentFormDialog>
     } else {
       _month = DateTime.now().month;
       _year = DateTime.now().year;
+      
+      if (widget.initialContract != null) {
+        _selectedContract = widget.initialContract;
+        _amountController.text = widget.initialContract!.monthlyRent.toString();
+      }
     }
   }
 
@@ -272,6 +278,8 @@ class _PaymentFormDialogState extends ConsumerState<PaymentFormDialog>
               data: (contracts) => PaymentFormFields.contractField(
                 selectedContract: _selectedContract,
                 contracts: contracts,
+                // Disable selection if initialContract is provided (and we are creating new)
+                enabled: widget.initialContract == null || widget.payment != null,
                 onChanged: (value) {
                   setState(() {
                     _selectedContract = value;

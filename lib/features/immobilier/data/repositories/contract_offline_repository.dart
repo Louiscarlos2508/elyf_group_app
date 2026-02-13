@@ -1,6 +1,7 @@
-import 'dart:convert';
+import 'package:drift/drift.dart';
 
 import '../../../../core/errors/error_handler.dart';
+import '../../../../core/offline/drift/app_database.dart';
 import '../../../../core/offline/offline_repository.dart';
 import '../../domain/entities/contract.dart';
 import '../../domain/repositories/contract_repository.dart';
@@ -46,56 +47,72 @@ class ContractOfflineRepository extends OfflineRepository<Contract>
   @override
   Future<void> saveToLocal(Contract entity) async {
     final localId = getLocalId(entity);
-    final map = toMap(entity)..['localId'] = localId;
-    await driftService.records.upsert(
-      collectionName: collectionName,
-      localId: localId,
-      remoteId: getRemoteId(entity),
-      enterpriseId: enterpriseId,
-      moduleType: moduleType,
-      dataJson: jsonEncode(map),
-      localUpdatedAt: DateTime.now(),
+    final companion = ContractsTableCompanion(
+      id: Value(localId),
+      enterpriseId: Value(enterpriseId),
+      propertyId: Value(entity.propertyId),
+      tenantId: Value(entity.tenantId),
+      startDate: Value(entity.startDate),
+      endDate: Value(entity.endDate),
+      monthlyRent: Value(entity.monthlyRent),
+      deposit: Value(entity.deposit),
+      status: Value(entity.status.name),
+      paymentDay: Value(entity.paymentDay),
+      notes: Value(entity.notes),
+      depositInMonths: Value(entity.depositInMonths),
+      entryInventory: Value(entity.entryInventory),
+      exitInventory: Value(entity.exitInventory),
+      createdAt: Value(entity.createdAt ?? DateTime.now()),
+      updatedAt: Value(DateTime.now()),
+      deletedAt: Value(entity.deletedAt),
+      deletedBy: Value(entity.deletedBy),
     );
+
+    await driftService.db.into(driftService.db.contractsTable).insertOnConflictUpdate(companion);
   }
 
   @override
   Future<void> deleteFromLocal(Contract entity) async {
-    final remoteId = getRemoteId(entity);
-    if (remoteId != null) {
-      await driftService.records.deleteByRemoteId(
-        collectionName: collectionName,
-        remoteId: remoteId,
-        enterpriseId: enterpriseId,
-        moduleType: moduleType,
-      );
-      return;
-    }
     final localId = getLocalId(entity);
-    await driftService.records.deleteByLocalId(
-      collectionName: collectionName,
-      localId: localId,
-      enterpriseId: enterpriseId,
-      moduleType: moduleType,
-    );
+    await (driftService.db.delete(driftService.db.contractsTable)
+          ..where((t) => t.id.equals(localId)))
+        .go();
   }
 
   @override
   Future<Contract?> getByLocalId(String localId) async {
-    final record = await driftService.records.findByLocalId(
-      collectionName: collectionName,
-      localId: localId,
-      enterpriseId: enterpriseId,
-      moduleType: moduleType,
-    ) ?? await driftService.records.findByRemoteId(
-      collectionName: collectionName,
-      remoteId: localId,
-      enterpriseId: enterpriseId,
-      moduleType: moduleType,
-    );
+    final query = driftService.db.select(driftService.db.contractsTable)
+      ..where((t) => t.id.equals(localId));
+    final row = await query.getSingleOrNull();
 
-    if (record == null) return null;
-    final map = safeDecodeJson(record.dataJson, record.localId);
-    return map != null ? fromMap(map) : null;
+    if (row == null) return null;
+    return _fromEntity(row);
+  }
+
+  Contract _fromEntity(ContractEntity entity) {
+    return Contract(
+      id: entity.id,
+      enterpriseId: entity.enterpriseId,
+      propertyId: entity.propertyId,
+      tenantId: entity.tenantId,
+      startDate: entity.startDate,
+      endDate: entity.endDate,
+      monthlyRent: entity.monthlyRent,
+      deposit: entity.deposit,
+      status: ContractStatus.values.firstWhere(
+        (e) => e.name == entity.status,
+        orElse: () => ContractStatus.pending,
+      ),
+      paymentDay: entity.paymentDay,
+      notes: entity.notes,
+      depositInMonths: entity.depositInMonths,
+      entryInventory: entity.entryInventory,
+      exitInventory: entity.exitInventory,
+      createdAt: entity.createdAt,
+      updatedAt: entity.updatedAt,
+      deletedAt: entity.deletedAt,
+      deletedBy: entity.deletedBy,
+    );
   }
 
   @override
@@ -105,58 +122,26 @@ class ContractOfflineRepository extends OfflineRepository<Contract>
 
   @override
   Future<List<Contract>> getAllForEnterprise(String enterpriseId) async {
-    final rows = await driftService.records.listForEnterprise(
-      collectionName: collectionName,
-      enterpriseId: enterpriseId,
-      moduleType: moduleType,
-    );
-    final entities = rows
-        .map((r) => safeDecodeJson(r.dataJson, r.localId))
-        .where((m) => m != null)
-        .map((m) => fromMap(m!))
-        .toList();
-    
-    return deduplicateByRemoteId(entities);
+    final query = driftService.db.select(driftService.db.contractsTable)
+      ..where((t) => t.enterpriseId.equals(enterpriseId));
+    final rows = await query.get();
+    return rows.map(_fromEntity).toList();
   }
 
   // ContractRepository interface implementation
 
   @override
   Stream<List<Contract>> watchContracts() {
-    return driftService.records
-        .watchForEnterprise(
-          collectionName: collectionName,
-          enterpriseId: enterpriseId,
-          moduleType: moduleType,
-        )
-        .map((rows) {
-          final entities = rows
-              .map((r) => safeDecodeJson(r.dataJson, r.localId))
-              .where((m) => m != null)
-              .map((m) => fromMap(m!))
-              .where((e) => !e.isDeleted)
-              .toList();
-          return deduplicateByRemoteId(entities);
-        });
+    final query = driftService.db.select(driftService.db.contractsTable)
+      ..where((t) => t.enterpriseId.equals(enterpriseId) & t.deletedAt.isNull());
+    return query.watch().map((rows) => rows.map(_fromEntity).toList());
   }
 
   @override
   Stream<List<Contract>> watchDeletedContracts() {
-    return driftService.records
-        .watchForEnterprise(
-          collectionName: collectionName,
-          enterpriseId: enterpriseId,
-          moduleType: moduleType,
-        )
-        .map((rows) {
-          final entities = rows
-              .map((r) => safeDecodeJson(r.dataJson, r.localId))
-              .where((m) => m != null)
-              .map((m) => fromMap(m!))
-              .where((e) => e.isDeleted)
-              .toList();
-          return deduplicateByRemoteId(entities);
-        });
+    final query = driftService.db.select(driftService.db.contractsTable)
+      ..where((t) => t.enterpriseId.equals(enterpriseId) & t.deletedAt.isNotNull());
+    return query.watch().map((rows) => rows.map(_fromEntity).toList());
   }
 
   @override

@@ -16,6 +16,8 @@ class CartSummary extends ConsumerWidget {
     required this.onUpdateQuantity,
     required this.onClear,
     required this.onCheckout,
+    required this.onHold,
+    required this.onDiscount,
   });
 
   final List<CartItem> cartItems;
@@ -23,6 +25,8 @@ class CartSummary extends ConsumerWidget {
   final void Function(int, int) onUpdateQuantity;
   final VoidCallback onClear;
   final VoidCallback onCheckout;
+  final VoidCallback onHold;
+  final VoidCallback onDiscount;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -49,14 +53,31 @@ class CartSummary extends ConsumerWidget {
                   ),
                 ),
                 if (cartItems.isNotEmpty)
-                  TextButton.icon(
-                    onPressed: onClear,
-                    icon: const Icon(Icons.delete_sweep_rounded, size: 18),
-                    label: const Text('Vider'),
-                    style: TextButton.styleFrom(
-                      foregroundColor: theme.colorScheme.error,
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                    ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                       IconButton(
+                        onPressed: onHold,
+                        icon: const Icon(Icons.pause_circle_outline, size: 20),
+                        tooltip: 'Mettre en attente',
+                        color: theme.colorScheme.primary,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                      IconButton(
+                        onPressed: onDiscount,
+                        icon: const Icon(Icons.percent_rounded, size: 18),
+                        tooltip: 'Appliquer une remise',
+                        color: theme.colorScheme.secondary,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                      IconButton(
+                        onPressed: onClear,
+                        icon: const Icon(Icons.delete_sweep_rounded, size: 20),
+                        tooltip: 'Vider le panier',
+                        color: theme.colorScheme.error,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    ],
                   ),
               ],
             ),

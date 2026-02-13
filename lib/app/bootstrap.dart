@@ -23,6 +23,7 @@ import '../shared/utils/local_notification_service.dart';
 import '../core/offline/providers.dart';
 import '../core/firebase/providers.dart';
 
+
 /// Performs global asynchronous initialization before the app renders.
 ///
 /// This is where we initialize Firebase, Drift, Remote Config,

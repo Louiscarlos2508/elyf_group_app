@@ -16,6 +16,7 @@ class ReportTabsV2 extends StatelessWidget {
     _TabInfo('Achats', Icons.shopping_bag_outlined),
     _TabInfo('Dépenses', Icons.receipt_long_outlined),
     _TabInfo('Bénéfices', Icons.trending_up),
+    _TabInfo('Clôtures', Icons.lock_clock_outlined),
   ];
 
   @override

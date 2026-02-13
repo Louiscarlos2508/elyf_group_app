@@ -7,10 +7,12 @@ class Product {
     required this.price,
     required this.stock,
     this.description,
-    this.category,
+    this.categoryId,
     this.imageUrl,
     this.barcode,
     this.purchasePrice, // Prix d'achat en CFA
+    this.lowStockThreshold = 5, // Seuil d'alerte par défaut
+    this.isActive = true, // Produit actif ou archivé
     this.deletedAt, // Date de suppression (soft delete)
     this.deletedBy, // ID de l'utilisateur qui a supprimé
     this.createdAt,
@@ -23,10 +25,12 @@ class Product {
   final int price; // Prix de vente en CFA
   final int stock; // Quantité disponible
   final String? description;
-  final String? category;
+  final String? categoryId;
   final String? imageUrl;
   final String? barcode; // Pour le scan de code-barres
   final int? purchasePrice; // Prix d'achat en CFA
+  final int lowStockThreshold; // Seuil d'alerte
+  final bool isActive;
   final DateTime? deletedAt; // Date de suppression (soft delete)
   final String? deletedBy; // ID de l'utilisateur qui a supprimé
   final DateTime? createdAt;
@@ -54,12 +58,15 @@ class Product {
     int? price,
     int? stock,
     String? description,
-    String? category,
+    String? categoryId,
     String? imageUrl,
     String? barcode,
     int? purchasePrice,
+    int? lowStockThreshold,
+    bool? isActive,
     DateTime? deletedAt,
     String? deletedBy,
+    DateTime? createdAt,
     DateTime? updatedAt,
   }) {
     return Product(
@@ -69,10 +76,12 @@ class Product {
       price: price ?? this.price,
       stock: stock ?? this.stock,
       description: description ?? this.description,
-      category: category ?? this.category,
+      categoryId: categoryId ?? this.categoryId,
       imageUrl: imageUrl ?? this.imageUrl,
       barcode: barcode ?? this.barcode,
       purchasePrice: purchasePrice ?? this.purchasePrice,
+      lowStockThreshold: lowStockThreshold ?? this.lowStockThreshold,
+      isActive: isActive ?? this.isActive,
       deletedAt: deletedAt ?? this.deletedAt,
       deletedBy: deletedBy ?? this.deletedBy,
       createdAt: createdAt ?? this.createdAt,
@@ -97,10 +106,12 @@ class Product {
           0,
       stock: (map['stock'] as num?)?.toInt() ?? 0,
       description: map['description'] as String?,
-      category: map['category'] as String?,
+      categoryId: map['categoryId'] as String? ?? map['category'] as String?,
       imageUrl: map['imageUrl'] as String?,
       barcode: map['barcode'] as String?,
       purchasePrice: (map['purchasePrice'] as num?)?.toInt(),
+      lowStockThreshold: (map['lowStockThreshold'] as num?)?.toInt() ?? 5,
+      isActive: map['isActive'] as bool? ?? true,
       deletedAt: deletedAt,
       deletedBy: map['deletedBy'] as String?,
       createdAt: map['createdAt'] != null
@@ -121,11 +132,12 @@ class Product {
       'sellingPrice': price,
       'stock': stock.toDouble(),
       'description': description,
-      'category': category,
+      'categoryId': categoryId,
       'imageUrl': imageUrl,
       'barcode': barcode,
       'purchasePrice': purchasePrice?.toDouble(),
-      'isActive': true,
+      'lowStockThreshold': lowStockThreshold.toDouble(),
+      'isActive': isActive,
       'deletedAt': deletedAt?.toIso8601String(),
       'deletedBy': deletedBy,
       'createdAt': createdAt?.toIso8601String(),

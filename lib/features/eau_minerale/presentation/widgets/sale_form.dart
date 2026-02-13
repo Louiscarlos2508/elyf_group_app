@@ -109,10 +109,11 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
     });
   }
 
-  void _onSplitChanged(int cashAmount, int orangeMoneyAmount) {
+  void _onSplitChanged(int cashAmount, int orangeMoneyAmount, int cardAmount) {
     setState(() {
       _cashAmount = cashAmount;
       _orangeMoneyAmount = orangeMoneyAmount;
+      // Note: Eau Minerale module might not use cardAmount yet, but callback requires it.
     });
   }
 

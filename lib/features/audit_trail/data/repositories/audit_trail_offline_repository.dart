@@ -3,6 +3,7 @@ import 'dart:convert';
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/offline_repository.dart';
+import '../../../../core/security/ledger_hasher.dart';
 import '../../domain/entities/audit_record.dart';
 import '../../domain/repositories/audit_trail_repository.dart';
 
@@ -30,6 +31,8 @@ class AuditTrailOfflineRepository extends OfflineRepository<AuditRecord>
       metadata: map['metadata'] != null
           ? Map<String, dynamic>.from(map['metadata'] as Map)
           : null,
+      hash: map['hash'] as String?,
+      previousHash: map['previousHash'] as String?,
       timestamp: DateTime.parse(map['timestamp'] as String),
       updatedAt: map['updatedAt'] != null
           ? DateTime.parse(map['updatedAt'] as String)
@@ -48,6 +51,8 @@ class AuditTrailOfflineRepository extends OfflineRepository<AuditRecord>
       'entityId': entity.entityId,
       'entityType': entity.entityType,
       'metadata': entity.metadata,
+      'hash': entity.hash,
+      'previousHash': entity.previousHash,
       'timestamp': entity.timestamp.toIso8601String(),
       'updatedAt': entity.updatedAt?.toIso8601String(),
     };
@@ -174,11 +179,31 @@ class AuditTrailOfflineRepository extends OfflineRepository<AuditRecord>
   Future<String> log(AuditRecord record) async {
     try {
       final localId = getLocalId(record);
-      final recordWithLocalId = record.copyWith(
+      
+      // Get previous hash for chaining
+      String? previousHash;
+      final enterpriseId = record.enterpriseId;
+      
+      final latestRecords = await fetchRecords(
+        enterpriseId: enterpriseId,
+        module: record.module,
+      );
+      
+      if (latestRecords.isNotEmpty) {
+        // fetchRecords sorts by timestamp desc, so first is latest
+        previousHash = latestRecords.first.hash;
+      }
+
+      final hash = LedgerHasher.calculateHash(record, previousHash);
+
+      final recordToSave = record.copyWith(
         id: localId,
+        hash: hash,
+        previousHash: previousHash,
         updatedAt: DateTime.now(),
       );
-      await save(recordWithLocalId);
+      
+      await save(recordToSave);
       return localId;
     } catch (e, stack) {
       final appException = ErrorHandler.instance.handleError(e, stack);

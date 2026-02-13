@@ -176,6 +176,14 @@ class ExpenseOfflineRepository extends OfflineRepository<Expense>
   }
 
   @override
+  Future<int> getCountForDate(DateTime date) async {
+    final start = DateTime(date.year, date.month, date.day);
+    final end = start.add(const Duration(days: 1)).subtract(const Duration(seconds: 1));
+    final expenses = await getExpensesInPeriod(start, end);
+    return expenses.length;
+  }
+
+  @override
   Future<Expense?> getExpense(String id) async {
     return getByLocalId(id);
   }

@@ -15,9 +15,10 @@ class PaymentFormFields {
     required List<Contract> contracts,
     required ValueChanged<Contract?> onChanged,
     required String? Function(Contract?) validator,
+    bool enabled = true,
   }) {
     return DropdownButtonFormField<Contract>(
-      initialValue: selectedContract,
+      value: selectedContract,
       decoration: const InputDecoration(
         labelText: 'Contrat *',
         prefixIcon: Icon(Icons.description),
@@ -28,7 +29,7 @@ class PaymentFormFields {
           child: Text(contract.displayName),
         );
       }).toList(),
-      onChanged: onChanged,
+      onChanged: enabled ? onChanged : null,
       validator: validator,
     );
   }

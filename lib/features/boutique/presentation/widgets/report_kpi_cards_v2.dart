@@ -37,10 +37,14 @@ class ReportKpiCardsV2 extends ConsumerWidget {
             final isWide = constraints.maxWidth > 600;
 
             return isWide
-                ? Row(
+                ? Column(
                     children: [
-                      Expanded(
-                        child: DashboardKpiCard(
+                      _buildStockValuationCard(ref, theme),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: DashboardKpiCard(
                           label: "Chiffre d'Affaires",
                           value:
                               '${CurrencyFormatter.formatFCFA(data.salesRevenue)} FCFA',
@@ -95,9 +99,13 @@ class ReportKpiCardsV2 extends ConsumerWidget {
                         ),
                       ),
                     ],
-                  )
-                : Column(
+                  ),
+                ],
+              )
+            : Column(
                     children: [
+                      _buildStockValuationCard(ref, theme),
+                      const SizedBox(height: 16),
                       Row(
                         children: [
                           Expanded(
@@ -168,6 +176,23 @@ class ReportKpiCardsV2 extends ConsumerWidget {
       },
       loading: () => AppShimmers.statsGrid(context),
       error: (_, __) => const SizedBox.shrink(),
+    );
+  }
+
+  Widget _buildStockValuationCard(WidgetRef ref, ThemeData theme) {
+    final valuationAsync = ref.watch(stockValuationProvider);
+
+    return valuationAsync.when(
+      data: (value) => DashboardKpiCard(
+        label: 'Valeur Totale du Stock',
+        value: '${CurrencyFormatter.formatFCFA(value)} FCFA',
+        subtitle: 'Capital immobilisé en stock',
+        icon: Icons.inventory_2,
+        iconColor: const Color(0xFF8B5CF6), // Purple 500
+        backgroundColor: const Color(0xFF8B5CF6),
+      ),
+      loading: () => ElyfShimmer(child: Container(height: 100, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)))),
+      error: (e, _) => const SizedBox.shrink(),
     );
   }
 }

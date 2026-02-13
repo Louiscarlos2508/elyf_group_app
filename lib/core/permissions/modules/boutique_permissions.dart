@@ -157,6 +157,44 @@ class BoutiquePermissions {
     description: 'Permet de télécharger les rapports',
   );
 
+  // Treasury
+  static const viewTreasury = ActionPermission(
+    id: 'view_treasury',
+    name: 'Voir la trésorerie',
+    module: 'boutique',
+    description: 'Permet de voir les soldes et l\'historique de la trésorerie',
+  );
+
+  static const editTreasury = ActionPermission(
+    id: 'edit_treasury',
+    name: 'Gérer la trésorerie',
+    module: 'boutique',
+    description: 'Permet d\'effectuer des transferts et ajustements de trésorerie',
+  );
+
+  // Suppliers
+  static const viewSuppliers = ActionPermission(
+    id: 'view_suppliers',
+    name: 'Voir les fournisseurs',
+    module: 'boutique',
+    description: 'Permet de voir la liste des fournisseurs',
+  );
+
+  static const editSuppliers = ActionPermission(
+    id: 'edit_suppliers',
+    name: 'Gérer les fournisseurs',
+    module: 'boutique',
+    description: 'Permet d\'ajouter ou modifier des fournisseurs',
+  );
+
+  // Settings
+  static const viewSettings = ActionPermission(
+    id: 'view_settings',
+    name: 'Voir les paramètres',
+    module: 'boutique',
+    description: 'Permet d\'accéder aux paramètres du module',
+  );
+
   // Profile
   static const viewProfile = ActionPermission(
     id: 'view_profile',
@@ -177,28 +215,6 @@ class BoutiquePermissions {
     name: 'Changer le mot de passe',
     module: 'boutique',
     description: 'Permet de changer son mot de passe',
-  );
-
-  // Trash/Corbeille
-  static const viewTrash = ActionPermission(
-    id: 'view_trash',
-    name: 'Voir la corbeille',
-    module: 'boutique',
-    description: 'Permet de voir les éléments supprimés',
-  );
-
-  static const restoreProduct = ActionPermission(
-    id: 'restore_product',
-    name: 'Restaurer un produit',
-    module: 'boutique',
-    description: 'Permet de restaurer un produit supprimé',
-  );
-
-  static const restoreExpense = ActionPermission(
-    id: 'restore_expense',
-    name: 'Restaurer une dépense',
-    module: 'boutique',
-    description: 'Permet de restaurer une dépense supprimée',
   );
 
   /// All permissions for the module
@@ -224,11 +240,13 @@ class BoutiquePermissions {
     deleteExpense,
     viewReports,
     downloadReports,
+    viewTreasury,
+    editTreasury,
+    viewSuppliers,
+    editSuppliers,
     viewProfile,
     editProfile,
     changePassword,
-    viewTrash,
-    restoreProduct,
-    restoreExpense,
+    viewSettings,
   ];
 }

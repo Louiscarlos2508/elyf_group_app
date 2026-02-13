@@ -14,6 +14,7 @@ import '../../presentation/screens/sections/properties_screen.dart';
 import '../../presentation/screens/sections/reports_screen.dart';
 import '../../presentation/screens/sections/tenants_screen.dart';
 import '../../presentation/screens/sections/trash_screen.dart';
+import '../../presentation/screens/sections/maintenance_screen.dart';
 import 'permission_providers.dart';
 
 /// Provider pour récupérer les sections accessibles selon les permissions.
@@ -93,6 +94,16 @@ final accessibleImmobilierSectionsProvider =
                 moduleId: moduleId,
               ),
               requiredPermissions: {ImmobilierPermissions.viewExpenses.id},
+            ),
+            (
+              section: NavigationSection(
+                label: 'Maintenance',
+                icon: Icons.handyman_outlined,
+                builder: () => const MaintenanceScreen(),
+                enterpriseId: enterpriseId,
+                moduleId: moduleId,
+              ),
+              requiredPermissions: {ImmobilierPermissions.viewMaintenance.id},
             ),
             (
               section: NavigationSection(

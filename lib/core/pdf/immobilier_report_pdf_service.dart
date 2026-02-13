@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 import '../../features/immobilier/domain/entities/contract.dart';
@@ -7,6 +8,7 @@ import '../../features/immobilier/domain/entities/expense.dart';
 import '../../features/immobilier/domain/entities/payment.dart';
 import '../../features/immobilier/domain/entities/property.dart';
 import '../../features/immobilier/domain/entities/report_period.dart';
+import '../../features/immobilier/domain/entities/tenant.dart';
 import '../../features/immobilier/domain/services/dashboard_calculation_service.dart';
 import 'base_report_pdf_service.dart';
 
@@ -100,6 +102,82 @@ class ImmobilierReportPdfService extends BaseReportPdfService {
       reportTitle: 'Rapport Financier',
       startDate: start,
       endDate: end,
+      contentSections: contentSections,
+    );
+  }
+
+  /// Génère un relevé de compte pour un locataire.
+  Future<File> generateTenantBalanceReport({
+    required Tenant tenant,
+    required List<Contract> contracts,
+    required List<Payment> payments,
+    required DateTime startDate,
+    required DateTime endDate,
+  }) async {
+    // Filtrer les contrats du locataire
+    final tenantContracts = contracts.where((c) => c.tenantId == tenant.id).toList();
+    final tenantContractIds = tenantContracts.map((c) => c.id).toSet();
+    
+    // Filtrer les paiements du locataire dans la période
+    final tenantPayments = payments.where((p) {
+      return tenantContractIds.contains(p.contractId) &&
+          p.paymentDate.isAfter(startDate.subtract(const Duration(days: 1))) &&
+          p.paymentDate.isBefore(endDate.add(const Duration(days: 1)));
+    }).toList();
+
+    // Trier les paiements par date
+    tenantPayments.sort((a, b) => b.paymentDate.compareTo(a.paymentDate));
+
+    // Calculer le total payé
+    final totalPaid = tenantPayments.fold<int>(0, (sum, p) => sum + p.amount);
+
+    // Contenu du rapport
+    final contentSections = [
+      buildKpiSection(
+        title: 'Résumé du Compte',
+        kpis: [
+          {'label': 'Locataire', 'value': tenant.fullName},
+          {'label': 'Téléphone', 'value': tenant.phone},
+          {'label': 'Contrats Actifs', 'value': '${tenantContracts.where((c) => c.status == ContractStatus.active).length}'},
+          {'label': 'Total Payé (Période)', 'value': formatCurrency(totalPaid)},
+        ],
+      ),
+      pw.SizedBox(height: 20),
+      pw.Header(
+        level: 2,
+        text: 'Historique des Paiements',
+        textStyle: pw.TextStyle(
+          fontSize: 14,
+          fontWeight: pw.FontWeight.bold,
+          color: PdfColors.grey700,
+        ),
+      ),
+      pw.SizedBox(height: 10),
+      pw.TableHelper.fromTextArray(
+        headers: ['Date', 'Description', 'Montant', 'Statut'],
+        data: tenantPayments.map((p) {
+          return [
+            '${p.paymentDate.day}/${p.paymentDate.month}/${p.paymentDate.year}',
+            'Loyer ${p.month}/${p.year}',
+            formatCurrency(p.amount),
+            p.status == PaymentStatus.paid ? 'Payé' : 'En attente',
+          ];
+        }).toList(),
+        headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.white),
+        headerDecoration: const pw.BoxDecoration(color: PdfColors.blue600),
+        rowDecoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide(color: PdfColors.grey300))),
+        cellAlignment: pw.Alignment.centerLeft,
+        cellAlignments: {
+          2: pw.Alignment.centerRight,
+        },
+      ),
+    ];
+
+    return generateReportPdf(
+      moduleName: 'Immobilier',
+      reportTitle: 'Relevé de Compte Locataire',
+      startDate: startDate,
+      endDate: endDate,
       contentSections: contentSections,
     );
   }

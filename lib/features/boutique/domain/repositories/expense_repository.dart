@@ -9,6 +9,7 @@ abstract class ExpenseRepository {
   Future<void> restoreExpense(String id);
   Future<List<Expense>> getDeletedExpenses();
   Future<List<Expense>> getExpensesInPeriod(DateTime start, DateTime end);
+  Future<int> getCountForDate(DateTime date);
   Stream<List<Expense>> watchExpenses({int limit = 50});
   Stream<List<Expense>> watchDeletedExpenses();
 }

@@ -15,6 +15,7 @@ class PropertyDetailDialog extends ConsumerWidget {
     this.onDelete,
     this.onAddContract,
     this.onAddExpense,
+    this.onAddPayment,
   });
 
   final Property property;
@@ -22,6 +23,7 @@ class PropertyDetailDialog extends ConsumerWidget {
   final VoidCallback? onDelete;
   final VoidCallback? onAddContract;
   final VoidCallback? onAddExpense;
+  final VoidCallback? onAddPayment;
 
   Color _getStatusColor(PropertyStatus status) {
     switch (status) {
@@ -162,6 +164,24 @@ class PropertyDetailDialog extends ConsumerWidget {
                               label: const Text('Nouveau Contrat'),
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: theme.colorScheme.primary,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                        ],
+                        if (onAddPayment != null &&
+                            property.status == PropertyStatus.rented) ...[
+                          Expanded(
+                            child: FilledButton.icon(
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                                onAddPayment?.call();
+                              },
+                              icon: const Icon(Icons.payment),
+                              label: const Text('Payer Loyer'),
+                              style: FilledButton.styleFrom(
+                                backgroundColor: Colors.green,
+                                foregroundColor: Colors.white,
                               ),
                             ),
                           ),

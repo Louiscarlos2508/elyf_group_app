@@ -200,6 +200,14 @@ class PurchaseOfflineRepository extends OfflineRepository<Purchase>
   }
 
   @override
+  Future<int> getCountForDate(DateTime date) async {
+    final start = DateTime(date.year, date.month, date.day);
+    final end = start.add(const Duration(days: 1)).subtract(const Duration(seconds: 1));
+    final purchases = await getPurchasesInPeriod(start, end);
+    return purchases.length;
+  }
+
+  @override
   Future<Purchase?> getPurchase(String id) async {
     try {
       return await getByLocalId(id);
@@ -230,7 +238,7 @@ class PurchaseOfflineRepository extends OfflineRepository<Purchase>
       await _logAudit(
         action: 'create_purchase',
         entityId: localId,
-        metadata: {'supplier': purchase.supplier, 'totalAmount': purchase.totalAmount},
+        metadata: {'supplierId': purchase.supplierId, 'totalAmount': purchase.totalAmount},
       );
 
       return localId;

@@ -5,14 +5,19 @@ import 'package:elyf_groupe_app/core/permissions/modules/boutique_permissions.da
 import 'package:elyf_groupe_app/features/boutique/application/providers.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
-import '../../../domain/entities/product.dart';
-import '../../../domain/services/product_filter_service.dart';
-import '../../widgets/permission_guard.dart';
-import '../../widgets/product_form_dialog.dart';
-import '../../widgets/product_tile.dart';
-import '../../widgets/restock_dialog.dart';
-import '../../widgets/boutique_header.dart';
-import '../../widgets/boutique_search_bar.dart';
+import 'package:elyf_groupe_app/features/boutique/domain/entities/product.dart';
+import 'package:elyf_groupe_app/features/boutique/domain/services/product_filter_service.dart';
+import 'package:elyf_groupe_app/features/boutique/presentation/widgets/permission_guard.dart';
+import 'package:elyf_groupe_app/features/boutique/presentation/widgets/product_form_dialog.dart';
+import 'package:elyf_groupe_app/features/boutique/presentation/widgets/product_tile.dart';
+import 'package:elyf_groupe_app/features/boutique/presentation/widgets/purchase_entry_dialog.dart';
+import 'package:elyf_groupe_app/features/boutique/presentation/widgets/stock_adjustment_dialog.dart';
+import 'package:elyf_groupe_app/features/boutique/presentation/widgets/boutique_header.dart';
+import 'package:elyf_groupe_app/features/boutique/presentation/widgets/boutique_search_bar.dart';
+import 'package:elyf_groupe_app/features/boutique/domain/entities/category.dart';
+import 'package:elyf_groupe_app/features/boutique/presentation/screens/sections/stock_movement_screen.dart';
+import 'package:elyf_groupe_app/features/boutique/presentation/widgets/boutique_category_filter.dart';
+import 'package:elyf_groupe_app/features/boutique/presentation/widgets/price_history_dialog.dart';
 
 class CatalogScreen extends ConsumerStatefulWidget {
   const CatalogScreen({super.key});
@@ -24,6 +29,7 @@ class CatalogScreen extends ConsumerStatefulWidget {
 class _CatalogScreenState extends ConsumerState<CatalogScreen> {
   final _searchController = TextEditingController();
   String _searchQuery = '';
+  String? _selectedCategory;
 
   @override
   void dispose() {
@@ -31,16 +37,32 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
     super.dispose();
   }
 
-  List<Product> _filterProducts(List<Product> products, String query) {
-    return ProductFilterService.filterProducts(
-      products: products,
-      query: query,
-    );
+  List<Product> _filterProducts(List<Product> products, String query, String? categoryId, List<Category> categories) {
+    var filtered = products;
+
+    if (categoryId != null) {
+      filtered = ProductFilterService.filterByCategory(
+        products: filtered,
+        categoryId: categoryId,
+      );
+    }
+
+    if (query.isNotEmpty) {
+      final categoryNames = {for (var c in categories) c.id: c.name};
+      filtered = ProductFilterService.filterProducts(
+        products: filtered,
+        query: query,
+        categoryNames: categoryNames,
+      );
+    }
+
+    return filtered;
   }
 
   @override
   Widget build(BuildContext context) {
-    final productsAsync = ref.watch(productsProvider);
+    final productsAsync = ref.watch(activeProductsProvider);
+    final categoriesAsync = ref.watch(categoriesProvider);
 
     return CustomScrollView(
       slivers: [
@@ -53,6 +75,20 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
           ],
           shadowColor: const Color(0xFF059669),
           additionalActions: [
+            BoutiquePermissionGuard(
+              permission: BoutiquePermissions.viewReports, // Or stock permission?
+              child: IconButton(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const StockMovementScreen(),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.history, color: Colors.white),
+                tooltip: 'Historique des stocks',
+              ),
+            ),
             BoutiquePermissionGuard(
               permission: BoutiquePermissions.createProduct,
               child: IntrinsicWidth(
@@ -80,6 +116,22 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
           ],
         ),
         SliverPadding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+          sliver: categoriesAsync.when(
+            data: (categories) => SliverToBoxAdapter(
+              child: BoutiqueCategoryFilter(
+                categories: categories,
+                selectedCategory: _selectedCategory,
+                onCategorySelected: (category) {
+                  setState(() => _selectedCategory = category);
+                },
+              ),
+            ),
+            loading: () => const SliverToBoxAdapter(child: SizedBox.shrink()),
+            error: (_, __) => const SliverToBoxAdapter(child: SizedBox.shrink()),
+          ),
+        ),
+        SliverPadding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
           sliver: SliverToBoxAdapter(
             child: BoutiqueSearchBar(
@@ -95,7 +147,13 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
           padding: EdgeInsets.all(AppSpacing.lg),
           sliver: productsAsync.when(
             data: (products) {
-              final filteredProducts = _filterProducts(products, _searchQuery);
+              final categories = categoriesAsync.value ?? [];
+              final filteredProducts = _filterProducts(
+                products,
+                _searchQuery,
+                _selectedCategory,
+                categories,
+              );
               if (filteredProducts.isEmpty) {
                 return SliverFillRemaining(
                   hasScrollBody: false,
@@ -184,12 +242,67 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
                                   showDialog(
                                     context: context,
                                     builder: (_) =>
-                                        RestockDialog(product: product),
+                                        PurchaseEntryDialog(initialProduct: product),
                                   );
                                 } else if (context.mounted) {
                                   NotificationService.showError(
                                     context,
                                     'Vous n\'avez pas la permission de modifier le stock.',
+                                  );
+                                }
+                              });
+                        },
+                        onAdjust: () {
+                          // Vérifier la permission d'édition du stock
+                          final adapter = ref.read(
+                            boutiquePermissionAdapterProvider,
+                          );
+                          adapter
+                              .hasPermission(BoutiquePermissions.editStock.id)
+                              .then((hasPermission) {
+                                if (hasPermission && context.mounted) {
+                                  showDialog(
+                                    context: context,
+                                    builder: (_) =>
+                                        StockAdjustmentDialog(product: product),
+                                  );
+                                } else if (context.mounted) {
+                                  NotificationService.showError(
+                                    context,
+                                    'Vous n\'avez pas la permission de modifier le stock.',
+                                  );
+                                }
+                              });
+                        },
+                        onPriceHistory: () {
+                          showDialog(
+                            context: context,
+                            builder: (_) => PriceHistoryDialog(product: product),
+                          );
+                        },
+                        onDuplicate: () {
+                          // Check create permission (duplication is essentially creation)
+                          final adapter = ref.read(boutiquePermissionAdapterProvider);
+                          adapter.hasPermission(BoutiquePermissions.createProduct.id)
+                              .then((hasPermission) {
+                                if (hasPermission && context.mounted) {
+                                  // Create a copy for duplication
+                                  final duplicate = product.copyWith(
+                                    id: '', // New ID will be generated
+                                    name: '${product.name} (Copie)',
+                                    stock: 0, // Reset stock
+                                    createdAt: DateTime.now(),
+                                    updatedAt: DateTime.now(),
+                                  );
+                                  
+                                  showDialog(
+                                    context: context,
+                                    builder: (_) => ProductFormDialog(product: duplicate),
+                                  );
+                                } else if (context.mounted) {
+                                  NotificationService.showError(
+                                    context,
+                                    'Vous n\'avez pas la permission de créer des produits.',
                                   );
                                 }
                               });

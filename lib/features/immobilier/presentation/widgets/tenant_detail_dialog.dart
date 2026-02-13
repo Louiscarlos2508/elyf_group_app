@@ -7,6 +7,7 @@ import '../../domain/entities/payment.dart';
 import '../../domain/entities/tenant.dart';
 import 'contract_card_helpers.dart';
 import 'tenant_form_dialog.dart';
+import 'tenant_balance_report_dialog.dart';
 
 /// Dialog de détails d'un locataire avec onglets.
 class TenantDetailDialog extends ConsumerWidget {
@@ -107,6 +108,16 @@ class TenantDetailDialog extends ConsumerWidget {
                 ),
               ],
             ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.picture_as_pdf),
+            tooltip: 'Relevé de compte',
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) => TenantBalanceReportDialog(tenant: tenant),
+              );
+            },
           ),
           IconButton(
             icon: const Icon(Icons.edit),

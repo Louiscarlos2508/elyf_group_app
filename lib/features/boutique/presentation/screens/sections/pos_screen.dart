@@ -4,16 +4,23 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/boutique/application/providers.dart';
 import 'package:elyf_groupe_app/core/permissions/modules/boutique_permissions.dart';
-import '../../../domain/entities/cart_item.dart';
-import '../../../domain/entities/product.dart';
-import '../../widgets/cart_summary.dart';
-import '../../widgets/checkout_dialog.dart';
-import '../../widgets/permission_guard.dart';
-import '../../widgets/product_tile.dart';
-import '../../widgets/barcode_scanner_widget.dart';
-import '../../widgets/boutique_search_bar.dart';
+import 'package:elyf_groupe_app/features/boutique/domain/entities/closing.dart';
+import 'package:elyf_groupe_app/features/boutique/domain/entities/cart_item.dart';
+import 'package:elyf_groupe_app/features/boutique/domain/entities/product.dart';
+import 'package:elyf_groupe_app/features/boutique/presentation/widgets/cart_summary.dart';
+import 'package:elyf_groupe_app/features/boutique/presentation/widgets/checkout_dialog.dart';
+import 'package:elyf_groupe_app/features/boutique/presentation/widgets/permission_guard.dart';
+import 'package:elyf_groupe_app/features/boutique/presentation/widgets/product_tile.dart';
+import 'package:elyf_groupe_app/features/boutique/presentation/widgets/barcode_scanner_widget.dart';
+import 'package:elyf_groupe_app/features/boutique/presentation/widgets/boutique_search_bar.dart';
+import 'package:elyf_groupe_app/features/boutique/presentation/widgets/boutique_category_filter.dart';
 import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/core/offline/providers.dart';
+import 'dart:convert';
 import '../../widgets/boutique_header.dart';
+import 'package:elyf_groupe_app/features/boutique/domain/entities/category.dart';
+import 'package:elyf_groupe_app/features/boutique/domain/services/product_filter_service.dart';
+import '../../widgets/opening_session_dialog.dart';
 
 class PosScreen extends ConsumerStatefulWidget {
   const PosScreen({super.key});
@@ -26,6 +33,22 @@ class _PosScreenState extends ConsumerState<PosScreen> {
   final List<CartItem> _cartItems = [];
   final _searchController = TextEditingController();
   String _searchQuery = '';
+  String? _selectedCategory;
+  double _discountPercentage = 0.0;
+  bool _hasHeldCart = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkHeldCart();
+  }
+
+  Future<void> _checkHeldCart() async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    setState(() {
+      _hasHeldCart = prefs.containsKey('boutique_held_cart');
+    });
+  }
 
   @override
   void dispose() {
@@ -34,6 +57,16 @@ class _PosScreenState extends ConsumerState<PosScreen> {
   }
 
   void _addToCart(Product product) {
+    // Session Guard
+    final activeSession = ref.read(activeSessionProvider).value;
+    if (activeSession == null || activeSession.status != ClosingStatus.open) {
+      NotificationService.showWarning(
+        context,
+        'Caisse fermée. Veuillez ouvrir la caisse avant de vendre.',
+      );
+      return;
+    }
+
     setState(() {
       final existingIndex = _cartItems.indexWhere(
         (item) => item.product.id == product.id,
@@ -81,10 +114,87 @@ class _PosScreenState extends ConsumerState<PosScreen> {
   void _clearCart() {
     setState(() {
       _cartItems.clear();
+      _selectedCategory = null;
     });
   }
 
+  void _holdCart() async {
+    if (_cartItems.isEmpty) return;
+    
+    final prefs = ref.read(sharedPreferencesProvider);
+    final cartJson = jsonEncode(_cartItems.map((item) => {
+      'productId': item.product.id,
+      'quantity': item.quantity,
+    }).toList());
+    
+    await prefs.setString('boutique_held_cart', cartJson);
+    setState(() {
+      _cartItems.clear();
+      _hasHeldCart = true;
+    });
+    
+    if (mounted) {
+      NotificationService.showSuccess(context, 'Panier mis en attente');
+    }
+  }
+
+  void _resumeCart() async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    final cartJson = prefs.getString('boutique_held_cart');
+    if (cartJson == null) return;
+    
+    final productsAsync = ref.read(productsProvider);
+    productsAsync.whenData((products) {
+      final List<dynamic> decoded = jsonDecode(cartJson);
+      setState(() {
+        _cartItems.clear();
+        for (final itemData in decoded) {
+          try {
+            final product = products.firstWhere((p) => p.id == itemData['productId']);
+            _cartItems.add(CartItem(product: product, quantity: itemData['quantity'] as int));
+          } catch (e) {
+            // Product not found, skip
+          }
+        }
+        prefs.remove('boutique_held_cart');
+        _hasHeldCart = false;
+      });
+      NotificationService.showSuccess(context, 'Panier repris');
+    });
+  }
+
+  void _applyDiscount() {
+    if (_cartItems.isEmpty) return;
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Appliquer une remise (%)'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [0, 5, 10, 15, 20].map((p) => ListTile(
+            title: Text('$p %'),
+            onTap: () {
+              setState(() => _discountPercentage = p.toDouble());
+              Navigator.pop(context);
+            },
+          )).toList(),
+        ),
+      ),
+    );
+  }
+
   void _showCheckout(BuildContext context) async {
+    // Session Guard
+    final activeSession = ref.read(activeSessionProvider).value;
+    if (activeSession == null || activeSession.status != ClosingStatus.open) {
+      NotificationService.showWarning(
+        context,
+        'Caisse fermée. Veuillez ouvrir la caisse avant de procéder au paiement.',
+      );
+      return;
+    }
+
     if (_cartItems.isEmpty) {
       NotificationService.showInfo(context, 'Le panier est vide');
       return;
@@ -109,9 +219,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
       return;
     }
 
-    final total = ref
-        .read(storeControllerProvider)
-        .calculateCartTotal(_cartItems);
+    final total = _cartTotal;
     if (context.mounted) {
       showDialog(
         context: context,
@@ -139,6 +247,8 @@ class _PosScreenState extends ConsumerState<PosScreen> {
           onRemove: _removeFromCart,
           onUpdateQuantity: _updateQuantity,
           onClear: _clearCart,
+          onHold: _holdCart,
+          onDiscount: _applyDiscount,
           onCheckout: () {
             Navigator.of(scrollContext).pop();
             _showCheckout(parentContext);
@@ -148,14 +258,26 @@ class _PosScreenState extends ConsumerState<PosScreen> {
     );
   }
 
-  List<Product> _filterProducts(List<Product> products, String query) {
-    if (query.isEmpty) return products;
-    final lowerQuery = query.toLowerCase();
-    return products.where((product) {
-      return product.name.toLowerCase().contains(lowerQuery) ||
-          (product.category?.toLowerCase().contains(lowerQuery) ?? false) ||
-          (product.barcode?.contains(query) ?? false);
-    }).toList();
+  List<Product> _filterProducts(List<Product> products, String query, String? categoryId, List<Category> categories) {
+    var filtered = products;
+
+    if (categoryId != null) {
+      filtered = ProductFilterService.filterByCategory(
+        products: filtered,
+        categoryId: categoryId,
+      );
+    }
+
+    if (query.isNotEmpty) {
+      final categoryNames = {for (var c in categories) c.id: c.name};
+      filtered = ProductFilterService.filterProducts(
+        products: filtered,
+        query: query,
+        categoryNames: categoryNames,
+      );
+    }
+
+    return filtered;
   }
 
   int get _cartItemCount {
@@ -163,13 +285,20 @@ class _PosScreenState extends ConsumerState<PosScreen> {
   }
 
   int get _cartTotal {
-    return ref.read(storeControllerProvider).calculateCartTotal(_cartItems);
+    final rawTotal = ref.read(storeControllerProvider).calculateCartTotal(_cartItems);
+    if (_discountPercentage > 0) {
+      return (rawTotal * (1 - _discountPercentage / 100)).round();
+    }
+    return rawTotal;
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final productsAsync = ref.watch(productsProvider);
+    final productsAsync = ref.watch(activeProductsProvider);
+    final activeSessionAsync = ref.watch(activeSessionProvider);
+    final categoriesAsync = ref.watch(categoriesProvider);
+    final isSessionOpen = activeSessionAsync.value?.status == ClosingStatus.open;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -177,178 +306,257 @@ class _PosScreenState extends ConsumerState<PosScreen> {
 
         return Stack(
           children: [
-            Row(
+            Column(
               children: [
+                if (!isSessionOpen)
+                  Container(
+                    width: double.infinity,
+                    color: Colors.orange[800],
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 8,
+                      horizontal: 16,
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.warning_amber_rounded,
+                          color: Colors.white,
+                        ),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Text(
+                            'CAISSE FERMÉE. Veuillez ouvrir une session sur le Dashboard pour vendre.',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            showDialog(
+                              context: context,
+                              builder: (context) => const OpeningSessionDialog(),
+                            );
+                          },
+                          child: const Text(
+                            'OUVRIR',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 Expanded(
-                  flex: isWide ? 2 : 1,
-                  child: CustomScrollView(
-                    slivers: [
-                      BoutiqueHeader(
-                        title: "POINT DE VENTE",
-                        subtitle: "Caisse & Panier",
-                        gradientColors: [
-                          const Color(0xFF2563EB), // Blue 600
-                          const Color(0xFF1D4ED8), // Blue 700
-                        ],
-                        shadowColor: const Color(0xFF2563EB),
-                      ),
-                      SliverPadding(
-                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                        sliver: SliverToBoxAdapter(
-                          child: BoutiqueSearchBar(
-                            controller: _searchController,
-                            hintText: 'Rechercher un produit...',
-                            onChanged: (value) {
-                              setState(() => _searchQuery = value);
-                            },
-                            onScanPressed: () async {
-                              final scannedBarcode = await Navigator.of(context).push<String>(
-                                MaterialPageRoute(
-                                  builder: (context) => BarcodeScannerWidget(
-                                    onBarcodeDetected: (barcode) {
-                                      Navigator.of(context).pop(barcode);
-                                    },
-                                    onError: (error) {
-                                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                                        if (context.mounted) {
-                                          NotificationService.showError(
+                  child: Row(
+                    children: [
+                      Expanded(
+                        flex: isWide ? 2 : 1,
+                        child: CustomScrollView(
+                          slivers: [
+                            BoutiqueHeader(
+                              title: "POINT DE VENTE",
+                              subtitle: "Caisse & Panier",
+                              gradientColors: const [
+                                Color(0xFF2563EB), // Blue 600
+                                Color(0xFF1D4ED8), // Blue 700
+                              ],
+                              shadowColor: const Color(0xFF2563EB),
+                              additionalActions: [
+                                if (_hasHeldCart)
+                                  IconButton(
+                                    icon: const Icon(Icons.shopping_basket_outlined, color: Colors.white),
+                                    onPressed: _resumeCart,
+                                    tooltip: 'Reprendre le panier en attente',
+                                  ),
+                              ],
+                            ),
+                            SliverPadding(
+                              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                              sliver: SliverToBoxAdapter(
+                                child: BoutiqueSearchBar(
+                                  controller: _searchController,
+                                  hintText: 'Rechercher un produit...',
+                                  onChanged: (value) {
+                                    setState(() => _searchQuery = value);
+                                  },
+                                  onScanPressed: () async {
+                                    final scannedBarcode =
+                                        await Navigator.of(context).push<String>(
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            BarcodeScannerWidget(
+                                          onBarcodeDetected: (barcode) {
+                                            Navigator.of(context).pop(barcode);
+                                          },
+                                          onError: (error) {
+                                            WidgetsBinding.instance
+                                                .addPostFrameCallback((_) {
+                                              if (context.mounted) {
+                                                NotificationService.showError(
+                                                  context,
+                                                  'Erreur de scan: $error',
+                                                );
+                                              }
+                                            });
+                                          },
+                                        ),
+                                      ),
+                                    );
+
+                                    if (scannedBarcode != null && mounted) {
+                                      final productsAsync =
+                                          ref.read(productsProvider);
+                                      productsAsync.whenData((products) {
+                                        try {
+                                          final product = products.firstWhere(
+                                            (p) => p.barcode == scannedBarcode,
+                                          );
+                                          _addToCart(product);
+                                          NotificationService.showSuccess(
                                             context,
-                                            'Erreur de scan: $error',
+                                            '${product.name} ajouté au panier',
+                                          );
+                                        } catch (e) {
+                                          NotificationService.showWarning(
+                                            context,
+                                            'Produit avec code-barres $scannedBarcode non trouvé',
                                           );
                                         }
                                       });
-                                    },
-                                  ),
+                                    }
+                                  },
                                 ),
-                              );
-
-                              if (scannedBarcode != null && mounted) {
-                                final productsAsync = ref.read(productsProvider);
-                                productsAsync.whenData((products) {
-                                  try {
-                                    final product = products.firstWhere(
-                                      (p) => p.barcode == scannedBarcode,
-                                    );
-                                    _addToCart(product);
-                                    NotificationService.showSuccess(
-                                      context,
-                                      '${product.name} ajouté au panier',
-                                    );
-                                  } catch (e) {
-                                    NotificationService.showWarning(
-                                      context,
-                                      'Produit avec code-barres $scannedBarcode non trouvé',
-                                    );
-                                  }
-                                });
-                              }
-                            },
-                          ),
-                        ),
-                      ),
-                      productsAsync.when(
-                        data: (products) {
-                          final filteredProducts = _filterProducts(
-                            products,
-                            _searchQuery,
-                          );
-                          if (filteredProducts.isEmpty) {
-                            return SliverFillRemaining(
-                              child: Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      _searchQuery.isEmpty
-                                          ? Icons.inventory_2_outlined
-                                          : Icons.search_off,
-                                      size: 64,
-                                      color: theme.colorScheme.onSurfaceVariant
-                                          .withValues(alpha: 0.5),
-                                    ),
-                                    const SizedBox(height: 16),
-                                    Text(
-                                      _searchQuery.isEmpty
-                                          ? 'Aucun produit disponible'
-                                          : 'Aucun résultat pour "$_searchQuery"',
-                                      style: theme.textTheme.bodyLarge
-                                          ?.copyWith(
+                              ),
+                            ),
+                            categoriesAsync.when(
+                              data: (categories) => SliverToBoxAdapter(
+                                child: BoutiqueCategoryFilter(
+                                  categories: categories,
+                                  selectedCategory: _selectedCategory,
+                                  onCategorySelected: (category) {
+                                    setState(() => _selectedCategory = category);
+                                  },
+                                ),
+                              ),
+                              loading: () => const SliverToBoxAdapter(child: SizedBox.shrink()),
+                              error: (_, __) => const SliverToBoxAdapter(child: SizedBox.shrink()),
+                            ),
+                            productsAsync.when(
+                              data: (products) {
+                                final categories = categoriesAsync.value ?? [];
+                                final filteredProducts = _filterProducts(
+                                  products,
+                                  _searchQuery,
+                                  _selectedCategory,
+                                  categories,
+                                );
+                                if (filteredProducts.isEmpty) {
+                                  return SliverFillRemaining(
+                                    child: Center(
+                                      child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            _searchQuery.isEmpty
+                                                ? Icons.inventory_2_outlined
+                                                : Icons.search_off,
+                                            size: 64,
                                             color: theme
-                                                .colorScheme
-                                                .onSurfaceVariant,
+                                                .colorScheme.onSurfaceVariant
+                                                .withValues(alpha: 0.5),
                                           ),
+                                          const SizedBox(height: 16),
+                                          Text(
+                                            _searchQuery.isEmpty
+                                                ? 'Aucun produit disponible'
+                                                : 'Aucun résultat pour "$_searchQuery"',
+                                            style: theme.textTheme.bodyLarge
+                                                ?.copyWith(
+                                              color: theme.colorScheme
+                                                  .onSurfaceVariant,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          }
-                          return SliverPadding(
-                            padding: const EdgeInsets.all(16),
-                            sliver: SliverGrid(
-                              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: isWide ? 4 : 2,
-                                childAspectRatio: 0.75,
-                                crossAxisSpacing: 12,
-                                mainAxisSpacing: 12,
-                              ),
-                              delegate: SliverChildBuilderDelegate(
-                                (context, index) {
-                                  final product = filteredProducts[index];
-                                  return ProductTile(
-                                    product: product,
-                                    onTap: () => _addToCart(product),
                                   );
-                                },
-                                childCount: filteredProducts.length,
-                              ),
-                            ),
-                          );
-                        },
-                        loading: () => SliverToBoxAdapter(
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: AppShimmers.grid(context, count: 8),
-                          ),
-                        ),
-                        error: (_, __) => SliverFillRemaining(
-                          child: Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.error_outline,
-                                  size: 64,
-                                  color: theme.colorScheme.error,
+                                }
+                                return SliverPadding(
+                                  padding: const EdgeInsets.all(16),
+                                  sliver: SliverGrid(
+                                    gridDelegate:
+                                        SliverGridDelegateWithFixedCrossAxisCount(
+                                      crossAxisCount: isWide ? 4 : 2,
+                                      childAspectRatio: 0.75,
+                                      crossAxisSpacing: 12,
+                                      mainAxisSpacing: 12,
+                                    ),
+                                    delegate: SliverChildBuilderDelegate(
+                                      (context, index) {
+                                        final product = filteredProducts[index];
+                                        return ProductTile(
+                                          product: product,
+                                          isEnabled: isSessionOpen,
+                                          onTap: () => _addToCart(product),
+                                        );
+                                      },
+                                      childCount: filteredProducts.length,
+                                    ),
+                                  ),
+                                );
+                              },
+                              loading: () => SliverToBoxAdapter(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: AppShimmers.grid(context, count: 8),
                                 ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  'Erreur de chargement',
-                                  style: theme.textTheme.bodyLarge?.copyWith(
-                                    color: theme.colorScheme.error,
+                              ),
+                              error: (_, __) => SliverFillRemaining(
+                                child: Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.error_outline,
+                                        size: 64,
+                                        color: theme.colorScheme.error,
+                                      ),
+                                      const SizedBox(height: 16),
+                                      Text(
+                                        'Erreur de chargement',
+                                        style: theme.textTheme.bodyLarge
+                                            ?.copyWith(
+                                          color: theme.colorScheme.error,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                              ],
+                              ),
                             ),
-                          ),
+                          ],
                         ),
                       ),
+                      if (isWide) ...[
+                        const VerticalDivider(width: 1),
+                        SizedBox(
+                          width: 400,
+                          child: CartSummary(
+                            cartItems: _cartItems,
+                            onRemove: _removeFromCart,
+                            onUpdateQuantity: _updateQuantity,
+                            onClear: _clearCart,
+                            onHold: _holdCart,
+                            onDiscount: _applyDiscount,
+                            onCheckout: () => _showCheckout(context),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
-                if (isWide) ...[
-                  const VerticalDivider(width: 1),
-                  SizedBox(
-                    width: 400,
-                    child: CartSummary(
-                      cartItems: _cartItems,
-                      onRemove: _removeFromCart,
-                      onUpdateQuantity: _updateQuantity,
-                      onClear: _clearCart,
-                      onCheckout: () => _showCheckout(context),
-                    ),
-                  ),
-                ],
               ],
             ),
             if (!isWide && _cartItems.isNotEmpty)
@@ -356,7 +564,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                 bottom: 16,
                 right: 16,
                 child: BoutiquePermissionGuardAny(
-                  permissions: [
+                  permissions: const [
                     BoutiquePermissions.usePos,
                     BoutiquePermissions.createSale,
                   ],

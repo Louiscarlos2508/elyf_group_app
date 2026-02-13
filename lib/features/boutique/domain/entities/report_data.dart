@@ -128,3 +128,24 @@ class ProfitReportData {
   final double grossMarginPercentage;
   final double netMarginPercentage;
 }
+
+/// Aggregates all boutique report data for full PDF generation.
+class FullBoutiqueReportData {
+  const FullBoutiqueReportData({
+    required this.general,
+    required this.sales,
+    required this.purchases,
+    required this.expenses,
+    required this.profit,
+    required this.startDate,
+    required this.endDate,
+  });
+
+  final ReportData general;
+  final SalesReportData sales;
+  final PurchasesReportData purchases;
+  final ExpensesReportData expenses;
+  final ProfitReportData profit;
+  final DateTime startDate;
+  final DateTime endDate;
+}

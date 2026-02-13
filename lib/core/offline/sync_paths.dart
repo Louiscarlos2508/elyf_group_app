@@ -14,6 +14,12 @@ final collectionPaths = <String, String Function(String?)>{
   'products': (enterpriseId) => 'enterprises/${enterpriseId!}/products',
   'expenses': (enterpriseId) => 'enterprises/${enterpriseId!}/expenses',
   'purchases': (enterpriseId) => 'enterprises/${enterpriseId!}/purchases',
+  'suppliers': (enterpriseId) => 'enterprises/${enterpriseId!}/suppliers',
+  'supplier_settlements': (enterpriseId) =>
+      'enterprises/${enterpriseId!}/supplierSettlements',
+  'treasury_operations': (enterpriseId) =>
+      'enterprises/${enterpriseId!}/treasuryOperations',
+  'closings': (enterpriseId) => 'enterprises/${enterpriseId!}/closings',
 
   // Eau Minérale module
   'customers': (enterpriseId) => 'enterprises/${enterpriseId!}/customers',

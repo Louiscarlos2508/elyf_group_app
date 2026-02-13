@@ -32,6 +32,7 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog>
   final _categoryController = TextEditingController();
   final _barcodeController = TextEditingController();
   final _imageUrlController = TextEditingController();
+  final _thresholdController = TextEditingController();
   File? _selectedImage;
   bool _isLoading = false;
 
@@ -45,9 +46,10 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog>
           widget.product!.purchasePrice?.toString() ?? '';
       _stockController.text = widget.product!.stock.toString();
       _descriptionController.text = widget.product!.description ?? '';
-      _categoryController.text = widget.product!.category ?? '';
+      _categoryController.text = widget.product!.categoryId ?? '';
       _barcodeController.text = widget.product!.barcode ?? '';
       _imageUrlController.text = widget.product!.imageUrl ?? '';
+      _thresholdController.text = widget.product!.lowStockThreshold.toString();
       // Note: Pour les produits existants avec imageUrl, on garde l'URL
       // Pour une nouvelle image sélectionnée, on utilisera _selectedImage
     }
@@ -63,6 +65,7 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog>
     _categoryController.dispose();
     _barcodeController.dispose();
     _imageUrlController.dispose();
+    _thresholdController.dispose();
     super.dispose();
   }
 
@@ -104,12 +107,13 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog>
           description: _descriptionController.text.isEmpty
               ? null
               : _descriptionController.text.trim(),
-          category: _categoryController.text.isEmpty
+          categoryId: _categoryController.text.isEmpty
               ? null
               : _categoryController.text.trim(),
           barcode: _barcodeController.text.isEmpty
               ? null
               : _barcodeController.text.trim(),
+          lowStockThreshold: int.tryParse(_thresholdController.text) ?? 5,
           imageUrl: _selectedImage != null
               ? _selectedImage!.path
               : (_imageUrlController.text.isEmpty
@@ -194,6 +198,7 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog>
                     stockController: _stockController,
                     categoryController: _categoryController,
                     barcodeController: _barcodeController,
+                    thresholdController: _thresholdController,
                     descriptionController: _descriptionController,
                     isEditing: widget.product != null,
                   ),

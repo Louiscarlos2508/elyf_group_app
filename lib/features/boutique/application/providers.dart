@@ -8,27 +8,52 @@ import 'providers/permission_providers.dart' show currentUserIdProvider;
 import '../../../../core/tenant/tenant_provider.dart'
     show activeEnterpriseProvider;
 
-import '../../../core/offline/drift_service.dart';
-import '../../../core/offline/providers.dart';
-import '../../../../core/tenant/tenant_provider.dart';
-import '../data/repositories/expense_offline_repository.dart';
-import '../data/repositories/purchase_offline_repository.dart';
-import '../data/repositories/report_offline_repository.dart';
-import '../data/repositories/stock_offline_repository.dart';
-import '../data/repositories/product_offline_repository.dart';
-import '../data/repositories/sale_offline_repository.dart';
-import '../domain/adapters/expense_balance_adapter.dart';
-import '../domain/entities/report_data.dart';
-import '../domain/repositories/expense_repository.dart';
-import '../../../../core/domain/entities/expense_balance_data.dart';
-import '../domain/repositories/product_repository.dart';
-import '../domain/repositories/purchase_repository.dart';
-import '../domain/repositories/report_repository.dart';
-import '../domain/repositories/sale_repository.dart';
-import '../domain/repositories/stock_repository.dart';
-import '../domain/entities/sale.dart';
-import '../domain/entities/purchase.dart';
-import '../domain/entities/expense.dart';
+import 'package:elyf_groupe_app/core/offline/drift_service.dart';
+import 'package:elyf_groupe_app/core/offline/providers.dart';
+import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
+
+import 'package:elyf_groupe_app/core/domain/entities/expense_balance_data.dart';
+import 'package:elyf_groupe_app/features/boutique/data/repositories/expense_offline_repository.dart';
+import 'package:elyf_groupe_app/features/boutique/data/repositories/closing_offline_repository.dart';
+import 'package:elyf_groupe_app/features/boutique/data/repositories/purchase_offline_repository.dart';
+import 'package:elyf_groupe_app/features/boutique/data/repositories/report_offline_repository.dart';
+import 'package:elyf_groupe_app/features/boutique/data/repositories/stock_offline_repository.dart';
+import 'package:elyf_groupe_app/features/boutique/data/repositories/product_offline_repository.dart';
+import 'package:elyf_groupe_app/features/boutique/data/repositories/sale_offline_repository.dart';
+import 'package:elyf_groupe_app/features/boutique/data/repositories/treasury_offline_repository.dart';
+import 'package:elyf_groupe_app/features/boutique/data/repositories/supplier_offline_repository.dart';
+import 'package:elyf_groupe_app/features/boutique/data/repositories/supplier_settlement_offline_repository.dart';
+import 'package:elyf_groupe_app/features/boutique/data/repositories/category_offline_repository.dart';
+import 'package:elyf_groupe_app/features/boutique/domain/adapters/expense_balance_adapter.dart';
+import '../domain/entities/product.dart';
+import 'package:elyf_groupe_app/features/boutique/domain/entities/stock_movement.dart';
+import 'package:elyf_groupe_app/features/boutique/domain/repositories/stock_movement_repository.dart';
+import 'package:elyf_groupe_app/features/boutique/data/repositories/stock_movement_offline_repository.dart';
+import 'package:elyf_groupe_app/features/boutique/domain/services/boutique_export_service.dart';
+import 'package:elyf_groupe_app/features/boutique/domain/services/boutique_settings_service.dart';
+import 'package:elyf_groupe_app/features/boutique/domain/services/boutique_export_service.dart';
+import 'package:elyf_groupe_app/features/boutique/domain/services/boutique_export_service.dart';
+import 'package:elyf_groupe_app/features/boutique/domain/services/boutique_export_service.dart';
+import 'package:elyf_groupe_app/features/boutique/domain/entities/report_data.dart';
+import 'package:elyf_groupe_app/features/boutique/domain/repositories/expense_repository.dart';
+import 'package:elyf_groupe_app/features/boutique/domain/repositories/product_repository.dart';
+import 'package:elyf_groupe_app/features/boutique/domain/repositories/purchase_repository.dart';
+import 'package:elyf_groupe_app/features/boutique/domain/repositories/report_repository.dart';
+import 'package:elyf_groupe_app/features/boutique/domain/repositories/sale_repository.dart';
+import 'package:elyf_groupe_app/features/boutique/domain/repositories/stock_repository.dart';
+import 'package:elyf_groupe_app/features/boutique/domain/repositories/closing_repository.dart';
+import 'package:elyf_groupe_app/features/boutique/domain/repositories/treasury_repository.dart';
+import 'package:elyf_groupe_app/features/boutique/domain/repositories/supplier_repository.dart';
+import 'package:elyf_groupe_app/features/boutique/domain/repositories/supplier_settlement_repository.dart';
+import 'package:elyf_groupe_app/features/boutique/domain/repositories/category_repository.dart';
+import 'package:elyf_groupe_app/features/boutique/domain/entities/sale.dart';
+import 'package:elyf_groupe_app/features/boutique/domain/entities/purchase.dart';
+import 'package:elyf_groupe_app/features/boutique/domain/entities/expense.dart';
+import 'package:elyf_groupe_app/features/boutique/domain/entities/treasury_operation.dart';
+import 'package:elyf_groupe_app/features/boutique/domain/entities/closing.dart';
+import 'package:elyf_groupe_app/features/boutique/domain/entities/supplier.dart';
+import 'package:elyf_groupe_app/features/boutique/domain/entities/supplier_settlement.dart';
+import 'package:elyf_groupe_app/features/boutique/domain/entities/category.dart';
 import '../domain/services/calculation/cart_calculation_service.dart';
 import '../domain/services/cart_service.dart';
 import '../domain/services/dashboard_calculation_service.dart';
@@ -168,6 +193,96 @@ final expenseRepositoryProvider = Provider<ExpenseRepository>((ref) {
   );
 });
 
+final closingRepositoryProvider = Provider<ClosingRepository>((ref) {
+  final enterpriseId =
+      ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+  final driftService = DriftService.instance;
+  final syncManager = ref.watch(syncManagerProvider);
+  final connectivityService = ref.watch(connectivityServiceProvider);
+
+  return ClosingOfflineRepository(
+    driftService: driftService,
+    syncManager: syncManager,
+    connectivityService: connectivityService,
+    enterpriseId: enterpriseId,
+    moduleType: 'boutique',
+    auditTrailRepository: ref.watch(auditTrailRepositoryProvider),
+    userId: ref.watch(currentUserIdProvider),
+  );
+});
+
+final treasuryRepositoryProvider = Provider<TreasuryRepository>((ref) {
+  final enterpriseId =
+      ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+  final driftService = DriftService.instance;
+  final syncManager = ref.watch(syncManagerProvider);
+  final connectivityService = ref.watch(connectivityServiceProvider);
+
+  return TreasuryOfflineRepository(
+    driftService: driftService,
+    syncManager: syncManager,
+    connectivityService: connectivityService,
+    enterpriseId: enterpriseId,
+    moduleType: 'boutique',
+    auditTrailRepository: ref.watch(auditTrailRepositoryProvider),
+    userId: ref.watch(currentUserIdProvider),
+  );
+});
+
+final supplierRepositoryProvider = Provider<SupplierRepository>((ref) {
+  final enterpriseId =
+      ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+  final driftService = DriftService.instance;
+  final syncManager = ref.watch(syncManagerProvider);
+  final connectivityService = ref.watch(connectivityServiceProvider);
+
+  return SupplierOfflineRepository(
+    driftService: driftService,
+    syncManager: syncManager,
+    connectivityService: connectivityService,
+    enterpriseId: enterpriseId,
+    moduleType: 'boutique',
+    auditTrailRepository: ref.watch(auditTrailRepositoryProvider),
+    userId: ref.watch(currentUserIdProvider),
+  );
+});
+
+final settlementRepositoryProvider = Provider<SupplierSettlementRepository>((ref) {
+  final enterpriseId =
+      ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+  final driftService = DriftService.instance;
+  final syncManager = ref.watch(syncManagerProvider);
+  final connectivityService = ref.watch(connectivityServiceProvider);
+
+  return SupplierSettlementOfflineRepository(
+    driftService: driftService,
+    syncManager: syncManager,
+    connectivityService: connectivityService,
+    enterpriseId: enterpriseId,
+    moduleType: 'boutique',
+    auditTrailRepository: ref.watch(auditTrailRepositoryProvider),
+    userId: ref.watch(currentUserIdProvider),
+  );
+});
+
+final categoryRepositoryProvider = Provider<CategoryRepository>((ref) {
+  final enterpriseId =
+      ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+  final driftService = DriftService.instance;
+  final syncManager = ref.watch(syncManagerProvider);
+  final connectivityService = ref.watch(connectivityServiceProvider);
+
+  return CategoryOfflineRepository(
+    driftService: driftService,
+    syncManager: syncManager,
+    connectivityService: connectivityService,
+    enterpriseId: enterpriseId,
+    moduleType: 'boutique',
+    auditTrailRepository: ref.watch(auditTrailRepositoryProvider),
+    userId: ref.watch(currentUserIdProvider),
+  );
+});
+
 final reportRepositoryProvider = Provider<ReportRepository>((ref) {
   return ReportOfflineRepository(
     saleRepository: ref.watch(saleRepositoryProvider),
@@ -176,29 +291,64 @@ final reportRepositoryProvider = Provider<ReportRepository>((ref) {
   );
 });
 
-final storeControllerProvider = Provider<StoreController>(
-  (ref) => StoreController(
+final stockMovementRepositoryProvider = Provider<StockMovementRepository>((ref) {
+  final enterpriseId =
+      ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+  final driftService = DriftService.instance;
+  final syncManager = ref.watch(syncManagerProvider);
+  final connectivityService = ref.watch(connectivityServiceProvider);
+
+  return StockMovementOfflineRepository(
+    driftService: driftService,
+    syncManager: syncManager,
+    connectivityService: connectivityService,
+    enterpriseId: enterpriseId,
+    moduleType: 'boutique',
+    auditTrailRepository: ref.watch(auditTrailRepositoryProvider),
+    userId: ref.watch(currentUserIdProvider),
+  );
+});
+
+final storeControllerProvider = Provider<StoreController>((ref) {
+  return StoreController(
     ref.watch(productRepositoryProvider),
     ref.watch(saleRepositoryProvider),
     ref.watch(stockRepositoryProvider),
     ref.watch(purchaseRepositoryProvider),
     ref.watch(expenseRepositoryProvider),
     ref.watch(reportRepositoryProvider),
+    ref.watch(closingRepositoryProvider),
+    ref.watch(treasuryRepositoryProvider),
+    ref.watch(supplierRepositoryProvider),
+    ref.watch(settlementRepositoryProvider),
+    ref.watch(categoryRepositoryProvider),
+    ref.watch(stockMovementRepositoryProvider),
     ref.watch(auditTrailServiceProvider),
     ref.watch(currentUserIdProvider),
-  ),
-);
+  );
+});
 
 final productsProvider = StreamProvider.autoDispose(
   (ref) => ref.watch(storeControllerProvider).watchProducts(),
 );
+
+final activeProductsProvider = Provider.autoDispose<AsyncValue<List<Product>>>((ref) {
+  return ref.watch(productsProvider).whenData(
+    (products) => products.where((p) => p.isActive).toList(),
+  );
+});
 
 final recentSalesProvider = StreamProvider.autoDispose(
   (ref) => ref.watch(storeControllerProvider).watchRecentSales(),
 );
 
 final lowStockProductsProvider = StreamProvider.autoDispose(
-  (ref) => ref.watch(storeControllerProvider).watchLowStockProducts(),
+  (ref) {
+    final settings = ref.watch(boutiqueSettingsServiceProvider);
+    return ref.watch(storeControllerProvider).watchLowStockProducts(
+      threshold: settings.lowStockThreshold,
+    );
+  },
 );
 
 final purchasesProvider = StreamProvider.autoDispose(
@@ -209,13 +359,39 @@ final expensesProvider = StreamProvider.autoDispose(
   (ref) => ref.watch(storeControllerProvider).watchExpenses(),
 );
 
-final deletedProductsProvider = StreamProvider.autoDispose(
-  (ref) => ref.watch(storeControllerProvider).watchDeletedProducts(),
+final closingsProvider = StreamProvider.autoDispose(
+  (ref) => ref.watch(storeControllerProvider).watchClosings(),
 );
 
-final deletedExpensesProvider = StreamProvider.autoDispose(
-  (ref) => ref.watch(storeControllerProvider).watchDeletedExpenses(),
+final activeSessionProvider = StreamProvider.autoDispose<Closing?>(
+  (ref) => ref.watch(storeControllerProvider).watchActiveSession(),
 );
+
+final treasuryOperationsProvider = StreamProvider.autoDispose<List<TreasuryOperation>>(
+  (ref) => ref.watch(storeControllerProvider).watchTreasuryOperations(),
+);
+
+final treasuryBalancesProvider = FutureProvider.autoDispose<Map<String, int>>(
+  (ref) async {
+    // Triggers re-calculation whenever operations change
+    ref.watch(treasuryOperationsProvider);
+    return await ref.read(storeControllerProvider).getTreasuryBalances();
+  },
+);
+
+// --- Suppliers ---
+
+final suppliersProvider = StreamProvider.autoDispose<List<Supplier>>(
+  (ref) => ref.watch(storeControllerProvider).watchSuppliers(),
+);
+
+final categoriesProvider = StreamProvider.autoDispose<List<Category>>(
+  (ref) => ref.watch(storeControllerProvider).watchCategories(),
+);
+
+final stockValuationProvider = FutureProvider.autoDispose<int>((ref) async {
+  return ref.watch(storeControllerProvider).calculateStockValuation();
+});
 
 /// Provider combiné pour les métriques mensuelles du dashboard boutique.
 ///
@@ -316,3 +492,34 @@ final profitReportProvider = StreamProvider.family
             endDate: params.endDate,
           );
     });
+
+final fullReportDataProvider = StreamProvider.family
+    .autoDispose<
+      FullBoutiqueReportData,
+      ({ReportPeriod period, DateTime? startDate, DateTime? endDate})
+    >((ref, params) {
+      return ref
+          .watch(storeControllerProvider)
+          .watchFullReportData(
+            params.period,
+            startDate: params.startDate,
+            endDate: params.endDate,
+          );
+    });
+
+/// Provider for BoutiqueExportService.
+final boutiqueExportServiceProvider = Provider<BoutiqueExportService>((ref) {
+  return BoutiqueExportService();
+});
+
+/// Provider for BoutiqueSettingsService.
+/// Note: Requires SharedPreferences to be initialized (usually via sharedPreferencesProvider from core).
+final boutiqueSettingsServiceProvider = Provider<BoutiqueSettingsService>((ref) {
+  final prefs = ref.watch(sharedPreferencesProvider);
+  return BoutiqueSettingsService(prefs);
+});
+
+final stockMovementsProvider = FutureProvider.family<List<StockMovement>, String?>((ref, productId) async {
+  return ref.read(storeControllerProvider).fetchStockMovements(productId: productId);
+});
+

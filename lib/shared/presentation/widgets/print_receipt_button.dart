@@ -1,29 +1,32 @@
-import 'package:flutter/material.dart';
 
-import '../../../core/printing/sunmi_v3_service.dart';
-import '../../../core/printing/templates/sales_receipt_template.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/features/boutique/application/providers.dart';
+import '../../../core/printing/printer_provider.dart';
 import '../../../features/boutique/domain/entities/sale.dart';
 
-/// Bouton d'impression de facture avec détection automatique Sunmi.
-class PrintReceiptButton extends StatefulWidget {
+/// Bouton d'impression de facture supportant plusieurs types d'imprimantes via activePrinterProvider.
+class PrintReceiptButton extends ConsumerStatefulWidget {
   const PrintReceiptButton({
     super.key,
     required this.sale,
     this.onPrintSuccess,
     this.onPrintError,
+    this.iconOnly = false,
   });
 
   final Sale sale;
   final VoidCallback? onPrintSuccess;
   final void Function(String error)? onPrintError;
+  final bool iconOnly;
 
   @override
-  State<PrintReceiptButton> createState() => _PrintReceiptButtonState();
+  ConsumerState<PrintReceiptButton> createState() => _PrintReceiptButtonState();
 }
 
-class _PrintReceiptButtonState extends State<PrintReceiptButton> {
+class _PrintReceiptButtonState extends ConsumerState<PrintReceiptButton> {
   bool _isPrinting = false;
-  bool _isSunmiDevice = false;
   bool _isPrinterAvailable = false;
 
   @override
@@ -33,67 +36,61 @@ class _PrintReceiptButtonState extends State<PrintReceiptButton> {
   }
 
   Future<void> _checkPrinterAvailability() async {
-    final sunmi = SunmiV3Service.instance;
-    final isSunmi = await sunmi.isSunmiDevice;
-    final isAvailable = isSunmi && await sunmi.isPrinterAvailable();
+    final printer = ref.read(activePrinterProvider);
+    final isAvailable = await printer.isAvailable();
 
     if (mounted) {
       setState(() {
-        _isSunmiDevice = isSunmi;
         _isPrinterAvailable = isAvailable;
       });
     }
   }
 
   Future<void> _printReceipt() async {
-    if (!_isPrinterAvailable) {
-      widget.onPrintError?.call(
-        _isSunmiDevice
-            ? 'Imprimante non disponible'
-            : 'Imprimante Sunmi non détectée',
-      );
+    final printer = ref.read(activePrinterProvider);
+    final isAvailable = await printer.isAvailable();
+    
+    if (!isAvailable) {
+      if (mounted) {
+        NotificationService.showWarning(context, 'Imprimante non disponible. Vérifiez les réglages.');
+      }
+      widget.onPrintError?.call('Imprimante non disponible');
       return;
     }
 
     setState(() => _isPrinting = true);
 
     try {
-      final template = SalesReceiptTemplate(widget.sale);
+      final width = await printer.getLineWidth();
+      
+      // Get settings
+      final settings = ref.read(boutiqueSettingsServiceProvider);
+      
+      final template = SalesReceiptTemplate(
+        widget.sale,
+        width: width,
+        headerText: settings.receiptHeader,
+        footerText: settings.receiptFooter,
+        showLogo: settings.showLogo,
+      );
+      
       final content = template.generate();
 
-      final success = await SunmiV3Service.instance.printReceipt(content);
+      final success = await printer.printReceipt(content);
 
       if (!mounted) return;
 
       if (success) {
         widget.onPrintSuccess?.call();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Facture imprimée avec succès'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
-          ),
-        );
+        NotificationService.showSuccess(context, 'Facture imprimée avec succès');
       } else {
         widget.onPrintError?.call('Erreur lors de l\'impression');
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Erreur lors de l\'impression'),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 2),
-          ),
-        );
+        NotificationService.showError(context, 'Erreur lors de l\'impression');
       }
     } catch (e) {
       if (!mounted) return;
       widget.onPrintError?.call(e.toString());
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur: $e'),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 2),
-        ),
-      );
+      NotificationService.showError(context, 'Erreur: $e');
     } finally {
       if (mounted) {
         setState(() => _isPrinting = false);
@@ -103,20 +100,26 @@ class _PrintReceiptButtonState extends State<PrintReceiptButton> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    // Ne pas afficher le bouton si l'appareil n'est pas Sunmi
-    if (!_isSunmiDevice) {
-      return const SizedBox.shrink();
+    if (widget.iconOnly) {
+      return IconButton(
+        icon: _isPrinting 
+          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+          : const Icon(Icons.print_outlined, size: 20),
+        onPressed: _isPrinting ? null : _printReceipt,
+        tooltip: 'Imprimer ticket',
+        color: _isPrinterAvailable ? Colors.blue : Colors.grey,
+      );
     }
 
+    final theme = Theme.of(context);
+
     return FilledButton.icon(
-      onPressed: _isPrinting || !_isPrinterAvailable ? null : _printReceipt,
+      onPressed: _isPrinting ? null : _printReceipt,
       icon: _isPrinting
           ? const SizedBox(
               width: 16,
               height: 16,
-              child: CircularProgressIndicator(strokeWidth: 2),
+              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
             )
           : const Icon(Icons.print),
       label: Text(_isPrinting ? 'Impression...' : 'Imprimer la facture'),

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:elyf_groupe_app/app/theme/app_colors.dart';
 
 import '../../../../../core/errors/app_exceptions.dart';
 import 'package:elyf_groupe_app/core/permissions/modules/boutique_permissions.dart';
@@ -35,6 +34,7 @@ class _CheckoutDialogState extends ConsumerState<CheckoutDialog>
   PaymentMethod _paymentMethod = PaymentMethod.cash;
   int _cashAmount = 0;
   int _mobileMoneyAmount = 0;
+  int _cardAmount = 0;
   bool _isLoading = false;
   Sale? _completedSale;
 
@@ -44,6 +44,7 @@ class _CheckoutDialogState extends ConsumerState<CheckoutDialog>
     _amountPaidController.text = widget.total.toString();
     _cashAmount = widget.total;
     _mobileMoneyAmount = 0;
+    _cardAmount = 0;
   }
 
   void _onPaymentMethodChanged(PaymentMethod method) {
@@ -53,13 +54,19 @@ class _CheckoutDialogState extends ConsumerState<CheckoutDialog>
       if (method == PaymentMethod.cash) {
         _cashAmount = amountPaid;
         _mobileMoneyAmount = 0;
+        _cardAmount = 0;
       } else if (method == PaymentMethod.mobileMoney) {
         _cashAmount = 0;
         _mobileMoneyAmount = amountPaid;
-      } else if (method == PaymentMethod.both) {
-        // Ne pas initialiser automatiquement, laisser l'utilisateur répartir
+        _cardAmount = 0;
+      } else if (method == PaymentMethod.card) {
         _cashAmount = 0;
         _mobileMoneyAmount = 0;
+        _cardAmount = amountPaid;
+      } else if (method == PaymentMethod.both) {
+        _cashAmount = 0;
+        _mobileMoneyAmount = 0;
+        _cardAmount = 0;
       }
     });
   }
@@ -72,21 +79,26 @@ class _CheckoutDialogState extends ConsumerState<CheckoutDialog>
           if (_paymentMethod == PaymentMethod.cash) {
             _cashAmount = amount;
             _mobileMoneyAmount = 0;
+            _cardAmount = 0;
           } else if (_paymentMethod == PaymentMethod.mobileMoney) {
             _cashAmount = 0;
             _mobileMoneyAmount = amount;
+            _cardAmount = 0;
+          } else if (_paymentMethod == PaymentMethod.card) {
+            _cashAmount = 0;
+            _mobileMoneyAmount = 0;
+            _cardAmount = amount;
           }
-          // Si "Les deux", ne pas modifier automatiquement
-          // L'utilisateur répartira manuellement dans PaymentSplitter
         });
       }
     });
   }
 
-  void _onSplitChanged(int cashAmount, int mobileMoneyAmount) {
+  void _onSplitChanged(int cashAmount, int mobileMoneyAmount, int cardAmount) {
     setState(() {
       _cashAmount = cashAmount;
       _mobileMoneyAmount = mobileMoneyAmount;
+      _cardAmount = cardAmount;
     });
   }
 
@@ -126,14 +138,14 @@ class _CheckoutDialogState extends ConsumerState<CheckoutDialog>
       onSubmit: () async {
         // Calculer le montant payé selon la méthode
         final amountPaid = _paymentMethod == PaymentMethod.both
-            ? (_cashAmount + _mobileMoneyAmount)
+            ? (_cashAmount + _mobileMoneyAmount + _cardAmount)
             : (_amountPaid ?? 0);
 
         // Validation pour paiement mixte
         if (_paymentMethod == PaymentMethod.both) {
-          if (_cashAmount + _mobileMoneyAmount != widget.total) {
+          if (_cashAmount + _mobileMoneyAmount + _cardAmount != widget.total) {
             throw ValidationException(
-              'La somme des montants (${CurrencyFormatter.formatFCFA(_cashAmount + _mobileMoneyAmount)}) doit être égale au total (${CurrencyFormatter.formatFCFA(widget.total)})',
+              'La somme des montants (${CurrencyFormatter.formatFCFA(_cashAmount + _mobileMoneyAmount + _cardAmount)}) doit être égale au total (${CurrencyFormatter.formatFCFA(widget.total)})',
               'PAYMENT_AMOUNT_MISMATCH',
             );
           }
@@ -165,13 +177,14 @@ class _CheckoutDialogState extends ConsumerState<CheckoutDialog>
           paymentMethod: _paymentMethod,
           cashAmount: _cashAmount,
           mobileMoneyAmount: _mobileMoneyAmount,
+          cardAmount: _cardAmount,
         );
 
-        await ref.read(storeControllerProvider).createSale(sale);
+        final createdSale = await ref.read(storeControllerProvider).createSale(sale);
 
         if (mounted) {
           // Garder la vente pour l'impression
-          setState(() => _completedSale = sale);
+          setState(() => _completedSale = createdSale);
 
           ref.invalidate(recentSalesProvider);
           ref.invalidate(productsProvider);
@@ -255,27 +268,69 @@ class _CheckoutDialogState extends ConsumerState<CheckoutDialog>
                     ),
                   ),
                   const SizedBox(height: 12),
-                  SegmentedButton<PaymentMethod>(
-                    segments: const [
-                      ButtonSegment(
-                        value: PaymentMethod.cash,
-                        label: Text('Espèces'),
-                        icon: Icon(Icons.money),
-                      ),
-                      ButtonSegment(
-                        value: PaymentMethod.mobileMoney,
-                        label: Text('Mobile Money'),
-                        icon: Icon(Icons.phone_android),
-                      ),
-                      ButtonSegment(
-                        value: PaymentMethod.both,
-                        label: Text('Les deux'),
-                        icon: Icon(Icons.payment),
-                      ),
-                    ],
-                    selected: {_paymentMethod},
-                    onSelectionChanged: (Set<PaymentMethod> newSelection) {
-                      _onPaymentMethodChanged(newSelection.first);
+                  const SizedBox(height: 12),
+                  Consumer(
+                    builder: (context, ref, child) {
+                      final settings = ref.read(boutiqueSettingsServiceProvider);
+                      final enabledMethods = settings.enabledPaymentMethods;
+                      
+                      final segments = <ButtonSegment<PaymentMethod>>[];
+                      
+                      if (enabledMethods.contains('cash')) {
+                        segments.add(const ButtonSegment(
+                          value: PaymentMethod.cash,
+                          label: Text('Espèces'),
+                          icon: Icon(Icons.money),
+                        ));
+                      }
+                      
+                      if (enabledMethods.contains('mobile_money')) {
+                        segments.add(const ButtonSegment(
+                          value: PaymentMethod.mobileMoney,
+                          label: Text('Mobile Money'),
+                          icon: Icon(Icons.phone_android),
+                        ));
+                      }
+                      
+                      if (enabledMethods.contains('card')) {
+                        segments.add(const ButtonSegment(
+                          value: PaymentMethod.card,
+                          label: Text('Carte'),
+                          icon: Icon(Icons.credit_card),
+                        ));
+                      }
+                      
+                      // Enable Mixte if at least 2 methods are enabled
+                      if (enabledMethods.length >= 2) {
+                        segments.add(const ButtonSegment(
+                          value: PaymentMethod.both,
+                          label: Text('Mixte'),
+                          icon: Icon(Icons.payment),
+                        ));
+                      }
+
+                      // If current method is distinct from available, reset to first available
+                      // This side-effect in build is not ideal but necessary for state consistency if settings changed
+                      // Better to do in initState, but let's handle empty case safely
+                      if (segments.isEmpty) {
+                         return const Center(child: Text("Aucune méthode de paiement activée"));
+                      }
+
+                      // Ensure selected is valid
+                      if (!segments.any((s) => s.value == _paymentMethod)) {
+                         // Must defer state update
+                         WidgetsBinding.instance.addPostFrameCallback((_) {
+                           if (mounted) _onPaymentMethodChanged(segments.first.value);
+                         });
+                      }
+
+                      return SegmentedButton<PaymentMethod>(
+                        segments: segments,
+                        selected: {_paymentMethod},
+                        onSelectionChanged: (Set<PaymentMethod> newSelection) {
+                          _onPaymentMethodChanged(newSelection.first);
+                        },
+                      );
                     },
                   ),
                   const SizedBox(height: 24),
@@ -300,7 +355,7 @@ class _CheckoutDialogState extends ConsumerState<CheckoutDialog>
                           return 'Le montant ne peut pas dépasser ${CurrencyFormatter.formatFCFA(widget.total)}';
                         }
                         if (amount < widget.total &&
-                            _paymentMethod == PaymentMethod.cash) {
+                            (_paymentMethod == PaymentMethod.cash || _paymentMethod == PaymentMethod.card)) {
                           return 'Le crédit n\'est pas supporté ici';
                         }
                         return null;
@@ -314,7 +369,7 @@ class _CheckoutDialogState extends ConsumerState<CheckoutDialog>
                       onSplitChanged: _onSplitChanged,
                       initialCashAmount: _cashAmount,
                       initialMobileMoneyAmount: _mobileMoneyAmount,
-                      mobileMoneyLabel: 'Mobile Money',
+                      initialCardAmount: _cardAmount,
                     ),
                   ],
                   const SizedBox(height: 24),
@@ -345,15 +400,15 @@ class _CheckoutDialogState extends ConsumerState<CheckoutDialog>
                                   size: 24,
                                 ),
                                 const SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(
-                                    'Vente enregistrée avec succès',
-                                    style: theme.textTheme.titleMedium?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                      color: AppColors.success,
+                                  Expanded(
+                                    child: Text(
+                                      'Vente ${_completedSale?.number ?? ""} enregistrée avec succès',
+                                      style: theme.textTheme.titleMedium?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.success,
+                                      ),
                                     ),
                                   ),
-                                ),
                             ],
                           ),
                           const SizedBox(height: 16),

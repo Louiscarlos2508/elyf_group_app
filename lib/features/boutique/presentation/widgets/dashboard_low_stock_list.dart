@@ -5,14 +5,17 @@ import '../../domain/entities/product.dart';
 
 /// Section displaying low stock products.
 class DashboardLowStockList extends StatelessWidget {
+  final void Function(Product)? onProductTap;
+  final void Function(Product)? onRestockTap;
+
   const DashboardLowStockList({
     super.key,
     required this.products,
     this.onProductTap,
+    this.onRestockTap,
   });
 
   final List<Product> products;
-  final void Function(Product)? onProductTap;
 
   @override
   Widget build(BuildContext context) {
@@ -92,13 +95,14 @@ class DashboardLowStockList extends StatelessWidget {
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                subtitle: product.category != null
-                    ? Text(product.category!)
+                subtitle: product.categoryId != null
+                    ? Text(product.categoryId!)
                     : null,
-                trailing: Icon(
-                  Icons.add_shopping_cart_rounded,
-                  color: const Color(0xFFF59E0B).withValues(alpha: 0.7),
-                  size: 20,
+                trailing: IconButton(
+                  icon: const Icon(Icons.add_shopping_cart_rounded),
+                  color: const Color(0xFFF59E0B),
+                  tooltip: 'Réapprovisionner',
+                  onPressed: () => onRestockTap?.call(product),
                 ),
                 onTap: () => onProductTap?.call(product),
               );

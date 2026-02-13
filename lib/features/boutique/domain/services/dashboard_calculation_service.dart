@@ -53,8 +53,16 @@ class BoutiqueDashboardCalculationService {
       return sum + s.items.fold(0, (itemSum, item) => itemSum + item.quantity);
     });
 
+    // Calculer le revenu par mode de paiement (incluant les paiements mixtes)
+    final cashRevenue = todaySales.fold(0, (sum, s) => sum + s.cashAmount);
+    final mobileMoneyRevenue = todaySales.fold(0, (sum, s) => sum + s.mobileMoneyAmount);
+    final cardRevenue = todaySales.fold(0, (sum, s) => sum + s.cardAmount);
+
     return DashboardTodayMetrics(
       revenue: revenue,
+      cashRevenue: cashRevenue,
+      mobileMoneyRevenue: mobileMoneyRevenue,
+      cardRevenue: cardRevenue,
       salesCount: count,
       averageTicket: avgTicket,
       itemsCount: itemsCount,
@@ -238,12 +246,18 @@ class BoutiqueDashboardCalculationService {
 class DashboardTodayMetrics {
   const DashboardTodayMetrics({
     required this.revenue,
+    required this.cashRevenue,
+    required this.mobileMoneyRevenue,
+    required this.cardRevenue,
     required this.salesCount,
     required this.averageTicket,
     required this.itemsCount,
   });
 
   final int revenue;
+  final int cashRevenue;
+  final int mobileMoneyRevenue;
+  final int cardRevenue;
   final int salesCount;
   final int averageTicket;
   final int itemsCount;

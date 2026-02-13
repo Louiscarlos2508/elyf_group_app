@@ -13,6 +13,7 @@ import '../../widgets/report_kpi_cards_v2.dart';
 import '../../widgets/report_period_selector_v2.dart';
 import '../../widgets/report_tabs_v2.dart';
 import '../../widgets/sales_report_content_v2.dart';
+import '../../widgets/closings_report_content_v2.dart';
 import '../../widgets/boutique_header.dart';
 
 /// Reports screen with professional UI - style eau_minerale.
@@ -60,22 +61,30 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (context) => const Center(child: CircularProgressIndicator()),
+        builder: (context) => const Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(color: Colors.white),
+              SizedBox(height: 16),
+              Text(
+                'Génération du PDF...',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+        ),
       );
 
-      final reportData = await ref.read(
-        reportDataProvider((
-          period: ReportPeriod.custom,
-          startDate: _startDate,
-          endDate: _endDate,
-        )).future,
-      );
+      final reportData = await ref.read(storeControllerProvider).getFullReportData(
+        ReportPeriod.custom,
+        startDate: _startDate,
+        endDate: _endDate,
+      ).timeout(const Duration(seconds: 45));
 
       final pdfService = BoutiqueReportPdfService.instance;
       final file = await pdfService.generateReport(
         reportData: reportData,
-        startDate: _startDate,
-        endDate: _endDate,
       );
 
       if (mounted) {
@@ -85,15 +94,20 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       if (mounted) {
         final result = await OpenFile.open(file.path);
         if (result.type != ResultType.done && mounted) {
-          NotificationService.showInfo(context, 'PDF généré: ${file.path}');
+          NotificationService.showInfo(
+            context, 
+            'PDF généré avec succès. Vous pouvez le retrouver dans vos fichiers temporaires.',
+          );
         }
       }
     } catch (e) {
       if (mounted) {
-        Navigator.of(context).pop();
+        if (Navigator.of(context).canPop()) {
+          Navigator.of(context).pop();
+        }
         NotificationService.showError(
           context,
-          'Erreur lors de la génération PDF: $e',
+          'Échec de la génération PDF: ${e.toString()}',
         );
       }
     }
@@ -206,6 +220,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         );
       case 3:
         return ProfitReportContentV2(startDate: _startDate, endDate: _endDate);
+      case 4:
+        return ClosingsReportContentV2(startDate: _startDate, endDate: _endDate);
       default:
         return const SizedBox.shrink();
     }

@@ -26,6 +26,12 @@ abstract class ReportRepository {
     DateTime? endDate,
   });
 
+  Future<FullBoutiqueReportData> getFullReportData(
+    ReportPeriod period, {
+    DateTime? startDate,
+    DateTime? endDate,
+  });
+
   Future<ProfitReportData> getProfitReport(
     ReportPeriod period, {
     DateTime? startDate,
@@ -57,6 +63,12 @@ abstract class ReportRepository {
   });
 
   Stream<ProfitReportData> watchProfitReport(
+    ReportPeriod period, {
+    DateTime? startDate,
+    DateTime? endDate,
+  });
+
+  Stream<FullBoutiqueReportData> watchFullReportData(
     ReportPeriod period, {
     DateTime? startDate,
     DateTime? endDate,

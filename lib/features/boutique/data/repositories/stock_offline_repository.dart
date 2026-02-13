@@ -38,6 +38,31 @@ class StockOfflineRepository implements StockRepository {
   }
 
   @override
+  Future<void> recordAdjustment(String productId, int quantity, String reason) async {
+    try {
+      AppLogger.debug(
+        'Recording stock adjustment for product: $productId, change: $quantity, reason: $reason',
+        name: 'StockOfflineRepository',
+      );
+      final product = await productRepository.getProduct(productId);
+      if (product != null) {
+        final newStock = product.stock + quantity;
+        final updatedProduct = product.copyWith(stock: newStock);
+        await productRepository.updateProduct(updatedProduct);
+      }
+    } catch (error, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
+      AppLogger.error(
+        'Error recording stock adjustment for product: $productId - ${appException.message}',
+        name: 'StockOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      throw appException;
+    }
+  }
+
+  @override
   Future<int> getStock(String productId) async {
     try {
       final product = await productRepository.getProduct(productId);

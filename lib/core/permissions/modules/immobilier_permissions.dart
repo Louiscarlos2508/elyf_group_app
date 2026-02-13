@@ -242,6 +242,35 @@ class ImmobilierPermissions {
     description: 'Permet de restaurer une dépense supprimée',
   );
 
+  // Maintenance
+  static const viewMaintenance = ActionPermission(
+    id: 'view_maintenance',
+    name: 'Voir la maintenance',
+    module: 'immobilier',
+    description: 'Permet de voir les tickets de maintenance',
+  );
+
+  static const createMaintenance = ActionPermission(
+    id: 'create_maintenance',
+    name: 'Créer un ticket de maintenance',
+    module: 'immobilier',
+    description: 'Permet de créer un ticket de maintenance',
+  );
+
+  static const editMaintenance = ActionPermission(
+    id: 'edit_maintenance',
+    name: 'Modifier un ticket de maintenance',
+    module: 'immobilier',
+    description: 'Permet de modifier un ticket de maintenance',
+  );
+
+  static const deleteMaintenance = ActionPermission(
+    id: 'delete_maintenance',
+    name: 'Supprimer un ticket de maintenance',
+    module: 'immobilier',
+    description: 'Permet de supprimer un ticket de maintenance',
+  );
+
   /// All permissions for the module
   static const all = [
     viewDashboard,
@@ -277,5 +306,9 @@ class ImmobilierPermissions {
     deletePayment,
     restorePayment,
     restoreExpense,
+    viewMaintenance,
+    createMaintenance,
+    editMaintenance,
+    deleteMaintenance,
   ];
 }

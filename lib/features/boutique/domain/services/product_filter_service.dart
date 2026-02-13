@@ -6,27 +6,29 @@ import '../entities/product.dart';
 class ProductFilterService {
   /// Filters products by search query.
   ///
-  /// Searches in product name, category, and barcode.
+  /// Searches in product name, category name (if provided), and barcode.
   static List<Product> filterProducts({
     required List<Product> products,
     required String query,
+    Map<String, String>? categoryNames, // productId -> categoryName
   }) {
     if (query.isEmpty) return products;
 
     final lowerQuery = query.toLowerCase();
     return products.where((product) {
+      final categoryName = categoryNames?[product.categoryId] ?? '';
       return product.name.toLowerCase().contains(lowerQuery) ||
-          (product.category?.toLowerCase().contains(lowerQuery) ?? false) ||
+          (categoryName.toLowerCase().contains(lowerQuery)) ||
           (product.barcode?.contains(query) ?? false);
     }).toList();
   }
 
-  /// Filters products by category.
+  /// Filters products by category ID.
   static List<Product> filterByCategory({
     required List<Product> products,
-    required String category,
+    required String categoryId,
   }) {
-    return products.where((product) => product.category == category).toList();
+    return products.where((product) => product.categoryId == categoryId).toList();
   }
 
   /// Filters products by stock status.
@@ -64,7 +66,7 @@ class ProductFilterService {
     }
 
     if (category != null) {
-      filtered = filterByCategory(products: filtered, category: category);
+      filtered = filterByCategory(products: filtered, categoryId: category);
     }
 
     if (inStock != null) {

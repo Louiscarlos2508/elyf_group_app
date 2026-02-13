@@ -1,6 +1,9 @@
 import 'dart:convert';
 
+import 'package:drift/drift.dart';
+
 import '../../../../core/errors/error_handler.dart';
+import '../../../../core/offline/drift/app_database.dart';
 import '../../../../core/offline/offline_repository.dart';
 import '../../domain/entities/property.dart';
 import '../../domain/repositories/property_repository.dart';
@@ -46,56 +49,75 @@ class PropertyOfflineRepository extends OfflineRepository<Property>
   @override
   Future<void> saveToLocal(Property entity) async {
     final localId = getLocalId(entity);
-    final map = toMap(entity)..['localId'] = localId;
-    await driftService.records.upsert(
-      collectionName: collectionName,
-      localId: localId,
-      remoteId: getRemoteId(entity),
-      enterpriseId: enterpriseId,
-      moduleType: moduleType,
-      dataJson: jsonEncode(map),
-      localUpdatedAt: DateTime.now(),
+    final companion = PropertiesTableCompanion(
+      id: Value(localId),
+      enterpriseId: Value(enterpriseId),
+      address: Value(entity.address),
+      city: Value(entity.city),
+      propertyType: Value(entity.propertyType.name),
+      rooms: Value(entity.rooms),
+      area: Value(entity.area),
+      price: Value(entity.price),
+      status: Value(entity.status.name),
+      description: Value(entity.description),
+      images: Value(entity.images != null ? jsonEncode(entity.images) : null),
+      amenities: Value(entity.amenities != null ? jsonEncode(entity.amenities) : null),
+      createdAt: Value(entity.createdAt ?? DateTime.now()),
+      updatedAt: Value(DateTime.now()),
+      deletedAt: Value(entity.deletedAt),
+      deletedBy: Value(entity.deletedBy),
     );
+
+    await driftService.db.into(driftService.db.propertiesTable).insertOnConflictUpdate(companion);
   }
 
   @override
   Future<void> deleteFromLocal(Property entity) async {
-    final remoteId = getRemoteId(entity);
-    if (remoteId != null) {
-      await driftService.records.deleteByRemoteId(
-        collectionName: collectionName,
-        remoteId: remoteId,
-        enterpriseId: enterpriseId,
-        moduleType: moduleType,
-      );
-      return;
-    }
     final localId = getLocalId(entity);
-    await driftService.records.deleteByLocalId(
-      collectionName: collectionName,
-      localId: localId,
-      enterpriseId: enterpriseId,
-      moduleType: moduleType,
-    );
+    await (driftService.db.delete(driftService.db.propertiesTable)
+          ..where((t) => t.id.equals(localId)))
+        .go();
   }
 
   @override
   Future<Property?> getByLocalId(String localId) async {
-    final record = await driftService.records.findByLocalId(
-      collectionName: collectionName,
-      localId: localId,
-      enterpriseId: enterpriseId,
-      moduleType: moduleType,
-    ) ?? await driftService.records.findByRemoteId(
-      collectionName: collectionName,
-      remoteId: localId,
-      enterpriseId: enterpriseId,
-      moduleType: moduleType,
-    );
+    final query = driftService.db.select(driftService.db.propertiesTable)
+      ..where((t) => t.id.equals(localId));
+    final row = await query.getSingleOrNull();
 
-    if (record == null) return null;
-    final map = safeDecodeJson(record.dataJson, record.localId);
-    return map != null ? fromMap(map) : null;
+    if (row == null) return null;
+    return _fromEntity(row);
+  }
+
+  Property _fromEntity(PropertyEntity entity) {
+    return Property(
+      id: entity.id,
+      enterpriseId: entity.enterpriseId,
+      address: entity.address,
+      city: entity.city,
+      propertyType: PropertyType.values.firstWhere(
+        (e) => e.name == entity.propertyType,
+        orElse: () => PropertyType.house,
+      ),
+      rooms: entity.rooms,
+      area: entity.area,
+      price: entity.price,
+      status: PropertyStatus.values.firstWhere(
+        (e) => e.name == entity.status,
+        orElse: () => PropertyStatus.available,
+      ),
+      description: entity.description,
+      images: entity.images != null
+          ? (jsonDecode(entity.images!) as List).cast<String>()
+          : null,
+      amenities: entity.amenities != null
+          ? (jsonDecode(entity.amenities!) as List).cast<String>()
+          : null,
+      createdAt: entity.createdAt,
+      updatedAt: entity.updatedAt,
+      deletedAt: entity.deletedAt,
+      deletedBy: entity.deletedBy,
+    );
   }
 
   @override
@@ -105,58 +127,26 @@ class PropertyOfflineRepository extends OfflineRepository<Property>
 
   @override
   Future<List<Property>> getAllForEnterprise(String enterpriseId) async {
-    final rows = await driftService.records.listForEnterprise(
-      collectionName: collectionName,
-      enterpriseId: enterpriseId,
-      moduleType: moduleType,
-    );
-    final properties = rows
-        .map((r) => safeDecodeJson(r.dataJson, r.localId))
-        .where((m) => m != null)
-        .map((m) => fromMap(m!))
-        .toList();
-    
-    return deduplicateByRemoteId(properties);
+    final query = driftService.db.select(driftService.db.propertiesTable)
+      ..where((t) => t.enterpriseId.equals(enterpriseId));
+    final rows = await query.get();
+    return rows.map(_fromEntity).toList();
   }
 
   // PropertyRepository interface implementation
 
   @override
   Stream<List<Property>> watchProperties() {
-    return driftService.records
-        .watchForEnterprise(
-          collectionName: collectionName,
-          enterpriseId: enterpriseId,
-          moduleType: moduleType,
-        )
-        .map((rows) {
-          final entities = rows
-              .map((r) => safeDecodeJson(r.dataJson, r.localId))
-              .where((m) => m != null)
-              .map((m) => fromMap(m!))
-              .where((e) => !e.isDeleted)
-              .toList();
-          return deduplicateByRemoteId(entities);
-        });
+    final query = driftService.db.select(driftService.db.propertiesTable)
+      ..where((t) => t.enterpriseId.equals(enterpriseId) & t.deletedAt.isNull());
+    return query.watch().map((rows) => rows.map(_fromEntity).toList());
   }
 
   @override
   Stream<List<Property>> watchDeletedProperties() {
-    return driftService.records
-        .watchForEnterprise(
-          collectionName: collectionName,
-          enterpriseId: enterpriseId,
-          moduleType: moduleType,
-        )
-        .map((rows) {
-          final entities = rows
-              .map((r) => safeDecodeJson(r.dataJson, r.localId))
-              .where((m) => m != null)
-              .map((m) => fromMap(m!))
-              .where((e) => e.isDeleted)
-              .toList();
-          return deduplicateByRemoteId(entities);
-        });
+    final query = driftService.db.select(driftService.db.propertiesTable)
+      ..where((t) => t.enterpriseId.equals(enterpriseId) & t.deletedAt.isNotNull());
+    return query.watch().map((rows) => rows.map(_fromEntity).toList());
   }
 
   @override
