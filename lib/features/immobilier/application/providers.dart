@@ -33,6 +33,7 @@ import 'controllers/expense_controller.dart';
 import 'controllers/payment_controller.dart';
 import 'controllers/property_controller.dart';
 import 'controllers/tenant_controller.dart';
+import 'services/receipt_service.dart';
 import '../domain/services/calculation/immobilier_report_calculation_service.dart';
 import '../domain/services/dashboard_calculation_service.dart';
 import '../domain/services/filtering/expense_filter_service.dart';
@@ -200,6 +201,10 @@ final contractControllerProvider = Provider<ContractController>(
 final paymentControllerProvider = Provider<PaymentController>(
   (ref) => PaymentController(
     ref.watch(paymentRepositoryProvider),
+    ref.watch(contractRepositoryProvider),
+    ref.watch(tenantRepositoryProvider),
+    ref.watch(propertyRepositoryProvider),
+    ref.watch(receiptServiceProvider),
     ref.watch(immobilierValidationServiceProvider),
     ref.watch(auditTrailServiceProvider),
     ref.watch(activeEnterpriseProvider).value?.id ?? 'default',
@@ -433,6 +438,24 @@ final contractsByPropertyProvider = StreamProvider.autoDispose
         (contracts) => contracts.where((c) => c.propertyId == propertyId).toList(),
       );
     });
+
+final activeLeaseForPropertyProvider = StreamProvider.autoDispose.family<Contract?, String>((ref, propertyId) {
+  final contractsStream = ref.watch(contractControllerProvider).watchContracts();
+  final tenantsStream = ref.watch(tenantControllerProvider).watchTenants();
+  
+  return CombineLatestStream.combine2(
+    contractsStream,
+    tenantsStream,
+    (contracts, tenants) {
+      final contract = contracts.firstWhereOrNull(
+        (c) => c.propertyId == propertyId && c.status == ContractStatus.active,
+      );
+      if (contract == null) return null;
+      final tenant = tenants.where((t) => t.id == contract.tenantId).firstOrNull;
+      return contract.copyWith(tenant: tenant);
+    },
+  );
+});
 
 final paymentsByTenantProvider = StreamProvider.autoDispose
     .family<List<Payment>, String>((ref, tenantId) {

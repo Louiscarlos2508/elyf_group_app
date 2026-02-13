@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
+import '../../../../core/offline/offline.dart';
+import '../../../../core/errors/error_handler.dart';
 import '../../../../core/tenant/tenant_provider.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/maintenance_ticket.dart';
@@ -80,11 +82,20 @@ class _MaintenanceFormDialogState extends ConsumerState<MaintenanceFormDialog>
       onLoadingChanged: (isLoading) => setState(() => _isSaving = isLoading),
       onSubmit: () async {
         final enterpriseId = ref.read(activeEnterpriseIdProvider).value ?? 'default';
+        
+        // Find active tenant for this property if not already set
+        String? tenantId = widget.ticket?.tenantId;
+        if (tenantId == null && _selectedProperty != null) {
+          final activeLease = await ref.read(contractControllerProvider)
+              .getActiveContractForProperty(_selectedProperty!.id);
+          tenantId = activeLease?.tenantId;
+        }
+
         final ticket = MaintenanceTicket(
-          id: widget.ticket?.id ?? IdGenerator.generate(),
+          id: widget.ticket?.id ?? LocalIdGenerator.generate(),
           enterpriseId: enterpriseId,
           propertyId: _selectedProperty!.id,
-          tenantId: widget.ticket?.tenantId, // Preserve tenant ID if existing
+          tenantId: tenantId,
           description: _descriptionController.text.trim(),
           priority: _priority,
           status: _status,
@@ -95,21 +106,25 @@ class _MaintenanceFormDialogState extends ConsumerState<MaintenanceFormDialog>
         );
 
         final controller = ref.read(maintenanceControllerProvider);
-        if (widget.ticket == null) {
-          await controller.createTicket(ticket);
-        } else {
-          await controller.updateTicket(ticket);
-        }
+        try {
+          if (widget.ticket == null) {
+            await controller.createTicket(ticket);
+          } else {
+            await controller.updateTicket(ticket);
+          }
 
-        if (mounted) {
-          // Invalidate relevant providers
-          ref.invalidate(maintenanceTicketsProvider);
-          Navigator.of(context).pop();
-        }
+          if (mounted) {
+            ref.invalidate(maintenanceTicketsProvider);
+            Navigator.of(context).pop();
+          }
 
-        return widget.ticket == null
-            ? 'Ticket créé avec succès'
-            : 'Ticket mis à jour avec succès';
+          return widget.ticket == null
+              ? 'Ticket créé avec succès'
+              : 'Ticket mis à jour avec succès';
+        } catch (error, stackTrace) {
+           final appError = ErrorHandler.instance.handleError(error, stackTrace);
+           throw appError.message;
+        }
       },
     );
   }

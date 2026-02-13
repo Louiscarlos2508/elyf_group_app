@@ -121,7 +121,8 @@ class PropertyExpenseOfflineRepository extends OfflineRepository<PropertyExpense
   @override
   Stream<List<PropertyExpense>> watchExpenses() {
     final query = driftService.db.select(driftService.db.propertyExpensesTable)
-      ..where((t) => t.enterpriseId.equals(enterpriseId).and(t.deletedAt.isNull()));
+      ..where((t) => t.enterpriseId.equals(enterpriseId))
+      ..where((t) => t.deletedAt.isNull());
     return query.watch().map((rows) => rows.map(_fromEntity).toList());
   }
 
@@ -203,7 +204,8 @@ class PropertyExpenseOfflineRepository extends OfflineRepository<PropertyExpense
   @override
   Stream<List<PropertyExpense>> watchDeletedExpenses() {
     final query = driftService.db.select(driftService.db.propertyExpensesTable)
-      ..where((t) => t.enterpriseId.equals(enterpriseId).and(t.deletedAt.isNotNull()));
+      ..where((t) => t.enterpriseId.equals(enterpriseId))
+      ..where((t) => t.deletedAt.isNotNull());
     return query.watch().map((rows) => rows.map(_fromEntity).toList());
   }
 

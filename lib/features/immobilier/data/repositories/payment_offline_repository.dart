@@ -3,6 +3,7 @@ import 'package:drift/drift.dart';
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/offline/drift/app_database.dart';
 import '../../../../core/offline/offline_repository.dart';
+import '../../../../shared/domain/entities/payment_method.dart';
 import '../../domain/entities/payment.dart';
 import '../../domain/repositories/payment_repository.dart';
 
@@ -89,7 +90,7 @@ class PaymentOfflineRepository extends OfflineRepository<Payment>
     return _fromEntity(row);
   }
 
-  Payment _fromEntity(ImmobilierPaymentsTableData entity) {
+  Payment _fromEntity(ImmobilierPaymentEntity entity) {
     return Payment(
       id: entity.id,
       enterpriseId: entity.enterpriseId,
@@ -133,7 +134,7 @@ class PaymentOfflineRepository extends OfflineRepository<Payment>
     final query = driftService.db.select(driftService.db.immobilierPaymentsTable)
       ..where((t) => t.enterpriseId.equals(enterpriseId));
     final rows = await query.get();
-    return rows.map(_fromEntity).toList();
+    return rows.map<Payment>(_fromEntity).toList();
   }
 
   // PaymentRepository interface implementation
@@ -141,8 +142,9 @@ class PaymentOfflineRepository extends OfflineRepository<Payment>
   @override
   Stream<List<Payment>> watchPayments() {
     final query = driftService.db.select(driftService.db.immobilierPaymentsTable)
-      ..where((t) => t.enterpriseId.equals(enterpriseId) & t.deletedAt.isNull());
-    return query.watch().map((rows) => rows.map(_fromEntity).toList());
+      ..where((t) => t.enterpriseId.equals(enterpriseId))
+      ..where((t) => t.deletedAt.isNull());
+    return query.watch().map((rows) => rows.map<Payment>(_fromEntity).toList());
   }
 
   @override
@@ -172,8 +174,9 @@ class PaymentOfflineRepository extends OfflineRepository<Payment>
   @override
   Stream<List<Payment>> watchDeletedPayments() {
     final query = driftService.db.select(driftService.db.immobilierPaymentsTable)
-      ..where((t) => t.enterpriseId.equals(enterpriseId) & t.deletedAt.isNotNull());
-    return query.watch().map((rows) => rows.map(_fromEntity).toList());
+      ..where((t) => t.enterpriseId.equals(enterpriseId))
+      ..where((t) => t.deletedAt.isNotNull());
+    return query.watch().map((rows) => rows.map<Payment>(_fromEntity).toList());
   }
 
   @override

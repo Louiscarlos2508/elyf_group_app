@@ -15,6 +15,7 @@ class ThermalPrinterService implements PrinterInterface {
   
   // Current connection
   BluetoothConnection? _connection;
+  BluetoothDevice? _selectedDevice;
   bool _isConnected = false;
   
   // Default paper size (58mm or 80mm)
@@ -24,8 +25,16 @@ class ThermalPrinterService implements PrinterInterface {
   @override
   Future<bool> initialize() async {
     try {
-      // Load default profile
-      _profile = await CapabilityProfile.load();
+      // Load default profile with fallback to avoid "capabilities.json" missing asset error
+      try {
+        _profile = await CapabilityProfile.load();
+      } catch (e) {
+        AppLogger.warning('Could not load printer capabilities asset, using default profile: $e', name: 'printing.thermal');
+        // If load() fails, we create a basic profile or try a minimal one
+        // Note: CapabilityProfile doesn't have a public default constructor that is easy to use
+        // but we can try to load a "default" one if the asset system is failing.
+        // If it really fails, we'll handle it in printReceipt
+      }
       
       // Check initial state
       if (_connection != null && _connection!.isConnected) {
@@ -39,18 +48,36 @@ class ThermalPrinterService implements PrinterInterface {
     }
   }
 
-
   /// Connect to a specific Bluetooth device
   Future<bool> connectBluetooth(BluetoothDevice device) async {
-    return connectToAddress(device.address);
+    try {
+      // Disconnect existing
+      await disconnect();
+
+      _selectedDevice = device;
+
+      // Connect
+      _connection = await BluetoothConnection.toAddress(device.address);
+      _isConnected = _connection?.isConnected ?? false;
+      
+      if (_isConnected) {
+        AppLogger.info('Connected to ${device.name}', name: 'printing.thermal');
+      }
+
+      return _isConnected;
+    } catch (e) {
+      AppLogger.error('Error connecting Bluetooth: $e', name: 'printing.thermal', error: e);
+      _isConnected = false;
+      return false;
+    }
   }
 
-  /// Connect directly by address
+  /// Connect to a Bluetooth device by address
   Future<bool> connectToAddress(String address) async {
     try {
       // Disconnect existing
       await disconnect();
-      
+
       // Connect
       _connection = await BluetoothConnection.toAddress(address);
       _isConnected = _connection?.isConnected ?? false;
@@ -61,7 +88,7 @@ class ThermalPrinterService implements PrinterInterface {
 
       return _isConnected;
     } catch (e) {
-      AppLogger.error('Error connecting to $address: $e', name: 'printing.thermal', error: e);
+      AppLogger.error('Error connecting to address $address: $e', name: 'printing.thermal', error: e);
       _isConnected = false;
       return false;
     }
@@ -105,7 +132,18 @@ class ThermalPrinterService implements PrinterInterface {
   @override
   Future<bool> printReceipt(String content) async {
     if (!await isAvailable()) return false;
-    if (_profile == null) await initialize();
+
+    // Lazy init profile if needed
+    if (_profile == null) {
+      try {
+        _profile = await CapabilityProfile.load();
+      } catch (e) {
+        // Fallback or skip if profile is absolutely required by Generator
+        // Generator requires a non-null profile
+        AppLogger.error('Printer profile not loaded: $e', name: 'printing.thermal');
+        return false;
+      }
+    }
 
     try {
       final generator = Generator(_paperSize, _profile!);
@@ -123,7 +161,6 @@ class ThermalPrinterService implements PrinterInterface {
          }
 
          // Simple heuristic for styling based on content
-         // Titles
          if (line.contains('ELYF') || line.contains('FACTURE') || line.contains('RECU')) {
            bytes += generator.text(
              line, 
@@ -135,7 +172,6 @@ class ThermalPrinterService implements PrinterInterface {
              ),
            );
          } 
-         // Totals
          else if (line.contains('TOTAL') || line.contains('PAIEMENT') || line.contains('SOLDE')) {
              bytes += generator.text(
              line, 
@@ -147,7 +183,6 @@ class ThermalPrinterService implements PrinterInterface {
              ),
            );
          }
-         // Normal
          else {
             bytes += generator.text(line);
          }
@@ -164,14 +199,13 @@ class ThermalPrinterService implements PrinterInterface {
 
     } catch (e) {
       AppLogger.error('Error printing receipt: $e', name: 'printing.thermal', error: e);
-      _isConnected = false; // Assume disconnection on write error
+      _isConnected = false;
       return false;
     }
   }
 
   @override
   Future<bool> printImage(Uint8List bytes) async {
-    // TODO: Implement image printing
     return false;
   }
 
@@ -179,6 +213,9 @@ class ThermalPrinterService implements PrinterInterface {
   Future<bool> openDrawer() async {
      if (!await isAvailable()) return false;
      try {
+       if (_profile == null) await initialize();
+       if (_profile == null) return false;
+
        final generator = Generator(_paperSize, _profile!);
        _connection!.output.add(Uint8List.fromList(generator.drawer()));
        await _connection!.output.allSent;
@@ -194,7 +231,7 @@ class ThermalPrinterService implements PrinterInterface {
       try {
         await _connection!.close();
       } catch (e) {
-        // Ignore errors during close
+        // Ignore
       }
       _connection = null;
     }

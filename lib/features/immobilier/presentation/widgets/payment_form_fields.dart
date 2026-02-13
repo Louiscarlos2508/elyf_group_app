@@ -18,7 +18,7 @@ class PaymentFormFields {
     bool enabled = true,
   }) {
     return DropdownButtonFormField<Contract>(
-      value: selectedContract,
+      initialValue: selectedContract,
       decoration: const InputDecoration(
         labelText: 'Contrat *',
         prefixIcon: Icon(Icons.description),

@@ -8,6 +8,7 @@ import '../../../../features/immobilier/data/datasources/local/tables/tenants_ta
 import '../../../../features/immobilier/data/datasources/local/tables/contracts_table.dart';
 import '../../../../features/immobilier/data/datasources/local/tables/payments_table.dart';
 import '../../../../features/immobilier/data/datasources/local/tables/expenses_table.dart';
+import '../../../../features/immobilier/data/datasources/local/tables/maintenance_table.dart';
 
 part 'app_database.g.dart';
 
@@ -73,12 +74,13 @@ class SyncOperations extends Table {
   ContractsTable,
   ImmobilierPaymentsTable,
   PropertyExpensesTable,
+  MaintenanceTicketsTable,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(QueryExecutor? connection) : super(connection ?? openDriftConnection());
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration {
@@ -115,6 +117,9 @@ class AppDatabase extends _$AppDatabase {
         }
         if (from < 7) {
           await migrator.createTable(propertyExpensesTable);
+        }
+        if (from < 8) {
+          await migrator.createTable(maintenanceTicketsTable);
         }
       },
     );

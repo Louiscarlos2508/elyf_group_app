@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart'; // For ConsumerWidget if needed
 
 import '../../domain/entities/maintenance_ticket.dart';
 import '../../domain/entities/property.dart';
-import 'package:elyf_groupe_app/features/immobilier/presentation/widgets/property_detail_helpers.dart'; // For currency format if needed, or simple utils
 
 class MaintenanceTicketCard extends StatelessWidget {
   const MaintenanceTicketCard({

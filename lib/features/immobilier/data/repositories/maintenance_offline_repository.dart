@@ -1,11 +1,12 @@
-import 'dart:convert';
+import 'package:drift/drift.dart';
 
-import 'package:drift/drift.dart'; // For Value
 import '../../../../core/errors/error_handler.dart';
+import '../../../../core/offline/drift/app_database.dart';
 import '../../../../core/offline/offline_repository.dart';
 import '../../domain/entities/maintenance_ticket.dart';
 import '../../domain/repositories/maintenance_repository.dart';
 
+/// Offline-first repository for MaintenanceTicket entities (immobilier module).
 class MaintenanceOfflineRepository extends OfflineRepository<MaintenanceTicket>
     implements MaintenanceRepository {
   MaintenanceOfflineRepository({
@@ -47,69 +48,110 @@ class MaintenanceOfflineRepository extends OfflineRepository<MaintenanceTicket>
   @override
   Future<void> saveToLocal(MaintenanceTicket entity) async {
     final localId = getLocalId(entity);
-    final map = toMap(entity)..['localId'] = localId; // Ensure localId is in map for robust decoding if needed
-    
-    await driftService.records.upsert(
-      collectionName: collectionName,
-      localId: localId,
-      remoteId: getRemoteId(entity),
-      enterpriseId: enterpriseId,
-      moduleType: moduleType,
-      dataJson: jsonEncode(map),
-      localUpdatedAt: DateTime.now(),
+    final companion = MaintenanceTicketsTableCompanion(
+      id: Value(localId),
+      enterpriseId: Value(enterpriseId),
+      propertyId: Value(entity.propertyId),
+      tenantId: Value(entity.tenantId),
+      description: Value(entity.description),
+      priority: Value(entity.priority.name),
+      status: Value(entity.status.name),
+      photos: Value(entity.photos?.join(',')),
+      cost: Value(entity.cost),
+      createdAt: Value(entity.createdAt ?? DateTime.now()),
+      updatedAt: Value(DateTime.now()),
+      deletedAt: Value(entity.deletedAt),
+      deletedBy: Value(entity.deletedBy),
     );
+
+    await driftService.db.into(driftService.db.maintenanceTicketsTable).insertOnConflictUpdate(companion);
   }
 
   @override
   Future<void> deleteFromLocal(MaintenanceTicket entity) async {
-    final remoteId = getRemoteId(entity);
-    if (remoteId != null) {
-      await driftService.records.deleteByRemoteId(
-        collectionName: collectionName,
-        remoteId: remoteId,
-        enterpriseId: enterpriseId,
-        moduleType: moduleType,
-      );
-      return;
-    }
     final localId = getLocalId(entity);
-    await driftService.records.deleteByLocalId(
-      collectionName: collectionName,
-      localId: localId,
-      enterpriseId: enterpriseId,
-      moduleType: moduleType,
-    );
+    await (driftService.db.delete(driftService.db.maintenanceTicketsTable)
+          ..where((t) => t.id.equals(localId)))
+        .go();
   }
 
   @override
   Future<MaintenanceTicket?> getByLocalId(String localId) async {
-    final record = await driftService.records.findByLocalId(
-      collectionName: collectionName,
-      localId: localId,
-      enterpriseId: enterpriseId,
-      moduleType: moduleType,
-    ) ?? await driftService.records.findByRemoteId(
-      collectionName: collectionName,
-      remoteId: localId,
-      enterpriseId: enterpriseId,
-      moduleType: moduleType,
-    );
+    final query = driftService.db.select(driftService.db.maintenanceTicketsTable)
+      ..where((t) => t.id.equals(localId));
+    final row = await query.getSingleOrNull();
 
-    if (record == null) return null;
-    final map = safeDecodeJson(record.dataJson, record.localId);
-    return map != null ? fromMap(map) : null;
+    if (row == null) return null;
+    return _fromEntity(row);
+  }
+
+  MaintenanceTicket _fromEntity(MaintenanceTicketsTableData entity) {
+    return MaintenanceTicket(
+      id: entity.id,
+      enterpriseId: entity.enterpriseId,
+      propertyId: entity.propertyId,
+      tenantId: entity.tenantId,
+      description: entity.description,
+      priority: MaintenancePriority.values.firstWhere(
+        (e) => e.name == entity.priority,
+        orElse: () => MaintenancePriority.medium,
+      ),
+      status: MaintenanceStatus.values.firstWhere(
+        (e) => e.name == entity.status,
+        orElse: () => MaintenanceStatus.open,
+      ),
+      photos: entity.photos?.split(','),
+      cost: entity.cost,
+      createdAt: entity.createdAt,
+      updatedAt: entity.updatedAt,
+      deletedAt: entity.deletedAt,
+      deletedBy: entity.deletedBy,
+    );
+  }
+
+  @override
+  Future<List<MaintenanceTicket>> getAllForEnterprise(String enterpriseId) async {
+    final query = driftService.db.select(driftService.db.maintenanceTicketsTable)
+      ..where((t) => t.enterpriseId.equals(enterpriseId));
+    final rows = await query.get();
+    return rows.map<MaintenanceTicket>(_fromEntity).toList();
+  }
+
+  @override
+  Stream<List<MaintenanceTicket>> watchAllTickets() {
+    final query = driftService.db.select(driftService.db.maintenanceTicketsTable)
+      ..where((t) => t.enterpriseId.equals(enterpriseId))
+      ..where((t) => t.deletedAt.isNull());
+    return query.watch().map((rows) => rows.map<MaintenanceTicket>(_fromEntity).toList());
+  }
+
+  @override
+  Stream<List<MaintenanceTicket>> watchTicketsByProperty(String propertyId) {
+    final query = driftService.db.select(driftService.db.maintenanceTicketsTable)
+      ..where((t) => t.enterpriseId.equals(enterpriseId))
+      ..where((t) => t.propertyId.equals(propertyId))
+      ..where((t) => t.deletedAt.isNull());
+    return query.watch().map((rows) => rows.map<MaintenanceTicket>(_fromEntity).toList());
   }
 
   @override
   Future<List<MaintenanceTicket>> getTicketsByProperty(String propertyId) async {
-    final all = await getAllForEnterprise(enterpriseId);
-    return all.where((t) => t.propertyId == propertyId && !t.isDeleted).toList();
+    final query = driftService.db.select(driftService.db.maintenanceTicketsTable)
+      ..where((t) => t.enterpriseId.equals(enterpriseId))
+      ..where((t) => t.propertyId.equals(propertyId))
+      ..where((t) => t.deletedAt.isNull());
+    final rows = await query.get();
+    return rows.map<MaintenanceTicket>(_fromEntity).toList();
   }
 
   @override
   Future<List<MaintenanceTicket>> getTicketsByStatus(MaintenanceStatus status) async {
-    final all = await getAllForEnterprise(enterpriseId);
-    return all.where((t) => t.status == status && !t.isDeleted).toList();
+    final query = driftService.db.select(driftService.db.maintenanceTicketsTable)
+      ..where((t) => t.enterpriseId.equals(enterpriseId))
+      ..where((t) => t.status.equals(status.name))
+      ..where((t) => t.deletedAt.isNull());
+    final rows = await query.get();
+    return rows.map<MaintenanceTicket>(_fromEntity).toList();
   }
 
   @override
@@ -145,7 +187,6 @@ class MaintenanceOfflineRepository extends OfflineRepository<MaintenanceTicket>
     try {
       final ticket = await getByLocalId(id);
       if (ticket != null) {
-        // Soft delete
         await save(ticket.copyWith(
           deletedAt: DateTime.now(),
           deletedBy: 'system',
@@ -154,47 +195,5 @@ class MaintenanceOfflineRepository extends OfflineRepository<MaintenanceTicket>
     } catch (error, stackTrace) {
       throw ErrorHandler.instance.handleError(error, stackTrace);
     }
-  }
-
-  @override
-  Future<List<MaintenanceTicket>> getAllForEnterprise(String enterpriseId) async {
-    final rows = await driftService.records.listForEnterprise(
-      collectionName: collectionName,
-      enterpriseId: enterpriseId,
-      moduleType: moduleType,
-    );
-    final tickets = rows
-        .map((r) => safeDecodeJson(r.dataJson, r.localId))
-        .where((m) => m != null)
-        .map((m) => fromMap(m!))
-        .toList();
-    
-    return deduplicateByRemoteId(tickets);
-  }
-
-  @override
-  Stream<List<MaintenanceTicket>> watchTicketsByProperty(String propertyId) {
-    return watchAllTickets().map((tickets) => 
-      tickets.where((t) => t.propertyId == propertyId).toList()
-    );
-  }
-
-  @override
-  Stream<List<MaintenanceTicket>> watchAllTickets() {
-     return driftService.records
-        .watchForEnterprise(
-          collectionName: collectionName,
-          enterpriseId: enterpriseId,
-          moduleType: moduleType,
-        )
-        .map((rows) {
-          final entities = rows
-              .map((r) => safeDecodeJson(r.dataJson, r.localId))
-              .where((m) => m != null)
-              .map((m) => fromMap(m!))
-              .where((e) => !e.isDeleted)
-              .toList();
-          return deduplicateByRemoteId(entities);
-        });
   }
 }

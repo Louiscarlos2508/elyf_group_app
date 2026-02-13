@@ -149,7 +149,6 @@ class PropertyDetailDialog extends ConsumerWidget {
                       error: (e, st) => Text('Erreur rentabilité: $e'),
                     ),
                     const SizedBox(height: 16),
-                    // Quick Actions
                     Row(
                       children: [
                         if (onAddContract != null &&
@@ -204,6 +203,46 @@ class PropertyDetailDialog extends ConsumerWidget {
                       ],
                     ),
                     const SizedBox(height: 24),
+                    // Active Lease Section
+                    if (property.status == PropertyStatus.rented)
+                      ref.watch(activeLeaseForPropertyProvider(property.id)).when(
+                        data: (contract) {
+                          if (contract == null) return const SizedBox.shrink();
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              PropertyDetailSection(
+                                title: 'Locataire Actuel',
+                                children: [
+                                  PropertyDetailRow(
+                                    label: 'Locataire',
+                                    value: contract.tenant?.fullName ?? 'Inconnu',
+                                    icon: Icons.person,
+                                    valueColor: theme.colorScheme.primary,
+                                  ),
+                                  PropertyDetailRow(
+                                    label: 'Fin de contrat',
+                                    value: contract.endDate != null 
+                                        ? _formatDate(contract.endDate) 
+                                        : 'Indéterminée',
+                                    icon: Icons.event_available,
+                                  ),
+                                  PropertyDetailRow(
+                                    label: 'Jour de paiement',
+                                    value: contract.paymentDay != null 
+                                        ? 'Le ${contract.paymentDay}' 
+                                        : 'Non spécifié',
+                                    icon: Icons.calendar_month,
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 24),
+                            ],
+                          );
+                        },
+                        loading: () => const LinearProgressIndicator(),
+                        error: (e, _) => Text('Erreur bail: $e'),
+                      ),
                     PropertyDetailSection(
                       title: 'Caractéristiques',
                       children: [

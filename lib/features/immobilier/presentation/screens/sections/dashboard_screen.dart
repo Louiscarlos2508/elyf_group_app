@@ -253,6 +253,7 @@ class _DashboardMonthKpis extends StatelessWidget {
                               monthProfit: metrics.netRevenue,
                               occupancyRate: metrics.occupancyRate,
                               collectionRate: metrics.collectionRate,
+                              unpaidRentsCount: metrics.unpaidRentsCount,
                               openTickets: metrics.totalOpenTickets,
                               highPriorityTickets: metrics.highPriorityTickets,
                               onRevenueTap: onRevenueTap,

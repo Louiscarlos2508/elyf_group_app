@@ -47,16 +47,8 @@ class MaintenanceScreen extends ConsumerWidget {
                         delegate: SliverChildBuilderDelegate(
                           (context, index) {
                             final ticket = tickets[index];
-                            final property = propertiesAsync.value?.firstWhere(
-                              (p) => p.id == ticket.propertyId,
-                              orElse: () => throw Exception('Property not found'), // Should handle gracefully
-                            );
-                            
-                            // Safe retrieval of property
-                            // We can't use orElse with a default Property easily here without a dummy one.
-                            // Better:
                             final prop = propertiesAsync.value?.where((p) => p.id == ticket.propertyId).firstOrNull;
-
+                            
                             return MaintenanceTicketCard(
                               ticket: ticket,
                               property: prop,

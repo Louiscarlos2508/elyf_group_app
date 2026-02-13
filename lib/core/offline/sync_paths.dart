@@ -68,6 +68,8 @@ final collectionPaths = <String, String Function(String?)>{
   'payments': (enterpriseId) => 'enterprises/${enterpriseId!}/payments',
   'property_expenses': (enterpriseId) =>
       'enterprises/${enterpriseId!}/propertyExpenses',
+  'maintenance_tickets': (enterpriseId) =>
+      'enterprises/${enterpriseId!}/maintenanceTickets',
 
   // Gaz module
   'gas_sales': (enterpriseId) => 'enterprises/${enterpriseId!}/gasSales',

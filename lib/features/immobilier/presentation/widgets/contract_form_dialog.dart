@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/domain/entities/attached_file.dart';
 import 'package:elyf_groupe_app/shared.dart';
+import '../../../../core/offline/offline.dart';
+import '../../../../core/errors/error_handler.dart';
 import 'package:elyf_groupe_app/features/immobilier/application/providers.dart';
 import '../../../../core/tenant/tenant_provider.dart';
 import '../../domain/entities/contract.dart';
@@ -159,7 +161,7 @@ class _ContractFormDialogState extends ConsumerState<ContractFormDialog>
         );
         final enterpriseId = ref.read(activeEnterpriseIdProvider).value ?? 'default';
         final contract = Contract(
-          id: widget.contract?.id ?? IdGenerator.generate(),
+          id: widget.contract?.id ?? LocalIdGenerator.generate(),
           enterpriseId: enterpriseId,
           propertyId: _selectedProperty!.id,
           tenantId: _selectedTenant!.id,
@@ -187,24 +189,29 @@ class _ContractFormDialogState extends ConsumerState<ContractFormDialog>
         );
 
         final controller = ref.read(contractControllerProvider);
-        if (widget.contract == null) {
-          await controller.createContract(contract);
-          // Invalider aussi les propriétés pour mettre à jour le statut
-          ref.invalidate(propertiesProvider);
-        } else {
-          await controller.updateContract(contract);
-          // Invalider aussi les propriétés pour mettre à jour le statut
-          ref.invalidate(propertiesProvider);
-        }
+        try {
+          if (widget.contract == null) {
+            await controller.createContract(contract);
+            // Invalider aussi les propriétés pour mettre à jour le statut
+            ref.invalidate(propertiesProvider);
+          } else {
+            await controller.updateContract(contract);
+            // Invalider aussi les propriétés pour mettre à jour le statut
+            ref.invalidate(propertiesProvider);
+          }
 
-        if (mounted) {
-          ref.invalidate(contractsProvider);
-          Navigator.of(context).pop();
-        }
+          if (mounted) {
+            ref.invalidate(contractsProvider);
+            Navigator.of(context).pop();
+          }
 
-        return widget.contract == null
-            ? 'Contrat créé avec succès'
-            : 'Contrat mis à jour avec succès';
+          return widget.contract == null
+              ? 'Contrat créé avec succès'
+              : 'Contrat mis à jour avec succès';
+        } catch (error, stackTrace) {
+           final appError = ErrorHandler.instance.handleError(error, stackTrace);
+           throw appError.message;
+        }
       },
     );
   }

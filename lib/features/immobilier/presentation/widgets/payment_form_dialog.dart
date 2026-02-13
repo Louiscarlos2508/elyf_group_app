@@ -37,6 +37,7 @@ class _PaymentFormDialogState extends ConsumerState<PaymentFormDialog>
   final _cashAmountController = TextEditingController(); 
   final _mobileMoneyAmountController = TextEditingController(); 
   bool _isSaving = false;
+  bool _printReceipt = true;
 
   @override
   void initState() {
@@ -157,19 +158,31 @@ class _PaymentFormDialogState extends ConsumerState<PaymentFormDialog>
         );
 
         final controller = ref.read(paymentControllerProvider);
+        Payment savedPayment;
         if (widget.payment == null) {
-          await controller.createPayment(payment);
+          savedPayment = await controller.createPayment(payment);
         } else {
-          await controller.updatePayment(payment);
+          savedPayment = await controller.updatePayment(payment);
+        }
+
+        if (_printReceipt && mounted) {
+          try {
+             await controller.printReceipt(savedPayment.id);
+          } catch (e) {
+            // On ne bloque pas le flux si l'impression échoue, mais on notifie
+            if (mounted) {
+               NotificationService.showWarning(context, 'Erreur lors de l\'impression du ticket: $e');
+            }
+          }
         }
 
         if (mounted) {
           ref.invalidate(paymentsWithRelationsProvider);
-          Navigator.of(context).pop(payment);
+          Navigator.of(context).pop(savedPayment);
 
           // Proposer de générer la facture uniquement pour les nouveaux paiements
           if (widget.payment == null) {
-            _showInvoiceDialog(payment);
+            _showInvoiceDialog(savedPayment);
           }
         }
 
@@ -374,6 +387,14 @@ class _PaymentFormDialogState extends ConsumerState<PaymentFormDialog>
             const SizedBox(height: 16),
             const SizedBox(height: 16),
             PaymentFormFields.notesField(controller: _notesController),
+            const SizedBox(height: 16),
+            SwitchListTile(
+              title: const Text('Imprimer le reçu'),
+              subtitle: const Text('Imprimer un ticket sur l\'imprimante thermique'),
+              value: _printReceipt,
+              onChanged: (value) => setState(() => _printReceipt = value),
+              contentPadding: EdgeInsets.zero,
+            ),
             const SizedBox(height: 24),
           ],
         ),

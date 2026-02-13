@@ -120,14 +120,16 @@ class TenantOfflineRepository extends OfflineRepository<Tenant>
   @override
   Stream<List<Tenant>> watchTenants() {
     final query = driftService.db.select(driftService.db.tenantsTable)
-      ..where((t) => t.enterpriseId.equals(enterpriseId) & t.deletedAt.isNull());
+      ..where((t) => t.enterpriseId.equals(enterpriseId))
+      ..where((t) => t.deletedAt.isNull());
     return query.watch().map((rows) => rows.map(_fromEntity).toList());
   }
 
   @override
   Stream<List<Tenant>> watchDeletedTenants() {
     final query = driftService.db.select(driftService.db.tenantsTable)
-      ..where((t) => t.enterpriseId.equals(enterpriseId) & t.deletedAt.isNotNull());
+      ..where((t) => t.enterpriseId.equals(enterpriseId))
+      ..where((t) => t.deletedAt.isNotNull());
     return query.watch().map((rows) => rows.map(_fromEntity).toList());
   }
 

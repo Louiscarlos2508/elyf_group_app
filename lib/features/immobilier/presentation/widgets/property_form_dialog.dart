@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/immobilier/application/providers.dart';
+import '../../../../core/offline/offline.dart';
+import '../../../../core/errors/error_handler.dart';
 import '../../../../core/tenant/tenant_provider.dart';
 import '../../domain/entities/property.dart';
 import '../../domain/services/property_validation_service.dart';
@@ -66,7 +68,7 @@ class _PropertyFormDialogState extends ConsumerState<PropertyFormDialog>
       onSubmit: () async {
         final enterpriseId = ref.read(activeEnterpriseIdProvider).value ?? 'default';
         final property = Property(
-          id: widget.property?.id ?? IdGenerator.generate(),
+          id: widget.property?.id ?? LocalIdGenerator.generate(),
           enterpriseId: enterpriseId,
           address: _addressController.text.trim(),
           city: _cityController.text.trim(),
@@ -83,19 +85,24 @@ class _PropertyFormDialogState extends ConsumerState<PropertyFormDialog>
         );
 
         final controller = ref.read(propertyControllerProvider);
-        if (widget.property == null) {
-          await controller.createProperty(property);
-        } else {
-          await controller.updateProperty(property);
-        }
+        try {
+          if (widget.property == null) {
+            await controller.createProperty(property);
+          } else {
+            await controller.updateProperty(property);
+          }
 
-        if (mounted) {
-          ref.invalidate(propertiesProvider);
-        }
+          if (mounted) {
+            ref.invalidate(propertiesProvider);
+          }
 
-        return widget.property == null
-            ? 'Propriété créée avec succès'
-            : 'Propriété mise à jour avec succès';
+          return widget.property == null
+              ? 'Propriété créée avec succès'
+              : 'Propriété mise à jour avec succès';
+        } catch (error, stackTrace) {
+           final appError = ErrorHandler.instance.handleError(error, stackTrace);
+           throw appError.message;
+        }
       },
     );
   }

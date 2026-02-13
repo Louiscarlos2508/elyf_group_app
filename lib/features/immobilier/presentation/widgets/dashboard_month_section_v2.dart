@@ -15,6 +15,7 @@ class DashboardMonthSectionV2 extends StatelessWidget {
     required this.monthProfit,
     required this.occupancyRate,
     required this.collectionRate,
+    this.unpaidRentsCount = 0,
     this.openTickets = 0,
     this.highPriorityTickets = 0,
     this.onRevenueTap,
@@ -30,6 +31,7 @@ class DashboardMonthSectionV2 extends StatelessWidget {
   final int monthProfit;
   final double occupancyRate;
   final double collectionRate;
+  final int unpaidRentsCount;
   final int openTickets;
   final int highPriorityTickets;
   final VoidCallback? onRevenueTap;
@@ -63,6 +65,15 @@ class DashboardMonthSectionV2 extends StatelessWidget {
             iconColor: theme.colorScheme.error,
             backgroundColor: theme.colorScheme.error,
             onTap: onExpensesTap,
+          ),
+          DashboardKpiCardV2(
+            label: 'Loyers Impayés',
+            value: '$unpaidRentsCount',
+            subtitle: 'Contrats en attente',
+            icon: Icons.money_off,
+            iconColor: unpaidRentsCount > 0 ? theme.colorScheme.error : const Color(0xFF10B981),
+            backgroundColor: unpaidRentsCount > 0 ? theme.colorScheme.error : const Color(0xFF10B981),
+            onTap: null, // Pas de filtrage spécifique pour l'instant
           ),
           DashboardKpiCardV2(
             label: 'Bénéfice Net',

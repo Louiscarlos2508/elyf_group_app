@@ -1,12 +1,21 @@
 import '../../../audit_trail/domain/services/audit_trail_service.dart';
 import '../../../../core/errors/app_exceptions.dart';
+import '../../domain/entities/contract.dart';
 import '../../domain/entities/payment.dart';
+import '../../domain/repositories/contract_repository.dart';
 import '../../domain/repositories/payment_repository.dart';
+import '../../domain/repositories/property_repository.dart';
+import '../../domain/repositories/tenant_repository.dart';
 import '../../domain/services/immobilier_validation_service.dart';
+import '../services/receipt_service.dart';
 
 class PaymentController {
   PaymentController(
     this._paymentRepository,
+    this._contractRepository,
+    this._tenantRepository,
+    this._propertyRepository,
+    this._receiptService,
     this._validationService,
     this._auditTrailService,
     this._enterpriseId,
@@ -14,6 +23,10 @@ class PaymentController {
   );
 
   final PaymentRepository _paymentRepository;
+  final ContractRepository _contractRepository;
+  final TenantRepository _tenantRepository;
+  final PropertyRepository _propertyRepository;
+  final ReceiptService _receiptService;
   final ImmobilierValidationService _validationService;
   final AuditTrailService _auditTrailService;
   final String _enterpriseId;
@@ -92,6 +105,53 @@ class PaymentController {
     await _logAction('restore', id);
   }
 
+  /// Imprime un reçu pour un paiement donné.
+  Future<bool> printReceipt(String paymentId) async {
+    final payment = await _paymentRepository.getPaymentById(paymentId);
+    if (payment == null) {
+      throw NotFoundException(
+        'Le paiement n\'existe pas',
+        'PAYMENT_NOT_FOUND',
+      );
+    }
+
+    final contract = await _contractRepository.getContractById(payment.contractId);
+    if (contract == null) {
+      throw NotFoundException(
+        'Le contrat lié au paiement n\'existe pas',
+        'CONTRACT_NOT_FOUND',
+      );
+    }
+
+    final tenant = await _tenantRepository.getTenantById(contract.tenantId);
+    if (tenant == null) {
+      throw NotFoundException(
+        'Le locataire lié au paiement n\'existe pas',
+        'TENANT_NOT_FOUND',
+      );
+    }
+
+    final property = await _propertyRepository.getPropertyById(contract.propertyId);
+    if (property == null) {
+      throw NotFoundException(
+        'La propriété liée au paiement n\'existe pas',
+        'PROPERTY_NOT_FOUND',
+      );
+    }
+
+    final success = await _receiptService.printReceipt(
+      payment: payment,
+      tenant: tenant,
+      property: property,
+    );
+    
+    if (success) {
+      await _logAction('print_receipt', paymentId);
+    }
+    
+    return success;
+  }
+  
   Future<void> _logAction(
     String action,
     String entityId, {
