@@ -68,14 +68,17 @@ class PropertyDetailDialog extends ConsumerWidget {
                   ),
                 if (onDelete != null)
                   IconButton(
-                    icon: const Icon(Icons.delete_outline),
+                    icon: Icon(property.deletedAt != null ? Icons.restore_from_trash : Icons.archive_outlined),
                     onPressed: () {
+                      final isArchived = property.deletedAt != null;
                       showDialog(
                         context: context,
                         builder: (context) => AlertDialog(
-                          title: const Text('Supprimer la propriété'),
-                          content: const Text(
-                            'Êtes-vous sûr de vouloir supprimer cette propriété ?',
+                          title: Text(isArchived ? 'Restaurer la propriété' : 'Archiver la propriété'),
+                          content: Text(
+                            isArchived 
+                                ? 'Voulez-vous restaurer cette propriété ?\nElle sera de nouveau visible dans la liste active.' 
+                                : 'Voulez-vous archiver cette propriété ?\nElle sera déplacée dans les archives.',
                           ),
                           actions: [
                             TextButton(
@@ -89,15 +92,15 @@ class PropertyDetailDialog extends ConsumerWidget {
                                 onDelete?.call();
                               },
                               style: FilledButton.styleFrom(
-                                backgroundColor: theme.colorScheme.error,
+                                backgroundColor: isArchived ? Colors.green : theme.colorScheme.error,
                               ),
-                              child: const Text('Supprimer'),
+                              child: Text(isArchived ? 'Restaurer' : 'Archiver'),
                             ),
                           ],
                         ),
                       );
                     },
-                    tooltip: 'Supprimer',
+                    tooltip: property.deletedAt != null ? 'Restaurer' : 'Archiver',
                   ),
                 IconButton(
                   icon: const Icon(Icons.close),

@@ -26,6 +26,9 @@ class _PrinterSettingsScreenState extends ConsumerState<PrinterSettingsScreen> {
   List<BluetoothDiscoveryResult> _devices = [];
   bool _isScanning = false;
   bool _isConnected = false;
+  
+  final _headerController = TextEditingController();
+  final _footerController = TextEditingController();
 
 
   @override
@@ -45,6 +48,13 @@ class _PrinterSettingsScreenState extends ConsumerState<PrinterSettingsScreen> {
      _checkConnection();
   }
 
+  @override
+  void dispose() {
+    _headerController.dispose();
+    _footerController.dispose();
+    super.dispose();
+  }
+
   Future<void> _checkConnection() async {
     final connected = await _thermalService.isAvailable();
     if (mounted) setState(() => _isConnected = connected);
@@ -54,6 +64,8 @@ class _PrinterSettingsScreenState extends ConsumerState<PrinterSettingsScreen> {
     final settingsService = ref.read(boutiqueSettingsServiceProvider);
     setState(() {
       _selectedType = settingsService.printerType;
+      _headerController.text = settingsService.receiptHeader;
+      _footerController.text = settingsService.receiptFooter;
       _isLoading = false;
     });
   }
@@ -63,6 +75,15 @@ class _PrinterSettingsScreenState extends ConsumerState<PrinterSettingsScreen> {
     await ref.read(boutiqueSettingsServiceProvider).setPrinterType(type);
     if (mounted) {
       NotificationService.showSuccess(context, 'Type d\'imprimante mis à jour');
+    }
+  }
+
+  Future<void> _saveReceiptConfig() async {
+    final settings = ref.read(boutiqueSettingsServiceProvider);
+    await settings.setReceiptHeader(_headerController.text);
+    await settings.setReceiptFooter(_footerController.text);
+    if (mounted) {
+      NotificationService.showSuccess(context, 'Configuration du reçu enregistrée');
     }
   }
 
@@ -222,6 +243,36 @@ class _PrinterSettingsScreenState extends ConsumerState<PrinterSettingsScreen> {
                     description: 'Utiliser le service d\'print Android standard (PDF).',
                     icon: Icons.print,
                     color: Colors.grey,
+                  ),
+
+                  const SizedBox(height: 32),
+                  const Divider(),
+                  const SizedBox(height: 24),
+                  const Text("Personnalisation du reçu :", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  const SizedBox(height: 16),
+
+                  TextField(
+                    controller: _headerController,
+                    decoration: const InputDecoration(
+                      labelText: 'En-tête du reçu',
+                      hintText: 'Ex: MA BOUTIQUE ELYF',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _footerController,
+                    decoration: const InputDecoration(
+                      labelText: 'Pied de page du reçu',
+                      hintText: 'Ex: Merci de votre visite !',
+                      border: OutlineInputBorder(),
+                    ),
+                    maxLines: 2,
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: _saveReceiptConfig,
+                    child: const Text('Enregistrer la personnalisation'),
                   ),
 
                   const SizedBox(height: 32),

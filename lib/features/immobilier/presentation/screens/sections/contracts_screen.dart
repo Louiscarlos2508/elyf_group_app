@@ -112,11 +112,16 @@ class _ContractsScreenState extends ConsumerState<ContractsScreen> {
   }
 
   Future<void> _deleteContract(Contract contract) async {
+    final isArchived = contract.deletedAt != null;
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Supprimer le contrat'),
-        content: const Text('Êtes-vous sûr de vouloir supprimer ce contrat ?'),
+        title: Text(isArchived ? 'Restaurer le contrat' : 'Archiver le contrat'),
+        content: Text(
+          isArchived 
+              ? 'Voulez-vous restaurer ce contrat ?\nIl sera de nouveau visible dans la liste active.' 
+              : 'Voulez-vous archiver ce contrat ?\nIl sera déplacé dans les archives.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -124,8 +129,10 @@ class _ContractsScreenState extends ConsumerState<ContractsScreen> {
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Supprimer'),
+            style: FilledButton.styleFrom(
+              backgroundColor: isArchived ? Colors.green : Colors.red,
+            ),
+            child: Text(isArchived ? 'Restaurer' : 'Archiver'),
           ),
         ],
       ),
@@ -134,13 +141,24 @@ class _ContractsScreenState extends ConsumerState<ContractsScreen> {
     if (confirm == true && mounted) {
       try {
         final controller = ref.read(contractControllerProvider);
-        await controller.deleteContract(contract.id);
-        ref.invalidate(contractsProvider);
-        if (mounted) {
-          NotificationService.showSuccess(
-            context,
-            'Contrat supprimé avec succès',
-          );
+        if (isArchived) {
+          await controller.restoreContract(contract.id); // Assuming restoreContract exists
+          if (mounted) {
+            ref.invalidate(contractsProvider);
+            NotificationService.showSuccess(
+              context,
+              'Contrat restauré avec succès',
+            );
+          }
+        } else {
+          await controller.deleteContract(contract.id);
+          if (mounted) {
+            ref.invalidate(contractsProvider);
+            NotificationService.showSuccess(
+              context,
+              'Contrat archivé avec succès',
+            );
+          }
         }
       } catch (e) {
         if (mounted) {
@@ -229,9 +247,17 @@ class _ContractsScreenState extends ConsumerState<ContractsScreen> {
                   SliverToBoxAdapter(
                     child: ContractFilters(
                       selectedStatus: _selectedStatus,
+                      selectedArchiveFilter: ref.watch(archiveFilterProvider),
                       onStatusChanged: (status) =>
                           setState(() => _selectedStatus = status),
-                      onClear: () => setState(() => _selectedStatus = null),
+                      onArchiveFilterChanged: (filter) =>
+                          ref.read(archiveFilterProvider.notifier).set(filter),
+                      onClear: () {
+                        setState(() => _selectedStatus = null);
+                        ref
+                            .read(archiveFilterProvider.notifier)
+                            .set(ArchiveFilter.active);
+                      },
                     ),
                   ),
 

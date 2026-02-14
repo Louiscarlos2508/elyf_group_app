@@ -10,6 +10,7 @@ class ImmobilierHeader extends StatelessWidget {
     this.additionalActions,
     this.bottom,
     this.asSliver = true,
+    this.showBackButton = false,
   });
 
   final String title;
@@ -19,6 +20,7 @@ class ImmobilierHeader extends StatelessWidget {
   final List<Widget>? additionalActions;
   final Widget? bottom;
   final bool asSliver;
+  final bool showBackButton;
 
   @override
   Widget build(BuildContext context) {
@@ -46,6 +48,13 @@ class ImmobilierHeader extends StatelessWidget {
         children: [
           Row(
             children: [
+              if (showBackButton) ...[
+                IconButton(
+                  icon: const Icon(Icons.arrow_back, color: Colors.white),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+                const SizedBox(width: 8),
+              ],
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

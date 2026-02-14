@@ -17,11 +17,8 @@ abstract class TenantRepository {
   /// Met à jour un locataire existant.
   Future<Tenant> updateTenant(Tenant tenant);
 
-  /// Observe les locataires.
-  Stream<List<Tenant>> watchTenants();
-
-  /// Observe les locataires supprimés.
-  Stream<List<Tenant>> watchDeletedTenants();
+  /// Observe les locataires (isDeleted: false = actifs, true = supprimés, null = tous).
+  Stream<List<Tenant>> watchTenants({bool? isDeleted = false});
 
   /// Supprime un locataire.
   Future<void> deleteTenant(String id);

@@ -125,8 +125,20 @@ class PaymentOfflineRepository extends OfflineRepository<Payment>
   }
 
   @override
-  Future<List<Payment>> getAllPayments() async {
-    return getAllForEnterprise(enterpriseId);
+  Future<List<Payment>> getAllPayments({bool? isDeleted = false}) async {
+    final query = driftService.db.select(driftService.db.immobilierPaymentsTable)
+      ..where((t) => t.enterpriseId.equals(enterpriseId));
+
+    if (isDeleted != null) {
+      if (isDeleted) {
+        query.where((t) => t.deletedAt.isNotNull());
+      } else {
+        query.where((t) => t.deletedAt.isNull());
+      }
+    }
+
+    final rows = await query.get();
+    return rows.map<Payment>(_fromEntity).toList();
   }
 
   @override
@@ -140,10 +152,18 @@ class PaymentOfflineRepository extends OfflineRepository<Payment>
   // PaymentRepository interface implementation
 
   @override
-  Stream<List<Payment>> watchPayments() {
+  Stream<List<Payment>> watchPayments({bool? isDeleted = false}) {
     final query = driftService.db.select(driftService.db.immobilierPaymentsTable)
-      ..where((t) => t.enterpriseId.equals(enterpriseId))
-      ..where((t) => t.deletedAt.isNull());
+      ..where((t) => t.enterpriseId.equals(enterpriseId));
+
+    if (isDeleted != null) {
+      if (isDeleted) {
+        query.where((t) => t.deletedAt.isNotNull());
+      } else {
+        query.where((t) => t.deletedAt.isNull());
+      }
+    }
+
     return query.watch().map((rows) => rows.map<Payment>(_fromEntity).toList());
   }
 

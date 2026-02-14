@@ -131,18 +131,18 @@ class ContractOfflineRepository extends OfflineRepository<Contract>
   // ContractRepository interface implementation
 
   @override
-  Stream<List<Contract>> watchContracts() {
-    final query = driftService.db.select(driftService.db.contractsTable)
-      ..where((t) => t.enterpriseId.equals(enterpriseId))
-      ..where((t) => t.deletedAt.isNull());
-    return query.watch().map((rows) => rows.map(_fromEntity).toList());
-  }
+  Stream<List<Contract>> watchContracts({bool? isDeleted = false}) {
+    var query = driftService.db.select(driftService.db.contractsTable)
+      ..where((t) => t.enterpriseId.equals(enterpriseId));
 
-  @override
-  Stream<List<Contract>> watchDeletedContracts() {
-    final query = driftService.db.select(driftService.db.contractsTable)
-      ..where((t) => t.enterpriseId.equals(enterpriseId))
-      ..where((t) => t.deletedAt.isNotNull());
+    if (isDeleted != null) {
+      if (isDeleted) {
+        query.where((t) => t.deletedAt.isNotNull());
+      } else {
+        query.where((t) => t.deletedAt.isNull());
+      }
+    }
+
     return query.watch().map((rows) => rows.map(_fromEntity).toList());
   }
 

@@ -97,24 +97,6 @@ class ImmobilierDashboardCalculationService {
     // On cherche tout paiement couvrant ce mois/année, peu importe quand il a été payé
     int unpaidCount = 0;
     for (final contract in activeContracts) {
-      final isPaidForMonth = payments.any((p) {
-        return p.contractId == contract.id &&
-            p.month == now.month &&
-            p.year == now.year &&
-            (p.status == PaymentStatus.paid || p.status == PaymentStatus.pending);
-            // On considère aussi 'pending' comme "en cours de traitement" donc pas "en retard/impayé" au sens strict ?
-            // Généralement "Impayé" = "Rien reçu". "Pending" = "Reçu mais pas validé".
-            // Si on veut être strict, seul 'paid' compte.
-            // Mais 'pending' (ex: chèque reçu) ne devrait peut-être pas alarmer comme "Impayé".
-            // Disons que pour "Loyers Impayés", on veut ce qui manque totalement ou est rejeté.
-            // Pour l'instant, gardons `paid`. Si 'pending', c'est pas encore 'paid'.
-      });
-      
-      // Correction: Si le statut est 'pending', c'est techniquement pas encore payé, donc ça reste dans les "à recevoir" ?
-      // Dans le dashboard, on a souvent "En attente" et "Impayé" (retard).
-      // Ici on a juste "Loyers Impayés".
-      // Si je viens de payer mais c'est 'pending', je ne veux pas voir rouge.
-      
       final hasValidPayment = payments.any((p) =>
           p.contractId == contract.id &&
           p.month == now.month &&

@@ -14,6 +14,8 @@ abstract class BaseReportPdfService {
     required DateTime startDate,
     required DateTime endDate,
     required List<pw.Widget> contentSections,
+    String? enterpriseName,
+    String? footerText,
     String? fileName,
   }) async {
     final pdf = pw.Document();
@@ -27,7 +29,7 @@ abstract class BaseReportPdfService {
         margin: const pw.EdgeInsets.all(40),
         build: (pw.Context context) {
           return [
-            _buildHeader(moduleName),
+            _buildHeader(moduleName, enterpriseName: enterpriseName),
             pw.SizedBox(height: 20),
             _buildTitle(reportTitle),
             pw.SizedBox(height: 10),
@@ -35,7 +37,7 @@ abstract class BaseReportPdfService {
             pw.SizedBox(height: 30),
             ...contentSections,
             pw.SizedBox(height: 30),
-            _buildFooter(),
+            _buildFooter(footerText: footerText),
           ];
         },
       ),
@@ -52,14 +54,14 @@ abstract class BaseReportPdfService {
     return file;
   }
 
-  pw.Widget _buildHeader(String moduleName) {
+  pw.Widget _buildHeader(String moduleName, {String? enterpriseName}) {
     return pw.Row(
       mainAxisAlignment: pw.MainAxisAlignment.center,
       children: [
         pw.Column(
           children: [
             pw.Text(
-              'ELYF GROUPE',
+              enterpriseName ?? 'ELYF GROUPE',
               style: pw.TextStyle(
                 fontSize: 20,
                 fontWeight: pw.FontWeight.bold,
@@ -106,7 +108,7 @@ abstract class BaseReportPdfService {
     );
   }
 
-  pw.Widget _buildFooter() {
+  pw.Widget _buildFooter({String? footerText}) {
     return pw.Container(
       padding: const pw.EdgeInsets.all(12),
       decoration: pw.BoxDecoration(
@@ -114,20 +116,32 @@ abstract class BaseReportPdfService {
           top: pw.BorderSide(color: PdfColors.grey300, width: 1),
         ),
       ),
-      child: pw.Row(
-        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+      child: pw.Column(
         children: [
-          pw.Text(
-            'Généré le ${DateFormat('dd/MM/yyyy à HH:mm').format(DateTime.now())}',
-            style: pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
-          ),
-          pw.Text(
-            'ELYF GROUPE',
-            style: pw.TextStyle(
-              fontSize: 10,
-              color: PdfColors.grey600,
-              fontStyle: pw.FontStyle.italic,
+          if (footerText != null) ...[
+            pw.Text(
+              footerText,
+              style: pw.TextStyle(fontSize: 10, color: PdfColors.grey700),
+              textAlign: pw.TextAlign.center,
             ),
+            pw.SizedBox(height: 8),
+          ],
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Text(
+                'Généré le ${DateFormat('dd/MM/yyyy à HH:mm').format(DateTime.now())}',
+                style: pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
+              ),
+              pw.Text(
+                'ELYF GROUPE',
+                style: pw.TextStyle(
+                  fontSize: 10,
+                  color: PdfColors.grey600,
+                  fontStyle: pw.FontStyle.italic,
+                ),
+              ),
+            ],
           ),
         ],
       ),

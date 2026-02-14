@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/entities/property.dart';
+import '../../application/providers/filter_providers.dart'; // Add import for ArchiveFilter
 
 /// Widget pour filtrer les propriétés.
 class PropertyFilters extends StatelessWidget {
@@ -8,15 +9,19 @@ class PropertyFilters extends StatelessWidget {
     super.key,
     this.selectedStatus,
     this.selectedType,
+    required this.selectedArchiveFilter, // Make required
     this.onStatusChanged,
     this.onTypeChanged,
+    this.onArchiveFilterChanged, // Add to constructor
     this.onClear,
   });
 
   final PropertyStatus? selectedStatus;
   final PropertyType? selectedType;
+  final ArchiveFilter selectedArchiveFilter;
   final ValueChanged<PropertyStatus?>? onStatusChanged;
   final ValueChanged<PropertyType?>? onTypeChanged;
+  final ValueChanged<ArchiveFilter>? onArchiveFilterChanged;
   final VoidCallback? onClear;
 
   String _getStatusLabel(PropertyStatus status) {
@@ -47,10 +52,21 @@ class PropertyFilters extends StatelessWidget {
     }
   }
 
+  String _getArchiveLabel(ArchiveFilter filter) {
+    switch (filter) {
+      case ArchiveFilter.active:
+        return 'Actifs';
+      case ArchiveFilter.archived:
+        return 'Archivés';
+      case ArchiveFilter.all:
+        return 'Tous';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final hasFilters = selectedStatus != null || selectedType != null;
+    final hasFilters = selectedStatus != null || selectedType != null || selectedArchiveFilter != ArchiveFilter.active;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -75,6 +91,15 @@ class PropertyFilters extends StatelessWidget {
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
+                   _FilterChip<ArchiveFilter>(
+                    label: 'Affichage',
+                    value: selectedArchiveFilter,
+                    options: ArchiveFilter.values,
+                    getLabel: _getArchiveLabel,
+                    onChanged: (v) => onArchiveFilterChanged?.call(v ?? ArchiveFilter.active),
+                    showCheckmark: false,
+                  ),
+                  const SizedBox(width: 8),
                   _FilterChip<PropertyStatus>(
                     label: 'Statut',
                     value: selectedStatus,
@@ -116,6 +141,7 @@ class _FilterChip<T> extends StatelessWidget {
     required this.options,
     required this.getLabel,
     required this.onChanged,
+    this.showCheckmark = true,
   });
 
   final String label;
@@ -123,6 +149,7 @@ class _FilterChip<T> extends StatelessWidget {
   final List<T> options;
   final String Function(T) getLabel;
   final ValueChanged<T?>? onChanged;
+  final bool showCheckmark;
 
   @override
   Widget build(BuildContext context) {
@@ -150,7 +177,7 @@ class _FilterChip<T> extends StatelessWidget {
                 : theme.colorScheme.onSurfaceVariant,
           ),
         ),
-        avatar: isSelected
+        avatar: (isSelected && showCheckmark)
             ? Icon(Icons.check, size: 16, color: theme.colorScheme.primary)
             : null,
         backgroundColor: isSelected

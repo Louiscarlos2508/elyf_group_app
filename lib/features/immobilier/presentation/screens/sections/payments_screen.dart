@@ -273,11 +273,15 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
       child: PaymentFilters(
         selectedStatus: selectedStatus,
         selectedMethod: _selectedMethod,
+        selectedArchiveFilter: ref.watch(archiveFilterProvider),
         onStatusChanged: (status) =>
             ref.read(paymentListFilterProvider.notifier).set(status),
         onMethodChanged: (method) => setState(() => _selectedMethod = method),
+        onArchiveFilterChanged: (filter) =>
+            ref.read(archiveFilterProvider.notifier).set(filter),
         onClear: () {
           ref.read(paymentListFilterProvider.notifier).set(null);
+          ref.read(archiveFilterProvider.notifier).set(ArchiveFilter.active);
           setState(() {
             _selectedMethod = null;
           });

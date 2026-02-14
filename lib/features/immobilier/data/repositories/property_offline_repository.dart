@@ -136,18 +136,18 @@ class PropertyOfflineRepository extends OfflineRepository<Property>
   // PropertyRepository interface implementation
 
   @override
-  Stream<List<Property>> watchProperties() {
-    final query = driftService.db.select(driftService.db.propertiesTable)
-      ..where((t) => t.enterpriseId.equals(enterpriseId))
-      ..where((t) => t.deletedAt.isNull());
-    return query.watch().map((rows) => rows.map(_fromEntity).toList());
-  }
+  Stream<List<Property>> watchProperties({bool? isDeleted = false}) {
+    var query = driftService.db.select(driftService.db.propertiesTable)
+      ..where((t) => t.enterpriseId.equals(enterpriseId));
 
-  @override
-  Stream<List<Property>> watchDeletedProperties() {
-    final query = driftService.db.select(driftService.db.propertiesTable)
-      ..where((t) => t.enterpriseId.equals(enterpriseId))
-      ..where((t) => t.deletedAt.isNotNull());
+    if (isDeleted != null) {
+      if (isDeleted) {
+        query.where((t) => t.deletedAt.isNotNull());
+      } else {
+        query.where((t) => t.deletedAt.isNull());
+      }
+    }
+
     return query.watch().map((rows) => rows.map(_fromEntity).toList());
   }
 

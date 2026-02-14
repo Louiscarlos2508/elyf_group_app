@@ -80,7 +80,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(QueryExecutor? connection) : super(connection ?? openDriftConnection());
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration {
@@ -120,6 +120,9 @@ class AppDatabase extends _$AppDatabase {
         }
         if (from < 8) {
           await migrator.createTable(maintenanceTicketsTable);
+        }
+        if (from < 9) {
+          await migrator.addColumn(propertyExpensesTable, propertyExpensesTable.paymentMethod as GeneratedColumn<String>);
         }
       },
     );

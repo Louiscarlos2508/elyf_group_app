@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../domain/entities/maintenance_ticket.dart';
 import '../../domain/entities/property.dart';
-import 'package:elyf_groupe_app/features/immobilier/presentation/widgets/property_detail_helpers.dart';
+
 
 class MaintenanceFormFields {
   MaintenanceFormFields._();
@@ -15,7 +15,8 @@ class MaintenanceFormFields {
     required String? Function(Property?) validator,
   }) {
     return DropdownButtonFormField<Property>(
-      value: selectedProperty,
+      key: ValueKey(selectedProperty),
+      initialValue: selectedProperty,
       decoration: const InputDecoration(
         labelText: 'Propriété *',
         prefixIcon: Icon(Icons.home),
@@ -55,7 +56,8 @@ class MaintenanceFormFields {
     required ValueChanged<MaintenancePriority?> onChanged,
   }) {
     return DropdownButtonFormField<MaintenancePriority>(
-      value: value,
+      key: ValueKey(value),
+      initialValue: value,
       decoration: const InputDecoration(
         labelText: 'Priorité',
         prefixIcon: Icon(Icons.flag),
@@ -85,7 +87,8 @@ class MaintenanceFormFields {
     required ValueChanged<MaintenanceStatus?> onChanged,
   }) {
     return DropdownButtonFormField<MaintenanceStatus>(
-      value: value,
+      key: ValueKey(value),
+      initialValue: value,
       decoration: const InputDecoration(
         labelText: 'Statut',
         prefixIcon: Icon(Icons.info_outline),

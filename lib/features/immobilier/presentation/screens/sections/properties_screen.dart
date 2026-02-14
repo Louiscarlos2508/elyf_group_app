@@ -52,13 +52,26 @@ class _PropertiesScreenState extends ConsumerState<PropertiesScreen> {
   Future<void> _deleteProperty(Property property) async {
     try {
       final controller = ref.read(propertyControllerProvider);
-      await controller.deleteProperty(property.id);
-      if (mounted) {
-        ref.invalidate(propertiesProvider);
-        NotificationService.showSuccess(
-          context,
-          'Propriété supprimée avec succès',
-        );
+      final isArchived = property.deletedAt != null;
+
+      if (isArchived) {
+        await controller.restoreProperty(property.id);
+        if (mounted) {
+          ref.invalidate(propertiesProvider);
+          NotificationService.showSuccess(
+            context,
+            'Propriété restaurée avec succès',
+          );
+        }
+      } else {
+        await controller.deleteProperty(property.id);
+        if (mounted) {
+          ref.invalidate(propertiesProvider);
+          NotificationService.showSuccess(
+            context,
+            'Propriété archivée avec succès',
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -266,14 +279,19 @@ class _PropertiesScreenState extends ConsumerState<PropertiesScreen> {
                     child: PropertyFilters(
                       selectedStatus: ref.watch(propertyListFilterProvider),
                       selectedType: _selectedType,
+                      selectedArchiveFilter: ref.watch(archiveFilterProvider),
                       onStatusChanged: (status) =>
                           ref.read(propertyListFilterProvider.notifier).set(
                               status),
                       onTypeChanged: (type) =>
                           setState(() => _selectedType = type),
+                      onArchiveFilterChanged: (filter) =>
+                          ref.read(archiveFilterProvider.notifier).set(filter),
                       onClear: () => setState(() {
                         ref.read(propertyListFilterProvider.notifier).set(
                             null);
+                        ref.read(archiveFilterProvider.notifier).set(
+                            ArchiveFilter.active);
                         _selectedType = null;
                       }),
                     ),

@@ -10,11 +10,46 @@ import '../../widgets/daily_expense_summary_card_v2.dart';
 import '../../widgets/expense_form_dialog.dart' as immobilier_widgets;
 import '../../widgets/expenses_table_v2.dart';
 import '../../widgets/monthly_expense_summary_v2.dart';
+import '../../widgets/expense_filters.dart';
 import '../../widgets/immobilier_header.dart';
+import '../../widgets/property_search_bar.dart'; // Import correct
 
 /// Expenses screen with professional UI - style Boutique/Eau Minérale.
-class ExpensesScreen extends ConsumerWidget {
+class ExpensesScreen extends ConsumerStatefulWidget {
   const ExpensesScreen({super.key});
+
+  @override
+  ConsumerState<ExpensesScreen> createState() => _ExpensesScreenState();
+}
+
+class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
+  final _searchController = TextEditingController();
+  ExpenseCategory? _selectedCategory;
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<PropertyExpense> _filterExpenses(List<PropertyExpense> expenses) {
+    var filtered = expenses;
+    
+    if (_searchController.text.isNotEmpty) {
+      final query = _searchController.text.toLowerCase();
+      filtered = filtered.where((e) => 
+        e.description.toLowerCase().contains(query) ||
+        (e.property?.toLowerCase().contains(query) ?? false)
+      ).toList();
+    }
+
+    if (_selectedCategory != null) {
+      filtered = filtered.where((e) => e.category == _selectedCategory).toList();
+    }
+
+    filtered.sort((a, b) => b.expenseDate.compareTo(a.expenseDate));
+    return filtered;
+  }
 
   List<PropertyExpense> _getTodayExpenses(
     List<PropertyExpense> expenses,
@@ -32,7 +67,7 @@ class ExpensesScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final expensesAsync = ref.watch(expensesProvider);
 
@@ -49,8 +84,11 @@ class ExpensesScreen extends ConsumerWidget {
       ),
       body: expensesAsync.when(
         data: (expenses) {
+          final filteredExpenses = _filterExpenses(expenses);
           final todayExpenses = _getTodayExpenses(expenses, ref);
           final todayTotal = _getTodayTotal(expenses, ref);
+          final archiveFilter = ref.watch(archiveFilterProvider);
+          final hasFilters = _selectedCategory != null || _searchController.text.isNotEmpty || archiveFilter != ArchiveFilter.active;
 
           return LayoutBuilder(
             builder: (context, constraints) {
@@ -93,74 +131,97 @@ class ExpensesScreen extends ConsumerWidget {
                     ],
                   ),
 
-                  // Daily summary card
+                  // Filters & Search
                   SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: DailyExpenseSummaryCardV2(
-                        total: todayTotal,
-                        formatCurrency: CurrencyFormatter.formatFCFA,
-                      ),
+                    child: PropertySearchBar(
+                      controller: _searchController,
+                      onChanged: (_) => setState(() {}),
+                      onClear: () => setState(() {}),
+                    ),
+                  ),
+                  SliverToBoxAdapter(
+                    child: ExpenseFilters(
+                      selectedCategory: _selectedCategory,
+                      selectedArchiveFilter: archiveFilter,
+                      onCategoryChanged: (cat) => setState(() => _selectedCategory = cat),
+                      onArchiveFilterChanged: (filter) => ref.read(archiveFilterProvider.notifier).set(filter),
+                      onClear: () {
+                        setState(() {
+                          _selectedCategory = null;
+                          _searchController.clear();
+                        });
+                        ref.read(archiveFilterProvider.notifier).set(ArchiveFilter.active);
+                      },
                     ),
                   ),
 
-                  // Today's expenses table
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: EdgeInsets.fromLTRB(
-                        AppSpacing.lg,
-                        AppSpacing.lg,
-                        AppSpacing.lg,
-                        AppSpacing.md,
+                  if (!hasFilters) ...[
+                    // Daily summary card
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                        child: DailyExpenseSummaryCardV2(
+                          total: todayTotal,
+                          formatCurrency: CurrencyFormatter.formatFCFA,
+                        ),
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Dépenses du Jour',
-                            style: theme.textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          Container(
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.surface,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: theme.colorScheme.outline.withValues(
-                                  alpha: 0.2,
-                                ),
+                    ),
+
+                    // Today's expenses table
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: EdgeInsets.fromLTRB(
+                          AppSpacing.lg,
+                          AppSpacing.md,
+                          AppSpacing.lg,
+                          AppSpacing.md,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Dépenses du Jour',
+                              style: theme.textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
-                            padding: EdgeInsets.all(AppSpacing.lg),
-                            child: ExpensesTableV2(
-                              expenses: todayExpenses,
-                              formatCurrency: CurrencyFormatter.formatFCFA,
-                              onActionTap: (expense, action) {
-                                if (action == 'delete') {
-                                  _confirmDelete(context, ref, expense);
-                                } else if (action == 'view') {
-                                  _showExpenseDetail(context, expense);
-                                }
-                              },
-                            ),
-                          ),
-                        ],
+                            const SizedBox(height: 16),
+                            _buildExpensesTable(theme, todayExpenses),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
 
-                  // Monthly summary
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: MonthlyExpenseSummaryV2(expenses: expenses),
+                    // Monthly summary
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: MonthlyExpenseSummaryV2(expenses: expenses),
+                      ),
                     ),
-                  ),
+                  ] else ...[
+                    // Filtered results
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, AppSpacing.sm),
+                        child: Text(
+                          'Résultats du filtrage (${filteredExpenses.length})',
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                        child: _buildExpensesTable(theme, filteredExpenses),
+                      ),
+                    ),
+                  ],
 
                   SliverToBoxAdapter(
-                    child: SizedBox(height: AppSpacing.lg),
+                    child: SizedBox(height: AppSpacing.xl),
                   ),
                 ],
               );
@@ -269,12 +330,15 @@ class ExpensesScreen extends ConsumerWidget {
     WidgetRef ref,
     PropertyExpense expense,
   ) {
+    final isDeleted = expense.deletedAt != null;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Supprimer la dépense ?'),
+        title: Text(isDeleted ? 'Restaurer la dépense ?' : 'Supprimer la dépense ?'),
         content: Text(
-          'Voulez-vous vraiment supprimer "${expense.description}" ?',
+          isDeleted 
+            ? 'Voulez-vous restaurer "${expense.description}" ?'
+            : 'Voulez-vous vraiment supprimer "${expense.description}" ?',
         ),
         actions: [
           TextButton(
@@ -283,19 +347,48 @@ class ExpensesScreen extends ConsumerWidget {
           ),
           FilledButton(
             onPressed: () async {
-              await ref
-                  .read(expenseControllerProvider)
-                  .deleteExpense(expense.id);
+              final controller = ref.read(expenseControllerProvider);
+              if (expense.deletedAt == null) {
+                await controller.deleteExpense(expense.id);
+              } else {
+                await controller.restoreExpense(expense.id);
+              }
               ref.invalidate(expensesProvider);
               if (context.mounted) {
                 Navigator.of(context).pop();
-                NotificationService.showSuccess(context, 'Dépense supprimée');
+                NotificationService.showSuccess(context, 'Dépense mise à jour');
               }
             },
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Supprimer'),
+            child: Text(isDeleted ? 'Restaurer' : 'Supprimer'),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildExpensesTable(ThemeData theme, List<PropertyExpense> expenses) {
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: theme.colorScheme.outline.withValues(
+            alpha: 0.2,
+          ),
+        ),
+      ),
+      padding: EdgeInsets.all(AppSpacing.lg),
+      child: ExpensesTableV2(
+        expenses: expenses,
+        formatCurrency: CurrencyFormatter.formatFCFA,
+        onActionTap: (expense, action) {
+          if (action == 'delete') {
+            _confirmDelete(context, ref, expense);
+          } else if (action == 'view') {
+            _showExpenseDetail(context, expense);
+          }
+        },
       ),
     );
   }

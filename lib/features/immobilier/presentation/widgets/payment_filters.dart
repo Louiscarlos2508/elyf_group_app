@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../shared/domain/entities/payment_method.dart';
 import '../../domain/entities/payment.dart';
+import '../../application/providers/filter_providers.dart';
 
 /// Widget pour les filtres de paiement.
 class PaymentFilters extends StatelessWidget {
@@ -9,15 +10,19 @@ class PaymentFilters extends StatelessWidget {
     super.key,
     required this.selectedStatus,
     required this.selectedMethod,
+    required this.selectedArchiveFilter,
     required this.onStatusChanged,
     required this.onMethodChanged,
+    required this.onArchiveFilterChanged,
     required this.onClear,
   });
 
   final PaymentStatus? selectedStatus;
   final PaymentMethod? selectedMethod;
+  final ArchiveFilter selectedArchiveFilter;
   final ValueChanged<PaymentStatus?> onStatusChanged;
   final ValueChanged<PaymentMethod?> onMethodChanged;
+  final ValueChanged<ArchiveFilter> onArchiveFilterChanged;
   final VoidCallback onClear;
 
   String _getStatusLabel(PaymentStatus status) {
@@ -30,6 +35,17 @@ class PaymentFilters extends StatelessWidget {
         return 'En retard';
       case PaymentStatus.cancelled:
         return 'Annulé';
+    }
+  }
+
+  String _getArchiveLabel(ArchiveFilter filter) {
+    switch (filter) {
+      case ArchiveFilter.active:
+        return 'Actifs';
+      case ArchiveFilter.archived:
+        return 'Archivés';
+      case ArchiveFilter.all:
+        return 'Tous';
     }
   }
 
@@ -66,6 +82,15 @@ class PaymentFilters extends StatelessWidget {
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
+                   _FilterChip<ArchiveFilter>(
+                    label: 'Affichage',
+                    value: selectedArchiveFilter,
+                    options: ArchiveFilter.values,
+                    getLabel: _getArchiveLabel,
+                    onChanged: (v) => onArchiveFilterChanged(v ?? ArchiveFilter.active),
+                    showCheckmark: false,
+                  ),
+                  const SizedBox(width: 8),
                   PopupMenuButton<PaymentStatus?>(
                     initialValue: selectedStatus,
                     onSelected: onStatusChanged,
@@ -165,6 +190,63 @@ class PaymentFilters extends StatelessWidget {
               ),
             ),
         ],
+      ),
+    );
+  }
+}
+
+class _FilterChip<T> extends StatelessWidget {
+  const _FilterChip({
+    required this.label,
+    required this.value,
+    required this.options,
+    required this.getLabel,
+    required this.onChanged,
+    this.showCheckmark = true,
+  });
+
+  final String label;
+  final T value;
+  final List<T> options;
+  final String Function(T) getLabel;
+  final ValueChanged<T?> onChanged;
+  final bool showCheckmark;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isSelected = true; // For ArchiveFilter it's always one of the values
+
+    return PopupMenuButton<T?>(
+      initialValue: value,
+      onSelected: onChanged,
+      itemBuilder: (context) => options
+          .map((option) => PopupMenuItem<T?>(
+                value: option,
+                child: Text(getLabel(option)),
+              ))
+          .toList(),
+      child: Chip(
+        label: Text(
+          getLabel(value),
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: theme.colorScheme.primary,
+          ),
+        ),
+        avatar: isSelected && showCheckmark
+            ? Icon(
+                Icons.check,
+                size: 16,
+                color: theme.colorScheme.primary,
+              )
+            : null,
+        backgroundColor: theme.colorScheme.primaryContainer,
+        side: BorderSide.none,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
       ),
     );
   }

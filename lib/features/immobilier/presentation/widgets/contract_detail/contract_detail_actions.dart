@@ -37,10 +37,10 @@ class ContractDetailActions extends ConsumerWidget {
                     Navigator.of(context).pop();
                     onDelete!();
                   },
-                  icon: const Icon(Icons.delete_outline),
-                  label: const Text('Supprimer'),
+                  icon: Icon(contract.deletedAt != null ? Icons.restore_from_trash : Icons.archive_outlined),
+                  label: Text(contract.deletedAt != null ? 'Restaurer' : 'Archiver'),
                   style: TextButton.styleFrom(
-                    foregroundColor: Theme.of(context).colorScheme.error,
+                    foregroundColor: contract.deletedAt != null ? Colors.green : Theme.of(context).colorScheme.error,
                   ),
                 ),
               const Spacer(),

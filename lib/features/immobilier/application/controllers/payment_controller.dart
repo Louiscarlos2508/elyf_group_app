@@ -1,12 +1,12 @@
 import '../../../audit_trail/domain/services/audit_trail_service.dart';
 import '../../../../core/errors/app_exceptions.dart';
-import '../../domain/entities/contract.dart';
-import '../../domain/entities/payment.dart';
 import '../../domain/repositories/contract_repository.dart';
 import '../../domain/repositories/payment_repository.dart';
+import '../../domain/entities/payment.dart';
 import '../../domain/repositories/property_repository.dart';
 import '../../domain/repositories/tenant_repository.dart';
 import '../../domain/services/immobilier_validation_service.dart';
+import 'immobilier_treasury_controller.dart';
 import '../services/receipt_service.dart';
 
 class PaymentController {
@@ -18,6 +18,7 @@ class PaymentController {
     this._receiptService,
     this._validationService,
     this._auditTrailService,
+    this._treasuryController,
     this._enterpriseId,
     this._userId,
   );
@@ -29,15 +30,16 @@ class PaymentController {
   final ReceiptService _receiptService;
   final ImmobilierValidationService _validationService;
   final AuditTrailService _auditTrailService;
+  final ImmobilierTreasuryController _treasuryController;
   final String _enterpriseId;
   final String _userId;
 
-  Future<List<Payment>> fetchPayments() async {
-    return await _paymentRepository.getAllPayments();
+  Future<List<Payment>> fetchPayments({bool? isDeleted = false}) async {
+    return await _paymentRepository.getAllPayments(isDeleted: isDeleted);
   }
 
-  Stream<List<Payment>> watchPayments() {
-    return _paymentRepository.watchPayments();
+  Stream<List<Payment>> watchPayments({bool? isDeleted = false}) {
+    return _paymentRepository.watchPayments(isDeleted: isDeleted);
   }
 
   Stream<List<Payment>> watchDeletedPayments() {
@@ -74,6 +76,18 @@ class PaymentController {
 
     final created = await _paymentRepository.createPayment(payment);
     await _logAction('create', created.id, metadata: created.toMap());
+
+    // Record Treasury Operation
+    if (created.status == PaymentStatus.paid) {
+      await _treasuryController.recordIncome(
+        amount: created.amount,
+        method: created.paymentMethod,
+        reason: 'Loyer ${created.month ?? ""}/${created.year ?? ""}',
+        referenceEntityId: created.id,
+        notes: 'Paiement Loyer',
+      );
+    }
+
     return created;
   }
 

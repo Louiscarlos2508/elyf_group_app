@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/boutique/application/providers.dart';
+import '../../../../core/printing/printer_provider.dart';
 
 class BoutiqueShellScreen extends BaseModuleShellScreen {
   const BoutiqueShellScreen({
@@ -44,7 +45,20 @@ class _BoutiqueShellScreenState
 
   @override
   List<NavigationSection> buildSections() {
-    // Cette méthode n'est plus utilisée car on utilise getSectionsAsync()
+    // Cette méthode doit être implémentée mais n'est pas utilisée
+    // car getSectionsAsync retourne une valeur non-nulle.
     return [];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ProviderScope(
+      overrides: [
+        printerConfigProvider.overrideWith(
+          (ref) => ref.watch(boutiquePrinterConfigProvider),
+        ),
+      ],
+      child: super.build(context),
+    );
   }
 }

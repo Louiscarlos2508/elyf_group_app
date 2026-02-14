@@ -6,6 +6,7 @@ import 'package:elyf_groupe_app/core/pdf/immobilier_report_pdf_service.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import '../../widgets/immobilier_header.dart';
 import 'package:elyf_groupe_app/features/immobilier/application/providers.dart';
+import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 import '../../../domain/entities/report_period.dart';
 import '../../widgets/expenses_report_content.dart';
 import '../../widgets/payments_report_content.dart';
@@ -66,6 +67,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       final contracts = await ref.read(contractsProvider.future);
       final payments = await ref.read(paymentsWithRelationsProvider.future);
       final expenses = await ref.read(expensesProvider.future);
+      final settings = ref.read(immobilierSettingsServiceProvider);
+      final activeEnterprise = ref.read(activeEnterpriseProvider).value;
 
       final periodPayments = payments.where((p) {
         return p.paymentDate.isAfter(
@@ -92,6 +95,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         expenses: expenses,
         periodPayments: periodPayments,
         periodExpenses: periodExpenses,
+        enterpriseName: activeEnterprise?.name ?? settings.receiptHeader,
+        footerText: settings.receiptFooter,
       );
 
       if (mounted) {

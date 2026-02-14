@@ -118,19 +118,35 @@ class MaintenanceOfflineRepository extends OfflineRepository<MaintenanceTicket>
   }
 
   @override
-  Stream<List<MaintenanceTicket>> watchAllTickets() {
-    final query = driftService.db.select(driftService.db.maintenanceTicketsTable)
-      ..where((t) => t.enterpriseId.equals(enterpriseId))
-      ..where((t) => t.deletedAt.isNull());
+  Stream<List<MaintenanceTicket>> watchAllTickets({bool? isDeleted = false}) {
+    var query = driftService.db.select(driftService.db.maintenanceTicketsTable)
+      ..where((t) => t.enterpriseId.equals(enterpriseId));
+
+    if (isDeleted != null) {
+      if (isDeleted) {
+        query.where((t) => t.deletedAt.isNotNull());
+      } else {
+        query.where((t) => t.deletedAt.isNull());
+      }
+    }
+    
     return query.watch().map((rows) => rows.map<MaintenanceTicket>(_fromEntity).toList());
   }
 
   @override
-  Stream<List<MaintenanceTicket>> watchTicketsByProperty(String propertyId) {
-    final query = driftService.db.select(driftService.db.maintenanceTicketsTable)
+  Stream<List<MaintenanceTicket>> watchTicketsByProperty(String propertyId, {bool? isDeleted = false}) {
+    var query = driftService.db.select(driftService.db.maintenanceTicketsTable)
       ..where((t) => t.enterpriseId.equals(enterpriseId))
-      ..where((t) => t.propertyId.equals(propertyId))
-      ..where((t) => t.deletedAt.isNull());
+      ..where((t) => t.propertyId.equals(propertyId));
+
+    if (isDeleted != null) {
+      if (isDeleted) {
+        query.where((t) => t.deletedAt.isNotNull());
+      } else {
+        query.where((t) => t.deletedAt.isNull());
+      }
+    }
+    
     return query.watch().map((rows) => rows.map<MaintenanceTicket>(_fromEntity).toList());
   }
 
@@ -191,6 +207,33 @@ class MaintenanceOfflineRepository extends OfflineRepository<MaintenanceTicket>
           deletedAt: DateTime.now(),
           deletedBy: 'system',
         ));
+      }
+    } catch (error, stackTrace) {
+      throw ErrorHandler.instance.handleError(error, stackTrace);
+    }
+  }
+
+  @override
+  Future<void> restoreTicket(String id) async {
+    try {
+      final ticket = await getByLocalId(id);
+      if (ticket != null) {
+        final restoredTicket = MaintenanceTicket(
+          id: ticket.id,
+          enterpriseId: ticket.enterpriseId,
+          propertyId: ticket.propertyId,
+          tenantId: ticket.tenantId,
+          description: ticket.description,
+          priority: ticket.priority,
+          status: ticket.status,
+          photos: ticket.photos,
+          cost: ticket.cost,
+          createdAt: ticket.createdAt,
+          updatedAt: DateTime.now(),
+          deletedAt: null,
+          deletedBy: null,
+        );
+        await save(restoredTicket);
       }
     } catch (error, stackTrace) {
       throw ErrorHandler.instance.handleError(error, stackTrace);

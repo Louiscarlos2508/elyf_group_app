@@ -23,12 +23,12 @@ class TenantController {
     return await _tenantRepository.getAllTenants();
   }
 
-  Stream<List<Tenant>> watchTenants() {
-    return _tenantRepository.watchTenants();
+  Stream<List<Tenant>> watchTenants({bool? isDeleted = false}) {
+    return _tenantRepository.watchTenants(isDeleted: isDeleted);
   }
 
   Stream<List<Tenant>> watchDeletedTenants() {
-    return _tenantRepository.watchDeletedTenants();
+    return _tenantRepository.watchTenants(isDeleted: true);
   }
 
   Future<Tenant?> getTenant(String id) async {

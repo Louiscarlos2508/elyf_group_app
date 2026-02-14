@@ -1,3 +1,5 @@
+import '../../../../shared/domain/entities/payment_method.dart';
+
 /// Entité représentant une dépense liée à une propriété.
 class PropertyExpense {
   PropertyExpense({
@@ -8,6 +10,7 @@ class PropertyExpense {
     required this.expenseDate,
     required this.category,
     required this.description,
+    this.paymentMethod = PaymentMethod.cash,
     this.property,
     this.receipt,
     this.createdAt,
@@ -23,6 +26,7 @@ class PropertyExpense {
   final DateTime expenseDate;
   final ExpenseCategory category;
   final String description;
+  final PaymentMethod paymentMethod;
   final String? property;
   final String? receipt; // URL ou chemin vers le reçu
   final DateTime? createdAt;
@@ -40,6 +44,7 @@ class PropertyExpense {
     DateTime? expenseDate,
     ExpenseCategory? category,
     String? description,
+    PaymentMethod? paymentMethod,
     String? property,
     String? receipt,
     DateTime? createdAt,
@@ -55,6 +60,7 @@ class PropertyExpense {
       expenseDate: expenseDate ?? this.expenseDate,
       category: category ?? this.category,
       description: description ?? this.description,
+      paymentMethod: paymentMethod ?? this.paymentMethod,
       property: property ?? this.property,
       receipt: receipt ?? this.receipt,
       createdAt: createdAt ?? this.createdAt,
@@ -74,6 +80,7 @@ class PropertyExpense {
       'expenseDate': expenseDate.toIso8601String(),
       'category': category.name,
       'description': description,
+      'paymentMethod': paymentMethod.name,
       'property': property,
       'receipt': receipt,
       'createdAt': createdAt?.toIso8601String(),
@@ -95,6 +102,10 @@ class PropertyExpense {
         orElse: () => ExpenseCategory.other,
       ),
       description: map['description'] as String,
+      paymentMethod: PaymentMethod.values.firstWhere(
+        (e) => e.name == map['paymentMethod'],
+        orElse: () => PaymentMethod.cash,
+      ),
       property: map['property'] as String?,
       receipt: map['receipt'] as String?,
       createdAt: map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : null,

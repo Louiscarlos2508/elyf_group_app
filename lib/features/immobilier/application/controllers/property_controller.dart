@@ -23,12 +23,12 @@ class PropertyController {
     return await _propertyRepository.getAllProperties();
   }
 
-  Stream<List<Property>> watchProperties() {
-    return _propertyRepository.watchProperties();
+  Stream<List<Property>> watchProperties({bool? isDeleted = false}) {
+    return _propertyRepository.watchProperties(isDeleted: isDeleted);
   }
 
   Stream<List<Property>> watchDeletedProperties() {
-    return _propertyRepository.watchDeletedProperties();
+    return _propertyRepository.watchProperties(isDeleted: true);
   }
 
   Future<Property?> getProperty(String id) async {

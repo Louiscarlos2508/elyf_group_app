@@ -3,6 +3,7 @@ import 'package:drift/drift.dart';
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/offline/drift/app_database.dart';
 import '../../../../core/offline/offline_repository.dart';
+import '../../../../shared/domain/entities/payment_method.dart';
 import '../../domain/entities/expense.dart';
 import '../../domain/repositories/expense_repository.dart';
 
@@ -55,6 +56,7 @@ class PropertyExpenseOfflineRepository extends OfflineRepository<PropertyExpense
       expenseDate: Value(entity.expenseDate),
       category: Value(entity.category.name),
       description: Value(entity.description),
+      paymentMethod: Value(entity.paymentMethod.name),
       receipt: Value(entity.receipt),
       createdAt: Value(entity.createdAt ?? DateTime.now()),
       updatedAt: Value(DateTime.now()),
@@ -95,6 +97,10 @@ class PropertyExpenseOfflineRepository extends OfflineRepository<PropertyExpense
         orElse: () => ExpenseCategory.other,
       ),
       description: entity.description,
+      paymentMethod: PaymentMethod.values.firstWhere(
+        (e) => e.name == entity.paymentMethod,
+        orElse: () => PaymentMethod.cash,
+      ),
       receipt: entity.receipt,
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
@@ -104,8 +110,20 @@ class PropertyExpenseOfflineRepository extends OfflineRepository<PropertyExpense
   }
 
   @override
-  Future<List<PropertyExpense>> getAllExpenses() async {
-    return getAllForEnterprise(enterpriseId);
+  Future<List<PropertyExpense>> getAllExpenses({bool? isDeleted = false}) async {
+    final query = driftService.db.select(driftService.db.propertyExpensesTable)
+      ..where((t) => t.enterpriseId.equals(enterpriseId));
+
+    if (isDeleted != null) {
+      if (isDeleted) {
+        query.where((t) => t.deletedAt.isNotNull());
+      } else {
+        query.where((t) => t.deletedAt.isNull());
+      }
+    }
+
+    final rows = await query.get();
+    return rows.map(_fromEntity).toList();
   }
 
   @override
@@ -119,10 +137,18 @@ class PropertyExpenseOfflineRepository extends OfflineRepository<PropertyExpense
   // PropertyExpenseRepository interface implementation
 
   @override
-  Stream<List<PropertyExpense>> watchExpenses() {
+  Stream<List<PropertyExpense>> watchExpenses({bool? isDeleted = false}) {
     final query = driftService.db.select(driftService.db.propertyExpensesTable)
-      ..where((t) => t.enterpriseId.equals(enterpriseId))
-      ..where((t) => t.deletedAt.isNull());
+      ..where((t) => t.enterpriseId.equals(enterpriseId));
+
+    if (isDeleted != null) {
+      if (isDeleted) {
+        query.where((t) => t.deletedAt.isNotNull());
+      } else {
+        query.where((t) => t.deletedAt.isNull());
+      }
+    }
+
     return query.watch().map((rows) => rows.map(_fromEntity).toList());
   }
 

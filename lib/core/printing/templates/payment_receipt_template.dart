@@ -12,6 +12,9 @@ class PaymentReceiptTemplate {
     required String propertyAddress,
     String? period,
     String? notes,
+    String? header,
+    String? footer,
+    bool showLogo = true,
   }) {
     final width = 30; // Largeur pour imprimante 58mm
     final lines = <String>[];
@@ -26,9 +29,14 @@ class PaymentReceiptTemplate {
     // Fonction pour créer une ligne de séparation
     String separator(String char) => char * 26;
 
+    // Logo
+    if (showLogo) {
+      lines.add(centerText(' [ E L Y F ] '));
+      lines.add('');
+    }
+
     // En-tête simplifié
-    lines.add('');
-    lines.add(centerText('ELYF GROUPE'));
+    lines.add(centerText(header ?? 'ELYF GROUPE'));
     lines.add('');
     lines.add(centerText(separator('-')));
     lines.add('');
@@ -93,8 +101,15 @@ class PaymentReceiptTemplate {
     lines.add('');
 
     // Pied de page
-    lines.add(centerText('Merci de votre'));
-    lines.add(centerText('confiance !'));
+    if (footer != null && footer.isNotEmpty) {
+      final footerLines = footer.split('\n');
+      for (final fl in footerLines) {
+        lines.add(centerText(fl));
+      }
+    } else {
+      lines.add(centerText('Merci de votre'));
+      lines.add(centerText('confiance !'));
+    }
     lines.add('');
 
     // Ajouter des lignes vides à la fin pour la découpe

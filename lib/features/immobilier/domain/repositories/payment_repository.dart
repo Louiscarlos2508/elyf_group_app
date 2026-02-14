@@ -3,7 +3,7 @@ import '../entities/payment.dart';
 /// Repository abstrait pour la gestion des paiements.
 abstract class PaymentRepository {
   /// Récupère tous les paiements.
-  Future<List<Payment>> getAllPayments();
+  Future<List<Payment>> getAllPayments({bool? isDeleted = false});
 
   /// Récupère un paiement par son ID.
   Future<Payment?> getPaymentById(String id);
@@ -21,7 +21,7 @@ abstract class PaymentRepository {
   Future<Payment> updatePayment(Payment payment);
 
   /// Observe les paiements.
-  Stream<List<Payment>> watchPayments();
+  Stream<List<Payment>> watchPayments({bool? isDeleted = false});
 
   /// Observe les paiements supprimés.
   Stream<List<Payment>> watchDeletedPayments();

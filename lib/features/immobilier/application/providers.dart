@@ -1,15 +1,13 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:collection/collection.dart';
 
-export 'providers/permission_providers.dart';
-export 'providers/section_providers.dart';
-export 'providers/filter_providers.dart';
-
+import 'providers/filter_providers.dart'; 
 import '../../audit_trail/application/providers.dart';
 import 'providers/permission_providers.dart' show currentUserIdProvider;
 import '../../../../core/offline/drift_service.dart';
-import '../../../../core/offline/providers.dart';
+import '../../../../core/offline/providers.dart' as core_providers;
 import '../../../../core/tenant/tenant_provider.dart';
 import '../data/repositories/contract_offline_repository.dart';
 import '../data/repositories/property_expense_offline_repository.dart';
@@ -46,6 +44,57 @@ import '../data/repositories/maintenance_offline_repository.dart';
 import '../domain/entities/maintenance_ticket.dart';
 import '../domain/repositories/maintenance_repository.dart';
 import 'controllers/maintenance_controller.dart';
+import '../domain/entities/treasury_operation.dart';
+import '../domain/repositories/treasury_repository.dart';
+import '../data/repositories/treasury_offline_repository.dart';
+import 'controllers/immobilier_treasury_controller.dart';
+import '../domain/entities/immobilier_settings.dart';
+import '../domain/repositories/immobilier_settings_repository.dart';
+import '../data/repositories/immobilier_settings_offline_repository.dart';
+import '../domain/services/immobilier_settings_service.dart' hide sharedPreferencesProvider;
+import '../../../../core/printing/printer_provider.dart';
+
+export 'providers/permission_providers.dart';
+export 'providers/section_providers.dart';
+export 'providers/filter_providers.dart';
+
+// --- Settings & Hardware ---
+
+final immobilierSettingsRepositoryProvider = Provider<ImmobilierSettingsRepository>((ref) {
+  final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+  final driftService = DriftService.instance;
+  final syncManager = ref.watch(core_providers.syncManagerProvider);
+  final connectivityService = ref.watch(core_providers.connectivityServiceProvider);
+
+  return ImmobilierSettingsOfflineRepository(
+    driftService: driftService,
+    syncManager: syncManager,
+    connectivityService: connectivityService,
+    currentEnterpriseId: enterpriseId,
+  );
+});
+
+final immobilierSettingsServiceProvider = Provider<ImmobilierSettingsService>((ref) {
+  final prefs = ref.watch(core_providers.sharedPreferencesProvider);
+  final repository = ref.watch(immobilierSettingsRepositoryProvider);
+  final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id;
+  return ImmobilierSettingsService(prefs, repository, enterpriseId);
+});
+
+final immobilierPrinterConfigProvider = Provider<PrinterConfig>((ref) {
+  final settings = ref.watch(immobilierSettingsServiceProvider);
+  return PrinterConfig(
+    type: settings.printerType,
+    address: settings.printerAddress,
+  );
+});
+
+/// Reactive stream of immobilier settings.
+final immobilierSettingsProvider = StreamProvider.autoDispose<ImmobilierSettings?>((ref) {
+  final repository = ref.watch(immobilierSettingsRepositoryProvider);
+  final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+  return repository.watchSettings(enterpriseId);
+});
 
 // --- Services ---
 
@@ -85,8 +134,8 @@ final propertyRepositoryProvider = Provider<PropertyRepository>((ref) {
   final enterpriseId =
       ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
   final driftService = DriftService.instance;
-  final syncManager = ref.watch(syncManagerProvider);
-  final connectivityService = ref.watch(connectivityServiceProvider);
+  final syncManager = ref.watch(core_providers.syncManagerProvider);
+  final connectivityService = ref.watch(core_providers.connectivityServiceProvider);
 
   return PropertyOfflineRepository(
     driftService: driftService,
@@ -100,8 +149,8 @@ final tenantRepositoryProvider = Provider<TenantRepository>((ref) {
   final enterpriseId =
       ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
   final driftService = DriftService.instance;
-  final syncManager = ref.watch(syncManagerProvider);
-  final connectivityService = ref.watch(connectivityServiceProvider);
+  final syncManager = ref.watch(core_providers.syncManagerProvider);
+  final connectivityService = ref.watch(core_providers.connectivityServiceProvider);
 
   return TenantOfflineRepository(
     driftService: driftService,
@@ -115,8 +164,8 @@ final contractRepositoryProvider = Provider<ContractRepository>((ref) {
   final enterpriseId =
       ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
   final driftService = DriftService.instance;
-  final syncManager = ref.watch(syncManagerProvider);
-  final connectivityService = ref.watch(connectivityServiceProvider);
+  final syncManager = ref.watch(core_providers.syncManagerProvider);
+  final connectivityService = ref.watch(core_providers.connectivityServiceProvider);
 
   return ContractOfflineRepository(
     driftService: driftService,
@@ -130,8 +179,8 @@ final paymentRepositoryProvider = Provider<PaymentRepository>((ref) {
   final enterpriseId =
       ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
   final driftService = DriftService.instance;
-  final syncManager = ref.watch(syncManagerProvider);
-  final connectivityService = ref.watch(connectivityServiceProvider);
+  final syncManager = ref.watch(core_providers.syncManagerProvider);
+  final connectivityService = ref.watch(core_providers.connectivityServiceProvider);
 
   return PaymentOfflineRepository(
     driftService: driftService,
@@ -145,8 +194,8 @@ final expenseRepositoryProvider = Provider<PropertyExpenseRepository>((ref) {
   final enterpriseId =
       ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
   final driftService = DriftService.instance;
-  final syncManager = ref.watch(syncManagerProvider);
-  final connectivityService = ref.watch(connectivityServiceProvider);
+  final syncManager = ref.watch(core_providers.syncManagerProvider);
+  final connectivityService = ref.watch(core_providers.connectivityServiceProvider);
 
   return PropertyExpenseOfflineRepository(
     driftService: driftService,
@@ -207,6 +256,7 @@ final paymentControllerProvider = Provider<PaymentController>(
     ref.watch(receiptServiceProvider),
     ref.watch(immobilierValidationServiceProvider),
     ref.watch(auditTrailServiceProvider),
+    ref.watch(treasuryControllerProvider),
     ref.watch(activeEnterpriseProvider).value?.id ?? 'default',
     ref.watch(currentUserIdProvider) ?? 'unknown',
   ),
@@ -216,6 +266,7 @@ final expenseControllerProvider = Provider<PropertyExpenseController>(
   (ref) => PropertyExpenseController(
     ref.watch(expenseRepositoryProvider),
     ref.watch(auditTrailServiceProvider),
+    ref.watch(treasuryControllerProvider),
     ref.watch(activeEnterpriseProvider).value?.id ?? 'default',
     ref.watch(currentUserIdProvider) ?? 'unknown',
   ),
@@ -223,25 +274,29 @@ final expenseControllerProvider = Provider<PropertyExpenseController>(
 
 // --- Basic Data Providers ---
 
-final propertiesProvider = StreamProvider.autoDispose<List<Property>>((ref) {
+final propertiesProvider = StreamProvider<List<Property>>((ref) {
   final controller = ref.watch(propertyControllerProvider);
-  return controller.watchProperties();
+  final filter = ref.watch(archiveFilterProvider);
+  return controller.watchProperties(isDeleted: filter.asBool);
 });
 
-final tenantsProvider = StreamProvider.autoDispose<List<Tenant>>((ref) {
+final tenantsProvider = StreamProvider<List<Tenant>>((ref) {
   final controller = ref.watch(tenantControllerProvider);
-  return controller.watchTenants();
+  final filter = ref.watch(archiveFilterProvider);
+  return controller.watchTenants(isDeleted: filter.asBool);
 });
 
-final contractsProvider = StreamProvider.autoDispose<List<Contract>>((ref) {
+final contractsProvider = StreamProvider<List<Contract>>((ref) {
   final controller = ref.watch(contractControllerProvider);
-  return controller.watchContracts();
+  final filter = ref.watch(archiveFilterProvider);
+  return controller.watchContracts(isDeleted: filter.asBool);
 });
 
-final contractsWithRelationsProvider = StreamProvider.autoDispose<List<Contract>>((ref) {
-  final contractsStream = ref.watch(contractControllerProvider).watchContracts();
-  final tenantsStream = ref.watch(tenantControllerProvider).watchTenants();
-  final propertiesStream = ref.watch(propertyControllerProvider).watchProperties();
+final contractsWithRelationsProvider = StreamProvider<List<Contract>>((ref) {
+  final filter = ref.watch(archiveFilterProvider);
+  final contractsStream = ref.watch(contractControllerProvider).watchContracts(isDeleted: filter.asBool);
+  final tenantsStream = ref.watch(tenantControllerProvider).watchTenants(isDeleted: null); 
+  final propertiesStream = ref.watch(propertyControllerProvider).watchProperties(isDeleted: null); 
 
   return CombineLatestStream.combine3(
     contractsStream,
@@ -257,23 +312,37 @@ final contractsWithRelationsProvider = StreamProvider.autoDispose<List<Contract>
   );
 });
 
-final paymentsProvider = StreamProvider.autoDispose<List<Payment>>((ref) {
+final maintenanceTicketsProvider = StreamProvider<List<MaintenanceTicket>>((ref) {
+  final controller = ref.watch(maintenanceControllerProvider);
+  final filter = ref.watch(archiveFilterProvider);
+  return controller.watchAllTickets(isDeleted: filter.asBool);
+});
+
+final maintenanceTicketsByPropertyProvider = StreamProvider.autoDispose
+    .family<List<MaintenanceTicket>, String>((ref, propertyId) {
+      final controller = ref.watch(maintenanceControllerProvider);
+      final filter = ref.watch(archiveFilterProvider);
+      return controller.watchTicketsByProperty(propertyId, isDeleted: filter.asBool);
+    });
+
+final paymentsProvider = StreamProvider<List<Payment>>((ref) {
   final controller = ref.watch(paymentControllerProvider);
-  return controller.watchPayments();
+  final filter = ref.watch(archiveFilterProvider);
+  return controller.watchPayments(isDeleted: filter.asBool);
 });
 
-final expensesProvider = StreamProvider.autoDispose<List<PropertyExpense>>((
-  ref,
-) {
+final expensesProvider = StreamProvider<List<PropertyExpense>>((ref) {
   final controller = ref.watch(expenseControllerProvider);
-  return controller.watchExpenses();
+  final filter = ref.watch(archiveFilterProvider);
+  return controller.watchExpenses(isDeleted: filter.asBool);
 });
 
-final paymentsWithRelationsProvider = StreamProvider.autoDispose<List<Payment>>((ref) {
-  final paymentsStream = ref.watch(paymentControllerProvider).watchPayments();
-  final contractsStream = ref.watch(contractControllerProvider).watchContracts();
-  final tenantsStream = ref.watch(tenantControllerProvider).watchTenants();
-  final propertiesStream = ref.watch(propertyControllerProvider).watchProperties();
+final paymentsWithRelationsProvider = StreamProvider<List<Payment>>((ref) {
+  final filter = ref.watch(archiveFilterProvider);
+  final paymentsStream = ref.watch(paymentControllerProvider).watchPayments(isDeleted: filter.asBool);
+  final contractsStream = ref.watch(contractControllerProvider).watchContracts(isDeleted: null);
+  final tenantsStream = ref.watch(tenantControllerProvider).watchTenants(isDeleted: null);
+  final propertiesStream = ref.watch(propertyControllerProvider).watchProperties(isDeleted: null);
 
   return CombineLatestStream.combine4<List<Payment>, List<Contract>, List<Tenant>,
       List<Property>, List<Payment>>(
@@ -459,7 +528,7 @@ final activeLeaseForPropertyProvider = StreamProvider.autoDispose.family<Contrac
 
 final paymentsByTenantProvider = StreamProvider.autoDispose
     .family<List<Payment>, String>((ref, tenantId) {
-      return CombineLatestStream.combine2(
+      return CombineLatestStream.combine2<List<Contract>, List<Payment>, List<Payment>>(
         ref.watch(contractControllerProvider).watchContracts().map(
           (contracts) => contracts.where((c) => c.tenantId == tenantId).toList(),
         ),
@@ -477,7 +546,7 @@ final paymentsByTenantProvider = StreamProvider.autoDispose
     });
 final propertyProfitabilityProvider = StreamProvider.autoDispose
     .family<({int revenue, int expenses, int net}), String>((ref, propertyId) {
-      return CombineLatestStream.combine3(
+      return CombineLatestStream.combine3<Iterable<Contract>, List<Payment>, Iterable<PropertyExpense>, ({int revenue, int expenses, int net})>(
         ref.watch(contractControllerProvider).watchContracts().map(
           (contracts) => contracts.where((c) => c.propertyId == propertyId),
         ),
@@ -490,11 +559,11 @@ final propertyProfitabilityProvider = StreamProvider.autoDispose
           
           final revenue = payments
               .where((p) => contractIds.contains(p.contractId) && p.status != PaymentStatus.cancelled)
-              .fold(0, (sum, p) => sum + p.amount);
+              .fold<int>(0, (sum, p) => sum + p.amount);
 
           final expenses = propertyExpenses
               .where((e) => e.deletedAt == null)
-              .fold(0, (sum, e) => sum + e.amount);
+              .fold<int>(0, (sum, e) => sum + e.amount);
 
           return (
             revenue: revenue,
@@ -510,8 +579,8 @@ final maintenanceRepositoryProvider = Provider<MaintenanceRepository>((ref) {
   final enterpriseId =
       ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
   final driftService = DriftService.instance;
-  final syncManager = ref.watch(syncManagerProvider);
-  final connectivityService = ref.watch(connectivityServiceProvider);
+  final syncManager = ref.watch(core_providers.syncManagerProvider);
+  final connectivityService = ref.watch(core_providers.connectivityServiceProvider);
 
   return MaintenanceOfflineRepository(
     driftService: driftService,
@@ -530,13 +599,43 @@ final maintenanceControllerProvider = Provider<MaintenanceController>(
   ),
 );
 
-final maintenanceTicketsProvider = StreamProvider.autoDispose<List<MaintenanceTicket>>((ref) {
-  final controller = ref.watch(maintenanceControllerProvider);
-  return controller.watchAllTickets();
+
+// --- Treasury Providers ---
+
+final treasuryRepositoryProvider = Provider<TreasuryRepository>((ref) {
+  final enterpriseId =
+      ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+  final driftService = DriftService.instance;
+  final syncManager = ref.watch(core_providers.syncManagerProvider);
+  final connectivityService = ref.watch(core_providers.connectivityServiceProvider);
+  final auditTrailRepo = ref.watch(auditTrailRepositoryProvider);
+  final userId = ref.watch(currentUserIdProvider);
+
+  return TreasuryOfflineRepository(
+    driftService: driftService,
+    syncManager: syncManager,
+    connectivityService: connectivityService,
+    enterpriseId: enterpriseId,
+    auditTrailRepository: auditTrailRepo,
+    userId: userId,
+  );
 });
 
-final maintenanceTicketsByPropertyProvider = StreamProvider.autoDispose
-    .family<List<MaintenanceTicket>, String>((ref, propertyId) {
-      final controller = ref.watch(maintenanceControllerProvider);
-      return controller.watchTicketsByProperty(propertyId);
-    });
+final treasuryControllerProvider = Provider<ImmobilierTreasuryController>((ref) {
+  return ImmobilierTreasuryController(
+    ref.watch(treasuryRepositoryProvider),
+    ref.watch(activeEnterpriseProvider).value?.id ?? 'default',
+    ref.watch(currentUserIdProvider) ?? 'unknown',
+  );
+});
+
+final treasuryOperationsProvider = StreamProvider.autoDispose<List<TreasuryOperation>>((ref) {
+  final controller = ref.watch(treasuryControllerProvider);
+  return controller.watchOperations();
+});
+
+final treasuryBalancesProvider = FutureProvider.autoDispose<Map<String, int>>((ref) {
+  ref.watch(treasuryOperationsProvider);
+  final controller = ref.watch(treasuryControllerProvider);
+  return controller.getBalances();
+});

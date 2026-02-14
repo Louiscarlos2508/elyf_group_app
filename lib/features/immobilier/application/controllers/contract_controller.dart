@@ -27,12 +27,12 @@ class ContractController {
     return await _contractRepository.getAllContracts();
   }
 
-  Stream<List<Contract>> watchContracts() {
-    return _contractRepository.watchContracts();
+  Stream<List<Contract>> watchContracts({bool? isDeleted = false}) {
+    return _contractRepository.watchContracts(isDeleted: isDeleted);
   }
 
   Stream<List<Contract>> watchDeletedContracts() {
-    return _contractRepository.watchDeletedContracts();
+    return _contractRepository.watchContracts(isDeleted: true);
   }
 
   Future<Contract?> getContract(String id) async {

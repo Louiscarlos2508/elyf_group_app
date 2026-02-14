@@ -16,12 +16,12 @@ class MaintenanceController {
   final String _enterpriseId;
   final String _userId;
 
-  Stream<List<MaintenanceTicket>> watchTicketsByProperty(String propertyId) {
-    return _maintenanceRepository.watchTicketsByProperty(propertyId);
+  Stream<List<MaintenanceTicket>> watchTicketsByProperty(String propertyId, {bool? isDeleted = false}) {
+    return _maintenanceRepository.watchTicketsByProperty(propertyId, isDeleted: isDeleted);
   }
 
-  Stream<List<MaintenanceTicket>> watchAllTickets() {
-    return _maintenanceRepository.watchAllTickets();
+  Stream<List<MaintenanceTicket>> watchAllTickets({bool? isDeleted = false}) {
+    return _maintenanceRepository.watchAllTickets(isDeleted: isDeleted);
   }
 
   Future<List<MaintenanceTicket>> getTicketsByProperty(String propertyId) async {
@@ -47,6 +47,11 @@ class MaintenanceController {
   Future<void> deleteTicket(String id) async {
     await _maintenanceRepository.deleteTicket(id);
     await _logAction('delete', id);
+  }
+
+  Future<void> restoreTicket(String id) async {
+    await _maintenanceRepository.restoreTicket(id);
+    await _logAction('restore', id);
   }
 
   Future<void> _logAction(

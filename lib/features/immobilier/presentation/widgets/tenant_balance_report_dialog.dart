@@ -4,6 +4,7 @@ import 'package:open_file/open_file.dart';
 
 import 'package:elyf_groupe_app/core/pdf/immobilier_report_pdf_service.dart';
 import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/tenant.dart';
 
@@ -55,6 +56,8 @@ class _TenantBalanceReportDialogState extends ConsumerState<TenantBalanceReportD
     try {
       final contracts = await ref.read(contractsProvider.future);
       final payments = await ref.read(paymentsWithRelationsProvider.future);
+      final settings = await ref.read(immobilierSettingsProvider.future);
+      final activeEnterprise = ref.read(activeEnterpriseProvider).value;
 
       final pdfService = ImmobilierReportPdfService.instance;
       final file = await pdfService.generateTenantBalanceReport(
@@ -63,6 +66,8 @@ class _TenantBalanceReportDialogState extends ConsumerState<TenantBalanceReportD
         payments: payments,
         startDate: _startDate,
         endDate: _endDate,
+        enterpriseName: activeEnterprise?.name ?? settings.receiptHeader,
+        footerText: settings.receiptFooter,
       );
 
       if (mounted) {

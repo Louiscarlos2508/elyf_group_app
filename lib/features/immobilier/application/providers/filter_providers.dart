@@ -26,3 +26,25 @@ class PropertyListFilterNotifier extends Notifier<PropertyStatus?> {
 }
 
 final propertyListFilterProvider = NotifierProvider<PropertyListFilterNotifier, PropertyStatus?>(PropertyListFilterNotifier.new);
+
+enum ArchiveFilter {
+  active,
+  archived,
+  all;
+
+  bool? get asBool {
+    switch (this) {
+      case ArchiveFilter.active: return false;
+      case ArchiveFilter.archived: return true;
+      case ArchiveFilter.all: return null;
+    }
+  }
+}
+
+class ArchiveFilterNotifier extends Notifier<ArchiveFilter> {
+  @override
+  ArchiveFilter build() => ArchiveFilter.active;
+  void set(ArchiveFilter filter) => state = filter;
+}
+
+final archiveFilterProvider = NotifierProvider<ArchiveFilterNotifier, ArchiveFilter>(ArchiveFilterNotifier.new);

@@ -16,11 +16,13 @@ class TenantDetailDialog extends ConsumerWidget {
     required this.tenant,
     this.onContractTap,
     this.onPaymentTap,
+    this.onDelete,
   });
 
   final Tenant tenant;
   final void Function(Contract)? onContractTap;
   final void Function(Payment)? onPaymentTap;
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -119,16 +121,52 @@ class TenantDetailDialog extends ConsumerWidget {
               );
             },
           ),
-          IconButton(
-            icon: const Icon(Icons.edit),
-            onPressed: () {
-              Navigator.of(context).pop();
-              showDialog(
-                context: context,
-                builder: (context) => TenantFormDialog(tenant: tenant),
-              );
-            },
-          ),
+            IconButton(
+              icon: const Icon(Icons.edit),
+              onPressed: () {
+                Navigator.of(context).pop();
+                showDialog(
+                  context: context,
+                  builder: (context) => TenantFormDialog(tenant: tenant),
+                );
+              },
+            ),
+            if (onDelete != null)
+              IconButton(
+                icon: Icon(tenant.deletedAt != null ? Icons.restore_from_trash : Icons.archive_outlined),
+                onPressed: () {
+                  final isArchived = tenant.deletedAt != null;
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: Text(isArchived ? 'Restaurer le locataire' : 'Archiver le locataire'),
+                      content: Text(
+                        isArchived 
+                            ? 'Voulez-vous restaurer ce locataire ?\nIl sera de nouveau visible dans la liste active.' 
+                            : 'Voulez-vous archiver ce locataire ?\nIl sera déplacé dans les archives.',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: const Text('Annuler'),
+                        ),
+                        FilledButton(
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                            Navigator.of(context).pop();
+                            onDelete?.call();
+                          },
+                          style: FilledButton.styleFrom(
+                            backgroundColor: isArchived ? Colors.green : theme.colorScheme.error,
+                          ),
+                          child: Text(isArchived ? 'Restaurer' : 'Archiver'),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+                tooltip: tenant.deletedAt != null ? 'Restaurer' : 'Archiver',
+              ),
           IconButton(
             icon: const Icon(Icons.close),
             onPressed: () => Navigator.of(context).pop(),

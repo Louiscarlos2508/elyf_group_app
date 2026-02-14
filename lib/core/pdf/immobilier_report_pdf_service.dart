@@ -29,6 +29,8 @@ class ImmobilierReportPdfService extends BaseReportPdfService {
     required List<PropertyExpense> expenses,
     required List<Payment> periodPayments,
     required List<PropertyExpense> periodExpenses,
+    String? enterpriseName,
+    String? footerText,
   }) async {
     // Utiliser le service de calcul pour extraire la logique métier
     final calculationService = ImmobilierDashboardCalculationService();
@@ -95,6 +97,47 @@ class ImmobilierReportPdfService extends BaseReportPdfService {
           },
         ],
       ),
+      pw.SizedBox(height: 20),
+      if (periodPayments.isNotEmpty)
+        buildTableSection(
+          title: 'Détail des Recettes',
+          headers: ['Date', 'Locataire / Propriété', 'Description', 'Montant'],
+          rows: periodPayments.map((p) {
+            final tenantName = p.contract?.tenant?.fullName ?? 'Inconnu';
+            final propertyName = p.contract?.property?.address ?? 'Inconnue';
+            return [
+              formatDate(p.paymentDate),
+              '$tenantName\n($propertyName)',
+              'Loyer ${p.month ?? '-'}/${p.year ?? '-'}',
+              formatCurrency(p.amount),
+            ];
+          }).toList(),
+          columnAlignments: [
+            pw.TextAlign.left,
+            pw.TextAlign.left,
+            pw.TextAlign.left,
+            pw.TextAlign.right,
+          ],
+        ),
+      if (periodExpenses.isNotEmpty)
+        buildTableSection(
+          title: 'Détail des Dépenses',
+          headers: ['Date', 'Propriété', 'Description', 'Montant'],
+          rows: periodExpenses.map((e) {
+            return [
+              formatDate(e.expenseDate),
+              e.property ?? 'Général',
+              e.description,
+              formatCurrency(e.amount),
+            ];
+          }).toList(),
+          columnAlignments: [
+            pw.TextAlign.left,
+            pw.TextAlign.left,
+            pw.TextAlign.left,
+            pw.TextAlign.right,
+          ],
+        ),
     ];
 
     return generateReportPdf(
@@ -103,6 +146,8 @@ class ImmobilierReportPdfService extends BaseReportPdfService {
       startDate: start,
       endDate: end,
       contentSections: contentSections,
+      enterpriseName: enterpriseName,
+      footerText: footerText,
     );
   }
 
@@ -113,6 +158,8 @@ class ImmobilierReportPdfService extends BaseReportPdfService {
     required List<Payment> payments,
     required DateTime startDate,
     required DateTime endDate,
+    String? enterpriseName,
+    String? footerText,
   }) async {
     // Filtrer les contrats du locataire
     final tenantContracts = contracts.where((c) => c.tenantId == tenant.id).toList();
@@ -179,6 +226,8 @@ class ImmobilierReportPdfService extends BaseReportPdfService {
       startDate: startDate,
       endDate: endDate,
       contentSections: contentSections,
+      enterpriseName: enterpriseName,
+      footerText: footerText,
     );
   }
 }

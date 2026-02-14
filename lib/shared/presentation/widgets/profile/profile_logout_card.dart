@@ -40,12 +40,12 @@ class ProfileLogoutCard extends ConsumerWidget {
       final authController = ref.read(authControllerProvider);
       await authController.signOut();
 
-      ref.invalidate(currentUserProfileProvider);
-      ref.invalidate(currentUserProvider);
-      ref.invalidate(authControllerProvider);
-
-      // Naviguer vers la page de connexion
       if (context.mounted) {
+        ref.invalidate(currentUserProfileProvider);
+        ref.invalidate(currentUserProvider);
+        ref.invalidate(authControllerProvider);
+
+        // Naviguer vers la page de connexion
         context.go('/login');
       }
     }

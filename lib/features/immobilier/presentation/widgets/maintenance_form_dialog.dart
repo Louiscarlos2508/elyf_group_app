@@ -15,10 +15,12 @@ class MaintenanceFormDialog extends ConsumerStatefulWidget {
     super.key,
     this.ticket,
     this.initialProperty,
+    this.onDelete,
   });
 
   final MaintenanceTicket? ticket;
   final Property? initialProperty;
+  final VoidCallback? onDelete;
 
   @override
   ConsumerState<MaintenanceFormDialog> createState() => _MaintenanceFormDialogState();
@@ -138,6 +140,35 @@ class _MaintenanceFormDialogState extends ConsumerState<MaintenanceFormDialog>
       saveLabel: 'Enregistrer',
       onSave: _isSaving ? null : _save,
       isLoading: _isSaving,
+      customAction: widget.ticket != null && widget.onDelete != null
+          ? IconButton(
+              icon: Icon(widget.ticket!.deletedAt != null 
+                  ? Icons.restore_from_trash 
+                  : Icons.archive_outlined),
+              onPressed: () {
+                // Determine if archived or active to show correct confirmation in parent?
+                // Actually the callback passed from screen already handles the confirmation dialog.
+                // But wait, the screen's callback shows a dialog.
+                // If I call it here, it will show a dialog on top of this dialog.
+                // That's fine.
+                // BUT, if I archive it, I probably want to close THIS dialog too.
+                // The screen callback does NOT close this dialog (it assumes this dialog is closed or it's called from a list).
+                
+                // Let's look at MaintenanceScreen logic again.
+                // It calls `showDialog` for MaintenanceFormDialog.
+                // And passes `onDelete: () => _deleteTicket(ticket)`.
+                // `_deleteTicket` shows a confirmation dialog.
+                // If confirmed, it calls controller and invalidates.
+                // It does NOT pop the FormDialog.
+                
+                // So I should pop this dialog first, then call onDelete.
+                Navigator.of(context).pop();
+                widget.onDelete?.call();
+              },
+              tooltip: widget.ticket!.deletedAt != null ? 'Restaurer' : 'Archiver',
+              color: widget.ticket!.deletedAt != null ? Colors.green : Theme.of(context).colorScheme.error,
+            )
+          : null,
       child: Form(
         key: _formKey,
         child: Column(

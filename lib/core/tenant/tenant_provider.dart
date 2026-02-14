@@ -78,16 +78,16 @@ final userAccessibleEnterprisesProvider = FutureProvider<List<Enterprise>>((
 ) async {
   // Add timeout to prevent infinite loading
   try {
-    return await Future.any([
-      _fetchUserAccessibleEnterprises(ref),
-      Future.delayed(const Duration(seconds: 10)).then((_) {
+    return await _fetchUserAccessibleEnterprises(ref).timeout(
+      const Duration(seconds: 10),
+      onTimeout: () {
         AppLogger.warning(
           'userAccessibleEnterprisesProvider: Timeout after 10 seconds',
           name: 'userAccessibleEnterprisesProvider',
         );
         return <Enterprise>[];
-      }),
-    ]);
+      },
+    );
   } catch (e, stackTrace) {
     AppLogger.error(
       'userAccessibleEnterprisesProvider: Error - $e',

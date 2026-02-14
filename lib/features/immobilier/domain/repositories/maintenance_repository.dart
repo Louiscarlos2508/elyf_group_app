@@ -6,7 +6,8 @@ abstract class MaintenanceRepository {
   Future<MaintenanceTicket> createTicket(MaintenanceTicket ticket);
   Future<MaintenanceTicket> updateTicket(MaintenanceTicket ticket);
   Future<void> deleteTicket(String id);
+  Future<void> restoreTicket(String id);
   
-  Stream<List<MaintenanceTicket>> watchTicketsByProperty(String propertyId);
-  Stream<List<MaintenanceTicket>> watchAllTickets();
+  Stream<List<MaintenanceTicket>> watchTicketsByProperty(String propertyId, {bool? isDeleted = false});
+  Stream<List<MaintenanceTicket>> watchAllTickets({bool? isDeleted = false});
 }

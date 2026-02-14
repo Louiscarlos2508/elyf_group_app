@@ -1,18 +1,23 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/entities/expense.dart';
+import '../../application/providers/filter_providers.dart';
 
 /// Widget pour les filtres de dépenses.
 class ExpenseFilters extends StatelessWidget {
   const ExpenseFilters({
     super.key,
     required this.selectedCategory,
+    required this.selectedArchiveFilter,
     required this.onCategoryChanged,
+    required this.onArchiveFilterChanged,
     required this.onClear,
   });
 
   final ExpenseCategory? selectedCategory;
+  final ArchiveFilter selectedArchiveFilter;
   final ValueChanged<ExpenseCategory?> onCategoryChanged;
+  final ValueChanged<ArchiveFilter> onArchiveFilterChanged;
   final VoidCallback onClear;
 
   String _getCategoryLabel(ExpenseCategory category) {
@@ -31,6 +36,17 @@ class ExpenseFilters extends StatelessWidget {
         return 'Nettoyage';
       case ExpenseCategory.other:
         return 'Autre';
+    }
+  }
+
+  String _getArchiveLabel(ArchiveFilter filter) {
+    switch (filter) {
+      case ArchiveFilter.active:
+        return 'Actifs';
+      case ArchiveFilter.archived:
+        return 'Archivés';
+      case ArchiveFilter.all:
+        return 'Tous';
     }
   }
 
@@ -62,6 +78,15 @@ class ExpenseFilters extends StatelessWidget {
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
+                   _FilterChip<ArchiveFilter>(
+                    label: 'Affichage',
+                    value: selectedArchiveFilter,
+                    options: ArchiveFilter.values,
+                    getLabel: _getArchiveLabel,
+                    onChanged: (v) => onArchiveFilterChanged(v ?? ArchiveFilter.active),
+                    showCheckmark: false,
+                  ),
+                  const SizedBox(width: 8),
                   PopupMenuButton<ExpenseCategory?>(
                     initialValue: selectedCategory,
                     onSelected: onCategoryChanged,
@@ -102,6 +127,10 @@ class ExpenseFilters extends StatelessWidget {
                       backgroundColor: selectedCategory != null
                           ? theme.colorScheme.primaryContainer
                           : theme.colorScheme.surfaceContainerHighest,
+                      side: BorderSide.none,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                   ),
                 ],
@@ -118,6 +147,63 @@ class ExpenseFilters extends StatelessWidget {
               ),
             ),
         ],
+      ),
+    );
+  }
+}
+
+class _FilterChip<T> extends StatelessWidget {
+  const _FilterChip({
+    required this.label,
+    required this.value,
+    required this.options,
+    required this.getLabel,
+    required this.onChanged,
+    this.showCheckmark = true,
+  });
+
+  final String label;
+  final T value;
+  final List<T> options;
+  final String Function(T) getLabel;
+  final ValueChanged<T?> onChanged;
+  final bool showCheckmark;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isSelected = true;
+
+    return PopupMenuButton<T?>(
+      initialValue: value,
+      onSelected: onChanged,
+      itemBuilder: (context) => options
+          .map((option) => PopupMenuItem<T?>(
+                value: option,
+                child: Text(getLabel(option)),
+              ))
+          .toList(),
+      child: Chip(
+        label: Text(
+          getLabel(value),
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: theme.colorScheme.primary,
+          ),
+        ),
+        avatar: isSelected && showCheckmark
+            ? Icon(
+                Icons.check,
+                size: 16,
+                color: theme.colorScheme.primary,
+              )
+            : null,
+        backgroundColor: theme.colorScheme.primaryContainer,
+        side: BorderSide.none,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
       ),
     );
   }

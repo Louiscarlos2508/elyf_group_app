@@ -6,6 +6,7 @@ import '../../../../shared/domain/entities/payment_method.dart';
 import '../../domain/entities/payment.dart';
 import '../../domain/entities/property.dart';
 import '../../domain/entities/tenant.dart';
+import '../providers.dart';
 
 final receiptServiceProvider = Provider<ReceiptService>((ref) {
   return ReceiptService(ref);
@@ -45,6 +46,8 @@ class ReceiptService {
       period = '${monthName[0].toUpperCase()}${monthName.substring(1)} ${payment.year}';
     }
 
+    final settings = _ref.read(immobilierSettingsServiceProvider);
+    
     final content = PaymentReceiptTemplate.generateReceipt(
       receiptNumber: payment.receiptNumber ?? payment.id.substring(0, 8),
       paymentDate: dateFormat.format(payment.paymentDate),
@@ -54,6 +57,9 @@ class ReceiptService {
       propertyAddress: '${property.address}, ${property.city}',
       period: period.isNotEmpty ? period : null,
       notes: payment.notes,
+      header: settings.receiptHeader,
+      footer: settings.receiptFooter,
+      showLogo: settings.showLogo,
     );
 
     return await printer.printReceipt(content);

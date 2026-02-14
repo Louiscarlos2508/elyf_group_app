@@ -1,26 +1,30 @@
 import '../../../audit_trail/domain/services/audit_trail_service.dart';
 import '../../domain/entities/expense.dart';
 import '../../domain/repositories/expense_repository.dart';
+import 'immobilier_treasury_controller.dart';
+import '../../../../shared/domain/entities/payment_method.dart';
 
 class PropertyExpenseController {
   PropertyExpenseController(
     this._expenseRepository,
     this._auditTrailService,
+    this._treasuryController,
     this._enterpriseId,
     this._userId,
   );
 
   final PropertyExpenseRepository _expenseRepository;
   final AuditTrailService _auditTrailService;
+  final ImmobilierTreasuryController _treasuryController;
   final String _enterpriseId;
   final String _userId;
 
-  Future<List<PropertyExpense>> fetchExpenses() async {
-    return await _expenseRepository.getAllExpenses();
+  Future<List<PropertyExpense>> fetchExpenses({bool? isDeleted = false}) async {
+    return await _expenseRepository.getAllExpenses(isDeleted: isDeleted);
   }
 
-  Stream<List<PropertyExpense>> watchExpenses() {
-    return _expenseRepository.watchExpenses();
+  Stream<List<PropertyExpense>> watchExpenses({bool? isDeleted = false}) {
+    return _expenseRepository.watchExpenses(isDeleted: isDeleted);
   }
 
   Stream<List<PropertyExpense>> watchDeletedExpenses() {
@@ -51,6 +55,16 @@ class PropertyExpenseController {
   Future<PropertyExpense> createExpense(PropertyExpense expense) async {
     final created = await _expenseRepository.createExpense(expense);
     await _logAction('create', created.id, metadata: created.toMap());
+    
+    // Record Treasury Expense
+    await _treasuryController.recordExpense(
+      amount: created.amount,
+      method: created.paymentMethod,
+      reason: '${created.category.name}: ${created.description}',
+      referenceEntityId: created.id,
+      notes: created.description,
+    );
+
     return created;
   }
 

@@ -3,7 +3,7 @@ import '../entities/expense.dart';
 /// Repository abstrait pour la gestion des dépenses.
 abstract class PropertyExpenseRepository {
   /// Récupère toutes les dépenses.
-  Future<List<PropertyExpense>> getAllExpenses();
+  Future<List<PropertyExpense>> getAllExpenses({bool? isDeleted = false});
 
   /// Récupère une dépense par son ID.
   Future<PropertyExpense?> getExpenseById(String id);
@@ -27,7 +27,7 @@ abstract class PropertyExpenseRepository {
   Future<PropertyExpense> updateExpense(PropertyExpense expense);
 
   /// Observe les dépenses.
-  Stream<List<PropertyExpense>> watchExpenses();
+  Stream<List<PropertyExpense>> watchExpenses({bool? isDeleted = false});
 
   /// Observe les dépenses supprimées.
   Stream<List<PropertyExpense>> watchDeletedExpenses();

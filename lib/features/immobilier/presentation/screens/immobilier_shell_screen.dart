@@ -8,6 +8,7 @@ import 'package:elyf_groupe_app/shared.dart'
         NavigationSection,
         ModuleLoadingAnimation;
 import 'package:elyf_groupe_app/features/immobilier/application/providers.dart';
+import '../../../../core/printing/printer_provider.dart';
 
 class ImmobilierShellScreen extends BaseModuleShellScreen {
   const ImmobilierShellScreen({
@@ -27,14 +28,14 @@ class _ImmobilierShellScreenState
   String get moduleName => 'Immobilier';
 
   @override
-  IconData get moduleIcon => Icons.home_work_outlined;
+  IconData get moduleIcon => Icons.business;
 
   @override
   String get appTitle => 'Immobilier • Maisons';
 
   @override
   Widget buildLoading() {
-    return ModuleLoadingAnimation(
+    return const ModuleLoadingAnimation(
       moduleName: 'Immobilier',
       moduleIcon: Icons.home_work_outlined,
       message: 'Chargement des données...',
@@ -51,5 +52,17 @@ class _ImmobilierShellScreenState
   List<NavigationSection> buildSections() {
     // Cette méthode n'est plus utilisée car on utilise getSectionsAsync()
     return [];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ProviderScope(
+      overrides: [
+        printerConfigProvider.overrideWith(
+          (ref) => ref.watch(immobilierPrinterConfigProvider),
+        ),
+      ],
+      child: super.build(context),
+    );
   }
 }

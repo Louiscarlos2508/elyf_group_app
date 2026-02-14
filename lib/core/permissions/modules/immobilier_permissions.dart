@@ -271,6 +271,21 @@ class ImmobilierPermissions {
     description: 'Permet de supprimer un ticket de maintenance',
   );
 
+  // Treasury
+  static const viewTreasury = ActionPermission(
+    id: 'view_treasury',
+    name: 'Voir la trésorerie',
+    module: 'immobilier',
+    description: 'Permet de voir la trésorerie',
+  );
+
+  static const createTreasuryOperation = ActionPermission(
+    id: 'create_treasury_operation',
+    name: 'Créer une opération de trésorerie',
+    module: 'immobilier',
+    description: 'Permet de créer une opération de trésorerie',
+  );
+
   /// All permissions for the module
   static const all = [
     viewDashboard,
@@ -310,5 +325,7 @@ class ImmobilierPermissions {
     createMaintenance,
     editMaintenance,
     deleteMaintenance,
+    viewTreasury,
+    createTreasuryOperation,
   ];
 }

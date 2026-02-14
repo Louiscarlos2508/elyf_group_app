@@ -13,6 +13,7 @@ import '../../widgets/property_search_bar.dart';
 import '../../widgets/tenant_card.dart';
 import '../../widgets/tenant_detail_dialog.dart';
 import '../../widgets/tenant_form_dialog.dart';
+import '../../widgets/tenant_filters.dart';
 import '../../widgets/immobilier_header.dart';
 
 class TenantsScreen extends ConsumerStatefulWidget {
@@ -57,8 +58,40 @@ class _TenantsScreenState extends ConsumerState<TenantsScreen> {
         tenant: tenant,
         onContractTap: _showContractDetails,
         onPaymentTap: _showPaymentDetails,
+        onDelete: () => _deleteTenant(tenant),
       ),
     );
+  }
+
+  Future<void> _deleteTenant(Tenant tenant) async {
+    try {
+      final controller = ref.read(tenantControllerProvider);
+      final isArchived = tenant.deletedAt != null;
+
+      if (isArchived) {
+        await controller.restoreTenant(tenant.id);
+        if (mounted) {
+          ref.invalidate(tenantsProvider);
+          NotificationService.showSuccess(
+            context,
+            'Locataire restauré avec succès',
+          );
+        }
+      } else {
+        await controller.deleteTenant(tenant.id);
+        if (mounted) {
+          ref.invalidate(tenantsProvider);
+          NotificationService.showSuccess(
+            context,
+            'Locataire archivé avec succès',
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        NotificationService.showError(context, e.toString());
+      }
+    }
   }
 
   void _showContractDetails(Contract contract) {
@@ -181,6 +214,18 @@ class _TenantsScreenState extends ConsumerState<TenantsScreen> {
                       controller: _searchController,
                       onChanged: (_) => setState(() {}),
                       onClear: () => setState(() {}),
+                    ),
+                  ),
+
+                  // Filters
+                  SliverToBoxAdapter(
+                    child: TenantFilters(
+                      selectedArchiveFilter: ref.watch(archiveFilterProvider),
+                      onArchiveFilterChanged: (filter) =>
+                          ref.read(archiveFilterProvider.notifier).set(filter),
+                      onClear: () =>
+                          ref.read(archiveFilterProvider.notifier).set(
+                              ArchiveFilter.active),
                     ),
                   ),
 

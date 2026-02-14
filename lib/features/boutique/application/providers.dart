@@ -31,9 +31,6 @@ import 'package:elyf_groupe_app/features/boutique/domain/repositories/stock_move
 import 'package:elyf_groupe_app/features/boutique/data/repositories/stock_movement_offline_repository.dart';
 import 'package:elyf_groupe_app/features/boutique/domain/services/boutique_export_service.dart';
 import 'package:elyf_groupe_app/features/boutique/domain/services/boutique_settings_service.dart';
-import 'package:elyf_groupe_app/features/boutique/domain/services/boutique_export_service.dart';
-import 'package:elyf_groupe_app/features/boutique/domain/services/boutique_export_service.dart';
-import 'package:elyf_groupe_app/features/boutique/domain/services/boutique_export_service.dart';
 import 'package:elyf_groupe_app/features/boutique/domain/entities/report_data.dart';
 import 'package:elyf_groupe_app/features/boutique/domain/repositories/expense_repository.dart';
 import 'package:elyf_groupe_app/features/boutique/domain/repositories/product_repository.dart';
@@ -61,9 +58,13 @@ import '../domain/services/product_calculation_service.dart';
 import '../domain/services/product_filter_service.dart';
 import '../domain/services/report_calculation_service.dart';
 import '../domain/services/validation/product_validation_service.dart';
+import '../domain/entities/boutique_settings.dart';
+import '../domain/repositories/boutique_settings_repository.dart';
+import '../data/repositories/boutique_settings_offline_repository.dart';
 import '../domain/entities/cart_item.dart';
 import 'controllers/cart_controller.dart';
 import 'controllers/store_controller.dart';
+import '../../../../core/printing/printer_provider.dart';
 
 /// Provider for BoutiqueDashboardCalculationService.
 final boutiqueDashboardCalculationServiceProvider =
@@ -328,7 +329,7 @@ final storeControllerProvider = Provider<StoreController>((ref) {
   );
 });
 
-final productsProvider = StreamProvider.autoDispose(
+final productsProvider = StreamProvider(
   (ref) => ref.watch(storeControllerProvider).watchProducts(),
 );
 
@@ -338,24 +339,32 @@ final activeProductsProvider = Provider.autoDispose<AsyncValue<List<Product>>>((
   );
 });
 
-final recentSalesProvider = StreamProvider.autoDispose(
+final recentSalesProvider = StreamProvider(
   (ref) => ref.watch(storeControllerProvider).watchRecentSales(),
 );
 
 final lowStockProductsProvider = StreamProvider.autoDispose(
   (ref) {
-    final settings = ref.watch(boutiqueSettingsServiceProvider);
+    final settings = ref.watch(boutiqueSettingsProvider).value;
+    final threshold = settings?.lowStockThreshold ?? 5;
     return ref.watch(storeControllerProvider).watchLowStockProducts(
-      threshold: settings.lowStockThreshold,
+      threshold: threshold,
     );
   },
 );
 
-final purchasesProvider = StreamProvider.autoDispose(
+/// Reactive stream of boutique settings.
+final boutiqueSettingsProvider = StreamProvider<BoutiqueSettings?>((ref) {
+  final repository = ref.watch(boutiqueSettingsRepositoryProvider);
+  final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+  return repository.watchSettings(enterpriseId);
+});
+
+final purchasesProvider = StreamProvider(
   (ref) => ref.watch(storeControllerProvider).watchPurchases(),
 );
 
-final expensesProvider = StreamProvider.autoDispose(
+final expensesProvider = StreamProvider(
   (ref) => ref.watch(storeControllerProvider).watchExpenses(),
 );
 
@@ -512,14 +521,39 @@ final boutiqueExportServiceProvider = Provider<BoutiqueExportService>((ref) {
   return BoutiqueExportService();
 });
 
+
+/// Provider for BoutiqueSettingsRepository.
+final boutiqueSettingsRepositoryProvider = Provider<BoutiqueSettingsRepository>((ref) {
+  final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+  final driftService = DriftService.instance;
+  final syncManager = ref.watch(syncManagerProvider);
+  final connectivityService = ref.watch(connectivityServiceProvider);
+
+  return BoutiqueSettingsOfflineRepository(
+    driftService: driftService,
+    syncManager: syncManager,
+    connectivityService: connectivityService,
+    currentEnterpriseId: enterpriseId,
+  );
+});
+
 /// Provider for BoutiqueSettingsService.
 /// Note: Requires SharedPreferences to be initialized (usually via sharedPreferencesProvider from core).
 final boutiqueSettingsServiceProvider = Provider<BoutiqueSettingsService>((ref) {
   final prefs = ref.watch(sharedPreferencesProvider);
-  return BoutiqueSettingsService(prefs);
+  final repository = ref.watch(boutiqueSettingsRepositoryProvider);
+  final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id;
+  return BoutiqueSettingsService(prefs, repository, enterpriseId);
+});
+
+final boutiquePrinterConfigProvider = Provider<PrinterConfig>((ref) {
+  final settings = ref.watch(boutiqueSettingsServiceProvider);
+  return PrinterConfig(
+    type: settings.printerType,
+    address: settings.printerConnection,
+  );
 });
 
 final stockMovementsProvider = FutureProvider.family<List<StockMovement>, String?>((ref, productId) async {
   return ref.read(storeControllerProvider).fetchStockMovements(productId: productId);
 });
-

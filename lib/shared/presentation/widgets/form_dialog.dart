@@ -1,5 +1,4 @@
 
-
 import 'package:flutter/material.dart';
 
 import '../../../core/errors/error_handler.dart';
@@ -24,6 +23,7 @@ class FormDialog extends StatefulWidget {
     this.icon,
     this.isGlass = false,
     this.maxWidth = 600,
+    this.customAction,
   });
 
   final String title;
@@ -36,6 +36,7 @@ class FormDialog extends StatefulWidget {
   final bool isLoading;
   final bool isGlass;
   final double maxWidth;
+  final Widget? customAction;
 
   @override
   State<FormDialog> createState() => _FormDialogState();
@@ -145,6 +146,10 @@ class _FormDialogState extends State<FormDialog> {
           padding: const EdgeInsets.all(28),
           child: Row(
             children: [
+              if (widget.customAction != null) ...[
+                widget.customAction!,
+                const SizedBox(width: 16),
+              ],
               Expanded(
                 child: OutlinedButton(
                   onPressed: _effectiveLoading ? null : () => Navigator.of(context).pop(),

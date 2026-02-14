@@ -20,6 +20,7 @@ final collectionPaths = <String, String Function(String?)>{
   'treasury_operations': (enterpriseId) =>
       'enterprises/${enterpriseId!}/treasuryOperations',
   'closings': (enterpriseId) => 'enterprises/${enterpriseId!}/closings',
+  'boutique_settings': (enterpriseId) => 'enterprises/${enterpriseId!}/boutiqueSettings',
 
   // Eau Minérale module
   'customers': (enterpriseId) => 'enterprises/${enterpriseId!}/customers',
@@ -70,6 +71,10 @@ final collectionPaths = <String, String Function(String?)>{
       'enterprises/${enterpriseId!}/propertyExpenses',
   'maintenance_tickets': (enterpriseId) =>
       'enterprises/${enterpriseId!}/maintenanceTickets',
+  'immobilier_treasury': (enterpriseId) =>
+      'enterprises/${enterpriseId!}/immobilierTreasury',
+  'immobilier_settings': (enterpriseId) =>
+      'enterprises/${enterpriseId!}/immobilierSettings',
 
   // Gaz module
   'gas_sales': (enterpriseId) => 'enterprises/${enterpriseId!}/gasSales',
