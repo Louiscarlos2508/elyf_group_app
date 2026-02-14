@@ -17,7 +17,7 @@ import '../../presentation/screens/sections/maintenance_screen.dart';
 import '../../presentation/screens/sections/treasury_screen.dart';
 import 'permission_providers.dart';
 
-import '../../presentation/screens/settings/immobilier_printer_settings_screen.dart';
+import '../../presentation/screens/settings/immobilier_settings_screen.dart';
 
 /// Provider pour récupérer les sections accessibles selon les permissions.
 ///
@@ -45,14 +45,34 @@ final accessibleImmobilierSectionsProvider =
     ),
     (
       section: NavigationSection(
-        label: 'Propriétés',
-        icon: Icons.home_outlined,
-        builder: () => const PropertiesScreen(),
+        label: 'Paiements',
+        icon: Icons.payment_outlined,
+        builder: () => const PaymentsScreen(),
         isPrimary: true,
         enterpriseId: enterpriseId,
         moduleId: moduleId,
       ),
-      requiredPermissions: {ImmobilierPermissions.viewProperties.id},
+      requiredPermissions: {ImmobilierPermissions.viewPayments.id},
+    ),
+    (
+      section: NavigationSection(
+        label: 'Maintenance',
+        icon: Icons.handyman_outlined,
+        builder: () => const MaintenanceScreen(),
+        enterpriseId: enterpriseId,
+        moduleId: moduleId,
+      ),
+      requiredPermissions: {ImmobilierPermissions.viewMaintenance.id},
+    ),
+    (
+      section: NavigationSection(
+        label: 'Trésorerie',
+        icon: Icons.account_balance_wallet_outlined,
+        builder: () => const TreasuryScreen(),
+        enterpriseId: enterpriseId,
+        moduleId: moduleId,
+      ),
+      requiredPermissions: {ImmobilierPermissions.viewTreasury.id},
     ),
     (
       section: NavigationSection(
@@ -78,44 +98,14 @@ final accessibleImmobilierSectionsProvider =
     ),
     (
       section: NavigationSection(
-        label: 'Paiements',
-        icon: Icons.payment_outlined,
-        builder: () => const PaymentsScreen(),
+        label: 'Propriétés',
+        icon: Icons.home_outlined,
+        builder: () => const PropertiesScreen(),
         isPrimary: true,
         enterpriseId: enterpriseId,
         moduleId: moduleId,
       ),
-      requiredPermissions: {ImmobilierPermissions.viewPayments.id},
-    ),
-    (
-      section: NavigationSection(
-        label: 'Dépenses',
-        icon: Icons.receipt_long_outlined,
-        builder: () => const ExpensesScreen(),
-        enterpriseId: enterpriseId,
-        moduleId: moduleId,
-      ),
-      requiredPermissions: {ImmobilierPermissions.viewExpenses.id},
-    ),
-    (
-      section: NavigationSection(
-        label: 'Maintenance',
-        icon: Icons.handyman_outlined,
-        builder: () => const MaintenanceScreen(),
-        enterpriseId: enterpriseId,
-        moduleId: moduleId,
-      ),
-      requiredPermissions: {ImmobilierPermissions.viewMaintenance.id},
-    ),
-    (
-      section: NavigationSection(
-        label: 'Trésorerie',
-        icon: Icons.account_balance_wallet_outlined,
-        builder: () => const TreasuryScreen(),
-        enterpriseId: enterpriseId,
-        moduleId: moduleId,
-      ),
-      requiredPermissions: {ImmobilierPermissions.viewTreasury.id},
+      requiredPermissions: {ImmobilierPermissions.viewProperties.id},
     ),
     (
       section: NavigationSection(
@@ -129,9 +119,9 @@ final accessibleImmobilierSectionsProvider =
     ),
     (
       section: NavigationSection(
-        label: 'Imprimante',
-        icon: Icons.print_outlined,
-        builder: () => const ImmobilierPrinterSettingsScreen(),
+        label: 'Paramètres',
+        icon: Icons.settings_outlined,
+        builder: () => const ImmobilierSettingsScreen(),
         enterpriseId: enterpriseId,
         moduleId: moduleId,
       ),

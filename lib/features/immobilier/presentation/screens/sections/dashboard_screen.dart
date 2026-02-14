@@ -32,10 +32,14 @@ class DashboardScreen extends ConsumerWidget {
       immobilierDashboardCalculationServiceProvider,
     );
 
+    // Trigger automation on load
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(billingAutomationServiceProvider).runAutomation();
+    });
+
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          // Header
           // Header
           ImmobilierHeader(
             title: 'TABLEAU DE BORD',
@@ -55,6 +59,9 @@ class DashboardScreen extends ConsumerWidget {
                     ref.invalidate(tenantsProvider);
                     ref.invalidate(immobilierMonthlyMetricsProvider);
                     ref.invalidate(immobilierAlertsProvider);
+                    
+                    // Trigger automation on refresh
+                    ref.read(billingAutomationServiceProvider).runAutomation();
                   },
                   tooltip: 'Actualiser le tableau de bord',
                 ),

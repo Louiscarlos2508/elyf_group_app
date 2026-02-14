@@ -9,24 +9,28 @@ import 'package:flutter_bluetooth_serial/flutter_bluetooth_serial.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:elyf_groupe_app/core/printing/printer_provider.dart';
 
-class ImmobilierPrinterSettingsScreen extends ConsumerStatefulWidget {
-  const ImmobilierPrinterSettingsScreen({super.key});
-
+class ImmobilierSettingsScreen extends ConsumerStatefulWidget {
+  const ImmobilierSettingsScreen({super.key});
+ 
   @override
-  ConsumerState<ImmobilierPrinterSettingsScreen> createState() => _ImmobilierPrinterSettingsScreenState();
+  ConsumerState<ImmobilierSettingsScreen> createState() => _ImmobilierSettingsScreenState();
 }
-
-class _ImmobilierPrinterSettingsScreenState extends ConsumerState<ImmobilierPrinterSettingsScreen> {
+ 
+class _ImmobilierSettingsScreenState extends ConsumerState<ImmobilierSettingsScreen> {
   String _selectedType = 'system'; // sunmi, bluetooth, system
   bool _isLoading = true;
   bool _isTesting = false;
   
+  // Automation settings
+  bool _autoBillingEnabled = true;
+  final _gracePeriodController = TextEditingController();
+
   // Bluetooth specific
   final _thermalService = ThermalPrinterService();
   List<BluetoothDiscoveryResult> _devices = [];
   bool _isScanning = false;
   bool _isConnected = false;
-
+ 
   final _headerController = TextEditingController();
   final _footerController = TextEditingController();
 
@@ -43,6 +47,7 @@ class _ImmobilierPrinterSettingsScreenState extends ConsumerState<ImmobilierPrin
   void dispose() {
     _headerController.dispose();
     _footerController.dispose();
+    _gracePeriodController.dispose();
     super.dispose();
   }
 
@@ -65,6 +70,8 @@ class _ImmobilierPrinterSettingsScreenState extends ConsumerState<ImmobilierPrin
       _selectedType = settingsService.printerType;
       _headerController.text = settingsService.receiptHeader;
       _footerController.text = settingsService.receiptFooter;
+      _autoBillingEnabled = settingsService.autoBillingEnabled;
+      _gracePeriodController.text = settingsService.overdueGracePeriod.toString();
       _isLoading = false;
     });
   }
@@ -81,8 +88,15 @@ class _ImmobilierPrinterSettingsScreenState extends ConsumerState<ImmobilierPrin
     final settings = ref.read(immobilierSettingsServiceProvider);
     await settings.setReceiptHeader(_headerController.text);
     await settings.setReceiptFooter(_footerController.text);
+    await settings.setAutoBillingEnabled(_autoBillingEnabled);
+    
+    final gracePeriod = int.tryParse(_gracePeriodController.text);
+    if (gracePeriod != null) {
+      await settings.setOverdueGracePeriod(gracePeriod);
+    }
+
     if (mounted) {
-      NotificationService.showSuccess(context, 'Configuration du reçu enregistrée');
+      NotificationService.showSuccess(context, 'Paramètres enregistrés');
     }
   }
 
@@ -184,8 +198,8 @@ class _ImmobilierPrinterSettingsScreenState extends ConsumerState<ImmobilierPrin
       body: CustomScrollView(
         slivers: [
           const ImmobilierHeader(
-            title: "IMPRIMANTE",
-            subtitle: "Configuration du matériel",
+            title: "PARAMÈTRES",
+            subtitle: "Configuration globale",
             showBackButton: true,
           ),
           SliverToBoxAdapter(
@@ -227,6 +241,30 @@ class _ImmobilierPrinterSettingsScreenState extends ConsumerState<ImmobilierPrin
                   const SizedBox(height: 32),
                   const Divider(),
                   const SizedBox(height: 24),
+                  const Text("Automatisation :", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  const SizedBox(height: 16),
+                  
+                  SwitchListTile(
+                    title: const Text('Facturation automatique'),
+                    subtitle: const Text('Génère les paiements en attente chaque mois'),
+                    value: _autoBillingEnabled,
+                    onChanged: (val) => setState(() => _autoBillingEnabled = val),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _gracePeriodController,
+                    decoration: const InputDecoration(
+                      labelText: 'Délai de grâce supplémentaire (jours)',
+                      hintText: 'Ex: 5',
+                      border: OutlineInputBorder(),
+                      helperText: 'Nombre de jours de tolérance après le jour de paiement prévu dans le contrat',
+                    ),
+                    keyboardType: TextInputType.number,
+                  ),
+
+                  const SizedBox(height: 32),
+                  const Divider(),
+                  const SizedBox(height: 24),
                   const Text("Personnalisation du reçu :", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                   const SizedBox(height: 16),
 
@@ -248,10 +286,16 @@ class _ImmobilierPrinterSettingsScreenState extends ConsumerState<ImmobilierPrin
                     ),
                     maxLines: 2,
                   ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: _saveReceiptConfig,
-                    child: const Text('Enregistrer la personnalisation'),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _saveReceiptConfig,
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                      child: const Text('Enregistrer tous les paramètres'),
+                    ),
                   ),
 
                   const SizedBox(height: 48),

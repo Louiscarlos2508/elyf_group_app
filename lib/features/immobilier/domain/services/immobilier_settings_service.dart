@@ -27,6 +27,8 @@ class ImmobilierSettingsService {
     _prefs.setString(_keyReceiptHeader, settings.receiptHeader);
     _prefs.setString(_keyReceiptFooter, settings.receiptFooter);
     _prefs.setBool(_keyShowLogo, settings.showLogo);
+    _prefs.setInt(_keyOverdueGracePeriod, settings.overdueGracePeriod);
+    _prefs.setBool(_keyAutoBillingEnabled, settings.autoBillingEnabled);
   }
 
   static const String _keyPrinterAddress = 'immobilier_printer_address';
@@ -34,6 +36,8 @@ class ImmobilierSettingsService {
   static const String _keyReceiptHeader = 'immobilier_receipt_header';
   static const String _keyReceiptFooter = 'immobilier_receipt_footer';
   static const String _keyShowLogo = 'immobilier_show_logo';
+  static const String _keyOverdueGracePeriod = 'immobilier_overdue_grace_period';
+  static const String _keyAutoBillingEnabled = 'immobilier_auto_billing_enabled';
 
   // --- Printer Settings (Local Only) ---
 
@@ -82,6 +86,26 @@ class ImmobilierSettingsService {
     if (_repository != null && _enterpriseId != null) {
       final current = await _repository!.getSettings(_enterpriseId!) ?? ImmobilierSettings(enterpriseId: _enterpriseId!);
       await _repository!.saveSettings(current.copyWith(showLogo: show));
+    }
+  }
+
+  int get overdueGracePeriod => _prefs.getInt(_keyOverdueGracePeriod) ?? 5;
+
+  Future<void> setOverdueGracePeriod(int days) async {
+    await _prefs.setInt(_keyOverdueGracePeriod, days);
+    if (_repository != null && _enterpriseId != null) {
+      final current = await _repository!.getSettings(_enterpriseId!) ?? ImmobilierSettings(enterpriseId: _enterpriseId!);
+      await _repository!.saveSettings(current.copyWith(overdueGracePeriod: days));
+    }
+  }
+
+  bool get autoBillingEnabled => _prefs.getBool(_keyAutoBillingEnabled) ?? true;
+
+  Future<void> setAutoBillingEnabled(bool enabled) async {
+    await _prefs.setBool(_keyAutoBillingEnabled, enabled);
+    if (_repository != null && _enterpriseId != null) {
+      final current = await _repository!.getSettings(_enterpriseId!) ?? ImmobilierSettings(enterpriseId: _enterpriseId!);
+      await _repository!.saveSettings(current.copyWith(autoBillingEnabled: enabled));
     }
   }
 }

@@ -41,6 +41,7 @@ import '../domain/services/property_calculation_service.dart';
 import '../domain/services/property_validation_service.dart';
 import '../domain/services/validation/contract_validation_service.dart';
 import '../data/repositories/maintenance_offline_repository.dart';
+import '../application/services/billing_automation_service.dart';
 import '../domain/entities/maintenance_ticket.dart';
 import '../domain/repositories/maintenance_repository.dart';
 import 'controllers/maintenance_controller.dart';
@@ -127,6 +128,17 @@ final paymentFilterServiceProvider = Provider<PaymentFilterService>(
 final expenseFilterServiceProvider = Provider<ExpenseFilterService>(
   (ref) => ExpenseFilterService(),
 );
+
+final billingAutomationServiceProvider = Provider<BillingAutomationService>((ref) {
+  return BillingAutomationService(
+    ref.watch(contractRepositoryProvider),
+    ref.watch(paymentRepositoryProvider),
+    ref.watch(immobilierSettingsRepositoryProvider),
+    ref.watch(auditTrailServiceProvider),
+    ref.watch(activeEnterpriseProvider).value?.id ?? 'default',
+    ref.watch(currentUserIdProvider) ?? 'unknown',
+  );
+});
 
 // --- Repositories ---
 

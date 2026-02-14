@@ -66,8 +66,8 @@ class _TenantBalanceReportDialogState extends ConsumerState<TenantBalanceReportD
         payments: payments,
         startDate: _startDate,
         endDate: _endDate,
-        enterpriseName: activeEnterprise?.name ?? settings.receiptHeader,
-        footerText: settings.receiptFooter,
+        enterpriseName: activeEnterprise?.name ?? settings?.receiptHeader ?? 'ELYF IMMOBILIER',
+        footerText: settings?.receiptFooter ?? 'Merci de votre confiance !',
       );
 
       if (mounted) {
