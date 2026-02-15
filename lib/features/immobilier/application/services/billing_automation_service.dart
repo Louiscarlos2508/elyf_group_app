@@ -51,10 +51,77 @@ class BillingAutomationService {
 
     await processMonthlyBilling();
     await checkOverduePayments(settings.overdueGracePeriod);
+    await applyLateFees(settings);
     
     AppLogger.info('Billing automation completed.', name: _logName);
   }
 
+  /// Calculates and applies late fees to overdue payments.
+  Future<void> applyLateFees(ImmobilierSettings settings) async {
+    if (settings.penaltyRate <= 0) return;
+
+    try {
+      final now = DateTime.now();
+      final payments = await _paymentRepository.getAllPayments();
+      final overduePayments = payments.where((p) => p.status == PaymentStatus.overdue).toList();
+      
+      if (overduePayments.isEmpty) return;
+
+      int updatedCount = 0;
+      for (final payment in overduePayments) {
+        int penaltyAmount = 0;
+
+        if (settings.penaltyType == 'fixed') {
+          // Fixed penalty applied once
+          if (payment.penaltyAmount == 0) {
+            penaltyAmount = (payment.amount * (settings.penaltyRate / 100)).round();
+          }
+        } else if (settings.penaltyType == 'daily') {
+          // Daily penalty based on days overdue since last update
+          final lastUpdate = payment.updatedAt ?? payment.paymentDate;
+          final daysOverdue = now.difference(lastUpdate).inDays;
+          
+          if (daysOverdue > 0) {
+            penaltyAmount = (payment.amount * (settings.penaltyRate / 100) * daysOverdue).round();
+          }
+        }
+
+        if (penaltyAmount > 0) {
+          final updatedPayment = payment.copyWith(
+            penaltyAmount: payment.penaltyAmount + penaltyAmount,
+            // We increase the total amount due as well? 
+            // In many systems, amount is base rent, and penalty is separate but added to "total due"
+            // Let's assume 'amount' is total due including existing penalties.
+            amount: payment.amount + penaltyAmount,
+            updatedAt: now,
+          );
+          
+          await _paymentRepository.updatePayment(updatedPayment);
+          updatedCount++;
+          
+          await _auditTrailService.logAction(
+            enterpriseId: _enterpriseId,
+            userId: _userId,
+            module: 'immobilier',
+            action: 'auto_late_fee_apply',
+            entityId: payment.id,
+            entityType: 'payment',
+            metadata: {
+              'paymentId': payment.id,
+              'penaltyAmount': penaltyAmount,
+              'newTotal': updatedPayment.amount,
+            },
+          );
+        }
+      }
+      
+      if (updatedCount > 0) {
+        AppLogger.info('Applied late fees to $updatedCount overdue payments.', name: _logName);
+      }
+    } catch (e, stackTrace) {
+      AppLogger.error('Error during late fee application', name: _logName, error: e, stackTrace: stackTrace);
+    }
+  }
   /// Ensures a pending payment exists for every active contract for the current month.
   Future<void> processMonthlyBilling() async {
     try {
@@ -80,6 +147,7 @@ class BillingAutomationService {
             enterpriseId: _enterpriseId,
             contractId: contract.id,
             amount: contract.monthlyRent,
+            paidAmount: 0,
             paymentDate: DateTime(now.year, now.month, 1),
             status: PaymentStatus.pending,
             month: now.month,

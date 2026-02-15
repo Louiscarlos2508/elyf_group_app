@@ -20,7 +20,11 @@ import '../../widgets/report_period_selector_v2.dart';
 import '../../widgets/report_tabs_v2.dart';
 import '../../widgets/sales_report_content_v2.dart';
 import '../../widgets/gaz_header.dart';
+import '../../widgets/stock_summary_content.dart';
+import '../../widgets/stock_history_content.dart';
+import '../../widgets/sessions_report_content.dart';
 import '../../../../../shared/presentation/widgets/elyf_ui/atoms/elyf_icon_button.dart';
+import '../../../../../core/tenant/tenant_provider.dart' show activeEnterpriseProvider;
 
 /// Reports screen with professional UI - style boutique.
 class GazReportsScreen extends ConsumerStatefulWidget {
@@ -226,6 +230,12 @@ class _GazReportsScreenState extends ConsumerState<GazReportsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final activeEnterpriseAsync = ref.watch(activeEnterpriseProvider);
+    final enterpriseId = activeEnterpriseAsync.when(
+      data: (e) => e?.id ?? '',
+      loading: () => '',
+      error: (_, __) => '',
+    );
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -267,6 +277,7 @@ class _GazReportsScreenState extends ConsumerState<GazReportsScreen> {
                 child: GazReportKpiCardsV2(
                   startDate: _startDate,
                   endDate: _endDate,
+                  selectedTab: _selectedTab,
                 ),
               ),
             ),
@@ -330,6 +341,25 @@ class _GazReportsScreenState extends ConsumerState<GazReportsScreen> {
           endDate: _endDate,
         );
       case 3:
+        final activeEnterpriseAsync = ref.watch(activeEnterpriseProvider);
+        final enterpriseId = activeEnterpriseAsync.when(
+          data: (e) => e?.id ?? '',
+          loading: () => '',
+          error: (_, __) => '',
+        );
+        if (enterpriseId.isEmpty) return const SizedBox.shrink();
+        
+        return Column(
+          children: [
+            GazStockSummaryContent(enterpriseId: enterpriseId),
+            GazStockHistoryContent(
+              enterpriseId: enterpriseId,
+              startDate: _startDate,
+              endDate: _endDate,
+            ),
+          ],
+        );
+      case 4:
         return reportDataAsync.when(
           data: (reportData) => GazFinancialReportContentV2(
             startDate: _startDate,
@@ -338,6 +368,11 @@ class _GazReportsScreenState extends ConsumerState<GazReportsScreen> {
           ),
           loading: () => AppShimmers.list(context),
           error: (_, __) => const SizedBox.shrink(),
+        );
+      case 5:
+        return GazSessionsReportContent(
+          startDate: _startDate,
+          endDate: _endDate,
         );
       default:
         return const SizedBox.shrink();

@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
-import 'package:elyf_groupe_app/app/theme/app_colors.dart';
-import '../../../../../shared/presentation/widgets/elyf_ui/organisms/elyf_card.dart';
+import 'boutique_kpi_card.dart';
 
 /// Section displaying monthly KPIs for boutique.
 class DashboardMonthSection extends StatelessWidget {
@@ -29,28 +28,28 @@ class DashboardMonthSection extends StatelessWidget {
         final isWide = constraints.maxWidth > 900;
 
         final cards = [
-          ElyfStatsCard(
+          BoutiqueKpiCard(
             label: "Chiffre d'Affaires",
             value: CurrencyFormatter.formatFCFA(monthRevenue),
             subtitle: '$monthSalesCount ventes',
             icon: Icons.trending_up,
             color: Colors.blue,
           ),
-          ElyfStatsCard(
+          BoutiqueKpiCard(
             label: 'Achats',
             value: CurrencyFormatter.formatFCFA(monthPurchasesAmount),
             subtitle: 'Approvisionnements',
             icon: Icons.shopping_bag,
             color: Colors.orange,
           ),
-          ElyfStatsCard(
+          BoutiqueKpiCard(
             label: 'Dépenses',
             value: CurrencyFormatter.formatFCFA(monthExpensesAmount),
             subtitle: 'Charges',
             icon: Icons.receipt_long,
             color: theme.colorScheme.error,
           ),
-          ElyfStatsCard(
+          BoutiqueKpiCard(
             label: 'Bénéfice Net',
             value: CurrencyFormatter.formatFCFA(monthProfit),
             subtitle: monthProfit >= 0 ? 'Profit' : 'Déficit',

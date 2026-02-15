@@ -14,6 +14,7 @@ import '../../widgets/report_period_selector_v2.dart';
 import '../../widgets/report_tabs_v2.dart';
 import '../../widgets/sales_report_content_v2.dart';
 import '../../widgets/closings_report_content_v2.dart';
+import '../../widgets/debts_report_content_v2.dart';
 import '../../widgets/boutique_header.dart';
 
 /// Reports screen with professional UI - style eau_minerale.
@@ -221,6 +222,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       case 3:
         return ProfitReportContentV2(startDate: _startDate, endDate: _endDate);
       case 4:
+        return const DebtsReportContentV2();
+      case 5:
         return ClosingsReportContentV2(startDate: _startDate, endDate: _endDate);
       default:
         return const SizedBox.shrink();

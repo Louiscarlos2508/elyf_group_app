@@ -15,6 +15,8 @@ import '../../presentation/screens/sections/retail_screen.dart';
 import '../../presentation/screens/sections/settings_screen.dart';
 import '../../presentation/screens/sections/stock_screen.dart';
 import '../../presentation/screens/sections/wholesale_screen.dart';
+import '../../presentation/screens/sections/delivery_workflow_screen.dart';
+import '../../presentation/screens/sections/inventory_screen.dart';
 import 'permission_providers.dart';
 
 /// Provider pour récupérer les sections accessibles selon les permissions.
@@ -144,6 +146,26 @@ final accessibleGazSectionsProvider = FutureProvider<List<NavigationSection>>((
             moduleId: moduleId,
           ),
           requiredPermissions: {GazPermissions.viewProfile.id},
+        ),
+        (
+          section: NavigationSection(
+            label: 'Livraisons',
+            icon: Icons.local_shipping,
+            builder: () => const GazDeliveryWorkflowScreen(),
+            enterpriseId: enterpriseId,
+            moduleId: moduleId,
+          ),
+          requiredPermissions: {GazPermissions.viewDeliveries.id},
+        ),
+        (
+          section: NavigationSection(
+            label: 'Inventaire',
+            icon: Icons.fact_check_outlined,
+            builder: () => const GazInventoryScreen(),
+            enterpriseId: enterpriseId,
+            moduleId: moduleId,
+          ),
+          requiredPermissions: {GazPermissions.manageInventory.id},
         ),
       ];
 

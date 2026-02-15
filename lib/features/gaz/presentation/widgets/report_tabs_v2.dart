@@ -15,7 +15,9 @@ class GazReportTabsV2 extends StatelessWidget {
     _TabInfo('Ventes', Icons.local_fire_department_outlined),
     _TabInfo('Dépenses', Icons.receipt_long_outlined),
     _TabInfo('Bénéfices', Icons.trending_up),
+    _TabInfo('Stock', Icons.inventory_2_outlined),
     _TabInfo('Financier', Icons.account_balance),
+    _TabInfo('Clôtures', Icons.lock_clock_outlined),
   ];
 
   @override

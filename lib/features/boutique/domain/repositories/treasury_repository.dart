@@ -6,4 +6,5 @@ abstract class TreasuryRepository {
   Future<String> createOperation(TreasuryOperation operation);
   Stream<List<TreasuryOperation>> watchOperations({int limit = 50});
   Future<Map<String, int>> getBalances();
+  Stream<Map<String, int>> watchBalances();
 }

@@ -24,8 +24,11 @@ class Tour {
     required this.loadingFeePerBottle,
     required this.unloadingFeePerBottle,
     this.transportExpenses = const [],
+    this.fullBottlesReceived = const {},
+    this.gasPurchaseCost,
     this.collectionCompletedDate,
     this.transportCompletedDate,
+    this.receptionCompletedDate,
     this.returnCompletedDate,
     this.closureDate,
     this.cancelledDate,
@@ -44,8 +47,11 @@ class Tour {
   final double loadingFeePerBottle;
   final double unloadingFeePerBottle;
   final List<TransportExpense> transportExpenses;
+  final Map<int, int> fullBottlesReceived; // poids -> quantité
+  final double? gasPurchaseCost;
   final DateTime? collectionCompletedDate;
   final DateTime? transportCompletedDate;
+  final DateTime? receptionCompletedDate;
   final DateTime? returnCompletedDate;
   final DateTime? closureDate;
   final DateTime? cancelledDate;
@@ -64,8 +70,11 @@ class Tour {
     double? loadingFeePerBottle,
     double? unloadingFeePerBottle,
     List<TransportExpense>? transportExpenses,
+    Map<int, int>? fullBottlesReceived,
+    double? gasPurchaseCost,
     DateTime? collectionCompletedDate,
     DateTime? transportCompletedDate,
+    DateTime? receptionCompletedDate,
     DateTime? returnCompletedDate,
     DateTime? closureDate,
     DateTime? cancelledDate,
@@ -85,10 +94,14 @@ class Tour {
       unloadingFeePerBottle:
           unloadingFeePerBottle ?? this.unloadingFeePerBottle,
       transportExpenses: transportExpenses ?? this.transportExpenses,
+      fullBottlesReceived: fullBottlesReceived ?? this.fullBottlesReceived,
+      gasPurchaseCost: gasPurchaseCost ?? this.gasPurchaseCost,
       collectionCompletedDate:
           collectionCompletedDate ?? this.collectionCompletedDate,
       transportCompletedDate:
           transportCompletedDate ?? this.transportCompletedDate,
+      receptionCompletedDate:
+          receptionCompletedDate ?? this.receptionCompletedDate,
       returnCompletedDate: returnCompletedDate ?? this.returnCompletedDate,
       closureDate: closureDate ?? this.closureDate,
       cancelledDate: cancelledDate ?? this.cancelledDate,
@@ -121,11 +134,19 @@ class Tour {
               ?.map((e) => TransportExpense.fromMap(e as Map<String, dynamic>))
               .toList() ??
           [],
+      fullBottlesReceived: (map['fullBottlesReceived'] as Map<String, dynamic>?)?.map(
+            (k, v) => MapEntry(int.parse(k), (v as num).toInt()),
+          ) ??
+          {},
+      gasPurchaseCost: (map['gasPurchaseCost'] as num?)?.toDouble(),
       collectionCompletedDate: map['collectionCompletedDate'] != null
           ? DateTime.parse(map['collectionCompletedDate'] as String)
           : null,
       transportCompletedDate: map['transportCompletedDate'] != null
           ? DateTime.parse(map['transportCompletedDate'] as String)
+          : null,
+      receptionCompletedDate: map['receptionCompletedDate'] != null
+          ? DateTime.parse(map['receptionCompletedDate'] as String)
           : null,
       returnCompletedDate: map['returnCompletedDate'] != null
           ? DateTime.parse(map['returnCompletedDate'] as String)
@@ -160,8 +181,13 @@ class Tour {
       'loadingFeePerBottle': loadingFeePerBottle,
       'unloadingFeePerBottle': unloadingFeePerBottle,
       'transportExpenses': transportExpenses.map((e) => e.toMap()).toList(),
+      'fullBottlesReceived': fullBottlesReceived.map(
+        (k, v) => MapEntry(k.toString(), v),
+      ),
+      'gasPurchaseCost': gasPurchaseCost,
       'collectionCompletedDate': collectionCompletedDate?.toIso8601String(),
       'transportCompletedDate': transportCompletedDate?.toIso8601String(),
+      'receptionCompletedDate': receptionCompletedDate?.toIso8601String(),
       'returnCompletedDate': returnCompletedDate?.toIso8601String(),
       'closureDate': closureDate?.toIso8601String(),
       'cancelledDate': cancelledDate?.toIso8601String(),

@@ -53,12 +53,32 @@ class PaymentFormFields {
   static Widget amountField({
     required TextEditingController controller,
     required String? Function(String?) validator,
+    String label = 'Montant Total (FCFA) *',
   }) {
     return TextFormField(
       controller: controller,
-      decoration: const InputDecoration(
-        labelText: 'Montant (FCFA) *',
-        prefixIcon: Icon(Icons.attach_money),
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: const Icon(Icons.attach_money),
+      ),
+      keyboardType: TextInputType.number,
+      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+      validator: validator,
+    );
+  }
+
+  static Widget paidAmountField({
+    required TextEditingController controller,
+    required String? Function(String?) validator,
+    String? helperText,
+  }) {
+    return TextFormField(
+      controller: controller,
+      decoration: InputDecoration(
+        labelText: 'Montant Reçu (FCFA) *',
+        prefixIcon: const Icon(Icons.payments_outlined),
+        helperText: helperText,
+        helperStyle: const TextStyle(color: Colors.blue),
       ),
       keyboardType: TextInputType.number,
       inputFormatters: [FilteringTextInputFormatter.digitsOnly],

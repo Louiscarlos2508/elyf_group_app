@@ -1,6 +1,7 @@
 import '../../domain/entities/tour.dart';
 import '../../domain/repositories/tour_repository.dart';
 import '../../domain/services/tour_service.dart';
+import '../../domain/entities/stock_alert.dart';
 
 /// Contrôleur pour gérer les tours d'approvisionnement.
 class TourController {
@@ -57,6 +58,11 @@ class TourController {
   /// Passe à l'étape suivante du workflow.
   Future<void> moveToNextStep(String tourId) async {
     await service.moveToNextStep(tourId);
+  }
+
+  /// Clôture un tour avec mise à jour des stocks et enregistrement financier.
+  Future<List<StockAlert>> closeTour(String tourId, String userId) async {
+    return await service.closeTour(tourId, userId);
   }
 
   /// Annule un tour.

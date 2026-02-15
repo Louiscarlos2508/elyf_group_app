@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/immobilier/application/providers.dart';
 import 'package:elyf_groupe_app/features/immobilier/presentation/widgets/immobilier_header.dart';
+import 'package:elyf_groupe_app/features/immobilier/domain/entities/immobilier_settings.dart';
+import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 import 'package:elyf_groupe_app/core/printing/thermal_printer_service.dart';
 import 'package:flutter_bluetooth_serial/flutter_bluetooth_serial.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -21,10 +23,11 @@ class _ImmobilierSettingsScreenState extends ConsumerState<ImmobilierSettingsScr
   bool _isLoading = true;
   bool _isTesting = false;
   
-  // Automation settings
   bool _autoBillingEnabled = true;
   final _gracePeriodController = TextEditingController();
-
+  final _penaltyRateController = TextEditingController();
+  String _penaltyType = 'fixed'; // fixed, daily
+  String? _enterpriseId;
   // Bluetooth specific
   final _thermalService = ThermalPrinterService();
   List<BluetoothDiscoveryResult> _devices = [];
@@ -37,10 +40,10 @@ class _ImmobilierSettingsScreenState extends ConsumerState<ImmobilierSettingsScr
   @override
   void initState() {
     super.initState();
-    _loadSettings();
     _thermalService.initialize().then((_) {
       _attemptAutoReconnect();
     });
+    // Initial load will happen when build watches the enterprise & settings
   }
 
   @override
@@ -48,15 +51,17 @@ class _ImmobilierSettingsScreenState extends ConsumerState<ImmobilierSettingsScr
     _headerController.dispose();
     _footerController.dispose();
     _gracePeriodController.dispose();
+    _penaltyRateController.dispose();
     super.dispose();
   }
 
   Future<void> _attemptAutoReconnect() async {
-     final settings = ref.read(immobilierSettingsServiceProvider);
-     if (settings.printerType == 'bluetooth' && settings.printerAddress != null) {
-        await _thermalService.connectToAddress(settings.printerAddress!);
-     }
-     _checkConnection();
+    if (!mounted) return;
+    final settings = ref.read(immobilierSettingsServiceProvider);
+    if (settings.printerType == 'bluetooth' && settings.printerAddress != null) {
+      await _thermalService.connectToAddress(settings.printerAddress!);
+    }
+    _checkConnection();
   }
 
   Future<void> _checkConnection() async {
@@ -64,17 +69,6 @@ class _ImmobilierSettingsScreenState extends ConsumerState<ImmobilierSettingsScr
     if (mounted) setState(() => _isConnected = connected);
   }
 
-  Future<void> _loadSettings() async {
-    final settingsService = ref.read(immobilierSettingsServiceProvider);
-    setState(() {
-      _selectedType = settingsService.printerType;
-      _headerController.text = settingsService.receiptHeader;
-      _footerController.text = settingsService.receiptFooter;
-      _autoBillingEnabled = settingsService.autoBillingEnabled;
-      _gracePeriodController.text = settingsService.overdueGracePeriod.toString();
-      _isLoading = false;
-    });
-  }
 
   Future<void> _savePrinterType(String type) async {
     setState(() => _selectedType = type);
@@ -85,15 +79,26 @@ class _ImmobilierSettingsScreenState extends ConsumerState<ImmobilierSettingsScr
   }
 
   Future<void> _saveReceiptConfig() async {
-    final settings = ref.read(immobilierSettingsServiceProvider);
-    await settings.setReceiptHeader(_headerController.text);
-    await settings.setReceiptFooter(_footerController.text);
-    await settings.setAutoBillingEnabled(_autoBillingEnabled);
-    
-    final gracePeriod = int.tryParse(_gracePeriodController.text);
-    if (gracePeriod != null) {
-      await settings.setOverdueGracePeriod(gracePeriod);
+    if (_enterpriseId == null) {
+       NotificationService.showError(context, 'Aucune entreprise sélectionnée');
+       return;
     }
+
+    final localSettings = ref.read(immobilierSettingsServiceProvider);
+    await localSettings.setReceiptHeader(_headerController.text);
+    await localSettings.setReceiptFooter(_footerController.text);
+    
+    final repoSettings = await ref.read(immobilierSettingsRepositoryProvider).getSettings(_enterpriseId!) ?? 
+                        ImmobilierSettings(enterpriseId: _enterpriseId!);
+    
+    final updatedSettings = repoSettings.copyWith(
+      autoBillingEnabled: _autoBillingEnabled,
+      overdueGracePeriod: int.tryParse(_gracePeriodController.text) ?? 5,
+      penaltyRate: double.tryParse(_penaltyRateController.text) ?? 0.0,
+      penaltyType: _penaltyType,
+    );
+
+    await ref.read(immobilierSettingsRepositoryProvider).saveSettings(updatedSettings);
 
     if (mounted) {
       NotificationService.showSuccess(context, 'Paramètres enregistrés');
@@ -192,15 +197,87 @@ class _ImmobilierSettingsScreenState extends ConsumerState<ImmobilierSettingsScr
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    final activeEnterpriseAsync = ref.watch(activeEnterpriseProvider);
+    
+    return activeEnterpriseAsync.when(
+      data: (enterprise) {
+        if (enterprise == null) {
+          return const Scaffold(
+            body: Center(
+              child: Text('Veuillez sélectionner une entreprise'),
+            ),
+          );
+        }
 
+        // 1. Permissions (using stable provider)
+        final hasAccessAsync = ref.watch(userHasImmobilierPermissionProvider('manage_settings'));
+        
+        return hasAccessAsync.when(
+          data: (hasAccess) {
+            if (!hasAccess) {
+              return const Scaffold(
+                body: Center(
+                  child: Text('Accès refusé. Permissions insuffisantes.'),
+                ),
+              );
+            }
+
+            // 2. Listen for settings changes and update local state
+            ref.listen<AsyncValue<ImmobilierSettings?>>(
+              immobilierSettingsProvider(enterprise.id),
+              (previous, next) {
+                if (next is AsyncData) {
+                  final settings = next.value;
+                  if (_isLoading || _enterpriseId != enterprise.id) {
+                    _isLoading = false;
+                    _enterpriseId = enterprise.id;
+                    _loadLocalAndRepoSettings(settings);
+                    setState(() {});
+                  }
+                }
+              },
+            );
+
+            // 3. Watch settings for UI rendering (nested when is ok if logic is clean)
+            final repoSettingsAsync = ref.watch(immobilierSettingsProvider(enterprise.id));
+
+            return repoSettingsAsync.when(
+              data: (settings) => _buildContent(context),
+              loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
+              error: (e, _) => Scaffold(body: Center(child: Text('Erreur: $e'))),
+            );
+          },
+          loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
+          error: (e, _) => Scaffold(body: Center(child: Text('Erreur permissions: $e'))),
+        );
+      },
+      loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
+      error: (e, _) => Scaffold(body: Center(child: Text('Erreur: $e'))),
+    );
+  }
+
+  void _loadLocalAndRepoSettings(ImmobilierSettings? settings) {
+    final localSettings = ref.read(immobilierSettingsServiceProvider);
+    _selectedType = localSettings.printerType;
+    _headerController.text = localSettings.receiptHeader;
+    _footerController.text = localSettings.receiptFooter;
+
+    if (settings != null) {
+      _autoBillingEnabled = settings.autoBillingEnabled;
+      _gracePeriodController.text = settings.overdueGracePeriod.toString();
+      _penaltyRateController.text = settings.penaltyRate.toString();
+      _penaltyType = settings.penaltyType;
+    }
+  }
+
+  Widget _buildContent(BuildContext context) {
     return Scaffold(
       body: CustomScrollView(
         slivers: [
           const ImmobilierHeader(
             title: "PARAMÈTRES",
             subtitle: "Configuration globale",
-            showBackButton: true,
+            showBackButton: false,
           ),
           SliverToBoxAdapter(
             child: SingleChildScrollView(
@@ -262,6 +339,43 @@ class _ImmobilierSettingsScreenState extends ConsumerState<ImmobilierSettingsScr
                     keyboardType: TextInputType.number,
                   ),
 
+                  const SizedBox(height: 16),
+                  const Text("Pénalités de retard :", style: TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _penaltyRateController,
+                          decoration: const InputDecoration(
+                            labelText: 'Taux de pénalité (%)',
+                            hintText: 'Ex: 5.0',
+                            border: OutlineInputBorder(),
+                            helperText: 'Pourcentage appliqué au loyer',
+                          ),
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          initialValue: _penaltyType,
+                          decoration: const InputDecoration(
+                            labelText: 'Type de pénalité',
+                            border: OutlineInputBorder(),
+                            helperText: 'Fréquence d\'application',
+                          ),
+                          items: const [
+                            DropdownMenuItem(value: 'fixed', child: Text('Unique (One-time)')),
+                            DropdownMenuItem(value: 'daily', child: Text('Journalier (Daily)')),
+                          ],
+                          onChanged: (val) {
+                            if (val != null) setState(() => _penaltyType = val);
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 32),
                   const Divider(),
                   const SizedBox(height: 24),
@@ -396,7 +510,7 @@ class _ImmobilierSettingsScreenState extends ConsumerState<ImmobilierSettingsScr
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isSelected ? color.withOpacity(0.1) : Colors.white,
+          color: isSelected ? color.withValues(alpha: 0.1) : Colors.white,
           border: Border.all(
             color: isSelected ? color : Colors.grey.shade300,
             width: isSelected ? 2 : 1,

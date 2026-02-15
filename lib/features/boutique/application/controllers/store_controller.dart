@@ -22,6 +22,7 @@ import 'package:elyf_groupe_app/features/boutique/domain/entities/supplier_settl
 import 'package:elyf_groupe_app/features/boutique/domain/entities/stock_movement.dart';
 import 'package:elyf_groupe_app/features/boutique/domain/repositories/stock_movement_repository.dart';
 import 'package:elyf_groupe_app/features/audit_trail/domain/services/audit_trail_service.dart';
+import 'package:elyf_groupe_app/features/boutique/domain/services/supplier_settlement_service.dart';
 import 'package:elyf_groupe_app/core/logging/app_logger.dart';
 
 import 'package:elyf_groupe_app/features/boutique/domain/entities/category.dart';
@@ -41,6 +42,7 @@ class StoreController {
     this._supplierSettlementRepository,
     this._categoryRepository,
     this._stockMovementRepository,
+    this._supplierSettlementService,
     this._auditTrailService,
     this._currentUserId,
   );
@@ -57,6 +59,7 @@ class StoreController {
   final SupplierSettlementRepository _supplierSettlementRepository;
   final CategoryRepository _categoryRepository;
   final StockMovementRepository _stockMovementRepository;
+  final SupplierSettlementService _supplierSettlementService;
   final AuditTrailService _auditTrailService;
   final String _currentUserId;
 
@@ -670,6 +673,10 @@ class StoreController {
     return _treasuryRepository.getBalances();
   }
 
+  Stream<Map<String, int>> watchTreasuryBalances() {
+    return _treasuryRepository.watchBalances();
+  }
+
   // --- Suppliers ---
 
   Future<String> createSupplier(Supplier supplier) {
@@ -1071,6 +1078,22 @@ class StoreController {
 
   Stream<List<SupplierSettlement>> watchSettlements({String? supplierId}) {
     return _supplierSettlementRepository.watchSettlements(supplierId: supplierId);
+  }
+
+  Stream<Map<String, int>> watchSupplierDebtAging(String supplierId) {
+    return _supplierSettlementService.watchDebtAging(supplierId);
+  }
+
+  Stream<({int totalDebt, int totalSettled, int balance})> watchSupplierSummary(String supplierId) {
+    return _supplierSettlementService.watchSupplierSummary(supplierId);
+  }
+
+  Stream<DebtsReportData> watchDebtsReport() {
+    return _reportRepository.watchDebtsReport();
+  }
+
+  Future<void> deleteSupplier(String id) async {
+    await _supplierRepository.deleteSupplier(id);
   }
 
   Stream<List<SupplierSettlement>> watchDeletedSettlements({String? supplierId}) {

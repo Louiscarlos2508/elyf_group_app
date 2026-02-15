@@ -1,12 +1,12 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import '../../../../core/printing/printer_provider.dart';
-import '../../../../core/printing/templates/gas_receipt_template.dart';
+import '../../../../core/tenant/tenant_provider.dart';
 import '../../domain/entities/gas_sale.dart';
 
-/// Bouton d'impression de facture pour le gaz supportant plusieurs imprimantes via activePrinterProvider.
+/// Bouton d'impression de reçu pour le gaz.
 class GasPrintReceiptButton extends ConsumerStatefulWidget {
   const GasPrintReceiptButton({
     super.key,
@@ -36,7 +36,7 @@ class _GasPrintReceiptButtonState extends ConsumerState<GasPrintReceiptButton> {
   }
 
   Future<void> _checkPrinterAvailability() async {
-    final printer = ref.read(activePrinterProvider);
+    final printer = ref.read(thermalPrinterServiceProvider);
     final isAvailable = await printer.isAvailable();
 
     if (mounted) {
@@ -47,24 +47,18 @@ class _GasPrintReceiptButtonState extends ConsumerState<GasPrintReceiptButton> {
   }
 
   Future<void> _printReceipt() async {
-    final printer = ref.read(activePrinterProvider);
-    final isAvailable = await printer.isAvailable();
-
-    if (!isAvailable) {
-      widget.onPrintError?.call('Imprimante non disponible. Veuillez vérifier la connexion dans les réglages.');
-      return;
-    }
-
+    final printingService = ref.read(gazPrintingServiceProvider);
+    
     setState(() => _isPrinting = true);
 
     try {
-      final template = GasReceiptTemplate(
-        widget.sale,
+      final enterpriseName = ref.read(activeEnterpriseProvider).value?.name;
+      
+      final success = await printingService.printSaleReceipt(
+        sale: widget.sale,
         cylinderLabel: widget.cylinderLabel,
+        enterpriseName: enterpriseName,
       );
-      final content = template.generate();
-
-      final success = await printer.printReceipt(content);
 
       if (!mounted) return;
 
@@ -72,7 +66,7 @@ class _GasPrintReceiptButtonState extends ConsumerState<GasPrintReceiptButton> {
         widget.onPrintSuccess?.call();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Facture imprimée avec succès'),
+            content: Text('Reçu imprimé avec succès'),
             backgroundColor: Colors.green,
             duration: Duration(seconds: 2),
           ),
@@ -81,7 +75,7 @@ class _GasPrintReceiptButtonState extends ConsumerState<GasPrintReceiptButton> {
         widget.onPrintError?.call('Erreur lors de l\'impression');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Erreur lors de l\'impression'),
+            content: Text('Erreur lors de l\'impression. Vérifiez l\'imprimante.'),
             backgroundColor: Colors.red,
             duration: Duration(seconds: 2),
           ),
@@ -117,7 +111,7 @@ class _GasPrintReceiptButtonState extends ConsumerState<GasPrintReceiptButton> {
               child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
             )
           : const Icon(Icons.print),
-      label: Text(_isPrinting ? 'Impression...' : 'Imprimer la facture'),
+      label: Text(_isPrinting ? 'Impression...' : 'Imprimer le reçu'),
       style: FilledButton.styleFrom(
         backgroundColor: _isPrinterAvailable
             ? theme.colorScheme.primary

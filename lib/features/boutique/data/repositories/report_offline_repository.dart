@@ -3,11 +3,16 @@ import 'package:rxdart/rxdart.dart';
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/logging/app_logger.dart';
 import '../../domain/entities/expense.dart';
+import '../../domain/entities/purchase.dart';
 import '../../domain/entities/report_data.dart';
+import '../../domain/entities/supplier.dart';
+import '../../domain/entities/supplier_settlement.dart';
 import '../../domain/repositories/expense_repository.dart';
 import '../../domain/repositories/purchase_repository.dart';
 import '../../domain/repositories/report_repository.dart';
 import '../../domain/repositories/sale_repository.dart';
+import '../../domain/repositories/supplier_repository.dart';
+import '../../domain/repositories/supplier_settlement_repository.dart';
 
 /// Offline-first repository for generating reports.
 ///
@@ -18,11 +23,15 @@ class ReportOfflineRepository implements ReportRepository {
     required this.saleRepository,
     required this.purchaseRepository,
     required this.expenseRepository,
+    required this.supplierRepository,
+    required this.settlementRepository,
   });
 
   final SaleRepository saleRepository;
   final PurchaseRepository purchaseRepository;
   final ExpenseRepository expenseRepository;
+  final SupplierRepository supplierRepository;
+  final SupplierSettlementRepository settlementRepository;
 
   DateTime _getStartDate(ReportPeriod period, {DateTime? startDate}) {
     if (startDate != null) return startDate;
@@ -694,6 +703,76 @@ class ReportOfflineRepository implements ReportRepository {
           endDate: end,
         );
       },
+    );
+  }
+
+  @override
+  Future<DebtsReportData> getDebtsReport() async {
+    final suppliers = await supplierRepository.fetchSuppliers();
+    final purchases = await purchaseRepository.fetchPurchases(limit: 5000);
+    final settlements = await settlementRepository.fetchSettlements(limit: 5000);
+
+    return _calculateDebtsData(suppliers, purchases, settlements);
+  }
+
+  @override
+  Stream<DebtsReportData> watchDebtsReport() {
+    return CombineLatestStream.combine3(
+      supplierRepository.watchSuppliers(),
+      purchaseRepository.watchPurchases(limit: 2000),
+      settlementRepository.watchSettlements(),
+      (suppliers, purchases, settlements) => _calculateDebtsData(suppliers, purchases, settlements),
+    );
+  }
+
+  DebtsReportData _calculateDebtsData(
+    List<Supplier> suppliers,
+    List<Purchase> purchases,
+    List<SupplierSettlement> settlements,
+  ) {
+    int totalDebt = 0;
+    final Map<String, int> aging = {
+      '0-30': 0,
+      '31-60': 0,
+      '61+': 0,
+    };
+    final List<SupplierDebtSummary> debtBySupplier = [];
+
+    final now = DateTime.now();
+
+    for (final supplier in suppliers) {
+      if (supplier.balance > 0) {
+        totalDebt += supplier.balance;
+        debtBySupplier.add(SupplierDebtSummary(
+          supplierId: supplier.id,
+          supplierName: supplier.name,
+          balance: supplier.balance,
+        ));
+
+        // Calculate aging for this supplier from their purchases
+        final supplierPurchases = purchases.where((p) => p.supplierId == supplier.id && !p.isDeleted);
+        for (final p in supplierPurchases) {
+          final debt = p.debtAmount ?? 0;
+          if (debt <= 0) continue;
+
+          final difference = now.difference(p.date).inDays;
+          if (difference <= 30) {
+            aging['0-30'] = (aging['0-30'] ?? 0) + debt;
+          } else if (difference <= 60) {
+            aging['31-60'] = (aging['31-60'] ?? 0) + debt;
+          } else {
+            aging['61+'] = (aging['61+'] ?? 0) + debt;
+          }
+        }
+      }
+    }
+
+    debtBySupplier.sort((a, b) => b.balance.compareTo(a.balance));
+
+    return DebtsReportData(
+      totalDebt: totalDebt,
+      aging: aging,
+      debtBySupplier: debtBySupplier.take(10).toList(),
     );
   }
 }

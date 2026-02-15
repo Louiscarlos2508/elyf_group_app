@@ -1,5 +1,6 @@
 import '../../../audit_trail/domain/services/audit_trail_service.dart';
 import '../../../../core/errors/app_exceptions.dart';
+import '../../../../shared/domain/entities/payment_method.dart';
 import '../../domain/repositories/contract_repository.dart';
 import '../../domain/repositories/payment_repository.dart';
 import '../../domain/entities/payment.dart';
@@ -78,9 +79,9 @@ class PaymentController {
     await _logAction('create', created.id, metadata: created.toMap());
 
     // Record Treasury Operation
-    if (created.status == PaymentStatus.paid) {
+    if (created.status == PaymentStatus.paid || created.status == PaymentStatus.partial) {
       await _treasuryController.recordIncome(
-        amount: created.amount,
+        amount: created.paidAmount,
         method: created.paymentMethod,
         reason: 'Loyer ${created.month ?? ""}/${created.year ?? ""}',
         referenceEntityId: created.id,
@@ -107,6 +108,44 @@ class PaymentController {
     final updated = await _paymentRepository.updatePayment(payment);
     await _logAction('update', updated.id, metadata: updated.toMap());
     return updated;
+  }
+
+  /// Settle multiple payments at once (bulk processing).
+  Future<void> settlePayments(List<Payment> payments, PaymentMethod method) async {
+    final now = DateTime.now();
+    int totalAmount = 0;
+    final List<String> settledIds = [];
+
+    for (final payment in payments) {
+      final updatedPayment = payment.copyWith(
+        status: PaymentStatus.paid,
+        paidAmount: payment.amount, // Full payment in bulk settle
+        paymentMethod: method,
+        paymentDate: now,
+        updatedAt: now,
+      );
+
+      await _paymentRepository.updatePayment(updatedPayment);
+      totalAmount += payment.amount;
+      settledIds.add(payment.id);
+
+      await _logAction('bulk_settle', payment.id, metadata: {
+        'batchId': settledIds.first, // Using first ID as a batch reference
+        'method': method.name,
+        'amount': payment.amount,
+      });
+    }
+
+    // Record a single treasury operation for the total
+    if (totalAmount > 0) {
+      await _treasuryController.recordIncome(
+        amount: totalAmount,
+        method: method,
+        reason: 'Règlement groupé (${settledIds.length} mois)',
+        referenceEntityId: settledIds.first,
+        notes: 'Paiements: ${settledIds.join(", ")}',
+      );
+    }
   }
 
   Future<void> deletePayment(String id) async {

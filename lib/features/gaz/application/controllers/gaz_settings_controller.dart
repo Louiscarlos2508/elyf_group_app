@@ -34,12 +34,13 @@ class GazSettingsController {
     await repository.saveSettings(settings);
   }
 
-  /// Définit le prix en gros pour un poids donné.
+  /// Définit le prix en gros pour un poids et un tier donnés.
   Future<void> setWholesalePrice({
     required String enterpriseId,
     required String moduleId,
     required int weight,
     required double price,
+    String tier = 'default',
   }) async {
     final existing = await repository.getSettings(
       enterpriseId: enterpriseId,
@@ -47,20 +48,21 @@ class GazSettingsController {
     );
 
     final updated = existing != null
-        ? existing.setWholesalePrice(weight, price)
+        ? existing.setWholesalePrice(weight, price, tier: tier)
         : GazSettings(
             enterpriseId: enterpriseId,
             moduleId: moduleId,
-          ).setWholesalePrice(weight, price);
+          ).setWholesalePrice(weight, price, tier: tier);
 
     await repository.saveSettings(updated);
   }
 
-  /// Supprime le prix en gros pour un poids donné.
+  /// Supprime le prix en gros pour un poids et un tier donnés.
   Future<void> removeWholesalePrice({
     required String enterpriseId,
     required String moduleId,
     required int weight,
+    String tier = 'default',
   }) async {
     final existing = await repository.getSettings(
       enterpriseId: enterpriseId,
@@ -68,21 +70,88 @@ class GazSettingsController {
     );
 
     if (existing != null) {
-      final updated = existing.removeWholesalePrice(weight);
+      final updated = existing.removeWholesalePrice(weight, tier: tier);
       await repository.saveSettings(updated);
     }
   }
 
-  /// Récupère le prix en gros pour un poids donné.
+  /// Récupère le prix en gros pour un poids et un tier donnés.
   Future<double?> getWholesalePrice({
     required String enterpriseId,
     required String moduleId,
     required int weight,
+    String tier = 'default',
   }) async {
     final settings = await repository.getSettings(
       enterpriseId: enterpriseId,
       moduleId: moduleId,
     );
-    return settings?.getWholesalePrice(weight);
+    return settings?.getWholesalePrice(weight, tier: tier);
+  }
+
+  /// Définit le seuil d'alerte pour un poids donné.
+  Future<void> setLowStockThreshold({
+    required String enterpriseId,
+    required String moduleId,
+    required int weight,
+    required int threshold,
+  }) async {
+    final existing = await repository.getSettings(
+      enterpriseId: enterpriseId,
+      moduleId: moduleId,
+    );
+
+    final updated = existing != null
+        ? existing.setLowStockThreshold(weight, threshold)
+        : GazSettings(
+            enterpriseId: enterpriseId,
+            moduleId: moduleId,
+          ).setLowStockThreshold(weight, threshold);
+
+    await repository.saveSettings(updated);
+  }
+
+  /// Définit le taux de consigne pour un poids donné.
+  Future<void> setDepositRate({
+    required String enterpriseId,
+    required String moduleId,
+    required int weight,
+    required double rate,
+  }) async {
+    final existing = await repository.getSettings(
+      enterpriseId: enterpriseId,
+      moduleId: moduleId,
+    );
+
+    final updated = existing != null
+        ? existing.setDepositRate(weight, rate)
+        : GazSettings(
+            enterpriseId: enterpriseId,
+            moduleId: moduleId,
+          ).setDepositRate(weight, rate);
+
+    await repository.saveSettings(updated);
+  }
+
+  /// Active/Désactive l'impression automatique des reçus.
+  Future<void> setAutoPrintReceipt({
+    required String enterpriseId,
+    required String moduleId,
+    required bool enabled,
+  }) async {
+    final existing = await repository.getSettings(
+      enterpriseId: enterpriseId,
+      moduleId: moduleId,
+    );
+
+    final updated = existing != null
+        ? existing.copyWith(autoPrintReceipt: enabled, updatedAt: DateTime.now())
+        : GazSettings(
+            enterpriseId: enterpriseId,
+            moduleId: moduleId,
+            autoPrintReceipt: enabled,
+          );
+
+    await repository.saveSettings(updated);
   }
 }

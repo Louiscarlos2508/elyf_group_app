@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 
 import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
-import 'package:elyf_groupe_app/app/theme/app_colors.dart';
-
-import '../../domain/services/dashboard_calculation_service.dart';
-import '../../../../../shared/presentation/widgets/elyf_ui/organisms/elyf_card.dart';
+import '../../domain/services/boutique_calculation_service.dart';
+import 'boutique_kpi_card.dart';
 
 /// Section displaying today's KPIs for boutique.
 ///
@@ -26,21 +24,21 @@ class DashboardTodaySection extends StatelessWidget {
       builder: (context, constraints) {
         final isWide = constraints.maxWidth > 900;
         final cards = [
-          ElyfStatsCard(
+          BoutiqueKpiCard(
             label: "Chiffre d'Affaires",
             value: CurrencyFormatter.formatFCFA(todayRevenue),
             subtitle: '$todayCount vente(s)',
             icon: Icons.trending_up,
             color: Colors.blue,
           ),
-          ElyfStatsCard(
+          BoutiqueKpiCard(
             label: 'Articles Vendus',
             value: '$itemsCount',
             subtitle: 'quantité totale',
             icon: Icons.inventory_2_outlined,
             color: Colors.orange,
           ),
-          ElyfStatsCard(
+          BoutiqueKpiCard(
             label: 'Ticket Moyen',
             value: CurrencyFormatter.formatFCFA(avgTicket),
             subtitle: todayCount > 0 ? 'par transaction' : 'aucune vente',

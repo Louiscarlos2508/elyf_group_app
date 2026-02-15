@@ -58,6 +58,7 @@ class MaintenanceOfflineRepository extends OfflineRepository<MaintenanceTicket>
       status: Value(entity.status.name),
       photos: Value(entity.photos?.join(',')),
       cost: Value(entity.cost),
+      assignedUserId: Value(entity.assignedUserId),
       createdAt: Value(entity.createdAt ?? DateTime.now()),
       updatedAt: Value(DateTime.now()),
       deletedAt: Value(entity.deletedAt),
@@ -102,6 +103,7 @@ class MaintenanceOfflineRepository extends OfflineRepository<MaintenanceTicket>
       ),
       photos: entity.photos?.split(','),
       cost: entity.cost,
+      assignedUserId: entity.assignedUserId,
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
       deletedAt: entity.deletedAt,
@@ -158,6 +160,11 @@ class MaintenanceOfflineRepository extends OfflineRepository<MaintenanceTicket>
       ..where((t) => t.deletedAt.isNull());
     final rows = await query.get();
     return rows.map<MaintenanceTicket>(_fromEntity).toList();
+  }
+
+  @override
+  Future<MaintenanceTicket?> getTicketById(String id) async {
+    return await getByLocalId(id);
   }
 
   @override

@@ -10,7 +10,7 @@ class MaintenanceTicketsTable extends Table {
   TextColumn get status => text()(); // open, inProgress, resolved, closed
   TextColumn get photos => text().nullable()(); // Serialized List<String>
   RealColumn get cost => real().nullable()();
-
+  TextColumn get assignedUserId => text().nullable()();
   // Security & Audit
   DateTimeColumn get createdAt => dateTime().nullable()();
   DateTimeColumn get updatedAt => dateTime().nullable()();

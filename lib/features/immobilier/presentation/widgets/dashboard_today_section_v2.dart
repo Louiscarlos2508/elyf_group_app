@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 
 import '../../domain/entities/payment.dart';
-import 'dashboard_kpi_card_v2.dart';
+import 'immobilier_kpi_card.dart';
 
 /// Section displaying today's KPIs for immobilier.
 class DashboardTodaySectionV2 extends StatelessWidget {
@@ -14,31 +14,28 @@ class DashboardTodaySectionV2 extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final paidPayments = todayPayments
-        .where((p) => p.status == PaymentStatus.paid)
+        .where((p) => p.status == PaymentStatus.paid || p.status == PaymentStatus.partial)
         .toList();
-    final todayRevenue = paidPayments.fold(0, (sum, p) => sum + p.amount);
+    final todayRevenue = paidPayments.fold(0, (sum, p) => sum + p.paidAmount);
     final todayCount = paidPayments.length;
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final isWide = constraints.maxWidth > 600;
         final cards = [
-          DashboardKpiCardV2(
+          ImmobilierKpiCard(
             label: 'Paiements reçus',
             value: CurrencyFormatter.formatFCFA(todayRevenue),
             subtitle: '$todayCount paiement(s)',
             icon: Icons.payments,
-            iconColor: const Color(0xFF3B82F6), // Blue
-            backgroundColor: const Color(0xFF3B82F6),
+            color: const Color(0xFF3B82F6), // Blue
           ),
-          DashboardKpiCardV2(
+          ImmobilierKpiCard(
             label: 'Nombre de paiements',
             value: todayCount.toString(),
             subtitle: todayCount > 0 ? 'transactions' : 'aucun paiement',
             icon: Icons.receipt,
-            iconColor: const Color(0xFF10B981), // Emerald
-            valueColor: const Color(0xFF059669), // Darker emerald
-            backgroundColor: const Color(0xFF10B981),
+            color: const Color(0xFF10B981), // Emerald
           ),
         ];
 

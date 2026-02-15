@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
 import 'package:elyf_groupe_app/core/logging/app_logger.dart';
+import 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder_leak.dart';
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
-import '../../../domain/entities/cylinder_leak.dart';
-import '../../widgets/cylinder_leak_form_dialog.dart';
+import 'package:elyf_groupe_app/features/gaz/presentation/widgets/leak_report_dialog.dart';
+import 'package:elyf_groupe_app/features/gaz/presentation/widgets/exchange_dialog.dart';
 import 'cylinder_leak/leak_filters.dart';
 import 'cylinder_leak/leak_header.dart';
 import 'cylinder_leak/leak_list_item.dart';
@@ -33,10 +33,7 @@ class _CylinderLeakScreenState extends ConsumerState<CylinderLeakScreen> {
     try {
       showDialog(
         context: context,
-        builder: (context) => CylinderLeakFormDialog(
-          enterpriseId: widget.enterpriseId,
-          moduleId: widget.moduleId,
-        ),
+        builder: (context) => const LeakReportDialog(),
       ).then((result) {
         if (result == true && mounted) {
           ref.invalidate(

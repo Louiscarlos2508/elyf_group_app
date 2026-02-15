@@ -5,6 +5,13 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'printer_interface.dart';
 
+/// Format facture 80x210mm (points: 72 pt = 1 inch, 1 inch = 25.4 mm).
+final PdfPageFormat _receipt80x210 = PdfPageFormat(
+  80 * (72 / 25.4),
+  210 * (72 / 25.4),
+  marginAll: 4,
+);
+
 class SystemPrinterService implements PrinterInterface {
   @override
   Future<bool> initialize() async {
@@ -18,7 +25,7 @@ class SystemPrinterService implements PrinterInterface {
 
   @override
   Future<int> getLineWidth() async {
-    return 80; // Standard PDF/A4 width heuristic in characters
+    return 48; // 80mm, aligné avec thermique / journal
   }
 
   @override
@@ -26,14 +33,27 @@ class SystemPrinterService implements PrinterInterface {
      return printReceipt(text);
   }
 
+  static const int _lineWidth = 48;
+  static const double _baseFontSize = 9.0;
+  static const double _minFontSize = 5.0;
+
   @override
   Future<bool> printReceipt(String content) async {
     try {
       final doc = pw.Document();
-      
+
+      // Adapter la ligne à la page : réduire la taille de police si la ligne est longue
+      double fontSizeForLine(String s) {
+        if (s.isEmpty) return _baseFontSize;
+        final len = s.length;
+        if (len <= _lineWidth) return _baseFontSize;
+        final size = _baseFontSize * _lineWidth / len;
+        return size.clamp(_minFontSize, _baseFontSize);
+      }
+
       doc.addPage(
         pw.Page(
-          pageFormat: PdfPageFormat.roll80,
+          pageFormat: _receipt80x210,
           build: (pw.Context context) {
             return pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -42,7 +62,7 @@ class SystemPrinterService implements PrinterInterface {
                   line,
                   style: pw.TextStyle(
                     font: pw.Font.courier(),
-                    fontSize: 9,
+                    fontSize: fontSizeForLine(line),
                   ),
                 );
               }).toList(),

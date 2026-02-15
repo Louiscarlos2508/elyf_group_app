@@ -15,6 +15,7 @@ import '../../widgets/dashboard_alerts_section.dart';
 import '../../widgets/immobilier_header.dart';
 import '../../widgets/dashboard_month_section_v2.dart';
 import '../../widgets/dashboard_today_section_v2.dart';
+import '../../widgets/dashboard_charts_section.dart';
 
 /// Professional dashboard screen for immobilier module.
 class DashboardScreen extends ConsumerWidget {
@@ -83,6 +84,38 @@ class DashboardScreen extends ConsumerWidget {
               child: _DashboardTodayKpis(
                 ref: ref,
                 paymentsAsync: paymentsAsync,
+              ),
+            ),
+          ),
+
+          // Analytics section header
+          const SliverSectionHeader(
+            title: 'ANALYTIQUES',
+            bottom: AppSpacing.sm,
+          ),
+
+          // Charts
+          SliverPadding(
+            padding: AppSpacing.sectionPadding,
+            sliver: SliverToBoxAdapter(
+              child: paymentsAsync.when(
+                data: (payments) {
+                  final trend = calculationService.calculateRevenueTrend(payments);
+                  final stats = calculationService.calculateMonthlyMetrics(
+                    properties: propertiesAsync.asData?.value ?? [],
+                    tenants: (tenantsAsync.asData?.value as List?)?.cast<Tenant>() ?? [],
+                    contracts: contractsAsync.asData?.value ?? [],
+                    payments: payments,
+                    expenses: (expensesAsync.asData?.value as List?)?.cast<PropertyExpense>() ?? [],
+                    tickets: ticketsAsync.asData?.value ?? [],
+                  );
+                  return DashboardChartsSection(
+                    revenueTrend: trend,
+                    occupancyRate: stats.occupancyRate,
+                  );
+                },
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (_, __) => const SizedBox.shrink(),
               ),
             ),
           ),
@@ -263,6 +296,7 @@ class _DashboardMonthKpis extends StatelessWidget {
                               unpaidRentsCount: metrics.unpaidRentsCount,
                               openTickets: metrics.totalOpenTickets,
                               highPriorityTickets: metrics.highPriorityTickets,
+                              totalDepositsHeld: metrics.totalDepositsHeld,
                               onRevenueTap: onRevenueTap,
                               onExpensesTap: onExpensesTap,
                               onProfitTap: onProfitTap,

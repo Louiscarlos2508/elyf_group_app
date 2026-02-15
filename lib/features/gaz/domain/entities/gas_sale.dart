@@ -16,10 +16,18 @@ class GasSale {
     this.tourId, // ID du tour d'approvisionnement (pour ventes en gros)
     this.wholesalerId, // ID du grossiste (pour ventes en gros)
     this.wholesalerName, // Nom du grossiste (pour ventes en gros)
+    this.emptyReturnedQuantity = 0, // Nombre de bouteilles vides rendues
+    this.dealType = GasSaleDealType.exchange, // Type de transaction (Échange ou Nouveau)
+    this.sellerId, // ID du vendeur
     this.createdAt,
     this.updatedAt,
     this.deletedAt,
     this.deletedBy,
+    this.paymentMethod = PaymentMethod.cash,
+    this.deliveryStatus = DeliveryStatus.pending,
+    this.deliveryPersonId,
+    this.deliveredAt,
+    this.proofOfDelivery,
   });
 
   final String id;
@@ -37,10 +45,20 @@ class GasSale {
   final String? tourId; // ID du tour d'approvisionnement (pour ventes en gros)
   final String? wholesalerId; // ID du grossiste (pour ventes en gros)
   final String? wholesalerName; // Nom du grossiste (pour ventes en gros)
+  final int emptyReturnedQuantity; // Nombre de bouteilles vides rendues
+  final GasSaleDealType dealType; // Type de transaction (Échange ou Nouveau)
+  final String? sellerId; // ID du vendeur
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final DateTime? deletedAt;
   final String? deletedBy;
+  final PaymentMethod paymentMethod;
+  final DeliveryStatus deliveryStatus;
+  final String? deliveryPersonId;
+  final DateTime? deliveredAt;
+  final String? proofOfDelivery; // Signature base64 or photo path
+
+  bool get isExchange => dealType == GasSaleDealType.exchange;
 
   GasSale copyWith({
     String? id,
@@ -58,10 +76,18 @@ class GasSale {
     String? tourId,
     String? wholesalerId,
     String? wholesalerName,
+    int? emptyReturnedQuantity,
+    GasSaleDealType? dealType,
+    String? sellerId,
     DateTime? createdAt,
     DateTime? updatedAt,
     DateTime? deletedAt,
     String? deletedBy,
+    PaymentMethod? paymentMethod,
+    DeliveryStatus? deliveryStatus,
+    String? deliveryPersonId,
+    DateTime? deliveredAt,
+    String? proofOfDelivery,
   }) {
     return GasSale(
       id: id ?? this.id,
@@ -79,10 +105,18 @@ class GasSale {
       tourId: tourId ?? this.tourId,
       wholesalerId: wholesalerId ?? this.wholesalerId,
       wholesalerName: wholesalerName ?? this.wholesalerName,
+      emptyReturnedQuantity: emptyReturnedQuantity ?? this.emptyReturnedQuantity,
+      dealType: dealType ?? this.dealType,
+      sellerId: sellerId ?? this.sellerId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       deletedAt: deletedAt ?? this.deletedAt,
       deletedBy: deletedBy ?? this.deletedBy,
+      paymentMethod: paymentMethod ?? this.paymentMethod,
+      deliveryStatus: deliveryStatus ?? this.deliveryStatus,
+      deliveryPersonId: deliveryPersonId ?? this.deliveryPersonId,
+      deliveredAt: deliveredAt ?? this.deliveredAt,
+      proofOfDelivery: proofOfDelivery ?? this.proofOfDelivery,
     );
   }
 
@@ -103,6 +137,14 @@ class GasSale {
       tourId: map['tourId'] as String?,
       wholesalerId: map['wholesalerId'] as String?,
       wholesalerName: map['wholesalerName'] as String?,
+      emptyReturnedQuantity: (map['emptyReturnedQuantity'] as num?)?.toInt() ?? 0,
+      dealType: GasSaleDealType.values.byName(map['dealType'] as String? ?? 'exchange'),
+      sellerId: map['sellerId'] as String?,
+      paymentMethod: PaymentMethod.values.byName(map['paymentMethod'] as String? ?? 'cash'),
+      deliveryStatus: DeliveryStatus.values.byName(map['deliveryStatus'] as String? ?? 'pending'),
+      deliveryPersonId: map['deliveryPersonId'] as String?,
+      deliveredAt: map['deliveredAt'] != null ? DateTime.parse(map['deliveredAt'] as String) : null,
+      proofOfDelivery: map['proofOfDelivery'] as String?,
       createdAt: map['createdAt'] != null
           ? DateTime.parse(map['createdAt'] as String)
           : null,
@@ -133,13 +175,20 @@ class GasSale {
       'tourId': tourId,
       'wholesalerId': wholesalerId,
       'wholesalerName': wholesalerName,
+      'emptyReturnedQuantity': emptyReturnedQuantity,
+      'dealType': dealType.name,
+      'sellerId': sellerId,
+      'paymentMethod': paymentMethod.name,
+      'deliveryStatus': deliveryStatus.name,
+      'deliveryPersonId': deliveryPersonId,
+      'deliveredAt': deliveredAt?.toIso8601String(),
+      'proofOfDelivery': proofOfDelivery,
       'createdAt': createdAt?.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
       'deletedAt': deletedAt?.toIso8601String(),
       'deletedBy': deletedBy,
     };
   }
-
   bool get isDeleted => deletedAt != null;
 }
 
@@ -148,5 +197,33 @@ enum SaleType {
   wholesale('Gros');
 
   const SaleType(this.label);
+  final String label;
+}
+
+enum GasSaleDealType {
+  exchange('Échange'),
+  newCylinder('Nouveau');
+
+  const GasSaleDealType(this.label);
+  final String label;
+}
+
+enum PaymentMethod {
+  cash('Espèces'),
+  mobileMoney('Mobile Money'),
+  card('Carte'),
+  credit('Crédit');
+
+  const PaymentMethod(this.label);
+  final String label;
+}
+
+enum DeliveryStatus {
+  pending('En attente'),
+  inProgress('En cours'),
+  delivered('Livré'),
+  cancelled('Annulé');
+
+  const DeliveryStatus(this.label);
   final String label;
 }

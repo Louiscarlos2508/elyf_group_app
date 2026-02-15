@@ -167,7 +167,7 @@ class DashboardScreen extends ConsumerWidget {
               child: salesAsync.when(
                 data: (sales) {
                   final calculationService = ref.read(
-                    boutiqueDashboardCalculationServiceProvider,
+                    boutiqueCalculationServiceProvider,
                   );
                   final metrics = calculationService.calculateTodayMetrics(
                     sales,
@@ -302,11 +302,11 @@ class DashboardScreen extends ConsumerWidget {
     return metricsAsync.when(
       data: (data) {
         final calculationService = ref.read(
-          boutiqueDashboardCalculationServiceProvider,
+          boutiqueCalculationServiceProvider,
         );
 
         final metrics = calculationService
-            .calculateMonthlyMetricsWithPurchases(
+            .calculateMonthlyMetrics(
           sales: data.sales,
           expenses: data.expenses,
           purchases: data.purchases,

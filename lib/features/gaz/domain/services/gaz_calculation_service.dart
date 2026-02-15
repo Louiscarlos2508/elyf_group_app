@@ -1,6 +1,7 @@
 import '../entities/collection.dart';
 import '../entities/cylinder.dart';
 import '../entities/cylinder_stock.dart';
+import '../entities/gaz_session.dart';
 import '../entities/expense.dart';
 import '../entities/gas_sale.dart';
 import '../entities/point_of_sale.dart';
@@ -442,6 +443,151 @@ class GazCalculationService {
     );
     return monthRevenue - monthExpenses;
   }
+
+  // ============================================================
+  // MÉTHODES DE CALCUL DE STOCK PAR POINT DE VENTE
+  // ============================================================
+
+  /// Calcule les métriques de stock pour un point de vente spécifique.
+  static PointOfSaleStockMetrics calculatePosStockMetrics({
+    required String posId,
+    required List<CylinderStock> allStocks,
+  }) {
+    // Filtrer les stocks pour ce point de vente
+    final posStocks =
+        allStocks.where((s) => s.siteId == posId || s.siteId == null).toList();
+
+    // Calculer les totaux
+    final fullStocks = posStocks
+        .where((s) => s.status == CylinderStatus.full)
+        .toList();
+    final emptyStocks = posStocks
+        .where(
+          (s) =>
+              s.status == CylinderStatus.emptyAtStore ||
+              s.status == CylinderStatus.emptyInTransit,
+        )
+        .toList();
+
+    final totalFull = fullStocks.fold<int>(0, (sum, s) => sum + s.quantity);
+    final totalEmpty = emptyStocks.fold<int>(0, (sum, s) => sum + s.quantity);
+
+    // Grouper par capacité
+    final availableWeights = posStocks.map((s) => s.weight).toSet().toList()
+      ..sort();
+    final stockByCapacity = <int, ({int full, int empty})>{};
+
+    for (final weight in availableWeights) {
+      final full = posStocks
+          .where((s) => s.weight == weight && s.status == CylinderStatus.full)
+          .fold<int>(0, (sum, s) => sum + s.quantity);
+      final empty = posStocks
+          .where(
+            (s) =>
+                s.weight == weight &&
+                (s.status == CylinderStatus.emptyAtStore ||
+                    s.status == CylinderStatus.emptyInTransit),
+          )
+          .fold<int>(0, (sum, s) => sum + s.quantity);
+      if (full > 0 || empty > 0) {
+        stockByCapacity[weight] = (full: full, empty: empty);
+      }
+    }
+
+    return PointOfSaleStockMetrics(
+      pointOfSaleId: posId,
+      totalFull: totalFull,
+      totalEmpty: totalEmpty,
+      stockByCapacity: stockByCapacity,
+    );
+  }
+
+  // ============================================================
+  // MÉTHODES DE RÉCONCILIATION
+  // ============================================================
+
+  /// Calcule les métriques de réconciliation pour une journée donnée.
+  static ReconciliationMetrics calculateDailyReconciliation({
+    required DateTime date,
+    required List<GasSale> allSales,
+    required List<GazExpense> allExpenses,
+    required List<Cylinder> cylinders,
+  }) {
+    final dayStart = DateTime(date.year, date.month, date.day);
+    final dayEnd = dayStart.add(const Duration(days: 1));
+
+    // Filtrer les ventes et dépenses du jour
+    final todaySales = allSales.where((s) {
+      return s.saleDate.isAfter(dayStart.subtract(const Duration(seconds: 1))) &&
+          s.saleDate.isBefore(dayEnd);
+    }).toList();
+
+    final todayExpenses = allExpenses.where((e) {
+      return e.date.isAfter(dayStart.subtract(const Duration(seconds: 1))) &&
+          e.date.isBefore(dayEnd);
+    }).toList();
+
+    // Calculer les totaux
+    final totalSales = todaySales.fold<double>(
+      0,
+      (sum, s) => sum + s.totalAmount,
+    );
+    final totalExpenses = todayExpenses.fold<double>(
+      0,
+      (sum, e) => sum + e.amount,
+    );
+
+    // Ventes partagées par méthode de paiement
+    final salesByPaymentMethod = <PaymentMethod, double>{};
+    for (final method in PaymentMethod.values) {
+      salesByPaymentMethod[method] = todaySales
+          .where((s) => s.paymentMethod == method)
+          .fold<double>(0, (sum, s) => sum + s.totalAmount);
+    }
+
+    // Le cash théorique est: Total Espèces - Dépenses (si on considère qu'elles sortent du cash)
+    final cashSales = salesByPaymentMethod[PaymentMethod.cash] ?? 0.0;
+    final theoreticalCash = cashSales - totalExpenses;
+
+    // Ventes partagées par poids (quantité totale de bouteilles)
+    final salesByCylinderWeight = <int, int>{};
+    for (final cylinder in cylinders) {
+      final weight = cylinder.weight;
+      final count = todaySales
+          .where((s) => s.cylinderId == cylinder.id)
+          .fold<int>(0, (sum, s) => sum + s.quantity);
+      salesByCylinderWeight[weight] =
+          (salesByCylinderWeight[weight] ?? 0) + count;
+    }
+
+    return ReconciliationMetrics(
+      date: dayStart,
+      totalSales: totalSales,
+      totalExpenses: totalExpenses,
+      theoreticalCash: theoreticalCash,
+      salesByPaymentMethod: salesByPaymentMethod,
+      salesByCylinderWeight: salesByCylinderWeight,
+    );
+  }
+
+  /// Crée un enregistrement de clôture de session.
+  static GazSession createSessionClosure({
+    required String id,
+    required String enterpriseId,
+    required ReconciliationMetrics metrics,
+    required double physicalCash,
+    required String closedBy,
+    String? notes,
+  }) {
+    return GazSession.fromMetrics(
+      id: id,
+      enterpriseId: enterpriseId,
+      metrics: metrics,
+      physicalCash: physicalCash,
+      closedBy: closedBy,
+      notes: notes,
+    );
+  }
 }
 
 // ============================================================
@@ -524,60 +670,21 @@ class PointOfSaleStockMetrics {
   final Map<int, ({int full, int empty})> stockByCapacity;
 }
 
-/// Extension du service pour les calculs de stock par point de vente.
-extension GazStockCalculationExtension on GazCalculationService {
-  /// Calcule les métriques de stock pour un point de vente spécifique.
-  static PointOfSaleStockMetrics calculatePosStockMetrics({
-    required String posId,
-    required List<CylinderStock> allStocks,
-  }) {
-    // Filtrer les stocks pour ce point de vente
-    final posStocks = allStocks
-        .where((s) => s.siteId == posId || s.siteId == null)
-        .toList();
+/// Métriques de réconciliation journalière.
+class ReconciliationMetrics {
+  const ReconciliationMetrics({
+    required this.date,
+    required this.totalSales,
+    required this.totalExpenses,
+    required this.theoreticalCash,
+    required this.salesByPaymentMethod,
+    required this.salesByCylinderWeight,
+  });
 
-    // Calculer les totaux
-    final fullStocks = posStocks
-        .where((s) => s.status == CylinderStatus.full)
-        .toList();
-    final emptyStocks = posStocks
-        .where(
-          (s) =>
-              s.status == CylinderStatus.emptyAtStore ||
-              s.status == CylinderStatus.emptyInTransit,
-        )
-        .toList();
-
-    final totalFull = fullStocks.fold<int>(0, (sum, s) => sum + s.quantity);
-    final totalEmpty = emptyStocks.fold<int>(0, (sum, s) => sum + s.quantity);
-
-    // Grouper par capacité
-    final availableWeights = posStocks.map((s) => s.weight).toSet().toList()
-      ..sort();
-    final stockByCapacity = <int, ({int full, int empty})>{};
-
-    for (final weight in availableWeights) {
-      final full = posStocks
-          .where((s) => s.weight == weight && s.status == CylinderStatus.full)
-          .fold<int>(0, (sum, s) => sum + s.quantity);
-      final empty = posStocks
-          .where(
-            (s) =>
-                s.weight == weight &&
-                (s.status == CylinderStatus.emptyAtStore ||
-                    s.status == CylinderStatus.emptyInTransit),
-          )
-          .fold<int>(0, (sum, s) => sum + s.quantity);
-      if (full > 0 || empty > 0) {
-        stockByCapacity[weight] = (full: full, empty: empty);
-      }
-    }
-
-    return PointOfSaleStockMetrics(
-      pointOfSaleId: posId,
-      totalFull: totalFull,
-      totalEmpty: totalEmpty,
-      stockByCapacity: stockByCapacity,
-    );
-  }
+  final DateTime date;
+  final double totalSales;
+  final double totalExpenses;
+  final double theoreticalCash; // Uniquement le cash (espèces)
+  final Map<PaymentMethod, double> salesByPaymentMethod;
+  final Map<int, int> salesByCylinderWeight;
 }

@@ -52,10 +52,10 @@ class ImmobilierDashboardCalculationService {
     final monthPayments = payments.where((p) {
       return p.paymentDate.year == now.year &&
           p.paymentDate.month == now.month &&
-          p.status == PaymentStatus.paid;
+          (p.status == PaymentStatus.paid || p.status == PaymentStatus.partial);
     }).toList();
-    final monthRevenue = monthPayments.fold<int>(0, (sum, p) => sum + p.amount);
-    final monthPaymentsCount = monthPayments.length; // Calculate count
+    final monthRevenue = monthPayments.fold<int>(0, (sum, p) => sum + p.paidAmount);
+    final monthPaymentsCount = monthPayments.length;
 
     // Dépenses du mois
     final monthExpenses = expenses.where((e) {
@@ -124,7 +124,37 @@ class ImmobilierDashboardCalculationService {
       unpaidRentsCount: unpaidCount,
       totalOpenTickets: openTickets,
       highPriorityTickets: highPriority,
+      totalDepositsHeld: calculateTotalDeposits(payments),
     );
+  }
+
+  /// Calcule le total des cautions détenues.
+  int calculateTotalDeposits(List<Payment> payments) {
+    return payments
+        .where((p) =>
+            p.paymentType == PaymentType.deposit &&
+            (p.status == PaymentStatus.paid || p.status == PaymentStatus.partial))
+        .fold<int>(0, (sum, p) => sum + p.paidAmount);
+  }
+
+  /// Calcule les données pour le graphique de tendance des revenus (6 derniers mois).
+  List<({DateTime date, int revenue})> calculateRevenueTrend(List<Payment> payments, {DateTime? referenceDate}) {
+    final now = referenceDate ?? DateTime.now();
+    final List<({DateTime date, int revenue})> trend = [];
+
+    for (int i = 5; i >= 0; i--) {
+      final date = DateTime(now.year, now.month - i, 1);
+      final monthRevenue = payments
+          .where((p) =>
+              p.paymentDate.year == date.year &&
+              p.paymentDate.month == date.month &&
+              (p.status == PaymentStatus.paid || p.status == PaymentStatus.partial))
+          .fold<int>(0, (sum, p) => sum + p.paidAmount);
+      
+      trend.add((date: date, revenue: monthRevenue));
+    }
+
+    return trend;
   }
 
   /// Calcule les dates de début et fin pour une période donnée.
@@ -199,9 +229,11 @@ class ImmobilierDashboardCalculationService {
     );
 
     // Revenus de la période
-    final periodRevenue = periodPayments
-        .where((p) => p.status == PaymentStatus.paid)
-        .fold<int>(0, (sum, p) => sum + p.amount);
+    final periodPaymentsFiltered = periodPayments
+        .where((p) => p.status == PaymentStatus.paid || p.status == PaymentStatus.partial)
+        .toList();
+    final periodRevenue = periodPaymentsFiltered.fold<int>(0, (sum, p) => sum + p.paidAmount);
+    final paidPaymentsCount = periodPaymentsFiltered.length;
 
     // Dépenses de la période
     final periodExpensesTotal = periodExpenses.fold<int>(
@@ -224,6 +256,7 @@ class ImmobilierDashboardCalculationService {
       activeContractsCount: activeContractsCount,
       totalMonthlyRent: totalMonthlyRent,
       periodRevenue: periodRevenue,
+      paidPaymentsCount: paidPaymentsCount,
       periodExpensesTotal: periodExpensesTotal,
       netRevenue: netRevenue,
       occupancyRate: occupancyRate,
@@ -249,6 +282,7 @@ class ImmobilierDashboardMetrics {
     required this.unpaidRentsCount,
     required this.totalOpenTickets,
     required this.highPriorityTickets,
+    required this.totalDepositsHeld,
   });
 
   final int totalProperties;
@@ -266,6 +300,7 @@ class ImmobilierDashboardMetrics {
   final int unpaidRentsCount;
   final int totalOpenTickets;
   final int highPriorityTickets;
+  final int totalDepositsHeld;
 }
 
 /// Métriques calculées pour une période donnée (utilisé pour les rapports PDF).
@@ -280,6 +315,7 @@ class ImmobilierPeriodMetrics {
     required this.periodExpensesTotal,
     required this.netRevenue,
     required this.occupancyRate,
+    required this.paidPaymentsCount,
   });
 
   final int totalProperties;
@@ -291,4 +327,7 @@ class ImmobilierPeriodMetrics {
   final int periodExpensesTotal;
   final int netRevenue;
   final double occupancyRate;
+  final int paidPaymentsCount;
+
+  bool get isProfit => netRevenue >= 0;
 }

@@ -193,6 +193,8 @@ class UnifiedPaymentPdfService extends BasePaymentPdfService {
     switch (status) {
       case PaymentStatus.paid:
         return 'Payé';
+      case PaymentStatus.partial:
+        return 'Partiel';
       case PaymentStatus.pending:
         return 'En attente';
       case PaymentStatus.overdue:

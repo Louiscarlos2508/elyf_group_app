@@ -32,10 +32,10 @@ class ProfitReportContent extends ConsumerWidget {
               (endDate == null ||
                   p.paymentDate
                       .isBefore(endDate!.add(const Duration(days: 1)))) &&
-              p.status == PaymentStatus.paid;
+              (p.status == PaymentStatus.paid || p.status == PaymentStatus.partial);
         }).toList();
 
-        final totalRevenue = periodPayments.fold(0, (sum, p) => sum + p.amount);
+        final totalRevenue = periodPayments.fold(0, (sum, p) => sum + p.paidAmount);
 
         return expensesAsync.when(
           data: (expenses) {
@@ -54,123 +54,142 @@ class ProfitReportContent extends ConsumerWidget {
             );
             final profit = totalRevenue - totalExpenses;
 
-            return Container(
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: theme.colorScheme.outline.withValues(alpha: 0.1),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.02),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Résumé Financier',
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
+            // Group by property
+            final propertyStats = <String, ({int revenue, int expenses, int profit})>{};
+            
+            for (final p in periodPayments) {
+              final propId = p.contract?.propertyId ?? '';
+              if (propId.isEmpty) continue;
+
+              final current = propertyStats[propId] ?? (revenue: 0, expenses: 0, profit: 0);
+              propertyStats[propId] = (
+                revenue: current.revenue + p.paidAmount,
+                expenses: current.expenses,
+                profit: current.profit + p.paidAmount,
+              );
+            }
+
+            for (final e in periodExpenses) {
+              final propId = e.propertyId;
+              final current = propertyStats[propId] ?? (revenue: 0, expenses: 0, profit: 0);
+              propertyStats[propId] = (
+                revenue: current.revenue,
+                expenses: current.expenses + e.amount,
+                profit: current.profit - e.amount,
+              );
+            }
+
+            return Column(
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surface,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: theme.colorScheme.outline.withValues(alpha: 0.1),
                     ),
                   ),
-                  const SizedBox(height: 24),
-
-                  // Revenue
-                  _buildFinancialRow(
-                    theme,
-                    label: 'Revenus Locatifs',
-                    value: totalRevenue,
-                    count: periodPayments.length,
-                    countLabel: 'paiements',
-                    color: const Color(0xFF10B981),
-                    icon: Icons.trending_up,
-                  ),
-
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 16),
-                    child: Divider(),
-                  ),
-
-                  // Expenses
-                  _buildFinancialRow(
-                    theme,
-                    label: 'Dépenses',
-                    value: totalExpenses,
-                    count: periodExpenses.length,
-                    countLabel: 'charges',
-                    color: theme.colorScheme.error,
-                    icon: Icons.trending_down,
-                    isExpense: true,
-                  ),
-
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 16),
-                    child: Divider(thickness: 2),
-                  ),
-
-                  // Profit
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: (profit >= 0 ? const Color(0xFF10B981) : theme.colorScheme.error)
-                          .withValues(alpha: 0.05),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: (profit >= 0 ? const Color(0xFF10B981) : theme.colorScheme.error)
-                            .withValues(alpha: 0.15),
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Résumé Global',
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          profit >= 0
-                              ? Icons.account_balance_wallet
-                              : Icons.warning,
-                          color: profit >= 0 ? Colors.green : Colors.red,
-                          size: 32,
+                      const SizedBox(height: 24),
+                      _buildFinancialRow(
+                        theme,
+                        label: 'Revenus Totaux',
+                        value: totalRevenue,
+                        count: periodPayments.length,
+                        countLabel: 'paiements',
+                        color: const Color(0xFF10B981),
+                        icon: Icons.trending_up,
+                      ),
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 16),
+                        child: Divider(),
+                      ),
+                      _buildFinancialRow(
+                        theme,
+                        label: 'Dépenses Totales',
+                        value: totalExpenses,
+                        count: periodExpenses.length,
+                        countLabel: 'charges',
+                        color: theme.colorScheme.error,
+                        icon: Icons.trending_down,
+                        isExpense: true,
+                      ),
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 16),
+                        child: Divider(thickness: 2),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: (profit >= 0 ? const Color(0xFF10B981) : theme.colorScheme.error)
+                              .withValues(alpha: 0.05),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: (profit >= 0 ? const Color(0xFF10B981) : theme.colorScheme.error)
+                                .withValues(alpha: 0.15),
+                          ),
                         ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
+                        child: Row(
+                          children: [
+                            Icon(
+                              profit >= 0 ? Icons.account_balance_wallet : Icons.warning,
+                              color: profit >= 0 ? Colors.green : Colors.red,
+                              size: 32,
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Text(
                                 profit >= 0 ? 'Bénéfice Net' : 'Déficit',
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
+                                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                               ),
-                              Text(
-                                profit >= 0
-                                    ? 'Résultat positif pour la période'
-                                    : 'Les dépenses dépassent les revenus',
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                ),
+                            ),
+                            Text(
+                              CurrencyFormatter.formatFCFA(profit),
+                              style: theme.textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.w900,
+                                color: profit >= 0 ? const Color(0xFF059669) : theme.colorScheme.error,
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
-                        Text(
-                          CurrencyFormatter.formatFCFA(profit),
-                          style: theme.textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.w900,
-                            color: profit >= 0
-                                ? const Color(0xFF059669)
-                                : theme.colorScheme.error,
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Text(
+                      'Rentabilité par Propriété',
+                      style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                ref.watch(propertiesProvider).when(
+                  data: (properties) {
+                    if (properties.isEmpty) return const Center(child: Text('Aucune propriété'));
+                    
+                    return Column(
+                      children: properties.map((property) {
+                        final stats = propertyStats[property.id] ?? (revenue: 0, expenses: 0, profit: 0);
+                        return _buildPropertyProfitCard(theme, property, stats);
+                      }).toList(),
+                    );
+                  },
+                  loading: () => const Center(child: CircularProgressIndicator()),
+                  error: (e, _) => Text('Erreur: $e'),
+                ),
+              ],
             );
           },
           loading: () => const Center(child: CircularProgressIndicator()),
@@ -182,6 +201,72 @@ class ProfitReportContent extends ConsumerWidget {
     );
   }
 
+  Widget _buildPropertyProfitCard(
+    ThemeData theme,
+    dynamic property,
+    ({int revenue, int expenses, int profit}) stats,
+  ) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Icon(Icons.home, size: 20, color: theme.colorScheme.primary),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    property.address,
+                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                ),
+                Text(
+                  CurrencyFormatter.formatFCFA(stats.profit),
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: stats.profit >= 0 ? Colors.green : Colors.red,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildMiniStat(theme, 'Revenus', stats.revenue, Colors.green),
+                ),
+                Expanded(
+                  child: _buildMiniStat(theme, 'Charges', stats.expenses, Colors.red),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMiniStat(ThemeData theme, String label, int value, Color color) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: theme.textTheme.labelSmall),
+        Text(
+          CurrencyFormatter.formatFCFA(value),
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: color,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
   Widget _buildFinancialRow(
     ThemeData theme, {
     required String label,

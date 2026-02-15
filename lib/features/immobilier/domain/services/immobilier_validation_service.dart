@@ -253,6 +253,7 @@ class ImmobilierValidationService {
           enterpriseId: payment.enterpriseId,
           contractId: payment.contractId,
           amount: payment.amount,
+          paidAmount: payment.paidAmount,
           paymentDate: payment.paymentDate,
           paymentMethod: payment.paymentMethod,
           status: PaymentStatus.overdue,

@@ -29,10 +29,9 @@ Le module Boutique suit une **architecture Clean Architecture** avec séparation
 #### Services (Services Métier)
 
 **Domain Services** :
-- `BoutiqueDashboardCalculationService` - Calculs pour le tableau de bord
+- `BoutiqueCalculationService` - Service de calcul unifié (Dashboard & Reports)
 - `ProductCalculationService` - Calculs liés aux produits
 - `CartCalculationService` - Calculs du panier
-- `BoutiqueReportCalculationService` - Calculs pour les rapports
 - `ProductValidationService` - Validation des produits
 
 ### 2. Data (Couche Données)

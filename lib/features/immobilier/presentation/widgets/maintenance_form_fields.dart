@@ -155,4 +155,24 @@ class MaintenanceFormFields {
         return 'Fermé';
     }
   }
+
+  static Widget assignedUserField({
+    required String? value,
+    required List<({String id, String name})> users,
+    required ValueChanged<String?> onChanged,
+  }) {
+    return DropdownButtonFormField<String>(
+      key: ValueKey(value),
+      initialValue: value,
+      decoration: const InputDecoration(
+        labelText: 'Assigné à',
+        prefixIcon: Icon(Icons.person_outline),
+      ),
+      items: [
+        const DropdownMenuItem(value: null, child: Text('Non assigné')),
+        ...users.map((u) => DropdownMenuItem(value: u.id, child: Text(u.name))),
+      ],
+      onChanged: onChanged,
+    );
+  }
 }

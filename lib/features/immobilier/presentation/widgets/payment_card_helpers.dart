@@ -40,6 +40,8 @@ class PaymentCardHelpers {
     switch (status) {
       case PaymentStatus.paid:
         return 'Payé';
+      case PaymentStatus.partial:
+        return 'Partiel';
       case PaymentStatus.pending:
         return 'En attente';
       case PaymentStatus.overdue:
@@ -53,6 +55,8 @@ class PaymentCardHelpers {
     switch (status) {
       case PaymentStatus.paid:
         return const Color(0xFF10B981); // Emerald
+      case PaymentStatus.partial:
+        return Colors.blue;
       case PaymentStatus.pending:
         return const Color(0xFFF59E0B); // Amber
       case PaymentStatus.overdue:

@@ -105,7 +105,7 @@ class _ElyfButtonState extends State<ElyfButton>
         child: SizedBox(
           width: effectiveWidth,
           height: effectiveHeight,
-          child: _buildButtonBody(theme, isDark),
+          child: _buildButtonBody(theme, isDark, effectiveWidth, effectiveHeight),
         ),
       ),
     );
@@ -122,7 +122,7 @@ class _ElyfButtonState extends State<ElyfButton>
     }
   }
 
-  Widget _buildButtonBody(ThemeData theme, bool isDark) {
+  Widget _buildButtonBody(ThemeData theme, bool isDark, double? effectiveWidth, double effectiveHeight) {
     final Color primaryColor = theme.colorScheme.primary;
     final Color onPrimaryColor = theme.colorScheme.onPrimary;
 
@@ -182,27 +182,30 @@ class _ElyfButtonState extends State<ElyfButton>
 
     return Container(
       decoration: decoration,
-      alignment: Alignment.center,
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: widget.isLoading
-          ? SizedBox(
-              height: 20,
-              width: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: color,
-              ),
-            )
-          : Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (widget.icon != null) ...[
-                  Icon(widget.icon, size: 20, color: color),
-                  const SizedBox(width: 8),
+      child: Center(
+        widthFactor: effectiveWidth == null ? 1.0 : null,
+        heightFactor: 1.0,
+        child: widget.isLoading
+            ? SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: color,
+                ),
+              )
+            : Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (widget.icon != null) ...[
+                    Icon(widget.icon, size: 20, color: color),
+                    const SizedBox(width: 8),
+                  ],
+                  widget.child,
                 ],
-                widget.child,
-              ],
-            ),
+              ),
+      ),
     );
   }
 }

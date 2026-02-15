@@ -18,8 +18,8 @@ class ThermalPrinterService implements PrinterInterface {
   BluetoothDevice? _selectedDevice;
   bool _isConnected = false;
   
-  // Default paper size (58mm or 80mm)
-  final PaperSize _paperSize = PaperSize.mm58;
+  // Format facture 80x210mm : largeur 80mm (hauteur rouleau)
+  final PaperSize _paperSize = PaperSize.mm80;
   CapabilityProfile? _profile;
 
   @override
@@ -121,7 +121,7 @@ class ThermalPrinterService implements PrinterInterface {
 
   @override
   Future<int> getLineWidth() async {
-    return _paperSize == PaperSize.mm58 ? 32 : 48;
+    return 48; // 80mm
   }
 
   @override
@@ -148,6 +148,11 @@ class ThermalPrinterService implements PrinterInterface {
     try {
       final generator = Generator(_paperSize, _profile!);
       List<int> bytes = [];
+      final lineWidth = await getLineWidth();
+
+      // Tronquer chaque ligne à la largeur pour éviter les retours à la ligne
+      String truncate(String s) =>
+          s.length > lineWidth ? s.substring(0, lineWidth) : s;
 
       // Reset
       bytes += generator.reset();
@@ -160,10 +165,12 @@ class ThermalPrinterService implements PrinterInterface {
            continue;
          }
 
+         final truncatedLine = truncate(line);
+
          // Simple heuristic for styling based on content
-         if (line.contains('ELYF') || line.contains('FACTURE') || line.contains('RECU')) {
+         if (truncatedLine.contains('ELYF') || truncatedLine.contains('FACTURE') || truncatedLine.contains('RECU')) {
            bytes += generator.text(
-             line, 
+             truncatedLine, 
              styles: const PosStyles(
                align: PosAlign.center, 
                bold: true,
@@ -172,9 +179,9 @@ class ThermalPrinterService implements PrinterInterface {
              ),
            );
          } 
-         else if (line.contains('TOTAL') || line.contains('PAIEMENT') || line.contains('SOLDE')) {
+         else if (truncatedLine.contains('TOTAL') || truncatedLine.contains('PAIEMENT') || truncatedLine.contains('SOLDE')) {
              bytes += generator.text(
-             line, 
+             truncatedLine, 
              styles: const PosStyles(
                align: PosAlign.right, 
                bold: true,
@@ -184,7 +191,7 @@ class ThermalPrinterService implements PrinterInterface {
            );
          }
          else {
-            bytes += generator.text(line);
+            bytes += generator.text(truncatedLine);
          }
       }
 

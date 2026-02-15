@@ -73,4 +73,7 @@ abstract class ReportRepository {
     DateTime? startDate,
     DateTime? endDate,
   });
+
+  Future<DebtsReportData> getDebtsReport();
+  Stream<DebtsReportData> watchDebtsReport();
 }

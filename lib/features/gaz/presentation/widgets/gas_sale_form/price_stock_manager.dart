@@ -7,18 +7,19 @@ import '../../../domain/entities/cylinder.dart';
 class PriceStockManager {
   PriceStockManager._();
 
-  /// Met à jour le prix unitaire selon le type de vente.
+  /// Met à jour le prix unitaire selon le type de vente et le tier.
   static Future<double> updateUnitPrice({
     required WidgetRef ref,
     required Cylinder? cylinder,
     required String? enterpriseId,
     required bool isWholesale,
+    String tier = 'default',
   }) async {
     if (cylinder == null || enterpriseId == null) {
       return 0.0;
     }
 
-    // Pour les ventes en gros, utiliser le prix en gros des settings
+    // Pour les ventes en gros, utiliser le prix en gros des settings pour le tier choisi
     if (isWholesale) {
       try {
         final settingsController = ref.read(gazSettingsControllerProvider);
@@ -26,6 +27,7 @@ class PriceStockManager {
           enterpriseId: enterpriseId,
           moduleId: 'gaz',
           weight: cylinder.weight,
+          tier: tier,
         );
         return wholesalePrice ?? cylinder.sellPrice;
       } catch (e) {

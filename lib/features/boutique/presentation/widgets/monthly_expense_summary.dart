@@ -4,7 +4,7 @@ import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import 'package:elyf_groupe_app/app/theme/app_colors.dart';
 
 import '../../domain/entities/expense.dart';
-import '../../domain/services/dashboard_calculation_service.dart';
+import '../../domain/services/boutique_calculation_service.dart';
 
 /// Widget displaying monthly expense summary - style eau_minerale.
 ///
@@ -20,7 +20,7 @@ class MonthlyExpenseSummary extends StatelessWidget {
   final MonthlyExpenseMetrics metrics;
 
   /// Service for getting category labels.
-  final BoutiqueDashboardCalculationService calculationService;
+  final BoutiqueCalculationService calculationService;
 
   Color _getCategoryColor(BuildContext context, ExpenseCategory category) {
     final theme = Theme.of(context);

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:elyf_groupe_app/shared.dart';
 import '../../../core/printing/printer_provider.dart';
-import '../../../core/printing/templates/z_report_template.dart';
 import '../../../features/boutique/domain/entities/closing.dart';
 import '../../../features/boutique/application/providers.dart';
 
@@ -25,7 +25,6 @@ class PrintZReportButton extends ConsumerStatefulWidget {
 
 class _PrintZReportButtonState extends ConsumerState<PrintZReportButton> {
   bool _isPrinting = false;
-  bool _isSunmiDevice = false;
   bool _isPrinterAvailable = false;
 
   @override
@@ -41,20 +40,19 @@ class _PrintZReportButtonState extends ConsumerState<PrintZReportButton> {
     if (mounted) {
       setState(() {
         _isPrinterAvailable = isAvailable;
-        // In the context of Z-Reports, we usually assume compatibility if it's "available"
-        // but we keep the Sunmi check for UI styling if needed
-        _isSunmiDevice = true; // Simplified for this component
       });
     }
   }
 
   Future<void> _printZReport() async {
     if (!_isPrinterAvailable) {
-      widget.onPrintError?.call(
-        _isSunmiDevice
-            ? 'Imprimante non disponible'
-            : 'Imprimante Sunmi non détectée',
-      );
+      if (mounted) {
+        NotificationService.showWarning(
+          context,
+          'Imprimante non disponible. Vérifiez les réglages.',
+        );
+      }
+      widget.onPrintError?.call('Imprimante non disponible');
       return;
     }
 
@@ -117,11 +115,6 @@ class _PrintZReportButtonState extends ConsumerState<PrintZReportButton> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
-    // Ne pas afficher le bouton si l'appareil n'est pas Sunmi
-    if (!_isSunmiDevice) {
-      return const SizedBox.shrink();
-    }
 
     return FilledButton.icon(
       onPressed: _isPrinting || !_isPrinterAvailable ? null : _printZReport,

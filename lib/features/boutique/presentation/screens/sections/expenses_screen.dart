@@ -221,7 +221,7 @@ class ExpensesScreen extends ConsumerWidget {
                       child: Builder(
                         builder: (context) {
                           final calculationService = ref.read(
-                            boutiqueDashboardCalculationServiceProvider,
+                            boutiqueCalculationServiceProvider,
                           );
                           final metrics = calculationService
                               .calculateMonthlyExpenseMetrics(expenses);

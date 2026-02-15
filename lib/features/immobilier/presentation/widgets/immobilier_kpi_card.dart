@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 
-/// KPI card widget for immobilier dashboard.
-class DashboardKpiCardV2 extends StatelessWidget {
-  const DashboardKpiCardV2({
+/// Unified premium KPI card widget for the Immobilier module.
+/// 
+/// Replaces both EnhancedKpiCard and DashboardKpiCardV2 with a single, 
+/// responsive, and highly visual component.
+class ImmobilierKpiCard extends StatelessWidget {
+  const ImmobilierKpiCard({
     super.key,
     required this.label,
     required this.value,
     this.subtitle,
     required this.icon,
-    required this.iconColor,
-    required this.backgroundColor,
-    this.valueColor,
+    this.color,
     this.onTap,
   });
 
@@ -18,21 +19,20 @@ class DashboardKpiCardV2 extends StatelessWidget {
   final String value;
   final String? subtitle;
   final IconData icon;
-  final Color iconColor;
-  final Color backgroundColor;
-  final Color? valueColor;
+  final Color? color;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isMobile = MediaQuery.of(context).size.width < 600;
+    final cardColor = color ?? theme.colorScheme.primary;
 
     return Container(
       decoration: BoxDecoration(
-        color: backgroundColor.withValues(alpha: 0.08),
+        color: cardColor.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: backgroundColor.withValues(alpha: 0.15)),
+        border: Border.all(color: cardColor.withValues(alpha: 0.15)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.02),
@@ -55,32 +55,35 @@ class DashboardKpiCardV2 extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      label,
-                      style: theme.textTheme.bodySmall?.copyWith(
+                      label.toUpperCase(),
+                      style: theme.textTheme.labelSmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
-                        fontSize: isMobile ? 11 : null,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                        fontSize: isMobile ? 9 : 10,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    SizedBox(height: isMobile ? 4 : 8),
+                    const SizedBox(height: 4),
                     Text(
                       value,
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: valueColor ?? iconColor,
-                        fontSize: isMobile ? 18 : null,
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        color: cardColor,
+                        fontSize: isMobile ? 18 : 22,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     if (subtitle != null) ...[
-                      SizedBox(height: isMobile ? 2 : 4),
+                      const SizedBox(height: 2),
                       Text(
                         subtitle!,
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: iconColor,
-                          fontSize: isMobile ? 10 : null,
+                          color: cardColor.withValues(alpha: 0.8),
+                          fontSize: isMobile ? 10 : 11,
+                          fontWeight: FontWeight.w500,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -89,8 +92,19 @@ class DashboardKpiCardV2 extends StatelessWidget {
                   ],
                 ),
               ),
-              SizedBox(width: isMobile ? 8 : 12),
-              Icon(icon, color: iconColor, size: isMobile ? 24 : 32),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: cardColor.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  icon,
+                  color: cardColor,
+                  size: isMobile ? 20 : 26,
+                ),
+              ),
             ],
           ),
         ),

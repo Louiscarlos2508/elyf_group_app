@@ -9,7 +9,7 @@ import '../../domain/entities/expense.dart';
 import '../../domain/entities/payment.dart';
 import '../../domain/entities/property.dart';
 import '../../domain/entities/tenant.dart';
-import 'enhanced_kpi_card.dart';
+import 'immobilier_kpi_card.dart';
 
 /// Widget pour afficher la grille de KPIs du dashboard.
 class DashboardKpiGrid extends ConsumerWidget {
@@ -43,57 +43,66 @@ class DashboardKpiGrid extends ConsumerWidget {
     );
 
     final cards = [
-      EnhancedKpiCard(
+      ImmobilierKpiCard(
         label: 'Propriétés',
         value: metrics.totalProperties.toString(),
+        subtitle: '${metrics.rentedProperties} louées',
         icon: Icons.home,
         color: Colors.blue,
       ),
-      EnhancedKpiCard(
+      ImmobilierKpiCard(
         label: 'Disponibles',
         value: metrics.availableProperties.toString(),
+        subtitle: 'unités vacantes',
         icon: Icons.check_circle,
         color: Colors.green,
       ),
-      EnhancedKpiCard(
+      ImmobilierKpiCard(
         label: 'Locataires',
         value: metrics.totalTenants.toString(),
+        subtitle: 'personnes inscrites',
         icon: Icons.people,
         color: Colors.purple,
       ),
-      EnhancedKpiCard(
+      ImmobilierKpiCard(
         label: 'Contrats actifs',
         value: metrics.activeContractsCount.toString(),
+        subtitle: 'engagements en cours',
         icon: Icons.description,
         color: Colors.orange,
       ),
-      EnhancedKpiCard(
+      ImmobilierKpiCard(
         label: 'Revenus du mois',
         value: CurrencyFormatter.formatFCFA(metrics.monthRevenue),
+        subtitle: '${metrics.monthPaymentsCount} encaissements',
         icon: Icons.trending_up,
         color: Colors.green,
       ),
-      EnhancedKpiCard(
+      ImmobilierKpiCard(
         label: 'Dépenses du mois',
         value: CurrencyFormatter.formatFCFA(metrics.monthExpensesTotal),
+        subtitle: 'charges payées',
         icon: Icons.trending_down,
         color: Colors.red,
       ),
-      EnhancedKpiCard(
+      ImmobilierKpiCard(
         label: 'Résultat net',
         value: CurrencyFormatter.formatFCFA(metrics.netRevenue),
+        subtitle: metrics.netRevenue >= 0 ? 'bénéfice mensuel' : 'perte mensuelle',
         icon: Icons.account_balance_wallet,
         color: metrics.netRevenue >= 0 ? Colors.green : Colors.red,
       ),
-      EnhancedKpiCard(
+      ImmobilierKpiCard(
         label: 'Taux d\'occupation',
         value: '${metrics.occupancyRate.toStringAsFixed(0)}%',
+        subtitle: 'rendement spatial',
         icon: Icons.percent,
         color: Colors.indigo,
       ),
-      EnhancedKpiCard(
+      ImmobilierKpiCard(
         label: 'Loyers mensuels',
         value: CurrencyFormatter.formatFCFA(metrics.totalMonthlyRent),
+        subtitle: 'potentiel théorique',
         icon: Icons.attach_money,
         color: Colors.teal,
       ),

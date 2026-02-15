@@ -56,7 +56,7 @@ class _TenantBalanceReportDialogState extends ConsumerState<TenantBalanceReportD
     try {
       final contracts = await ref.read(contractsProvider.future);
       final payments = await ref.read(paymentsWithRelationsProvider.future);
-      final settings = await ref.read(immobilierSettingsProvider.future);
+      final settings = ref.read(immobilierSettingsServiceProvider);
       final activeEnterprise = ref.read(activeEnterpriseProvider).value;
 
       final pdfService = ImmobilierReportPdfService.instance;
@@ -66,8 +66,8 @@ class _TenantBalanceReportDialogState extends ConsumerState<TenantBalanceReportD
         payments: payments,
         startDate: _startDate,
         endDate: _endDate,
-        enterpriseName: activeEnterprise?.name ?? settings?.receiptHeader ?? 'ELYF IMMOBILIER',
-        footerText: settings?.receiptFooter ?? 'Merci de votre confiance !',
+        enterpriseName: activeEnterprise?.name ?? settings.receiptHeader,
+        footerText: settings.receiptFooter,
       );
 
       if (mounted) {

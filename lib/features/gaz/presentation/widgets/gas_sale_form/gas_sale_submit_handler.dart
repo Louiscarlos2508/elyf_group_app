@@ -8,6 +8,8 @@ import '../../../../../../core/errors/error_handler.dart';
 import '../../../../../../core/logging/app_logger.dart';
 import '../../../domain/entities/cylinder.dart';
 import '../../../domain/entities/gas_sale.dart';
+import '../../../../audit_trail/application/providers.dart';
+import '../../../../../../core/auth/providers.dart';
 
 /// Handler pour la soumission du formulaire de vente de gaz.
 class GasSaleSubmitHandler {
@@ -29,6 +31,9 @@ class GasSaleSubmitHandler {
     String? tourId,
     String? wholesalerId,
     String? wholesalerName,
+    int emptyReturnedQuantity = 0,
+    GasSaleDealType dealType = GasSaleDealType.exchange,
+    PaymentMethod paymentMethod = PaymentMethod.cash,
     required VoidCallback onLoadingChanged,
   }) async {
     // Vérifier le stock disponible
@@ -63,38 +68,43 @@ class GasSaleSubmitHandler {
         tourId: tourId,
         wholesalerId: wholesalerId,
         wholesalerName: wholesalerName,
+        emptyReturnedQuantity: emptyReturnedQuantity,
+        dealType: dealType,
+        paymentMethod: paymentMethod,
       );
 
-      // Ajouter la vente
-      final gasController = ref.read(gasControllerProvider);
-      await gasController.addSale(sale);
-
-      // Mettre à jour le stock: retirer les bouteilles pleines
-      final stockController = ref.read(cylinderStockControllerProvider);
-      final stocks = await stockController.getStocksByWeight(
-        enterpriseId,
-        selectedCylinder.weight,
+      // Exécuter la vente via la transaction atomique (bi-modal stock)
+      final transactionService = ref.read(transactionServiceProvider);
+      final result = await transactionService.executeSaleTransaction(
+        sale: sale,
+        weight: selectedCylinder.weight,
+        enterpriseId: enterpriseId,
       );
 
-      final fullStock = stocks
-          .where((s) => s.status == CylinderStatus.full)
-          .firstOrNull;
-
-      if (fullStock != null) {
-        final newQuantity = fullStock.quantity - quantity;
-        if (newQuantity >= 0) {
-          await stockController.adjustStockQuantity(fullStock.id, newQuantity);
-        } else {
-          throw ValidationException(
-            'Stock insuffisant après validation',
-            'INSUFFICIENT_STOCK',
-          );
+      // Afficher l'alerte de stock si nécessaire (Story 1.4)
+      if (result.alert != null) {
+        final alertService = ref.read(gasAlertServiceProvider);
+        if (context.mounted) {
+          alertService.notifyIfLowStock(context, result.alert);
         }
-      } else {
-        throw NotFoundException(
-          'Aucun stock disponible trouvé',
-          'STOCK_NOT_FOUND',
+      }
+
+      // Audit Log (Si non géré par la transaction)
+      // Note: Pour l'instant on garde l'audit ici pour assurer la compatibilité
+      try {
+        final auditService = ref.read(auditTrailServiceProvider);
+        final authController = ref.read(authControllerProvider);
+        final userId = authController.currentUser?.id ?? 'system';
+        
+        await auditService.logSale(
+          enterpriseId: sale.enterpriseId,
+          userId: userId,
+          saleId: sale.id,
+          module: 'gaz',
+          totalAmount: sale.totalAmount.toDouble(),
         );
+      } catch (e) {
+        AppLogger.error('Failed to log gas sale audit in submit handler', error: e);
       }
 
       if (!context.mounted) return sale;

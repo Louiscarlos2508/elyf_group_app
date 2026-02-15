@@ -2,13 +2,15 @@ import '../../domain/entities/cylinder.dart';
 import '../../domain/entities/cylinder_stock.dart';
 import '../../domain/repositories/cylinder_stock_repository.dart';
 import '../../domain/services/stock_service.dart';
+import '../../domain/services/transaction_service.dart';
 
 /// Contrôleur pour la gestion des stocks de bouteilles.
 class CylinderStockController {
-  CylinderStockController(this._repository, this._stockService);
+  CylinderStockController(this._repository, this._stockService, this._transactionService);
 
   final CylinderStockRepository _repository;
   final StockService _stockService;
+  final TransactionService _transactionService;
 
   /// Récupère les stocks par statut.
   Future<List<CylinderStock>> getStocksByStatus(
@@ -54,9 +56,22 @@ class CylinderStockController {
     await _stockService.changeStockStatus(stockId, newStatus);
   }
 
-  /// Ajuste la quantité d'un stock.
-  Future<void> adjustStockQuantity(String stockId, int newQuantity) async {
-    await _stockService.adjustStockQuantity(stockId, newQuantity);
+  /// Ajuste la quantité d'un stock avec log d'audit.
+  Future<void> adjustStockQuantity(
+    String stockId,
+    int newQuantity, {
+    required String userId,
+    String? reason,
+  }) async {
+    final stock = await _repository.getStockById(stockId);
+    if (stock == null) return;
+
+    await _transactionService.executeStockAdjustment(
+      stock: stock,
+      newQuantity: newQuantity,
+      userId: userId,
+      reason: reason,
+    );
   }
 
   /// Récupère le stock disponible (pleines) pour un format.

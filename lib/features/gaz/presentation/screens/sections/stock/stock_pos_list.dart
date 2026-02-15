@@ -25,7 +25,7 @@ class StockPosList extends StatelessWidget {
         final pos = activePointsOfSale[index];
 
         // Use calculation service for business logic
-        final metrics = GazStockCalculationExtension.calculatePosStockMetrics(
+        final metrics = GazCalculationService.calculatePosStockMetrics(
           posId: pos.id,
           allStocks: allStocks,
         );

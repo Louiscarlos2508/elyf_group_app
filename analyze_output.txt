@@ -1,0 +1,12 @@
+Analyzing 5 items...                                            
+
+   info • Unnecessary braces in a string interpolation • lib/features/boutique/application/controllers/store_controller.dart:184:23 • unnecessary_brace_in_string_interps
+   info • Unnecessary braces in a string interpolation • lib/features/boutique/application/controllers/store_controller.dart:591:23 • unnecessary_brace_in_string_interps
+warning • Unused import: 'package:elyf_groupe_app/features/boutique/domain/entities/supplier_settlement.dart' • lib/features/boutique/application/providers.dart:52:8 • unused_import
+warning • Unused import: 'package:elyf_groupe_app/shared.dart' • lib/features/boutique/presentation/screens/sections/treasury_screen.dart:4:8 • unused_import
+warning • Unused import: 'package:elyf_groupe_app/features/boutique/domain/entities/sale.dart' • lib/features/boutique/presentation/screens/sections/treasury_screen.dart:7:8 • unused_import
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/boutique/presentation/screens/sections/treasury_screen.dart:170:22 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/boutique/presentation/screens/sections/treasury_screen.dart:172:41 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/boutique/presentation/screens/sections/treasury_screen.dart:235:32 • deprecated_member_use
+
+8 issues found. (ran in 4.9s)

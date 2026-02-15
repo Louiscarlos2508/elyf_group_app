@@ -8,6 +8,7 @@ class Payment {
     required this.enterpriseId,
     required this.contractId,
     required this.amount,
+    required this.paidAmount,
     required this.paymentDate,
     required this.paymentMethod,
     required this.status,
@@ -19,6 +20,7 @@ class Payment {
     this.paymentType,
     this.cashAmount,
     this.mobileMoneyAmount,
+    this.penaltyAmount = 0,
     this.createdAt,
     this.updatedAt,
     this.deletedAt,
@@ -28,7 +30,8 @@ class Payment {
   final String id;
   final String enterpriseId;
   final String contractId;
-  final int amount;
+  final int amount; // Total amount due
+  final int paidAmount; // Current amount paid
   final DateTime paymentDate;
   final PaymentMethod paymentMethod;
   final PaymentStatus status;
@@ -41,6 +44,7 @@ class Payment {
   final int? cashAmount; // Montant payé en espèces (si paymentMethod == both)
   final int?
   mobileMoneyAmount; // Montant payé en mobile money (si paymentMethod == both)
+  final int penaltyAmount; // Accumulated penalty for late payment
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final DateTime? deletedAt;
@@ -53,6 +57,7 @@ class Payment {
     String? enterpriseId,
     String? contractId,
     int? amount,
+    int? paidAmount,
     DateTime? paymentDate,
     PaymentMethod? paymentMethod,
     PaymentStatus? status,
@@ -64,6 +69,7 @@ class Payment {
     PaymentType? paymentType,
     int? cashAmount,
     int? mobileMoneyAmount,
+    int? penaltyAmount,
     DateTime? createdAt,
     DateTime? updatedAt,
     DateTime? deletedAt,
@@ -74,6 +80,7 @@ class Payment {
       enterpriseId: enterpriseId ?? this.enterpriseId,
       contractId: contractId ?? this.contractId,
       amount: amount ?? this.amount,
+      paidAmount: paidAmount ?? this.paidAmount,
       paymentDate: paymentDate ?? this.paymentDate,
       paymentMethod: paymentMethod ?? this.paymentMethod,
       status: status ?? this.status,
@@ -85,6 +92,7 @@ class Payment {
       paymentType: paymentType ?? this.paymentType,
       cashAmount: cashAmount ?? this.cashAmount,
       mobileMoneyAmount: mobileMoneyAmount ?? this.mobileMoneyAmount,
+      penaltyAmount: penaltyAmount ?? this.penaltyAmount,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       deletedAt: deletedAt ?? this.deletedAt,
@@ -99,6 +107,7 @@ class Payment {
       'enterpriseId': enterpriseId,
       'contractId': contractId,
       'amount': amount,
+      'paidAmount': paidAmount,
       'paymentDate': paymentDate.toIso8601String(),
       'paymentMethod': paymentMethod.name,
       'status': status.name,
@@ -109,6 +118,7 @@ class Payment {
       'paymentType': paymentType?.name,
       'cashAmount': cashAmount,
       'mobileMoneyAmount': mobileMoneyAmount,
+      'penaltyAmount': penaltyAmount,
       'createdAt': createdAt?.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
       'deletedAt': deletedAt?.toIso8601String(),
@@ -122,6 +132,7 @@ class Payment {
       enterpriseId: map['enterpriseId'] as String,
       contractId: map['contractId'] as String,
       amount: (map['amount'] as num).toInt(),
+      paidAmount: (map['paidAmount'] as num?)?.toInt() ?? (map['amount'] as num).toInt(),
       paymentDate: DateTime.parse(map['paymentDate'] as String),
       paymentMethod: PaymentMethod.values.firstWhere(
         (e) => e.name == map['paymentMethod'],
@@ -143,6 +154,7 @@ class Payment {
           : null,
       cashAmount: (map['cashAmount'] as num?)?.toInt(),
       mobileMoneyAmount: (map['mobileMoneyAmount'] as num?)?.toInt(),
+      penaltyAmount: (map['penaltyAmount'] as num?)?.toInt() ?? 0,
       createdAt: map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : null,
       updatedAt: map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : null,
       deletedAt: map['deletedAt'] != null ? DateTime.parse(map['deletedAt'] as String) : null,
@@ -164,4 +176,4 @@ enum PaymentType {
   deposit, // Paiement de caution
 }
 
-enum PaymentStatus { paid, pending, overdue, cancelled }
+enum PaymentStatus { paid, partial, pending, overdue, cancelled }

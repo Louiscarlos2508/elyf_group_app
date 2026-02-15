@@ -6,6 +6,7 @@ class ImmobilierPaymentsTable extends Table {
   TextColumn get enterpriseId => text()();
   TextColumn get contractId => text()();
   IntColumn get amount => integer()();
+  IntColumn get paidAmount => integer().withDefault(const Constant(0))();
   DateTimeColumn get paymentDate => dateTime()();
   TextColumn get paymentMethod => text()(); // cash, mobileMoney, both, bankTransfer
   TextColumn get status => text()(); // paid, pending, overdue, cancelled
@@ -16,7 +17,7 @@ class ImmobilierPaymentsTable extends Table {
   TextColumn get paymentType => text().nullable()(); // rent, deposit
   IntColumn get cashAmount => integer().nullable()();
   IntColumn get mobileMoneyAmount => integer().nullable()();
-  
+  IntColumn get penaltyAmount => integer().withDefault(const Constant(0))();
   // Security & Audit
   DateTimeColumn get createdAt => dateTime().nullable()();
   DateTimeColumn get updatedAt => dateTime().nullable()();

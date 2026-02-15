@@ -43,6 +43,11 @@ final activePrinterProvider = Provider<PrinterInterface>((ref) {
   }
 });
 
+/// Provider for a default thermal printer instance
+final thermalPrinterServiceProvider = Provider<ThermalPrinterService>((ref) {
+  return ThermalPrinterService();
+});
+
 /// Provider pour vérifier si une imprimante est configurée/disponible
 final isPrinterAvailableProvider = FutureProvider<bool>((ref) async {
   final printer = ref.watch(activePrinterProvider);

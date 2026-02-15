@@ -202,6 +202,19 @@ class GazPermissions {
     description: 'Permet de changer son mot de passe',
   );
 
+  static const viewDeliveries = ActionPermission(
+    id: 'view_deliveries',
+    name: 'Voir les livraisons',
+    module: 'gaz',
+    description: 'Permet de voir les livraisons assignées',
+  );
+
+  static const manageInventory = ActionPermission(
+    id: 'manage_inventory',
+    name: 'Gérer l\'inventaire',
+    module: 'gaz',
+    description: 'Permet d\'effectuer des audits d\'inventaire complets',
+  );
   /// All permissions for the module
   static const all = [
     viewDashboard,
@@ -231,5 +244,7 @@ class GazPermissions {
     viewProfile,
     editProfile,
     changePassword,
+    viewDeliveries,
+    manageInventory,
   ];
 }

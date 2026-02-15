@@ -11,6 +11,8 @@ import 'dashboard/dashboard_kpi_section.dart';
 import 'dashboard/dashboard_performance_section.dart';
 import 'dashboard/dashboard_pos_performance_section.dart';
 import '../../widgets/gaz_header.dart';
+import '../../widgets/dashboard/quick_actions_section.dart';
+import '../../widgets/dashboard/reconciliation_section.dart';
 import '../../../../../shared/presentation/widgets/elyf_ui/atoms/elyf_icon_button.dart';
 
 /// Professional dashboard screen for gaz module - matches Figma design.
@@ -114,6 +116,31 @@ class _DashboardContent extends ConsumerWidget {
           ),
         ),
 
+        // Quick Actions section
+        const SliverPadding(
+          padding: EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            0,
+            AppSpacing.lg,
+            AppSpacing.lg,
+          ),
+          sliver: SliverToBoxAdapter(
+            child: QuickActionsSection(),
+          ),
+        ),
+
+        // Reconciliation section (Z-Report)
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            0,
+            AppSpacing.lg,
+            AppSpacing.lg,
+          ),
+          sliver: const SliverToBoxAdapter(
+            child: DashboardReconciliationSection(),
+          ),
+        ),
         // Stock par capacité section
         const SliverPadding(
           padding: EdgeInsets.fromLTRB(

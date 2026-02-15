@@ -8,6 +8,7 @@ class Cylinder {
     required this.enterpriseId,
     required this.moduleId,
     this.stock = 0,
+    this.depositPrice = 0.0, // Prix de la consigne (bouteille vide)
     this.createdAt,
     this.updatedAt,
     this.deletedAt,
@@ -22,6 +23,7 @@ class Cylinder {
   final String enterpriseId;
   final String moduleId;
   final int stock; // Stock disponible
+  final double depositPrice; // Prix de la consigne (bouteille vide)
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final DateTime? deletedAt;
@@ -35,6 +37,7 @@ class Cylinder {
     String? enterpriseId,
     String? moduleId,
     int? stock,
+    double? depositPrice,
     DateTime? createdAt,
     DateTime? updatedAt,
     DateTime? deletedAt,
@@ -48,6 +51,7 @@ class Cylinder {
       enterpriseId: enterpriseId ?? this.enterpriseId,
       moduleId: moduleId ?? this.moduleId,
       stock: stock ?? this.stock,
+      depositPrice: depositPrice ?? this.depositPrice,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       deletedAt: deletedAt ?? this.deletedAt,
@@ -64,6 +68,7 @@ class Cylinder {
       enterpriseId: map['enterpriseId'] as String? ?? defaultEnterpriseId,
       moduleId: map['moduleId'] as String? ?? 'gaz',
       stock: (map['stock'] as num?)?.toInt() ?? 0,
+      depositPrice: (map['depositPrice'] as num?)?.toDouble() ?? 0.0,
       createdAt: map['createdAt'] != null
           ? DateTime.parse(map['createdAt'] as String)
           : null,
@@ -86,6 +91,7 @@ class Cylinder {
       'enterpriseId': enterpriseId,
       'moduleId': moduleId,
       'stock': stock,
+      'depositPrice': depositPrice,
       'createdAt': createdAt?.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
       'deletedAt': deletedAt?.toIso8601String(),

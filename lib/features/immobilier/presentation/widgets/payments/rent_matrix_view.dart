@@ -23,6 +23,7 @@ class RentMatrixEntry {
   });
 
   bool get isPaid => payment != null && payment!.status == PaymentStatus.paid;
+  bool get isPartial => payment != null && payment!.status == PaymentStatus.partial;
 }
 
 /// Notifier for the selected month/year in the matrix.
@@ -173,7 +174,9 @@ class _RentMatrixCard extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(
-          color: isPaid ? Colors.green.withValues(alpha: 0.2) : Colors.red.withValues(alpha: 0.2),
+          color: isPaid 
+              ? Colors.green.withValues(alpha: 0.2) 
+              : (entry.isPartial ? Colors.blue.withValues(alpha: 0.2) : Colors.red.withValues(alpha: 0.2)),
           width: 1,
         ),
       ),
@@ -183,7 +186,9 @@ class _RentMatrixCard extends StatelessWidget {
           children: [
             Container(
               width: 6,
-              color: isPaid ? Colors.green : Colors.red,
+              color: isPaid 
+                  ? Colors.green 
+                  : (entry.isPartial ? Colors.blue : Colors.red),
             ),
             Expanded(
               child: Padding(
@@ -260,6 +265,13 @@ class _RentMatrixCard extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(color: Colors.green.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
         child: const Text('PAYÉ', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 10)),
+      );
+    }
+    if (entry.isPartial) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(color: Colors.blue.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+        child: const Text('PARTIEL', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 10)),
       );
     }
     return Container(

@@ -4,10 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import '../../../domain/entities/tour.dart';
+import '../../../domain/entities/stock_alert.dart';
 import 'closure_expense_item.dart';
+import '../../../../../../core/auth/providers.dart';
+import '../../../../../../core/logging/app_logger.dart';
 
 /// Carte de détails pour l'étape de clôture.
-class ClosureDetailsCard extends ConsumerWidget {
+class ClosureDetailsCard extends ConsumerStatefulWidget {
   const ClosureDetailsCard({
     super.key,
     required this.tour,
@@ -28,8 +31,46 @@ class ClosureDetailsCard extends ConsumerWidget {
   final String enterpriseId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ClosureDetailsCard> createState() => _ClosureDetailsCardState();
+}
+
+class _ClosureDetailsCardState extends ConsumerState<ClosureDetailsCard> {
+  late Map<int, TextEditingController> _receptionControllers;
+  late TextEditingController _costController;
+
+  @override
+  void initState() {
+    super.initState();
+    _costController = TextEditingController(
+      text: widget.tour.gasPurchaseCost?.toString() ?? '',
+    );
+    _receptionControllers = {};
+  }
+
+  @override
+  void dispose() {
+    for (final controller in _receptionControllers.values) {
+      controller.dispose();
+    }
+    _costController.dispose();
+    super.initState();
+  }
+
+  Map<int, int> _getReceptionData() {
+    final data = <int, int>{};
+    for (final entry in _receptionControllers.entries) {
+      final qty = int.tryParse(entry.value.text) ?? 0;
+      if (qty > 0) {
+        data[entry.key] = qty;
+      }
+    }
+    return data;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final cylindersAsync = ref.watch(cylindersProvider);
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -50,7 +91,6 @@ class ClosureDetailsCard extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Titre "Récapitulatif"
           Text(
             'Récapitulatif',
             style: theme.textTheme.titleMedium?.copyWith(
@@ -59,43 +99,65 @@ class ClosureDetailsCard extends ConsumerWidget {
               color: theme.colorScheme.onSurface,
             ),
           ),
-          const SizedBox(height: 46),
-          // Bouteilles collectées
+          const SizedBox(height: 24),
           _DetailSection(
             title: 'Bouteilles collectées',
-            value: '$totalBottles',
+            value: '${widget.totalBottles}',
             theme: theme,
           ),
-          const SizedBox(height: 16),
-          // Divider
+          const SizedBox(height: 24),
           Divider(color: theme.colorScheme.outline.withValues(alpha: 0.1)),
-          const SizedBox(height: 16),
-          // Détail des dépenses
+          const SizedBox(height: 24),
+          
+          // Section Réception Fournisseur (Nouvelle section pour Story 1.2)
+          cylindersAsync.when(
+            data: (cylinders) {
+              final weights = cylinders.map((c) => c.weight).toSet().toList()..sort();
+              // Initialiser les controllers si nécessaire
+              for (final weight in weights) {
+                if (!_receptionControllers.containsKey(weight)) {
+                  _receptionControllers[weight] = TextEditingController(
+                    text: widget.tour.fullBottlesReceived[weight]?.toString() ?? '',
+                  );
+                }
+              }
+              
+              return _ReplenishmentSection(
+                weights: weights,
+                controllers: _receptionControllers,
+                costController: _costController,
+                theme: theme,
+                isReadOnly: widget.tour.status == TourStatus.closure,
+              );
+            },
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, _) => Text('Erreur chargement cylindres: $e'),
+          ),
+          
+          const SizedBox(height: 24),
+          Divider(color: theme.colorScheme.outline.withValues(alpha: 0.1)),
+          const SizedBox(height: 24),
           _ExpensesDetailSection(
-            loadingFees: loadingFees,
-            unloadingFees: unloadingFees,
-            otherExpenses: otherExpenses,
-            totalExpenses: totalExpenses,
+            loadingFees: widget.loadingFees,
+            unloadingFees: widget.unloadingFees,
+            otherExpenses: widget.otherExpenses,
+            totalExpenses: widget.totalExpenses + (double.tryParse(_costController.text) ?? 0),
             theme: theme,
           ),
-          const SizedBox(height: 16),
-          // Divider
+          const SizedBox(height: 24),
           Divider(color: theme.colorScheme.outline.withValues(alpha: 0.1)),
-          const SizedBox(height: 16),
-          // Boutons d'action
+          const SizedBox(height: 24),
           _ClosureActionButtons(
-            tour: tour,
-            enterpriseId: enterpriseId,
+            tour: widget.tour,
+            enterpriseId: widget.enterpriseId,
+            getReceptionData: _getReceptionData,
+            getGasPurchaseCost: () => double.tryParse(_costController.text) ?? 0,
             onTourClosed: () {
-              ref.invalidate(
-                toursProvider((enterpriseId: enterpriseId, status: null)),
-              );
-              ref.invalidate(
-                toursProvider((
-                  enterpriseId: enterpriseId,
-                  status: TourStatus.closure,
-                )),
-              );
+              ref.invalidate(toursProvider((enterpriseId: widget.enterpriseId, status: null)));
+              ref.invalidate(toursProvider((
+                enterpriseId: widget.enterpriseId,
+                status: TourStatus.closure,
+              )));
             },
           ),
         ],
@@ -142,7 +204,78 @@ class _DetailSection extends StatelessWidget {
   }
 }
 
+class _ReplenishmentSection extends StatelessWidget {
+  const _ReplenishmentSection({
+    required this.weights,
+    required this.controllers,
+    required this.costController,
+    required this.theme,
+    required this.isReadOnly,
+  });
+
+  final List<int> weights;
+  final Map<int, TextEditingController> controllers;
+  final TextEditingController costController;
+  final ThemeData theme;
+  final bool isReadOnly;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Réception Fournisseur (Pleins)',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 16),
+        ...weights.map((weight) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Row(
+              children: [
+                Expanded(flex: 2, child: Text('$weight kg')),
+                const SizedBox(width: 16),
+                Expanded(
+                  flex: 3,
+                  child: TextField(
+                    controller: controllers[weight],
+                    readOnly: isReadOnly,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      isDense: true,
+                      hintText: 'Qté reçue',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }),
+        const SizedBox(height: 12),
+        TextField(
+          controller: costController,
+          readOnly: isReadOnly,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(
+            isDense: true,
+            labelText: 'Coût total d\'achat gaz (facultatif)',
+            prefixIcon: Icon(Icons.money, size: 20),
+            border: OutlineInputBorder(),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _ExpensesDetailSection extends StatelessWidget {
+// ... existing code ...
   const _ExpensesDetailSection({
     required this.loadingFees,
     required this.unloadingFees,
@@ -211,15 +344,21 @@ class _ClosureActionButtons extends ConsumerWidget {
     required this.tour,
     required this.enterpriseId,
     required this.onTourClosed,
+    required this.getReceptionData,
+    required this.getGasPurchaseCost,
   });
 
   final Tour tour;
   final String enterpriseId;
   final VoidCallback onTourClosed;
+  final Map<int, int> Function() getReceptionData;
+  final double Function() getGasPurchaseCost;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isAlreadyClosed = tour.status == TourStatus.closure;
+    final authController = ref.watch(authControllerProvider);
+    final userId = authController.currentUser?.id ?? '';
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -244,15 +383,36 @@ class _ClosureActionButtons extends ConsumerWidget {
               onPressed: () async {
                 try {
                   final controller = ref.read(tourControllerProvider);
-                  await controller.moveToNextStep(tour.id);
+                  
+                  // 1. Mettre à jour le tour avec les données de réception
+                  final updatedTour = tour.copyWith(
+                    fullBottlesReceived: getReceptionData(),
+                    gasPurchaseCost: getGasPurchaseCost(),
+                  );
+                  await controller.updateTour(updatedTour);
+                  
+                  // 2. Clôturer le tour (atomique: stocks + audit + alerts)
+                  final alerts = await controller.closeTour(tour.id, userId);
+                  
+                  // 3. Afficher les alertes de stock (Story 1.4)
+                  if (alerts.isNotEmpty) {
+                    final alertService = ref.read(gasAlertServiceProvider);
+                    if (context.mounted) {
+                      for (final alert in alerts) {
+                        alertService.notifyIfLowStock(context, alert);
+                      }
+                    }
+                  }
+                  
                   onTourClosed();
                   if (context.mounted) {
                     NotificationService.showSuccess(
                       context,
-                      'Tour clôturé avec succès',
+                      'Tour clôturé avec succès et stocks mis à jour',
                     );
                   }
                 } catch (e) {
+                  AppLogger.error('Erreur lors de la clôture: $e', error: e);
                   if (context.mounted) {
                     NotificationService.showError(context, 'Erreur: $e');
                   }
@@ -260,7 +420,7 @@ class _ClosureActionButtons extends ConsumerWidget {
               },
               icon: const Icon(Icons.check, size: 16),
               label: const Text(
-                'Clôturer le tour',
+                'Confirmer la clôture',
                 style: TextStyle(fontSize: 14),
               ),
             ),

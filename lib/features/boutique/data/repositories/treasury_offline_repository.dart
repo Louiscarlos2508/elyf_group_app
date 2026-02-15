@@ -143,12 +143,22 @@ class TreasuryOfflineRepository extends OfflineRepository<TreasuryOperation> imp
   @override
   Future<Map<String, int>> getBalances() async {
     final ops = await fetchOperations();
+    return _calculateBalances(ops);
+  }
+
+  @override
+  Stream<Map<String, int>> watchBalances() {
+    return watchOperations().map((ops) => _calculateBalances(ops));
+  }
+
+  Map<String, int> _calculateBalances(List<TreasuryOperation> ops) {
     int cash = 0;
     int mm = 0;
 
     for (final op in ops) {
       switch (op.type) {
         case TreasuryOperationType.supply:
+        case TreasuryOperationType.adjustment: // Treating adjustment as delta
           if (op.toAccount == PaymentMethod.cash) cash += op.amount;
           if (op.toAccount == PaymentMethod.mobileMoney) mm += op.amount;
           break;
@@ -161,16 +171,6 @@ class TreasuryOfflineRepository extends OfflineRepository<TreasuryOperation> imp
           if (op.fromAccount == PaymentMethod.cash) cash -= op.amount;
           if (op.fromAccount == PaymentMethod.mobileMoney) mm -= op.amount;
           // Add to destination
-          if (op.toAccount == PaymentMethod.cash) cash += op.amount;
-          if (op.toAccount == PaymentMethod.mobileMoney) mm += op.amount;
-          break;
-        case TreasuryOperationType.adjustment:
-          // For adjustments, we assume they are targeted at a specific account
-          if (op.toAccount == PaymentMethod.cash) cash = op.amount; // Or total if it's absolute, but usually it's a delta. 
-          // However, based on Boutique UX, adjustment often means "Set to this value".
-          // Let's treat it as a delta for now to be safe, or check if we should override.
-          // Re-reading common accounting: adjustments are often deltas. 
-          // If the UI allows "Set to X", the controller should calculate the delta.
           if (op.toAccount == PaymentMethod.cash) cash += op.amount;
           if (op.toAccount == PaymentMethod.mobileMoney) mm += op.amount;
           break;

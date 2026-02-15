@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:elyf_groupe_app/features/immobilier/application/providers.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import '../../../../shared/domain/entities/payment_method.dart';
+import '../../application/providers.dart';
 import '../../domain/entities/contract.dart';
 import '../../domain/entities/payment.dart';
 import '../../domain/entities/tenant.dart';
@@ -333,16 +335,17 @@ class _ContractsTab extends ConsumerWidget {
   }
 }
 
-class _ContractMiniCard extends StatelessWidget {
+class _ContractMiniCard extends ConsumerWidget {
   const _ContractMiniCard({required this.contract, this.onTap});
 
   final Contract contract;
   final VoidCallback? onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final statusColor = ContractCardHelpers.getStatusColor(contract.status);
+    final paymentsAsync = ref.watch(paymentsByContractProvider(contract.id));
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
@@ -362,8 +365,38 @@ class _ContractMiniCard extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-        subtitle: Text(
-          '${ContractCardHelpers.formatDate(contract.startDate)} - ${contract.endDate != null ? ContractCardHelpers.formatDate(contract.endDate!) : "Indéterminée"}',
+        subtitle: paymentsAsync.when(
+          data: (payments) {
+            final cautionPaid = payments.any((p) =>
+                p.paymentType == PaymentType.deposit &&
+                (p.status == PaymentStatus.paid || p.status == PaymentStatus.partial));
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${ContractCardHelpers.formatDate(contract.startDate)} - ${contract.endDate != null ? ContractCardHelpers.formatDate(contract.endDate!) : "Indéterminée"}',
+                ),
+                if (cautionPaid)
+                  Text(
+                    'Caution réglée',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: Colors.green,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  )
+                else
+                  Text(
+                    'Caution non réglée',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.error,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+              ],
+            );
+          },
+          loading: () => const Text('Chargement...'),
+          error: (_, __) => const Text('Erreur caution'),
         ),
         trailing: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -402,36 +435,43 @@ class _PaymentsTab extends ConsumerWidget {
       data: (payments) {
         if (payments.isEmpty) {
           return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.payment_outlined,
-                  size: 48,
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Aucun paiement',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
+// ... (omitted same lines)
           );
         }
 
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: payments.length,
-          itemBuilder: (context, index) {
-            final payment = payments[index];
-            return _PaymentMiniCard(
-              payment: payment,
-              onTap: onPaymentTap != null ? () => onPaymentTap!(payment) : null,
-            );
-          },
+        final unpaidPayments = payments
+            .where((p) =>
+                p.status == PaymentStatus.pending ||
+                p.status == PaymentStatus.overdue ||
+                p.status == PaymentStatus.partial)
+            .toList();
+        final totalArrears =
+            unpaidPayments.fold<int>(0, (sum, p) => sum + (p.amount - p.paidAmount));
+
+        return Column(
+          children: [
+            if (unpaidPayments.isNotEmpty)
+              _ArrearsSummaryCard(
+                unpaidCount: unpaidPayments.length,
+                totalAmount: totalArrears,
+                onSettle: () => _showBulkPaymentDialog(context, ref, unpaidPayments),
+              ),
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: payments.length,
+                itemBuilder: (context, index) {
+                  final payment = payments[index];
+                  return _PaymentMiniCard(
+                    payment: payment,
+                    onTap: onPaymentTap != null
+                        ? () => onPaymentTap!(payment)
+                        : null,
+                  );
+                },
+              ),
+            ),
+          ],
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -450,6 +490,8 @@ class _PaymentMiniCard extends StatelessWidget {
     switch (status) {
       case PaymentStatus.paid:
         return Colors.green;
+      case PaymentStatus.partial:
+        return Colors.blue;
       case PaymentStatus.pending:
         return Colors.orange;
       case PaymentStatus.overdue:
@@ -463,6 +505,8 @@ class _PaymentMiniCard extends StatelessWidget {
     switch (status) {
       case PaymentStatus.paid:
         return 'Payé';
+      case PaymentStatus.partial:
+        return 'Partiel';
       case PaymentStatus.pending:
         return 'En attente';
       case PaymentStatus.overdue:
@@ -489,11 +533,24 @@ class _PaymentMiniCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(4),
           ),
         ),
-        title: Text(
-          ContractCardHelpers.formatCurrency(payment.amount),
-          style: theme.textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              ContractCardHelpers.formatCurrency(payment.amount),
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            if (payment.status == PaymentStatus.partial)
+              Text(
+                'Reste: ${ContractCardHelpers.formatCurrency(payment.amount - payment.paidAmount)}',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.error,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+          ],
         ),
         subtitle: Text(ContractCardHelpers.formatDate(payment.paymentDate)),
         trailing: Chip(
@@ -506,6 +563,188 @@ class _PaymentMiniCard extends StatelessWidget {
           materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),
       ),
+    );
+  }
+}
+
+class _ArrearsSummaryCard extends StatelessWidget {
+  const _ArrearsSummaryCard({
+    required this.unpaidCount,
+    required this.totalAmount,
+    required this.onSettle,
+  });
+
+  final int unpaidCount;
+  final int totalAmount;
+  final VoidCallback onSettle;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.errorContainer.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.error.withValues(alpha: 0.2),
+        ),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: theme.colorScheme.error),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Arriérés de paiement',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.error,
+                      ),
+                    ),
+                    Text(
+                      '$unpaidCount mois impayés',
+                      style: theme.textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+              Text(
+                ContractCardHelpers.formatCurrency(totalAmount),
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.error,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: onSettle,
+              icon: const Icon(Icons.check_circle_outline),
+              label: const Text('Régler les impayés'),
+              style: FilledButton.styleFrom(
+                backgroundColor: theme.colorScheme.error,
+                foregroundColor: theme.colorScheme.onError,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+void _showBulkPaymentDialog(
+    BuildContext context, WidgetRef ref, List<Payment> payments) {
+  showDialog(
+    context: context,
+    builder: (context) => _BulkPaymentDialog(payments: payments),
+  );
+}
+
+class _BulkPaymentDialog extends ConsumerStatefulWidget {
+  const _BulkPaymentDialog({required this.payments});
+  final List<Payment> payments;
+
+  @override
+  ConsumerState<_BulkPaymentDialog> createState() => _BulkPaymentDialogState();
+}
+
+class _BulkPaymentDialogState extends ConsumerState<_BulkPaymentDialog> {
+  PaymentMethod _method = PaymentMethod.cash;
+  bool _isSaving = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final total = widget.payments.fold<int>(0, (sum, p) => sum + (p.amount - p.paidAmount));
+
+    return AlertDialog(
+      title: const Text('Règlement groupé'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Vous allez régler le total des arriérés pour :',
+            style: TextStyle(fontSize: 14),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            ContractCardHelpers.formatCurrency(total),
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Nombre de mensualités : ${widget.payments.length}',
+            style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
+          ),
+          const SizedBox(height: 24),
+          const Text('Mode de paiement :',
+              style: TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          DropdownButtonFormField<PaymentMethod>(
+            value: _method,
+            items: PaymentMethod.values
+                .where((m) => m != PaymentMethod.both)
+                .map((m) => DropdownMenuItem(
+                      value: m,
+                      child: Text(m.label),
+                    ))
+                .toList(),
+            onChanged: (val) {
+              if (val != null) setState(() => _method = val);
+            },
+            decoration: const InputDecoration(border: OutlineInputBorder()),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Annuler'),
+        ),
+        _isSaving
+            ? const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: SizedBox(
+                    width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+              )
+            : FilledButton(
+                onPressed: () async {
+                  setState(() => _isSaving = true);
+                  try {
+                    await ref
+                        .read(paymentControllerProvider)
+                        .settlePayments(widget.payments, _method);
+                    if (mounted) {
+                      ref.invalidate(paymentsByTenantProvider);
+                      ref.invalidate(paymentsWithRelationsProvider);
+                      Navigator.pop(context);
+                      NotificationService.showSuccess(
+                          context, 'Paiements enregistrés avec succès');
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      NotificationService.showError(
+                          context, 'Erreur lors du règlement : $e');
+                    }
+                  } finally {
+                    if (mounted) setState(() => _isSaving = false);
+                  }
+                },
+                child: const Text('Confirmer le paiement'),
+              ),
+      ],
     );
   }
 }

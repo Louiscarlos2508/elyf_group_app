@@ -5,7 +5,7 @@ import 'package:elyf_groupe_app/shared.dart';
 
 import '../../application/providers.dart';
 import '../../domain/entities/report_data.dart';
-import 'dashboard_kpi_card.dart';
+import 'boutique_kpi_card.dart';
 
 /// Content widget for profit report tab - style eau_minerale.
 class ProfitReportContentV2 extends ConsumerWidget {
@@ -254,21 +254,19 @@ class ProfitReportContentV2 extends ConsumerWidget {
     bool isWide,
   ) {
     final cards = [
-      DashboardKpiCard(
+      BoutiqueKpiCard(
         label: 'Marge Brute',
         value: CurrencyFormatter.formatFCFA(data.grossProfit),
         subtitle: '${data.grossMarginPercentage.toStringAsFixed(1)}% du CA',
         icon: Icons.show_chart,
-        iconColor: Colors.purple,
-        backgroundColor: Colors.purple,
+        color: Colors.purple,
       ),
-      DashboardKpiCard(
+      BoutiqueKpiCard(
         label: 'Marge Nette',
         value: '${data.netMarginPercentage.toStringAsFixed(1)}%',
         subtitle: 'après charges',
         icon: Icons.percent,
-        iconColor: Colors.teal,
-        backgroundColor: Colors.teal,
+        color: Colors.teal,
       ),
     ];
 

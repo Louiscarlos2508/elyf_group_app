@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/features/immobilier/application/providers.dart';
 import '../../domain/entities/payment.dart';
 import '../../domain/entities/property.dart';
-import 'dashboard_kpi_card_v2.dart';
+import 'immobilier_kpi_card.dart';
 
 /// KPI cards for immobilier reports module - style eau_minerale.
 class ReportKpiCardsV2 extends ConsumerWidget {
@@ -103,123 +103,71 @@ class ReportKpiCardsV2 extends ConsumerWidget {
       builder: (context, constraints) {
         final isWide = constraints.maxWidth > 600;
 
-        return isWide
-            ? Row(
-                children: [
-                  Expanded(
-                    child: DashboardKpiCardV2(
-                      label: 'Revenus Locatifs',
-                      value:
-                          '${CurrencyFormatter.formatFCFA(paymentsRevenue)} FCFA',
-                      subtitle: '$paymentsCount paiements',
-                      icon: Icons.trending_up,
-                      iconColor: Colors.blue,
-                      backgroundColor: Colors.blue,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: DashboardKpiCardV2(
-                      label: 'Dépenses',
-                      value:
-                          '${CurrencyFormatter.formatFCFA(expensesAmount)} FCFA',
-                      subtitle: '$expensesCount charges',
-                      icon: Icons.receipt_long,
-                      iconColor: Colors.red,
-                      valueColor: Colors.red.shade700,
-                      backgroundColor: Colors.red,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: DashboardKpiCardV2(
-                      label: 'Bénéfice Net',
-                      value: '${CurrencyFormatter.formatFCFA(profit)} FCFA',
-                      subtitle: profit >= 0 ? 'Profit' : 'Déficit',
-                      icon: Icons.account_balance_wallet,
-                      iconColor: profit >= 0 ? Colors.green : Colors.red,
-                      valueColor: profit >= 0
-                          ? Colors.green.shade700
-                          : Colors.red.shade700,
-                      backgroundColor: profit >= 0 ? Colors.green : Colors.red,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: DashboardKpiCardV2(
-                      label: "Taux d'Occupation",
-                      value: '$occupancyRate%',
-                      subtitle: 'propriétés louées',
-                      icon: Icons.home,
-                      iconColor: Colors.indigo,
-                      backgroundColor: Colors.indigo,
-                    ),
-                  ),
-                ],
-              )
-            : Column(
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: DashboardKpiCardV2(
-                          label: 'Revenus Locatifs',
-                          value:
-                              '${CurrencyFormatter.formatFCFA(paymentsRevenue)} FCFA',
-                          subtitle: '$paymentsCount paiements',
-                          icon: Icons.trending_up,
-                          iconColor: Colors.blue,
-                          backgroundColor: Colors.blue,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: DashboardKpiCardV2(
-                          label: 'Dépenses',
-                          value:
-                              '${CurrencyFormatter.formatFCFA(expensesAmount)} FCFA',
-                          subtitle: '$expensesCount charges',
-                          icon: Icons.receipt_long,
-                          iconColor: Colors.red,
-                          valueColor: Colors.red.shade700,
-                          backgroundColor: Colors.red,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: DashboardKpiCardV2(
-                          label: 'Bénéfice Net',
-                          value: '${CurrencyFormatter.formatFCFA(profit)} FCFA',
-                          subtitle: profit >= 0 ? 'Profit' : 'Déficit',
-                          icon: Icons.account_balance_wallet,
-                          iconColor: profit >= 0 ? Colors.green : Colors.red,
-                          valueColor: profit >= 0
-                              ? Colors.green.shade700
-                              : Colors.red.shade700,
-                          backgroundColor: profit >= 0
-                              ? Colors.green
-                              : Colors.red,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: DashboardKpiCardV2(
-                          label: "Taux d'Occupation",
-                          value: '$occupancyRate%',
-                          subtitle: 'propriétés louées',
-                          icon: Icons.home,
-                          iconColor: Colors.indigo,
-                          backgroundColor: Colors.indigo,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              );
+        final revenueCard = ImmobilierKpiCard(
+          label: 'Revenus Locatifs',
+          value: '${CurrencyFormatter.formatFCFA(paymentsRevenue)} FCFA',
+          subtitle: '$paymentsCount paiements',
+          icon: Icons.trending_up,
+          color: Colors.blue,
+        );
+
+        final expensesCard = ImmobilierKpiCard(
+          label: 'Dépenses',
+          value: '${CurrencyFormatter.formatFCFA(expensesAmount)} FCFA',
+          subtitle: '$expensesCount charges',
+          icon: Icons.receipt_long,
+          color: Colors.red,
+        );
+
+        final profitCard = ImmobilierKpiCard(
+          label: 'Bénéfice Net',
+          value: '${CurrencyFormatter.formatFCFA(profit)} FCFA',
+          subtitle: profit >= 0 ? 'Profit' : 'Déficit',
+          icon: Icons.account_balance_wallet,
+          color: profit >= 0 ? Colors.green : Colors.red,
+        );
+
+        final occupancyCard = ImmobilierKpiCard(
+          label: "Taux d'Occupation",
+          value: '$occupancyRate%',
+          subtitle: 'propriétés louées',
+          icon: Icons.home,
+          color: Colors.indigo,
+        );
+
+        if (isWide) {
+          return Row(
+            children: [
+              Expanded(child: revenueCard),
+              const SizedBox(width: 16),
+              Expanded(child: expensesCard),
+              const SizedBox(width: 16),
+              Expanded(child: profitCard),
+              const SizedBox(width: 16),
+              Expanded(child: occupancyCard),
+            ],
+          );
+        }
+
+        return Column(
+          children: [
+            Row(
+              children: [
+                Expanded(child: revenueCard),
+                const SizedBox(width: 16),
+                Expanded(child: expensesCard),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(child: profitCard),
+                const SizedBox(width: 16),
+                Expanded(child: occupancyCard),
+              ],
+            ),
+          ],
+        );
       },
     );
   }

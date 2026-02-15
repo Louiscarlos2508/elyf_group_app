@@ -49,14 +49,12 @@ import 'package:elyf_groupe_app/features/boutique/domain/entities/expense.dart';
 import 'package:elyf_groupe_app/features/boutique/domain/entities/treasury_operation.dart';
 import 'package:elyf_groupe_app/features/boutique/domain/entities/closing.dart';
 import 'package:elyf_groupe_app/features/boutique/domain/entities/supplier.dart';
-import 'package:elyf_groupe_app/features/boutique/domain/entities/supplier_settlement.dart';
 import 'package:elyf_groupe_app/features/boutique/domain/entities/category.dart';
 import '../domain/services/calculation/cart_calculation_service.dart';
 import '../domain/services/cart_service.dart';
-import '../domain/services/dashboard_calculation_service.dart';
+import '../domain/services/boutique_calculation_service.dart';
 import '../domain/services/product_calculation_service.dart';
 import '../domain/services/product_filter_service.dart';
-import '../domain/services/report_calculation_service.dart';
 import '../domain/services/validation/product_validation_service.dart';
 import '../domain/entities/boutique_settings.dart';
 import '../domain/repositories/boutique_settings_repository.dart';
@@ -64,24 +62,19 @@ import '../data/repositories/boutique_settings_offline_repository.dart';
 import '../domain/entities/cart_item.dart';
 import 'controllers/cart_controller.dart';
 import 'controllers/store_controller.dart';
+import '../domain/services/supplier_settlement_service.dart';
 import '../../../../core/printing/printer_provider.dart';
 
-/// Provider for BoutiqueDashboardCalculationService.
-final boutiqueDashboardCalculationServiceProvider =
-    Provider<BoutiqueDashboardCalculationService>(
-      (ref) => BoutiqueDashboardCalculationService(),
+/// Provider for BoutiqueCalculationService.
+final boutiqueCalculationServiceProvider =
+    Provider<BoutiqueCalculationService>(
+      (ref) => BoutiqueCalculationService(),
     );
 
 /// Provider for ProductCalculationService.
 final productCalculationServiceProvider = Provider<ProductCalculationService>(
   (ref) => ProductCalculationService(),
 );
-
-/// Provider for BoutiqueReportCalculationService.
-final boutiqueReportCalculationServiceProvider =
-    Provider<BoutiqueReportCalculationService>(
-      (ref) => BoutiqueReportCalculationService(),
-    );
 
 /// Provider for CartCalculationService.
 final cartCalculationServiceProvider = Provider<CartCalculationService>(
@@ -266,6 +259,13 @@ final settlementRepositoryProvider = Provider<SupplierSettlementRepository>((ref
   );
 });
 
+final supplierSettlementServiceProvider = Provider<SupplierSettlementService>((ref) {
+  return SupplierSettlementService(
+    purchaseRepository: ref.watch(purchaseRepositoryProvider),
+    settlementRepository: ref.watch(settlementRepositoryProvider),
+  );
+});
+
 final categoryRepositoryProvider = Provider<CategoryRepository>((ref) {
   final enterpriseId =
       ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
@@ -289,6 +289,8 @@ final reportRepositoryProvider = Provider<ReportRepository>((ref) {
     saleRepository: ref.watch(saleRepositoryProvider),
     purchaseRepository: ref.watch(purchaseRepositoryProvider),
     expenseRepository: ref.watch(expenseRepositoryProvider),
+    supplierRepository: ref.watch(supplierRepositoryProvider),
+    settlementRepository: ref.watch(settlementRepositoryProvider),
   );
 });
 
@@ -324,6 +326,7 @@ final storeControllerProvider = Provider<StoreController>((ref) {
     ref.watch(settlementRepositoryProvider),
     ref.watch(categoryRepositoryProvider),
     ref.watch(stockMovementRepositoryProvider),
+    ref.watch(supplierSettlementServiceProvider),
     ref.watch(auditTrailServiceProvider),
     ref.watch(currentUserIdProvider),
   );
@@ -380,12 +383,8 @@ final treasuryOperationsProvider = StreamProvider.autoDispose<List<TreasuryOpera
   (ref) => ref.watch(storeControllerProvider).watchTreasuryOperations(),
 );
 
-final treasuryBalancesProvider = FutureProvider.autoDispose<Map<String, int>>(
-  (ref) async {
-    // Triggers re-calculation whenever operations change
-    ref.watch(treasuryOperationsProvider);
-    return await ref.read(storeControllerProvider).getTreasuryBalances();
-  },
+final treasuryBalancesProvider = StreamProvider.autoDispose<Map<String, int>>(
+  (ref) => ref.watch(storeControllerProvider).watchTreasuryBalances(),
 );
 
 // --- Suppliers ---
@@ -515,6 +514,10 @@ final fullReportDataProvider = StreamProvider.family
             endDate: params.endDate,
           );
     });
+
+final debtsReportProvider = StreamProvider.autoDispose<DebtsReportData>((ref) {
+  return ref.watch(storeControllerProvider).watchDebtsReport();
+});
 
 /// Provider for BoutiqueExportService.
 final boutiqueExportServiceProvider = Provider<BoutiqueExportService>((ref) {

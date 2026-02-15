@@ -110,7 +110,7 @@ class _DailyClosingDialogState extends ConsumerState<DailyClosingDialog> {
         return salesAsync.when(
           data: (sales) => expensesAsync.when(
             data: (expenses) {
-              final calculationService = ref.read(boutiqueDashboardCalculationServiceProvider);
+              final calculationService = ref.read(boutiqueCalculationServiceProvider);
               final metrics = calculationService.calculateTodayMetrics(sales);
               
               // Only expenses since opening

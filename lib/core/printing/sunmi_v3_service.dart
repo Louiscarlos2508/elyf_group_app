@@ -60,13 +60,9 @@ class SunmiV3Service implements PrinterInterface {
           manufacturer.contains('sunmi') ||
           brand.contains('sunmi');
 
-      // Width detection (V3 Mix specs)
+      // Format facture 80x210mm pour toutes les impressions (comme journal)
       if (_isSunmiDeviceCache!) {
-        if (modelLower.contains('t5711')) {
-          _paperWidthChars = 48; // 80mm
-        } else {
-          _paperWidthChars = 32; // 58mm (T5701 or default)
-        }
+        _paperWidthChars = 48; // 80mm
       }
 
       return _isSunmiDeviceCache!;
@@ -205,19 +201,25 @@ class SunmiV3Service implements PrinterInterface {
 
       final cleanedContent = content.trim();
       final lines = cleanedContent.split('\n');
+      final lineWidth = await getLineWidth();
+
+      // Tronquer chaque ligne pour éviter les retours à la ligne
+      String truncate(String s) =>
+          s.length > lineWidth ? s.substring(0, lineWidth) : s;
 
       for (final line in lines) {
         if (line.trim().isEmpty) continue;
 
-        final isTitle = line.contains('EAU MINERALE') || line.contains('ELYF') || line.contains('FACTURE') || line.contains('RECU');
-        final isTotal = line.contains('TOTAL') || line.contains('PAIEMENT:') || line.contains('SOLDE');
+        final truncatedLine = truncate(line);
+        final isTitle = truncatedLine.contains('EAU MINERALE') || truncatedLine.contains('ELYF') || truncatedLine.contains('FACTURE') || truncatedLine.contains('RECU');
+        final isTotal = truncatedLine.contains('TOTAL') || truncatedLine.contains('PAIEMENT:') || truncatedLine.contains('SOLDE');
 
         if (isTitle) {
-          await lineApi.printText(line, titleTextStyle);
+          await lineApi.printText(truncatedLine, titleTextStyle);
         } else if (isTotal) {
-          await lineApi.printText(line, totalTextStyle);
+          await lineApi.printText(truncatedLine, totalTextStyle);
         } else {
-          await lineApi.printText(line, defaultTextStyle);
+          await lineApi.printText(truncatedLine, defaultTextStyle);
         }
       }
 

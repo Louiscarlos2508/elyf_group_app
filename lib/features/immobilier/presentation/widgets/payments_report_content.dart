@@ -237,6 +237,8 @@ class PaymentsReportContent extends ConsumerWidget {
     switch (status) {
       case PaymentStatus.paid:
         return const Color(0xFF10B981);
+      case PaymentStatus.partial:
+        return Colors.blue;
       case PaymentStatus.pending:
         return const Color(0xFFF59E0B);
       case PaymentStatus.overdue:
@@ -250,6 +252,8 @@ class PaymentsReportContent extends ConsumerWidget {
     switch (status) {
       case PaymentStatus.paid:
         return 'Payé';
+      case PaymentStatus.partial:
+        return 'Partiel';
       case PaymentStatus.pending:
         return 'En attente';
       case PaymentStatus.overdue:

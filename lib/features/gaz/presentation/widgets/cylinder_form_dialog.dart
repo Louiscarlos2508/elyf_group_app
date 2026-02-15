@@ -21,6 +21,9 @@ class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
   final _weightController = TextEditingController();
   final _sellPriceController = TextEditingController();
   final _buyPriceController = TextEditingController();
+  final _initialFullStockController = TextEditingController();
+  final _initialEmptyStockController = TextEditingController();
+  final _depositPriceController = TextEditingController();
 
   int? _selectedWeight;
   bool _isLoading = false;
@@ -37,6 +40,7 @@ class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
       _weightController.text = widget.cylinder!.weight.toString();
       _sellPriceController.text = widget.cylinder!.sellPrice.toStringAsFixed(0);
       _buyPriceController.text = widget.cylinder!.buyPrice.toStringAsFixed(0);
+      _depositPriceController.text = widget.cylinder!.depositPrice.toStringAsFixed(0);
       _enterpriseId = widget.cylinder!.enterpriseId;
       _moduleId = widget.cylinder!.moduleId;
     }
@@ -47,6 +51,9 @@ class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
     _weightController.dispose();
     _sellPriceController.dispose();
     _buyPriceController.dispose();
+    _initialFullStockController.dispose();
+    _initialEmptyStockController.dispose();
+    _depositPriceController.dispose();
     super.dispose();
   }
 
@@ -62,6 +69,9 @@ class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
       weightText: _weightController.text,
       sellPriceText: _sellPriceController.text,
       buyPriceText: _buyPriceController.text,
+      initialFullStockText: _initialFullStockController.text,
+      initialEmptyStockText: _initialEmptyStockController.text,
+      depositPriceText: _depositPriceController.text,
       enterpriseId: _enterpriseId,
       moduleId: _moduleId,
       existingCylinder: widget.cylinder,
@@ -211,8 +221,6 @@ class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
                       return null;
                     },
                   ),
-                  const SizedBox(height: 16),
-                  
                   // Prix d'achat
                   TextFormField(
                     controller: _buyPriceController,
@@ -243,6 +251,84 @@ class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
                       return null;
                     },
                   ),
+                  const SizedBox(height: 16),
+                  
+                  // Prix de consigne
+                  TextFormField(
+                    controller: _depositPriceController,
+                    decoration: InputDecoration(
+                      labelText: 'Prix de la bouteille (Consigne)',
+                      hintText: 'Ex: 15000',
+                      suffixText: 'FCFA',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      prefixIcon: const Icon(Icons.inventory_outlined),
+                      filled: true,
+                      fillColor: Colors.grey.withAlpha(10),
+                    ),
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    validator: (value) {
+                      if (value == null || value.isEmpty) return 'Requis';
+                      final price = double.tryParse(value);
+                      if (price == null || price < 0) return 'Invalide';
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  if (widget.cylinder == null) ...[
+                    const Divider(),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Stock Initial (Plein/Vide)',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _initialFullStockController,
+                            decoration: InputDecoration(
+                              labelText: 'Stock Plein',
+                              hintText: '0',
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              prefixIcon: const Icon(Icons.inventory_2_outlined),
+                              filled: true,
+                              fillColor: Colors.grey.withAlpha(10),
+                            ),
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: TextFormField(
+                            controller: _initialEmptyStockController,
+                            decoration: InputDecoration(
+                              labelText: 'Stock Vide',
+                              hintText: '0',
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              prefixIcon: const Icon(Icons.inventory_outlined),
+                              filled: true,
+                              fillColor: Colors.grey.withAlpha(10),
+                            ),
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                   const SizedBox(height: 32),
                   
                   Row(

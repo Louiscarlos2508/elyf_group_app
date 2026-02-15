@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../administration/application/providers.dart';
+import '../../../administration/domain/entities/user.dart';
 import '../../domain/entities/maintenance_ticket.dart';
 import '../../domain/entities/property.dart';
 
-class MaintenanceTicketCard extends StatelessWidget {
+class MaintenanceTicketCard extends ConsumerWidget {
   const MaintenanceTicketCard({
     super.key,
     required this.ticket,
@@ -16,7 +19,7 @@ class MaintenanceTicketCard extends StatelessWidget {
   final VoidCallback? onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final color = _getPriorityColor(ticket.priority);
 
@@ -93,7 +96,7 @@ class MaintenanceTicketCard extends StatelessWidget {
               if (ticket.cost != null && ticket.cost! > 0) ...[
                 const SizedBox(height: 8),
                 Text(
-                  'Coût estimé: ${ticket.cost} FCFA', // Simple format
+                  'Coût estimé: ${ticket.cost} FCFA',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.primary,
                     fontWeight: FontWeight.bold,
@@ -102,8 +105,33 @@ class MaintenanceTicketCard extends StatelessWidget {
               ],
               const SizedBox(height: 8),
               Row(
-                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
+                   if (ticket.assignedUserId != null)
+                    Expanded(
+                      child: ref.watch(searchUsersProvider('')).when(
+                        data: (users) {
+                          final user = users.cast<User?>().firstWhere(
+                            (u) => u?.id == ticket.assignedUserId,
+                            orElse: () => null
+                          );
+                          return Row(
+                            children: [
+                              Icon(Icons.person, size: 14, color: theme.colorScheme.primary),
+                              const SizedBox(width: 4),
+                              Text(
+                                user?.fullName ?? 'Utilisateur inconnu',
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: theme.colorScheme.primary,
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                        loading: () => const SizedBox.shrink(),
+                        error: (_, __) => const SizedBox.shrink(),
+                      ),
+                    ),
+                  const Spacer(),
                   Text(
                     _formatDate(ticket.createdAt),
                     style: theme.textTheme.labelSmall?.copyWith(

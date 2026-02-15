@@ -50,7 +50,10 @@ class _GazRetailScreenState extends ConsumerState<GazRetailScreen>
       showDialog(
         context: context,
         builder: (context) =>
-            const GasSaleFormDialog(saleType: SaleType.retail),
+            GasSaleFormDialog(
+              saleType: SaleType.retail,
+              initialCylinder: cylinder,
+            ),
       );
     } catch (e) {
       AppLogger.error(

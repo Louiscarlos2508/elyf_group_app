@@ -9,32 +9,34 @@ class ExpensesEmptyState extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.account_balance_wallet_outlined,
-            size: 48,
-            color: const Color(0xFF6A7282).withValues(alpha: 0.5),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Aucune dépense enregistrée',
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontSize: 16,
-              fontWeight: FontWeight.normal,
-              color: const Color(0xFF6A7282),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.account_balance_wallet_outlined,
+              size: 48,
+              color: const Color(0xFF6A7282).withValues(alpha: 0.5),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Les dépenses enregistrées apparaîtront ici',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              fontSize: 14,
-              color: const Color(0xFF99A1AF),
+            const SizedBox(height: 16),
+            Text(
+              'Aucune dépense enregistrée',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontSize: 16,
+                fontWeight: FontWeight.normal,
+                color: const Color(0xFF6A7282),
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 8),
+            Text(
+              'Les dépenses enregistrées apparaîtront ici',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontSize: 14,
+                color: const Color(0xFF99A1AF),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

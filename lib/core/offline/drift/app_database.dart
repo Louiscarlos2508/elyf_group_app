@@ -80,7 +80,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(QueryExecutor? connection) : super(connection ?? openDriftConnection());
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 11;
 
   @override
   MigrationStrategy get migration {
@@ -91,23 +91,14 @@ class AppDatabase extends _$AppDatabase {
       onUpgrade: (migrator, from, to) async {
         if (from < 2) {
           await migrator.createTable(syncOperations);
-          // Add table for Boutique sales if updating from < v2
           await migrator.createTable(salesTable);
           await migrator.createTable(saleItemsTable);
         }
         if (from < 3) {
           await migrator.addColumn(syncOperations, syncOperations.priority);
         }
-        if (from < 4) {
-          // This block is now redundant if from < 2 creates salesTable and saleItemsTable
-          // but keeping it for faithful reproduction of the provided migration logic.
-          // The provided instruction's migration logic for from < 2 already creates salesTable and saleItemsTable.
-          // The original code had this:
-          // await migrator.createTable(salesTable);
-          // await migrator.createTable(saleItemsTable);
-        } else if (from < 5) {
-          // Only add if not created in step 4
-          await migrator.addColumn(salesTable, salesTable.number as GeneratedColumn<String>);
+        if (from < 5) {
+          await migrator.addColumn(salesTable, salesTable.number);
         }
         if (from < 6) {
           await migrator.createTable(propertiesTable);
@@ -122,7 +113,14 @@ class AppDatabase extends _$AppDatabase {
           await migrator.createTable(maintenanceTicketsTable);
         }
         if (from < 9) {
-          await migrator.addColumn(propertyExpensesTable, propertyExpensesTable.paymentMethod as GeneratedColumn<String>);
+          await migrator.addColumn(propertyExpensesTable, propertyExpensesTable.paymentMethod);
+        }
+        if (from < 10) {
+          await migrator.addColumn(immobilierPaymentsTable, immobilierPaymentsTable.paidAmount);
+        }
+        if (from < 11) {
+          await migrator.addColumn(maintenanceTicketsTable, maintenanceTicketsTable.assignedUserId);
+          await migrator.addColumn(immobilierPaymentsTable, immobilierPaymentsTable.penaltyAmount);
         }
       },
     );

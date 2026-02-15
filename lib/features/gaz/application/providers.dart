@@ -5,29 +5,48 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 export 'providers/permission_providers.dart';
 export 'providers/section_providers.dart';
 import '../../audit_trail/application/providers.dart';
+import 'package:elyf_groupe_app/core/offline/drift_service.dart';
+import 'package:elyf_groupe_app/core/offline/providers.dart';
+import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
+export 'controllers/cylinder_controller.dart';
+export 'controllers/cylinder_leak_controller.dart';
+export 'controllers/cylinder_stock_controller.dart';
+export 'controllers/dispatch_controller.dart';
+export 'controllers/expense_controller.dart';
+export 'controllers/financial_report_controller.dart';
+export 'controllers/gas_controller.dart';
+export 'controllers/gaz_settings_controller.dart';
+export 'controllers/gaz_session_controller.dart';
+export 'controllers/point_of_sale_controller.dart';
+export 'controllers/stock_transfer_controller.dart';
+export 'controllers/tour_controller.dart';
 
-import '../../../../core/offline/drift_service.dart';
-import '../../../../core/offline/providers.dart';
-import '../../../../core/tenant/tenant_provider.dart';
 import 'controllers/cylinder_controller.dart';
 import 'controllers/cylinder_leak_controller.dart';
 import 'controllers/cylinder_stock_controller.dart';
+import 'controllers/dispatch_controller.dart';
 import 'controllers/expense_controller.dart';
 import 'controllers/financial_report_controller.dart';
 import 'controllers/gas_controller.dart';
 import 'controllers/gaz_settings_controller.dart';
+import 'controllers/gaz_session_controller.dart';
 import 'controllers/point_of_sale_controller.dart';
+import 'controllers/stock_transfer_controller.dart';
 import 'controllers/tour_controller.dart';
 import '../data/repositories/cylinder_leak_offline_repository.dart';
 import '../data/repositories/cylinder_stock_offline_repository.dart';
 import '../data/repositories/expense_offline_repository.dart';
 import '../data/repositories/financial_report_offline_repository.dart';
 import '../data/repositories/gas_offline_repository.dart';
+import '../data/repositories/exchange_offline_repository.dart';
 import '../data/repositories/gaz_settings_offline_repository.dart';
 import '../data/repositories/point_of_sale_offline_repository.dart';
+import '../data/repositories/session_offline_repository.dart';
+import '../data/repositories/stock_transfer_offline_repository.dart';
 import '../data/repositories/tour_offline_repository.dart';
 import '../domain/entities/cylinder.dart';
 import '../domain/entities/cylinder_leak.dart';
+import '../domain/entities/stock_movement.dart';
 import '../domain/entities/cylinder_stock.dart';
 import '../domain/entities/expense.dart';
 import '../domain/entities/financial_report.dart';
@@ -35,28 +54,39 @@ import '../domain/entities/gas_sale.dart';
 import '../domain/entities/gaz_settings.dart';
 import '../domain/entities/point_of_sale.dart';
 import '../domain/entities/report_data.dart';
+import '../domain/entities/stock_transfer.dart';
 import '../domain/entities/tour.dart';
+import '../domain/entities/gaz_session.dart';
 import '../domain/services/wholesaler_service.dart';
 import '../domain/repositories/cylinder_leak_repository.dart';
 import '../domain/repositories/cylinder_stock_repository.dart';
 import '../domain/repositories/expense_repository.dart';
 import '../domain/repositories/financial_report_repository.dart';
 import '../domain/repositories/gas_repository.dart';
+import '../domain/repositories/exchange_repository.dart';
 import '../domain/repositories/gaz_settings_repository.dart';
 import '../domain/repositories/point_of_sale_repository.dart';
+import '../domain/repositories/session_repository.dart';
+import '../domain/repositories/stock_transfer_repository.dart';
 import '../domain/repositories/tour_repository.dart';
 import '../domain/services/data_consistency_service.dart';
 import '../domain/services/financial_calculation_service.dart';
 import '../domain/services/gas_calculation_service.dart';
+import '../domain/services/gas_alert_service.dart';
 import '../domain/services/gas_validation_service.dart';
 import '../domain/services/filtering/gaz_filter_service.dart';
 import '../domain/services/gaz_dashboard_calculation_service.dart';
 import '../domain/services/point_of_sale_service.dart';
 import '../domain/services/gaz_report_calculation_service.dart';
+import '../domain/services/gaz_stock_report_service.dart';
 import '../domain/services/realtime_sync_service.dart';
 import '../domain/services/stock_service.dart';
+import '../domain/services/stock_transfer_service.dart';
 import '../domain/services/tour_service.dart';
+import '../domain/services/gaz_dispatch_service.dart';
 import '../domain/services/transaction_service.dart';
+import '../domain/services/gaz_printing_service.dart';
+import 'package:elyf_groupe_app/core/printing/printer_provider.dart';
 
 /// Provider for GazDashboardCalculationService.
 final gazDashboardCalculationServiceProvider =
@@ -80,6 +110,16 @@ final gasCalculationServiceProvider = Provider<GasCalculationService>(
   (ref) => GasCalculationService(),
 );
 
+/// Provider for GasAlertService.
+final gasAlertServiceProvider = Provider<GasAlertService>((ref) {
+  final settingsRepo = ref.watch(gazSettingsRepositoryProvider);
+  final stockRepo = ref.watch(cylinderStockRepositoryProvider);
+  return GasAlertService(
+    settingsRepository: settingsRepo,
+    stockRepository: stockRepo,
+  );
+});
+
 /// Provider for GasValidationService.
 final gasValidationServiceProvider = Provider<GasValidationService>(
   (ref) => GasValidationService(),
@@ -97,6 +137,11 @@ final wholesalerServiceProvider = Provider<WholesalerService>(
   },
 );
 
+/// Provider for GazPrintingService.
+final gazPrintingServiceProvider = Provider<GazPrintingService>((ref) {
+  final printerService = ref.watch(thermalPrinterServiceProvider);
+  return GazPrintingService(printerService: printerService);
+});
 // Repositories
 final gasRepositoryProvider = Provider<GasRepository>((ref) {
   final enterpriseId =
@@ -127,6 +172,12 @@ final gazExpenseRepositoryProvider = Provider<GazExpenseRepository>((ref) {
     enterpriseId: enterpriseId,
     moduleType: 'gaz',
   );
+});
+
+/// Provider for GazSessionRepository.
+final gazSessionRepositoryProvider = Provider<GazSessionRepository>((ref) {
+  final driftService = ref.watch(driftServiceProvider);
+  return GazSessionOfflineRepository(driftService.db);
 });
 
 final cylinderStockRepositoryProvider = Provider<CylinderStockRepository>((
@@ -160,6 +211,31 @@ final cylinderLeakRepositoryProvider = Provider<CylinderLeakRepository>((ref) {
     connectivityService: connectivityService,
     enterpriseId: enterpriseId,
     moduleType: 'gaz',
+  );
+});
+/// Provider for GazDispatchService.
+final gazDispatchServiceProvider = Provider<GazDispatchService>((ref) {
+  final gasRepo = ref.watch(gasRepositoryProvider);
+  final auditRepo = ref.watch(auditTrailRepositoryProvider);
+  return GazDispatchService(
+    gasRepository: gasRepo,
+    auditTrailRepository: auditRepo,
+  );
+});
+
+/// Provider for ExchangeRepository.
+final exchangeRepositoryProvider = Provider<ExchangeRepository>((ref) {
+  final drift = ref.watch(driftServiceProvider);
+  final sync = ref.watch(syncManagerProvider);
+  final connectivity = ref.watch(connectivityServiceProvider);
+  final auth = ref.watch(activeEnterpriseProvider).value;
+  final enterpriseId = auth?.id ?? '';
+
+  return ExchangeOfflineRepository(
+    driftService: drift,
+    syncManager: sync,
+    connectivityService: connectivity,
+    enterpriseId: enterpriseId,
   );
 });
 
@@ -229,6 +305,23 @@ final financialReportRepositoryProvider = Provider<FinancialReportRepository>((
   );
 });
 
+final stockTransferRepositoryProvider = Provider<StockTransferRepository>((
+  ref,
+) {
+  final enterpriseId =
+      ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+  final driftService = DriftService.instance;
+  final syncManager = ref.watch(syncManagerProvider);
+  final connectivityService = ref.watch(connectivityServiceProvider);
+
+  return StockTransferOfflineRepository(
+    driftService: driftService,
+    syncManager: syncManager,
+    connectivityService: connectivityService,
+    currentEnterpriseId: enterpriseId,
+  );
+});
+
 // Services
 final financialCalculationServiceProvider =
     Provider<FinancialCalculationService>((ref) {
@@ -243,7 +336,24 @@ final stockServiceProvider = Provider<StockService>((ref) {
 
 final tourServiceProvider = Provider<TourService>((ref) {
   final tourRepo = ref.watch(tourRepositoryProvider);
-  return TourService(tourRepository: tourRepo);
+  final transactionService = ref.watch(transactionServiceProvider);
+  return TourService(
+    tourRepository: tourRepo,
+    transactionService: transactionService,
+  );
+});
+
+final stockTransferServiceProvider = Provider<StockTransferService>((ref) {
+  final transferRepo = ref.watch(stockTransferRepositoryProvider);
+  final stockRepo = ref.watch(cylinderStockRepositoryProvider);
+  final gasRepo = ref.watch(gasRepositoryProvider);
+  final auditRepo = ref.watch(auditTrailRepositoryProvider);
+  return StockTransferService(
+    transferRepository: transferRepo,
+    stockRepository: stockRepo,
+    gasRepository: gasRepo,
+    auditTrailRepository: auditRepo,
+  );
 });
 
 // Data Consistency & Transaction Services
@@ -263,11 +373,31 @@ final transactionServiceProvider = Provider<TransactionService>((ref) {
   final gasRepo = ref.watch(gasRepositoryProvider);
   final tourRepo = ref.watch(tourRepositoryProvider);
   final consistencyService = ref.watch(dataConsistencyServiceProvider);
+  final auditRepo = ref.watch(auditTrailRepositoryProvider);
+  final alertService = ref.watch(gasAlertServiceProvider);
+  final leakRepo = ref.watch(cylinderLeakRepositoryProvider);
+  final exchangeRepo = ref.watch(exchangeRepositoryProvider);
+  final settingsRepo = ref.watch(gazSettingsRepositoryProvider);
+
   return TransactionService(
     stockRepository: stockRepo,
     gasRepository: gasRepo,
     tourRepository: tourRepo,
     consistencyService: consistencyService,
+    auditTrailRepository: auditRepo,
+    alertService: alertService,
+    leakRepository: leakRepo,
+    exchangeRepository: exchangeRepo,
+    settingsRepository: settingsRepo,
+  );
+});
+
+final gazStockReportServiceProvider = Provider<GazStockReportService>((ref) {
+  final auditRepo = ref.watch(auditTrailRepositoryProvider);
+  final stockRepo = ref.watch(cylinderStockRepositoryProvider);
+  return GazStockReportService(
+    auditRepository: auditRepo,
+    stockRepository: stockRepo,
   );
 });
 
@@ -305,13 +435,15 @@ final cylinderStockControllerProvider = Provider<CylinderStockController>((
 ) {
   final repo = ref.watch(cylinderStockRepositoryProvider);
   final service = ref.watch(stockServiceProvider);
-  return CylinderStockController(repo, service);
+  final transactionService = ref.watch(transactionServiceProvider);
+  return CylinderStockController(repo, service, transactionService);
 });
 
 final cylinderLeakControllerProvider = Provider<CylinderLeakController>((ref) {
   final leakRepo = ref.watch(cylinderLeakRepositoryProvider);
   final stockRepo = ref.watch(cylinderStockRepositoryProvider);
-  return CylinderLeakController(leakRepo, stockRepo);
+  final transactionService = ref.watch(transactionServiceProvider);
+  return CylinderLeakController(leakRepo, stockRepo, transactionService);
 });
 
 final financialReportControllerProvider = Provider<FinancialReportController>((
@@ -338,10 +470,30 @@ final pointOfSaleControllerProvider = Provider<PointOfSaleController>((ref) {
   return PointOfSaleController(repo);
 });
 
+final stockTransferControllerProvider = Provider<StockTransferController>((
+  ref,
+) {
+  final repo = ref.watch(stockTransferRepositoryProvider);
+  final service = ref.watch(stockTransferServiceProvider);
+  return StockTransferController(repo, service);
+});
+
+// GazSessionController is defined in its own file
+
 /// Provider pour le service PointOfSaleService.
 final pointOfSaleServiceProvider = Provider<PointOfSaleService>((ref) {
   return PointOfSaleService(
     pointOfSaleRepository: ref.watch(pointOfSaleRepositoryProvider),
+  );
+});
+
+final gazSessionControllerProvider = Provider<GazSessionController>((ref) {
+  final sessionRepo = ref.watch(gazSessionRepositoryProvider);
+  final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? '';
+
+  return GazSessionController(
+    sessionRepository: sessionRepo,
+    enterpriseId: enterpriseId,
   );
 });
 
@@ -463,6 +615,15 @@ final gazProfitProvider = StreamProvider<double>((ref) {
   final totalExpenses = totalExpensesAsync.value ?? 0.0;
 
   return Stream.value(totalSales - totalExpenses);
+});
+
+// Sessions are managed via GazSessionController
+final gazSessionsProvider = StreamProvider<List<GazSession>>((ref) {
+  return ref.watch(gazSessionControllerProvider).watchSessions();
+});
+
+final todayGazSessionProvider = FutureProvider<GazSession?>((ref) {
+  return ref.watch(gazSessionControllerProvider).getSessionForDate(DateTime.now());
 });
 
 // Report Data Provider
@@ -615,6 +776,32 @@ final financialChargesProvider =
       );
     });
 
+/// Provider pour l'historique des mouvements de stock.
+final gazStockHistoryProvider = FutureProvider.family<
+    List<StockMovement>,
+    ({String enterpriseId, DateTime startDate, DateTime endDate, String? siteId})
+>((ref, params) async {
+  final service = ref.watch(gazStockReportServiceProvider);
+  return service.getStockHistory(
+    enterpriseId: params.enterpriseId,
+    startDate: params.startDate,
+    endDate: params.endDate,
+    siteId: params.siteId,
+  );
+});
+
+/// Provider pour le résumé du stock actuel.
+final gazStockSummaryProvider = FutureProvider.family<
+    Map<int, Map<CylinderStatus, int>>,
+    ({String enterpriseId, String? siteId})
+>((ref, params) async {
+  final service = ref.watch(gazStockReportServiceProvider);
+  return service.getStockSummary(
+    enterpriseId: params.enterpriseId,
+    siteId: params.siteId,
+  );
+});
+
 /// Provider pour calculer le reliquat net pour une période donnée.
 final financialNetAmountProvider =
     FutureProvider.family<
@@ -676,4 +863,11 @@ final gazSettingsProvider =
         enterpriseId: params.enterpriseId,
         moduleId: params.moduleId,
       );
+    });
+
+// Stock Transfers
+final stockTransfersProvider =
+    StreamProvider.family<List<StockTransfer>, String>((ref, enterpriseId) {
+      final controller = ref.watch(stockTransferControllerProvider);
+      return controller.watchTransfers(enterpriseId);
     });

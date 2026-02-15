@@ -302,7 +302,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isWide = constraints.maxWidth > 800;
+        final isWide = constraints.maxWidth > 720;
 
         return Stack(
           children: [
@@ -488,7 +488,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                                   sliver: SliverGrid(
                                     gridDelegate:
                                         SliverGridDelegateWithFixedCrossAxisCount(
-                                      crossAxisCount: isWide ? 4 : 2,
+                                      crossAxisCount: isWide ? (constraints.maxWidth > 1000 ? 5 : 3) : 2,
                                       childAspectRatio: 0.75,
                                       crossAxisSpacing: 12,
                                       mainAxisSpacing: 12,

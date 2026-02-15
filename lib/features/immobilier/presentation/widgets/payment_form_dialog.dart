@@ -27,6 +27,7 @@ class _PaymentFormDialogState extends ConsumerState<PaymentFormDialog>
   Contract? _selectedContract;
   DateTime _paymentDate = DateTime.now();
   final _amountController = TextEditingController();
+  final _paidAmountController = TextEditingController();
   PaymentMethod _paymentMethod = PaymentMethod.cash;
   PaymentStatus _status = PaymentStatus.paid;
   PaymentType _paymentType = PaymentType.rent;
@@ -47,24 +48,17 @@ class _PaymentFormDialogState extends ConsumerState<PaymentFormDialog>
       _selectedContract = p.contract;
       _paymentDate = p.paymentDate;
       _amountController.text = p.amount.toString();
+      _paidAmountController.text = p.paidAmount.toString();
       _paymentMethod = p.paymentMethod;
       _status = p.status;
       _paymentType = p.paymentType ?? PaymentType.rent;
       _month = p.month;
       _year = p.year;
-      _year = p.year;
-      _year = p.year;
       _notesController.text = p.notes ?? '';
-      // Initialiser les champs split si nécessaire
       if (p.paymentMethod == PaymentMethod.both) {
         _cashAmountController.text = p.cashAmount?.toString() ?? '';
         _mobileMoneyAmountController.text = p.mobileMoneyAmount?.toString() ?? '';
       }
-      // Note: Transaction ID n'est pas encore dans l'entité Payment, on l'ajoute dans les notes pour l'instant ou on l'ignore si non supporté par l'entité
-      // Si l'utilisateur veut vraiment le stocker proprement, il faudrait l'ajouter à l'entité. 
-      // Pour l'instant on va supposer qu'il est concaténé dans les notes ou on l'ajoute.
-      // Le prompt user ne demandait pas explicitement de le stocker dans un nouveau champ, mais le plan disait "Add _transactionIdController".
-      // L'entité Payment n'a PAS de champ transactionId. Je vais l'ajouter aux notes lors de la sauvegarde.
     } else {
       _month = DateTime.now().month;
       _year = DateTime.now().year;
@@ -72,6 +66,38 @@ class _PaymentFormDialogState extends ConsumerState<PaymentFormDialog>
       if (widget.initialContract != null) {
         _selectedContract = widget.initialContract;
         _amountController.text = widget.initialContract!.monthlyRent.toString();
+        _paidAmountController.text = widget.initialContract!.monthlyRent.toString();
+        
+        // Suggest next unpaid month for this contract
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
+          final payments = await ref.read(paymentControllerProvider).getPaymentsByContract(widget.initialContract!.id);
+          final validPayments = payments.where((p) => p.status != PaymentStatus.cancelled).toList();
+          
+          if (validPayments.isNotEmpty) {
+            // Sort to find the latest month/year paid
+            validPayments.sort((a, b) {
+              final valA = (a.year ?? 0) * 12 + (a.month ?? 0);
+              final valB = (b.year ?? 0) * 12 + (b.month ?? 0);
+              return valB.compareTo(valA);
+            });
+            
+            final latest = validPayments.first;
+            int nextMonth = (latest.month ?? DateTime.now().month) + 1;
+            int nextYear = (latest.year ?? DateTime.now().year);
+            
+            if (nextMonth > 12) {
+              nextMonth = 1;
+              nextYear++;
+            }
+            
+            if (mounted) {
+              setState(() {
+                _month = nextMonth;
+                _year = nextYear;
+              });
+            }
+          }
+        });
       }
     }
   }
@@ -79,6 +105,7 @@ class _PaymentFormDialogState extends ConsumerState<PaymentFormDialog>
   @override
   void dispose() {
     _amountController.dispose();
+    _paidAmountController.dispose();
     _notesController.dispose();
     _transactionIdController.dispose();
     _cashAmountController.dispose();
@@ -133,14 +160,28 @@ class _PaymentFormDialogState extends ConsumerState<PaymentFormDialog>
       onLoadingChanged: (isLoading) => setState(() => _isSaving = isLoading),
       onSubmit: () async {
         final enterpriseId = ref.read(activeEnterpriseIdProvider).value ?? 'default';
+        final totalAmount = int.parse(_amountController.text);
+        final paidAmount = int.parse(_paidAmountController.text);
+        
+        // Calculate status automatically if not manually overridden or just force logic
+        var status = _status;
+        if (paidAmount == 0) {
+          status = PaymentStatus.pending;
+        } else if (paidAmount < totalAmount) {
+          status = PaymentStatus.partial;
+        } else if (paidAmount >= totalAmount) {
+          status = PaymentStatus.paid;
+        }
+
         final payment = Payment(
           id: widget.payment?.id ?? IdGenerator.generate(),
           enterpriseId: enterpriseId,
           contractId: _selectedContract!.id,
-          amount: int.parse(_amountController.text),
+          amount: totalAmount,
+          paidAmount: paidAmount,
           paymentDate: _paymentDate,
           paymentMethod: _paymentMethod,
-          status: _status,
+          status: status,
           cashAmount: _paymentMethod == PaymentMethod.both ? int.tryParse(_cashAmountController.text) : null,
           mobileMoneyAmount: _paymentMethod == PaymentMethod.both ? int.tryParse(_mobileMoneyAmountController.text) : null,
           contract: _selectedContract,
@@ -346,6 +387,27 @@ class _PaymentFormDialogState extends ConsumerState<PaymentFormDialog>
             PaymentFormFields.amountField(
               controller: _amountController,
               validator: (value) => Validators.amount(value),
+              label: 'Montant du loyer (FCFA) *',
+            ),
+            const SizedBox(height: 16),
+            ValueListenableBuilder(
+              valueListenable: _amountController,
+              builder: (context, value, child) {
+                final total = int.tryParse(value.text) ?? 0;
+                return PaymentFormFields.paidAmountField(
+                  controller: _paidAmountController,
+                  validator: (val) {
+                    final res = Validators.amount(val);
+                    if (res != null) return res;
+                    final paid = int.tryParse(val!) ?? 0;
+                    if (paid > total) return 'Le montant reçu ne peut pas dépasser le loyer';
+                    return null;
+                  },
+                  helperText: (int.tryParse(_paidAmountController.text) ?? 0) < total
+                      ? 'Reste à payer : ${total - (int.tryParse(_paidAmountController.text) ?? 0)} FCFA'
+                      : null,
+                );
+              },
             ),
             const SizedBox(height: 16),
             PaymentFormFields.monthYearFields(

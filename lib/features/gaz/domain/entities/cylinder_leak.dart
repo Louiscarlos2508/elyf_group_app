@@ -8,6 +8,16 @@ enum LeakStatus {
   final String label;
 }
 
+/// Source d'une fuite.
+enum LeakSource {
+  store('Magasin'),
+  tour('Tournée (Livraison)'),
+  supplier('Fournisseur (Réception)');
+
+  const LeakSource(this.label);
+  final String label;
+}
+
 /// Représente une bouteille avec fuite (échange standard fournisseur).
 class CylinderLeak {
   const CylinderLeak({
@@ -17,9 +27,13 @@ class CylinderLeak {
     required this.weight,
     required this.reportedDate,
     required this.status,
+    this.source = LeakSource.store,
+    this.isFullLoss = true,
+    this.estimatedLossVolume,
     this.tourId,
     this.exchangeDate,
     this.notes,
+    this.reportedBy,
     this.updatedAt,
     this.createdAt,
     this.deletedAt,
@@ -35,7 +49,11 @@ class CylinderLeak {
   final String?
   tourId; // ID du tour d'approvisionnement où la fuite a été signalée
   final DateTime? exchangeDate;
+  final LeakSource source;
+  final bool isFullLoss;
+  final double? estimatedLossVolume;
   final String? notes;
+  final String? reportedBy;
   final DateTime? updatedAt;
   final DateTime? createdAt;
   final DateTime? deletedAt;
@@ -48,9 +66,13 @@ class CylinderLeak {
     int? weight,
     DateTime? reportedDate,
     LeakStatus? status,
+    LeakSource? source,
+    bool? isFullLoss,
+    double? estimatedLossVolume,
     String? tourId,
     DateTime? exchangeDate,
     String? notes,
+    String? reportedBy,
     DateTime? updatedAt,
     DateTime? createdAt,
     DateTime? deletedAt,
@@ -63,9 +85,13 @@ class CylinderLeak {
       weight: weight ?? this.weight,
       reportedDate: reportedDate ?? this.reportedDate,
       status: status ?? this.status,
+      source: source ?? this.source,
+      isFullLoss: isFullLoss ?? this.isFullLoss,
+      estimatedLossVolume: estimatedLossVolume ?? this.estimatedLossVolume,
       tourId: tourId ?? this.tourId,
       exchangeDate: exchangeDate ?? this.exchangeDate,
       notes: notes ?? this.notes,
+      reportedBy: reportedBy ?? this.reportedBy,
       updatedAt: updatedAt ?? this.updatedAt,
       createdAt: createdAt ?? this.createdAt,
       deletedAt: deletedAt ?? this.deletedAt,
@@ -83,7 +109,13 @@ class CylinderLeak {
           ? DateTime.parse(map['reportedDate'] as String)
           : DateTime.now(),
       status: LeakStatus.values.byName(map['status'] as String? ?? 'reported'),
+      source: map['source'] != null 
+          ? LeakSource.values.byName(map['source'] as String)
+          : LeakSource.store,
+      isFullLoss: map['isFullLoss'] as bool? ?? true,
+      estimatedLossVolume: (map['estimatedLossVolume'] as num?)?.toDouble(),
       tourId: map['tourId'] as String?,
+      reportedBy: map['reportedBy'] as String?,
       exchangeDate: map['exchangeDate'] != null
           ? DateTime.parse(map['exchangeDate'] as String)
           : null,
@@ -109,9 +141,13 @@ class CylinderLeak {
       'weight': weight,
       'reportedDate': reportedDate.toIso8601String(),
       'status': status.name,
+      'source': source.name,
+      'isFullLoss': isFullLoss,
+      'estimatedLossVolume': estimatedLossVolume,
       'tourId': tourId,
       'exchangeDate': exchangeDate?.toIso8601String(),
       'notes': notes,
+      'reportedBy': reportedBy,
       'updatedAt': updatedAt?.toIso8601String(),
       'createdAt': createdAt?.toIso8601String(),
       'deletedAt': deletedAt?.toIso8601String(),

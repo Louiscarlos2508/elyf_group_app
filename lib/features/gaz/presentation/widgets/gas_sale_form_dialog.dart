@@ -14,13 +14,18 @@ import 'gas_sale_form/price_stock_manager.dart';
 import 'gas_sale_form/quantity_and_total_widget.dart';
 import 'gas_sale_form/tour_wholesaler_selector_widget.dart';
 import 'gas_print_receipt_button.dart';
-
+import '../../application/providers.dart';
+import 'package:elyf_groupe_app/core/logging/app_logger.dart';
 /// Dialog de formulaire pour créer une vente de gaz.
 class GasSaleFormDialog extends ConsumerStatefulWidget {
-  const GasSaleFormDialog({super.key, required this.saleType});
+  const GasSaleFormDialog({
+    super.key,
+    required this.saleType,
+    this.initialCylinder,
+  });
 
   final SaleType saleType;
-
+  final Cylinder? initialCylinder;
   @override
   ConsumerState<GasSaleFormDialog> createState() => _GasSaleFormDialogState();
 }
@@ -39,10 +44,15 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
   String? _selectedWholesalerId;
   String? _selectedWholesalerName;
   GasSale? _completedSale;
+  bool _emptyReturned = true; // Par défaut, on suppose qu'un client rend une bouteille (échange standard)
+  String _selectedTier = 'default';
+  PaymentMethod _selectedPaymentMethod = PaymentMethod.cash;
+  bool _isInitialized = false;
 
   @override
   void initState() {
     super.initState();
+    _selectedCylinder = widget.initialCylinder;
     _quantityController.text = '1';
   }
 
@@ -66,11 +76,24 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
 
   double get _totalAmount {
     final quantity = int.tryParse(_quantityController.text) ?? 0;
+    
+    // Calculer la part de consigne si c'est une nouvelle bouteille
+    double depositPart = 0;
+    if (!_emptyReturned && _selectedCylinder != null) {
+      final enterpriseId = ref.read(activeEnterpriseProvider).value?.id;
+      if (enterpriseId != null) {
+        final settings = ref.read(gazSettingsProvider((enterpriseId: enterpriseId, moduleId: 'gaz'))).value;
+        if (settings != null) {
+          depositPart = settings.getDepositRate(_selectedCylinder!.weight) * quantity;
+        }
+      }
+    }
+
     return GasCalculationService.calculateTotalAmount(
       cylinder: _selectedCylinder,
       unitPrice: _unitPrice,
       quantity: quantity,
-    );
+    ) + depositPart;
   }
 
   Future<void> _updateUnitPrice(String? enterpriseId) async {
@@ -80,6 +103,7 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
       cylinder: _selectedCylinder,
       enterpriseId: enterpriseId,
       isWholesale: widget.saleType == SaleType.wholesale,
+      tier: _selectedTier,
     );
     if (mounted) {
       setState(() => _unitPrice = price);
@@ -140,14 +164,39 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
       wholesalerName: widget.saleType == SaleType.wholesale
           ? _selectedWholesalerName
           : null,
-      onLoadingChanged: () => setState(() => _isLoading = !_isLoading),
+      emptyReturnedQuantity: _emptyReturned ? (int.tryParse(_quantityController.text) ?? 0) : 0,
+      dealType: _emptyReturned ? GasSaleDealType.exchange : GasSaleDealType.newCylinder,
+      paymentMethod: _selectedPaymentMethod,
+      onLoadingChanged: () => setState(() => _isLoading = true),
     );
 
     if (sale != null && mounted) {
       setState(() => _completedSale = sale);
+      
+      // Auto-print logic (Story 2.4)
+      try {
+        final settingsAsync = ref.read(gazSettingsProvider((
+          enterpriseId: enterpriseId,
+          moduleId: 'gaz',
+        )));
+        
+        settingsAsync.whenData((settings) async {
+          if (settings?.autoPrintReceipt == true) {
+            final printingService = ref.read(gazPrintingServiceProvider);
+            final enterpriseName = ref.read(activeEnterpriseProvider).value?.name;
+            
+            await printingService.printSaleReceipt(
+              sale: sale,
+              cylinderLabel: _selectedCylinder?.label,
+              enterpriseName: enterpriseName,
+            );
+          }
+        });
+      } catch (e) {
+        AppLogger.error('Failed to auto-print receipt', error: e);
+      }
     }
   }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -159,6 +208,15 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
       loading: () => null,
       error: (_, __) => null,
     );
+
+    // Initialisation automatique du prix et du stock si un cylinder est pré-sélectionné
+    if (!_isInitialized && enterpriseId != null && _selectedCylinder != null) {
+      _isInitialized = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _updateUnitPrice(enterpriseId);
+        _updateAvailableStock(enterpriseId);
+      });
+    }
 
     try {
       return Dialog(
@@ -221,6 +279,31 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
                           });
                         },
                       ),
+                    if (widget.saleType == SaleType.wholesale) ...[
+                      const SizedBox(height: 16),
+                      DropdownButtonFormField<String>(
+                        value: _selectedTier,
+                        decoration: const InputDecoration(
+                          labelText: 'Tier de prix *',
+                          prefixIcon: Icon(Icons.loyalty),
+                          border: OutlineInputBorder(),
+                        ),
+                        items: const [
+                          DropdownMenuItem(value: 'default', child: Text('Standard')),
+                          DropdownMenuItem(value: 'bronze', child: Text('Bronze')),
+                          DropdownMenuItem(value: 'silver', child: Text('Silver')),
+                          DropdownMenuItem(value: 'gold', child: Text('Gold')),
+                        ],
+                        onChanged: (value) {
+                          if (value != null) {
+                            setState(() {
+                              _selectedTier = value;
+                              _updateUnitPrice(enterpriseId);
+                            });
+                          }
+                        },
+                      ),
+                    ],
                     if (widget.saleType == SaleType.wholesale)
                       const SizedBox(height: 16),
                     // Sélection de la bouteille
@@ -244,7 +327,17 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
                       availableStock: _availableStock,
                       unitPrice: _unitPrice,
                       onQuantityChanged: () => setState(() {}),
+                      emptyReturned: _emptyReturned,
+                      onEmptyReturnedChanged: (value) =>
+                          setState(() => _emptyReturned = value),
                     ),
+                    if (!_emptyReturned && _selectedCylinder != null) ...[
+                      const SizedBox(height: 8),
+                      _DepositInfoRow(
+                        weight: _selectedCylinder!.weight,
+                        quantity: int.tryParse(_quantityController.text) ?? 0,
+                      ),
+                    ],
                     const SizedBox(height: 16),
                     // Informations client
                     CustomerInfoWidget(
@@ -352,5 +445,55 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
         ),
       );
     }
+  }
+}
+
+class _DepositInfoRow extends ConsumerWidget {
+  const _DepositInfoRow({required this.weight, required this.quantity});
+  final int weight;
+  final int quantity;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id;
+    if (enterpriseId == null) return const SizedBox.shrink();
+
+    final settingsAsync = ref.watch(gazSettingsProvider((enterpriseId: enterpriseId, moduleId: 'gaz')));
+
+    return settingsAsync.when(
+      data: (settings) {
+        final rate = settings?.getDepositRate(weight) ?? 0.0;
+        if (rate <= 0) return const SizedBox.shrink();
+        
+        final totalDeposit = rate * quantity;
+        
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF0F9FF),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: const Color(0xFFB9E6FE)),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.info_outline, size: 16, color: Color(0xFF026AA2)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Inclut ${totalDeposit.toStringAsFixed(0)} FCFA de consigne (${rate.toStringAsFixed(0)} x $quantity)',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF026AA2),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+    );
   }
 }

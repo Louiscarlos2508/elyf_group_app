@@ -12,6 +12,7 @@ class MaintenanceTicket {
     required this.priority,
     required this.status,
     this.tenantId,
+    this.assignedUserId,
     this.photos,
     this.cost,
     this.createdAt,
@@ -24,6 +25,7 @@ class MaintenanceTicket {
   final String enterpriseId;
   final String propertyId;
   final String? tenantId;
+  final String? assignedUserId;
   final String description;
   final MaintenancePriority priority;
   final MaintenanceStatus status;
@@ -41,6 +43,7 @@ class MaintenanceTicket {
     String? enterpriseId,
     String? propertyId,
     String? tenantId,
+    String? assignedUserId,
     String? description,
     MaintenancePriority? priority,
     MaintenanceStatus? status,
@@ -56,6 +59,7 @@ class MaintenanceTicket {
       enterpriseId: enterpriseId ?? this.enterpriseId,
       propertyId: propertyId ?? this.propertyId,
       tenantId: tenantId ?? this.tenantId,
+      assignedUserId: assignedUserId ?? this.assignedUserId,
       description: description ?? this.description,
       priority: priority ?? this.priority,
       status: status ?? this.status,
@@ -74,6 +78,7 @@ class MaintenanceTicket {
       'enterpriseId': enterpriseId,
       'propertyId': propertyId,
       'tenantId': tenantId,
+      'assignedUserId': assignedUserId,
       'description': description,
       'priority': priority.name,
       'status': status.name,
@@ -92,6 +97,7 @@ class MaintenanceTicket {
       enterpriseId: map['enterpriseId'] as String,
       propertyId: map['propertyId'] as String,
       tenantId: map['tenantId'] as String?,
+      assignedUserId: map['assignedUserId'] as String?,
       description: map['description'] as String,
       priority: MaintenancePriority.values.firstWhere(
         (e) => e.name == map['priority'],

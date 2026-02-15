@@ -16,7 +16,7 @@ class PaymentReceiptTemplate {
     String? footer,
     bool showLogo = true,
   }) {
-    final width = 30; // Largeur pour imprimante 58mm
+    final width = 48; // Format 80mm (aligné journal / factures)
     final lines = <String>[];
 
     // Fonction pour centrer le texte
@@ -27,7 +27,7 @@ class PaymentReceiptTemplate {
     }
 
     // Fonction pour créer une ligne de séparation
-    String separator(String char) => char * 26;
+    String separator(String char) => char * width;
 
     // Logo
     if (showLogo) {

@@ -129,6 +129,32 @@ class ProfitReportData {
   final double netMarginPercentage;
 }
 
+/// Represents debt report data.
+class DebtsReportData {
+  const DebtsReportData({
+    required this.totalDebt,
+    required this.aging,
+    required this.debtBySupplier,
+  });
+
+  final int totalDebt;
+  final Map<String, int> aging; // '0-30', '31-60', '61+' -> Amount
+  final List<SupplierDebtSummary> debtBySupplier;
+}
+
+/// Summary of a supplier's debt.
+class SupplierDebtSummary {
+  const SupplierDebtSummary({
+    required this.supplierId,
+    required this.supplierName,
+    required this.balance,
+  });
+
+  final String supplierId;
+  final String supplierName;
+  final int balance;
+}
+
 /// Aggregates all boutique report data for full PDF generation.
 class FullBoutiqueReportData {
   const FullBoutiqueReportData({
@@ -137,6 +163,7 @@ class FullBoutiqueReportData {
     required this.purchases,
     required this.expenses,
     required this.profit,
+    this.debts, // Optionnel pour le moment
     required this.startDate,
     required this.endDate,
   });
@@ -146,6 +173,7 @@ class FullBoutiqueReportData {
   final PurchasesReportData purchases;
   final ExpensesReportData expenses;
   final ProfitReportData profit;
+  final DebtsReportData? debts;
   final DateTime startDate;
   final DateTime endDate;
 }

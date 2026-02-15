@@ -3,7 +3,7 @@ import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
 
-import 'dashboard_kpi_card_v2.dart';
+import 'immobilier_kpi_card.dart';
 
 /// Section displaying monthly KPIs for immobilier.
 class DashboardMonthSectionV2 extends StatelessWidget {
@@ -18,6 +18,7 @@ class DashboardMonthSectionV2 extends StatelessWidget {
     this.unpaidRentsCount = 0,
     this.openTickets = 0,
     this.highPriorityTickets = 0,
+    this.totalDepositsHeld = 0,
     this.onRevenueTap,
     this.onExpensesTap,
     this.onProfitTap,
@@ -34,6 +35,7 @@ class DashboardMonthSectionV2 extends StatelessWidget {
   final int unpaidRentsCount;
   final int openTickets;
   final int highPriorityTickets;
+  final int totalDepositsHeld;
   final VoidCallback? onRevenueTap;
   final VoidCallback? onExpensesTap;
   final VoidCallback? onProfitTap;
@@ -48,64 +50,63 @@ class DashboardMonthSectionV2 extends StatelessWidget {
         final isWide = constraints.maxWidth > 900;
 
         final cards = [
-          DashboardKpiCardV2(
+          ImmobilierKpiCard(
             label: 'Revenus Locatifs',
             value: CurrencyFormatter.formatFCFA(monthRevenue),
             subtitle: '$monthPaymentsCount paiements (${collectionRate.toStringAsFixed(0)}%)',
             icon: Icons.trending_up,
-            iconColor: const Color(0xFF3B82F6), // Blue
-            backgroundColor: const Color(0xFF3B82F6),
+            color: const Color(0xFF3B82F6),
             onTap: onRevenueTap,
           ),
-          DashboardKpiCardV2(
+          ImmobilierKpiCard(
             label: 'Dépenses',
             value: CurrencyFormatter.formatFCFA(monthExpensesAmount),
             subtitle: 'Charges',
             icon: Icons.receipt_long,
-            iconColor: theme.colorScheme.error,
-            backgroundColor: theme.colorScheme.error,
+            color: theme.colorScheme.error,
             onTap: onExpensesTap,
           ),
-          DashboardKpiCardV2(
+          ImmobilierKpiCard(
             label: 'Loyers Impayés',
             value: '$unpaidRentsCount',
             subtitle: 'Contrats en attente',
             icon: Icons.money_off,
-            iconColor: unpaidRentsCount > 0 ? theme.colorScheme.error : const Color(0xFF10B981),
-            backgroundColor: unpaidRentsCount > 0 ? theme.colorScheme.error : const Color(0xFF10B981),
-            onTap: null, // Pas de filtrage spécifique pour l'instant
+            color: unpaidRentsCount > 0 ? theme.colorScheme.error : const Color(0xFF10B981),
+            onTap: null,
           ),
-          DashboardKpiCardV2(
+          ImmobilierKpiCard(
             label: 'Bénéfice Net',
             value: CurrencyFormatter.formatFCFA(monthProfit),
             subtitle: monthProfit >= 0 ? 'Profit' : 'Déficit',
             icon: Icons.account_balance_wallet,
-            iconColor: monthProfit >= 0 ? const Color(0xFF10B981) : theme.colorScheme.error,
-            valueColor: monthProfit >= 0
-                ? const Color(0xFF059669)
-                : theme.colorScheme.error,
-            backgroundColor: monthProfit >= 0 ? const Color(0xFF10B981) : theme.colorScheme.error,
+            color: monthProfit >= 0 ? const Color(0xFF10B981) : theme.colorScheme.error,
             onTap: onProfitTap,
           ),
-          DashboardKpiCardV2(
+          ImmobilierKpiCard(
             label: "Taux d'Occupation",
             value: '${occupancyRate.toStringAsFixed(0)}%',
             subtitle: 'propriétés louées',
             icon: Icons.home,
-            iconColor: const Color(0xFF6366F1), // Indigo
-            backgroundColor: const Color(0xFF6366F1),
+            color: const Color(0xFF6366F1),
             onTap: onOccupancyTap,
           ),
-             if (openTickets > 0 || onMaintenanceTap != null)
-            DashboardKpiCardV2(
+          if (openTickets > 0 || onMaintenanceTap != null)
+            ImmobilierKpiCard(
               label: 'Maintenance',
               value: '$openTickets tickets',
               subtitle: '$highPriorityTickets urgents',
               icon: Icons.handyman,
-              iconColor: highPriorityTickets > 0 ? Colors.red : Colors.orange,
-              backgroundColor: highPriorityTickets > 0 ? Colors.red : Colors.orange,
+              color: highPriorityTickets > 0 ? Colors.red : Colors.orange,
               onTap: onMaintenanceTap,
             ),
+          ImmobilierKpiCard(
+            label: 'Cautions Détenues',
+            value: CurrencyFormatter.formatFCFA(totalDepositsHeld),
+            subtitle: 'Dépôts de garantie',
+            icon: Icons.lock_clock,
+            color: const Color(0xFF8B5CF6),
+            onTap: null,
+          ),
         ];
 
         // Layout logic

@@ -84,6 +84,8 @@ class ContractPaymentListTile extends StatelessWidget {
     switch (status) {
       case PaymentStatus.paid:
         return Colors.green;
+      case PaymentStatus.partial:
+        return Colors.blue;
       case PaymentStatus.pending:
         return Colors.orange;
       case PaymentStatus.overdue:

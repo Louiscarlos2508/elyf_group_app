@@ -1,12 +1,19 @@
 import '../../../../core/errors/app_exceptions.dart';
 import '../entities/tour.dart';
 import '../repositories/tour_repository.dart';
+import '../entities/stock_alert.dart';
+
+import 'transaction_service.dart';
 
 /// Service de gestion des tours avec logique métier.
 class TourService {
-  const TourService({required this.tourRepository});
+  const TourService({
+    required this.tourRepository,
+    required this.transactionService,
+  });
 
   final TourRepository tourRepository;
+  final TransactionService transactionService;
 
   /// Valide qu'on peut passer au statut suivant.
   /// Retourne un message d'erreur si la transition n'est pas valide, sinon null.
@@ -94,7 +101,23 @@ class TourService {
     }
 
     // Mettre à jour le statut
+    if (nextStatus == TourStatus.closure) {
+      // Pour la clôture, utiliser la transaction atomique (stocks + audit)
+      // Note: On assume que l'appelant fournit le userId via une extension ou un autre paramètre
+      // Pour l'instant, je vais modifier moveToNextStep pour accepter le userId.
+      throw ValidationException('La clôture doit être effectuée via closeTour', 'USE_CLOSE_TOUR');
+    }
+
     await tourRepository.updateStatus(tourId, nextStatus);
+  }
+
+  /// Clôture un tour avec mise à jour des stocks et enregistrement financier.
+  Future<List<StockAlert>> closeTour(String tourId, String userId) async {
+    final result = await transactionService.executeTourClosureTransaction(
+      tourId: tourId,
+      userId: userId,
+    );
+    return result.alerts;
   }
 
   /// Obtient le statut suivant.

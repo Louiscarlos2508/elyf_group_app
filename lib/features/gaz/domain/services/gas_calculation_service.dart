@@ -11,11 +11,17 @@ class GasCalculationService {
     required Cylinder? cylinder,
     required double unitPrice,
     required int quantity,
+    int emptyReturnedQuantity = 0,
   }) {
-    if (cylinder == null || unitPrice == 0.0 || quantity <= 0) {
+    if (cylinder == null || (unitPrice == 0.0 && cylinder.depositPrice == 0.0) || quantity < 0) {
       return 0.0;
     }
-    return unitPrice * quantity;
+    
+    final gasTotal = unitPrice * quantity;
+    final depositDifference = quantity - emptyReturnedQuantity;
+    final depositTotal = depositDifference * cylinder.depositPrice;
+    
+    return gasTotal + depositTotal;
   }
 
   /// Calculates total amount from quantity text input.
@@ -25,9 +31,10 @@ class GasCalculationService {
     required Cylinder? cylinder,
     required double unitPrice,
     required String? quantityText,
+    int emptyReturnedQuantity = 0,
   }) {
     if (cylinder == null ||
-        unitPrice == 0.0 ||
+        (unitPrice == 0.0 && cylinder.depositPrice == 0.0) ||
         quantityText == null ||
         quantityText.isEmpty) {
       return 0.0;
@@ -37,6 +44,7 @@ class GasCalculationService {
       cylinder: cylinder,
       unitPrice: unitPrice,
       quantity: quantity,
+      emptyReturnedQuantity: emptyReturnedQuantity,
     );
   }
 

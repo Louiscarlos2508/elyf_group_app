@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:elyf_groupe_app/shared.dart';
+import '../../../../shared.dart';
 import '../../../../core/offline/offline.dart';
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/tenant/tenant_provider.dart';
+import '../../../administration/application/providers.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/maintenance_ticket.dart';
 import '../../domain/entities/property.dart';
@@ -34,6 +35,7 @@ class _MaintenanceFormDialogState extends ConsumerState<MaintenanceFormDialog>
   final _costController = TextEditingController();
   MaintenancePriority _priority = MaintenancePriority.medium;
   MaintenanceStatus _status = MaintenanceStatus.open;
+  String? _assignedUserId;
   List<String> _photos = [];
   bool _isSaving = false;
 
@@ -47,6 +49,7 @@ class _MaintenanceFormDialogState extends ConsumerState<MaintenanceFormDialog>
       _costController.text = t.cost?.toString() ?? '';
       _priority = t.priority;
       _status = t.status;
+      _assignedUserId = t.assignedUserId;
       _photos = List.from(t.photos ?? []);
     } else if (widget.initialProperty != null) {
       _selectedProperty = widget.initialProperty;
@@ -101,6 +104,7 @@ class _MaintenanceFormDialogState extends ConsumerState<MaintenanceFormDialog>
           description: _descriptionController.text.trim(),
           priority: _priority,
           status: _status,
+          assignedUserId: _assignedUserId,
           photos: _photos,
           cost: double.tryParse(_costController.text),
           createdAt: widget.ticket?.createdAt ?? DateTime.now(),
@@ -152,7 +156,7 @@ class _MaintenanceFormDialogState extends ConsumerState<MaintenanceFormDialog>
                 // If I call it here, it will show a dialog on top of this dialog.
                 // That's fine.
                 // BUT, if I archive it, I probably want to close THIS dialog too.
-                // The screen callback does NOT close this dialog (it assumes this dialog is closed or it's called from a list).
+                // The screen callback does NOT pop the FormDialog (it assumes this dialog is closed or it's called from a list).
                 
                 // Let's look at MaintenanceScreen logic again.
                 // It calls `showDialog` for MaintenanceFormDialog.
@@ -201,6 +205,16 @@ class _MaintenanceFormDialogState extends ConsumerState<MaintenanceFormDialog>
               onChanged: (value) {
                 if (value != null) setState(() => _status = value);
               },
+            ),
+            const SizedBox(height: 16),
+            ref.watch(usersProvider).when(
+              data: (users) => MaintenanceFormFields.assignedUserField(
+                value: _assignedUserId,
+                users: users.map((u) => (id: u.id, name: u.fullName)).toList(),
+                onChanged: (value) => setState(() => _assignedUserId = value),
+              ),
+              loading: () => const LinearProgressIndicator(),
+              error: (_, __) => const SizedBox.shrink(),
             ),
             const SizedBox(height: 16),
             MaintenanceFormFields.descriptionField(

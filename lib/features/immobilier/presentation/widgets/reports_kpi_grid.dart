@@ -7,7 +7,7 @@ import '../../domain/entities/contract.dart';
 import '../../domain/entities/expense.dart';
 import '../../domain/entities/payment.dart';
 import '../../domain/entities/property.dart';
-import 'enhanced_kpi_card.dart';
+import 'immobilier_kpi_card.dart';
 import 'reports_helpers.dart';
 
 /// Widget pour afficher la grille de KPIs des rapports.
@@ -32,8 +32,8 @@ class ReportsKpiGrid extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Utiliser le service de calcul pour extraire la logique métier
-    final reportService = ref.read(immobilierReportCalculationServiceProvider);
-    final metrics = reportService.calculateReportMetrics(
+    final calculationService = ref.read(immobilierDashboardCalculationServiceProvider);
+    final metrics = calculationService.calculatePeriodMetrics(
       properties: properties,
       contracts: contracts,
       periodPayments: periodPayments,
@@ -41,39 +41,45 @@ class ReportsKpiGrid extends ConsumerWidget {
     );
 
     final cards = [
-      EnhancedKpiCard(
+      ImmobilierKpiCard(
         label: 'Revenus',
-        value: ReportsHelpers.formatCurrency(metrics.totalRevenue),
+        value: ReportsHelpers.formatCurrency(metrics.periodRevenue),
+        subtitle: 'loyers encaissés',
         icon: Icons.trending_up,
         color: Colors.green,
       ),
-      EnhancedKpiCard(
+      ImmobilierKpiCard(
         label: 'Dépenses',
-        value: ReportsHelpers.formatCurrency(metrics.totalExpenses),
+        value: ReportsHelpers.formatCurrency(metrics.periodExpensesTotal),
+        subtitle: 'charges décaissées',
         icon: Icons.trending_down,
         color: Colors.red,
       ),
-      EnhancedKpiCard(
+      ImmobilierKpiCard(
         label: 'Résultat net',
         value: ReportsHelpers.formatCurrency(metrics.netRevenue),
+        subtitle: metrics.isProfit ? 'solde positif' : 'solde négatif',
         icon: Icons.account_balance_wallet,
         color: metrics.isProfit ? Colors.green : Colors.red,
       ),
-      EnhancedKpiCard(
+      ImmobilierKpiCard(
         label: 'Paiements',
         value: metrics.paidPaymentsCount.toString(),
+        subtitle: 'reçus émis',
         icon: Icons.payment,
         color: Colors.blue,
       ),
-      EnhancedKpiCard(
+      ImmobilierKpiCard(
         label: 'Taux d\'occupation',
         value: '${metrics.occupancyRate.toStringAsFixed(0)}%',
+        subtitle: 'utilisation parc',
         icon: Icons.percent,
         color: Colors.purple,
       ),
-      EnhancedKpiCard(
+      ImmobilierKpiCard(
         label: 'Contrats actifs',
         value: metrics.activeContractsCount.toString(),
+        subtitle: 'baux en vigueur',
         icon: Icons.description,
         color: Colors.orange,
       ),

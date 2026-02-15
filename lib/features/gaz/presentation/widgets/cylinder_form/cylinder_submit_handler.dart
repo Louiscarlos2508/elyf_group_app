@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import '../../../domain/entities/cylinder.dart';
+import '../../../domain/entities/cylinder_stock.dart';
 import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
 
 /// Handler pour la soumission du formulaire de bouteille.
@@ -16,6 +17,9 @@ class CylinderSubmitHandler {
     required String weightText,
     required String sellPriceText,
     required String buyPriceText,
+    String? initialFullStockText,
+    String? initialEmptyStockText,
+    String? depositPriceText,
     required String? enterpriseId,
     required String? moduleId,
     required Cylinder? existingCylinder,
@@ -32,9 +36,11 @@ class CylinderSubmitHandler {
 
     try {
       final controller = ref.read(cylinderControllerProvider);
+      final stockController = ref.read(cylinderStockControllerProvider);
       final weight = int.tryParse(weightText) ?? selectedWeight;
       final sellPrice = double.tryParse(sellPriceText) ?? 0.0;
       final buyPrice = double.tryParse(buyPriceText) ?? 0.0;
+      final depositPrice = double.tryParse(depositPriceText ?? '0') ?? 0.0;
 
       Cylinder cylinder;
       if (existingCylinder != null) {
@@ -42,6 +48,7 @@ class CylinderSubmitHandler {
           weight: weight,
           buyPrice: buyPrice,
           sellPrice: sellPrice,
+          depositPrice: depositPrice,
         );
       } else {
         cylinder = Cylinder(
@@ -52,11 +59,42 @@ class CylinderSubmitHandler {
           enterpriseId: enterpriseId,
           moduleId: moduleId,
           stock: 0,
+          depositPrice: depositPrice,
         );
       }
 
       if (existingCylinder == null) {
         await controller.addCylinder(cylinder);
+
+        // Initialisation du stock initial (Bi-modal)
+        final fullQuantity = int.tryParse(initialFullStockText ?? '0') ?? 0;
+        final emptyQuantity = int.tryParse(initialEmptyStockText ?? '0') ?? 0;
+
+        if (fullQuantity > 0) {
+          await stockController.addStock(CylinderStock(
+            id: 'stock-full-${cylinder.id}-${DateTime.now().millisecondsSinceEpoch}',
+            cylinderId: cylinder.id,
+            weight: cylinder.weight,
+            status: CylinderStatus.full,
+            quantity: fullQuantity,
+            enterpriseId: enterpriseId,
+            updatedAt: DateTime.now(),
+            createdAt: DateTime.now(),
+          ));
+        }
+
+        if (emptyQuantity > 0) {
+          await stockController.addStock(CylinderStock(
+            id: 'stock-empty-${cylinder.id}-${DateTime.now().millisecondsSinceEpoch}',
+            cylinderId: cylinder.id,
+            weight: cylinder.weight,
+            status: CylinderStatus.emptyAtStore,
+            quantity: emptyQuantity,
+            enterpriseId: enterpriseId,
+            updatedAt: DateTime.now(),
+            createdAt: DateTime.now(),
+          ));
+        }
       } else {
         await controller.updateCylinder(cylinder);
       }
@@ -65,6 +103,7 @@ class CylinderSubmitHandler {
 
       // Invalider les providers pour forcer le rafraîchissement
       ref.invalidate(cylindersProvider);
+      ref.invalidate(cylinderStocksProvider);
 
       Navigator.of(context).pop();
 

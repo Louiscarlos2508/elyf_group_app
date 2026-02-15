@@ -14,8 +14,10 @@ import '../../../core/offline/sync_paths.dart';
 import '../../../core/offline/drift_service.dart';
 import '../../../core/offline/module_data_sync_service.dart';
 import '../../../features/administration/application/controllers/admin_controller.dart';
+import '../../../features/administration/application/controllers/user_controller.dart';
 import '../../../features/administration/application/providers.dart'
-    show adminControllerProvider;
+    show adminControllerProvider, userControllerProvider;
+import '../../../features/administration/domain/entities/user.dart';
 
 /// Controller pour gérer l'authentification.
 ///
@@ -27,15 +29,18 @@ class AuthController {
     required this.firestoreUserService,
     required Ref ref,
     AdminController? adminController,
+    UserController? userController,
     FirebaseFirestore? firestore,
   })  : _ref = ref,
         _adminController = adminController,
+        _userController = userController,
         _firestore = firestore;
 
   final AuthService authService;
   final FirestoreUserService firestoreUserService;
   final Ref _ref;
   final AdminController? _adminController;
+  final UserController? _userController;
   final FirebaseFirestore? _firestore;
 
   /// Se connecter avec email et mot de passe.
@@ -252,16 +257,47 @@ class AuthController {
     bool isActive = true,
     bool isAdmin = false,
   }) async {
-    await firestoreUserService.createOrUpdateUser(
-      userId: userId,
-      email: email,
-      firstName: firstName,
-      lastName: lastName,
-      username: username,
-      phone: phone,
-      isActive: isActive,
-      isAdmin: isAdmin,
-    );
+    // Si UserController est disponible, l'utiliser pour bénéficier de l'architecture offline-first
+    // (Drift -> SyncManager -> Firestore)
+    final userController = _userController;
+    if (userController != null) {
+      final user = User(
+        id: userId,
+        email: email,
+        firstName: firstName ?? '',
+        lastName: lastName ?? '',
+        username: username ?? '',
+        phone: phone,
+        isActive: isActive,
+      );
+      
+      await userController.updateUser(
+        user,
+        currentUserId: userId, // L'utilisateur se met à jour lui-même
+      );
+      
+      AppLogger.info(
+        'Profile updated via UserController (offline-first)',
+        name: 'auth.controller',
+      );
+    } else {
+      // Fallback sur le service Firestore direct si UserController n'est pas dispo
+      await firestoreUserService.createOrUpdateUser(
+        userId: userId,
+        email: email,
+        firstName: firstName,
+        lastName: lastName,
+        username: username,
+        phone: phone,
+        isActive: isActive,
+        isAdmin: isAdmin,
+      );
+      
+      AppLogger.warning(
+        'Profile updated via FirestoreUserService (direct online only fallback)',
+        name: 'auth.controller',
+      );
+    }
   }
 
   /// Synchronise en arrière-plan tous les modules auxquels l'utilisateur a accès.
@@ -408,6 +444,7 @@ final authControllerProvider = Provider<AuthController>((ref) {
     authService: ref.watch(authServiceProvider),
     firestoreUserService: ref.watch(firestoreUserServiceProvider),
     adminController: ref.watch(adminControllerProvider),
+    userController: ref.watch(userControllerProvider),
     firestore: FirebaseFirestore.instance,
     ref: ref,
   );

@@ -17,7 +17,7 @@ class GasReceiptTemplate {
     buffer.writeln(_centerText('GAZ ELYF'));
     buffer.writeln(_centerText('GROUPE APP'));
     buffer.writeln();
-    buffer.writeln(_centerText('--------------------------------'));
+    buffer.writeln(_centerText('-' * 48));
     buffer.writeln();
 
     // Informations de la vente
@@ -34,12 +34,12 @@ class GasReceiptTemplate {
       buffer.writeln();
     }
 
-    buffer.writeln(_centerText('─' * 26));
+    buffer.writeln(_centerText('─' * 48));
     buffer.writeln();
 
     // Article
     buffer.writeln(_centerText('Article    Qté  Prix  Total'));
-    buffer.writeln(_centerText('─' * 26));
+    buffer.writeln(_centerText('─' * 48));
     buffer.writeln();
 
     // Type de bouteille (ex: 6kg, 12kg)
@@ -62,7 +62,7 @@ class GasReceiptTemplate {
     );
     buffer.writeln();
 
-    buffer.writeln(_centerText('─' * 26));
+    buffer.writeln(_centerText('─' * 48));
     buffer.writeln();
 
     // Totaux
@@ -85,7 +85,7 @@ class GasReceiptTemplate {
     }
 
     buffer.writeln();
-    buffer.writeln(_centerText('--------------------------------'));
+    buffer.writeln(_centerText('-' * 48));
     buffer.writeln();
     buffer.writeln(_centerText('SERVICE CLIENT: 70 00 00 00'));
     buffer.writeln(_centerText('MERCI DE VOTRE CONFIANCE !'));
@@ -101,17 +101,17 @@ class GasReceiptTemplate {
   }
 
   String _centerText(String text) {
-    const width = 30;
+    const width = 48; // Format 80mm
     final truncatedText = text.length > width ? text.substring(0, width) : text;
     final padding = (width - truncatedText.length) ~/ 2;
     return ' ' * padding + truncatedText;
   }
 
   String _formatLine(String col1, String col2, String col3, String col4) {
-    const col1Width = 12;
-    const col2Width = 3;
-    const col3Width = 6;
-    const col4Width = 7;
+    const col1Width = 20;
+    const col2Width = 4;
+    const col3Width = 10;
+    const col4Width = 10;
 
     final col1Formatted = col1.length > col1Width
         ? col1.substring(0, col1Width)

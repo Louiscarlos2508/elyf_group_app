@@ -11,11 +11,19 @@ import 'widgets/supplier_settlement_dialog.dart';
 
 import 'package:elyf_groupe_app/features/boutique/presentation/widgets/boutique_header.dart';
 
-class SuppliersScreen extends ConsumerWidget {
+class SuppliersScreen extends ConsumerStatefulWidget {
   const SuppliersScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SuppliersScreen> createState() => _SuppliersScreenState();
+}
+
+class _SuppliersScreenState extends ConsumerState<SuppliersScreen> {
+  String _searchQuery = '';
+  String _filterStatus = 'all'; // all, in_debt, settled
+
+  @override
+  Widget build(BuildContext context) {
     final suppliersAsync = ref.watch(suppliersProvider);
 
     return CustomScrollView(
@@ -31,7 +39,7 @@ class SuppliersScreen extends ConsumerWidget {
           additionalActions: [
             IconButton(
               icon: const Icon(Icons.add, color: Colors.white),
-              onPressed: () => _showAddEditSupplierDialog(context, ref),
+              onPressed: () => _showAddEditSupplierDialog(context),
             ),
           ],
         ),
@@ -39,7 +47,7 @@ class SuppliersScreen extends ConsumerWidget {
         // Statistics Cards
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.all(24.0),
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
             child: suppliersAsync.when(
               data: (suppliers) {
                 final totalDebt =
@@ -89,113 +97,175 @@ class SuppliersScreen extends ConsumerWidget {
           ),
         ),
 
-        const SliverPadding(
-          padding: EdgeInsets.symmetric(horizontal: 24),
-          sliver: SliverToBoxAdapter(
-            child: Text(
-              "Liste des Fournisseurs",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        // Search and Filter UI
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            child: Column(
+              children: [
+                TextField(
+                  onChanged: (v) => setState(() => _searchQuery = v),
+                  decoration: InputDecoration(
+                    hintText: "Rechercher un fournisseur...",
+                    prefixIcon: const Icon(Icons.search),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
+                    ),
+                    filled: true,
+                    fillColor: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      FilterChip(
+                        label: const Text('Tous'),
+                        selected: _filterStatus == 'all',
+                        onSelected: (v) => setState(() => _filterStatus = 'all'),
+                      ),
+                      const SizedBox(width: 8),
+                      FilterChip(
+                        label: const Text('Avec Dette'),
+                        selected: _filterStatus == 'in_debt',
+                        onSelected: (v) => setState(() => _filterStatus = 'in_debt'),
+                        selectedColor: Colors.red.withOpacity(0.2),
+                      ),
+                      const SizedBox(width: 8),
+                      FilterChip(
+                        label: const Text('Réglés'),
+                        selected: _filterStatus == 'settled',
+                        onSelected: (v) => setState(() => _filterStatus = 'settled'),
+                        selectedColor: Colors.green.withOpacity(0.2),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
         ),
 
         // Suppliers List
         SliverPadding(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
           sliver: suppliersAsync.when(
-            data: (suppliers) => suppliers.isEmpty
-                ? const SliverFillRemaining(
-                    child: Center(child: Text('Aucun fournisseur enregistré')))
-                : SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final supplier = suppliers[index];
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
-                          child: ListTile(
-                            contentPadding: const EdgeInsets.all(16),
-                            leading: CircleAvatar(
-                              backgroundColor:
-                                  Theme.of(context).primaryColor.withOpacity(0.1),
-                              child: Text(supplier.name[0].toUpperCase()),
-                            ),
-                            title: Text(supplier.name,
-                                style: const TextStyle(fontWeight: FontWeight.bold)),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                if (supplier.phone != null &&
-                                    supplier.phone!.isNotEmpty)
-                                  Text(supplier.phone!,
-                                      style: const TextStyle(fontSize: 12)),
-                                if (supplier.category != null &&
-                                    supplier.category!.isNotEmpty)
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 4.0),
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 8, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: Colors.blueGrey.withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                      child: Text(supplier.category!,
-                                          style: const TextStyle(fontSize: 10)),
-                                    ),
+            data: (suppliers) {
+              // Apply filtering and searching
+              final filtered = suppliers.where((s) {
+                final matchSearch = s.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+                                   (s.phone?.contains(_searchQuery) ?? false);
+                
+                final matchFilter = _filterStatus == 'all' || 
+                                    (_filterStatus == 'in_debt' && s.balance > 0) ||
+                                    (_filterStatus == 'settled' && s.balance <= 0);
+                
+                return matchSearch && matchFilter;
+              }).toList();
+
+              if (filtered.isEmpty) {
+                return const SliverFillRemaining(
+                    child: Center(child: Text('Aucun fournisseur correspondant')));
+              }
+
+              return SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    final supplier = filtered[index];
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.all(16),
+                        leading: CircleAvatar(
+                          backgroundColor:
+                              Theme.of(context).primaryColor.withOpacity(0.1),
+                          child: Text(supplier.name[0].toUpperCase()),
+                        ),
+                        title: Text(supplier.name,
+                            style: const TextStyle(fontWeight: FontWeight.bold)),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (supplier.phone != null &&
+                                supplier.phone!.isNotEmpty)
+                              Text(supplier.phone!,
+                                  style: const TextStyle(fontSize: 12)),
+                            if (supplier.category != null &&
+                                supplier.category!.isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 4.0),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: Colors.blueGrey.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(10),
                                   ),
-                              ],
-                            ),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    Text(
-                                      '${NumberFormat('#,###').format(supplier.balance)} CFA',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        color: supplier.balance > 0
-                                            ? Colors.red
-                                            : Colors.green,
-                                      ),
-                                    ),
-                                    Text(
-                                      supplier.balance > 0 ? 'Dette en cours' : 'À jour',
-                                      style: const TextStyle(
-                                          fontSize: 10, color: Colors.grey),
-                                    ),
-                                  ],
+                                  child: Text(supplier.category!,
+                                      style: const TextStyle(fontSize: 10)),
                                 ),
-                                if (supplier.balance > 0)
-                                  Padding(
-                                    padding: const EdgeInsets.only(left: 8.0),
-                                    child: IconButton(
-                                      icon: const Icon(Icons.payment,
-                                          color: Colors.blue),
-                                      tooltip: 'Régler la dette',
-                                      onPressed: () =>
-                                          _showSettlementDialog(context, supplier),
-                                    ),
+                              ),
+                          ],
+                        ),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(
+                                  '${NumberFormat('#,###').format(supplier.balance)} CFA',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: supplier.balance > 0
+                                        ? Colors.red
+                                        : Colors.green,
                                   ),
-                                IconButton(
-                                  icon: const Icon(Icons.history, color: Colors.blueGrey),
-                                  tooltip: 'Historique des règlements',
-                                  onPressed: () => _showSettlementHistory(context, supplier, ref),
+                                ),
+                                Text(
+                                  supplier.balance > 0 ? 'Dette en cours' : 'À jour',
+                                  style: const TextStyle(
+                                      fontSize: 10, color: Colors.grey),
                                 ),
                               ],
                             ),
-                            onTap: () => _showAddEditSupplierDialog(context, ref,
-                                supplier: supplier),
-                          ),
-                        );
-                      },
-                      childCount: suppliers.length,
-                    ),
-                  ),
+                            if (supplier.balance > 0)
+                              Padding(
+                                padding: const EdgeInsets.only(left: 8.0),
+                                child: IconButton(
+                                  icon: const Icon(Icons.payment,
+                                      color: Colors.blue),
+                                  tooltip: 'Régler la dette',
+                                  onPressed: () =>
+                                      _showSettlementDialog(context, supplier),
+                                ),
+                              ),
+                            IconButton(
+                              icon: const Icon(Icons.history, color: Colors.blueGrey),
+                              tooltip: 'Historique des règlements',
+                              onPressed: () => _showSettlementHistory(context, supplier),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete_outline, color: Colors.red),
+                              tooltip: 'Supprimer',
+                              onPressed: () => _deleteSupplier(context, supplier),
+                            ),
+                          ],
+                        ),
+                        onTap: () => _showAddEditSupplierDialog(context,
+                            supplier: supplier),
+                      ),
+                    );
+                  },
+                  childCount: filtered.length,
+                ),
+              );
+            },
             loading: () => const SliverFillRemaining(
                 child: Center(child: CircularProgressIndicator())),
             error: (e, s) => SliverFillRemaining(
@@ -206,8 +276,7 @@ class SuppliersScreen extends ConsumerWidget {
     );
   }
 
-  void _showAddEditSupplierDialog(BuildContext context, WidgetRef ref,
-      {Supplier? supplier}) {
+  void _showAddEditSupplierDialog(BuildContext context, {Supplier? supplier}) {
     showDialog(
       context: context,
       builder: (context) => AddEditSupplierDialog(supplier: supplier),
@@ -221,11 +290,37 @@ class SuppliersScreen extends ConsumerWidget {
     );
   }
 
-  void _showSettlementHistory(BuildContext context, Supplier supplier, WidgetRef ref) {
+  void _showSettlementHistory(BuildContext context, Supplier supplier) {
     showDialog(
       context: context,
       builder: (context) => _SupplierHistoryDialog(supplier: supplier),
     );
+  }
+
+  Future<void> _deleteSupplier(BuildContext context, Supplier supplier) async {
+    if (supplier.balance != 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Impossible de supprimer un fournisseur avec une dette en cours.')),
+      );
+      return;
+    }
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirmer la suppression'),
+        content: Text('Voulez-vous vraiment supprimer le fournisseur ${supplier.name} ?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Annuler')),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Supprimer')),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await ref.read(storeControllerProvider).deleteSupplier(supplier.id);
+      if (mounted) NotificationService.showSuccess(context, 'Fournisseur supprimé');
+    }
   }
 }
 

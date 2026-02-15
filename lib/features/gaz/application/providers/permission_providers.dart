@@ -29,3 +29,8 @@ final gazPermissionAdapterProvider = Provider<GazPermissionAdapter>(
     userId: ref.watch(currentUserIdProvider),
   ),
 );
+
+final userHasGazPermissionProvider = FutureProvider.family<bool, String>((ref, permission) async {
+  final adapter = ref.watch(gazPermissionAdapterProvider);
+  return await adapter.hasPermission(permission);
+});

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:elyf_groupe_app/shared.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/cylinder.dart';
 import '../../domain/entities/cylinder_stock.dart';
@@ -10,6 +9,9 @@ import '../../domain/entities/point_of_sale.dart';
 import 'stock_adjustment/stock_adjustment_header.dart';
 import 'stock_adjustment/cylinder_selector_field.dart';
 import 'stock_adjustment/current_stock_info.dart';
+import '../../../../shared.dart';
+import '../../../../../core/auth/providers.dart';
+import '../../../../../core/tenant/tenant_provider.dart' show activeEnterpriseProvider;
 
 /// Dialog pour ajuster le stock de bouteilles.
 class StockAdjustmentDialog extends ConsumerStatefulWidget {
@@ -28,9 +30,10 @@ class StockAdjustmentDialog extends ConsumerStatefulWidget {
 }
 
 class _StockAdjustmentDialogState extends ConsumerState<StockAdjustmentDialog> {
-  bool _isLoading = false;
   final _formKey = GlobalKey<FormState>();
+  bool _isLoading = false;
   final _quantityController = TextEditingController();
+  final _reasonController = TextEditingController();
 
   PointOfSale? _selectedPointOfSale;
   Cylinder? _selectedCylinder;
@@ -40,6 +43,7 @@ class _StockAdjustmentDialogState extends ConsumerState<StockAdjustmentDialog> {
   @override
   void dispose() {
     _quantityController.dispose();
+    _reasonController.dispose();
     super.dispose();
   }
 
@@ -106,6 +110,8 @@ class _StockAdjustmentDialogState extends ConsumerState<StockAdjustmentDialog> {
         return;
       }
 
+      final auth = ref.read(authControllerProvider);
+      final userId = auth.currentUser?.id ?? '';
       final stockController = ref.read(cylinderStockControllerProvider);
 
       // Si un stock existe, on l'ajuste
@@ -113,6 +119,8 @@ class _StockAdjustmentDialogState extends ConsumerState<StockAdjustmentDialog> {
         await stockController.adjustStockQuantity(
           _existingStock!.id,
           newQuantity,
+          userId: userId,
+          reason: _reasonController.text.isEmpty ? null : _reasonController.text,
         );
       } else {
         // Sinon, on doit créer un nouveau stock
@@ -306,6 +314,19 @@ class _StockAdjustmentDialogState extends ConsumerState<StockAdjustmentDialog> {
                       }
                       return null;
                     },
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Raison de l'ajustement
+                  TextFormField(
+                    controller: _reasonController,
+                    decoration: const InputDecoration(
+                      labelText: 'Raison (optionnel)',
+                      prefixIcon: Icon(Icons.comment),
+                      border: OutlineInputBorder(),
+                      helperText: 'Ex: Inventaire physique, casse, etc.',
+                    ),
+                    maxLines: 2,
                   ),
                   const SizedBox(height: 24),
 

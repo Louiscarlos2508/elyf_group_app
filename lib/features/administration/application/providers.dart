@@ -15,6 +15,8 @@ import '../data/repositories/enterprise_firestore_repository.dart';
 import '../domain/repositories/admin_repository.dart';
 import '../domain/repositories/enterprise_repository.dart';
 import '../domain/repositories/user_repository.dart';
+import '../data/repositories/admin_offline_repository.dart';
+import '../data/repositories/user_offline_repository.dart';
 import '../domain/entities/enterprise.dart';
 import '../domain/entities/user.dart';
 import '../../../core/auth/entities/enterprise_module_user.dart';
@@ -37,19 +39,43 @@ import '../../../core/firebase/providers.dart' show firestoreProvider;
 import '../data/repositories/admin_firestore_repository.dart';
 import '../data/repositories/user_firestore_repository.dart';
 
-/// Provider for admin repository (Firestore online-only)
+/// Provider for admin repository (platform-aware)
+/// - Web: Utilise Firestore directement (online-only)
+/// - Mobile/Desktop: Utilise Drift (offline-first)
 final adminRepositoryProvider = Provider<AdminRepository>(
-  (ref) => AdminFirestoreRepository(
-    firestore: ref.watch(firestoreProvider),
-    ref: ref,
-  ),
+  (ref) {
+    if (kIsWeb) {
+      return AdminFirestoreRepository(
+        firestore: ref.watch(firestoreProvider),
+        ref: ref,
+      );
+    } else {
+      return AdminOfflineRepository(
+        driftService: ref.watch(driftServiceProvider),
+        syncManager: ref.watch(syncManagerProvider),
+        connectivityService: ref.watch(connectivityServiceProvider),
+      );
+    }
+  },
 );
 
-/// Provider for user repository (Firestore online-only)
+/// Provider for user repository (platform-aware)
+/// - Web: Utilise Firestore directement (online-only)
+/// - Mobile/Desktop: Utilise Drift (offline-first)
 final userRepositoryProvider = Provider<UserRepository>(
-  (ref) => UserFirestoreRepository(
-    firestore: ref.watch(firestoreProvider),
-  ),
+  (ref) {
+    if (kIsWeb) {
+      return UserFirestoreRepository(
+        firestore: ref.watch(firestoreProvider),
+      );
+    } else {
+      return UserOfflineRepository(
+        driftService: ref.watch(driftServiceProvider),
+        syncManager: ref.watch(syncManagerProvider),
+        connectivityService: ref.watch(connectivityServiceProvider),
+      );
+    }
+  },
 );
 
 /// Provider for permission service
