@@ -9,6 +9,7 @@ class GasSale {
     required this.totalAmount,
     required this.saleDate,
     required this.saleType,
+    this.sessionId, // ID de la session active
     this.customerName,
     this.customerPhone,
     this.createdBy,
@@ -24,10 +25,6 @@ class GasSale {
     this.deletedAt,
     this.deletedBy,
     this.paymentMethod = PaymentMethod.cash,
-    this.deliveryStatus = DeliveryStatus.pending,
-    this.deliveryPersonId,
-    this.deliveredAt,
-    this.proofOfDelivery,
   });
 
   final String id;
@@ -38,6 +35,7 @@ class GasSale {
   final double totalAmount;
   final DateTime saleDate;
   final SaleType saleType;
+  final String? sessionId;
   final String? customerName;
   final String? customerPhone;
   final String? createdBy;
@@ -53,10 +51,6 @@ class GasSale {
   final DateTime? deletedAt;
   final String? deletedBy;
   final PaymentMethod paymentMethod;
-  final DeliveryStatus deliveryStatus;
-  final String? deliveryPersonId;
-  final DateTime? deliveredAt;
-  final String? proofOfDelivery; // Signature base64 or photo path
 
   bool get isExchange => dealType == GasSaleDealType.exchange;
 
@@ -69,6 +63,7 @@ class GasSale {
     double? totalAmount,
     DateTime? saleDate,
     SaleType? saleType,
+    String? sessionId,
     String? customerName,
     String? customerPhone,
     String? createdBy,
@@ -84,10 +79,6 @@ class GasSale {
     DateTime? deletedAt,
     String? deletedBy,
     PaymentMethod? paymentMethod,
-    DeliveryStatus? deliveryStatus,
-    String? deliveryPersonId,
-    DateTime? deliveredAt,
-    String? proofOfDelivery,
   }) {
     return GasSale(
       id: id ?? this.id,
@@ -98,6 +89,7 @@ class GasSale {
       totalAmount: totalAmount ?? this.totalAmount,
       saleDate: saleDate ?? this.saleDate,
       saleType: saleType ?? this.saleType,
+      sessionId: sessionId ?? this.sessionId,
       customerName: customerName ?? this.customerName,
       customerPhone: customerPhone ?? this.customerPhone,
       createdBy: createdBy ?? this.createdBy,
@@ -113,10 +105,6 @@ class GasSale {
       deletedAt: deletedAt ?? this.deletedAt,
       deletedBy: deletedBy ?? this.deletedBy,
       paymentMethod: paymentMethod ?? this.paymentMethod,
-      deliveryStatus: deliveryStatus ?? this.deliveryStatus,
-      deliveryPersonId: deliveryPersonId ?? this.deliveryPersonId,
-      deliveredAt: deliveredAt ?? this.deliveredAt,
-      proofOfDelivery: proofOfDelivery ?? this.proofOfDelivery,
     );
   }
 
@@ -130,6 +118,7 @@ class GasSale {
       totalAmount: (map['totalAmount'] as num?)?.toDouble() ?? 0,
       saleDate: DateTime.parse(map['saleDate'] as String),
       saleType: SaleType.values.byName(map['saleType'] as String? ?? 'retail'),
+      sessionId: map['sessionId'] as String?,
       customerName: map['customerName'] as String?,
       customerPhone: map['customerPhone'] as String?,
       createdBy: map['createdBy'] as String?,
@@ -141,10 +130,6 @@ class GasSale {
       dealType: GasSaleDealType.values.byName(map['dealType'] as String? ?? 'exchange'),
       sellerId: map['sellerId'] as String?,
       paymentMethod: PaymentMethod.values.byName(map['paymentMethod'] as String? ?? 'cash'),
-      deliveryStatus: DeliveryStatus.values.byName(map['deliveryStatus'] as String? ?? 'pending'),
-      deliveryPersonId: map['deliveryPersonId'] as String?,
-      deliveredAt: map['deliveredAt'] != null ? DateTime.parse(map['deliveredAt'] as String) : null,
-      proofOfDelivery: map['proofOfDelivery'] as String?,
       createdAt: map['createdAt'] != null
           ? DateTime.parse(map['createdAt'] as String)
           : null,
@@ -168,6 +153,7 @@ class GasSale {
       'totalAmount': totalAmount,
       'saleDate': saleDate.toIso8601String(),
       'saleType': saleType.name,
+      'sessionId': sessionId,
       'customerName': customerName,
       'customerPhone': customerPhone,
       'createdBy': createdBy,
@@ -179,10 +165,6 @@ class GasSale {
       'dealType': dealType.name,
       'sellerId': sellerId,
       'paymentMethod': paymentMethod.name,
-      'deliveryStatus': deliveryStatus.name,
-      'deliveryPersonId': deliveryPersonId,
-      'deliveredAt': deliveredAt?.toIso8601String(),
-      'proofOfDelivery': proofOfDelivery,
       'createdAt': createdAt?.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
       'deletedAt': deletedAt?.toIso8601String(),
@@ -215,15 +197,5 @@ enum PaymentMethod {
   credit('Crédit');
 
   const PaymentMethod(this.label);
-  final String label;
-}
-
-enum DeliveryStatus {
-  pending('En attente'),
-  inProgress('En cours'),
-  delivered('Livré'),
-  cancelled('Annulé');
-
-  const DeliveryStatus(this.label);
   final String label;
 }

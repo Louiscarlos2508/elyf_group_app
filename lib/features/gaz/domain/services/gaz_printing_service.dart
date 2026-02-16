@@ -20,7 +20,8 @@ class GazPrintingService {
       
       // Header
       buffer.writeln('--------------------------------');
-      buffer.writeln(enterpriseName?.toUpperCase() ?? 'ELYF GROUP - GAZ');
+      final name = enterpriseName?.toUpperCase() ?? 'ELYF GROUP - GAZ';
+      buffer.writeln(name);
       buffer.writeln('--------------------------------');
       buffer.writeln('RECU DE VENTE');
       buffer.writeln('Date: ${_formatDate(sale.saleDate)}');
@@ -38,14 +39,14 @@ class GazPrintingService {
       buffer.writeln('--------------------------------');
 
       // Items
-      buffer.writeln('Article: ${cylinderLabel ?? 'Bouteille'}');
-      buffer.writeln('Transaction: ${sale.dealType.label}');
-      buffer.writeln('Qté: ${sale.quantity}');
-      buffer.writeln('Prix Unitaire: ${sale.unitPrice.toStringAsFixed(0)} FCFA');
+      buffer.writeln('Article | ${cylinderLabel ?? 'Bouteille'}');
+      buffer.writeln('Transaction | ${sale.dealType.label}');
+      buffer.writeln('Qté | ${sale.quantity}');
+      buffer.writeln('Prix Unitaire | ${sale.unitPrice.toStringAsFixed(0)} FCFA');
       buffer.writeln('--------------------------------');
       
       // Total
-      buffer.writeln('TOTAL: ${sale.totalAmount.toStringAsFixed(0)} FCFA');
+      buffer.writeln('TOTAL | ${sale.totalAmount.toStringAsFixed(0)} FCFA');
       buffer.writeln('Mode: ${sale.paymentMethod.label}');
       buffer.writeln('--------------------------------');
       buffer.writeln('Merci de votre confiance !');

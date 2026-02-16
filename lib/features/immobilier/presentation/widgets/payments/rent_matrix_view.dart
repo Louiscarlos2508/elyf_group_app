@@ -15,11 +15,13 @@ class RentMatrixEntry {
   final Contract contract;
   final Payment? payment;
   final bool isLate;
+  final int totalArrears;
 
   RentMatrixEntry({
     required this.contract,
     this.payment,
     required this.isLate,
+    this.totalArrears = 0,
   });
 
   bool get isPaid => payment != null && payment!.status == PaymentStatus.paid;
@@ -78,10 +80,18 @@ final rentMatrixProvider = StreamProvider.autoDispose<List<RentMatrixEntry>>((re
 
         final isLate = payment == null && isCurrentOrPastMonth;
 
+        final calcService = ref.read(immobilierDashboardCalculationServiceProvider);
+        final arrears = calcService.calculateContractArrears(
+          contract: enrichedContract,
+          payments: payments,
+          referenceDate: selectedDate,
+        );
+
         return RentMatrixEntry(
           contract: enrichedContract,
           payment: payment,
           isLate: isLate,
+          totalArrears: arrears,
         );
       }).toList();
     },
@@ -231,6 +241,23 @@ class _RentMatrixCard extends StatelessWidget {
                             ),
                           ],
                         ),
+                        if (entry.totalArrears > 0)
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                'Dette cumulée',
+                                style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.error),
+                              ),
+                              Text(
+                                CurrencyFormatter.formatFCFA(entry.totalArrears),
+                                style: theme.textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: theme.colorScheme.error,
+                                ),
+                              ),
+                            ],
+                          ),
                         if (!isPaid)
                           ElevatedButton.icon(
                             onPressed: () => _sendReminder(context),

@@ -1,12 +1,14 @@
 import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:drift/drift.dart' hide Query;
 
 import '../errors/app_exceptions.dart';
 import '../errors/error_handler.dart';
 import '../logging/app_logger.dart';
 import 'collection_names.dart';
 import 'drift_service.dart';
+import 'drift/app_database.dart';
 import 'security/data_sanitizer.dart';
 
 /// Service pour synchroniser les données d'un module depuis Firestore vers Drift.
@@ -221,6 +223,10 @@ class ModuleDataSyncService {
         name: 'module.sync',
       );
 
+      if (snapshot.docs.isEmpty) return;
+
+      final companions = <OfflineRecordsCompanion>[];
+
       // Sauvegarder chaque document dans Drift
       for (final doc in snapshot.docs) {
         try {
@@ -250,29 +256,10 @@ class ModuleDataSyncService {
             continue; // Skip ce document et continuer avec les autres
           }
 
-          // Pour les points de vente, utiliser l'enterpriseId passé en paramètre
-          // (qui est l'ID de l'entreprise gaz où les points de vente sont stockés dans Firestore)
-          // Les points de vente sont dans enterprises/{gaz_enterprise_id}/pointsOfSale/
-          // et doivent être stockés avec cet ID dans Drift pour être récupérables
-          // Note: Le parentEnterpriseId dans les données pointe vers l'entreprise mère,
-          // mais le stockage dans Drift utilise l'ID de l'entreprise gaz
           String storageEnterpriseId = enterpriseId;
-          if (collectionName == 'pointOfSale') {
-            // Utiliser l'enterpriseId passé en paramètre (ID de l'entreprise gaz)
-            // car c'est là que les points de vente sont stockés dans Firestore
-            storageEnterpriseId = enterpriseId;
-            final posName = sanitizedData['name'] as String? ?? 'unknown';
-            final parentEnterpriseId = sanitizedData['parentEnterpriseId'] as String? ??
-                                       sanitizedData['enterpriseId'] as String? ??
-                                       'unknown';
-            AppLogger.debug(
-              'SYNC: Point de vente "$posName" (id: $documentId) - parentEnterpriseId=$parentEnterpriseId, stockage avec enterpriseId=$storageEnterpriseId (entreprise gaz) dans Drift',
-              name: 'module.sync',
-            );
-          }
+          // Note: specific logic for pointOfSale remains as is but integrated into batch
           
           // Vérifier si un enregistrement avec le même remoteId existe déjà
-          // pour éviter les doublons lors de la synchronisation
           final existingRecord = await driftService.records.findByRemoteId(
             collectionName: collectionName,
             remoteId: documentId,
@@ -283,37 +270,29 @@ class ModuleDataSyncService {
           // Utiliser le localId existant si trouvé, sinon utiliser documentId
           final localIdToUse = existingRecord?.localId ?? documentId;
 
-          // Sauvegarder dans Drift (mise à jour si existe, création sinon)
-          await driftService.records.upsert(
+          companions.add(OfflineRecordsCompanion.insert(
             collectionName: collectionName,
             localId: localIdToUse,
-            remoteId: documentId,
+            remoteId: Value(documentId),
             enterpriseId: storageEnterpriseId,
-            moduleType: moduleId,
+            moduleType: Value(moduleId),
             dataJson: jsonPayload,
             localUpdatedAt: DateTime.now(),
-          );
-          
-          if (collectionName == 'pointOfSale') {
-            AppLogger.debug(
-              'SYNC: Point de vente sauvegardé dans Drift avec enterpriseId=$storageEnterpriseId, moduleType=$moduleId',
-              name: 'module.sync',
-            );
-          }
-        } catch (e, stackTrace) {
-          final appException = ErrorHandler.instance.handleError(e, stackTrace);
+          ));
+        } catch (e) {
           AppLogger.warning(
-            'Error syncing document ${doc.id} in collection $collectionName: ${appException.message}',
+            'Error preparing document ${doc.id} for sync: $e',
             name: 'module.sync',
-            error: e,
-            stackTrace: stackTrace,
           );
-          // Continue avec les autres documents même si un échoue
         }
       }
 
+      if (companions.isNotEmpty) {
+        await driftService.records.upsertAll(companions);
+      }
+
       AppLogger.info(
-        'Completed syncing $collectionName: ${snapshot.docs.length} documents',
+        'Completed syncing $collectionName: ${snapshot.docs.length} documents (Batched)',
         name: 'module.sync',
       );
     } catch (e, stackTrace) {

@@ -20,6 +20,8 @@ class Purchase {
     this.createdAt,
     this.updatedAt,
     this.number,
+    this.hash,
+    this.previousHash,
   });
 
   final String id;
@@ -39,6 +41,8 @@ class Purchase {
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final String? number; // Numéro d'achat (ex: ACH-20240212-001)
+  final String? hash;
+  final String? previousHash;
 
   bool get isDeleted => deletedAt != null;
 
@@ -56,9 +60,10 @@ class Purchase {
     List<AttachedFile>? attachedFiles,
     DateTime? deletedAt,
     String? deletedBy,
-    DateTime? createdAt,
     DateTime? updatedAt,
     String? number,
+    String? hash,
+    String? previousHash,
   }) {
     return Purchase(
       id: id ?? this.id,
@@ -77,6 +82,8 @@ class Purchase {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       number: number ?? this.number,
+      hash: hash ?? this.hash,
+      previousHash: previousHash ?? this.previousHash,
     );
   }
 
@@ -116,6 +123,8 @@ class Purchase {
           ? DateTime.parse(map['updatedAt'] as String)
           : null,
       number: map['number'] as String?,
+      hash: map['hash'] as String?,
+      previousHash: map['previousHash'] as String?,
     );
   }
 
@@ -137,6 +146,8 @@ class Purchase {
       'createdAt': createdAt?.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
       'number': number,
+      'hash': hash,
+      'previousHash': previousHash,
     };
   }
 }

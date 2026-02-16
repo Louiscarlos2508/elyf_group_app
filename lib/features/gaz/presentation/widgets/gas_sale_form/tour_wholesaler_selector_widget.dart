@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
-import 'package:elyf_groupe_app/features/gaz/domain/services/wholesaler_service.dart';
+import '../../../domain/entities/wholesaler.dart';
 import '../../../domain/entities/collection.dart';
 import '../../../domain/entities/tour.dart';
 
@@ -28,7 +28,7 @@ class TourWholesalerSelectorWidget extends ConsumerStatefulWidget {
   final String? selectedWholesalerName;
   final String enterpriseId;
   final ValueChanged<Tour?> onTourChanged;
-  final ValueChanged<({String id, String name})?> onWholesalerChanged;
+  final ValueChanged<({String id, String name, String tier})?> onWholesalerChanged;
 
   @override
   ConsumerState<TourWholesalerSelectorWidget> createState() =>
@@ -75,17 +75,23 @@ class _TourWholesalerSelectorWidgetState
                 .toList();
 
             return DropdownButtonFormField<Tour?>(
-              initialValue: widget.selectedTour,
+              value: widget.selectedTour,
               decoration: const InputDecoration(
-                labelText: 'Tour d\'approvisionnement *',
+                labelText: 'Source de la vente *',
                 prefixIcon: Icon(Icons.local_shipping),
                 border: OutlineInputBorder(),
-                helperText: 'Sélectionnez le tour lié à cette vente',
+                helperText: 'Enlèvement au dépôt ou Livraison par Tournée',
               ),
               items: [
                 const DropdownMenuItem<Tour?>(
                   value: null,
-                  child: Text('Aucun tour'),
+                  child: Row(
+                    children: [
+                      Icon(Icons.warehouse, size: 20, color: Colors.blue),
+                      SizedBox(width: 8),
+                      Text('Enlèvement au dépôt'),
+                    ],
+                  ),
                 ),
                 ...activeTours.map(
                   (tour) => DropdownMenuItem<Tour?>(
@@ -95,7 +101,7 @@ class _TourWholesalerSelectorWidgetState
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          'Tour du ${_formatDate(tour.tourDate)}',
+                          'Tournée: ${_formatDate(tour.tourDate)}',
                           style: const TextStyle(fontWeight: FontWeight.w500),
                         ),
                         Text(
@@ -118,12 +124,7 @@ class _TourWholesalerSelectorWidgetState
                   _isAddingNewWholesaler = false;
                 });
               },
-              validator: (value) {
-                if (value == null) {
-                  return 'Veuillez sélectionner un tour';
-                }
-                return null;
-              },
+              validator: (value) => null, // Optionnel (null = dépôt)
             );
           },
           loading: () => const SizedBox(
@@ -153,9 +154,8 @@ class _TourWholesalerSelectorWidgetState
         ),
         const SizedBox(height: 16),
 
-        // Sélection du grossiste (seulement si un tour est sélectionné)
-        if (widget.selectedTour != null)
-          _buildWholesalerSelector(allWholesalersAsync),
+        // Sélection du grossiste (Toujours visible pour le gros)
+        _buildWholesalerSelector(allWholesalersAsync),
       ],
     );
   }
@@ -225,6 +225,7 @@ class _TourWholesalerSelectorWidgetState
                         widget.onWholesalerChanged((
                           id: wholesaler.id,
                           name: wholesaler.name,
+                          tier: wholesaler.tier,
                         ));
                       } else {
                         widget.onWholesalerChanged(null);
@@ -385,6 +386,7 @@ class _TourWholesalerSelectorWidgetState
                   widget.onWholesalerChanged((
                     id: newId,
                     name: name,
+                    tier: 'default',
                   ));
 
                   // Si un tour est sélectionné, ajouter le grossiste au tour

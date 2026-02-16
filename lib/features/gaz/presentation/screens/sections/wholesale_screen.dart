@@ -9,6 +9,8 @@ import '../../widgets/wholesale_date_filter_card.dart';
 import '../../widgets/wholesale_empty_state.dart';
 import '../../widgets/wholesale_sale_card.dart';
 import '../../widgets/gaz_header.dart';
+import '../../widgets/gaz_session_guard.dart';
+import '../wholesaler_management_screen.dart';
 import '../../../../../shared/presentation/widgets/elyf_ui/atoms/elyf_icon_button.dart';
 
 /// Écran des ventes en gros - matches Figma design.
@@ -28,87 +30,99 @@ class _GazWholesaleScreenState extends ConsumerState<GazWholesaleScreen> {
     final theme = Theme.of(context);
     final salesAsync = ref.watch(gasSalesProvider);
 
-    return CustomScrollView(
-      slivers: [
-        // Header section with Premium Background
-        GazHeader(
-          title: 'VENTES GROS',
-          subtitle: 'Suivi des ventes',
-          additionalActions: [
-            ElyfIconButton(
-              icon: Icons.refresh,
-              onPressed: () => ref.invalidate(gasSalesProvider),
-              tooltip: 'Actualiser',
-            ),
-          ],
-        ),
+    return GazSessionGuard(
+      child: CustomScrollView(
+        slivers: [
+          // Header section with Premium Background
+          GazHeader(
+            title: 'VENTES GROS',
+            subtitle: 'Suivi des ventes',
+            additionalActions: [
+              ElyfIconButton(
+                icon: Icons.people_outline,
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const WholesalerManagementScreen(),
+                  ),
+                ),
+                tooltip: 'Gérer les grossistes',
+              ),
+              ElyfIconButton(
+                icon: Icons.refresh,
+                onPressed: () => ref.invalidate(gasSalesProvider),
+                tooltip: 'Actualiser',
+              ),
+            ],
+          ),
 
-        // Filter section
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-            child: WholesaleDateFilterCard(
-              startDate: _startDate,
-              endDate: _endDate,
-              onStartDateChanged: (date) {
-                setState(() {
-                  _startDate = date;
-                });
-              },
-              onEndDateChanged: (date) {
-                setState(() {
-                  _endDate = date;
-                });
-              },
+          // Filter section
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+              child: WholesaleDateFilterCard(
+                startDate: _startDate,
+                endDate: _endDate,
+                onStartDateChanged: (date) {
+                  setState(() {
+                    _startDate = date;
+                  });
+                },
+                onEndDateChanged: (date) {
+                  setState(() {
+                    _endDate = date;
+                  });
+                },
+              ),
             ),
           ),
-        ),
 
-        // KPI Cards
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-            child: salesAsync.when(
-              data: (allSales) {
-                // Use calculation service for business logic
-                final metrics = GazCalculationService.calculateWholesaleMetrics(
-                  allSales,
-                  startDate: _startDate,
-                  endDate: _endDate,
-                );
+          // KPI Cards
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+              child: salesAsync.when(
+                data: (allSales) {
+                  // Use calculation service for business logic
+                  final metrics = GazCalculationService.calculateWholesaleMetrics(
+                    allSales,
+                    startDate: _startDate,
+                    endDate: _endDate,
+                  );
 
-                return _WholesaleKpiGrid(metrics: metrics);
-              },
-              loading: () => AppShimmers.statsGrid(context),
-              error: (_, __) => const SizedBox.shrink(),
+                  return _WholesaleKpiGrid(metrics: metrics);
+                },
+                loading: () => AppShimmers.statsGrid(context),
+                error: (_, __) => const SizedBox.shrink(),
+              ),
             ),
           ),
-        ),
 
-        // Empty state or sales list
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
-            child: salesAsync.when(
-              data: (allSales) {
-                final metrics = GazCalculationService.calculateWholesaleMetrics(
-                  allSales,
-                  startDate: _startDate,
-                  endDate: _endDate,
-                );
+          // Empty state or sales list
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+              child: salesAsync.when(
+                data: (allSales) {
+                  final metrics = GazCalculationService.calculateWholesaleMetrics(
+                    allSales,
+                    startDate: _startDate,
+                    endDate: _endDate,
+                  );
 
-                if (metrics.sales.isEmpty) {
-                  return const WholesaleEmptyState();
-                }
+                  if (metrics.sales.isEmpty) {
+                    return const WholesaleEmptyState();
+                  }
 
-                return _WholesaleSalesList(sales: metrics.sales, theme: theme);
-              },
-              loading: () => AppShimmers.list(context),
-              error: (_, __) => const SizedBox.shrink(),
+                  return _WholesaleSalesList(sales: metrics.sales, theme: theme);
+                },
+                loading: () => AppShimmers.list(context),
+                error: (_, __) => const SizedBox.shrink(),
+              ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

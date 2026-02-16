@@ -34,6 +34,16 @@ class OfflineRecordDao {
         );
   }
 
+  Future<void> upsertAll(List<OfflineRecordsCompanion> companions) async {
+    await _db.batch((batch) {
+      batch.insertAll(
+        _db.offlineRecords,
+        companions,
+        mode: InsertMode.insertOrReplace,
+      );
+    });
+  }
+
   /// Returns the most recently updated record when duplicates exist.
   Future<OfflineRecord?> findByLocalId({
     required String collectionName,

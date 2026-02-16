@@ -297,6 +297,7 @@ class _DashboardMonthKpis extends StatelessWidget {
                               openTickets: metrics.totalOpenTickets,
                               highPriorityTickets: metrics.highPriorityTickets,
                               totalDepositsHeld: metrics.totalDepositsHeld,
+                              totalArrears: metrics.totalArrears,
                               onRevenueTap: onRevenueTap,
                               onExpensesTap: onExpensesTap,
                               onProfitTap: onProfitTap,

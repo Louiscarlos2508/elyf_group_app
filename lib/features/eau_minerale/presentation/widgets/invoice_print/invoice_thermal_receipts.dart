@@ -1,68 +1,54 @@
 import '../../../domain/entities/sale.dart';
 import 'invoice_print_helpers.dart';
+import '../../../../core/printing/thermal_receipt_builder.dart';
 
 /// Génère le contenu texte pour l'imprimante thermique (vente).
 String generateSaleReceipt(Sale sale) {
-  final buffer = StringBuffer();
-  const width = 32;
-
-  String center(String text) {
-    if (text.length >= width) return text.substring(0, width);
-    final padding = (width - text.length) ~/ 2;
-    return ' ' * padding + text;
-  }
-
-  String separator() => center('--------------------------------');
+  final builder = ThermalReceiptBuilder(width: 32);
 
   // Entête moderne et centré
-  buffer.writeln(center('EAU MINERALE ELYF'));
-  buffer.writeln(center('GROUPE APP'));
-  buffer.writeln(separator());
+  builder.header('EAU MINERALE ELYF', subtitle: 'GROUPE APP');
   
-  buffer.writeln(center('FACTURE N°: ${InvoicePrintHelpers.truncateId(sale.id)}'));
-  buffer.writeln(center('${InvoicePrintHelpers.formatDate(sale.date)} ${InvoicePrintHelpers.formatTime(sale.date)}'));
-  
-  buffer.writeln(separator());
+  builder.row('FACTURE N°', InvoicePrintHelpers.truncateId(sale.id));
+  builder.row('Date', InvoicePrintHelpers.formatDate(sale.date));
+  builder.row('Heure', InvoicePrintHelpers.formatTime(sale.date));
+  builder.space();
 
-  // Client centré
-  buffer.writeln(center('Client: ${sale.customerName}'));
+  // Client
+  builder.row('Client', sale.customerName);
   if (sale.customerPhone.isNotEmpty) {
-    buffer.writeln(center('Tel: ${sale.customerPhone}'));
+    builder.row('Tel', sale.customerPhone);
   }
-  buffer.writeln();
+  builder.space();
 
   // Détails
-  buffer.writeln(separator());
-  buffer.writeln('Article: ${sale.productName}');
-  buffer.writeln(
-    'Qte: ${sale.quantity} x '
-    '${InvoicePrintHelpers.formatCurrency(sale.unitPrice)}',
-  );
-  buffer.writeln(separator());
-  buffer.writeln();
+  builder.section('Détail Achat');
+  
+  final priceDetail = '${sale.quantity}x ${InvoicePrintHelpers.formatCurrency(sale.unitPrice)}';
+  final totalDetail = InvoicePrintHelpers.formatCurrency(sale.totalPrice);
+  builder.itemRow(sale.productName, priceDetail, totalDetail);
+  builder.separator();
 
   // Totaux
-  buffer.writeln('TOTAL: ${InvoicePrintHelpers.formatCurrency(sale.totalPrice)}');
-  buffer.writeln('Paye:  ${InvoicePrintHelpers.formatCurrency(sale.amountPaid)}');
+  builder.total('TOTAL', InvoicePrintHelpers.formatCurrency(sale.totalPrice));
+  builder.row('Payé', InvoicePrintHelpers.formatCurrency(sale.amountPaid));
 
   if (sale.cashAmount > 0) {
-    buffer.writeln('  Cash: ${InvoicePrintHelpers.formatCurrency(sale.cashAmount)}');
+    builder.row('  Cash', InvoicePrintHelpers.formatCurrency(sale.cashAmount));
   }
   if (sale.orangeMoneyAmount > 0) {
-    buffer.writeln('  OM:   ${InvoicePrintHelpers.formatCurrency(sale.orangeMoneyAmount)}');
+    builder.row('  OM', InvoicePrintHelpers.formatCurrency(sale.orangeMoneyAmount));
   }
 
   if (sale.remainingAmount > 0) {
-    buffer.writeln();
-    buffer.writeln('CREDIT: ${InvoicePrintHelpers.formatCurrency(sale.remainingAmount)}');
+    builder.space();
+    builder.row('RESTE A PAYER', InvoicePrintHelpers.formatCurrency(sale.remainingAmount));
   }
 
-  buffer.writeln();
-  buffer.writeln(separator());
-  buffer.writeln(center('Merci !'));
-  buffer.writeln('\n\n'); 
+  // Pied de page
+  builder.footer('Merci !');
 
-  return buffer.toString();
+  return builder.toString();
 }
 
 /// Génère le contenu texte pour l'imprimante thermique (paiement crédit).
@@ -75,63 +61,54 @@ String generateCreditPaymentReceipt({
   int cashAmount = 0,
   int omAmount = 0,
 }) {
-  final buffer = StringBuffer();
-  const width = 32;
-
-  String center(String text) {
-    if (text.length >= width) return text.substring(0, width);
-    final padding = (width - text.length) ~/ 2;
-    return ' ' * padding + text;
-  }
-
-  String separator() => center('--------------------------------');
+  final builder = ThermalReceiptBuilder(width: 32);
   final now = DateTime.now();
   final newAmountPaid = sale.amountPaid + paymentAmount;
 
   // Entête moderne et centré
-  buffer.writeln(center('EAU MINERALE ELYF'));
-  buffer.writeln(center('RECU DE PAIEMENT'));
-  buffer.writeln(separator());
+  builder.header('EAU MINERALE ELYF', subtitle: 'REÇU DE PAIEMENT');
 
-  buffer.writeln(center('${InvoicePrintHelpers.formatDate(now)} ${InvoicePrintHelpers.formatTime(now)}'));
-  buffer.writeln(center('Client: $customerName'));
-  buffer.writeln(separator());
+  builder.row('Date', InvoicePrintHelpers.formatDate(now));
+  builder.row('Heure', InvoicePrintHelpers.formatTime(now));
+  builder.row('Client', customerName);
+  builder.space();
 
   // Info Vente
-  buffer.writeln('Ref vente: ${InvoicePrintHelpers.formatDate(sale.date)}');
-  buffer.writeln('${sale.productName} x${sale.quantity}');
-  buffer.writeln('Total vente: ${InvoicePrintHelpers.formatCurrency(sale.totalPrice)}');
-  buffer.writeln(separator());
+  builder.section('Référence Vente');
+  builder.row('Date vente', InvoicePrintHelpers.formatDate(sale.date));
+  builder.row('Article', '${sale.productName} x${sale.quantity}');
+  builder.row('Total vente', InvoicePrintHelpers.formatCurrency(sale.totalPrice));
+  builder.space();
 
   // Info Paiement
-  buffer.writeln('Deja paye:  ${InvoicePrintHelpers.formatCurrency(sale.amountPaid)}');
-  buffer.writeln('PAIEMENT:   ${InvoicePrintHelpers.formatCurrency(paymentAmount)}');
+  builder.section('Détail Paiement');
+  builder.row('Déjà payé', InvoicePrintHelpers.formatCurrency(sale.amountPaid));
+  builder.row('PAIEMENT', InvoicePrintHelpers.formatCurrency(paymentAmount));
   
   if (cashAmount > 0) {
-    buffer.writeln('  Cash: ${InvoicePrintHelpers.formatCurrency(cashAmount)}');
+    builder.row('  Cash', InvoicePrintHelpers.formatCurrency(cashAmount));
   }
   if (omAmount > 0) {
-    buffer.writeln('  OM:   ${InvoicePrintHelpers.formatCurrency(omAmount)}');
+    builder.row('  OM', InvoicePrintHelpers.formatCurrency(omAmount));
   }
 
-  buffer.writeln('Total paye: ${InvoicePrintHelpers.formatCurrency(newAmountPaid)}');
+  builder.separator();
+  builder.total('TOTAL PAYÉ', InvoicePrintHelpers.formatCurrency(newAmountPaid));
   
   if (remainingAfterPayment > 0) {
-    buffer.writeln('Reste:      ${InvoicePrintHelpers.formatCurrency(remainingAfterPayment)}');
+    builder.row('Reste', InvoicePrintHelpers.formatCurrency(remainingAfterPayment));
   } else {
-    buffer.writeln();
-    buffer.writeln(center('*** SOLDE ***'));
+    builder.space();
+    builder.center('*** SOLDE ***');
   }
 
   if (notes != null && notes.isNotEmpty) {
-    buffer.writeln();
-    buffer.writeln('Note: $notes');
+    builder.space();
+    builder.writeLine('Note: $notes');
   }
 
-  buffer.writeln();
-  buffer.writeln(separator());
-  buffer.writeln(center('Merci !'));
-  buffer.writeln('\n\n');
+  // Pied de page
+  builder.footer('Merci !');
 
-  return buffer.toString();
+  return builder.toString();
 }

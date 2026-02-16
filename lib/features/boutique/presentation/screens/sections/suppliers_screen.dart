@@ -9,6 +9,7 @@ import '../../../domain/entities/supplier_settlement.dart';
 import 'widgets/add_edit_supplier_dialog.dart';
 import 'widgets/supplier_settlement_dialog.dart';
 
+import 'package:elyf_groupe_app/features/boutique/presentation/widgets/boutique_search_bar.dart';
 import 'package:elyf_groupe_app/features/boutique/presentation/widgets/boutique_header.dart';
 
 class SuppliersScreen extends ConsumerStatefulWidget {
@@ -19,8 +20,15 @@ class SuppliersScreen extends ConsumerStatefulWidget {
 }
 
 class _SuppliersScreenState extends ConsumerState<SuppliersScreen> {
+  final _searchController = TextEditingController();
   String _searchQuery = '';
   String _filterStatus = 'all'; // all, in_debt, settled
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -103,18 +111,10 @@ class _SuppliersScreenState extends ConsumerState<SuppliersScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
             child: Column(
               children: [
-                TextField(
+                BoutiqueSearchBar(
+                  controller: _searchController,
+                  hintText: "Rechercher un fournisseur...",
                   onChanged: (v) => setState(() => _searchQuery = v),
-                  decoration: InputDecoration(
-                    hintText: "Rechercher un fournisseur...",
-                    prefixIcon: const Icon(Icons.search),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
-                    ),
-                    filled: true,
-                    fillColor: Colors.white,
-                  ),
                 ),
                 const SizedBox(height: 12),
                 SingleChildScrollView(
@@ -131,14 +131,14 @@ class _SuppliersScreenState extends ConsumerState<SuppliersScreen> {
                         label: const Text('Avec Dette'),
                         selected: _filterStatus == 'in_debt',
                         onSelected: (v) => setState(() => _filterStatus = 'in_debt'),
-                        selectedColor: Colors.red.withOpacity(0.2),
+                        selectedColor: Colors.red.withValues(alpha: 0.2),
                       ),
                       const SizedBox(width: 8),
                       FilterChip(
                         label: const Text('Réglés'),
                         selected: _filterStatus == 'settled',
                         onSelected: (v) => setState(() => _filterStatus = 'settled'),
-                        selectedColor: Colors.green.withOpacity(0.2),
+                        selectedColor: Colors.green.withValues(alpha: 0.2),
                       ),
                     ],
                   ),
@@ -182,7 +182,7 @@ class _SuppliersScreenState extends ConsumerState<SuppliersScreen> {
                         contentPadding: const EdgeInsets.all(16),
                         leading: CircleAvatar(
                           backgroundColor:
-                              Theme.of(context).primaryColor.withOpacity(0.1),
+                              Theme.of(context).primaryColor.withValues(alpha: 0.1),
                           child: Text(supplier.name[0].toUpperCase()),
                         ),
                         title: Text(supplier.name,
@@ -202,7 +202,7 @@ class _SuppliersScreenState extends ConsumerState<SuppliersScreen> {
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 8, vertical: 2),
                                   decoration: BoxDecoration(
-                                    color: Colors.blueGrey.withOpacity(0.1),
+                                    color: Colors.blueGrey.withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(10),
                                   ),
                                   child: Text(supplier.category!,
@@ -410,9 +410,9 @@ class _StatCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.05),
+        color: color.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.2)),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

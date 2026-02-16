@@ -11,7 +11,7 @@ enum LeakStatus {
 /// Source d'une fuite.
 enum LeakSource {
   store('Magasin'),
-  tour('Tournée (Livraison)'),
+  tour('Approvisionnement / Tournée'),
   supplier('Fournisseur (Réception)');
 
   const LeakSource(this.label);

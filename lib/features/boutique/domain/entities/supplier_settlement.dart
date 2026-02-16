@@ -15,6 +15,8 @@ class SupplierSettlement extends Equatable {
   final String? deletedBy;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final String? hash;
+  final String? previousHash;
 
   const SupplierSettlement({
     required this.id,
@@ -30,6 +32,8 @@ class SupplierSettlement extends Equatable {
     this.deletedBy,
     this.createdAt,
     this.updatedAt,
+    this.hash,
+    this.previousHash,
   });
 
   bool get isDeleted => deletedAt != null;
@@ -48,6 +52,8 @@ class SupplierSettlement extends Equatable {
     String? deletedBy,
     DateTime? createdAt,
     DateTime? updatedAt,
+    String? hash,
+    String? previousHash,
   }) {
     return SupplierSettlement(
       id: id ?? this.id,
@@ -63,6 +69,8 @@ class SupplierSettlement extends Equatable {
       deletedBy: deletedBy ?? this.deletedBy,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      hash: hash ?? this.hash,
+      previousHash: previousHash ?? this.previousHash,
     );
   }
 
@@ -81,6 +89,8 @@ class SupplierSettlement extends Equatable {
       'deletedBy': deletedBy,
       'createdAt': createdAt?.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
+      'hash': hash,
+      'previousHash': previousHash,
     };
   }
 
@@ -102,6 +112,8 @@ class SupplierSettlement extends Equatable {
       deletedBy: map['deletedBy'] as String?,
       createdAt: map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : null,
       updatedAt: map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : null,
+      hash: map['hash'] as String?,
+      previousHash: map['previousHash'] as String?,
     );
   }
 
@@ -120,5 +132,7 @@ class SupplierSettlement extends Equatable {
         deletedBy,
         createdAt,
         updatedAt,
+        hash,
+        previousHash,
       ];
 }

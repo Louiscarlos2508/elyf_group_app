@@ -1,3 +1,5 @@
+import '../thermal_receipt_builder.dart';
+
 /// Template pour l'impression de reçus de paiement sur imprimante thermique Sunmi.
 class PaymentReceiptTemplate {
   PaymentReceiptTemplate._();
@@ -16,107 +18,53 @@ class PaymentReceiptTemplate {
     String? footer,
     bool showLogo = true,
   }) {
-    final width = 48; // Format 80mm (aligné journal / factures)
-    final lines = <String>[];
+    final builder = ThermalReceiptBuilder();
 
-    // Fonction pour centrer le texte
-    String centerText(String text) {
-      if (text.length >= width) return text.substring(0, width);
-      final padding = (width - text.length) ~/ 2;
-      return ' ' * padding + text;
-    }
-
-    // Fonction pour créer une ligne de séparation
-    String separator(String char) => char * width;
-
-    // Logo
+    // Logo / Header
     if (showLogo) {
-      lines.add(centerText(' [ E L Y F ] '));
-      lines.add('');
+      builder.center('[ E L Y F ]');
+      builder.space();
     }
 
-    // En-tête simplifié
-    lines.add(centerText(header ?? 'ELYF GROUPE'));
-    lines.add('');
-    lines.add(centerText(separator('-')));
-    lines.add('');
-    lines.add(centerText('REÇU DE PAIEMENT'));
-    lines.add(centerText(separator('=')));
-    lines.add('');
+    builder.header(header ?? 'ELYF GROUPE', subtitle: 'REÇU DE PAIEMENT');
 
     // Informations du reçu
-    lines.add('N°: $receiptNumber');
-    lines.add('Date: $paymentDate');
+    builder.row('N°', receiptNumber);
+    builder.row('Date', paymentDate);
     if (period != null) {
-      lines.add('Période: $period');
+      builder.row('Période', period);
     }
-    lines.add(separator('─'));
+    builder.separator();
 
     // Informations du locataire
-    lines.add('Locataire:');
-    lines.add(tenantName);
-    lines.add('');
+    builder.row('Locataire', tenantName);
+    builder.space();
 
     // Informations de la propriété
-    lines.add('Propriété:');
-    if (propertyAddress.length > width - 2) {
-      lines.add(propertyAddress.substring(0, width - 2));
-    } else {
-      lines.add(propertyAddress);
-    }
-    lines.add(separator('─'));
+    builder.row('Propriété', propertyAddress);
+    builder.separator();
 
     // Détails du paiement
-    lines.add('Montant: $amount F');
-    lines.add('Méthode: $paymentMethod');
-    lines.add(separator('═'));
+    builder.row('Montant', '$amount F');
+    builder.row('Méthode', paymentMethod);
+    builder.doubleSeparator();
 
     // Notes si présentes
     if (notes != null && notes.isNotEmpty) {
-      lines.add('Notes:');
-      if (notes.length > width - 2) {
-        final words = notes.split(' ');
-        String currentLine = '';
-        for (final word in words) {
-          if ((currentLine + word).length < width - 2) {
-            currentLine += (currentLine.isEmpty ? '' : ' ') + word;
-          } else {
-            if (currentLine.isNotEmpty) lines.add(currentLine);
-            currentLine = word;
-          }
-        }
-        if (currentLine.isNotEmpty) lines.add(currentLine);
-      } else {
-        lines.add(notes);
-      }
-      lines.add(separator('─'));
+      builder.row('Notes', notes);
+      builder.separator();
     }
 
     // Espace pour signature
-    lines.add('');
-    lines.add('Signature locataire:');
-    lines.add('');
-    lines.add('');
-    lines.add('Signature et cachet:');
-    lines.add('');
+    builder.space();
+    builder.writeLine('Signature locataire:');
+    builder.space(2);
+    builder.writeLine('Signature et cachet:');
+    builder.space();
 
     // Pied de page
-    if (footer != null && footer.isNotEmpty) {
-      final footerLines = footer.split('\n');
-      for (final fl in footerLines) {
-        lines.add(centerText(fl));
-      }
-    } else {
-      lines.add(centerText('Merci de votre'));
-      lines.add(centerText('confiance !'));
-    }
-    lines.add('');
+    builder.footer(footer ?? 'Merci de votre confiance !');
 
-    // Ajouter des lignes vides à la fin pour la découpe
-    for (int i = 0; i < 4; i++) {
-      lines.add('');
-    }
-
-    return lines.join('\n');
+    return builder.toString();
   }
 }

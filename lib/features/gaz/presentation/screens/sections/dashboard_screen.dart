@@ -13,6 +13,7 @@ import 'dashboard/dashboard_pos_performance_section.dart';
 import '../../widgets/gaz_header.dart';
 import '../../widgets/dashboard/quick_actions_section.dart';
 import '../../widgets/dashboard/reconciliation_section.dart';
+import '../../widgets/dashboard/low_stock_alert_section.dart';
 import '../../../../../shared/presentation/widgets/elyf_ui/atoms/elyf_icon_button.dart';
 
 /// Professional dashboard screen for gaz module - matches Figma design.
@@ -114,6 +115,11 @@ class _DashboardContent extends ConsumerWidget {
           sliver: SliverToBoxAdapter(
             child: _DashboardKpiSliver(),
           ),
+        ),
+
+        // Low Stock Alert section (Story 5.2)
+        const SliverToBoxAdapter(
+          child: LowStockAlertSection(),
         ),
 
         // Quick Actions section

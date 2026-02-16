@@ -113,6 +113,8 @@ enum ExpenseCategory {
   rent('Loyer'),
   utilities('Services publics'),
   supplies('Fournitures'),
+  stockReplenishment('Achat de stock (Gaz)'),
+  stockAdjustment('Ajustement de stock'),
   other('Autre');
 
   const ExpenseCategory(this.label);

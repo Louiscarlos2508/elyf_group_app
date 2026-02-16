@@ -1,3 +1,4 @@
+import '../entities/cylinder.dart';
 import '../entities/cylinder_stock.dart';
 import '../entities/expense.dart';
 import '../entities/gas_sale.dart';
@@ -107,15 +108,28 @@ class GazDashboardCalculationService {
     return monthExpenses.fold<double>(0, (sum, e) => sum + e.amount);
   }
 
-  /// Calculates month's profit (revenue - expenses).
+  /// Calculates month's profit (revenue - COGS - expenses).
   double calculateMonthProfit({
     required List<GasSale> sales,
     required List<GazExpense> expenses,
+    required List<Cylinder> cylinders,
     DateTime? referenceDate,
   }) {
+    final monthSales = filterMonthSales(sales, referenceDate);
     final monthRevenue = calculateMonthRevenue(sales, referenceDate);
     final monthExpenses = calculateMonthExpensesTotal(expenses, referenceDate);
-    return monthRevenue - monthExpenses;
+    
+    // Calculate COGS (Cost of Goods Sold)
+    double monthCOGS = 0.0;
+    for (final sale in monthSales) {
+      final cylinder = cylinders.firstWhere(
+        (c) => c.id == sale.cylinderId,
+        orElse: () => cylinders.firstWhere((c) => c.weight == 0, orElse: () => cylinders.first),
+      );
+      monthCOGS += cylinder.buyPrice * sale.quantity;
+    }
+
+    return monthRevenue - monthCOGS - monthExpenses;
   }
 
   /// Counts retail sales in month.
@@ -152,7 +166,7 @@ class GazDashboardCalculationService {
     required List<CylinderStock> stocks,
     required List<GasSale> sales,
     required List<GazExpense> expenses,
-    required int cylinderTypesCount,
+    required List<Cylinder> cylinders,
     DateTime? referenceDate,
   }) {
     final totalStock = calculateTotalStock(stocks);
@@ -170,6 +184,7 @@ class GazDashboardCalculationService {
     final monthProfit = calculateMonthProfit(
       sales: sales,
       expenses: expenses,
+      cylinders: cylinders,
       referenceDate: referenceDate,
     );
     final retailSales = countMonthRetailSales(sales, referenceDate);
@@ -177,7 +192,7 @@ class GazDashboardCalculationService {
 
     return GazDashboardMetrics(
       totalStock: totalStock,
-      cylinderTypesCount: cylinderTypesCount,
+      cylinderTypesCount: cylinders.length,
       todayRevenue: todayRevenue,
       todaySalesCount: todaySales.length,
       weekRevenue: weekRevenue,

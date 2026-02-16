@@ -7,6 +7,7 @@ import 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder_leak.dart'
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import 'package:elyf_groupe_app/features/gaz/presentation/widgets/leak_report_dialog.dart';
 import 'package:elyf_groupe_app/features/gaz/presentation/widgets/exchange_dialog.dart';
+import 'package:elyf_groupe_app/features/gaz/presentation/widgets/supplier_claim_dialog.dart';
 import 'cylinder_leak/leak_filters.dart';
 import 'cylinder_leak/leak_header.dart';
 import 'cylinder_leak/leak_list_item.dart';
@@ -56,6 +57,22 @@ class _CylinderLeakScreenState extends ConsumerState<CylinderLeakScreen> {
     }
   }
 
+  void _showClaimDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => SupplierClaimDialog(enterpriseId: widget.enterpriseId),
+    ).then((result) {
+      if (result == true && mounted) {
+        ref.invalidate(
+          cylinderLeaksProvider((
+            enterpriseId: widget.enterpriseId,
+            status: null,
+          )),
+        );
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 600;
@@ -71,7 +88,11 @@ class _CylinderLeakScreenState extends ConsumerState<CylinderLeakScreen> {
       slivers: [
         // Header
         SliverToBoxAdapter(
-          child: LeakHeader(isMobile: isMobile, onReportLeak: _showLeakDialog),
+          child: LeakHeader(
+            isMobile: isMobile,
+            onReportLeak: _showLeakDialog,
+            onGenerateClaim: _showClaimDialog,
+          ),
         ),
         // Filters
         SliverToBoxAdapter(

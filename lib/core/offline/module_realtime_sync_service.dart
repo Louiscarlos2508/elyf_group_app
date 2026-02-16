@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:drift/drift.dart' hide Query;
 
 import '../errors/app_exceptions.dart';
 import '../errors/error_handler.dart';
@@ -59,75 +60,85 @@ class ModuleRealtimeSyncService {
     return value;
   }
 
-  /// Sauvegarde un document dans Drift en vérifiant d'abord s'il existe déjà
-  /// par remoteId pour éviter les doublons.
-  ///
-  /// Si un enregistrement avec le même remoteId existe, utilise son localId
-  /// pour mettre à jour l'enregistrement existant au lieu d'en créer un nouveau.
-  /// Gère les cas où plusieurs enregistrements ont le même remoteId (doublons).
-  Future<void> _upsertWithDuplicateCheck({
+  Future<String> _resolveLocalId({
     required String collectionName,
     required String documentId,
     required String enterpriseId,
     required String moduleId,
-    required String dataJson,
-    DateTime? localUpdatedAt,
   }) async {
-    // Récupérer tous les enregistrements pour gérer les doublons
-    final records = await driftService.records.listForEnterprise(
+    final existingRecord = await driftService.records.findByRemoteId(
       collectionName: collectionName,
-      enterpriseId: enterpriseId,
-      moduleType: moduleId,
-    );
-    
-    // Chercher par remoteId (gérer les doublons)
-    final matchingByRemote = records.where((r) => r.remoteId == documentId).toList();
-    
-    String localIdToUse;
-    if (matchingByRemote.isNotEmpty) {
-      // Si plusieurs enregistrements avec le même remoteId, prendre le plus récent
-      if (matchingByRemote.length > 1) {
-        matchingByRemote.sort((a, b) => 
-          b.localUpdatedAt.compareTo(a.localUpdatedAt)
-        );
-        AppLogger.warning(
-          'Multiple records found with remoteId $documentId (${matchingByRemote.length} duplicates) in $collectionName, using most recent.',
-          name: 'module.realtime.sync',
-        );
-        // Supprimer les doublons (garder seulement le plus récent)
-        for (var i = 1; i < matchingByRemote.length; i++) {
-          try {
-            await driftService.records.deleteByLocalId(
-              collectionName: collectionName,
-              localId: matchingByRemote[i].localId,
-              enterpriseId: enterpriseId,
-              moduleType: moduleId,
-            );
-          } catch (e) {
-            AppLogger.warning(
-              'Failed to delete duplicate record ${matchingByRemote[i].localId}: $e',
-              name: 'module.realtime.sync',
-              error: e,
-            );
-          }
-        }
-      }
-      localIdToUse = matchingByRemote.first.localId;
-    } else {
-      // Aucun enregistrement trouvé, utiliser documentId comme localId
-      localIdToUse = documentId;
-    }
-
-    // Sauvegarder dans Drift (mise à jour si existe, création sinon)
-    await driftService.records.upsert(
-      collectionName: collectionName,
-      localId: localIdToUse,
       remoteId: documentId,
       enterpriseId: enterpriseId,
       moduleType: moduleId,
-      dataJson: dataJson,
-      localUpdatedAt: localUpdatedAt ?? DateTime.now(),
     );
+    return existingRecord?.localId ?? documentId;
+  }
+
+  Future<({Map<String, dynamic> data, DateTime updatedAt})?> _resolveConflict({
+    required OfflineRecord localRecord,
+    required Map<String, dynamic> firestoreData,
+    required String collectionName,
+  }) async {
+    try {
+      final localData = jsonDecode(localRecord.dataJson) as Map<String, dynamic>;
+      
+      // Check for pending changes
+      bool hasPendingChanges = false;
+      final syncManager = _syncManager;
+      if (syncManager != null) {
+        final pendingOps = await syncManager.getPendingForCollection(collectionName);
+        hasPendingChanges = pendingOps.any((op) => op.documentId == localRecord.remoteId);
+      }
+
+      final firestoreUpdatedAtStr = firestoreData['updatedAt'] as String?;
+      final firestoreUpdatedAt = firestoreUpdatedAtStr != null ? DateTime.tryParse(firestoreUpdatedAtStr) : null;
+      
+      if (firestoreUpdatedAt == null) return null; // Keep local
+
+      final localUpdatedAtStr = localData['updatedAt'] as String?;
+      final localUpdatedAtParsed = localUpdatedAtStr != null ? DateTime.tryParse(localUpdatedAtStr) : null;
+
+      if (localUpdatedAtParsed == null) {
+        return (data: firestoreData, updatedAt: DateTime.now());
+      }
+
+      final localIsNewer = localUpdatedAtParsed.isAfter(firestoreUpdatedAt);
+      if (localIsNewer && hasPendingChanges) return null; // Keep local
+
+      // Soft delete logic
+      final firestoreDeletedAt = firestoreData['deletedAt'];
+      final localDeletedAt = localData['deletedAt'];
+
+      if (firestoreDeletedAt != null && localDeletedAt == null && !localIsNewer) {
+        final softDeletedData = Map<String, dynamic>.from(localData)
+          ..['deletedAt'] = firestoreDeletedAt
+          ..['deletedBy'] = firestoreData['deletedBy']
+          ..['updatedAt'] = firestoreUpdatedAtStr;
+        return (data: softDeletedData, updatedAt: DateTime.now());
+      }
+
+      if (localDeletedAt != null && firestoreDeletedAt == null && !localIsNewer) {
+        final restoredData = Map<String, dynamic>.from(firestoreData)
+          ..remove('deletedAt')
+          ..remove('deletedBy');
+        return (data: restoredData, updatedAt: DateTime.now());
+      }
+
+      final resolvedResult = _conflictResolver.resolve(
+        localData: localData,
+        serverData: firestoreData,
+        collectionName: collectionName,
+      );
+
+      return (
+        data: resolvedResult.resolvedData,
+        updatedAt: localIsNewer ? localRecord.localUpdatedAt : DateTime.now()
+      );
+    } catch (e) {
+      AppLogger.warning('Error resolving conflict for $collectionName: $e');
+      return (data: firestoreData, updatedAt: DateTime.now());
+    }
   }
 
   /// Démarre la synchronisation en temps réel pour un module.
@@ -260,148 +271,108 @@ class ModuleRealtimeSyncService {
 
       final subscription = collectionRef.snapshots().listen(
         (snapshot) async {
+          if (snapshot.docChanges.isEmpty) return;
+
+          final itemsToUpsert = <OfflineRecordsCompanion>[];
+          final itemsToRemove = <String>[]; // List of remoteIds to remove
+
           for (final docChange in snapshot.docChanges) {
             try {
               final data = docChange.doc.data();
               if (data == null) continue;
 
               final documentId = docChange.doc.id;
-
-              // Ajouter l'ID du document dans les données
-              final dataWithId = Map<String, dynamic>.from(data)
-                ..['id'] = documentId;
-
-              // Convertir les Timestamp en format JSON-compatible
+              final dataWithId = Map<String, dynamic>.from(data)..['id'] = documentId;
               final jsonCompatibleData = _convertToJsonCompatible(dataWithId);
+              final sanitizedData = DataSanitizer.sanitizeMap(jsonCompatibleData);
+              final jsonPayload = jsonEncode(sanitizedData);
 
-              // Pour les points de vente, utiliser l'enterpriseId passé en paramètre
-              // (qui est l'ID de l'entreprise gaz où les points de vente sont stockés dans Firestore)
-              // Les points de vente sont dans enterprises/{gaz_enterprise_id}/pointsOfSale/
-              // et doivent être stockés avec cet ID dans Drift pour être récupérables
-              // Note: Le parentEnterpriseId dans les données pointe vers l'entreprise mère,
-              // mais le stockage dans Drift utilise l'ID de l'entreprise gaz
               String storageEnterpriseId = enterpriseId;
               if (collectionName == 'pointOfSale') {
-                // Utiliser l'enterpriseId passé en paramètre (ID de l'entreprise gaz)
-                // car c'est là que les points de vente sont stockés dans Firestore
-                storageEnterpriseId = enterpriseId;
-                final parentEnterpriseId = jsonCompatibleData['parentEnterpriseId'] as String? ??
-                                           jsonCompatibleData['enterpriseId'] as String? ??
-                                           'unknown';
-                AppLogger.debug(
-                  '🔵 SYNC (realtime): Point de vente - parentEnterpriseId=$parentEnterpriseId, stockage avec enterpriseId=$storageEnterpriseId (entreprise gaz) dans Drift',
-                  name: 'module.realtime.sync',
-                );
+                storageEnterpriseId = sanitizedData['parentEnterpriseId'] as String? ??
+                                     sanitizedData['enterpriseId'] as String? ??
+                                     enterpriseId;
               }
-              
-              // Sanitizer les données avant sauvegarde locale
-              final sanitizedData = DataSanitizer.sanitizeMap(jsonCompatibleData);
 
               switch (docChange.type) {
                 case DocumentChangeType.added:
-                  // Check if there are pending deletions for this document
-                  // This prevents "zombie resurrection" where a deleted item reappears
-                  // because the server hasn't processed the delete yet but sends the item in a snapshot
-                  bool isDeletedLocally = false;
-                  final syncManager = _syncManager;
-                  if (syncManager != null) {
-                    final pendingOps = await syncManager.getPendingForCollection(
-                      collectionName,
-                    );
-                    isDeletedLocally = pendingOps.any(
-                      (op) =>
-                          op.documentId == documentId &&
-                          op.operationType == 'delete',
-                    );
-                  }
-
-                  if (isDeletedLocally) {
-                    AppLogger.debug(
-                      'Skipping added document $documentId because it is marked for deletion locally',
-                      name: 'module.realtime.sync',
-                    );
-                    break;
-                  }
-
-                  // Nouveau document : sauvegarder avec vérification de doublon
-                  await _upsertWithDuplicateCheck(
+                case DocumentChangeType.modified:
+                  // For realtime sync, we still need to check conflicts but we can collect them
+                  // However, conflict resolution involves async lookups, so we'll do it sequentially
+                  // BUT we wrap it in a single batch at the end for the upserts.
+                  
+                  // Optimisation: if it's "added", we rarely have local record unless it was just created 
+                  // and we are getting the server echo.
+                  
+                  final localId = await _resolveLocalId(
                     collectionName: collectionName,
                     documentId: documentId,
                     enterpriseId: storageEnterpriseId,
                     moduleId: moduleId,
-                    dataJson: jsonEncode(sanitizedData),
+                  );
+
+                  // Conflict check for modified
+                  if (docChange.type == DocumentChangeType.modified) {
+                    final localRecord = await driftService.records.findByLocalId(
+                      collectionName: collectionName,
+                      localId: localId,
+                      enterpriseId: storageEnterpriseId,
+                      moduleType: moduleId,
+                    );
+                    
+                    if (localRecord != null) {
+                       final resolvedData = await _resolveConflict(
+                         localRecord: localRecord,
+                         firestoreData: sanitizedData,
+                         collectionName: collectionName,
+                       );
+                       if (resolvedData != null) {
+                         itemsToUpsert.add(OfflineRecordsCompanion.insert(
+                            collectionName: collectionName,
+                            localId: localId,
+                            remoteId: Value(documentId),
+                            enterpriseId: storageEnterpriseId,
+                            moduleType: Value(moduleId),
+                            dataJson: jsonEncode(resolvedData.data),
+                            localUpdatedAt: resolvedData.updatedAt,
+                          ));
+                       }
+                       continue;
+                    }
+                  }
+
+                  itemsToUpsert.add(OfflineRecordsCompanion.insert(
+                    collectionName: collectionName,
+                    localId: localId,
+                    remoteId: Value(documentId),
+                    enterpriseId: storageEnterpriseId,
+                    moduleType: Value(moduleId),
+                    dataJson: jsonPayload,
                     localUpdatedAt: DateTime.now(),
-                  );
-                  AppLogger.debug(
-                    '${collectionName.capitalize()} added in realtime: $documentId',
-                    name: 'module.realtime.sync',
-                  );
+                  ));
                   break;
-                case DocumentChangeType.modified:
-                  // Document modifié : vérifier les conflits avant d'écraser
-                  await _handleModifiedDocument(
-                    collectionName: collectionName,
-                    documentId: documentId,
-                    enterpriseId: enterpriseId,
-                    moduleId: moduleId,
-                    firestoreData: sanitizedData,
-                  );
-                  break;
+
                 case DocumentChangeType.removed:
-                  // Document supprimé dans Firestore (hard delete)
-                  // Vérifier s'il y a des modifications locales en attente avant de supprimer
-                  bool hasPendingChanges = false;
-                  final syncManager = _syncManager;
-                  if (syncManager != null) {
-                    final pendingOps = await syncManager.getPendingForCollection(
-                      collectionName,
-                    );
-                    hasPendingChanges = pendingOps.any(
-                      (op) => op.documentId == documentId,
-                    );
-                  }
-
-                  // Si des modifications sont en attente, ne pas supprimer
-                  // (les modifications locales seront synchronisées)
-                  if (hasPendingChanges) {
-                    AppLogger.debug(
-                      '${collectionName.capitalize()} removed in Firestore but local changes pending: $documentId (skipping delete)',
-                      name: 'module.realtime.sync',
-                    );
-                    break;
-                  }
-
-                  // Pour les points de vente, utiliser le parentEnterpriseId depuis les données
-                  String deleteEnterpriseId = enterpriseId;
-                  if (collectionName == 'points_of_sale') {
-                    final parentEnterpriseId = jsonCompatibleData['parentEnterpriseId'] as String? ??
-                                               jsonCompatibleData['enterpriseId'] as String? ??
-                                               enterpriseId;
-                    deleteEnterpriseId = parentEnterpriseId;
-                  }
-                  
-                  // Supprimer localement (hard delete)
-                  await driftService.records.deleteByRemoteId(
-                    collectionName: collectionName,
-                    remoteId: documentId,
-                    enterpriseId: deleteEnterpriseId,
-                    moduleType: moduleId,
-                  );
-                  AppLogger.debug(
-                    '${collectionName.capitalize()} removed in realtime: $documentId',
-                    name: 'module.realtime.sync',
-                  );
+                  itemsToRemove.add(documentId);
                   break;
               }
-            } catch (e, stackTrace) {
-              final appException = ErrorHandler.instance.handleError(e, stackTrace);
-              AppLogger.warning(
-                'Error processing $collectionName change in realtime sync: ${appException.message}',
-                name: 'module.realtime.sync',
-                error: e,
-                stackTrace: stackTrace,
-              );
+            } catch (e) {
+               AppLogger.warning('Error processing doc change: $e');
             }
+          }
+
+          // Apply Batch
+          if (itemsToUpsert.isNotEmpty) {
+            await driftService.records.upsertAll(itemsToUpsert);
+          }
+          
+          for (final remoteId in itemsToRemove) {
+            await driftService.records.deleteByRemoteId(
+              collectionName: collectionName,
+              remoteId: remoteId,
+              enterpriseId: enterpriseId,
+              moduleType: moduleId,
+            );
           }
         },
         onError: (error, stackTrace) {
@@ -453,311 +424,6 @@ class ModuleRealtimeSyncService {
     return _isListening &&
         _currentEnterpriseId == enterpriseId &&
         _currentModuleId == moduleId;
-  }
-
-  /// Gère une modification de document depuis Firestore en vérifiant les conflits.
-  ///
-  /// Vérifie s'il y a des modifications locales en attente et compare les timestamps
-  /// pour éviter d'écraser les modifications locales non synchronisées.
-  Future<void> _handleModifiedDocument({
-    required String collectionName,
-    required String documentId,
-    required String enterpriseId,
-    required String moduleId,
-    required Map<String, dynamic> firestoreData,
-  }) async {
-      // Pour les points de vente, utiliser le parentEnterpriseId depuis les données
-      String storageEnterpriseId = enterpriseId;
-      if (collectionName == 'pointOfSale') {
-      final parentEnterpriseId = firestoreData['parentEnterpriseId'] as String? ??
-                                 firestoreData['enterpriseId'] as String? ??
-                                 enterpriseId;
-      storageEnterpriseId = parentEnterpriseId;
-      AppLogger.debug(
-        'Point de vente (modified): utilisation de parentEnterpriseId=$parentEnterpriseId pour le stockage (au lieu de enterpriseId=$enterpriseId)',
-        name: 'module.realtime.sync',
-      );
-    }
-    
-    try {
-      // 1. Vérifier s'il y a des opérations en attente pour ce document
-      bool hasPendingChanges = false;
-      final syncManager = _syncManager;
-      if (syncManager != null) {
-        final pendingOps = await syncManager.getPendingForCollection(
-          collectionName,
-        );
-        hasPendingChanges = pendingOps.any(
-          (op) => op.documentId == documentId,
-        );
-      }
-
-      // 2. Récupérer la version locale actuelle
-      // Pour les points de vente, chercher avec storageEnterpriseId
-      // Essayer d'abord avec storageEnterpriseId, puis avec enterpriseId si pas trouvé
-      OfflineRecord? localRecord;
-      if (collectionName == 'points_of_sale') {
-        localRecord = await driftService.records.findByLocalId(
-          collectionName: collectionName,
-          localId: documentId,
-          enterpriseId: storageEnterpriseId,
-          moduleType: moduleId,
-        );
-        localRecord ??= await driftService.records.findByLocalId(
-          collectionName: collectionName,
-          localId: documentId,
-          enterpriseId: enterpriseId,
-          moduleType: moduleId,
-        );
-      } else {
-        localRecord = await driftService.records.findByLocalId(
-          collectionName: collectionName,
-          localId: documentId,
-          enterpriseId: enterpriseId,
-          moduleType: moduleId,
-        );
-      }
-
-      // Si pas trouvé par localId, essayer par remoteId (documentId = id Firestore).
-      // Ex. session créée localement (local_xxx) puis synced : on a remoteId = documentId.
-      // Évite de créer une 2e ligne "no local" alors qu'une existe déjà.
-      localRecord ??= await driftService.records.findByRemoteId(
-        collectionName: collectionName,
-        remoteId: documentId,
-        enterpriseId: storageEnterpriseId,
-        moduleType: moduleId,
-      );
-      localRecord ??= collectionName == 'points_of_sale'
-          ? await driftService.records.findByRemoteId(
-              collectionName: collectionName,
-              remoteId: documentId,
-              enterpriseId: enterpriseId,
-              moduleType: moduleId,
-            )
-          : null;
-
-      // 3. Si pas de version locale et pas de modifications en attente, sauvegarder directement
-      if (localRecord == null && !hasPendingChanges) {
-        await _upsertWithDuplicateCheck(
-          collectionName: collectionName,
-          documentId: documentId,
-          enterpriseId: storageEnterpriseId,
-          moduleId: moduleId,
-          dataJson: jsonEncode(firestoreData),
-          localUpdatedAt: DateTime.now(),
-        );
-        AppLogger.debug(
-          '${collectionName.capitalize()} modified in realtime (no local): $documentId',
-          name: 'module.realtime.sync',
-        );
-        return;
-      }
-
-      // 4. Si pas de version locale mais modifications en attente, ne pas écraser
-      // (les modifications locales seront synchronisées et écraseront Firestore)
-      if (localRecord == null && hasPendingChanges) {
-        AppLogger.debug(
-          '${collectionName.capitalize()} modified in Firestore but local changes pending: $documentId (skipping)',
-          name: 'module.realtime.sync',
-        );
-        return;
-      }
-
-      // 5. Si version locale existe, comparer les timestamps pour résoudre le conflit
-      if (localRecord != null) {
-        Map<String, dynamic>? localData;
-        try {
-          localData = jsonDecode(localRecord.dataJson) as Map<String, dynamic>;
-        } catch (e, stackTrace) {
-          final appException = ErrorHandler.instance.handleError(e, stackTrace);
-          AppLogger.warning(
-            'Corrupted local data for $collectionName/$documentId, treating as empty/missing: ${appException.message}',
-            name: 'module.realtime.sync',
-            error: e,
-            stackTrace: stackTrace,
-          );
-          // If local data is corrupted, we can't compare, so we should arguably overwrite it with server data
-          // or behave as if localRecord is null. Overwriting is safer to restore consistency.
-           await _upsertWithDuplicateCheck(
-            collectionName: collectionName,
-            documentId: documentId,
-            enterpriseId: storageEnterpriseId,
-            moduleId: moduleId,
-            dataJson: jsonEncode(firestoreData),
-            localUpdatedAt: DateTime.now(),
-          );
-           return;
-        }
-        
-        final localUpdatedAt = localRecord.localUpdatedAt;
-
-        // Extraire updatedAt de Firestore
-        final firestoreUpdatedAtStr = firestoreData['updatedAt'] as String?;
-        final firestoreUpdatedAt = firestoreUpdatedAtStr != null
-            ? DateTime.tryParse(firestoreUpdatedAtStr)
-            : null;
-
-        // Si Firestore n'a pas de timestamp, utiliser la version locale
-        if (firestoreUpdatedAt == null) {
-          AppLogger.debug(
-            '${collectionName.capitalize()} modified in Firestore but no updatedAt: $documentId (keeping local)',
-            name: 'module.realtime.sync',
-          );
-          return;
-        }
-
-        // Comparer les timestamps pour déterminer quelle version est la plus récente
-        final localUpdatedAtStr = localData['updatedAt'] as String?;
-        final localUpdatedAtParsed = localUpdatedAtStr != null
-            ? DateTime.tryParse(localUpdatedAtStr)
-            : null;
-
-        // Si la version locale n'a pas de timestamp, utiliser Firestore
-        if (localUpdatedAtParsed == null) {
-        await _upsertWithDuplicateCheck(
-          collectionName: collectionName,
-          documentId: documentId,
-          enterpriseId: storageEnterpriseId,
-          moduleId: moduleId,
-          dataJson: jsonEncode(firestoreData),
-          localUpdatedAt: DateTime.now(),
-        );
-        AppLogger.debug(
-          '${collectionName.capitalize()} modified in realtime (local has no updatedAt): $documentId',
-          name: 'module.realtime.sync',
-        );
-        return;
-        }
-
-        // Comparer les timestamps pour déterminer quelle version est la plus récente
-        final localIsNewer = localUpdatedAtParsed.isAfter(firestoreUpdatedAt);
-
-        // Si la version locale est plus récente et qu'il y a des modifications en attente,
-        // ne pas écraser (les modifications locales seront synchronisées vers Firestore)
-        if (localIsNewer && hasPendingChanges) {
-          AppLogger.debug(
-            '${collectionName.capitalize()} conflict: local is newer with pending changes: $documentId (skipping Firestore update)',
-            name: 'module.realtime.sync',
-          );
-          return;
-        }
-
-        // Vérifier si Firestore contient un soft delete (deletedAt)
-        final firestoreDeletedAt = firestoreData['deletedAt'];
-        final localDeletedAt = localData['deletedAt'];
-
-        // Si Firestore a un soft delete et que local n'en a pas,
-        // appliquer le soft delete localement (si Firestore est plus récent ou égal)
-        if (firestoreDeletedAt != null && localDeletedAt == null && !localIsNewer) {
-          // Appliquer le soft delete localement
-          final softDeletedData = Map<String, dynamic>.from(localData)
-            ..['deletedAt'] = firestoreDeletedAt
-            ..['deletedBy'] = firestoreData['deletedBy']
-            ..['updatedAt'] = firestoreUpdatedAtStr;
-
-        await _upsertWithDuplicateCheck(
-          collectionName: collectionName,
-          documentId: documentId,
-          enterpriseId: storageEnterpriseId,
-          moduleId: moduleId,
-          dataJson: jsonEncode(softDeletedData),
-          localUpdatedAt: DateTime.now(),
-        );
-          AppLogger.debug(
-            '${collectionName.capitalize()} soft deleted in realtime: $documentId',
-            name: 'module.realtime.sync',
-          );
-          return;
-        }
-
-        // Si local a un soft delete et que Firestore n'en a pas,
-        // restaurer localement (si Firestore est plus récent)
-        if (localDeletedAt != null && firestoreDeletedAt == null && !localIsNewer) {
-          // Restaurer le document localement
-          final restoredData = Map<String, dynamic>.from(firestoreData)
-            ..remove('deletedAt')
-            ..remove('deletedBy');
-
-        await _upsertWithDuplicateCheck(
-          collectionName: collectionName,
-          documentId: documentId,
-          enterpriseId: storageEnterpriseId,
-          moduleId: moduleId,
-          dataJson: jsonEncode(restoredData),
-          localUpdatedAt: DateTime.now(),
-        );
-          AppLogger.debug(
-            '${collectionName.capitalize()} restored in realtime: $documentId',
-            name: 'module.realtime.sync',
-          );
-          return;
-        }
-
-        // Résoudre le conflit en utilisant SyncConflictResolver
-        // (stratégie par défaut : lastWriteWins basé sur updatedAt)
-        final resolvedDataResult = _conflictResolver.resolve(
-          localData: localData,
-          serverData: firestoreData,
-          collectionName: collectionName,
-        );
-        final resolvedData = resolvedDataResult.resolvedData;
-
-        // Déterminer quelle version a été choisie en comparant les timestamps
-        // Le ConflictResolver utilise lastWriteWins par défaut
-        final choseLocal = localIsNewer;
-
-        // Sauvegarder la version résolue
-        await _upsertWithDuplicateCheck(
-          collectionName: collectionName,
-          documentId: documentId,
-          enterpriseId: storageEnterpriseId,
-          moduleId: moduleId,
-          dataJson: jsonEncode(resolvedData),
-          localUpdatedAt: choseLocal ? localUpdatedAt : DateTime.now(),
-        );
-
-        AppLogger.debug(
-          '${collectionName.capitalize()} modified in realtime (conflict resolved): $documentId',
-          name: 'module.realtime.sync',
-        );
-      }
-    } catch (e, stackTrace) {
-      final appException = ErrorHandler.instance.handleError(e, stackTrace);
-      AppLogger.error(
-        'Error handling modified document $documentId: ${appException.message}',
-        name: 'module.realtime.sync',
-        error: e,
-        stackTrace: stackTrace,
-      );
-      // En cas d'erreur, sauvegarder quand même pour éviter la perte de données
-      try {
-        // Pour les points de vente, utiliser le parentEnterpriseId depuis les données
-        String fallbackEnterpriseId = enterpriseId;
-        if (collectionName == 'pointOfSale') {
-          final parentEnterpriseId = firestoreData['parentEnterpriseId'] as String? ??
-                                     firestoreData['enterpriseId'] as String? ??
-                                     enterpriseId;
-          fallbackEnterpriseId = parentEnterpriseId;
-        }
-        
-        await _upsertWithDuplicateCheck(
-          collectionName: collectionName,
-          documentId: documentId,
-          enterpriseId: fallbackEnterpriseId,
-          moduleId: moduleId,
-          dataJson: jsonEncode(firestoreData),
-          localUpdatedAt: DateTime.now(),
-        );
-      } catch (fallbackError, fallbackStackTrace) {
-        final fallbackAppException = ErrorHandler.instance.handleError(fallbackError, fallbackStackTrace);
-        AppLogger.error(
-          'Error in fallback save: ${fallbackAppException.message}',
-          name: 'module.realtime.sync',
-          error: fallbackError,
-          stackTrace: fallbackStackTrace,
-        );
-      }
-    }
   }
 }
 

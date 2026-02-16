@@ -25,10 +25,12 @@ class GazSessionsReportContent extends ConsumerWidget {
     return sessionsAsync.when(
       data: (sessions) {
         final filteredSessions = sessions.where((s) {
-          return s.date.isAfter(startDate.subtract(const Duration(days: 1))) &&
-              s.date.isBefore(endDate.add(const Duration(days: 1)));
+          final date = s.date;
+          if (date == null) return false;
+          return date.isAfter(startDate.subtract(const Duration(days: 1))) &&
+              date.isBefore(endDate.add(const Duration(days: 1)));
         }).toList()
-          ..sort((a, b) => b.date.compareTo(a.date));
+          ..sort((a, b) => (b.date ?? DateTime(0)).compareTo(a.date ?? DateTime(0)));
 
         if (filteredSessions.isEmpty) {
           return const Center(
@@ -74,7 +76,7 @@ class _SessionClosureCard extends StatelessWidget {
       ),
       child: ExpansionTile(
         title: Text(
-          DateFormat('dd MMMM yyyy').format(session.date),
+          DateFormat('dd MMMM yyyy').format(session.date ?? DateTime.now()),
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         subtitle: Text(
@@ -106,7 +108,32 @@ class _SessionClosureCard extends StatelessWidget {
                 _buildInfoRow('Dépenses', CurrencyFormatter.formatDouble(session.totalExpenses)),
                 _buildInfoRow('Cash Théorique', CurrencyFormatter.formatDouble(session.theoreticalCash)),
                 const Divider(),
-                _buildInfoRow('Clôturé par', session.closedBy),
+                _buildInfoRow('Clôturé par', session.closedBy ?? 'Inconnu'),
+                if (session.stockReconciliation.isNotEmpty) ...[
+                  const Divider(),
+                  const Text('Écarts de Stock:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                  const SizedBox(height: 4),
+                  ...session.stockReconciliation.entries.map((e) {
+                    final isPositive = e.value > 0;
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 2),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('${e.key}kg (${session.theoreticalStock[e.key] ?? 0} théo.)', style: const TextStyle(fontSize: 12)),
+                          Text(
+                            '${isPositive ? '+' : ''}${e.value}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: e.value == 0 ? Colors.grey : (isPositive ? Colors.green : Colors.red),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                ],
                 if (session.notes != null && session.notes!.isNotEmpty) ...[
                   const SizedBox(height: 8),
                   const Text('Notes:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),

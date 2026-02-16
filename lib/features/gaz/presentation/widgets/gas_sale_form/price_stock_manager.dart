@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
+import '../../../domain/services/gas_calculation_service.dart';
 import '../../../domain/entities/cylinder.dart';
 
 /// Gestionnaire de prix et stock pour le formulaire de vente.
@@ -22,14 +23,16 @@ class PriceStockManager {
     // Pour les ventes en gros, utiliser le prix en gros des settings pour le tier choisi
     if (isWholesale) {
       try {
-        final settingsController = ref.read(gazSettingsControllerProvider);
-        final wholesalePrice = await settingsController.getWholesalePrice(
+        final settings = await ref.read(gazSettingsRepositoryProvider(enterpriseId)).getSettings(
           enterpriseId: enterpriseId,
           moduleId: 'gaz',
-          weight: cylinder.weight,
+        );
+        
+        return GasCalculationService.determineWholesalePrice(
+          cylinder: cylinder,
+          settings: settings,
           tier: tier,
         );
-        return wholesalePrice ?? cylinder.sellPrice;
       } catch (e) {
         return cylinder.sellPrice;
       }

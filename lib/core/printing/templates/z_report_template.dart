@@ -1,5 +1,6 @@
 import '../../../../features/boutique/domain/entities/closing.dart';
 import '../../../../shared.dart';
+import '../thermal_receipt_builder.dart';
 
 /// Template pour l'impression du rapport de clôture (Z-Report) sur imprimante thermique.
 class ZReportTemplate {
@@ -19,107 +20,66 @@ class ZReportTemplate {
 
   /// Génère le contenu formaté du Z-Report pour l'impression thermique.
   String generate() {
-    final buffer = StringBuffer();
+    final builder = ThermalReceiptBuilder(width: width);
 
-    // Logo
+    // Logo / Header
     if (showLogo) {
-      buffer.writeln(_centerText(' [ E L Y F ] '));
-      buffer.writeln();
+      builder.center('[ E L Y F ]');
+      builder.space();
     }
 
-    // En-tête
-    if (headerText != null && headerText!.isNotEmpty) {
-      buffer.writeln(_centerText(headerText!));
-    } else {
-      buffer.writeln(_centerText('BOUTIQUE ELYF'));
-    }
-    buffer.writeln(_centerText('RAPPORT DE CLOTURE (Z)'));
-    buffer.writeln(_centerText('=' * width));
-    buffer.writeln();
+    builder.header(headerText ?? 'BOUTIQUE ELYF', subtitle: 'RAPPORT DE CLOTURE (Z)');
 
     // Informations de la session
-    buffer.writeln(_centerText('Session N°: ${closing.number ?? closing.id.substring(0, 8)}'));
-    buffer.writeln(_centerText('Date: ${_formatDate(closing.date)}'));
-    buffer.writeln(_centerText('Heure: ${_formatTime(closing.date)}'));
-    buffer.writeln();
+    builder.row('Session N°', closing.number ?? closing.id.substring(0, 8));
+    builder.row('Date', _formatDate(closing.date));
+    builder.row('Heure', _formatTime(closing.date));
+    builder.space();
 
-    buffer.writeln(_centerText('-' * width));
-    buffer.writeln(_centerText('BILAN FINANCIER'));
-    buffer.writeln(_centerText('-' * width));
-    buffer.writeln();
-
+    builder.section('BILAN FINANCIER');
+    
     // Chiffres théoriques
-    buffer.writeln(_formatLine('Ventes Totales:', CurrencyFormatter.formatFCFA(closing.digitalRevenue)));
-    buffer.writeln(_formatLine('Dépenses Totales:', CurrencyFormatter.formatFCFA(-closing.digitalExpenses)));
-    buffer.writeln(_formatLine('Attendu Net:', CurrencyFormatter.formatFCFA(closing.digitalNet)));
-    buffer.writeln();
+    builder.row('Ventes Totales', CurrencyFormatter.formatFCFA(closing.digitalRevenue));
+    builder.row('Dépenses Totales', CurrencyFormatter.formatFCFA(-closing.digitalExpenses));
+    builder.row('Attendu Net', CurrencyFormatter.formatFCFA(closing.digitalNet));
+    builder.space();
 
-    buffer.writeln(_centerText('Détail Modes de Paiement'));
-    buffer.writeln(_formatLine('  Espèces (Ventes):', CurrencyFormatter.formatFCFA(closing.digitalCashRevenue)));
-    buffer.writeln(_formatLine('  Mobile Money:', CurrencyFormatter.formatFCFA(closing.digitalMobileMoneyRevenue)));
-    buffer.writeln();
+    builder.center('Détail Modes de Paiement');
+    builder.row('  Espèces (Ventes)', CurrencyFormatter.formatFCFA(closing.digitalCashRevenue));
+    builder.row('  Mobile Money', CurrencyFormatter.formatFCFA(closing.digitalMobileMoneyRevenue));
+    builder.space();
 
-    buffer.writeln(_centerText('-' * width));
-    buffer.writeln(_centerText('RECONCILIATION PHYSIQUE'));
-    buffer.writeln(_centerText('-' * width));
-    buffer.writeln();
+    builder.section('RECONCILIATION PHYSIQUE');
 
     // Espèces
-    buffer.writeln(_centerText('-- ESPECES (CASH) --'));
-    buffer.writeln(_formatLine('Attendu Cash:', CurrencyFormatter.formatFCFA(closing.expectedCash)));
-    buffer.writeln(_formatLine('Physique Cash:', CurrencyFormatter.formatFCFA(closing.physicalCashAmount)));
-    buffer.writeln(_formatLine('Ecart Cash:', CurrencyFormatter.formatFCFA(closing.cashDiscrepancy)));
-    buffer.writeln();
+    builder.center('-- ESPECES (CASH) --');
+    builder.row('Attendu Cash', CurrencyFormatter.formatFCFA(closing.expectedCash));
+    builder.row('Physique Cash', CurrencyFormatter.formatFCFA(closing.physicalCashAmount));
+    builder.row('Ecart Cash', CurrencyFormatter.formatFCFA(closing.cashDiscrepancy));
+    builder.space();
 
     // Mobile Money
-    buffer.writeln(_centerText('-- MOBILE MONEY --'));
-    buffer.writeln(_formatLine('Attendu MM:', CurrencyFormatter.formatFCFA(closing.expectedMobileMoney)));
-    buffer.writeln(_formatLine('Physique MM:', CurrencyFormatter.formatFCFA(closing.physicalMobileMoneyAmount)));
-    buffer.writeln(_formatLine('Ecart MM:', CurrencyFormatter.formatFCFA(closing.mobileMoneyDiscrepancy)));
-    buffer.writeln();
+    builder.center('-- MOBILE MONEY --');
+    builder.row('Attendu MM', CurrencyFormatter.formatFCFA(closing.expectedMobileMoney));
+    builder.row('Physique MM', CurrencyFormatter.formatFCFA(closing.physicalMobileMoneyAmount));
+    builder.row('Ecart MM', CurrencyFormatter.formatFCFA(closing.mobileMoneyDiscrepancy));
+    builder.space();
 
-    buffer.writeln(_centerText('-' * width));
-    buffer.writeln(_formatLine('ECART GLOBAL:', CurrencyFormatter.formatFCFA(closing.discrepancy)));
-    buffer.writeln(_centerText('-' * width));
-    buffer.writeln();
+    builder.separator();
+    builder.row('ECART GLOBAL', CurrencyFormatter.formatFCFA(closing.discrepancy));
+    builder.separator();
+    builder.space();
 
     if (closing.notes != null && closing.notes!.isNotEmpty) {
-      buffer.writeln('Notes:');
-      buffer.writeln(closing.notes);
-      buffer.writeln();
+      builder.writeLine('Notes:');
+      builder.writeLine(closing.notes);
+      builder.space();
     }
 
-    buffer.writeln();
-    buffer.writeln(_centerText('=' * width));
-    buffer.writeln();
-    
     // Pied de page
-    if (footerText != null && footerText!.isNotEmpty) {
-      buffer.writeln(_centerText(footerText!));
-    } else {
-      buffer.writeln(_centerText('RAPPORT GENERE AVEC SUCCES'));
-    }
-    buffer.writeln();
+    builder.footer(footerText ?? 'RAPPORT GENERE AVEC SUCCES');
 
-    // Espace en bas
-    buffer.writeln();
-    buffer.writeln();
-    buffer.writeln();
-    buffer.writeln();
-
-    return buffer.toString().trimRight();
-  }
-
-  String _centerText(String text) {
-    final truncatedText = text.length > width ? text.substring(0, width) : text;
-    final padding = (width - truncatedText.length) ~/ 2;
-    return ' ' * padding + truncatedText;
-  }
-
-  String _formatLine(String label, String value) {
-    final padding = width - label.length - value.length;
-    if (padding < 1) return '$label $value';
-    return label + ' ' * padding + value;
+    return builder.toString();
   }
 
   String _formatDate(DateTime date) {

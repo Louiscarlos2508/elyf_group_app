@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/tenant/tenant_provider.dart';
@@ -171,6 +172,7 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
     );
 
     if (sale != null && mounted) {
+      HapticFeedback.heavyImpact();
       setState(() => _completedSale = sale);
       
       // Auto-print logic (Story 2.4)
@@ -272,9 +274,13 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
                             if (wholesaler != null) {
                               _selectedWholesalerId = wholesaler.id;
                               _selectedWholesalerName = wholesaler.name;
+                              _selectedTier = wholesaler.tier;
+                              _updateUnitPrice(enterpriseId);
                             } else {
                               _selectedWholesalerId = null;
                               _selectedWholesalerName = null;
+                              _selectedTier = 'default';
+                              _updateUnitPrice(enterpriseId);
                             }
                           });
                         },
@@ -359,10 +365,20 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
                           children: [
                             Row(
                               children: [
-                                  const Icon(
-                                    Icons.check_circle_rounded,
-                                    color: Colors.green,
-                                    size: 24,
+                                  TweenAnimationBuilder<double>(
+                                    duration: const Duration(milliseconds: 600),
+                                    curve: Curves.elasticOut,
+                                    tween: Tween(begin: 0, end: 1),
+                                    builder: (context, value, child) {
+                                      return Transform.scale(
+                                        scale: value,
+                                        child: const Icon(
+                                          Icons.check_circle_rounded,
+                                          color: Colors.green,
+                                          size: 32,
+                                        ),
+                                      );
+                                    },
                                   ),
                                   const SizedBox(width: 12),
                                   Expanded(

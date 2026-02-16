@@ -104,4 +104,48 @@ class CylinderStockController {
   Future<void> updateStock(CylinderStock stock) async {
     await _repository.updateStock(stock);
   }
+
+  /// Réception de stock (Réapprovisionnement) avec enregistrement comptable.
+  Future<void> replenishStock({
+    required String enterpriseId,
+    required String cylinderId,
+    required int weight,
+    required int quantity,
+    required double unitCost,
+    required String userId,
+    int leakySwappedQuantity = 0, // Nombre de bouteilles de fuite échangées gratuitement
+    String? siteId,
+    String? supplierName,
+  }) async {
+    await _transactionService.executeReplenishmentTransaction(
+      enterpriseId: enterpriseId,
+      cylinderId: cylinderId,
+      weight: weight,
+      quantity: quantity,
+      unitCost: unitCost,
+      userId: userId,
+      leakySwappedQuantity: leakySwappedQuantity,
+      siteId: siteId,
+      supplierName: supplierName,
+    );
+  }
+
+  /// Remboursement de consigné (Retour bouteille vide).
+  Future<void> refundDeposit({
+    required String enterpriseId,
+    required String cylinderId,
+    required int weight,
+    required int quantity,
+    required String userId,
+    String? siteId,
+  }) async {
+    await _transactionService.executeDepositRefund(
+      enterpriseId: enterpriseId,
+      cylinderId: cylinderId,
+      weight: weight,
+      quantity: quantity,
+      userId: userId,
+      siteId: siteId,
+    );
+  }
 }

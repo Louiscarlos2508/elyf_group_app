@@ -12,4 +12,5 @@ abstract class PurchaseRepository {
   Future<List<Purchase>> getDeletedPurchases();
   Stream<List<Purchase>> watchPurchases({int limit = 50});
   Stream<List<Purchase>> watchDeletedPurchases();
+  Future<bool> verifyChain();
 }

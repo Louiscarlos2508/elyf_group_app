@@ -19,6 +19,7 @@ class DashboardMonthSectionV2 extends StatelessWidget {
     this.openTickets = 0,
     this.highPriorityTickets = 0,
     this.totalDepositsHeld = 0,
+    this.totalArrears = 0,
     this.onRevenueTap,
     this.onExpensesTap,
     this.onProfitTap,
@@ -36,6 +37,7 @@ class DashboardMonthSectionV2 extends StatelessWidget {
   final int openTickets;
   final int highPriorityTickets;
   final int totalDepositsHeld;
+  final int totalArrears;
   final VoidCallback? onRevenueTap;
   final VoidCallback? onExpensesTap;
   final VoidCallback? onProfitTap;
@@ -107,6 +109,14 @@ class DashboardMonthSectionV2 extends StatelessWidget {
             color: const Color(0xFF8B5CF6),
             onTap: null,
           ),
+          ImmobilierKpiCard(
+            label: 'Total Arriérés',
+            value: CurrencyFormatter.formatFCFA(totalArrears),
+            subtitle: 'Dettes cumulées',
+            icon: Icons.warning_amber_rounded,
+            color: totalArrears > 0 ? theme.colorScheme.error : const Color(0xFF10B981),
+            onTap: null,
+          ),
         ];
 
         // Layout logic
@@ -125,6 +135,10 @@ class DashboardMonthSectionV2 extends StatelessWidget {
                 if (cards.length > 4) ...[
                    const SizedBox(width: 16),
                    Expanded(child: cards[4]),
+                ],
+                if (cards.length > 5) ...[
+                   const SizedBox(width: 16),
+                   Expanded(child: cards[5]),
                 ]
               ],
             ),

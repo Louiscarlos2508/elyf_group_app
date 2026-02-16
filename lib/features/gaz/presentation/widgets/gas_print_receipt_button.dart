@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -48,8 +49,54 @@ class _GasPrintReceiptButtonState extends ConsumerState<GasPrintReceiptButton> {
 
   Future<void> _printReceipt() async {
     final printingService = ref.read(gazPrintingServiceProvider);
+    final theme = Theme.of(context);
     
     setState(() => _isPrinting = true);
+
+    // Show full-screen blurred overlay (Story 5.3)
+    final overlay = showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+        child: Dialog(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(32),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface.withValues(alpha: 0.8),
+                  shape: BoxShape.circle,
+                ),
+                child: CircularProgressIndicator(
+                  strokeWidth: 3,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'IMPRESSION DU REÇU EN COURS',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Merci de patienter...',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: Colors.white70,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
 
     try {
       final enterpriseName = ref.read(activeEnterpriseProvider).value?.name;
@@ -61,6 +108,7 @@ class _GasPrintReceiptButtonState extends ConsumerState<GasPrintReceiptButton> {
       );
 
       if (!mounted) return;
+      Navigator.of(context).pop(); // Close overlay
 
       if (success) {
         widget.onPrintSuccess?.call();
@@ -82,6 +130,9 @@ class _GasPrintReceiptButtonState extends ConsumerState<GasPrintReceiptButton> {
         );
       }
     } catch (e) {
+      if (mounted) {
+        Navigator.of(context).pop(); // Close overlay on error
+      }
       if (!mounted) return;
       widget.onPrintError?.call(e.toString());
       ScaffoldMessenger.of(context).showSnackBar(

@@ -39,6 +39,10 @@ class GazExpensesTable extends StatelessWidget {
         return Icons.local_shipping;
       case ExpenseCategory.other:
         return Icons.category;
+      case ExpenseCategory.stockReplenishment:
+        return Icons.inventory;
+      case ExpenseCategory.stockAdjustment:
+        return Icons.settings_backup_restore;
     }
   }
 
@@ -62,6 +66,10 @@ class GazExpensesTable extends StatelessWidget {
         return const Color(0xFF14B8A6); // Teal
       case ExpenseCategory.other:
         return const Color(0xFF64748B); // Slate
+      case ExpenseCategory.stockReplenishment:
+        return const Color(0xFF109B81); // Emerald-ish
+      case ExpenseCategory.stockAdjustment:
+        return const Color(0xFFEF4444); // Red
     }
   }
 

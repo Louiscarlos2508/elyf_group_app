@@ -10,6 +10,7 @@ import 'retail/retail_tab_bar.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/core/logging/app_logger.dart';
 import '../../widgets/gaz_header.dart';
+import '../../widgets/gaz_session_guard.dart';
 
 /// Écran de vente au détail - matches Figma design.
 class GazRetailScreen extends ConsumerStatefulWidget {
@@ -82,12 +83,14 @@ class _GazRetailScreenState extends ConsumerState<GazRetailScreen>
           ),
           // Content
           Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                RetailNewSaleTab(onCylinderTap: _showSaleDialog),
-                const RetailStatisticsTab(),
-              ],
+            child: GazSessionGuard(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  RetailNewSaleTab(onCylinderTap: _showSaleDialog),
+                  const RetailStatisticsTab(),
+                ],
+              ),
             ),
           ),
         ],

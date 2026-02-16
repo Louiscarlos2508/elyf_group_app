@@ -282,14 +282,26 @@ class GazCalculationService {
     return todayExpenses.fold<double>(0, (sum, e) => sum + e.amount);
   }
 
-  /// Calcule le profit du jour.
+  /// Calcule le profit du jour (Revenu - COGS - Dépenses).
   static double calculateTodayProfit(
     List<GasSale> sales,
     List<GazExpense> expenses,
+    List<Cylinder> cylinders,
   ) {
+    final todaySales = calculateTodaySales(sales);
     final todayRevenue = calculateTodayRevenue(sales);
     final todayExpenses = calculateTodayExpensesTotal(expenses);
-    return todayRevenue - todayExpenses;
+    
+    double todayCOGS = 0.0;
+    for (final sale in todaySales) {
+      final cylinder = cylinders.firstWhere(
+        (c) => c.id == sale.cylinderId,
+        orElse: () => cylinders.firstWhere((c) => c.weight == 0, orElse: () => cylinders.first),
+      );
+      todayCOGS += cylinder.buyPrice * sale.quantity;
+    }
+
+    return todayRevenue - todayCOGS - todayExpenses;
   }
 
   /// Calcule les données de performance pour les 7 derniers jours.
@@ -427,12 +439,14 @@ class GazCalculationService {
     return monthExpenses.fold<double>(0, (sum, e) => sum + e.amount);
   }
 
-  /// Calcule le profit du mois.
+  /// Calcule le profit du mois (Revenu - COGS - Dépenses).
   static double calculateMonthProfit(
     List<GasSale> sales,
-    List<GazExpense> expenses, {
+    List<GazExpense> expenses,
+    List<Cylinder> cylinders, {
     DateTime? referenceDate,
   }) {
+    final monthSales = calculateMonthSales(sales, referenceDate: referenceDate);
     final monthRevenue = calculateMonthRevenue(
       sales,
       referenceDate: referenceDate,
@@ -441,7 +455,18 @@ class GazCalculationService {
       expenses,
       referenceDate: referenceDate,
     );
-    return monthRevenue - monthExpenses;
+    
+    // Calculate COGS (Cost of Goods Sold)
+    double monthCOGS = 0.0;
+    for (final sale in monthSales) {
+      final cylinder = cylinders.firstWhere(
+        (c) => c.id == sale.cylinderId,
+        orElse: () => cylinders.firstWhere((c) => c.weight == 0, orElse: () => cylinders.first),
+      );
+      monthCOGS += cylinder.buyPrice * sale.quantity;
+    }
+
+    return monthRevenue - monthCOGS - monthExpenses;
   }
 
   // ============================================================
@@ -512,6 +537,7 @@ class GazCalculationService {
     required List<GasSale> allSales,
     required List<GazExpense> allExpenses,
     required List<Cylinder> cylinders,
+    List<CylinderStock> stocks = const [],
   }) {
     final dayStart = DateTime(date.year, date.month, date.day);
     final dayEnd = dayStart.add(const Duration(days: 1));
@@ -560,6 +586,16 @@ class GazCalculationService {
           (salesByCylinderWeight[weight] ?? 0) + count;
     }
 
+    // Stock théorique (Bouteilles pleines actuelles)
+    final theoreticalStock = <int, int>{};
+    for (final cylinder in cylinders) {
+      final weight = cylinder.weight;
+      final fullStock = stocks
+          .where((s) => s.cylinderId == cylinder.id && s.status == CylinderStatus.full)
+          .fold<int>(0, (sum, s) => sum + s.quantity);
+      theoreticalStock[weight] = (theoreticalStock[weight] ?? 0) + fullStock;
+    }
+
     return ReconciliationMetrics(
       date: dayStart,
       totalSales: totalSales,
@@ -567,6 +603,7 @@ class GazCalculationService {
       theoreticalCash: theoreticalCash,
       salesByPaymentMethod: salesByPaymentMethod,
       salesByCylinderWeight: salesByCylinderWeight,
+      theoreticalStock: theoreticalStock,
     );
   }
 
@@ -577,6 +614,7 @@ class GazCalculationService {
     required ReconciliationMetrics metrics,
     required double physicalCash,
     required String closedBy,
+    Map<int, int> physicalStock = const {},
     String? notes,
   }) {
     return GazSession.fromMetrics(
@@ -585,6 +623,7 @@ class GazCalculationService {
       metrics: metrics,
       physicalCash: physicalCash,
       closedBy: closedBy,
+      physicalStock: physicalStock,
       notes: notes,
     );
   }
@@ -679,6 +718,7 @@ class ReconciliationMetrics {
     required this.theoreticalCash,
     required this.salesByPaymentMethod,
     required this.salesByCylinderWeight,
+    this.theoreticalStock = const {},
   });
 
   final DateTime date;
@@ -687,4 +727,5 @@ class ReconciliationMetrics {
   final double theoreticalCash; // Uniquement le cash (espèces)
   final Map<PaymentMethod, double> salesByPaymentMethod;
   final Map<int, int> salesByCylinderWeight;
+  final Map<int, int> theoreticalStock;
 }

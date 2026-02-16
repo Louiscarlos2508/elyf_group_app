@@ -1,4 +1,3 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../shared/domain/entities/payment_method.dart';
 import '../../domain/entities/treasury_operation.dart';
 import '../../domain/repositories/treasury_repository.dart';
@@ -83,6 +82,48 @@ class ImmobilierTreasuryController {
       notes: notes,
       referenceEntityId: referenceEntityId,
       referenceEntityType: 'expense',
+    ));
+  }
+  
+  /// Helper: Record a transfer between accounts.
+  Future<String> recordTransfer({
+    required int amount,
+    required PaymentMethod fromChannel,
+    required PaymentMethod toChannel, // Corrected from method to channel
+    String? reason,
+    String? notes,
+  }) async {
+    return recordOperation(TreasuryOperation(
+      id: '',
+      enterpriseId: _enterpriseId,
+      userId: _userId,
+      amount: amount,
+      type: TreasuryOperationType.transfer,
+      fromAccount: fromChannel,
+      toAccount: toChannel,
+      date: DateTime.now(),
+      reason: reason ?? 'Transfert Inter-Comptes',
+      notes: notes,
+    ));
+  }
+
+  /// Helper: Record an adjustment.
+  Future<String> recordAdjustment({
+    required int amount, // Can be negative or positive depending on implementation, but repository expects positive and uses it as delta
+    required PaymentMethod channel,
+    required String reason,
+    String? notes,
+  }) async {
+    return recordOperation(TreasuryOperation(
+      id: '',
+      enterpriseId: _enterpriseId,
+      userId: _userId,
+      amount: amount,
+      type: TreasuryOperationType.adjustment,
+      toAccount: channel,
+      date: DateTime.now(),
+      reason: reason,
+      notes: notes,
     ));
   }
 }

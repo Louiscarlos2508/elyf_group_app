@@ -8,4 +8,5 @@ abstract class GazSessionRepository {
   Future<void> saveSession(GazSession session);
   Future<void> deleteSession(String id);
   Future<GazSession?> getSessionByDate(DateTime date);
+  Future<GazSession?> getActiveSession(String enterpriseId);
 }

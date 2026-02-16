@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import '../../../../core/domain/entities/attached_file.dart';
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/offline_repository.dart';
@@ -8,6 +7,7 @@ import '../../../audit_trail/domain/entities/audit_record.dart';
 import '../../../audit_trail/domain/repositories/audit_trail_repository.dart';
 import '../../domain/entities/purchase.dart';
 import '../../domain/repositories/purchase_repository.dart';
+import '../../domain/services/security/ledger_hash_service.dart';
 
 /// Offline-first repository for Purchase entities.
 class PurchaseOfflineRepository extends OfflineRepository<Purchase>
@@ -16,16 +16,18 @@ class PurchaseOfflineRepository extends OfflineRepository<Purchase>
     required super.driftService,
     required super.syncManager,
     required super.connectivityService,
+    required this.auditTrailRepository,
     required this.enterpriseId,
     required this.moduleType,
-    required this.auditTrailRepository,
     this.userId = 'system',
+    this.shopSecret = 'DEFAULT_SECRET',
   });
 
   final String enterpriseId;
   final String moduleType;
   final AuditTrailRepository auditTrailRepository;
   final String userId;
+  final String shopSecret;
 
   @override
   String get collectionName => 'purchases';
@@ -57,9 +59,21 @@ class PurchaseOfflineRepository extends OfflineRepository<Purchase>
 
   @override
   Future<void> saveToLocal(Purchase entity) async {
-    final localId = getLocalId(entity);
-    final remoteId = getRemoteId(entity);
-    final map = toMap(entity)..['localId'] = localId;
+    // 1. Chain hash if not already hashed
+    Purchase toSave = entity;
+    if (toSave.hash == null) {
+      final lastPurchase = await _getLastPurchase();
+      final hash = LedgerHashService.generateHash(
+        previousHash: lastPurchase?.hash,
+        entity: toSave,
+        shopSecret: shopSecret,
+      );
+      toSave = toSave.copyWith(hash: hash, previousHash: lastPurchase?.hash);
+    }
+
+    final localId = getLocalId(toSave);
+    final remoteId = getRemoteId(toSave);
+    final map = toMap(toSave)..['localId'] = localId;
     await driftService.records.upsert(
       collectionName: collectionName,
       localId: localId,
@@ -69,6 +83,13 @@ class PurchaseOfflineRepository extends OfflineRepository<Purchase>
       dataJson: jsonEncode(map),
       localUpdatedAt: DateTime.now(),
     );
+  }
+
+  Future<Purchase?> _getLastPurchase() async {
+    final all = await getAllForEnterprise(enterpriseId);
+    if (all.isEmpty) return null;
+    all.sort((a, b) => b.date.compareTo(a.date));
+    return all.first;
   }
 
   @override
@@ -227,10 +248,21 @@ class PurchaseOfflineRepository extends OfflineRepository<Purchase>
   Future<String> createPurchase(Purchase purchase) async {
     try {
       final localId = getLocalId(purchase);
+      
+      // Generate Hash
+      final lastPurchase = await _getLastPurchase();
+      final hash = LedgerHashService.generateHash(
+        previousHash: lastPurchase?.hash,
+        entity: purchase,
+        shopSecret: shopSecret,
+      );
+
       final purchaseWithLocalId = purchase.copyWith(
         id: localId,
         enterpriseId: enterpriseId,
         updatedAt: DateTime.now(),
+        hash: hash,
+        previousHash: lastPurchase?.hash,
       );
       await save(purchaseWithLocalId);
       
@@ -238,7 +270,11 @@ class PurchaseOfflineRepository extends OfflineRepository<Purchase>
       await _logAudit(
         action: 'create_purchase',
         entityId: localId,
-        metadata: {'supplierId': purchase.supplierId, 'totalAmount': purchase.totalAmount},
+        metadata: {
+          'supplierId': purchase.supplierId, 
+          'totalAmount': purchase.totalAmount,
+          'hash': hash,
+        },
       );
 
       return localId;
@@ -441,6 +477,39 @@ class PurchaseOfflineRepository extends OfflineRepository<Purchase>
       );
     } catch (e) {
       AppLogger.error('Failed to log purchase audit: $action', error: e);
+    }
+  }
+
+  @override
+  Future<bool> verifyChain() async {
+    try {
+      final purchases = await getAllForEnterprise(enterpriseId);
+      if (purchases.isEmpty) return true;
+
+      purchases.sort((a, b) => b.date.compareTo(a.date));
+
+      for (int i = 0; i < purchases.length; i++) {
+        final current = purchases[i];
+        final previous = i + 1 < purchases.length ? purchases[i + 1] : null;
+
+        final isValid = LedgerHashService.verify(
+          current,
+          previous?.hash,
+          shopSecret,
+        );
+
+        if (!isValid) {
+          AppLogger.error(
+            'Chain integrity violation at purchase ${current.id}.',
+            name: 'PurchaseOfflineRepository',
+          );
+          return false;
+        }
+      }
+      return true;
+    } catch (e) {
+      AppLogger.error('Purchase chain verification failed', error: e);
+      return false;
     }
   }
 }

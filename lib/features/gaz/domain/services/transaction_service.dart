@@ -18,6 +18,11 @@ import '../entities/exchange_record.dart';
 import '../repositories/cylinder_leak_repository.dart';
 import '../repositories/exchange_repository.dart';
 import '../repositories/gaz_settings_repository.dart';
+import '../repositories/inventory_audit_repository.dart';
+import '../entities/expense.dart';
+import '../entities/gaz_session.dart';
+import '../repositories/expense_repository.dart';
+import '../repositories/session_repository.dart';
 
 import '../../../audit_trail/domain/repositories/audit_trail_repository.dart';
 import '../../../audit_trail/domain/entities/audit_record.dart';
@@ -39,6 +44,9 @@ class TransactionService {
     required this.leakRepository,
     required this.exchangeRepository,
     required this.settingsRepository,
+    required this.inventoryAuditRepository,
+    required this.expenseRepository,
+    required this.sessionRepository,
   });
 
   final CylinderStockRepository stockRepository;
@@ -50,6 +58,122 @@ class TransactionService {
   final CylinderLeakRepository leakRepository;
   final ExchangeRepository exchangeRepository;
   final GazSettingsRepository settingsRepository;
+  final GazInventoryAuditRepository inventoryAuditRepository;
+  final GazExpenseRepository expenseRepository;
+  final GazSessionRepository sessionRepository;
+
+  /// Exécute un approvisionnement (Réception Plein) de manière atomique.
+  /// 
+  /// Étapes :
+  /// 1. Incrémente le stock PLEIN
+  /// 2. Décrémente le stock VIDE (Échange standard)
+  /// 3. Enregistre une dépense (Coût d'achat)
+  /// 4. Log l'audit
+  Future<({GazExpense expense, List<StockAlert> alerts})> executeReplenishmentTransaction({
+    required String enterpriseId,
+    required String cylinderId,
+    required int weight,
+    required int quantity,
+    required double unitCost,
+    required String userId,
+    int leakySwappedQuantity = 0,
+    String? siteId,
+    String? supplierName,
+  }) async {
+    final totalAmount = unitCost * quantity;
+    final totalFullToAdd = quantity + leakySwappedQuantity;
+    
+    // 1. Mise à jour des stocks
+    final existingStocks = await stockRepository.getStocksByWeight(enterpriseId, weight, siteId: siteId);
+    
+    // Ajouter au stock FULL (Achat + Échange fuite)
+    final fullStock = existingStocks.where((s) => s.status == CylinderStatus.full && s.cylinderId == cylinderId).firstOrNull;
+    if (fullStock != null) {
+      await stockRepository.updateStockQuantity(fullStock.id, fullStock.quantity + totalFullToAdd);
+    } else {
+      await stockRepository.addStock(CylinderStock(
+        id: LocalIdGenerator.generate(),
+        cylinderId: cylinderId,
+        weight: weight,
+        status: CylinderStatus.full,
+        quantity: totalFullToAdd,
+        enterpriseId: enterpriseId,
+        siteId: siteId,
+        updatedAt: DateTime.now(),
+      ));
+    }
+
+    // Déduire du stock VIDE (Échange standard chez le fournisseur pour la quantité ACHETÉE)
+    final emptyStock = existingStocks.where((s) => s.status == CylinderStatus.emptyAtStore && s.cylinderId == cylinderId).firstOrNull;
+    if (emptyStock != null) {
+      final newEmptyQty = (emptyStock.quantity - quantity).clamp(0, 1000000).toInt();
+      await stockRepository.updateStockQuantity(emptyStock.id, newEmptyQty);
+    }
+
+    // Déduire du stock FUITE (Échange gratuit chez le fournisseur pour la quantité LEAK)
+    if (leakySwappedQuantity > 0) {
+      final leakStock = existingStocks.where((s) => s.status == CylinderStatus.leak && s.cylinderId == cylinderId).firstOrNull;
+      if (leakStock != null) {
+        final newLeakQty = (leakStock.quantity - leakySwappedQuantity).clamp(0, 1000000).toInt();
+        await stockRepository.updateStockQuantity(leakStock.id, newLeakQty);
+      }
+    }
+
+    // 2. Créer la dépense (Basée uniquement sur quantity, pas leakySwappedQuantity)
+    final expense = GazExpense(
+      id: LocalIdGenerator.generate(),
+      enterpriseId: enterpriseId,
+      category: ExpenseCategory.stockReplenishment,
+      amount: totalAmount,
+      description: 'Réapprovisionnement Gaz ${weight}kg x $quantity${leakySwappedQuantity > 0 ? " (+ $leakySwappedQuantity fuites)" : ""} (${supplierName ?? "Fournisseur"})',
+      date: DateTime.now(),
+      isFixed: false,
+      notes: 'Coût unitaire: $unitCost',
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+    await expenseRepository.addExpense(expense);
+
+    // 3. Audit Trail
+    await auditTrailRepository.log(AuditRecord(
+      id: '',
+      enterpriseId: enterpriseId,
+      userId: userId,
+      module: 'gaz',
+      action: 'STOCK_REPLENISHMENT',
+      entityId: expense.id,
+      entityType: 'expense',
+      timestamp: DateTime.now(),
+      metadata: {
+        'operation': 'replenishment',
+        'cylinderId': cylinderId,
+        'weight': weight,
+        'quantity': quantity,
+        'leakySwappedQuantity': leakySwappedQuantity,
+        'unitCost': unitCost,
+        'totalAmount': totalAmount,
+        'supplierName': supplierName,
+        'movements': [
+          {'cylinderId': cylinderId, 'weight': weight, 'status': 'full', 'delta': totalFullToAdd},
+          {'cylinderId': cylinderId, 'weight': weight, 'status': 'emptyAtStore', 'delta': -quantity},
+          if (leakySwappedQuantity > 0)
+            {'cylinderId': cylinderId, 'weight': weight, 'status': 'leak', 'delta': -leakySwappedQuantity},
+        ],
+      },
+    ));
+
+    // 4. Vérifier les alertes
+    final alerts = <StockAlert>[];
+    final alert = await alertService.checkStockLevel(
+      enterpriseId: enterpriseId,
+      cylinderId: cylinderId,
+      weight: weight,
+      status: CylinderStatus.full,
+    );
+    if (alert != null) alerts.add(alert);
+
+    return (expense: expense, alerts: alerts);
+  }
 
   /// Exécute une vente de manière atomique.
   ///
@@ -65,9 +189,21 @@ class TransactionService {
     required String enterpriseId,
     String? siteId,
   }) async {
+    // 0. Vérifier si une session est ouverte (Obligatoire pour vendre)
+    final activeSession = await sessionRepository.getActiveSession(enterpriseId);
+    if (activeSession == null) {
+      throw ValidationException(
+        'Aucune session active. Veuillez ouvrir une session avant de vendre.',
+        'NO_ACTIVE_SESSION',
+      );
+    }
+
+    // Lier la vente à la session active
+    final saleWithSession = sale.copyWith(sessionId: activeSession.id);
+
     // 1. Validation de cohérence
     final consistencyError = await consistencyService.validateSaleConsistency(
-      sale: sale,
+      sale: saleWithSession,
       enterpriseId: enterpriseId,
       siteId: siteId,
       weight: weight,
@@ -99,7 +235,7 @@ class TransactionService {
           stocks.where((s) => s.status == CylinderStatus.full).toList()
             ..sort((a, b) => a.updatedAt.compareTo(b.updatedAt)); // FIFO
 
-      int remainingToDebit = sale.quantity;
+      int remainingToDebit = saleWithSession.quantity;
 
       for (final stock in fullStocks) {
         if (remainingToDebit <= 0) break;
@@ -126,7 +262,7 @@ class TransactionService {
       }
 
         // 3. Créditer le stock de bouteilles vides si c'est un échange
-      if (sale.isExchange && sale.emptyReturnedQuantity > 0) {
+      if (saleWithSession.isExchange && saleWithSession.emptyReturnedQuantity > 0) {
         final emptyStock = stocks
             .where((s) => s.status == CylinderStatus.emptyAtStore)
             .firstOrNull;
@@ -134,16 +270,16 @@ class TransactionService {
         if (emptyStock != null) {
           await stockRepository.updateStockQuantity(
             emptyStock.id,
-            emptyStock.quantity + sale.emptyReturnedQuantity,
+            emptyStock.quantity + saleWithSession.emptyReturnedQuantity,
           );
         } else {
           // Créer un enregistrement de stock vide si inexistant
           await stockRepository.addStock(CylinderStock(
             id: 'stock_empty_${DateTime.now().millisecondsSinceEpoch}_$weight',
-            cylinderId: sale.cylinderId,
+            cylinderId: saleWithSession.cylinderId,
             weight: weight,
             status: CylinderStatus.emptyAtStore,
-            quantity: sale.emptyReturnedQuantity,
+            quantity: saleWithSession.emptyReturnedQuantity,
             enterpriseId: enterpriseId,
             updatedAt: DateTime.now(),
             createdAt: DateTime.now(),
@@ -153,13 +289,13 @@ class TransactionService {
   
       // 3.5. Calculer la consigne si c'est un nouveau cylindre
       double depositAmount = 0;
-      if (sale.dealType == GasSaleDealType.newCylinder) {
+      if (saleWithSession.dealType == GasSaleDealType.newCylinder) {
         final settings = await settingsRepository.getSettings(
           enterpriseId: enterpriseId,
           moduleId: 'gaz',
         );
         if (settings != null) {
-          depositAmount = settings.getDepositRate(weight) * sale.quantity;
+          depositAmount = settings.getDepositRate(weight) * saleWithSession.quantity;
           AppLogger.info('Applying deposit: $depositAmount for new cylinders', name: 'TransactionService');
         }
       }
@@ -169,40 +305,41 @@ class TransactionService {
       // Pour ELYF, le totalAmount passé au service est le montant final payé par le client.)
       // Nous l'enregistrons tel quel, mais nous logguons la part de consigne dans l'audit.
       
-      await gasRepository.addSale(sale);
+      await gasRepository.addSale(saleWithSession);
   
       // 5. Audit Log
       await auditTrailRepository.log(AuditRecord(
         id: '',
         enterpriseId: enterpriseId,
-        userId: sale.sellerId ?? '',
+        userId: saleWithSession.sellerId ?? '',
         module: 'gaz',
         action: 'SALE_TRANSACTION',
-        entityId: sale.id ?? '',
+        entityId: saleWithSession.id,
         entityType: 'sale',
         timestamp: DateTime.now(),
         metadata: {
           'operation': 'sale',
-          'cylinderId': sale.cylinderId,
+          'cylinderId': saleWithSession.cylinderId,
           'weight': weight,
-          'quantity': sale.quantity,
-          'dealType': sale.dealType.name,
-          'isExchange': sale.isExchange,
-          'emptyReturnedQuantity': sale.emptyReturnedQuantity,
+          'quantity': saleWithSession.quantity,
+          'dealType': saleWithSession.dealType.name,
+          'isExchange': saleWithSession.isExchange,
+          'emptyReturnedQuantity': saleWithSession.emptyReturnedQuantity,
           'depositAmount': depositAmount,
+          'sessionId': activeSession.id,
           'movements': [
             {
-              'cylinderId': sale.cylinderId,
+              'cylinderId': saleWithSession.cylinderId,
               'weight': weight,
               'status': 'full',
-              'delta': -sale.quantity,
+              'delta': -saleWithSession.quantity,
             },
-            if (sale.isExchange && sale.emptyReturnedQuantity > 0)
+            if (saleWithSession.isExchange && saleWithSession.emptyReturnedQuantity > 0)
               {
-                'cylinderId': sale.cylinderId,
+                'cylinderId': saleWithSession.cylinderId,
                 'weight': weight,
                 'status': 'emptyAtStore',
-                'delta': sale.emptyReturnedQuantity,
+                'delta': saleWithSession.emptyReturnedQuantity,
               },
           ],
         },
@@ -212,7 +349,7 @@ class TransactionService {
     try {
       alert = await alertService.checkStockAlerts(
         enterpriseId: enterpriseId,
-        cylinderId: sale.cylinderId,
+        cylinderId: saleWithSession.cylinderId,
         weight: weight,
         status: CylinderStatus.full,
       );
@@ -220,7 +357,7 @@ class TransactionService {
       // Ignorer les erreurs d'alerte pour ne pas bloquer la vente
     }
 
-    return (sale: sale, alert: alert);
+    return (sale: saleWithSession, alert: alert);
   } catch (e) {
     // Rollback : restaurer les stocks
     for (final entry in stockUpdates.entries) {
@@ -726,6 +863,7 @@ class TransactionService {
     String? reason,
   }) async {
     final oldQuantity = stock.quantity;
+    final diff = newQuantity - oldQuantity;
     
     // 1. Mettre à jour le stock
     await stockRepository.updateStock(stock.copyWith(
@@ -733,7 +871,28 @@ class TransactionService {
       updatedAt: DateTime.now(),
     ));
 
-    // 2. Log l'audit
+    // 2. Calculer l'impact financier si c'est une perte (bouteilles pleines manquantes)
+    if (diff != 0 && stock.status == CylinderStatus.full) {
+      final cylinder = await gasRepository.getCylinderById(stock.cylinderId);
+      if (cylinder != null) {
+        final financialImpact = diff.abs() * cylinder.buyPrice;
+        
+        await expenseRepository.addExpense(GazExpense(
+          id: LocalIdGenerator.generate(),
+          enterpriseId: stock.enterpriseId,
+          category: ExpenseCategory.stockAdjustment,
+          amount: diff < 0 ? financialImpact.toDouble() : -financialImpact.toDouble(), // Perte = Montant positif (dépense), Gain = Montant négatif
+          description: 'Ajustement de stock ${cylinder.weight}kg: ${diff > 0 ? "+" : ""}$diff unités (${reason ?? "Inventaire"})',
+          date: DateTime.now(),
+          isFixed: false,
+          notes: 'Quantité ajustée de $oldQuantity à $newQuantity. Impact financier: $financialImpact',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ));
+      }
+    }
+
+    // 3. Log l'audit
     await auditTrailRepository.log(AuditRecord(
       id: '',
       enterpriseId: stock.enterpriseId,
@@ -750,7 +909,7 @@ class TransactionService {
         'status': stock.status.name,
         'oldQuantity': oldQuantity,
         'newQuantity': newQuantity,
-        'diff': newQuantity - oldQuantity,
+        'diff': diff,
         'reason': reason,
         'siteId': stock.siteId,
         'movements': [
@@ -758,7 +917,7 @@ class TransactionService {
             'cylinderId': stock.cylinderId,
             'weight': stock.weight,
             'status': stock.status.name,
-            'delta': newQuantity - oldQuantity
+            'delta': diff
           },
         ],
       },
@@ -854,7 +1013,10 @@ class TransactionService {
       await stockRepository.updateStockQuantity(item.stockId, item.physicalQuantity);
     }
 
-    // 2. Log l'audit global
+    // 2. Enregistrer l'audit dans l'historique
+    await inventoryAuditRepository.saveAudit(audit);
+
+    // 3. Log l'audit global
     await auditTrailRepository.log(AuditRecord(
       id: '',
       enterpriseId: audit.enterpriseId,

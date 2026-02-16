@@ -11,7 +11,6 @@ import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 export 'controllers/cylinder_controller.dart';
 export 'controllers/cylinder_leak_controller.dart';
 export 'controllers/cylinder_stock_controller.dart';
-export 'controllers/dispatch_controller.dart';
 export 'controllers/expense_controller.dart';
 export 'controllers/financial_report_controller.dart';
 export 'controllers/gas_controller.dart';
@@ -20,11 +19,12 @@ export 'controllers/gaz_session_controller.dart';
 export 'controllers/point_of_sale_controller.dart';
 export 'controllers/stock_transfer_controller.dart';
 export 'controllers/tour_controller.dart';
+export 'controllers/wholesaler_controller.dart';
+export 'controllers/leak_report_controller.dart';
 
 import 'controllers/cylinder_controller.dart';
 import 'controllers/cylinder_leak_controller.dart';
 import 'controllers/cylinder_stock_controller.dart';
-import 'controllers/dispatch_controller.dart';
 import 'controllers/expense_controller.dart';
 import 'controllers/financial_report_controller.dart';
 import 'controllers/gas_controller.dart';
@@ -33,6 +33,8 @@ import 'controllers/gaz_session_controller.dart';
 import 'controllers/point_of_sale_controller.dart';
 import 'controllers/stock_transfer_controller.dart';
 import 'controllers/tour_controller.dart';
+import 'controllers/wholesaler_controller.dart';
+import 'controllers/leak_report_controller.dart';
 import '../data/repositories/cylinder_leak_offline_repository.dart';
 import '../data/repositories/cylinder_stock_offline_repository.dart';
 import '../data/repositories/expense_offline_repository.dart';
@@ -44,6 +46,10 @@ import '../data/repositories/point_of_sale_offline_repository.dart';
 import '../data/repositories/session_offline_repository.dart';
 import '../data/repositories/stock_transfer_offline_repository.dart';
 import '../data/repositories/tour_offline_repository.dart';
+import '../data/repositories/wholesaler_offline_repository.dart';
+import '../domain/repositories/inventory_audit_repository.dart';
+import '../data/repositories/inventory_audit_offline_repository.dart';
+import '../domain/entities/gaz_inventory_audit.dart';
 import '../domain/entities/cylinder.dart';
 import '../domain/entities/cylinder_leak.dart';
 import '../domain/entities/stock_movement.dart';
@@ -51,12 +57,16 @@ import '../domain/entities/cylinder_stock.dart';
 import '../domain/entities/expense.dart';
 import '../domain/entities/financial_report.dart';
 import '../domain/entities/gas_sale.dart';
+import '../domain/entities/stock_alert.dart';
+import '../domain/entities/cylinder.dart';
 import '../domain/entities/gaz_settings.dart';
 import '../domain/entities/point_of_sale.dart';
 import '../domain/entities/report_data.dart';
 import '../domain/entities/stock_transfer.dart';
 import '../domain/entities/tour.dart';
+import '../domain/entities/wholesaler.dart';
 import '../domain/entities/gaz_session.dart';
+import '../domain/services/leak_report_service.dart';
 import '../domain/services/wholesaler_service.dart';
 import '../domain/repositories/cylinder_leak_repository.dart';
 import '../domain/repositories/cylinder_stock_repository.dart';
@@ -69,6 +79,7 @@ import '../domain/repositories/point_of_sale_repository.dart';
 import '../domain/repositories/session_repository.dart';
 import '../domain/repositories/stock_transfer_repository.dart';
 import '../domain/repositories/tour_repository.dart';
+import '../domain/repositories/wholesaler_repository.dart';
 import '../domain/services/data_consistency_service.dart';
 import '../domain/services/financial_calculation_service.dart';
 import '../domain/services/gas_calculation_service.dart';
@@ -83,7 +94,6 @@ import '../domain/services/realtime_sync_service.dart';
 import '../domain/services/stock_service.dart';
 import '../domain/services/stock_transfer_service.dart';
 import '../domain/services/tour_service.dart';
-import '../domain/services/gaz_dispatch_service.dart';
 import '../domain/services/transaction_service.dart';
 import '../domain/services/gaz_printing_service.dart';
 import 'package:elyf_groupe_app/core/printing/printer_provider.dart';
@@ -112,7 +122,8 @@ final gasCalculationServiceProvider = Provider<GasCalculationService>(
 
 /// Provider for GasAlertService.
 final gasAlertServiceProvider = Provider<GasAlertService>((ref) {
-  final settingsRepo = ref.watch(gazSettingsRepositoryProvider);
+  final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+  final settingsRepo = ref.watch(gazSettingsRepositoryProvider(enterpriseId));
   final stockRepo = ref.watch(cylinderStockRepositoryProvider);
   return GasAlertService(
     settingsRepository: settingsRepo,
@@ -130,12 +141,20 @@ final wholesalerServiceProvider = Provider<WholesalerService>(
   (ref) {
     final tourRepository = ref.watch(tourRepositoryProvider);
     final gasRepository = ref.watch(gasRepositoryProvider);
+    final wholesalerRepository = ref.watch(wholesalerRepositoryProvider);
     return WholesalerService(
       tourRepository: tourRepository,
       gasRepository: gasRepository,
+      wholesalerRepository: wholesalerRepository,
     );
   },
 );
+
+final leakReportServiceProvider = Provider<LeakReportService>((ref) {
+  final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+  final leakRepository = ref.watch(cylinderLeakRepositoryProvider(enterpriseId));
+  return LeakReportService(leakRepository: leakRepository);
+});
 
 /// Provider for GazPrintingService.
 final gazPrintingServiceProvider = Provider<GazPrintingService>((ref) {
@@ -198,9 +217,7 @@ final cylinderStockRepositoryProvider = Provider<CylinderStockRepository>((
   );
 });
 
-final cylinderLeakRepositoryProvider = Provider<CylinderLeakRepository>((ref) {
-  final enterpriseId =
-      ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+final cylinderLeakRepositoryProvider = Provider.family<CylinderLeakRepository, String>((ref, enterpriseId) {
   final driftService = DriftService.instance;
   final syncManager = ref.watch(syncManagerProvider);
   final connectivityService = ref.watch(connectivityServiceProvider);
@@ -213,23 +230,22 @@ final cylinderLeakRepositoryProvider = Provider<CylinderLeakRepository>((ref) {
     moduleType: 'gaz',
   );
 });
-/// Provider for GazDispatchService.
-final gazDispatchServiceProvider = Provider<GazDispatchService>((ref) {
-  final gasRepo = ref.watch(gasRepositoryProvider);
-  final auditRepo = ref.watch(auditTrailRepositoryProvider);
-  return GazDispatchService(
-    gasRepository: gasRepo,
-    auditTrailRepository: auditRepo,
-  );
-});
+// final gazDispatchServiceProvider = Provider<GazDispatchService>((ref) {
+//   final gasRepo = ref.watch(gasRepositoryProvider);
+//   final auditRepo = ref.watch(auditTrailRepositoryProvider);
+//   return GazDispatchService(
+//     gasRepository: gasRepo,
+//     auditTrailRepository: auditRepo,
+//   );
+// });
 
 /// Provider for ExchangeRepository.
-final exchangeRepositoryProvider = Provider<ExchangeRepository>((ref) {
+final exchangeRepositoryProvider = Provider.family<ExchangeRepository, String>((ref, enterpriseId) {
   final drift = ref.watch(driftServiceProvider);
   final sync = ref.watch(syncManagerProvider);
   final connectivity = ref.watch(connectivityServiceProvider);
-  final auth = ref.watch(activeEnterpriseProvider).value;
-  final enterpriseId = auth?.id ?? '';
+  // final auth = ref.watch(activeEnterpriseProvider).value;
+  // final enterpriseId = auth?.id ?? ''; // This is now passed as a family parameter
 
   return ExchangeOfflineRepository(
     driftService: drift,
@@ -255,9 +271,22 @@ final tourRepositoryProvider = Provider<TourRepository>((ref) {
   );
 });
 
-final gazSettingsRepositoryProvider = Provider<GazSettingsRepository>((ref) {
+final wholesalerRepositoryProvider = Provider<WholesalerRepository>((ref) {
   final enterpriseId =
       ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+  final driftService = DriftService.instance;
+  final syncManager = ref.watch(syncManagerProvider);
+  final connectivityService = ref.watch(connectivityServiceProvider);
+
+  return WholesalerOfflineRepository(
+    driftService: driftService,
+    syncManager: syncManager,
+    connectivityService: connectivityService,
+    enterpriseId: enterpriseId,
+  );
+});
+
+final gazSettingsRepositoryProvider = Provider.family<GazSettingsRepository, String>((ref, enterpriseId) {
   final driftService = DriftService.instance;
   final syncManager = ref.watch(syncManagerProvider);
   final connectivityService = ref.watch(connectivityServiceProvider);
@@ -368,6 +397,21 @@ final dataConsistencyServiceProvider = Provider<DataConsistencyService>((ref) {
   );
 });
 
+final inventoryAuditRepositoryProvider =
+    Provider.family<GazInventoryAuditRepository, String>((ref, enterpriseId) {
+  return GazInventoryAuditOfflineRepository(
+    driftService: ref.watch(driftServiceProvider),
+    syncManager: ref.watch(syncManagerProvider),
+    connectivityService: ref.watch(connectivityServiceProvider),
+    enterpriseId: enterpriseId,
+  );
+});
+
+final auditHistoryProvider = StreamProvider.family<List<GazInventoryAudit>, String>((ref, enterpriseId) {
+  final repo = ref.watch(inventoryAuditRepositoryProvider(enterpriseId));
+  return repo.watchAudits(enterpriseId);
+});
+
 final transactionServiceProvider = Provider<TransactionService>((ref) {
   final stockRepo = ref.watch(cylinderStockRepositoryProvider);
   final gasRepo = ref.watch(gasRepositoryProvider);
@@ -375,9 +419,13 @@ final transactionServiceProvider = Provider<TransactionService>((ref) {
   final consistencyService = ref.watch(dataConsistencyServiceProvider);
   final auditRepo = ref.watch(auditTrailRepositoryProvider);
   final alertService = ref.watch(gasAlertServiceProvider);
-  final leakRepo = ref.watch(cylinderLeakRepositoryProvider);
-  final exchangeRepo = ref.watch(exchangeRepositoryProvider);
-  final settingsRepo = ref.watch(gazSettingsRepositoryProvider);
+  final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+  final leakRepo = ref.watch(cylinderLeakRepositoryProvider(enterpriseId));
+  final exchangeRepo = ref.watch(exchangeRepositoryProvider(enterpriseId));
+  final settingsRepo = ref.watch(gazSettingsRepositoryProvider(enterpriseId));
+  final inventoryAuditRepo = ref.watch(inventoryAuditRepositoryProvider(enterpriseId));
+  final expenseRepo = ref.watch(gazExpenseRepositoryProvider);
+  final sessionRepo = ref.watch(gazSessionRepositoryProvider);
 
   return TransactionService(
     stockRepository: stockRepo,
@@ -389,6 +437,9 @@ final transactionServiceProvider = Provider<TransactionService>((ref) {
     leakRepository: leakRepo,
     exchangeRepository: exchangeRepo,
     settingsRepository: settingsRepo,
+    inventoryAuditRepository: inventoryAuditRepo,
+    expenseRepository: expenseRepo,
+    sessionRepository: sessionRepo,
   );
 });
 
@@ -440,7 +491,8 @@ final cylinderStockControllerProvider = Provider<CylinderStockController>((
 });
 
 final cylinderLeakControllerProvider = Provider<CylinderLeakController>((ref) {
-  final leakRepo = ref.watch(cylinderLeakRepositoryProvider);
+  final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+  final leakRepo = ref.watch(cylinderLeakRepositoryProvider(enterpriseId));
   final stockRepo = ref.watch(cylinderStockRepositoryProvider);
   final transactionService = ref.watch(transactionServiceProvider);
   return CylinderLeakController(leakRepo, stockRepo, transactionService);
@@ -460,8 +512,27 @@ final tourControllerProvider = Provider<TourController>((ref) {
   return TourController(repository: repo, service: service);
 });
 
+final wholesalerControllerProvider = Provider<WholesalerController>((ref) {
+  final service = ref.watch(wholesalerServiceProvider);
+  return WholesalerController(service: service);
+});
+
+final leakReportControllerProvider = Provider<LeakReportController>((ref) {
+  final service = ref.watch(leakReportServiceProvider);
+  return LeakReportController(service: service);
+});
+
+final leakReportSummaryProvider =
+    FutureProvider.family<Map<int, List<CylinderLeak>>, String>(
+  (ref, enterpriseId) {
+    final controller = ref.watch(leakReportControllerProvider);
+    return controller.getPendingLeaksSummary(enterpriseId);
+  },
+);
+
 final gazSettingsControllerProvider = Provider<GazSettingsController>((ref) {
-  final repo = ref.watch(gazSettingsRepositoryProvider);
+  final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+  final repo = ref.watch(gazSettingsRepositoryProvider(enterpriseId));
   return GazSettingsController(repository: repo);
 });
 
@@ -622,8 +693,12 @@ final gazSessionsProvider = StreamProvider<List<GazSession>>((ref) {
   return ref.watch(gazSessionControllerProvider).watchSessions();
 });
 
+final activeGazSessionProvider = FutureProvider<GazSession?>((ref) {
+  return ref.watch(gazSessionControllerProvider).getActiveSession();
+});
+
 final todayGazSessionProvider = FutureProvider<GazSession?>((ref) {
-  return ref.watch(gazSessionControllerProvider).getSessionForDate(DateTime.now());
+  return ref.watch(gazSessionControllerProvider).getActiveSession();
 });
 
 // Report Data Provider
@@ -870,4 +945,30 @@ final stockTransfersProvider =
     StreamProvider.family<List<StockTransfer>, String>((ref, enterpriseId) {
       final controller = ref.watch(stockTransferControllerProvider);
       return controller.watchTransfers(enterpriseId);
+    });
+// Stock Alerts
+final lowStockAlertsProvider =
+    FutureProvider.family<List<StockAlert>, String>((ref, enterpriseId) async {
+      final alertService = ref.watch(gasAlertServiceProvider);
+      final cylindersAsync = ref.watch(cylindersProvider);
+      
+      return cylindersAsync.when(
+        data: (cylinders) async {
+          final alerts = <StockAlert>[];
+          for (final cylinder in cylinders) {
+            final alert = await alertService.checkStockLevel(
+              enterpriseId: enterpriseId,
+              cylinderId: cylinder.id,
+              weight: cylinder.weight,
+              status: CylinderStatus.full,
+            );
+            if (alert != null) {
+              alerts.add(alert);
+            }
+          }
+          return alerts;
+        },
+        loading: () => <StockAlert>[],
+        error: (_, __) => <StockAlert>[],
+      );
     });

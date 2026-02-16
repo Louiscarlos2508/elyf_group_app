@@ -47,7 +47,7 @@ class GazDashboardKpiGrid extends ConsumerWidget {
           stocks: stocks,
           sales: sales,
           expenses: expenses,
-          cylinderTypesCount: cylinders.length,
+          cylinders: cylinders,
         );
 
         final cards = [

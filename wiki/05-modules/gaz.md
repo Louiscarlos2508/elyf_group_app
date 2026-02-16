@@ -30,8 +30,6 @@ Le module Gaz permet de gérer :
 ### Ventes en gros
 
 - Gestion des clients gros
-- Commandes en gros
-- Suivi des livraisons
 - Historique des commandes
 
 ### Stock
@@ -53,10 +51,6 @@ Le module Gaz permet de gérer :
 ### Cylinder
 
 Types de bouteilles de gaz
-
-### Delivery
-
-Livraisons/approvisionnements
 
 ### GasSale
 
@@ -82,7 +76,6 @@ gaz/
 ├── domain/
 │   ├── entities/
 │   │   ├── cylinder.dart
-│   │   ├── delivery.dart
 │   │   ├── gas_sale.dart
 │   │   └── expense.dart
 │   └── repositories/
@@ -147,8 +140,6 @@ gaz/
 - [ ] Rapports et statistiques avancés
 - [ ] Impression de reçus
 - [ ] Gestion des clients fidèles
-
-## Prochaines étapes
 
 - [Vue d'ensemble des modules](./overview.md)
 - [Impression thermique](../08-printing/sunmi-integration.md)

@@ -6,7 +6,6 @@ import '../../domain/entities/expense.dart';
 import '../../domain/entities/report_data.dart';
 import '../../domain/services/gaz_report_calculation_service.dart';
 import 'package:elyf_groupe_app/shared.dart';
-import '../../../../../shared/utils/currency_formatter.dart';
 
 /// Content widget for expenses report tab - style eau_minerale.
 class GazExpensesReportContentV2 extends ConsumerWidget {
@@ -290,6 +289,10 @@ class GazExpensesReportContentV2 extends ConsumerWidget {
         return const Color(0xFF6366F1); // Indigo
       case ExpenseCategory.loadingEvents:
         return const Color(0xFF14B8A6); // Teal
+      case ExpenseCategory.stockReplenishment:
+        return const Color(0xFF10B981); // Emerald
+      case ExpenseCategory.stockAdjustment:
+        return const Color(0xFFEF4444); // Red
       case ExpenseCategory.other:
         return const Color(0xFF64748B); // Slate
     }

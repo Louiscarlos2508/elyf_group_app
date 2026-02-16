@@ -125,7 +125,73 @@ class ImmobilierDashboardCalculationService {
       totalOpenTickets: openTickets,
       highPriorityTickets: highPriority,
       totalDepositsHeld: calculateTotalDeposits(payments),
+      totalArrears: calculateTotalArrears(contracts: activeContracts, payments: payments, referenceDate: now),
     );
+  }
+
+  /// Calcule le total des arriérés pour tous les contrats actifs.
+  int calculateTotalArrears({
+    required List<Contract> contracts,
+    required List<Payment> payments,
+    DateTime? referenceDate,
+  }) {
+    int totalArrears = 0;
+    final now = referenceDate ?? DateTime.now();
+
+    for (final contract in contracts) {
+      totalArrears += calculateContractArrears(
+        contract: contract,
+        payments: payments,
+        referenceDate: now,
+      );
+    }
+    return totalArrears;
+  }
+
+  /// Calcule les arriérés pour un contrat spécifique jusqu'à la date de référence.
+  int calculateContractArrears({
+    required Contract contract,
+    required List<Payment> payments,
+    DateTime? referenceDate,
+  }) {
+    if (contract.status != ContractStatus.active) return 0;
+    
+    final now = referenceDate ?? DateTime.now();
+    final startDate = contract.startDate;
+    int arrears = 0;
+
+    // On parcourt chaque mois depuis le début du contrat jusqu'au mois actuel
+    DateTime currentMonth = DateTime(startDate.year, startDate.month);
+    final targetMonth = DateTime(now.year, now.month);
+
+    while (currentMonth.isBefore(targetMonth) || currentMonth.isAtSameMomentAs(targetMonth)) {
+      final monthlyPayment = payments.where((p) =>
+          p.contractId == contract.id &&
+          p.paymentType == PaymentType.rent &&
+          p.month == currentMonth.month &&
+          p.year == currentMonth.year &&
+          p.status == PaymentStatus.paid
+      ).firstOrNull;
+
+      if (monthlyPayment == null) {
+        // Si pas de paiement complet, on vérifie les paiements partiels
+        final partialPayments = payments.where((p) =>
+            p.contractId == contract.id &&
+            p.paymentType == PaymentType.rent &&
+            p.month == currentMonth.month &&
+            p.year == currentMonth.year &&
+            p.status == PaymentStatus.partial
+        ).toList();
+
+        final paidAmount = partialPayments.fold<int>(0, (sum, p) => sum + p.paidAmount);
+        arrears += (contract.monthlyRent - paidAmount);
+      }
+      
+      // Passer au mois suivant
+      currentMonth = DateTime(currentMonth.year, currentMonth.month + 1);
+    }
+
+    return arrears;
   }
 
   /// Calcule le total des cautions détenues.
@@ -283,6 +349,7 @@ class ImmobilierDashboardMetrics {
     required this.totalOpenTickets,
     required this.highPriorityTickets,
     required this.totalDepositsHeld,
+    required this.totalArrears,
   });
 
   final int totalProperties;
@@ -301,6 +368,7 @@ class ImmobilierDashboardMetrics {
   final int totalOpenTickets;
   final int highPriorityTickets;
   final int totalDepositsHeld;
+  final int totalArrears;
 }
 
 /// Métriques calculées pour une période donnée (utilisé pour les rapports PDF).

@@ -1,5 +1,6 @@
 import '../../../../features/boutique/domain/entities/sale.dart';
 import '../../../../shared.dart';
+import '../thermal_receipt_builder.dart';
 
 /// Template pour l'impression de factures de vente sur imprimante thermique.
 class SalesReceiptTemplate {
@@ -19,122 +20,55 @@ class SalesReceiptTemplate {
 
   /// Génère le contenu formaté de la facture pour l'impression thermique.
   String generate() {
-    final buffer = StringBuffer();
+    final builder = ThermalReceiptBuilder(width: width);
 
-    // Logo
+    // Logo / Header
     if (showLogo) {
-      buffer.writeln(_centerText(' [ E L Y F ] '));
-      buffer.writeln();
+      builder.center('[ E L Y F ]');
+      builder.space();
     }
 
-    // En-tête
-    if (headerText != null && headerText!.isNotEmpty) {
-      buffer.writeln(_centerText(headerText!));
-    } else {
-      buffer.writeln(_centerText('BOUTIQUE ELYF'));
-    }
-    
-    // Sous-titre standard (toujours présent)
-    buffer.writeln(_centerText('ELYF GROUPE - POS'));
-    buffer.writeln(_centerText('=' * width));
-    buffer.writeln();
+    builder.header(headerText ?? 'BOUTIQUE ELYF', subtitle: 'ELYF GROUPE - POS');
 
-    // Informations de la vente (centrées)
-    buffer.writeln(_centerText('Facture N°: ${sale.number ?? sale.id.substring(0, 8)}'));
-    buffer.writeln(_centerText('Date: ${_formatDate(sale.date)}'));
-    buffer.writeln(_centerText('Heure: ${_formatTime(sale.date)}'));
-    buffer.writeln();
+    // Informations de la vente
+    builder.row('Facture N°', sale.number ?? sale.id.substring(0, 8));
+    builder.row('Date', _formatDate(sale.date));
+    builder.row('Heure', _formatTime(sale.date));
+    builder.space();
 
     if (sale.customerName != null && sale.customerName!.isNotEmpty) {
-      buffer.writeln(_centerText('Client: ${sale.customerName}'));
-      buffer.writeln();
+      builder.row('Client', sale.customerName!);
+      builder.space();
     }
-
-    buffer.writeln(_centerText('-' * width));
-    buffer.writeln();
 
     // Articles
-    final col1Width = (width * 0.6).floor(); // 18 for 30, 28 for 48
-    final col2Width = (width * 0.15).floor(); // 4 for 30, 7 for 48
-    final col3Width = width - col1Width - col2Width - 2; // Total
-
-    final labelHeader = 'Article'.padRight(col1Width);
-    final qtyHeader = 'Qté'.padLeft(col2Width);
-    final totalHeader = 'Total'.padLeft(col3Width);
-
-    buffer.writeln('$labelHeader $qtyHeader $totalHeader');
-    buffer.writeln('-' * width);
-
+    builder.section('Détails Vente');
+    
     for (final item in sale.items) {
-      final name = item.productName.length > col1Width
-          ? item.productName.substring(0, col1Width)
-          : item.productName.padRight(col1Width);
-          
-      final qty = item.quantity.toString().padLeft(col2Width);
-      final total = CurrencyFormatter.formatFCFA(item.totalPrice).padLeft(col3Width);
-      
-      buffer.writeln('$name $qty $total');
+      final priceDetail = '${item.quantity}x ${CurrencyFormatter.formatFCFA(item.unitPrice)}';
+      final totalDetail = CurrencyFormatter.formatFCFA(item.totalPrice);
+      builder.itemRow(item.productName, priceDetail, totalDetail);
     }
+    builder.separator();
 
-    buffer.writeln('-' * width);
-    buffer.writeln();
-
-    // Totaux (centrés)
-    buffer.writeln(
-      _centerText(
-        'Sous-total: ${CurrencyFormatter.formatFCFA(sale.totalAmount)}',
-      ),
-    );
-    buffer.writeln();
+    // Totaux
+    builder.total('TOTAL', CurrencyFormatter.formatFCFA(sale.totalAmount));
 
     if (sale.paymentMethod != null) {
       final method = _getPaymentMethodLabel(sale.paymentMethod!);
-      buffer.writeln(_centerText('Paiement: $method'));
-      buffer.writeln();
+      builder.row('Paiement', method);
     }
 
-    buffer.writeln(
-      _centerText(
-        'Montant payé: ${CurrencyFormatter.formatFCFA(sale.amountPaid)}',
-      ),
-    );
-    buffer.writeln();
+    builder.row('Montant payé', CurrencyFormatter.formatFCFA(sale.amountPaid));
 
     if (sale.change > 0) {
-      buffer.writeln(
-        _centerText('Monnaie: ${CurrencyFormatter.formatFCFA(sale.change)}'),
-      );
-      buffer.writeln();
+      builder.row('Monnaie', CurrencyFormatter.formatFCFA(sale.change));
     }
 
-    buffer.writeln();
-    buffer.writeln(_centerText('=' * width));
-    buffer.writeln();
-    
     // Pied de page
-    if (footerText != null && footerText!.isNotEmpty) {
-      buffer.writeln(_centerText(footerText!));
-    } else {
-      buffer.writeln(_centerText('MERCI DE VOTRE VISITE !'));
-    }
-    buffer.writeln();
+    builder.footer(footerText ?? 'MERCI DE VOTRE VISITE !');
 
-
-    // Espace en bas pour la découpe
-    buffer.writeln();
-    buffer.writeln();
-    buffer.writeln();
-    buffer.writeln();
-
-    return buffer.toString().trimRight();
-  }
-
-  String _centerText(String text) {
-    // Largeur dynamique
-    // Tronquer le texte s'il est trop long
-    final truncatedText = text.length > width ? text.substring(0, width) : text;
-    final padding = (width - truncatedText.length) ~/ 2;
-    return ' ' * padding + truncatedText;
+    return builder.toString();
   }
 
   String _formatDate(DateTime date) {
@@ -153,7 +87,7 @@ class SalesReceiptTemplate {
       case PaymentMethod.mobileMoney:
         return 'Mobile Money';
       case PaymentMethod.both:
-        return 'Mixte (Espèces + Mobile Money)';
+        return 'Mixte';
       case PaymentMethod.card:
         return 'Carte Bancaire';
     }

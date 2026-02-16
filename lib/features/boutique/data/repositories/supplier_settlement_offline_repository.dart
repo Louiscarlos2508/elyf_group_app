@@ -4,22 +4,26 @@ import '../../../audit_trail/domain/entities/audit_record.dart';
 import '../../../audit_trail/domain/repositories/audit_trail_repository.dart';
 import '../../domain/entities/supplier_settlement.dart';
 import '../../domain/repositories/supplier_settlement_repository.dart';
+import '../../domain/services/security/ledger_hash_service.dart';
+import '../../../../core/logging/app_logger.dart';
 
 class SupplierSettlementOfflineRepository extends OfflineRepository<SupplierSettlement> implements SupplierSettlementRepository {
   SupplierSettlementOfflineRepository({
     required super.driftService,
     required super.syncManager,
     required super.connectivityService,
+    required this.auditTrailRepository,
     required this.enterpriseId,
     required this.moduleType,
-    required this.auditTrailRepository,
     this.userId = 'system',
+    this.shopSecret = 'DEFAULT_SECRET',
   });
 
   final String enterpriseId;
   final String moduleType;
   final AuditTrailRepository auditTrailRepository;
   final String userId;
+  final String shopSecret;
 
   @override
   String get collectionName => 'supplier_settlements';
@@ -52,9 +56,21 @@ class SupplierSettlementOfflineRepository extends OfflineRepository<SupplierSett
 
   @override
   Future<void> saveToLocal(SupplierSettlement entity) async {
-    final localId = getLocalId(entity);
-    final remoteId = getRemoteId(entity);
-    final map = toMap(entity)..['localId'] = localId;
+    // 1. Chain hash if not already hashed
+    SupplierSettlement toSave = entity;
+    if (toSave.hash == null) {
+      final lastSettlement = await _getLastSettlement();
+      final hash = LedgerHashService.generateHash(
+        previousHash: lastSettlement?.hash,
+        entity: toSave,
+        shopSecret: shopSecret,
+      );
+      toSave = toSave.copyWith(hash: hash, previousHash: lastSettlement?.hash);
+    }
+
+    final localId = getLocalId(toSave);
+    final remoteId = getRemoteId(toSave);
+    final map = toMap(toSave)..['localId'] = localId;
     await driftService.records.upsert(
       collectionName: collectionName,
       localId: localId,
@@ -64,6 +80,13 @@ class SupplierSettlementOfflineRepository extends OfflineRepository<SupplierSett
       dataJson: jsonEncode(map),
       localUpdatedAt: DateTime.now(),
     );
+  }
+
+  Future<SupplierSettlement?> _getLastSettlement() async {
+    final all = await getAllForEnterprise(enterpriseId);
+    if (all.isEmpty) return null;
+    all.sort((a, b) => b.date.compareTo(a.date));
+    return all.first;
   }
 
   @override
@@ -150,13 +173,31 @@ class SupplierSettlementOfflineRepository extends OfflineRepository<SupplierSett
   @override
   Future<String> createSettlement(SupplierSettlement settlement) async {
     final id = settlement.id.isEmpty ? LocalIdGenerator.generate() : settlement.id;
-    final entity = settlement.copyWith(id: id, enterpriseId: enterpriseId);
+    
+    // Generate Hash
+    final lastSettlement = await _getLastSettlement();
+    final hash = LedgerHashService.generateHash(
+      previousHash: lastSettlement?.hash,
+      entity: settlement,
+      shopSecret: shopSecret,
+    );
+
+    final entity = settlement.copyWith(
+      id: id, 
+      enterpriseId: enterpriseId,
+      hash: hash,
+      previousHash: lastSettlement?.hash,
+    );
     await save(entity);
     
     await _logAudit(
       action: 'create_supplier_settlement',
       entityId: id,
-      metadata: {'supplierId': settlement.supplierId, 'amount': settlement.amount},
+      metadata: {
+        'supplierId': settlement.supplierId, 
+        'amount': settlement.amount,
+        'hash': hash,
+      },
     );
     
     return id;
@@ -196,6 +237,39 @@ class SupplierSettlementOfflineRepository extends OfflineRepository<SupplierSett
     });
   }
 
+  @override
+  Future<bool> verifyChain() async {
+    try {
+      final settlements = await getAllForEnterprise(enterpriseId);
+      if (settlements.isEmpty) return true;
+
+      settlements.sort((a, b) => b.date.compareTo(a.date));
+
+      for (int i = 0; i < settlements.length; i++) {
+        final current = settlements[i];
+        final previous = i + 1 < settlements.length ? settlements[i + 1] : null;
+
+        final isValid = LedgerHashService.verify(
+          current,
+          previous?.hash,
+          shopSecret,
+        );
+
+        if (!isValid) {
+          AppLogger.error(
+            'Chain integrity violation at settlement ${current.id}.',
+            name: 'SupplierSettlementOfflineRepository',
+          );
+          return false;
+        }
+      }
+      return true;
+    } catch (e) {
+      AppLogger.error('Settlement chain verification failed', error: e);
+      return false;
+    }
+  }
+
   Future<void> _logAudit({
     required String action,
     required String entityId,
@@ -216,7 +290,7 @@ class SupplierSettlementOfflineRepository extends OfflineRepository<SupplierSett
         ),
       );
     } catch (e) {
-      // Log error
+      AppLogger.error('Failed to log settlement audit: $action', error: e);
     }
   }
 }

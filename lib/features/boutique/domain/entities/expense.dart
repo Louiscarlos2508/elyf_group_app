@@ -17,6 +17,8 @@ class Expense {
     this.updatedAt,
     this.receiptPath,
     this.number,
+    this.hash,
+    this.previousHash,
   });
 
   final String id;
@@ -33,6 +35,8 @@ class Expense {
   final DateTime? updatedAt;
   final String? receiptPath;
   final String? number; // Numéro de dépense (ex: DEP-20240212-001)
+  final String? hash;
+  final String? previousHash;
 
   /// Indique si la dépense est supprimée (soft delete)
   bool get isDeleted => deletedAt != null;
@@ -51,6 +55,8 @@ class Expense {
     DateTime? updatedAt,
     String? receiptPath,
     String? number,
+    String? hash,
+    String? previousHash,
   }) {
     return Expense(
       id: id ?? this.id,
@@ -67,6 +73,8 @@ class Expense {
       updatedAt: updatedAt ?? this.updatedAt,
       receiptPath: receiptPath ?? this.receiptPath,
       number: number ?? this.number,
+      hash: hash ?? this.hash,
+      previousHash: previousHash ?? this.previousHash,
     );
   }
 
@@ -101,6 +109,8 @@ class Expense {
           : null,
       receiptPath: map['receiptPath'] as String? ?? map['receipt'] as String?,
       number: map['number'] as String?,
+      hash: map['hash'] as String?,
+      previousHash: map['previousHash'] as String?,
     );
   }
 
@@ -122,6 +132,8 @@ class Expense {
       'updatedAt': updatedAt?.toIso8601String(),
       'receiptPath': receiptPath,
       'number': number,
+      'hash': hash,
+      'previousHash': previousHash,
     };
   }
 

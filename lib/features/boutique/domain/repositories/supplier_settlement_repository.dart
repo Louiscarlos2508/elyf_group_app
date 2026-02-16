@@ -8,4 +8,5 @@ abstract class SupplierSettlementRepository {
   Stream<List<SupplierSettlement>> watchSettlements({String? supplierId, int limit = 100});
   Stream<List<SupplierSettlement>> watchDeletedSettlements({String? supplierId});
   Future<int> getCountForDate(DateTime date);
+  Future<bool> verifyChain();
 }

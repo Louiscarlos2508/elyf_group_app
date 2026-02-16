@@ -20,8 +20,8 @@ class GazSessionOfflineRepository implements GazSessionRepository {
     return results
         .map((r) => GazSession.fromMap(jsonDecode(r.dataJson)))
         .where((s) {
-      if (from != null && s.date.isBefore(from)) return false;
-      if (to != null && s.date.isAfter(to)) return false;
+      if (from != null && (s.date?.isBefore(from) ?? false)) return false;
+      if (to != null && (s.date?.isAfter(to) ?? false)) return false;
       return true;
     }).toList();
   }
@@ -35,8 +35,8 @@ class GazSessionOfflineRepository implements GazSessionRepository {
       return results
           .map((r) => GazSession.fromMap(jsonDecode(r.dataJson)))
           .where((s) {
-        if (from != null && s.date.isBefore(from)) return false;
-        if (to != null && s.date.isAfter(to)) return false;
+        if (from != null && (s.date?.isBefore(from) ?? false)) return false;
+        if (to != null && (s.date?.isAfter(to) ?? false)) return false;
         return true;
       }).toList();
     });
@@ -108,5 +108,19 @@ class GazSessionOfflineRepository implements GazSessionRepository {
     final dayStart = DateTime(date.year, date.month, date.day);
     final sessions = await getSessions(from: dayStart, to: dayStart.add(const Duration(days: 1)));
     return sessions.isEmpty ? null : sessions.first;
+  }
+
+  @override
+  Future<GazSession?> getActiveSession(String enterpriseId) async {
+    final query = _db.select(_db.offlineRecords)
+      ..where((t) => t.collectionName.equals(_collectionName))
+      ..where((t) => t.enterpriseId.equals(enterpriseId));
+
+    final results = await query.get();
+    for (final record in results) {
+      final session = GazSession.fromMap(jsonDecode(record.dataJson));
+      if (session.isOpen) return session;
+    }
+    return null;
   }
 }

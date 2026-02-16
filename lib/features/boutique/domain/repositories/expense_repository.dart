@@ -12,4 +12,5 @@ abstract class ExpenseRepository {
   Future<int> getCountForDate(DateTime date);
   Stream<List<Expense>> watchExpenses({int limit = 50});
   Stream<List<Expense>> watchDeletedExpenses();
+  Future<bool> verifyChain();
 }

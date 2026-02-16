@@ -34,6 +34,7 @@ class DashboardKpiSection extends ConsumerWidget {
     final todayProfit = GazCalculationService.calculateTodayProfit(
       sales,
       expenses,
+      cylinders,
     );
 
     // Full bottles count

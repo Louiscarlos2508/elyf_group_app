@@ -15,7 +15,6 @@ class ThermalPrinterService implements PrinterInterface {
   
   // Current connection
   BluetoothConnection? _connection;
-  BluetoothDevice? _selectedDevice;
   bool _isConnected = false;
   
   // Format facture 80x210mm : largeur 80mm (hauteur rouleau)
@@ -53,8 +52,6 @@ class ThermalPrinterService implements PrinterInterface {
     try {
       // Disconnect existing
       await disconnect();
-
-      _selectedDevice = device;
 
       // Connect
       _connection = await BluetoothConnection.toAddress(device.address);
@@ -243,5 +240,43 @@ class ThermalPrinterService implements PrinterInterface {
       _connection = null;
     }
     _isConnected = false;
+  }
+
+  @override
+  Future<bool> printRow(List<String> columns, {List<int>? weights, List<int>? alignments}) async {
+    if (!await isAvailable()) return false;
+    
+    // Pour une imprimante thermique ESC/POS simple, on joint avec des espaces
+    final lineWidth = await getLineWidth();
+    final colCount = columns.length;
+    if (colCount == 0) return true;
+    
+    final colWidth = (lineWidth / colCount).floor();
+    final buffer = StringBuffer();
+    
+    for (int i = 0; i < colCount; i++) {
+      final text = columns[i];
+      final width = (weights != null && weights.length > i) 
+          ? (weights[i] * lineWidth / weights.reduce((a, b) => a + b)).floor()
+          : colWidth;
+      
+      if (text.length > width) {
+        buffer.write(text.substring(0, width));
+      } else {
+        buffer.write(text.padRight(width));
+      }
+    }
+
+    return await printText(buffer.toString());
+  }
+
+  @override
+  Future<bool> printBarCode(String data, {int? width, int? height}) async {
+    return await printText('[BARCODE: $data]');
+  }
+
+  @override
+  Future<bool> printQrCode(String data, {int? size}) async {
+    return await printText('[QRCODE: $data]');
   }
 }

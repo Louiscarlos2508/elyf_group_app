@@ -10,6 +10,8 @@ import '../../../domain/entities/cylinder_stock.dart';
 import '../../../domain/entities/gaz_inventory_audit.dart';
 import '../../../domain/entities/point_of_sale.dart';
 import '../../../../../shared/utils/notification_service.dart';
+import '../../widgets/replenishment_dialog.dart';
+import '../../widgets/deposit_refund_dialog.dart';
 
 class GazInventoryScreen extends ConsumerStatefulWidget {
   const GazInventoryScreen({super.key});
@@ -42,6 +44,18 @@ class _GazInventoryScreenState extends ConsumerState<GazInventoryScreen> {
       appBar: AppBar(
         title: const Text('Inventaire & Audit'),
         actions: [
+          if (!_isAuditing) ...[
+            IconButton(
+              onPressed: () => _showReplenishmentDialog(context),
+              icon: const Icon(Icons.add_business),
+              tooltip: 'Réception Stock',
+            ),
+            IconButton(
+              onPressed: () => _showRefundDialog(context),
+              icon: const Icon(Icons.keyboard_return),
+              tooltip: 'Retour Bouteille',
+            ),
+          ],
           if (_isAuditing)
             TextButton.icon(
               onPressed: _isLoading ? null : () => _submitAudit(enterpriseId),
@@ -203,26 +217,43 @@ class _GazInventoryScreenState extends ConsumerState<GazInventoryScreen> {
   }
 
   Widget _buildRecentAudits(String enterpriseId) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        const Icon(Icons.history, size: 64, color: Colors.grey),
-        const SizedBox(height: 16),
-        const Text(
-          'Historique des audits',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          'Les audits complétés apparaîtront ici.',
-          style: TextStyle(color: Colors.grey),
-        ),
-        const SizedBox(height: 24),
-        ElyfButton(
-          onPressed: () => setState(() => _isAuditing = true),
-          child: const Text('Commencer un audit maintenant'),
-        ),
-      ],
+    final historyAsync = ref.watch(auditHistoryProvider(enterpriseId));
+
+    return historyAsync.when(
+      data: (audits) {
+        if (audits.isEmpty) {
+          return Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.history, size: 64, color: Colors.grey),
+              const SizedBox(height: 16),
+              const Text(
+                'Historique des audits',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Les audits complétés apparaîtront ici.',
+                style: TextStyle(color: Colors.grey),
+              ),
+              const SizedBox(height: 24),
+              ElyfButton(
+                onPressed: () => setState(() => _isAuditing = true),
+                child: const Text('Commencer un audit maintenant'),
+              ),
+            ],
+          );
+        }
+
+        return ListView.separated(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          itemCount: audits.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 12),
+          itemBuilder: (context, index) => _AuditHistoryCard(audit: audits[index]),
+        );
+      },
+      loading: () => const Center(child: LoadingIndicator()),
+      error: (e, _) => Center(child: Text('Erreur: $e')),
     );
   }
 
@@ -338,5 +369,76 @@ class _GazInventoryScreenState extends ConsumerState<GazInventoryScreen> {
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  void _showReplenishmentDialog(BuildContext context) {
+    ReplenishmentDialog.show(context, siteId: _selectedSite?.id);
+  }
+
+  void _showRefundDialog(BuildContext context) {
+    DepositRefundDialog.show(context, siteId: _selectedSite?.id);
+  }
+}
+
+class _AuditHistoryCard extends StatelessWidget {
+  const _AuditHistoryCard({required this.audit});
+
+  final GazInventoryAudit audit;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final totalDiscrepancy = audit.items.fold<int>(0, (sum, item) => sum + item.discrepancy.abs());
+
+    return Card(
+      child: ExpansionTile(
+        title: Text(
+          'Audit du ${audit.auditDate.toIso8601String().substring(0, 10)}',
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        subtitle: Text(
+          '${audit.items.length} types | Écart total: $totalDiscrepancy',
+          style: TextStyle(
+            color: totalDiscrepancy == 0 ? Colors.green : Colors.orange,
+          ),
+        ),
+        leading: Icon(
+          Icons.inventory_2_outlined,
+          color: totalDiscrepancy == 0 ? Colors.green : Colors.orange,
+        ),
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ...audit.items.map((item) => Padding(
+                      padding: const EdgeInsets.only(bottom: 8.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('${item.weight}kg - ${item.status.name}'),
+                          Text(
+                            'T: ${item.theoreticalQuantity} | P: ${item.physicalQuantity} (${item.discrepancy > 0 ? "+" : ""}${item.discrepancy})',
+                            style: TextStyle(
+                              color: item.discrepancy == 0
+                                  ? Colors.grey
+                                  : (item.discrepancy > 0 ? Colors.green : Colors.red),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )),
+                if (audit.notes != null) ...[
+                  const Divider(),
+                  Text('Note: ${audit.notes}', style: theme.textTheme.bodySmall),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

@@ -5,22 +5,26 @@ import '../../../audit_trail/domain/repositories/audit_trail_repository.dart';
 import '../../domain/entities/treasury_operation.dart';
 import '../../domain/repositories/treasury_repository.dart';
 import '../../domain/entities/sale.dart';
+import '../../domain/services/security/ledger_hash_service.dart';
+import '../../../../core/logging/app_logger.dart';
 
 class TreasuryOfflineRepository extends OfflineRepository<TreasuryOperation> implements TreasuryRepository {
   TreasuryOfflineRepository({
     required super.driftService,
     required super.syncManager,
     required super.connectivityService,
+    required this.auditTrailRepository,
     required this.enterpriseId,
     required this.moduleType,
-    required this.auditTrailRepository,
     this.userId = 'system',
+    this.shopSecret = 'DEFAULT_SECRET',
   });
 
   final String enterpriseId;
   final String moduleType;
   final AuditTrailRepository auditTrailRepository;
   final String userId;
+  final String shopSecret;
 
   @override
   String get collectionName => 'treasury_operations';
@@ -53,9 +57,21 @@ class TreasuryOfflineRepository extends OfflineRepository<TreasuryOperation> imp
 
   @override
   Future<void> saveToLocal(TreasuryOperation entity) async {
-    final localId = getLocalId(entity);
-    final remoteId = getRemoteId(entity);
-    final map = toMap(entity)..['localId'] = localId;
+    // 1. Chain hash if not already hashed (e.g. from createOperation)
+    TreasuryOperation toSave = entity;
+    if (toSave.hash == null) {
+      final lastOp = await _getLastOperation();
+      final hash = LedgerHashService.generateHash(
+        previousHash: lastOp?.hash,
+        entity: toSave,
+        shopSecret: shopSecret,
+      );
+      toSave = toSave.copyWith(hash: hash, previousHash: lastOp?.hash);
+    }
+
+    final localId = getLocalId(toSave);
+    final remoteId = getRemoteId(toSave);
+    final map = toMap(toSave)..['localId'] = localId;
     await driftService.records.upsert(
       collectionName: collectionName,
       localId: localId,
@@ -65,6 +81,13 @@ class TreasuryOfflineRepository extends OfflineRepository<TreasuryOperation> imp
       dataJson: jsonEncode(map),
       localUpdatedAt: DateTime.now(),
     );
+  }
+
+  Future<TreasuryOperation?> _getLastOperation() async {
+    final all = await getAllForEnterprise(enterpriseId);
+    if (all.isEmpty) return null;
+    all.sort((a, b) => b.date.compareTo(a.date));
+    return all.first;
   }
 
   @override
@@ -115,13 +138,33 @@ class TreasuryOfflineRepository extends OfflineRepository<TreasuryOperation> imp
   @override
   Future<String> createOperation(TreasuryOperation operation) async {
     final id = operation.id.isEmpty ? LocalIdGenerator.generate() : operation.id;
-    final entity = operation.copyWith(id: id, enterpriseId: enterpriseId, userId: userId);
+    
+    // Generate Hash
+    final lastOp = await _getLastOperation();
+    final hash = LedgerHashService.generateHash(
+      previousHash: lastOp?.hash,
+      entity: operation,
+      shopSecret: shopSecret,
+    );
+    
+    final entity = operation.copyWith(
+      id: id, 
+      enterpriseId: enterpriseId, 
+      userId: userId,
+      hash: hash,
+      previousHash: lastOp?.hash,
+    );
+    
     await save(entity);
     
     await _logAudit(
       action: 'create_treasury_operation',
       entityId: id,
-      metadata: {'type': operation.type.name, 'amount': operation.amount},
+      metadata: {
+        'type': operation.type.name, 
+        'amount': operation.amount,
+        'hash': hash,
+      },
     );
     
     return id;
@@ -200,7 +243,41 @@ class TreasuryOfflineRepository extends OfflineRepository<TreasuryOperation> imp
         ),
       );
     } catch (e) {
-      // Log error
+      AppLogger.error('Failed to log treasury audit: $action', error: e);
+    }
+  }
+
+  @override
+  Future<bool> verifyChain() async {
+    try {
+      final ops = await getAllForEnterprise(enterpriseId);
+      if (ops.isEmpty) return true;
+
+      // Sort chronological ascending for chain verification 
+      ops.sort((a, b) => a.date.compareTo(b.date));
+
+      for (int i = 0; i < ops.length; i++) {
+        final current = ops[i];
+        final previous = i > 0 ? ops[i - 1] : null;
+
+        final isValid = LedgerHashService.verify(
+          current,
+          previous?.hash,
+          shopSecret,
+        );
+
+        if (!isValid) {
+          AppLogger.error(
+            'Chain integrity violation at treasury op ${current.id}.',
+            name: 'TreasuryOfflineRepository',
+          );
+          return false;
+        }
+      }
+      return true;
+    } catch (e) {
+      AppLogger.error('Treasury chain verification failed', error: e);
+      return false;
     }
   }
 }

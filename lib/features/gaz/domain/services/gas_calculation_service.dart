@@ -1,4 +1,5 @@
 import '../entities/cylinder.dart';
+import '../entities/gaz_settings.dart';
 
 /// Service for gas sale calculation logic.
 ///
@@ -108,5 +109,20 @@ class GasCalculationService {
     }
     final quantity = int.tryParse(quantityText);
     return validateQuantity(quantity: quantity, availableStock: availableStock);
+  }
+
+  /// Determines the wholesale price based on settings and tier.
+  /// 
+  /// Falls back to cylinder's sell price if no wholesale price is defined.
+  static double determineWholesalePrice({
+    required Cylinder cylinder,
+    required GazSettings? settings,
+    String tier = 'default',
+  }) {
+    if (settings == null) {
+      return cylinder.sellPrice;
+    }
+    
+    return settings.getWholesalePrice(cylinder.weight, tier: tier) ?? cylinder.sellPrice;
   }
 }

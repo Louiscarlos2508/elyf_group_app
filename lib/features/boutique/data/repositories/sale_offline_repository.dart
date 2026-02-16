@@ -9,7 +9,7 @@ import '../../../audit_trail/domain/entities/audit_record.dart';
 import '../../../audit_trail/domain/repositories/audit_trail_repository.dart';
 import '../../domain/entities/sale.dart';
 import '../../domain/repositories/sale_repository.dart';
-import '../../domain/services/security/ticket_hash_helper.dart';
+import '../../domain/services/security/ledger_hash_service.dart';
 
 /// Offline-first repository for Sale entities using Relational Drift Tables.
 class SaleOfflineRepository extends OfflineRepository<Sale>
@@ -62,6 +62,8 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
   Future<String> _generateTicketHash(Sale sale) async {
     // 1. Get the last sale's hash for chaining
     final lastSaleQuery = db.select(db.salesTable)
+      ..where((t) => t.enterpriseId.equals(enterpriseId))
+      ..where((t) => t.id.equals(sale.id).not()) // Don't chain to yourself if updating
       ..orderBy([(t) => OrderingTerm(expression: t.date, mode: OrderingMode.desc)])
       ..limit(1);
     
@@ -69,9 +71,9 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
     final previousHash = lastSale?.ticketHash;
 
     // 2. Generate new hash
-    return TicketHashHelper.generateHash(
+    return LedgerHashService.generateHash(
       previousHash: previousHash,
-      sale: sale,
+      entity: sale,
       shopSecret: shopSecret,
     );
   }
@@ -81,12 +83,15 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
   @override
   Future<void> saveToLocal(Sale sale) async {
     // 1. Generate Secure Hash
-    final ticketHash = await _generateTicketHash(sale);
-    final previousHash = (await (db.select(db.salesTable)
+    final lastSale = await (db.select(db.salesTable)
+          ..where((t) => t.enterpriseId.equals(enterpriseId))
+          ..where((t) => t.id.equals(sale.id).not())
           ..orderBy([(t) => OrderingTerm(expression: t.date, mode: OrderingMode.desc)])
           ..limit(1))
-        .getSingleOrNull())
-        ?.ticketHash;
+        .getSingleOrNull();
+        
+    final previousHash = lastSale?.ticketHash;
+    final ticketHash = await _generateTicketHash(sale);
 
     final saleWithHash = sale.copyWith(
       ticketHash: ticketHash,
@@ -269,12 +274,14 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
   Future<Sale> createSale(Sale sale) async {
     try {
       // 1. Generate Secure Hash explicitly here to return it
-      final ticketHash = await _generateTicketHash(sale);
-      final previousHash = (await (db.select(db.salesTable)
+      final lastSale = await (db.select(db.salesTable)
+            ..where((t) => t.enterpriseId.equals(enterpriseId))
             ..orderBy([(t) => OrderingTerm(expression: t.date, mode: OrderingMode.desc)])
             ..limit(1))
-          .getSingleOrNull())
-          ?.ticketHash;
+          .getSingleOrNull();
+          
+      final previousHash = lastSale?.ticketHash;
+      final ticketHash = await _generateTicketHash(sale);
 
       final saleWithHash = sale.copyWith(
         ticketHash: ticketHash,
@@ -450,10 +457,37 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
   }
   @override
   Future<bool> verifyChain() async {
-    // Basic implementation: check if the chain is intact
-    // For now, return true to unblock compilation.
-    // Real implementation should iterate recent sales and verify hashes.
-    return true;
+    try {
+      final sales = await getAllForEnterprise(enterpriseId);
+      if (sales.isEmpty) return true;
+
+      // Reverse list to go from oldest to newest (or just rely on index - 1)
+      // Actually sales are ordered by date DESC.
+      // So [0] is newest, [1] is previous to [0].
+      
+      for (int i = 0; i < sales.length; i++) {
+        final current = sales[i];
+        final previous = i + 1 < sales.length ? sales[i + 1] : null;
+        
+        final isValid = LedgerHashService.verify(
+          current,
+          previous?.ticketHash,
+          shopSecret,
+        );
+        
+        if (!isValid) {
+          AppLogger.error(
+            'Chain integrity violation at sale ${current.id}. Previous: ${previous?.id}',
+            name: 'SaleOfflineRepository',
+          );
+          return false;
+        }
+      }
+      return true;
+    } catch (e) {
+      AppLogger.error('Chain verification failed', error: e);
+      return false;
+    }
   }
 
   @override

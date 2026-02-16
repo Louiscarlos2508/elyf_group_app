@@ -57,21 +57,64 @@ class _TreasuryOperationDialogState extends State<TreasuryOperationDialog> {
             children: [
               TextFormField(
                 controller: _amountController,
-                decoration: const InputDecoration(labelText: 'Montant (CFA)'),
-                keyboardType: TextInputType.number,
-                validator: (value) => (value == null || value.isEmpty) ? 'Requis' : null,
+                decoration: InputDecoration(
+                  labelText: widget.type == TreasuryOperationType.adjustment 
+                      ? 'Écart / Delta (CFA) - Ex: -500' 
+                      : 'Montant (CFA)',
+                  helperText: widget.type == TreasuryOperationType.adjustment 
+                      ? 'Négatif pour réduire, positif pour augmenter' 
+                      : null,
+                ),
+                keyboardType: const TextInputType.numberWithOptions(signed: true),
+                validator: (value) {
+                  if (value == null || value.isEmpty) return 'Requis';
+                  final amount = int.tryParse(value);
+                  if (amount == null) return 'Nombre invalide';
+                  if (widget.type != TreasuryOperationType.adjustment && amount <= 0) {
+                    return 'Le montant doit être positif';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 16),
               if (widget.type == TreasuryOperationType.transfer || widget.type == TreasuryOperationType.removal)
                 DropdownButtonFormField<PaymentMethod>(
-                  key: ValueKey(_fromAccount),
-                  initialValue: _fromAccount,
+                  key: ValueKey('from_$_fromAccount'),
+                  value: _fromAccount,
                   decoration: const InputDecoration(labelText: 'Depuis le compte'),
                   items: [
                     DropdownMenuItem(value: PaymentMethod.cash, child: const Text('Caisse (Espèces)')),
                     DropdownMenuItem(value: PaymentMethod.mobileMoney, child: const Text('Mobile Money')),
                   ],
                   onChanged: (v) => setState(() => _fromAccount = v),
+                  validator: (v) => v == null ? 'Requis' : null,
+                ),
+              if (widget.type == TreasuryOperationType.transfer)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8.0),
+                  child: Icon(Icons.arrow_downward, color: Colors.grey),
+                ),
+              if (widget.type == TreasuryOperationType.transfer || widget.type == TreasuryOperationType.supply || widget.type == TreasuryOperationType.adjustment)
+                DropdownButtonFormField<PaymentMethod>(
+                  key: ValueKey('to_$_toAccount'),
+                  value: _toAccount,
+                  decoration: InputDecoration(
+                    labelText: widget.type == TreasuryOperationType.adjustment 
+                        ? 'Compte à ajuster' 
+                        : 'Vers le compte',
+                  ),
+                  items: [
+                    DropdownMenuItem(value: PaymentMethod.cash, child: const Text('Caisse (Espèces)')),
+                    DropdownMenuItem(value: PaymentMethod.mobileMoney, child: const Text('Mobile Money')),
+                  ],
+                  onChanged: (v) => setState(() => _toAccount = v),
+                  validator: (v) {
+                    if (v == null) return 'Requis';
+                    if (widget.type == TreasuryOperationType.transfer && v == _fromAccount) {
+                      return 'Les comptes doivent être différents';
+                    }
+                    return null;
+                  },
                 ),
               if (widget.type == TreasuryOperationType.removal)
                 Padding(
@@ -87,6 +130,7 @@ class _TreasuryOperationDialogState extends State<TreasuryOperationDialog> {
                       DropdownMenuItem(value: 'Autre', child: Text('Autre')),
                     ],
                     onChanged: (v) => setState(() => _reason = v),
+                    validator: (v) => v == null ? 'Requis' : null,
                   ),
                 ),
               if (widget.type == TreasuryOperationType.removal)
@@ -99,22 +143,21 @@ class _TreasuryOperationDialogState extends State<TreasuryOperationDialog> {
                         ? 'Le nom du bénéficiaire est requis' : null,
                   ),
                 ),
-              if (widget.type == TreasuryOperationType.transfer || widget.type == TreasuryOperationType.supply || widget.type == TreasuryOperationType.adjustment)
-                DropdownButtonFormField<PaymentMethod>(
-                  key: ValueKey(_toAccount),
-                  initialValue: _toAccount,
-                  decoration: const InputDecoration(labelText: 'Vers le compte'),
-                  items: [
-                    DropdownMenuItem(value: PaymentMethod.cash, child: const Text('Caisse (Espèces)')),
-                    DropdownMenuItem(value: PaymentMethod.mobileMoney, child: const Text('Mobile Money')),
-                  ],
-                  onChanged: (v) => setState(() => _toAccount = v),
-                ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _notesController,
-                decoration: const InputDecoration(labelText: 'Notes / Justification'),
+                decoration: InputDecoration(
+                  labelText: widget.type == TreasuryOperationType.adjustment 
+                      ? 'Justification de l\'ajustement *' 
+                      : 'Notes / Justification',
+                ),
                 maxLines: 2,
+                validator: (v) {
+                  if (widget.type == TreasuryOperationType.adjustment && (v == null || v.isEmpty)) {
+                    return 'Une justification est obligatoire pour un ajustement';
+                  }
+                  return null;
+                },
               ),
             ],
           ),
@@ -141,18 +184,26 @@ class _TreasuryOperationDialogState extends State<TreasuryOperationDialog> {
       id: '', // Generated by repo
       enterpriseId: enterpriseId,
       userId: '', // Set by controller
-      amount: int.parse(_amountController.text),
+      amount: int.parse(_amountController.text).abs(), // We store absolute value but logic uses from/to or type
       type: widget.type,
       fromAccount: _fromAccount,
       toAccount: _toAccount,
       date: DateTime.now(),
-      reason: _reason,
+      reason: _reason ?? (widget.type == TreasuryOperationType.adjustment ? 'Ajustement Manuel' : null),
       recipient: _recipientController.text,
       notes: _notesController.text,
     );
 
+    // Special case for negative adjustment: we treat it as an adjustment to the account but we need to satisfy the repository logic
+    // Actually, getBalances does: cash += op.amount;
+    // So if I parse int.parse(_amountController.text), it will be negative.
+    // Wait, my recordOperation in controller might throw if amount <= 0.
+    // Fixed that in controller!
+    
+    final finalAmount = int.parse(_amountController.text);
+
     try {
-      await ref.read(treasuryControllerProvider).recordOperation(operation);
+      await ref.read(treasuryControllerProvider).recordOperation(operation.copyWith(amount: finalAmount));
       if (mounted) Navigator.pop(context);
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: $e')));

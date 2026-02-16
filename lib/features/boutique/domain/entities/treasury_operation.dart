@@ -26,6 +26,8 @@ class TreasuryOperation extends Equatable {
     this.createdAt,
     this.updatedAt,
     this.number,
+    this.hash,
+    this.previousHash,
   });
 
   final String id;
@@ -42,6 +44,8 @@ class TreasuryOperation extends Equatable {
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final String? number; // ex: TRE-20240213-001
+  final String? hash;
+  final String? previousHash;
 
   TreasuryOperation copyWith({
     String? id,
@@ -55,9 +59,10 @@ class TreasuryOperation extends Equatable {
     String? reason,
     String? recipient,
     String? notes,
-    DateTime? createdAt,
     DateTime? updatedAt,
     String? number,
+    String? hash,
+    String? previousHash,
   }) {
     return TreasuryOperation(
       id: id ?? this.id,
@@ -74,6 +79,8 @@ class TreasuryOperation extends Equatable {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       number: number ?? this.number,
+      hash: hash ?? this.hash,
+      previousHash: previousHash ?? this.previousHash,
     );
   }
 
@@ -100,6 +107,8 @@ class TreasuryOperation extends Equatable {
       createdAt: map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : null,
       updatedAt: map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : null,
       number: map['number'] as String?,
+      hash: map['hash'] as String?,
+      previousHash: map['previousHash'] as String?,
     );
   }
 
@@ -119,6 +128,8 @@ class TreasuryOperation extends Equatable {
       'createdAt': createdAt?.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
       'number': number,
+      'hash': hash,
+      'previousHash': previousHash,
     };
   }
 
@@ -138,5 +149,7 @@ class TreasuryOperation extends Equatable {
         createdAt,
         updatedAt,
         number,
+        hash,
+        previousHash,
       ];
 }

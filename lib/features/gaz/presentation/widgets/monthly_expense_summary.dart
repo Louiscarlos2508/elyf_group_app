@@ -51,6 +51,10 @@ class GazMonthlyExpenseSummary extends ConsumerWidget {
         return Colors.cyan;
       case ExpenseCategory.other:
         return Colors.grey;
+      case ExpenseCategory.stockReplenishment:
+        return Colors.teal;
+      case ExpenseCategory.stockAdjustment:
+        return Colors.red;
     }
   }
 

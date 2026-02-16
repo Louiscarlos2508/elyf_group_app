@@ -15,6 +15,7 @@ import '../../presentation/screens/sections/reports_screen.dart';
 import '../../presentation/screens/sections/tenants_screen.dart';
 import '../../presentation/screens/sections/maintenance_screen.dart';
 import '../../presentation/screens/sections/treasury_screen.dart';
+import '../../presentation/screens/sections/z_report_screen.dart';
 import 'permission_providers.dart';
 
 import '../../presentation/screens/settings/immobilier_settings_screen.dart';
@@ -116,6 +117,16 @@ final accessibleImmobilierSectionsProvider =
         moduleId: moduleId,
       ),
       requiredPermissions: {ImmobilierPermissions.viewReports.id},
+    ),
+    (
+      section: NavigationSection(
+        label: 'Rapport Z',
+        icon: Icons.history_edu_outlined,
+        builder: () => const ZReportScreen(),
+        enterpriseId: enterpriseId,
+        moduleId: moduleId,
+      ),
+      requiredPermissions: {ImmobilierPermissions.viewTreasury.id},
     ),
     (
       section: NavigationSection(

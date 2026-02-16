@@ -90,6 +90,10 @@ final collectionPaths = <String, String Function(String?)>{
       'enterprises/${enterpriseId!}/cylinderLeaks',
   'gaz_settings': (enterpriseId) =>
       'enterprises/${enterpriseId!}/gazSettings',
+  'inventory_audits': (enterpriseId) =>
+      'enterprises/${enterpriseId!}/inventoryAudits',
+  'wholesalers': (enterpriseId) =>
+      'enterprises/${enterpriseId!}/wholesalers',
   'financial_reports': (enterpriseId) =>
       'enterprises/${enterpriseId!}/financialReports',
 

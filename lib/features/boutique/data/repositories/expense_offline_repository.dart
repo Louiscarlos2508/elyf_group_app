@@ -8,6 +8,7 @@ import '../../../audit_trail/domain/entities/audit_record.dart';
 import '../../../audit_trail/domain/repositories/audit_trail_repository.dart';
 import '../../domain/entities/expense.dart';
 import '../../domain/repositories/expense_repository.dart';
+import '../../domain/services/security/ledger_hash_service.dart';
 
 /// Offline-first repository for Expense entities.
 class ExpenseOfflineRepository extends OfflineRepository<Expense>
@@ -16,16 +17,18 @@ class ExpenseOfflineRepository extends OfflineRepository<Expense>
     required super.driftService,
     required super.syncManager,
     required super.connectivityService,
+    required this.auditTrailRepository,
     required this.enterpriseId,
     required this.moduleType,
-    required this.auditTrailRepository,
     this.userId = 'system',
+    this.shopSecret = 'DEFAULT_SECRET',
   });
 
   final String enterpriseId;
   final String moduleType;
   final AuditTrailRepository auditTrailRepository;
   final String userId;
+  final String shopSecret;
 
   @override
   String get collectionName => 'expenses';
@@ -82,17 +85,36 @@ class ExpenseOfflineRepository extends OfflineRepository<Expense>
 
   @override
   Future<void> saveToLocal(Expense entity) async {
-    final localId = getLocalId(entity);
-    final map = toMap(entity)..['localId'] = localId;
+    // 1. Chain hash if not already hashed
+    Expense toSave = entity;
+    if (toSave.hash == null) {
+      final lastExpense = await _getLastExpense();
+      final hash = LedgerHashService.generateHash(
+        previousHash: lastExpense?.hash,
+        entity: toSave,
+        shopSecret: shopSecret,
+      );
+      toSave = toSave.copyWith(hash: hash, previousHash: lastExpense?.hash);
+    }
+
+    final localId = getLocalId(toSave);
+    final map = toMap(toSave)..['localId'] = localId;
     await driftService.records.upsert(
       collectionName: collectionName,
       localId: localId,
-      remoteId: getRemoteId(entity),
+      remoteId: getRemoteId(toSave),
       enterpriseId: enterpriseId,
       moduleType: moduleType,
       dataJson: jsonEncode(map),
       localUpdatedAt: DateTime.now(),
     );
+  }
+
+  Future<Expense?> _getLastExpense() async {
+    final all = await getAllForEnterprise(enterpriseId);
+    if (all.isEmpty) return null;
+    all.sort((a, b) => b.date.compareTo(a.date));
+    return all.first;
   }
 
   @override
@@ -191,11 +213,22 @@ class ExpenseOfflineRepository extends OfflineRepository<Expense>
   @override
   Future<String> createExpense(Expense expense) async {
     final localId = getLocalId(expense);
+    
+    // Generate Hash
+    final lastExpense = await _getLastExpense();
+    final hash = LedgerHashService.generateHash(
+      previousHash: lastExpense?.hash,
+      entity: expense,
+      shopSecret: shopSecret,
+    );
+
     // Create new expense with local ID
     final newExpense = expense.copyWith(
       id: localId,
       enterpriseId: enterpriseId,
       updatedAt: DateTime.now(),
+      hash: hash,
+      previousHash: lastExpense?.hash,
     );
     await save(newExpense);
       
@@ -203,7 +236,11 @@ class ExpenseOfflineRepository extends OfflineRepository<Expense>
     await _logAudit(
       action: 'create_expense',
       entityId: localId,
-      metadata: {'label': expense.label, 'amountCfa': expense.amountCfa},
+      metadata: {
+        'label': expense.label, 
+        'amountCfa': expense.amountCfa, 
+        'hash': hash,
+      },
     );
 
     return localId;
@@ -368,6 +405,39 @@ class ExpenseOfflineRepository extends OfflineRepository<Expense>
       );
     } catch (e) {
       AppLogger.error('Failed to log expense audit: $action', error: e);
+    }
+  }
+
+  @override
+  Future<bool> verifyChain() async {
+    try {
+      final expenses = await getAllForEnterprise(enterpriseId);
+      if (expenses.isEmpty) return true;
+
+      expenses.sort((a, b) => b.date.compareTo(a.date));
+
+      for (int i = 0; i < expenses.length; i++) {
+        final current = expenses[i];
+        final previous = i + 1 < expenses.length ? expenses[i + 1] : null;
+
+        final isValid = LedgerHashService.verify(
+          current,
+          previous?.hash,
+          shopSecret,
+        );
+
+        if (!isValid) {
+          AppLogger.error(
+            'Chain integrity violation at expense ${current.id}.',
+            name: 'ExpenseOfflineRepository',
+          );
+          return false;
+        }
+      }
+      return true;
+    } catch (e) {
+      AppLogger.error('Expense chain verification failed', error: e);
+      return false;
     }
   }
 }

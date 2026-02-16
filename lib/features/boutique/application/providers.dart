@@ -343,7 +343,9 @@ final activeProductsProvider = Provider.autoDispose<AsyncValue<List<Product>>>((
 });
 
 final recentSalesProvider = StreamProvider(
-  (ref) => ref.watch(storeControllerProvider).watchRecentSales(),
+  (ref) => ref.watch(storeControllerProvider).watchRecentSales().debounceTime(
+        const Duration(milliseconds: 500),
+      ),
 );
 
 final lowStockProductsProvider = StreamProvider.autoDispose(
@@ -418,7 +420,7 @@ final boutiqueMonthlyMetricsProvider = StreamProvider.autoDispose<
         purchases: purchases,
         expenses: expenses,
       ),
-    );
+    ).debounceTime(const Duration(milliseconds: 500));
   },
 );
 

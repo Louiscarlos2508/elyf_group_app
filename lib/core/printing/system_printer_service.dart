@@ -96,4 +96,20 @@ class SystemPrinterService implements PrinterInterface {
   Future<void> disconnect() async {
     // Nothing to do
   }
+
+  @override
+  Future<bool> printRow(List<String> columns, {List<int>? weights, List<int>? alignments}) async {
+    // Join with spaces for PDF preview/system printing
+    return await printText(columns.join('   '));
+  }
+
+  @override
+  Future<bool> printBarCode(String data, {int? width, int? height}) async {
+    return await printText('[BARCODE: $data]');
+  }
+
+  @override
+  Future<bool> printQrCode(String data, {int? size}) async {
+    return await printText('[QRCODE: $data]');
+  }
 }

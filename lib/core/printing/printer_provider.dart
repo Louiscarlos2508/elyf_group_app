@@ -1,6 +1,5 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:elyf_groupe_app/features/boutique/application/providers.dart';
 import 'printer_interface.dart';
 import 'sunmi_v3_service.dart';
 import 'thermal_printer_service.dart';

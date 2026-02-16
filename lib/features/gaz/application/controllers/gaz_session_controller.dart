@@ -1,5 +1,6 @@
 import '../../domain/entities/gaz_session.dart';
 import '../../domain/repositories/session_repository.dart';
+import '../../../../core/offline/offline_repository.dart' show LocalIdGenerator;
 
 class GazSessionController {
   GazSessionController({
@@ -15,14 +16,34 @@ class GazSessionController {
     return sessionRepository.watchSessions();
   }
 
-  /// Récupère la session pour une date précise.
-  Future<GazSession?> getSessionForDate(DateTime date) {
-    return sessionRepository.getSessionByDate(date);
+  /// Récupère la session active.
+  Future<GazSession?> getActiveSession() {
+    return sessionRepository.getActiveSession(enterpriseId);
+  }
+
+  /// Ouvre une nouvelle session.
+  Future<void> openSession({required String userId}) async {
+    final active = await getActiveSession();
+    if (active != null) return; // Déjà une session ouverte
+
+    final session = GazSession(
+      id: LocalIdGenerator.generate(),
+      enterpriseId: enterpriseId,
+      status: GazSessionStatus.open,
+      openedAt: DateTime.now(),
+      openedBy: userId,
+      date: DateTime.now(),
+    );
+
+    await sessionRepository.saveSession(session);
   }
 
   /// Enregistre une clôture de session.
   Future<void> confirmSessionClosure(GazSession session) async {
-    await sessionRepository.saveSession(session);
+    await sessionRepository.saveSession(session.copyWith(
+      status: GazSessionStatus.closed,
+      closedAt: DateTime.now(),
+    ));
   }
 
   /// Supprime une session.
