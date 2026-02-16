@@ -1,4 +1,5 @@
 import '../../../../features/boutique/domain/entities/sale.dart';
+import '../../../../shared/domain/entities/payment_method.dart';
 import '../../../../shared.dart';
 import '../thermal_receipt_builder.dart';
 
@@ -90,6 +91,8 @@ class SalesReceiptTemplate {
         return 'Mixte';
       case PaymentMethod.card:
         return 'Carte Bancaire';
+      case PaymentMethod.credit:
+        return 'Crédit';
     }
   }
 }

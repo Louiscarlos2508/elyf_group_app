@@ -203,6 +203,7 @@ class _DashboardKpiSliver extends ConsumerWidget {
         sales: data.sales,
         expenses: data.expenses,
         cylinders: data.cylinders,
+        stocks: data.stocks,
       ),
       loading: () => AppShimmers.statsGrid(context),
       error: (error, stackTrace) => ErrorDisplayWidget(

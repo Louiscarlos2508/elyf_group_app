@@ -1,4 +1,4 @@
-import 'sale.dart' show PaymentMethod;
+import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
 
 /// Represents an expense for the boutique.
 class Expense {

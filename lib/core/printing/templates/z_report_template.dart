@@ -72,7 +72,7 @@ class ZReportTemplate {
 
     if (closing.notes != null && closing.notes!.isNotEmpty) {
       builder.writeLine('Notes:');
-      builder.writeLine(closing.notes);
+      builder.writeLine(closing.notes!);
       builder.space();
     }
 

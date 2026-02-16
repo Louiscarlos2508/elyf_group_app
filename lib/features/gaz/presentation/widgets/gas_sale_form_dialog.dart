@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/tenant/tenant_provider.dart';
+import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 import 'package:elyf_groupe_app/shared.dart';
-import '../../domain/entities/cylinder.dart';
-import '../../domain/entities/gas_sale.dart';
-import '../../domain/entities/tour.dart';
-import '../../domain/services/gas_calculation_service.dart';
+import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
+import 'package:elyf_groupe_app/features/gaz/domain/entities/gaz_settings.dart';
+import 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder.dart';
+import 'package:elyf_groupe_app/features/gaz/domain/entities/gas_sale.dart';
+import 'package:elyf_groupe_app/features/gaz/domain/entities/tour.dart';
+import 'package:elyf_groupe_app/features/gaz/domain/services/gas_calculation_service.dart';
 import 'gas_sale_form/customer_info_widget.dart';
 import 'gas_sale_form/cylinder_selector_widget.dart';
 import 'gas_sale_form/gas_sale_submit_handler.dart';
@@ -47,7 +50,7 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
   GasSale? _completedSale;
   bool _emptyReturned = true; // Par défaut, on suppose qu'un client rend une bouteille (échange standard)
   String _selectedTier = 'default';
-  PaymentMethod _selectedPaymentMethod = PaymentMethod.cash;
+  final PaymentMethod _selectedPaymentMethod = PaymentMethod.cash;
   bool _isInitialized = false;
 
   @override
@@ -84,7 +87,7 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
       final enterpriseId = ref.read(activeEnterpriseProvider).value?.id;
       if (enterpriseId != null) {
         final settings = ref.read(gazSettingsProvider((enterpriseId: enterpriseId, moduleId: 'gaz'))).value;
-        if (settings != null) {
+        if (settings is GazSettings) {
           depositPart = settings.getDepositRate(_selectedCylinder!.weight) * quantity;
         }
       }
@@ -183,7 +186,7 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
         )));
         
         settingsAsync.whenData((settings) async {
-          if (settings?.autoPrintReceipt == true) {
+          if (settings is GazSettings && settings.autoPrintReceipt == true) {
             final printingService = ref.read(gazPrintingServiceProvider);
             final enterpriseName = ref.read(activeEnterpriseProvider).value?.name;
             
@@ -220,6 +223,16 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
       });
     }
 
+    // Vérification de la hiérarchie pour les ventes au détail (Epic 6)
+    final activeEnterprise = activeEnterpriseAsync.value;
+    final isRetailAndNotPOS = widget.saleType == SaleType.retail && 
+                             activeEnterprise != null && 
+                             activeEnterprise.type != EnterpriseType.gasPointOfSale;
+
+    if (isRetailAndNotPOS) {
+       return _buildPOSSelectionRequiredView(theme, activeEnterprise);
+    }
+
     try {
       return Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -231,7 +244,7 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
+                color: theme.colorScheme.shadow.withValues(alpha: 0.1),
                 blurRadius: 15,
                 offset: const Offset(0, 5),
               ),
@@ -372,9 +385,9 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
                                     builder: (context, value, child) {
                                       return Transform.scale(
                                         scale: value,
-                                        child: const Icon(
+                                        child: Icon(
                                           Icons.check_circle_rounded,
-                                          color: Colors.green,
+                                          color: theme.colorScheme.primary,
                                           size: 32,
                                         ),
                                       );
@@ -386,8 +399,8 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
                                       'Vente enregistrée avec succès',
                                       style: theme.textTheme.titleMedium?.copyWith(
                                         fontWeight: FontWeight.bold,
-                                        color: Colors.green,
-                                      ),
+                                          color: theme.colorScheme.primary,
+                                        ),
                                     ),
                                   ),
                               ],
@@ -462,6 +475,105 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
       );
     }
   }
+
+  Widget _buildPOSSelectionRequiredView(ThemeData theme, Enterprise currentEnterprise) {
+    final accessibleEnterprisesAsync = ref.watch(userAccessibleEnterprisesProvider);
+    
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        constraints: const BoxConstraints(maxWidth: 400),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.store_outlined, size: 48, color: theme.colorScheme.primary),
+            const SizedBox(height: 16),
+            Text(
+              'Point de Vente Requis',
+              style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Les ventes au détail doivent être effectuées depuis un Point de Vente (POS). Vous êtes actuellement sur "${currentEnterprise.name}".',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 24),
+            accessibleEnterprisesAsync.when(
+              data: (enterprises) {
+                final posList = enterprises.where((e) => 
+                  e.type == EnterpriseType.gasPointOfSale && 
+                  (e.parentEnterpriseId == currentEnterprise.id || 
+                   currentEnterprise.type == EnterpriseType.group ||
+                   e.ancestorIds.contains(currentEnterprise.id))
+                ).toList();
+
+                if (posList.isEmpty) {
+                  return Column(
+                    children: [
+                      Icon(Icons.warning_amber_rounded, color: theme.colorScheme.error),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Aucun point de vente Gaz accessible trouvé pour cette entreprise.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: theme.colorScheme.error),
+                      ),
+                    ],
+                  );
+                }
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Sélectionnez un Point de Vente :',
+                      style: theme.textTheme.labelLarge,
+                    ),
+                    const SizedBox(height: 12),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxHeight: 300),
+                      child: ListView.separated(
+                        shrinkWrap: true,
+                        itemCount: posList.length,
+                        separatorBuilder: (_, __) => const Divider(),
+                        itemBuilder: (context, index) {
+                          final pos = posList[index];
+                          return ListTile(
+                            leading: CircleAvatar(
+                              backgroundColor: theme.colorScheme.primaryContainer,
+                              child: Icon(Icons.location_on_outlined, 
+                                size: 20, color: theme.colorScheme.onPrimaryContainer),
+                            ),
+                            title: Text(pos.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+                            subtitle: Text(pos.address ?? 'Pas d\'adresse', maxLines: 1, overflow: TextOverflow.ellipsis),
+                            onTap: () async {
+                              final notifier = ref.read(activeEnterpriseIdProvider.notifier);
+                              await notifier.setActiveEnterpriseId(pos.id);
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                );
+              },
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, __) => Text('Erreur: $e'),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Annuler'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _DepositInfoRow extends ConsumerWidget {
@@ -471,6 +583,7 @@ class _DepositInfoRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
     final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id;
     if (enterpriseId == null) return const SizedBox.shrink();
 
@@ -486,20 +599,19 @@ class _DepositInfoRow extends ConsumerWidget {
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
-            color: const Color(0xFFF0F9FF),
+            color: theme.colorScheme.secondaryContainer,
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: const Color(0xFFB9E6FE)),
+            border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.2)),
           ),
           child: Row(
             children: [
-              const Icon(Icons.info_outline, size: 16, color: Color(0xFF026AA2)),
+              Icon(Icons.info_outline, size: 16, color: theme.colorScheme.onSecondaryContainer),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   'Inclut ${totalDeposit.toStringAsFixed(0)} FCFA de consigne (${rate.toStringAsFixed(0)} x $quantity)',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF026AA2),
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSecondaryContainer,
                     fontWeight: FontWeight.w500,
                   ),
                 ),

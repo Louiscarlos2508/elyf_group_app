@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/printing/thermal_printer_service.dart';
+import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
 import '../../domain/entities/gas_sale.dart';
 import '../services/gaz_calculation_service.dart';
 

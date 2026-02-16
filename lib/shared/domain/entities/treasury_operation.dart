@@ -1,15 +1,15 @@
 import 'package:equatable/equatable.dart';
-import '../../../../shared/domain/entities/payment_method.dart';
+import 'payment_method.dart';
 
 /// Type of treasury operation.
 enum TreasuryOperationType {
-  supply, // Apport de fonds (ex: Loyer)
-  removal, // Retrait de fonds (ex: Dépense)
+  supply, // Apport de fonds
+  removal, // Retrait de fonds
   transfer, // Transfert entre comptes
   adjustment, // Ajustement de solde
 }
 
-/// Represents a cash flow operation (manual or internal).
+/// Represents a cash flow operation (manual or internal) shared across modules.
 class TreasuryOperation extends Equatable {
   const TreasuryOperation({
     required this.id,
@@ -23,11 +23,13 @@ class TreasuryOperation extends Equatable {
     this.reason,
     this.recipient,
     this.notes,
-    this.createdAt,
-    this.updatedAt,
     this.number,
     this.referenceEntityId,
     this.referenceEntityType,
+    this.hash,
+    this.previousHash,
+    this.createdAt,
+    this.updatedAt,
   });
 
   final String id;
@@ -38,16 +40,21 @@ class TreasuryOperation extends Equatable {
   final PaymentMethod? fromAccount;
   final PaymentMethod? toAccount;
   final DateTime date;
-  final String? reason; // e.g., 'Retrait Superviseur', 'Paiement Loyer'
+  final String? reason;
   final String? recipient;
   final String? notes;
-  final DateTime? createdAt;
-  final DateTime? updatedAt;
-  final String? number; // ex: TRE-IMMO-20240213-001
+  final String? number;
   
   // Link to other entities (e.g. Payment ID, Expense ID)
   final String? referenceEntityId;
-  final String? referenceEntityType; // 'payment', 'expense'
+  final String? referenceEntityType;
+  
+  // Ledger integrity (used in Boutique)
+  final String? hash;
+  final String? previousHash;
+
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
 
   TreasuryOperation copyWith({
     String? id,
@@ -61,11 +68,13 @@ class TreasuryOperation extends Equatable {
     String? reason,
     String? recipient,
     String? notes,
-    DateTime? createdAt,
-    DateTime? updatedAt,
     String? number,
     String? referenceEntityId,
     String? referenceEntityType,
+    String? hash,
+    String? previousHash,
+    DateTime? createdAt,
+    DateTime? updatedAt,
   }) {
     return TreasuryOperation(
       id: id ?? this.id,
@@ -79,17 +88,19 @@ class TreasuryOperation extends Equatable {
       reason: reason ?? this.reason,
       recipient: recipient ?? this.recipient,
       notes: notes ?? this.notes,
-      createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
       number: number ?? this.number,
       referenceEntityId: referenceEntityId ?? this.referenceEntityId,
       referenceEntityType: referenceEntityType ?? this.referenceEntityType,
+      hash: hash ?? this.hash,
+      previousHash: previousHash ?? this.previousHash,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 
   factory TreasuryOperation.fromMap(Map<String, dynamic> map, String defaultEnterpriseId) {
     return TreasuryOperation(
-      id: map['id'] as String? ?? map['localId'] as String,
+      id: map['id'] as String? ?? map['localId'] as String? ?? '',
       enterpriseId: map['enterpriseId'] as String? ?? defaultEnterpriseId,
       userId: map['userId'] as String? ?? '',
       amount: (map['amount'] as num).toInt(),
@@ -98,20 +109,22 @@ class TreasuryOperation extends Equatable {
         orElse: () => TreasuryOperationType.adjustment,
       ),
       fromAccount: map['fromAccount'] != null 
-          ? PaymentMethod.values.firstWhere((e) => e.name == map['fromAccount']) 
+          ? PaymentMethod.values.byName(map['fromAccount'] as String) 
           : null,
       toAccount: map['toAccount'] != null 
-          ? PaymentMethod.values.firstWhere((e) => e.name == map['toAccount']) 
+          ? PaymentMethod.values.byName(map['toAccount'] as String) 
           : null,
       date: DateTime.parse(map['date'] as String),
       reason: map['reason'] as String?,
       recipient: map['recipient'] as String?,
       notes: map['notes'] as String?,
-      createdAt: map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : null,
-      updatedAt: map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : null,
       number: map['number'] as String?,
       referenceEntityId: map['referenceEntityId'] as String?,
       referenceEntityType: map['referenceEntityType'] as String?,
+      hash: map['hash'] as String?,
+      previousHash: map['previousHash'] as String?,
+      createdAt: map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : null,
+      updatedAt: map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : null,
     );
   }
 
@@ -128,11 +141,13 @@ class TreasuryOperation extends Equatable {
       'reason': reason,
       'recipient': recipient,
       'notes': notes,
-      'createdAt': createdAt?.toIso8601String(),
-      'updatedAt': updatedAt?.toIso8601String(),
       'number': number,
       'referenceEntityId': referenceEntityId,
       'referenceEntityType': referenceEntityType,
+      'hash': hash,
+      'previousHash': previousHash,
+      'createdAt': createdAt?.toIso8601String(),
+      'updatedAt': updatedAt?.toIso8601String(),
     };
   }
 
@@ -149,10 +164,12 @@ class TreasuryOperation extends Equatable {
         reason,
         recipient,
         notes,
-        createdAt,
-        updatedAt,
         number,
         referenceEntityId,
         referenceEntityType,
+        hash,
+        previousHash,
+        createdAt,
+        updatedAt,
       ];
 }

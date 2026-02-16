@@ -1,3 +1,4 @@
+import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
 import '../entities/collection.dart';
 import '../entities/cylinder.dart';
 import '../entities/cylinder_stock.dart';

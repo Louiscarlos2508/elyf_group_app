@@ -8,6 +8,7 @@ import '../../audit_trail/application/providers.dart';
 import 'package:elyf_groupe_app/core/offline/drift_service.dart';
 import 'package:elyf_groupe_app/core/offline/providers.dart';
 import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 export 'controllers/cylinder_controller.dart';
 export 'controllers/cylinder_leak_controller.dart';
 export 'controllers/cylinder_stock_controller.dart';
@@ -47,6 +48,7 @@ import '../data/repositories/session_offline_repository.dart';
 import '../data/repositories/stock_transfer_offline_repository.dart';
 import '../data/repositories/tour_offline_repository.dart';
 import '../data/repositories/wholesaler_offline_repository.dart';
+import '../data/repositories/treasury_offline_repository.dart';
 import '../domain/repositories/inventory_audit_repository.dart';
 import '../data/repositories/inventory_audit_offline_repository.dart';
 import '../domain/entities/gaz_inventory_audit.dart';
@@ -58,7 +60,6 @@ import '../domain/entities/expense.dart';
 import '../domain/entities/financial_report.dart';
 import '../domain/entities/gas_sale.dart';
 import '../domain/entities/stock_alert.dart';
-import '../domain/entities/cylinder.dart';
 import '../domain/entities/gaz_settings.dart';
 import '../domain/entities/point_of_sale.dart';
 import '../domain/entities/report_data.dart';
@@ -66,6 +67,7 @@ import '../domain/entities/stock_transfer.dart';
 import '../domain/entities/tour.dart';
 import '../domain/entities/wholesaler.dart';
 import '../domain/entities/gaz_session.dart';
+import 'package:elyf_groupe_app/shared/domain/entities/treasury_operation.dart';
 import '../domain/services/leak_report_service.dart';
 import '../domain/services/wholesaler_service.dart';
 import '../domain/repositories/cylinder_leak_repository.dart';
@@ -80,6 +82,7 @@ import '../domain/repositories/session_repository.dart';
 import '../domain/repositories/stock_transfer_repository.dart';
 import '../domain/repositories/tour_repository.dart';
 import '../domain/repositories/wholesaler_repository.dart';
+import '../domain/repositories/treasury_repository.dart';
 import '../domain/services/data_consistency_service.dart';
 import '../domain/services/financial_calculation_service.dart';
 import '../domain/services/gas_calculation_service.dart';
@@ -162,6 +165,27 @@ final gazPrintingServiceProvider = Provider<GazPrintingService>((ref) {
   return GazPrintingService(printerService: printerService);
 });
 // Repositories
+
+/// Scoped enterprise IDs for Gaz module data access.
+/// Returns the active enterprise ID and all its children if it's a mother company.
+final gazScopedEnterpriseIdsProvider = FutureProvider<List<String>>((ref) async {
+  final activeEnterprise = await ref.watch(activeEnterpriseProvider.future);
+  if (activeEnterprise == null) return [];
+
+  final List<String> scopedIds = [activeEnterprise.id];
+
+  // If the active enterprise is a mother company, include all its children
+  if (activeEnterprise.type == EnterpriseType.gasCompany) {
+    final allAccessibleEnterprises = await ref.watch(userAccessibleEnterprisesProvider.future);
+    final childrenIds = allAccessibleEnterprises
+        .where((e) => e.parentEnterpriseId == activeEnterprise.id || e.ancestorIds.contains(activeEnterprise.id))
+        .map((e) => e.id);
+    scopedIds.addAll(childrenIds);
+  }
+
+  return scopedIds.toSet().toList();
+});
+
 final gasRepositoryProvider = Provider<GasRepository>((ref) {
   final enterpriseId =
       ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
@@ -191,6 +215,24 @@ final gazExpenseRepositoryProvider = Provider<GazExpenseRepository>((ref) {
     enterpriseId: enterpriseId,
     moduleType: 'gaz',
   );
+});
+
+final gazTreasuryRepositoryProvider = Provider<GazTreasuryRepository>((ref) {
+  final drift = ref.watch(driftServiceProvider);
+  final sync = ref.watch(syncManagerProvider);
+  return GazTreasuryOfflineRepository(drift.db, sync);
+});
+
+final gazTreasuryBalanceProvider = FutureProvider.family<Map<String, int>, String>((ref, enterpriseId) {
+  final repo = ref.watch(gazTreasuryRepositoryProvider);
+  final scopedIds = ref.watch(gazScopedEnterpriseIdsProvider).value;
+  return repo.getBalances(enterpriseId, enterpriseIds: scopedIds);
+});
+
+final gazTreasuryOperationsStreamProvider = StreamProvider.family<List<TreasuryOperation>, String>((ref, enterpriseId) {
+  final repo = ref.watch(gazTreasuryRepositoryProvider);
+  final scopedIds = ref.watch(gazScopedEnterpriseIdsProvider).value;
+  return repo.watchOperations(enterpriseId, enterpriseIds: scopedIds);
 });
 
 /// Provider for GazSessionRepository.
@@ -426,6 +468,7 @@ final transactionServiceProvider = Provider<TransactionService>((ref) {
   final inventoryAuditRepo = ref.watch(inventoryAuditRepositoryProvider(enterpriseId));
   final expenseRepo = ref.watch(gazExpenseRepositoryProvider);
   final sessionRepo = ref.watch(gazSessionRepositoryProvider);
+  final treasuryRepo = ref.watch(gazTreasuryRepositoryProvider);
 
   return TransactionService(
     stockRepository: stockRepo,
@@ -440,6 +483,7 @@ final transactionServiceProvider = Provider<TransactionService>((ref) {
     inventoryAuditRepository: inventoryAuditRepo,
     expenseRepository: expenseRepo,
     sessionRepository: sessionRepo,
+    treasuryRepository: treasuryRepo,
   );
 });
 
@@ -622,13 +666,24 @@ final pointsOfSaleProvider = StreamProvider.family
 // Sales
 final gasSalesProvider = StreamProvider<List<GasSale>>((ref) {
   final controller = ref.watch(gasControllerProvider);
-  return controller.watchSales();
+  final scopedIds = ref.watch(gazScopedEnterpriseIdsProvider).value;
+  return controller.watchSales(enterpriseIds: scopedIds);
 });
 
 // Expenses
 final gazExpensesProvider = StreamProvider<List<GazExpense>>((ref) {
   final controller = ref.watch(expenseControllerProvider);
-  return controller.watchExpenses();
+  final scopedIds = ref.watch(gazScopedEnterpriseIdsProvider).value;
+  return controller.watchExpenses(enterpriseIds: scopedIds);
+});
+
+// Stocks
+final gazStocksProvider = StreamProvider<List<CylinderStock>>((ref) {
+  final controller = ref.watch(cylinderStockControllerProvider);
+  final scopedIds = ref.watch(gazScopedEnterpriseIdsProvider).value;
+  final enterpriseId = ref.watch(activeEnterpriseIdProvider).value ?? 'default';
+  
+  return controller.watchStocks(enterpriseId, enterpriseIds: scopedIds);
 });
 
 /// Provider combiné pour les données du dashboard gaz.
@@ -636,20 +691,23 @@ final gazExpensesProvider = StreamProvider<List<GazExpense>>((ref) {
 /// Simplifie l'utilisation en combinant sales, expenses et cylinders
 /// en un seul AsyncValue.
 final gazDashboardDataProvider = StreamProvider<
-    ({List<GasSale> sales, List<GazExpense> expenses, List<Cylinder> cylinders})>(
+    ({List<GasSale> sales, List<GazExpense> expenses, List<Cylinder> cylinders, List<CylinderStock> stocks})>(
   (ref) {
     final salesAsync = ref.watch(gasSalesProvider);
     final expensesAsync = ref.watch(gazExpensesProvider);
     final cylindersAsync = ref.watch(cylindersProvider);
+    final stocksAsync = ref.watch(gazStocksProvider);
 
     final sales = salesAsync.value ?? [];
     final expenses = expensesAsync.value ?? [];
     final cylinders = cylindersAsync.value ?? [];
+    final stocks = stocksAsync.value ?? [];
 
     return Stream.value((
       sales: sales,
       expenses: expenses,
       cylinders: cylinders,
+      stocks: stocks,
     ));
   },
 );

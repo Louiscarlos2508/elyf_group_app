@@ -3,7 +3,7 @@ import '../../../../core/offline/offline_repository.dart';
 import '../../../../shared/domain/entities/payment_method.dart';
 import '../../../audit_trail/domain/entities/audit_record.dart';
 import '../../../audit_trail/domain/repositories/audit_trail_repository.dart';
-import '../../domain/entities/treasury_operation.dart';
+import 'package:elyf_groupe_app/shared/domain/entities/treasury_operation.dart';
 import '../../domain/repositories/treasury_repository.dart';
 
 class TreasuryOfflineRepository extends OfflineRepository<TreasuryOperation> implements TreasuryRepository {

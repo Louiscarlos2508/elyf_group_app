@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../application/providers.dart';
-import '../../../domain/entities/treasury_operation.dart';
+import 'package:elyf_groupe_app/shared/domain/entities/treasury_operation.dart';
 import '../../../../../../shared/domain/entities/payment_method.dart';
 import '../../widgets/immobilier_header.dart';
 import 'widgets/treasury_operation_dialog.dart';

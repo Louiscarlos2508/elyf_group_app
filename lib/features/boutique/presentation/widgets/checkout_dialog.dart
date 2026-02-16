@@ -9,6 +9,7 @@ import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/cart_item.dart';
 import '../../domain/entities/sale.dart';
+import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
 
 class CheckoutDialog extends ConsumerStatefulWidget {
   const CheckoutDialog({

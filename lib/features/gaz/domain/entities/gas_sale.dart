@@ -1,3 +1,6 @@
+import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
+
 /// Représente une vente de gaz.
 class GasSale {
   const GasSale({
@@ -190,12 +193,3 @@ enum GasSaleDealType {
   final String label;
 }
 
-enum PaymentMethod {
-  cash('Espèces'),
-  mobileMoney('Mobile Money'),
-  card('Carte'),
-  credit('Crédit');
-
-  const PaymentMethod(this.label);
-  final String label;
-}

@@ -1,16 +1,17 @@
 
 import 'dart:convert';
 
-import '../../../../core/errors/app_exceptions.dart';
-import '../../../../core/errors/error_handler.dart';
-import '../../../../core/logging/app_logger.dart';
-import '../../../../core/offline/connectivity_service.dart';
-import '../../../../core/offline/drift_service.dart';
-import '../../../../core/offline/offline_repository.dart';
-import '../../../../core/offline/sync_manager.dart';
-import '../../domain/entities/cylinder.dart';
-import '../../domain/entities/gas_sale.dart';
-import '../../domain/repositories/gas_repository.dart';
+import 'package:elyf_groupe_app/core/errors/app_exceptions.dart';
+import 'package:elyf_groupe_app/core/errors/error_handler.dart';
+import 'package:elyf_groupe_app/core/logging/app_logger.dart';
+import 'package:elyf_groupe_app/core/offline/connectivity_service.dart';
+import 'package:elyf_groupe_app/core/offline/drift_service.dart';
+import 'package:elyf_groupe_app/core/offline/drift/app_database.dart';
+import 'package:elyf_groupe_app/core/offline/offline_repository.dart';
+import 'package:elyf_groupe_app/core/offline/sync_manager.dart';
+import 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder.dart';
+import 'package:elyf_groupe_app/features/gaz/domain/entities/gas_sale.dart';
+import 'package:elyf_groupe_app/features/gaz/domain/repositories/gas_repository.dart';
 
 /// Offline-first repository for Gas entities (gaz module).
 ///
@@ -394,13 +395,22 @@ class GasOfflineRepository implements GasRepository {
   // Implémentation de GasRepository - Sales
 
   @override
-  Future<List<GasSale>> getSales({DateTime? from, DateTime? to}) async {
+  Future<List<GasSale>> getSales({DateTime? from, DateTime? to, List<String>? enterpriseIds}) async {
     try {
-      final rows = await driftService.records.listForEnterprise(
-        collectionName: _salesCollection,
-        enterpriseId: enterpriseId,
-        moduleType: 'gaz',
-      );
+      final List<OfflineRecord> rows;
+      if (enterpriseIds != null && enterpriseIds.isNotEmpty) {
+        rows = await driftService.records.listForEnterprises(
+          collectionName: _salesCollection,
+          enterpriseIds: enterpriseIds,
+          moduleType: 'gaz',
+        );
+      } else {
+        rows = await driftService.records.listForEnterprise(
+          collectionName: _salesCollection,
+          enterpriseId: enterpriseId,
+          moduleType: 'gaz',
+        );
+      }
 
       var sales = rows
           .map((row) {
@@ -436,14 +446,23 @@ class GasOfflineRepository implements GasRepository {
   }
 
   @override
-  Stream<List<GasSale>> watchSales({DateTime? from, DateTime? to}) {
-    return driftService.records
-        .watchForEnterprise(
-          collectionName: _salesCollection,
-          enterpriseId: enterpriseId,
-          moduleType: 'gaz',
-        )
-        .map((rows) {
+  Stream<List<GasSale>> watchSales({DateTime? from, DateTime? to, List<String>? enterpriseIds}) {
+    final Stream<List<OfflineRecord>> stream;
+    if (enterpriseIds != null && enterpriseIds.isNotEmpty) {
+      stream = driftService.records.watchForEnterprises(
+        collectionName: _salesCollection,
+        enterpriseIds: enterpriseIds,
+        moduleType: 'gaz',
+      );
+    } else {
+      stream = driftService.records.watchForEnterprise(
+        collectionName: _salesCollection,
+        enterpriseId: enterpriseId,
+        moduleType: 'gaz',
+      );
+    }
+
+    return stream.map((rows) {
           var sales = rows
               .map((row) {
                 try {

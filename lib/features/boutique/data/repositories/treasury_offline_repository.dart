@@ -2,9 +2,9 @@ import 'dart:convert';
 import '../../../../core/offline/offline_repository.dart';
 import '../../../audit_trail/domain/entities/audit_record.dart';
 import '../../../audit_trail/domain/repositories/audit_trail_repository.dart';
-import '../../domain/entities/treasury_operation.dart';
+import 'package:elyf_groupe_app/shared/domain/entities/treasury_operation.dart';
 import '../../domain/repositories/treasury_repository.dart';
-import '../../domain/entities/sale.dart';
+import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
 import '../../domain/services/security/ledger_hash_service.dart';
 import '../../../../core/logging/app_logger.dart';
 

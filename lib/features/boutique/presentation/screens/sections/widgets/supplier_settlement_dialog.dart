@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../domain/entities/supplier.dart';
 import '../../../../domain/entities/supplier_settlement.dart';
-import '../../../../domain/entities/sale.dart' show PaymentMethod;
+import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
 import '../../../../application/providers.dart';
 import '../../../../../../core/tenant/tenant_provider.dart' show activeEnterpriseProvider;
 

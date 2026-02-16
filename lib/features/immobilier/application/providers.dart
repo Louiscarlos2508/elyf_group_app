@@ -44,7 +44,7 @@ import '../data/repositories/maintenance_offline_repository.dart';
 import '../domain/entities/maintenance_ticket.dart';
 import '../domain/repositories/maintenance_repository.dart';
 import 'controllers/maintenance_controller.dart';
-import '../domain/entities/treasury_operation.dart';
+import 'package:elyf_groupe_app/shared/domain/entities/treasury_operation.dart';
 import '../domain/repositories/treasury_repository.dart';
 import '../data/repositories/treasury_offline_repository.dart';
 import 'controllers/immobilier_treasury_controller.dart';

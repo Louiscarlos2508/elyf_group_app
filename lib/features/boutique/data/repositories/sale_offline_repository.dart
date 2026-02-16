@@ -8,6 +8,7 @@ import '../../../../core/offline/drift/app_database.dart';
 import '../../../audit_trail/domain/entities/audit_record.dart';
 import '../../../audit_trail/domain/repositories/audit_trail_repository.dart';
 import '../../domain/entities/sale.dart';
+import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
 import '../../domain/repositories/sale_repository.dart';
 import '../../domain/services/security/ledger_hash_service.dart';
 

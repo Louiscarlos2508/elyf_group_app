@@ -1,4 +1,4 @@
-import 'sale.dart' show PaymentMethod;
+import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
 import '../../../../core/domain/entities/attached_file.dart';
 
 /// Represents a purchase (achat) of products for the boutique.

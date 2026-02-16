@@ -1,5 +1,5 @@
 import '../../../../shared/domain/entities/payment_method.dart';
-import '../../domain/entities/treasury_operation.dart';
+import 'package:elyf_groupe_app/shared/domain/entities/treasury_operation.dart';
 import '../../domain/repositories/treasury_repository.dart';
 
 class ImmobilierTreasuryController {

@@ -73,6 +73,10 @@ class ReceiptService {
         return 'Mobile Money';
       case PaymentMethod.both:
         return 'Espèces + Mobile Money';
+      case PaymentMethod.card:
+        return 'Carte Bancaire';
+      case PaymentMethod.credit:
+        return 'Crédit / Dette';
     }
   }
 }

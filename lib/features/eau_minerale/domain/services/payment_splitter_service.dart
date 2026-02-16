@@ -1,5 +1,4 @@
-/// Payment method enum.
-enum PaymentMethod { cash, orangeMoney, both }
+import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
 
 /// Service for payment splitting logic.
 ///
@@ -18,7 +17,7 @@ class PaymentSplitterService {
           cashAmount: totalAmount,
           orangeMoneyAmount: 0,
         );
-      case PaymentMethod.orangeMoney:
+      case PaymentMethod.mobileMoney:
         return PaymentSplitResult(
           cashAmount: 0,
           orangeMoneyAmount: totalAmount,
@@ -28,6 +27,12 @@ class PaymentSplitterService {
         return PaymentSplitResult(
           cashAmount: cashAmount ?? 0,
           orangeMoneyAmount: orangeMoneyAmount ?? 0,
+        );
+      case PaymentMethod.card:
+      case PaymentMethod.credit:
+        return const PaymentSplitResult(
+          cashAmount: 0,
+          orangeMoneyAmount: 0,
         );
     }
   }

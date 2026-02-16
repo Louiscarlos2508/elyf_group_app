@@ -80,11 +80,11 @@ class DashboardPosPerformanceSection extends ConsumerWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline, size: 48, color: Colors.red[300]),
+            Icon(Icons.error_outline, size: 48, color: Theme.of(context).colorScheme.error.withValues(alpha: 0.5)),
             const SizedBox(height: 8),
             Text(
               'Erreur de chargement',
-              style: TextStyle(color: Colors.red[700], fontSize: 12),
+              style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 12),
             ),
           ],
         ),

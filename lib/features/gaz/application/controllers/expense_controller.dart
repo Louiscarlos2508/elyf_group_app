@@ -15,19 +15,19 @@ class GazExpenseController extends ChangeNotifier {
   List<GazExpense> get expenses => _expenses;
   bool get isLoading => _isLoading;
 
-  Future<void> loadExpenses({DateTime? from, DateTime? to}) async {
+  Future<void> loadExpenses({DateTime? from, DateTime? to, List<String>? enterpriseIds}) async {
     _isLoading = true;
     notifyListeners();
 
-    _expenses = await _repository.getExpenses(from: from, to: to);
+    _expenses = await _repository.getExpenses(from: from, to: to, enterpriseIds: enterpriseIds);
 
     _isLoading = false;
     notifyListeners();
   }
 
   /// Observe les dépenses en temps réel.
-  Stream<List<GazExpense>> watchExpenses({DateTime? from, DateTime? to}) {
-    return _repository.watchExpenses(from: from, to: to);
+  Stream<List<GazExpense>> watchExpenses({DateTime? from, DateTime? to, List<String>? enterpriseIds}) {
+    return _repository.watchExpenses(from: from, to: to, enterpriseIds: enterpriseIds);
   }
 
   Future<void> addExpense(GazExpense expense) async {

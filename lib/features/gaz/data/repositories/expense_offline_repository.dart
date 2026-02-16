@@ -1,10 +1,11 @@
 import 'dart:convert';
 
-import '../../../../core/errors/error_handler.dart';
-import '../../../../core/logging/app_logger.dart';
-import '../../../../core/offline/offline_repository.dart';
-import '../../domain/entities/expense.dart';
-import '../../domain/repositories/expense_repository.dart';
+import 'package:elyf_groupe_app/core/errors/error_handler.dart';
+import 'package:elyf_groupe_app/core/logging/app_logger.dart';
+import 'package:elyf_groupe_app/core/offline/drift/app_database.dart';
+import 'package:elyf_groupe_app/core/offline/offline_repository.dart';
+import 'package:elyf_groupe_app/features/gaz/domain/entities/expense.dart';
+import 'package:elyf_groupe_app/features/gaz/domain/repositories/expense_repository.dart';
 
 /// Offline-first repository for GazExpense entities.
 class GazExpenseOfflineRepository extends OfflineRepository<GazExpense>
@@ -120,9 +121,23 @@ class GazExpenseOfflineRepository extends OfflineRepository<GazExpense>
   }
 
   @override
-  Future<List<GazExpense>> getExpenses({DateTime? from, DateTime? to}) async {
+  Future<List<GazExpense>> getExpenses({DateTime? from, DateTime? to, List<String>? enterpriseIds}) async {
     try {
-      final all = await getAllForEnterprise(enterpriseId);
+      final List<GazExpense> all;
+      if (enterpriseIds != null && enterpriseIds.isNotEmpty) {
+        final rows = await driftService.records.listForEnterprises(
+          collectionName: collectionName,
+          enterpriseIds: enterpriseIds,
+          moduleType: moduleType,
+        );
+        all = rows
+            .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+            .where((expense) => !expense.isDeleted)
+            .toList();
+      } else {
+        all = await getAllForEnterprise(enterpriseId);
+      }
+
       return all.where((expense) {
         if (from != null && expense.date.isBefore(from)) return false;
         if (to != null && expense.date.isAfter(to)) return false;
@@ -144,35 +159,44 @@ class GazExpenseOfflineRepository extends OfflineRepository<GazExpense>
   // GazExpenseRepository implementation
 
   @override
-  Stream<List<GazExpense>> watchExpenses({DateTime? from, DateTime? to}) {
-    return driftService.records
-        .watchForEnterprise(
-          collectionName: collectionName,
-          enterpriseId: enterpriseId,
-          moduleType: moduleType,
-        )
-        .map((rows) {
-          final entities = rows
-              .map((r) {
-                try {
-                  final map = jsonDecode(r.dataJson) as Map<String, dynamic>;
-                  return fromMap(map);
-                } catch (e) {
-                  return null;
-                }
-              })
-              .whereType<GazExpense>()
-              .where((expense) => !expense.isDeleted)
-              .toList();
+  Stream<List<GazExpense>> watchExpenses({DateTime? from, DateTime? to, List<String>? enterpriseIds}) {
+    final Stream<List<OfflineRecord>> stream;
+    if (enterpriseIds != null && enterpriseIds.isNotEmpty) {
+      stream = driftService.records.watchForEnterprises(
+        collectionName: collectionName,
+        enterpriseIds: enterpriseIds,
+        moduleType: moduleType,
+      );
+    } else {
+      stream = driftService.records.watchForEnterprise(
+        collectionName: collectionName,
+        enterpriseId: enterpriseId,
+        moduleType: moduleType,
+      );
+    }
 
-          final deduplicated = deduplicateByRemoteId(entities);
-          return deduplicated.where((expense) {
-            if (from != null && expense.date.isBefore(from)) return false;
-            if (to != null && expense.date.isAfter(to)) return false;
-            return true;
-          }).toList()
-            ..sort((a, b) => b.date.compareTo(a.date));
-        });
+    return stream.map((rows) {
+      final entities = rows
+          .map((r) {
+            try {
+              final map = jsonDecode(r.dataJson) as Map<String, dynamic>;
+              return fromMap(map);
+            } catch (e) {
+              return null;
+            }
+          })
+          .whereType<GazExpense>()
+          .where((expense) => !expense.isDeleted)
+          .toList();
+
+      final deduplicated = deduplicateByRemoteId(entities);
+      return deduplicated.where((expense) {
+        if (from != null && expense.date.isBefore(from)) return false;
+        if (to != null && expense.date.isAfter(to)) return false;
+        return true;
+      }).toList()
+        ..sort((a, b) => b.date.compareTo(a.date));
+    });
   }
 
   @override

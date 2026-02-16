@@ -1,4 +1,4 @@
-import '../entities/treasury_operation.dart';
+import 'package:elyf_groupe_app/shared/domain/entities/treasury_operation.dart';
 
 abstract class TreasuryRepository {
   Future<List<TreasuryOperation>> fetchOperations({int limit = 50});

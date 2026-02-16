@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/domain/services/payment_splitter_service.dart';
+import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
 
 void main() {
   group('PaymentSplitterService', () {
@@ -15,9 +16,9 @@ void main() {
         expect(result.total, 10000);
       });
 
-      test('should split payment correctly for orangeMoney method', () {
+      test('should split payment correctly for mobileMoney method', () {
         final result = PaymentSplitterService.splitPayment(
-          method: PaymentMethod.orangeMoney,
+          method: PaymentMethod.mobileMoney,
           totalAmount: 10000,
         );
 

@@ -46,7 +46,7 @@ import 'package:elyf_groupe_app/features/boutique/domain/repositories/category_r
 import 'package:elyf_groupe_app/features/boutique/domain/entities/sale.dart';
 import 'package:elyf_groupe_app/features/boutique/domain/entities/purchase.dart';
 import 'package:elyf_groupe_app/features/boutique/domain/entities/expense.dart';
-import 'package:elyf_groupe_app/features/boutique/domain/entities/treasury_operation.dart';
+import 'package:elyf_groupe_app/shared/domain/entities/treasury_operation.dart';
 import 'package:elyf_groupe_app/features/boutique/domain/entities/closing.dart';
 import 'package:elyf_groupe_app/features/boutique/domain/entities/supplier.dart';
 import 'package:elyf_groupe_app/features/boutique/domain/entities/category.dart';

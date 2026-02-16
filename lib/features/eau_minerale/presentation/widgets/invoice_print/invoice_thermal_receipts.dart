@@ -1,6 +1,6 @@
 import '../../../domain/entities/sale.dart';
 import 'invoice_print_helpers.dart';
-import '../../../../core/printing/thermal_receipt_builder.dart';
+import '../../../../../core/printing/thermal_receipt_builder.dart';
 
 /// Génère le contenu texte pour l'imprimante thermique (vente).
 String generateSaleReceipt(Sale sale) {

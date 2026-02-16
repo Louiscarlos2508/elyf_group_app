@@ -46,30 +46,31 @@ class GazExpensesTable extends StatelessWidget {
     }
   }
 
-  Color _getCategoryColor(ExpenseCategory category) {
+  Color _getCategoryColor(BuildContext context, ExpenseCategory category) {
+    final theme = Theme.of(context);
     switch (category) {
       case ExpenseCategory.transport:
-        return const Color(0xFF3B82F6); // Blue
+        return theme.colorScheme.primary;
       case ExpenseCategory.maintenance:
-        return const Color(0xFFF59E0B); // Amber
+        return theme.colorScheme.secondary;
       case ExpenseCategory.salaries:
-        return const Color(0xFF8B5CF6); // Violet
+        return theme.colorScheme.tertiary;
       case ExpenseCategory.rent:
-        return const Color(0xFFEC4899); // Pink
+        return theme.colorScheme.outline;
       case ExpenseCategory.utilities:
-        return const Color(0xFF10B981); // Emerald
+        return theme.colorScheme.primary;
       case ExpenseCategory.supplies:
-        return const Color(0xFF06B6D4); // Cyan
+        return theme.colorScheme.secondary;
       case ExpenseCategory.structureCharges:
-        return const Color(0xFF6366F1); // Indigo
+        return theme.colorScheme.primary;
       case ExpenseCategory.loadingEvents:
-        return const Color(0xFF14B8A6); // Teal
+        return theme.colorScheme.secondary;
       case ExpenseCategory.other:
-        return const Color(0xFF64748B); // Slate
+        return theme.colorScheme.onSurfaceVariant;
       case ExpenseCategory.stockReplenishment:
-        return const Color(0xFF109B81); // Emerald-ish
+        return theme.colorScheme.primary;
       case ExpenseCategory.stockAdjustment:
-        return const Color(0xFFEF4444); // Red
+        return theme.colorScheme.error;
     }
   }
 
@@ -95,14 +96,14 @@ class GazExpensesTable extends StatelessWidget {
         final isWide = constraints.maxWidth > 600;
 
         if (isWide) {
-          return _buildDesktopTable(theme);
+          return _buildDesktopTable(context, theme);
         }
-        return _buildMobileList(theme);
+        return _buildMobileList(context, theme);
       },
     );
   }
 
-  Widget _buildDesktopTable(ThemeData theme) {
+  Widget _buildDesktopTable(BuildContext context, ThemeData theme) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: DataTable(
@@ -116,7 +117,7 @@ class GazExpensesTable extends StatelessWidget {
           DataColumn(label: Text('Actions')),
         ],
         rows: expenses.map((expense) {
-          final color = _getCategoryColor(expense.category);
+          final color = _getCategoryColor(context, expense.category);
           return DataRow(
             cells: [
               DataCell(
@@ -199,7 +200,7 @@ class GazExpensesTable extends StatelessWidget {
     );
   }
 
-  Widget _buildMobileList(ThemeData theme) {
+  Widget _buildMobileList(BuildContext context, ThemeData theme) {
     return ListView.separated(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -207,7 +208,7 @@ class GazExpensesTable extends StatelessWidget {
       separatorBuilder: (_, __) => const Divider(height: 1),
       itemBuilder: (context, index) {
         final expense = expenses[index];
-        final color = _getCategoryColor(expense.category);
+        final color = _getCategoryColor(context, expense.category);
 
         return ListTile(
           leading: Container(

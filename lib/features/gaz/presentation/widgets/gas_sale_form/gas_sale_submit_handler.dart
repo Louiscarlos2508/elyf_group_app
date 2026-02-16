@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import '../../../../../../core/errors/app_exceptions.dart';
 import '../../../../../../core/errors/error_handler.dart';

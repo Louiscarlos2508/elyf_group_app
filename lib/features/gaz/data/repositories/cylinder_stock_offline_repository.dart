@@ -109,14 +109,24 @@ class CylinderStockOfflineRepository extends OfflineRepository<CylinderStock>
       moduleType: moduleType,
     );
     final entities = rows
-
       .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
       .where((s) => !s.isDeleted)
       .toList();
 
-    
+    return deduplicateByRemoteId(entities);
+  }
 
-    // Dédupliquer par remoteId pour éviter les doublons
+  @override
+  Future<List<CylinderStock>> getAllForEnterprises(List<String> enterpriseIds) async {
+    final rows = await driftService.records.listForEnterprises(
+      collectionName: collectionName,
+      enterpriseIds: enterpriseIds,
+      moduleType: moduleType,
+    );
+    final entities = rows
+      .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+      .where((s) => !s.isDeleted)
+      .toList();
 
     return deduplicateByRemoteId(entities);
   }
@@ -178,6 +188,39 @@ class CylinderStockOfflineRepository extends OfflineRepository<CylinderStock>
           return deduplicated.where((stock) {
             if (status != null && stock.status != status) return false;
             if (siteId != null && stock.siteId != siteId) return false;
+            return true;
+          }).toList();
+        });
+  }
+
+  @override
+  Stream<List<CylinderStock>> watchStocksForEnterprises(
+    List<String> enterpriseIds, {
+    CylinderStatus? status,
+  }) {
+    return driftService.records
+        .watchForEnterprises(
+          collectionName: collectionName,
+          enterpriseIds: enterpriseIds,
+          moduleType: moduleType,
+        )
+        .map((rows) {
+          final entities = rows
+              .map((r) {
+                try {
+                  final map = jsonDecode(r.dataJson) as Map<String, dynamic>;
+                  final stock = fromMap(map);
+                  return stock.isDeleted ? null : stock;
+                } catch (e) {
+                  return null;
+                }
+              })
+              .whereType<CylinderStock>()
+              .toList();
+
+          final deduplicated = deduplicateByRemoteId(entities);
+          return deduplicated.where((stock) {
+            if (status != null && stock.status != status) return false;
             return true;
           }).toList();
         });

@@ -20,9 +20,11 @@ import '../repositories/exchange_repository.dart';
 import '../repositories/gaz_settings_repository.dart';
 import '../repositories/inventory_audit_repository.dart';
 import '../entities/expense.dart';
-import '../entities/gaz_session.dart';
 import '../repositories/expense_repository.dart';
 import '../repositories/session_repository.dart';
+import '../repositories/treasury_repository.dart';
+import 'package:elyf_groupe_app/shared/domain/entities/treasury_operation.dart';
+import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
 
 import '../../../audit_trail/domain/repositories/audit_trail_repository.dart';
 import '../../../audit_trail/domain/entities/audit_record.dart';
@@ -47,6 +49,7 @@ class TransactionService {
     required this.inventoryAuditRepository,
     required this.expenseRepository,
     required this.sessionRepository,
+    required this.treasuryRepository,
   });
 
   final CylinderStockRepository stockRepository;
@@ -61,6 +64,7 @@ class TransactionService {
   final GazInventoryAuditRepository inventoryAuditRepository;
   final GazExpenseRepository expenseRepository;
   final GazSessionRepository sessionRepository;
+  final GazTreasuryRepository treasuryRepository;
 
   /// Exécute un approvisionnement (Réception Plein) de manière atomique.
   /// 
@@ -133,6 +137,21 @@ class TransactionService {
       updatedAt: DateTime.now(),
     );
     await expenseRepository.addExpense(expense);
+    
+    // 2.5. Enregistrement Trésorerie (Epic 7)
+    await treasuryRepository.saveOperation(TreasuryOperation(
+      id: LocalIdGenerator.generate(),
+      enterpriseId: enterpriseId,
+      userId: userId,
+      amount: totalAmount.toInt(),
+      type: TreasuryOperationType.removal,
+      fromAccount: PaymentMethod.cash, // Les dépenses sortent généralement du cash
+      date: DateTime.now(),
+      reason: expense.description,
+      referenceEntityId: expense.id,
+      referenceEntityType: 'gaz_expense',
+      createdAt: DateTime.now(),
+    ));
 
     // 3. Audit Trail
     await auditTrailRepository.log(AuditRecord(
@@ -306,6 +325,21 @@ class TransactionService {
       // Nous l'enregistrons tel quel, mais nous logguons la part de consigne dans l'audit.
       
       await gasRepository.addSale(saleWithSession);
+  
+      // 4.5. Enregistrement Trésorerie (Epic 7)
+      await treasuryRepository.saveOperation(TreasuryOperation(
+        id: LocalIdGenerator.generate(),
+        enterpriseId: enterpriseId,
+        userId: saleWithSession.sellerId ?? '',
+        amount: saleWithSession.totalAmount.toInt(),
+        type: TreasuryOperationType.supply,
+        toAccount: saleWithSession.paymentMethod,
+        date: saleWithSession.saleDate,
+        reason: 'Vente Gaz ${weight}kg x ${saleWithSession.quantity}',
+        referenceEntityId: saleWithSession.id,
+        referenceEntityType: 'gas_sale',
+        createdAt: DateTime.now(),
+      ));
   
       // 5. Audit Log
       await auditTrailRepository.log(AuditRecord(
@@ -712,9 +746,24 @@ class TransactionService {
     final updatedTour = tour.copyWith(collections: updatedCollections);
 
     await tourRepository.updateTour(updatedTour);
+    
+    // 4. Enregistrement Trésorerie (Epic 7)
+    await treasuryRepository.saveOperation(TreasuryOperation(
+      id: LocalIdGenerator.generate(),
+      enterpriseId: tour.enterpriseId,
+      userId: '', // On suppose le chauffeur ou system
+      amount: amount.toInt(),
+      type: TreasuryOperationType.supply,
+      date: paymentDate,
+      reason: 'Paiement Collecte ${updatedCollection.clientName} (Tour: ${tour.id})',
+      referenceEntityId: updatedCollection.id,
+      referenceEntityType: 'gas_collection',
+      createdAt: DateTime.now(),
+    ));
 
     return updatedCollection;
   }
+
 
   /// Déclare une fuite de manière atomique.
   /// 

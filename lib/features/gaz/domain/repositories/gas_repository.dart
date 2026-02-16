@@ -12,8 +12,8 @@ abstract class GasRepository {
   Future<void> deleteCylinder(String id);
 
   // Sales
-  Future<List<GasSale>> getSales({DateTime? from, DateTime? to});
-  Stream<List<GasSale>> watchSales({DateTime? from, DateTime? to});
+  Future<List<GasSale>> getSales({DateTime? from, DateTime? to, List<String>? enterpriseIds});
+  Stream<List<GasSale>> watchSales({DateTime? from, DateTime? to, List<String>? enterpriseIds});
   Future<GasSale?> getSaleById(String id);
   Future<void> addSale(GasSale sale);
   Future<void> updateSale(GasSale sale);

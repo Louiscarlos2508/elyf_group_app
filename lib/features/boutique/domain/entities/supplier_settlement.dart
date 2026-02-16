@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'sale.dart' show PaymentMethod;
+import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
 
 class SupplierSettlement extends Equatable {
   final String id;

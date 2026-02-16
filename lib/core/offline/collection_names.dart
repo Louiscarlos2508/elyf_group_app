@@ -35,6 +35,10 @@ class CollectionNames {
   static const String pointOfSale = 'pointOfSale';
   static const String gazSettings = 'gaz_settings';
   static const String financialReports = 'financial_reports';
+  static const String gazSessions = 'gaz_sessions';
+  static const String inventoryAudits = 'inventory_audits';
+  static const String wholesalers = 'wholesalers';
+  static const String gazTreasuryOperations = 'gaz_treasury_operations';
 
   // Collections Orange Money
   static const String transactions = 'transactions';

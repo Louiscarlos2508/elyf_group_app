@@ -26,7 +26,14 @@ class CylinderStockController {
     String enterpriseId, {
     CylinderStatus? status,
     String? siteId,
+    List<String>? enterpriseIds,
   }) {
+    if (enterpriseIds != null && enterpriseIds.isNotEmpty) {
+      return _repository.watchStocksForEnterprises(
+        enterpriseIds,
+        status: status,
+      );
+    }
     return _repository.watchStocks(
       enterpriseId,
       status: status,

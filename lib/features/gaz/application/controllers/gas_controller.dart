@@ -25,8 +25,8 @@ class GasController extends ChangeNotifier {
     return _repository.watchCylinders();
   }
 
-  Stream<List<GasSale>> watchSales({DateTime? from, DateTime? to}) {
-    return _repository.watchSales(from: from, to: to);
+  Stream<List<GasSale>> watchSales({DateTime? from, DateTime? to, List<String>? enterpriseIds}) {
+    return _repository.watchSales(from: from, to: to, enterpriseIds: enterpriseIds);
   }
 
   Future<void> loadCylinders() async {
@@ -39,11 +39,11 @@ class GasController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> loadSales({DateTime? from, DateTime? to}) async {
+  Future<void> loadSales({DateTime? from, DateTime? to, List<String>? enterpriseIds}) async {
     _isLoading = true;
     notifyListeners();
 
-    _sales = await _repository.getSales(from: from, to: to);
+    _sales = await _repository.getSales(from: from, to: to, enterpriseIds: enterpriseIds);
 
     _isLoading = false;
     notifyListeners();

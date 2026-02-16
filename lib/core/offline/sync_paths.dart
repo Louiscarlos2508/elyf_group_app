@@ -96,6 +96,14 @@ final collectionPaths = <String, String Function(String?)>{
       'enterprises/${enterpriseId!}/wholesalers',
   'financial_reports': (enterpriseId) =>
       'enterprises/${enterpriseId!}/financialReports',
+  'gaz_sessions': (enterpriseId) =>
+      'enterprises/${enterpriseId!}/gazSessions',
+  'gaz_treasury_operations': (enterpriseId) =>
+      'enterprises/${enterpriseId!}/gazTreasuryOperations',
+  'inventory_audits': (enterpriseId) =>
+      'enterprises/${enterpriseId!}/inventoryAudits',
+  'wholesalers': (enterpriseId) =>
+      'enterprises/${enterpriseId!}/wholesalers',
 
   // Audit Trail module
   'audit_trail': (enterpriseId) => 'enterprises/${enterpriseId!}/auditTrail',

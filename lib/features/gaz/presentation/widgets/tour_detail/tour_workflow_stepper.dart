@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../../domain/entities/tour.dart';
-import 'package:elyf_groupe_app/app/theme/app_colors.dart';
 
 /// Stepper du workflow du tour.
 class TourWorkflowStepper extends StatelessWidget {
@@ -40,16 +39,16 @@ class TourWorkflowStepper extends StatelessWidget {
 
           // Couleurs selon le thème
           final circleColor = isPast
-              ? AppColors.success
+              ? theme.colorScheme.primary.withValues(alpha: 0.8)
               : isActive
                   ? theme.colorScheme.primary
-                  : theme.colorScheme.outlineVariant.withValues(alpha: 0.5);
+                  : theme.colorScheme.surfaceContainerHighest;
           final textColor = isPast || isActive
               ? theme.colorScheme.onPrimary
               : theme.colorScheme.onSurfaceVariant;
-          // La ligne après une étape complétée doit être verte
+          // La ligne après une étape complétée doit être de la couleur primaire
           final lineColor = isPast
-              ? AppColors.success
+              ? theme.colorScheme.primary.withValues(alpha: 0.6)
               : theme.colorScheme.outlineVariant.withValues(alpha: 0.3);
 
           return Expanded(

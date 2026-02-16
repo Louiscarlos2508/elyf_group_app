@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:elyf_groupe_app/features/boutique/domain/entities/treasury_operation.dart';
-import 'package:elyf_groupe_app/features/boutique/domain/entities/sale.dart' show PaymentMethod;
+import 'package:elyf_groupe_app/shared/domain/entities/treasury_operation.dart';
+import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
 import 'package:elyf_groupe_app/features/boutique/application/providers.dart';
 import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart' show activeEnterpriseProvider;
 

@@ -16,6 +16,7 @@ import '../../presentation/screens/sections/settings_screen.dart';
 import '../../presentation/screens/sections/stock_screen.dart';
 import '../../presentation/screens/sections/wholesale_screen.dart';
 import '../../presentation/screens/sections/inventory_screen.dart';
+import '../../presentation/screens/sections/treasury_screen.dart';
 import 'permission_providers.dart';
 
 /// Provider pour récupérer les sections accessibles selon les permissions.
@@ -115,6 +116,16 @@ final accessibleGazSectionsProvider = FutureProvider<List<NavigationSection>>((
             moduleId: moduleId,
           ),
           requiredPermissions: {GazPermissions.viewExpenses.id},
+        ),
+        (
+          section: NavigationSection(
+            label: 'Trésorerie',
+            icon: Icons.account_balance_wallet_outlined,
+            builder: () => const GazTreasuryScreen(),
+            enterpriseId: enterpriseId,
+            moduleId: moduleId,
+          ),
+          requiredPermissions: {GazPermissions.viewTreasury.id},
         ),
         (
           section: NavigationSection(

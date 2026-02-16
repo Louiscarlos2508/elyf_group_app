@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../../application/providers.dart';
 import '../../../../domain/entities/cylinder.dart';
+import '../../../../domain/entities/cylinder_stock.dart';
 import '../../../../domain/entities/expense.dart';
 import '../../../../domain/entities/gas_sale.dart';
 import '../../../../domain/services/gaz_calculation_service.dart';
@@ -15,14 +16,17 @@ class DashboardKpiSection extends ConsumerWidget {
     required this.sales,
     required this.expenses,
     required this.cylinders,
+    required this.stocks,
   });
 
   final List<GasSale> sales;
   final List<GazExpense> expenses;
   final List<Cylinder> cylinders;
+  final List<CylinderStock> stocks;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
     // Utiliser le service pour les calculs
     final todaySales = GazCalculationService.calculateTodaySales(sales);
     final todayRevenue = GazCalculationService.calculateTodayRevenue(sales);
@@ -37,32 +41,16 @@ class DashboardKpiSection extends ConsumerWidget {
       cylinders,
     );
 
-    // Full bottles count
-    final enterpriseId = cylinders.isNotEmpty
-        ? cylinders.first.enterpriseId
-        : 'default_enterprise';
-
-    // Récupérer tous les stocks pour calculer pleines et vides
-    final allStocksAsync = ref.watch(
-      cylinderStocksProvider((
-        enterpriseId: enterpriseId,
-        status: null, // null = tous les stocks
-        siteId: null,
-      )),
+    // Calculer les bouteilles pleines
+    final fullBottles = GazCalculationService.calculateTotalFullCylinders(
+      stocks,
+    );
+    // Calculer les bouteilles vides (emptyAtStore + emptyInTransit)
+    final emptyBottles = GazCalculationService.calculateTotalEmptyCylinders(
+      stocks,
     );
 
-    return allStocksAsync.when(
-      data: (allStocks) {
-        // Calculer les bouteilles pleines
-        final fullBottles = GazCalculationService.calculateTotalFullCylinders(
-          allStocks,
-        );
-        // Calculer les bouteilles vides (emptyAtStore + emptyInTransit)
-        final emptyBottles = GazCalculationService.calculateTotalEmptyCylinders(
-          allStocks,
-        );
-
-        return LayoutBuilder(
+    return LayoutBuilder(
           builder: (context, constraints) {
             final isWide = constraints.maxWidth > 800;
             if (isWide) {
@@ -74,7 +62,7 @@ class DashboardKpiSection extends ConsumerWidget {
                       value: CurrencyFormatter.formatDouble(todayRevenue),
                       subtitle: "${todaySales.length} vente(s)",
                       icon: Icons.trending_up_rounded,
-                      color: const Color(0xFF3B82F6), // Vibrant Blue
+                      color: theme.colorScheme.primary, // Vibrant Blue
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -84,7 +72,7 @@ class DashboardKpiSection extends ConsumerWidget {
                       value: CurrencyFormatter.formatDouble(todayExpensesAmount),
                       subtitle: "${todayExpenses.length} dépense(s)",
                       icon: Icons.trending_down_rounded,
-                      color: const Color(0xFFEF4444), // Vibrant Red
+                      color: theme.colorScheme.error, // Vibrant Red
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -94,7 +82,7 @@ class DashboardKpiSection extends ConsumerWidget {
                       value: CurrencyFormatter.formatDouble(todayProfit),
                       subtitle: todayProfit >= 0 ? "Bénéfice net" : "Déficit journalier",
                       icon: Icons.account_balance_wallet_rounded,
-                      color: const Color(0xFF10B981), // Emerald Green
+                      color: AppColors.success, // Emerald Green
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -104,7 +92,7 @@ class DashboardKpiSection extends ConsumerWidget {
                       value: "$fullBottles",
                       subtitle: "$emptyBottles vides",
                       icon: Icons.inventory_2_rounded,
-                      color: const Color(0xFF8B5CF6), // Vibrant Violet
+                      color: theme.colorScheme.tertiary, // Vibrant Violet/Tertiary
                     ),
                   ),
                 ],
@@ -122,7 +110,7 @@ class DashboardKpiSection extends ConsumerWidget {
                         value: CurrencyFormatter.formatDouble(todayRevenue),
                         subtitle: "${todaySales.length} vente(s)",
                         icon: Icons.trending_up_rounded,
-                        color: const Color(0xFF3B82F6),
+                        color: theme.colorScheme.primary,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -132,7 +120,7 @@ class DashboardKpiSection extends ConsumerWidget {
                         value: CurrencyFormatter.formatDouble(todayExpensesAmount),
                         subtitle: "${todayExpenses.length} dépense(s)",
                         icon: Icons.trending_down_rounded,
-                        color: const Color(0xFFEF4444),
+                        color: theme.colorScheme.error,
                       ),
                     ),
                   ],
@@ -146,7 +134,7 @@ class DashboardKpiSection extends ConsumerWidget {
                         value: CurrencyFormatter.formatDouble(todayProfit),
                         subtitle: todayProfit >= 0 ? "Bénéfice net" : "Déficit journalier",
                         icon: Icons.account_balance_wallet_rounded,
-                        color: const Color(0xFF10B981),
+                        color: AppColors.success,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -156,24 +144,14 @@ class DashboardKpiSection extends ConsumerWidget {
                         value: "$fullBottles",
                         subtitle: "$emptyBottles vides",
                         icon: Icons.inventory_2_rounded,
-                        color: const Color(0xFF8B5CF6),
+                        color: theme.colorScheme.tertiary,
                       ),
                     ),
                   ],
                 ),
               ],
             );
-          },
-        );
       },
-      loading: () => Column(
-        children: [
-          ElyfShimmer(child: ElyfShimmer.listTile()),
-          const SizedBox(height: 12),
-          ElyfShimmer(child: ElyfShimmer.listTile()),
-        ],
-      ),
-      error: (_, __) => const SizedBox.shrink(),
     );
   }
 }

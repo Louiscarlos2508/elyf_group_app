@@ -1,5 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:elyf_groupe_app/app/theme/app_colors.dart';
 import 'package:elyf_groupe_app/shared/presentation/widgets/elyf_ui/organisms/elyf_card.dart';
 
 /// Chart displaying performance over the last 7 days (Bénéfice, Dépenses, Ventes).
@@ -146,7 +147,7 @@ class DashboardPerformanceChart extends StatelessWidget {
                   LineChartBarData(
                     spots: profitSpots,
                     isCurved: true,
-                    color: const Color(0xFF3B82F6),
+                    color: theme.colorScheme.primary,
                     barWidth: 4,
                     isStrokeCapRound: true,
                     dotData: FlDotData(
@@ -156,7 +157,7 @@ class DashboardPerformanceChart extends StatelessWidget {
                           radius: 4,
                           color: Colors.white,
                           strokeWidth: 2,
-                          strokeColor: const Color(0xFF3B82F6),
+                          strokeColor: theme.colorScheme.primary,
                         );
                       },
                     ),
@@ -164,8 +165,8 @@ class DashboardPerformanceChart extends StatelessWidget {
                       show: true,
                       gradient: LinearGradient(
                         colors: [
-                          const Color(0xFF3B82F6).withValues(alpha: 0.15),
-                          const Color(0xFF3B82F6).withValues(alpha: 0.0),
+                          theme.colorScheme.primary.withValues(alpha: 0.15),
+                          theme.colorScheme.primary.withValues(alpha: 0.0),
                         ],
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
@@ -176,7 +177,7 @@ class DashboardPerformanceChart extends StatelessWidget {
                   LineChartBarData(
                     spots: expensesSpots,
                     isCurved: true,
-                    color: const Color(0xFFEF4444),
+                    color: theme.colorScheme.error,
                     barWidth: 3,
                     isStrokeCapRound: true,
                     dotData: FlDotData(
@@ -186,7 +187,7 @@ class DashboardPerformanceChart extends StatelessWidget {
                           radius: 3,
                           color: Colors.white,
                           strokeWidth: 2,
-                          strokeColor: const Color(0xFFEF4444),
+                          strokeColor: theme.colorScheme.error,
                         );
                       },
                     ),
@@ -196,7 +197,7 @@ class DashboardPerformanceChart extends StatelessWidget {
                   LineChartBarData(
                     spots: salesSpots,
                     isCurved: true,
-                    color: const Color(0xFF10B981),
+                    color: AppColors.success,
                     barWidth: 3,
                     isStrokeCapRound: true,
                     dotData: FlDotData(
@@ -206,7 +207,7 @@ class DashboardPerformanceChart extends StatelessWidget {
                           radius: 3,
                           color: Colors.white,
                           strokeWidth: 2,
-                          strokeColor: const Color(0xFF10B981),
+                          strokeColor: AppColors.success,
                         );
                       },
                     ),
@@ -225,7 +226,7 @@ class DashboardPerformanceChart extends StatelessWidget {
             children: [
               _LegendItem(color: theme.colorScheme.primary, label: 'Bénéfice'),
               _LegendItem(color: theme.colorScheme.error, label: 'Dépenses'),
-              _LegendItem(color: const Color(0xFF10B981), label: 'Ventes'),
+              _LegendItem(color: AppColors.success, label: 'Ventes'),
             ],
           ),
         ],

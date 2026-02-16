@@ -21,7 +21,7 @@ AppDatabase createTestDatabase() {
   // Pour les tests, on devrait mocker DriftService ou utiliser une base en mémoire.
   // Cette fonction retourne une instance normale qui devra être mockée dans les tests unitaires.
   // Pour les tests d'intégration, on peut utiliser une vraie base de données.
-  return AppDatabase();
+  return AppDatabase(null);
 }
 
 /// Setup pour un test avec Drift.

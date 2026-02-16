@@ -150,6 +150,21 @@ class GazPermissions {
     description: 'Permet de supprimer une dépense',
   );
 
+  // Treasury
+  static const viewTreasury = ActionPermission(
+    id: 'view_treasury',
+    name: 'Voir la trésorerie',
+    module: 'gaz',
+    description: 'Permet de voir le dashboard de trésorerie',
+  );
+
+  static const manageTreasury = ActionPermission(
+    id: 'manage_treasury',
+    name: 'Gérer la trésorerie',
+    module: 'gaz',
+    description: 'Permet de faire des dépôts/retraits manuels',
+  );
+
   // Reports
   static const viewReports = ActionPermission(
     id: 'view_reports',
@@ -246,5 +261,7 @@ class GazPermissions {
     changePassword,
     viewDeliveries,
     manageInventory,
+    viewTreasury,
+    manageTreasury,
   ];
 }

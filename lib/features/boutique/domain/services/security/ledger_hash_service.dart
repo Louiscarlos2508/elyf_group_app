@@ -3,7 +3,7 @@ import 'package:crypto/crypto.dart';
 import '../../entities/sale.dart';
 import '../../entities/expense.dart';
 import '../../entities/purchase.dart';
-import '../../entities/treasury_operation.dart';
+import 'package:elyf_groupe_app/shared/domain/entities/treasury_operation.dart';
 import '../../entities/supplier_settlement.dart';
 
 class LedgerHashService {

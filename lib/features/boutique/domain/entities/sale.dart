@@ -1,3 +1,5 @@
+import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
+
 /// Represents a completed sale transaction.
 class Sale {
   const Sale({
@@ -218,11 +220,4 @@ class SaleItem {
       'totalPrice': totalPrice,
     };
   }
-}
-
-enum PaymentMethod {
-  cash,
-  mobileMoney,
-  card,
-  both, // Permet de payer avec les deux méthodes en même temps
 }

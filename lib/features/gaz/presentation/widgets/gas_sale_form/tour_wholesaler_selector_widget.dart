@@ -52,6 +52,7 @@ class _TourWholesalerSelectorWidgetState
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final toursAsync = ref.watch(
       toursProvider((enterpriseId: widget.enterpriseId, status: null)),
     );
@@ -83,11 +84,11 @@ class _TourWholesalerSelectorWidgetState
                 helperText: 'Enlèvement au dépôt ou Livraison par Tournée',
               ),
               items: [
-                const DropdownMenuItem<Tour?>(
+                DropdownMenuItem<Tour?>(
                   value: null,
                   child: Row(
                     children: [
-                      Icon(Icons.warehouse, size: 20, color: Colors.blue),
+                      Icon(Icons.warehouse, size: 20, color: theme.colorScheme.primary),
                       SizedBox(width: 8),
                       Text('Enlèvement au dépôt'),
                     ],
@@ -108,7 +109,7 @@ class _TourWholesalerSelectorWidgetState
                           '${tour.collections.where((c) => c.type == CollectionType.wholesaler).length} grossiste(s)',
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.grey[600],
+                            color: theme.colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -134,18 +135,18 @@ class _TourWholesalerSelectorWidgetState
           error: (e, _) => Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.red[50],
+              color: theme.colorScheme.errorContainer,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.red[300]!),
+              border: Border.all(color: theme.colorScheme.error.withValues(alpha: 0.2)),
             ),
             child: Row(
               children: [
-                Icon(Icons.error_outline, color: Colors.red[700], size: 20),
+                Icon(Icons.error_outline, color: theme.colorScheme.error, size: 20),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     'Erreur de chargement des tours: $e',
-                    style: TextStyle(color: Colors.red[900], fontSize: 12),
+                    style: TextStyle(color: theme.colorScheme.error, fontSize: 12),
                   ),
                 ),
               ],
@@ -163,6 +164,7 @@ class _TourWholesalerSelectorWidgetState
   Widget _buildWholesalerSelector(
     AsyncValue<List<Wholesaler>> allWholesalersAsync,
   ) {
+    final theme = Theme.of(context);
     return allWholesalersAsync.when(
       data: (allWholesalers) {
         // Si on est en mode ajout, afficher le formulaire
@@ -187,7 +189,7 @@ class _TourWholesalerSelectorWidgetState
                           'Sélectionnez un grossiste existant ou ajoutez-en un nouveau',
                     ),
                     items: [
-                      const DropdownMenuItem<String>(
+                      DropdownMenuItem<String>(
                         value: null,
                         child: Text('-- Sélectionner --'),
                       ),
@@ -209,7 +211,7 @@ class _TourWholesalerSelectorWidgetState
                                   wholesaler.phone!,
                                   style: TextStyle(
                                     fontSize: 12,
-                                    color: Colors.grey[600],
+                                    color: theme.colorScheme.onSurfaceVariant,
                                   ),
                                 ),
                             ],
@@ -268,19 +270,19 @@ class _TourWholesalerSelectorWidgetState
       ),
       error: (e, _) => Container(
         padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.red[50],
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.red[300]!),
-        ),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.errorContainer,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: theme.colorScheme.error.withValues(alpha: 0.2)),
+          ),
         child: Row(
           children: [
-            Icon(Icons.error_outline, color: Colors.red[700], size: 20),
+            Icon(Icons.error_outline, color: theme.colorScheme.error, size: 20),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
                 'Erreur de chargement des grossistes: $e',
-                style: TextStyle(color: Colors.red[900], fontSize: 12),
+                style: TextStyle(color: theme.colorScheme.error, fontSize: 12),
               ),
             ),
           ],
@@ -290,24 +292,25 @@ class _TourWholesalerSelectorWidgetState
   }
 
   Widget _buildNewWholesalerForm() {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.blue[50],
+            color: theme.colorScheme.primaryContainer,
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.blue[300]!),
+            border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.2)),
           ),
           child: Row(
             children: [
-              Icon(Icons.info_outline, color: Colors.blue[700], size: 20),
+              Icon(Icons.info_outline, color: theme.colorScheme.primary, size: 20),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   'Nouveau grossiste - Les informations seront enregistrées',
-                  style: TextStyle(color: Colors.blue[900], fontSize: 12),
+                  style: TextStyle(color: theme.colorScheme.onPrimaryContainer, fontSize: 12),
                 ),
               ),
             ],
@@ -411,7 +414,7 @@ class _TourWholesalerSelectorWidgetState
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text('Grossiste "$name" ajouté avec succès'),
-                      backgroundColor: Colors.green,
+                      backgroundColor: theme.colorScheme.primary,
                     ),
                   );
                 },
@@ -431,6 +434,7 @@ class _TourWholesalerSelectorWidgetState
     String phone,
     String address,
   ) async {
+    final theme = Theme.of(context);
     try {
       final controller = ref.read(tourControllerProvider);
 
@@ -464,7 +468,7 @@ class _TourWholesalerSelectorWidgetState
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Erreur lors de l\'ajout au tour: $e'),
-          backgroundColor: Colors.red,
+          backgroundColor: theme.colorScheme.error,
         ),
       );
     }

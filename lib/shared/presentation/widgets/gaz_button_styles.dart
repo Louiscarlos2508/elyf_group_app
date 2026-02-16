@@ -26,7 +26,7 @@ class GazButtonStyles {
 
   /// Style pour le bouton OutlinedButton standard.
   static ButtonStyle outlined(BuildContext context) => OutlinedButton.styleFrom(
-    side: BorderSide(color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2), width: 1.5),
+    side: BorderSide(color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.4), width: 1.5),
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
     minimumSize: const Size(0, 48),
@@ -38,7 +38,7 @@ class GazButtonStyles {
     BuildContext context,
     double minWidth,
   ) => OutlinedButton.styleFrom(
-    side: BorderSide(color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2), width: 1.5),
+    side: BorderSide(color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.4), width: 1.5),
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
     minimumSize: Size(minWidth, 48),
